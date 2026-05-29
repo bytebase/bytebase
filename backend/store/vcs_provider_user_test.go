@@ -17,8 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-const vcsProviderUserActiveWindow = 90 * 24 * time.Hour
-
 func TestVCSProviderUserTouchAndCount(t *testing.T) {
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
@@ -33,11 +31,11 @@ func TestVCSProviderUserTouchAndCount(t *testing.T) {
 		},
 	}
 
-	ok, err := s.TouchVCSProviderUser(ctx, workspace, user, vcsProviderUserActiveWindow, 1)
+	ok, err := s.TouchVCSProviderUser(ctx, workspace, user, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	count, err := s.CountActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	count, err := s.CountActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
 
@@ -56,11 +54,11 @@ func TestVCSProviderUserTouchAndCount(t *testing.T) {
 			UserName:    "alice2",
 			DisplayName: "Alice Cooper",
 		},
-	}, vcsProviderUserActiveWindow, 1)
+	}, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Len(t, users, 1)
 	require.Equal(t, workspace, users[0].Workspace)
@@ -84,7 +82,7 @@ func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *tes
 	`, workspace, v1pb.VCSType_GITHUB.String())
 	require.NoError(t, err)
 
-	count, err := s.CountActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	count, err := s.CountActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
 
@@ -103,7 +101,7 @@ func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *tes
 			UserName:    "inactive-updated",
 			DisplayName: "Inactive Updated",
 		},
-	}, vcsProviderUserActiveWindow, 1)
+	}, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.False(t, ok)
 
@@ -123,7 +121,7 @@ func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *tes
 		Payload: &storepb.VCSProviderUserPayload{
 			UserName: "new",
 		},
-	}, vcsProviderUserActiveWindow, 1)
+	}, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.False(t, ok)
 
@@ -156,11 +154,11 @@ func TestVCSProviderUserTouchInactiveUserWhenUnderLimit(t *testing.T) {
 			UserName:    "active-again",
 			DisplayName: "Active Again",
 		},
-	}, vcsProviderUserActiveWindow, 1)
+	}, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Len(t, users, 1)
 	require.Equal(t, "inactive-1", users[0].UserID)
@@ -181,7 +179,7 @@ func TestVCSProviderUserListActiveUsersSortedDesc(t *testing.T) {
 	`, workspace, v1pb.VCSType_GITHUB.String())
 	require.NoError(t, err)
 
-	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Len(t, users, 2)
 	require.Equal(t, "new-active", users[0].UserID)
@@ -197,16 +195,51 @@ func TestVCSProviderUserTouchStoresEmptyPayloadWhenNil(t *testing.T) {
 	ok, err := s.TouchVCSProviderUser(ctx, workspace, &store.VCSProviderUserMessage{
 		VCSType: v1pb.VCSType_GITHUB,
 		UserID:  "1001",
-	}, vcsProviderUserActiveWindow, 1)
+	}, store.VCSProviderUserActiveWindow, 1)
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, vcsProviderUserActiveWindow)
+	users, err := s.ListActiveVCSProviderUsers(ctx, workspace, store.VCSProviderUserActiveWindow)
 	require.NoError(t, err)
 	require.Len(t, users, 1)
 	require.NotNil(t, users[0].Payload)
 	require.Empty(t, users[0].Payload.GetUserName())
 	require.Empty(t, users[0].Payload.GetDisplayName())
+}
+
+func TestDeleteExpiredVCSProviderUsers(t *testing.T) {
+	ctx := context.Background()
+	s, db := setupVCSProviderUserStore(ctx, t)
+
+	const workspace = "default"
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO vcs_provider_user (workspace, vcs_type, user_id, last_seen_at, payload)
+		VALUES
+			($1, $2, 'active', now() - interval '89 days', '{"userName":"active"}'::jsonb),
+			($1, $2, 'expired', now() - interval '91 days', '{"userName":"expired"}'::jsonb)
+	`, workspace, v1pb.VCSType_GITHUB.String())
+	require.NoError(t, err)
+
+	rowsAffected, err := s.DeleteExpiredVCSProviderUsers(ctx, store.VCSProviderUserActiveWindow)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, rowsAffected)
+
+	var userIDs []string
+	rows, err := db.QueryContext(ctx, `
+		SELECT user_id
+		FROM vcs_provider_user
+		WHERE workspace = $1
+		ORDER BY user_id
+	`, workspace)
+	require.NoError(t, err)
+	defer rows.Close()
+	for rows.Next() {
+		var userID string
+		require.NoError(t, rows.Scan(&userID))
+		userIDs = append(userIDs, userID)
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, []string{"active"}, userIDs)
 }
 
 func setupVCSProviderUserStore(ctx context.Context, t *testing.T) (*store.Store, *sql.DB) {

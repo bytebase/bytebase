@@ -13,12 +13,18 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-const countActiveVCSProviderUsersSQL = `
-	SELECT COUNT(*)
-	FROM vcs_provider_user
-	WHERE workspace = $1
-		AND last_seen_at >= now() - make_interval(secs => $2)
-`
+const (
+	// VCSProviderUserActiveWindow is the period in which a VCS provider user
+	// counts toward license usage.
+	VCSProviderUserActiveWindow = 90 * 24 * time.Hour
+
+	countActiveVCSProviderUsersSQL = `
+		SELECT COUNT(*)
+		FROM vcs_provider_user
+		WHERE workspace = $1
+			AND last_seen_at >= now() - make_interval(secs => $2)
+	`
+)
 
 // VCSProviderUserMessage is the store message for a VCS provider user.
 type VCSProviderUserMessage struct {
@@ -132,6 +138,22 @@ func countActiveVCSProviderUsersTx(ctx context.Context, tx *sql.Tx, workspace st
 		return 0, errors.Wrapf(err, "failed to count active VCS provider users")
 	}
 	return count, nil
+}
+
+// DeleteExpiredVCSProviderUsers deletes VCS provider users older than the active window.
+func (s *Store) DeleteExpiredVCSProviderUsers(ctx context.Context, activeWindow time.Duration) (int64, error) {
+	result, err := s.GetDB().ExecContext(ctx, `
+		DELETE FROM vcs_provider_user
+		WHERE last_seen_at < now() - make_interval(secs => $1)
+	`, activeWindow.Seconds())
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to delete expired VCS provider users")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get deleted VCS provider user count")
+	}
+	return rowsAffected, nil
 }
 
 // ListActiveVCSProviderUsers lists active VCS provider users in the workspace,

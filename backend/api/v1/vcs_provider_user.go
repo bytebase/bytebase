@@ -1,8 +1,8 @@
 package v1
 
-import "time"
+import "github.com/bytebase/bytebase/backend/store"
 
 const (
 	vcsProviderUserActiveWindowDays = 90
-	vcsProviderUserActiveWindow     = vcsProviderUserActiveWindowDays * 24 * time.Hour
+	vcsProviderUserActiveWindow     = store.VCSProviderUserActiveWindow
 )
