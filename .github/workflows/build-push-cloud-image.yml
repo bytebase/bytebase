@@ -3,8 +3,9 @@ name: Deploy Bytebase Cloud
 on:
   workflow_dispatch:
   schedule:
-    # Monday-Thursday at 00:00 UTC
-    - cron: "0 0 * * 1-4"
+    # Monday-Friday at 00:23 UTC. The off-the-hour minute avoids GitHub Actions'
+    # hour-boundary high-load window, where scheduled jobs can be delayed or dropped.
+    - cron: "23 0 * * 1-5"
 
 permissions:
   contents: read
