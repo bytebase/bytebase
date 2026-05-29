@@ -11,6 +11,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useWorksheetAndTab } from "@/react/hooks/useWorksheetAndTab";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   getSQLEditorTabsState,
@@ -18,7 +19,7 @@ import {
   useIsDisconnected,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useUIStateStore, useWorkSheetStore } from "@/store";
+import { useUIStateStore } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
@@ -44,7 +45,6 @@ type Props = {
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
   const uiStateStore = useUIStateStore();
-  const worksheetStore = useWorkSheetStore();
   const { currentSheet: currentWorksheet } = useWorksheetAndTab();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
@@ -93,7 +93,7 @@ export function EditorAction({ onExecute }: Props) {
 
   const canWriteSheet = (() => {
     if (!tabWorksheet) return false;
-    const sheet = worksheetStore.getWorksheetByName(tabWorksheet);
+    const sheet = useAppStore.getState().getWorksheetByName(tabWorksheet);
     return sheet ? isWorksheetWritableV1(sheet) : false;
   })();
 
@@ -101,7 +101,7 @@ export function EditorAction({ onExecute }: Props) {
     if (!showSheetsFeature || !currentTab) return false;
     if (tabWorksheet) {
       if (!canWriteSheet) return false;
-      const sheet = worksheetStore.getWorksheetByName(tabWorksheet);
+      const sheet = useAppStore.getState().getWorksheetByName(tabWorksheet);
       if (sheet && sheet.database !== currentTab.connection.database) {
         return true;
       }

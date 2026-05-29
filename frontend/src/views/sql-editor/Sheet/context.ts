@@ -6,6 +6,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import { t } from "@/plugins/i18n";
+import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorEditorState,
   subscribeSQLEditorEditorState,
@@ -16,8 +17,7 @@ import {
   subscribeSQLEditorTabsState,
   useSQLEditorTabsStore,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useCurrentUserV1, useWorkSheetStore } from "@/store";
-import { useCache } from "@/store/cache";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import type { SQLEditorTab, SQLEditorTabMode } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
@@ -235,14 +235,6 @@ const useSheetContextStore: UseBoundStore<StoreApi<SheetContextState>> =
       },
     }))
   );
-
-// Handle to the worksheet store's cache namespace. `useCache` keys its
-// listener registry + entity maps by namespace string, so this resolves
-// to the SAME cache the Pinia worksheet store writes to — letting us
-// subscribe to worksheet mutations (fetch / patch / delete) without
-// importing the store's internal closure. Namespace must match
-// `store/modules/v1/worksheet.ts`.
-const worksheetCache = useCache("bb.worksheet.by-uid");
 
 // ---- localStorage persistence ----------------------------------------------
 
@@ -612,23 +604,30 @@ const buildTree = (
 };
 
 const worksheetsForView = (view: SheetViewMode): Worksheet[] => {
-  const sheetStore = useWorkSheetStore();
+  if (view !== "my" && view !== "shared") return [];
   const filter = useSheetContextStore.getState().filter;
   const project = getSQLEditorEditorState().project;
-  let list: Worksheet[] = [];
-  switch (view) {
-    case "my":
-      list = sheetStore.myWorksheetList;
-      break;
-    case "shared":
-      list = sheetStore.sharedWorksheetList;
-      break;
-    default:
-      break;
+  // Use the Pinia current user — the same source the worksheet FETCH
+  // filter uses (`fetchSheetListFor`), so it's reliably populated by the
+  // time worksheets land. The app store's `currentUser` can still be
+  // empty here, which would misclassify every worksheet as "shared".
+  let email = "";
+  try {
+    email = useCurrentUserV1()?.value?.email ?? "";
+  } catch {
+    email = "";
   }
-  list = list.filter((sheet) => sheet.project === project);
+  const creator = `users/${email}`;
+  let list = useAppStore
+    .getState()
+    .worksheetList()
+    .filter((sheet) => {
+      if (sheet.project !== project) return false;
+      const mine = sheet.creator === creator;
+      return view === "my" ? mine : !mine;
+    });
   if (filter.onlyShowStarred) {
-    return list.filter((sheet) => sheet.starred);
+    list = list.filter((sheet) => sheet.starred);
   }
   return list;
 };
@@ -698,7 +697,7 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   const state = useSheetContextStore.getState();
   state.setViewIsLoading(view, true);
   try {
-    const sheetStore = useWorkSheetStore();
+    const sheetStore = useAppStore.getState();
     const me = useCurrentUserV1();
     const project = getSQLEditorEditorState().project;
     switch (view) {
@@ -781,7 +780,7 @@ const batchUpdateWorksheetFolders = async (
   worksheets: { name: string; folders: string[] }[]
 ): Promise<void> => {
   if (worksheets.length === 0) return;
-  await useWorkSheetStore().batchUpsertWorksheetOrganizers(
+  await useAppStore.getState().batchUpsertWorksheetOrganizers(
     worksheets.map((worksheet) => ({
       organizer: {
         worksheet: worksheet.name,
@@ -888,7 +887,8 @@ const bindWatchers = () => {
   // worksheet list. The "draft" view is tab-derived, not worksheet-
   // derived, so it doesn't need this. Debounced rebuilds coalesce the
   // burst of cache writes a single fetch produces.
-  worksheetCache.subscribe(() => {
+  useAppStore.subscribe((state, prev) => {
+    if (state.worksheetsByKey === prev.worksheetsByKey) return;
     getRebuildTreeFn("my")();
     getRebuildTreeFn("shared")();
   });
@@ -917,7 +917,7 @@ const onCurrentTabChanged = (tab: SQLEditorTab | undefined) => {
   const worksheetName = tab.worksheet;
 
   if (worksheetName) {
-    const worksheet = useWorkSheetStore().getWorksheetByName(worksheetName);
+    const worksheet = useAppStore.getState().getWorksheetByName(worksheetName);
     if (!worksheet) return;
     worksheetLikeItem = {
       name: worksheet.name,
@@ -1109,7 +1109,9 @@ export const openWorksheetByName = async ({
   forceNewTab: boolean;
   mode?: SQLEditorTabMode;
 }) => {
-  const sheet = await useWorkSheetStore().getOrFetchWorksheetByName(worksheet);
+  const sheet = await useAppStore
+    .getState()
+    .getOrFetchWorksheetByName(worksheet);
   if (!sheet) return undefined;
 
   if (!isWorksheetReadableV1(sheet)) {

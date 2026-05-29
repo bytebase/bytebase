@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   resultRowsLimit: 500,
   updateCurrentTab: vi.fn(),
   useUIStateStore: vi.fn(),
-  useWorkSheetStore: vi.fn(),
+  getWorksheetByName: vi.fn<(name: string) => unknown>(),
   useWorksheetAndTab: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   isWorksheetWritableV1: vi.fn(() => true),
@@ -36,7 +36,12 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/store", () => ({
   useUIStateStore: mocks.useUIStateStore,
-  useWorkSheetStore: mocks.useWorkSheetStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({ getWorksheetByName: mocks.getWorksheetByName }),
+  },
 }));
 
 vi.mock("@/react/hooks/useWorksheetAndTab", () => ({
@@ -198,12 +203,10 @@ const setup = (options: SetupOptions = {}) => {
   const updateCurrentTab = mocks.updateCurrentTab;
 
   mocks.useUIStateStore.mockReturnValue({ saveIntroStateByKey });
-  mocks.useWorkSheetStore.mockReturnValue({
-    getWorksheetByName: vi.fn(() => ({
-      name: worksheet ?? "",
-      database: "databases/db1",
-    })),
-  });
+  mocks.getWorksheetByName.mockImplementation(() => ({
+    name: worksheet ?? "",
+    database: "databases/db1",
+  }));
   mocks.useWorksheetAndTab.mockReturnValue({
     currentSheet: worksheet ? { name: worksheet, title: "sheet" } : undefined,
     isCreator: false,

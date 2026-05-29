@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useWorkSheetStore } from "@/store";
+import { pushNotification } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 
 const AUTO_SAVE_DEBOUNCE_MS = 2000;
@@ -23,7 +24,6 @@ const AUTO_SAVE_DEBOUNCE_MS = 2000;
  * component but should only be active while the SQL Editor route is.
  */
 export function useSQLEditorAutoSave() {
-  const worksheetStore = useWorkSheetStore();
   const abortAutoSave = useSQLEditorStore((s) => s.abortAutoSave);
   const setAutoSaveController = useSQLEditorStore(
     (s) => s.setAutoSaveController
@@ -58,7 +58,7 @@ export function useSQLEditorAutoSave() {
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
     if (!tab || !tab.worksheet || tab.status === "CLEAN") return;
 
-    const worksheet = worksheetStore.getWorksheetByName(tab.worksheet);
+    const worksheet = useAppStore.getState().getWorksheetByName(tab.worksheet);
     if (!worksheet || !isWorksheetWritableV1(worksheet)) return;
 
     abortAutoSave();

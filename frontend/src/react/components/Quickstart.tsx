@@ -5,6 +5,7 @@ import type { RouteLocationRaw } from "vue-router";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -21,7 +22,6 @@ import {
   useProjectIamPolicyStore,
   useProjectV1Store,
   useUIStateStore,
-  useWorkSheetStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -73,7 +73,6 @@ export function Quickstart() {
   const uiStateStore = useUIStateStore();
   const actuatorStore = useActuatorV1Store();
   const issueStore = useIssueV1Store();
-  const worksheetStore = useWorkSheetStore();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 
   const quickStartEnabled = useVueState(() => actuatorStore.quickStartEnabled);
@@ -149,16 +148,18 @@ export function Quickstart() {
       if (!cancelled) setSampleIssueExists(!!issue);
     })();
     void (async () => {
-      const sheet = await worksheetStore.getOrFetchWorksheetByName(
-        `${sampleProject.name}/sheets/${SAMPLE_SHEET_ID}`,
-        true /* silent */
-      );
+      const sheet = await useAppStore
+        .getState()
+        .getOrFetchWorksheetByName(
+          `${sampleProject.name}/sheets/${SAMPLE_SHEET_ID}`,
+          true /* silent */
+        );
       if (!cancelled) setSampleSheetExists(!!sheet);
     })();
     return () => {
       cancelled = true;
     };
-  }, [sampleProject, issueStore, worksheetStore]);
+  }, [sampleProject, issueStore]);
 
   // ---- intro list (memoized + permission-filtered) ----------------------
 

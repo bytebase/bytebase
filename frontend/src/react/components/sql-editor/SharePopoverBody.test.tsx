@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   useActuatorV1Store: vi.fn(),
   useCurrentUserV1: vi.fn(),
-  useWorkSheetStore: vi.fn(),
+  patchWorksheet: vi.fn().mockResolvedValue({}),
   // `useSQLEditorTabState(selector)` runs `selector` against this stub
   // state; the component selects `tabsById.get(currentTabId)?.status`.
   tabStatus: "CLEAN" as string,
@@ -35,8 +35,13 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
 vi.mock("@/store", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
   useCurrentUserV1: mocks.useCurrentUserV1,
-  useWorkSheetStore: mocks.useWorkSheetStore,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({ patchWorksheet: mocks.patchWorksheet }),
+  },
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
@@ -133,9 +138,7 @@ beforeEach(async () => {
   mocks.useCurrentUserV1.mockReturnValue({
     value: { email: "test@example.com", name: "users/test@example.com" },
   });
-  mocks.useWorkSheetStore.mockReturnValue({
-    patchWorksheet: vi.fn().mockResolvedValue({}),
-  });
+  mocks.patchWorksheet.mockResolvedValue({});
   mocks.tabStatus = "CLEAN";
 
   mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
@@ -202,8 +205,7 @@ describe("SharePopoverBody", () => {
   });
 
   test("handleChangeAccess calls patchWorksheet and pushNotification but does NOT close the outer popover", async () => {
-    const patchWorksheet = vi.fn().mockResolvedValue({});
-    mocks.useWorkSheetStore.mockReturnValue({ patchWorksheet });
+    const patchWorksheet = mocks.patchWorksheet;
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />

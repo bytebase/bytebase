@@ -8,8 +8,8 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useSQLEditorEvent } from "@/react/hooks/useSQLEditorEvent";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { extractWorksheetID } from "@/utils";
@@ -18,7 +18,6 @@ import { FolderForm } from "./FolderForm";
 
 export function SaveSheetModal() {
   const { t } = useTranslation();
-  const worksheetStore = useWorkSheetStore();
   const abortAutoSave = useSQLEditorStore((s) => s.abortAutoSave);
   const maybeUpdateWorksheet = useSQLEditorStore((s) => s.maybeUpdateWorksheet);
   const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
@@ -85,7 +84,9 @@ export function SaveSheetModal() {
     // (for the silent path) — bypassing React's async setState batching.
     let nextFolder = "";
     if (tab.worksheet) {
-      const worksheet = worksheetStore.getWorksheetByName(tab.worksheet);
+      const worksheet = useAppStore
+        .getState()
+        .getWorksheetByName(tab.worksheet);
       if (worksheet) {
         nextFolder = sheetContext.getPwdForWorksheet(worksheet);
       }

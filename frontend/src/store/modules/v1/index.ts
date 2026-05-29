@@ -24,6 +24,5 @@ export * from "./sheet";
 export * from "./sql";
 export * from "./storage";
 export * from "./subscription";
-export * from "./worksheet";
 export * from "./workspace";
 export * from "./plan";

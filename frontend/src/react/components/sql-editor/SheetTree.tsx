@@ -55,10 +55,11 @@ import type { TreeDataNode } from "@/react/components/ui/tree";
 import { Tree } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useWorkSheetStore } from "@/store";
+import { pushNotification } from "@/store";
 import {
   openWorksheetByName,
   revealNodes,
@@ -176,7 +177,6 @@ export function SheetTree({
   const { t } = useTranslation();
 
   // ---- Pinia stores (called at top level, not inside the Vue-bridge call) ----------
-  const worksheetV1Store = useWorkSheetStore();
   const createWorksheet = useSQLEditorReactStore((s) => s.createWorksheet);
 
   // ---- Sheet contexts -------------------------------------------------------
@@ -431,25 +431,22 @@ export function SheetTree({
 
   // ---- Delete helpers -------------------------------------------------------
 
-  const doDeleteWorksheets = useCallback(
-    async (worksheets: string[]) => {
-      await Promise.all(
-        worksheets.map((worksheet) =>
-          worksheetV1Store.deleteWorksheetByName(worksheet)
-        )
+  const doDeleteWorksheets = useCallback(async (worksheets: string[]) => {
+    await Promise.all(
+      worksheets.map((worksheet) =>
+        useAppStore.getState().deleteWorksheetByName(worksheet)
+      )
+    );
+    const tabsState = getSQLEditorTabsState();
+    for (const worksheet of worksheets) {
+      const tab = Array.from(tabsState.tabsById.values()).find(
+        (t) => t.worksheet === worksheet
       );
-      const tabsState = getSQLEditorTabsState();
-      for (const worksheet of worksheets) {
-        const tab = Array.from(tabsState.tabsById.values()).find(
-          (t) => t.worksheet === worksheet
-        );
-        if (tab) {
-          tabsState.closeTab(tab.id);
-        }
+      if (tab) {
+        tabsState.closeTab(tab.id);
       }
-    },
-    [worksheetV1Store]
-  );
+    }
+  }, []);
 
   // ---- handleRenameNode (debounced via ref) ---------------------------------
   // We can't use useDebounceFn from @vueuse/core in React, so we implement
@@ -487,16 +484,16 @@ export function SheetTree({
     }
 
     if (editing.node.worksheet) {
-      const worksheet = worksheetV1Store.getWorksheetByName(
-        editing.node.worksheet.name
-      );
+      const worksheet = useAppStore
+        .getState()
+        .getWorksheetByName(editing.node.worksheet.name);
       if (!worksheet) {
         cleanup();
         return;
       }
-      await worksheetV1Store.patchWorksheet({ ...worksheet, title: newTitle }, [
-        "title",
-      ]);
+      await useAppStore
+        .getState()
+        .patchWorksheet({ ...worksheet, title: newTitle }, ["title"]);
       const tabsState = getSQLEditorTabsState();
       const tab = Array.from(tabsState.tabsById.values()).find(
         (t) => t.worksheet === worksheet.name
@@ -549,7 +546,6 @@ export function SheetTree({
   }, [
     editingNode,
     setEditingNode,
-    worksheetV1Store,
     findParentNode,
     sheetTree,
     updateWorksheetFolders,
@@ -773,12 +769,12 @@ export function SheetTree({
         clearTimeout(starTimerRef.current);
       }
       starTimerRef.current = setTimeout(() => {
-        void worksheetV1Store.upsertWorksheetOrganizer({ worksheet, starred }, [
-          "starred",
-        ]);
+        void useAppStore
+          .getState()
+          .upsertWorksheetOrganizer({ worksheet, starred }, ["starred"]);
       }, 300);
     },
-    [worksheetV1Store]
+    []
   );
 
   // ---- handleDuplicateFolderNameDrop: promise-based duplicate check for DnD --
@@ -1152,8 +1148,9 @@ export function SheetTree({
                 if (deleteDialogState.type !== "duplicate-sheet") return;
                 const { worksheetName } = deleteDialogState;
                 setDeleteDialogState({ type: "none" });
-                const worksheet =
-                  worksheetV1Store.getWorksheetByName(worksheetName);
+                const worksheet = useAppStore
+                  .getState()
+                  .getWorksheetByName(worksheetName);
                 if (!worksheet) return;
                 await createWorksheet({
                   title: worksheet.title,

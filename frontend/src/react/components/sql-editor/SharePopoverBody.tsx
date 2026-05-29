@@ -15,6 +15,7 @@ import {
 } from "@/react/components/ui/popover";
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
@@ -22,7 +23,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  useWorkSheetStore,
 } from "@/store";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -47,7 +47,6 @@ export function SharePopoverBody({ worksheet }: Props) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const currentUserStore = useCurrentUserV1();
-  const worksheetStore = useWorkSheetStore();
 
   const workspaceExternalURL = usePiniaBridge(
     () => actuatorStore.serverInfo?.externalUrl
@@ -120,10 +119,11 @@ export function SharePopoverBody({ worksheet }: Props) {
       return;
     }
     setCurrentAccess(option);
-    await worksheetStore.patchWorksheet(
-      { ...worksheet, visibility: option.value },
-      ["visibility"]
-    );
+    await useAppStore
+      .getState()
+      .patchWorksheet({ ...worksheet, visibility: option.value }, [
+        "visibility",
+      ]);
 
     try {
       await navigator.clipboard.writeText(sharedTabLink);
@@ -168,6 +168,9 @@ export function SharePopoverBody({ worksheet }: Props) {
         </div>
         <Popover open={selectorOpen} onOpenChange={setSelectorOpen}>
           <PopoverTrigger
+            // The trigger renders a <div>, not a native <button>; tell Base
+            // UI so it doesn't warn about missing native button semantics.
+            nativeButton={false}
             render={
               <div
                 data-access-trigger

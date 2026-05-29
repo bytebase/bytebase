@@ -83,6 +83,17 @@ vi.mock("@/types", async () => {
   };
 });
 
+// The SQL-editor tab/worksheet stores now transitively load the Zustand
+// app store (eagerly created). Stub it so the real `createAppStore()`
+// (which reads `@/types` exports this test doesn't mock) never runs.
+vi.mock("@/react/stores/app", () => {
+  const useAppStore = Object.assign(
+    (selector?: (state: unknown) => unknown) => (selector ? selector({}) : {}),
+    { getState: () => ({}), subscribe: () => () => {} }
+  );
+  return { useAppStore };
+});
+
 let useConnectionMenu: typeof import("./actions").useConnectionMenu;
 
 const renderHook = <T,>(hookFn: () => T) => {

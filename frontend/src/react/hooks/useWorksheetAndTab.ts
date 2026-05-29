@@ -1,6 +1,6 @@
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { useCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab";
-import { useCurrentUserV1, useWorkSheetStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
@@ -19,21 +19,16 @@ export interface WorksheetAndTab {
  * React replacement for the Pinia `useWorkSheetAndTabStore`. Derives the
  * worksheet bound to the current SQL editor tab plus creator / read-only
  * flags. The tab comes from the Zustand tab store; the worksheet is read
- * from the Pinia worksheet cache via `useVueState` (re-subscribed per
- * worksheet name) so cache hydration and in-place edits re-render.
+ * from the Zustand worksheet slice via `useAppStore` so cache hydration
+ * and in-place edits re-render.
  */
 export const useWorksheetAndTab = (): WorksheetAndTab => {
   const currentTab = useCurrentSQLEditorTab();
   const worksheetName = currentTab?.worksheet;
-  const worksheetStore = useWorkSheetStore();
   const me = useCurrentUserV1();
 
-  const currentSheet = useVueState<Worksheet | undefined>(
-    () =>
-      worksheetName
-        ? worksheetStore.getWorksheetByName(worksheetName)
-        : undefined,
-    { deps: [worksheetName] }
+  const currentSheet = useAppStore((s) =>
+    worksheetName ? s.getWorksheetByName(worksheetName) : undefined
   );
 
   const isCreator = currentSheet
