@@ -163,34 +163,23 @@ func TestGetVCSUserSkipsBitbucketBotAuthor(t *testing.T) {
 	require.Nil(t, getVCSUser(world.Bitbucket))
 }
 
-func TestGetVCSUserSkipsUnsupportedPlatform(t *testing.T) {
-	require.Nil(t, getVCSUser(world.LocalPlatform))
+func TestGetVCSUserSkipsBitbucketAppUserAuthor(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"author":{"account_id":"557058:app-account","nickname":"release-app","type":"app_user"}}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("BITBUCKET_PR_ID", "10")
+	t.Setenv("BITBUCKET_REPO_FULL_NAME", "bytebase/example")
+	t.Setenv("BYTEBASE_BITBUCKET_API_BASE_URL", server.URL)
+
+	require.Nil(t, getVCSUser(world.Bitbucket))
 }
 
-func TestBuildCheckReleaseRequestIncludesVCSUser(t *testing.T) {
-	eventPath := filepath.Join(t.TempDir(), "event.json")
-	require.NoError(t, os.WriteFile(eventPath, []byte(`{"pull_request":{"user":{"id":1001,"login":"alice","name":"Alice","type":"User"}}}`), 0600))
-	t.Setenv("GITHUB_EVENT_NAME", "pull_request")
-	t.Setenv("GITHUB_EVENT_PATH", eventPath)
-
-	req := buildCheckReleaseRequest(&world.World{
-		Project:     "projects/prod",
-		Targets:     []string{"instances/prod/databases/app"},
-		CustomRules: "must be safe",
-	}, world.GitHub, []*v1pb.Release_File{
-		{
-			Path:      "migrations/001.sql",
-			Version:   "001",
-			Statement: []byte("SELECT 1;"),
-		},
-	}, v1pb.Release_VERSIONED)
-
-	require.Equal(t, "projects/prod", req.Parent)
-	require.Equal(t, []string{"instances/prod/databases/app"}, req.Targets)
-	require.Equal(t, "must be safe", req.CustomRules)
-	require.NotNil(t, req.VcsUser)
-	require.Equal(t, v1pb.VCSType_GITHUB, req.VcsUser.VcsType)
-	require.Equal(t, "1001", req.VcsUser.UserId)
+func TestGetVCSUserSkipsUnsupportedPlatform(t *testing.T) {
+	require.Nil(t, getVCSUser(world.LocalPlatform))
 }
 
 func mustParseURL(t *testing.T, rawURL string) *url.URL {

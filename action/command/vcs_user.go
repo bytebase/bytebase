@@ -266,7 +266,7 @@ func isGitLabBotUser(userName string) bool {
 }
 
 func isBitbucketBotUser(userType, userName string) bool {
-	return isBotUser(userType, userName) || strings.EqualFold(userType, "app")
+	return isBotUser(userType, userName) || strings.EqualFold(userType, "app") || strings.EqualFold(userType, "app_user")
 }
 
 func isBotUser(userType, userName string) bool {
