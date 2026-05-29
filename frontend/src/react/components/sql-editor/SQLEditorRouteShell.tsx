@@ -348,22 +348,29 @@ export function SQLEditorRouteShell() {
       const database = await useAppStore
         .getState()
         .getOrFetchDatabaseByName(vals.dbName);
-      if (vals.schema) query.schema = vals.schema;
-      if (vals.table) {
-        query.table = vals.table;
-        query.schema = vals.schema ?? "";
+      // The app-store getter returns the `unknownDatabase` fallback (rather
+      // than throwing) when the database can't be resolved — deleted or
+      // permission revoked. Skip navigation in that case so we don't rewrite
+      // the URL to a bogus `projects/-1/instances/-1/databases/-1` route;
+      // fall through to the instance / default sync instead.
+      if (isValidDatabaseName(database.name)) {
+        if (vals.schema) query.schema = vals.schema;
+        if (vals.table) {
+          query.table = vals.table;
+          query.schema = vals.schema ?? "";
+        }
+        const dbResource = extractDatabaseResourceName(database.name);
+        await navigate.replace({
+          name: SQL_EDITOR_DATABASE_MODULE,
+          params: {
+            project: extractProjectResourceName(database.project),
+            instance: extractInstanceResourceName(dbResource.instance),
+            database: dbResource.databaseName,
+          },
+          query,
+        });
+        return;
       }
-      const dbResource = extractDatabaseResourceName(database.name);
-      await navigate.replace({
-        name: SQL_EDITOR_DATABASE_MODULE,
-        params: {
-          project: extractProjectResourceName(database.project),
-          instance: extractInstanceResourceName(dbResource.instance),
-          database: dbResource.databaseName,
-        },
-        query,
-      });
-      return;
     }
     if (vals.instanceName && isValidInstanceName(vals.instanceName)) {
       if (vals.table) {
