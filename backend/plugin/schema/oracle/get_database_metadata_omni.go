@@ -32,6 +32,8 @@ func GetDatabaseMetadataOmni(schemaText string) (*storepb.DatabaseSchemaMetadata
 		triggers:          make(map[string]*storepb.TriggerMetadata),
 		sequences:         make(map[string]*storepb.SequenceMetadata),
 		packages:          make(map[string]*storepb.PackageMetadata),
+		checkNames:        make(map[string]map[string]bool),
+		checkNameNext:     make(map[string]map[string]int),
 		schemaText:        schemaText,
 	}
 
@@ -57,6 +59,8 @@ type oracleOmniMetadataExtractor struct {
 	triggers          map[string]*storepb.TriggerMetadata
 	sequences         map[string]*storepb.SequenceMetadata
 	packages          map[string]*storepb.PackageMetadata
+	checkNames        map[string]map[string]bool
+	checkNameNext     map[string]map[string]int
 	schemaText        string
 }
 
@@ -314,7 +318,7 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 			})
 		}
 	case ast.CONSTRAINT_CHECK:
-		e.appendCheckConstraint(table, checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%s", table.Name, column.Name)), n.Expr)
+		e.appendCheckConstraint(table, e.checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%s", table.Name, column.Name)), n.Expr)
 	case ast.CONSTRAINT_FOREIGN:
 		e.appendForeignKey(table, fallbackName(n.Name, fmt.Sprintf("FK_%s_%s", table.Name, column.Name)), []string{column.Name}, n.RefTable, n.RefColumns, n.OnDelete)
 	default:
@@ -351,7 +355,7 @@ func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstra
 			IsConstraint: true,
 		})
 	case ast.CONSTRAINT_CHECK:
-		e.appendCheckConstraint(table, checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%d", table.Name, len(table.CheckConstraints)+1)), n.Expr)
+		e.appendCheckConstraint(table, e.checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%d", table.Name, len(table.CheckConstraints)+1)), n.Expr)
 	case ast.CONSTRAINT_FOREIGN:
 		e.appendForeignKey(table, fallbackName(n.Name, fmt.Sprintf("FK_%s_%d", table.Name, len(table.ForeignKeys)+1)), columns, n.RefTable, n.RefColumns, n.OnDelete)
 	default:
@@ -394,33 +398,65 @@ func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *storepb.Table
 	if expr == nil {
 		return
 	}
+	e.reserveCheckConstraintName(table, name)
 	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
 		Name:       name,
 		Expression: e.exprText(expr),
 	})
 }
 
-func checkConstraintName(table *storepb.TableMetadata, name string, fallback string) string {
+func (e *oracleOmniMetadataExtractor) checkConstraintName(table *storepb.TableMetadata, name string, fallback string) string {
 	if name != "" {
 		return name
 	}
-	return uniqueCheckConstraintName(table, fallback)
+	return e.uniqueCheckConstraintName(table, fallback)
 }
 
-func uniqueCheckConstraintName(table *storepb.TableMetadata, fallback string) string {
-	used := make(map[string]bool)
-	for _, check := range table.CheckConstraints {
-		used[check.Name] = true
-	}
+func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *storepb.TableMetadata, fallback string) string {
+	used := e.checkConstraintNameSet(table)
 	if !used[fallback] {
 		return fallback
 	}
-	for i := 2; ; i++ {
-		candidate := fmt.Sprintf("%s_%d", fallback, i)
+	nextByFallback := e.checkConstraintNameNextSet(table)
+	next := nextByFallback[fallback]
+	if next < 2 {
+		next = 2
+	}
+	for {
+		candidate := fmt.Sprintf("%s_%d", fallback, next)
+		next++
 		if !used[candidate] {
+			nextByFallback[fallback] = next
 			return candidate
 		}
 	}
+}
+
+func (e *oracleOmniMetadataExtractor) reserveCheckConstraintName(table *storepb.TableMetadata, name string) {
+	e.checkConstraintNameSet(table)[name] = true
+}
+
+func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *storepb.TableMetadata) map[string]bool {
+	used := e.checkNames[table.Name]
+	if used != nil {
+		return used
+	}
+	used = make(map[string]bool)
+	for _, check := range table.CheckConstraints {
+		used[check.Name] = true
+	}
+	e.checkNames[table.Name] = used
+	return used
+}
+
+func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *storepb.TableMetadata) map[string]int {
+	next := e.checkNameNext[table.Name]
+	if next != nil {
+		return next
+	}
+	next = make(map[string]int)
+	e.checkNameNext[table.Name] = next
+	return next
 }
 
 func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, _ string) {
