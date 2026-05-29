@@ -9,7 +9,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -181,11 +183,54 @@ func isAllowedDynamicClientRedirectURI(uri string) bool {
 
 	switch parsed.Scheme {
 	case "http", "https":
-		return isLocalhostURI(uri)
+		return isLocalhostURI(uri) || isAllowedHostedRedirectURI(parsed)
 	case "cursor", "vscode", "vscode-insiders":
 		return true
 	case "jetbrains":
 		return parsed.Host == "gateway" && parsed.Path != "" && parsed.Path != "/"
+	default:
+		return false
+	}
+}
+
+// isAllowedHostedRedirectURI whitelists the fixed, vendor-controlled OAuth
+// callback URLs used by popular hosted MCP clients (web/desktop apps that
+// connect to remote MCP servers). These serve the same role as the cursor://,
+// vscode://, and jetbrains://gateway/... schemes above. Each entry is pinned to
+// an exact host (plus an exact or prefix path) so an attacker still cannot
+// register an arbitrary https:// redirect URI and exfiltrate authorization
+// codes.
+func isAllowedHostedRedirectURI(u *url.URL) bool {
+	if u.Scheme != "https" {
+		return false
+	}
+	// Only the default https port is the real vendor callback; reject any other
+	// port so a code can't be steered to a non-OAuth service on the vendor host.
+	if port := u.Port(); port != "" && port != "443" {
+		return false
+	}
+	// Reject "."/".." path segments (u.Path is already percent-decoded, so this
+	// also covers %2e%2e). Otherwise a prefix match like /connector/oauth/../evil
+	// passes here, but the browser normalizes it and delivers the code to a
+	// different path on the vendor host than the pinned callback.
+	if u.Path != path.Clean(u.Path) {
+		return false
+	}
+	// Hosts are case-insensitive (RFC 3986); normalize via Hostname()+ToLower so
+	// the exact-match cases below hold. Paths stay case-sensitive (matched verbatim).
+	switch strings.ToLower(u.Hostname()) {
+	case "claude.ai":
+		// Claude.ai web, Claude Desktop, mobile, and Cowork.
+		return u.Path == "/api/mcp/auth_callback"
+	case "chatgpt.com":
+		// ChatGPT connectors: per-connector path (current) and legacy fixed path.
+		return strings.HasPrefix(u.Path, "/connector/oauth/") || u.Path == "/connector_platform_oauth_redirect"
+	case "vscode.dev", "insiders.vscode.dev":
+		// VS Code for the Web (complements the vscode:// scheme above).
+		return u.Path == "/redirect"
+	case "antigravity.google":
+		// Google Antigravity.
+		return u.Path == "/oauth-callback"
 	default:
 		return false
 	}
