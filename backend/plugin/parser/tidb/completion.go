@@ -395,15 +395,23 @@ func isReservedKeyword(name string) bool {
 // caretInsideBacktickIdentifier reports whether the caret sits inside an open
 // backtick-quoted identifier (an odd number of backticks precede it), in which
 // case completed identifiers must not add their own quotes.
+// identifierChars is the set of bytes that can appear in a bare identifier,
+// used to strip a partial identifier the user is typing.
+const identifierChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
+
 // caretAtStatementStart reports whether the caret is at a statement-start
-// position — only whitespace and comments precede it, or it directly follows a
-// ';'. Write keywords are filtered only here (in the query scene) so keywords
-// valid inside read statements are preserved in other positions.
+// position — only whitespace and comments precede it (or it directly follows a
+// ';'), ignoring any partial identifier the user is currently typing (so "CRE"
+// or "...; INS" still count as statement start). Write keywords are filtered
+// only here (in the query scene) so keywords valid inside read statements are
+// preserved in other positions.
 func caretAtStatementStart(statement string, pos int) bool {
 	if pos > len(statement) {
 		pos = len(statement)
 	}
-	before := strings.TrimRight(stripStringsAndComments(statement)[:pos], " \t\r\n")
+	before := stripStringsAndComments(statement)[:pos]
+	before = strings.TrimRight(before, identifierChars) // drop the partial identifier
+	before = strings.TrimRight(before, " \t\r\n")
 	return before == "" || before[len(before)-1] == ';'
 }
 

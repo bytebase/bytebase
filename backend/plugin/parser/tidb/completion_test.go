@@ -209,6 +209,35 @@ func TestCompletion_QuerySceneKeepsReadSubkeywords(t *testing.T) {
 	}
 }
 
+// The query-scene write-keyword filter must also fire when the user has typed a
+// prefix at a statement-start position (the common autocomplete path), while
+// still preserving read sub-keywords typed mid-statement.
+func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name:    "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+	})
+	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
+
+	// Write-keyword prefix at the very start is filtered.
+	got, err := Completion(context.Background(), q, "CRE", 1, len("CRE"))
+	require.NoError(t, err)
+	require.False(t, hasKeyword(got, "CREATE"),
+		"CREATE must be filtered for a prefix at statement start; got %v", got)
+
+	// Write-keyword prefix right after a ';' is filtered.
+	got, err = Completion(context.Background(), q, "SELECT 1; INS", 1, len("SELECT 1; INS"))
+	require.NoError(t, err)
+	require.False(t, hasKeyword(got, "INSERT"),
+		"INSERT must be filtered for a prefix after ';'; got %v", got)
+
+	// A read sub-keyword typed with a prefix mid-statement is preserved.
+	got, err = Completion(context.Background(), q, "SHOW CRE", 1, len("SHOW CRE"))
+	require.NoError(t, err)
+	require.True(t, hasKeyword(got, "CREATE"),
+		"CREATE must be kept after SHOW even with a prefix; got %v", got)
+}
+
 // BATCH is TiDB-only grammar (added to omni in #157); the mysql ANTLR grammar
 // cannot produce it. Its presence for Engine_TIDB and absence for Engine_MYSQL
 // proves Engine_TIDB now routes through the omni shim, not the mysql completer.
