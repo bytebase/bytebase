@@ -1,6 +1,6 @@
 import { clone, create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { uniqBy } from "lodash-es";
+import { uniq, uniqBy } from "lodash-es";
 import { worksheetServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { UNKNOWN_ID } from "@/types";
@@ -19,6 +19,7 @@ import {
   WorksheetOrganizerSchema,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
+import { isValidDatabaseName } from "@/types/v1/database";
 import { extractWorksheetID } from "@/utils";
 import type { AppSliceCreator, WorksheetSlice, WorksheetView } from "./types";
 
@@ -50,11 +51,18 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
   };
 
   const hydrateRelatedResources = async (worksheets: Worksheet[]) => {
+    // A worksheet without a connection has `database: ""`. The batch
+    // endpoint rejects the whole request on an invalid name, which would
+    // drop hydration for every valid database in the same batch, so filter
+    // those out first. Dedupe all three to keep the batch payloads minimal.
+    const databases = uniq(
+      worksheets.map((w) => w.database).filter(isValidDatabaseName)
+    );
     try {
       await Promise.all([
-        get().batchFetchProjects(worksheets.map((w) => w.project)),
-        get().batchFetchDatabases(worksheets.map((w) => w.database)),
-        get().batchGetOrFetchUsers(worksheets.map((w) => w.creator)),
+        get().batchFetchProjects(uniq(worksheets.map((w) => w.project))),
+        get().batchFetchDatabases(databases),
+        get().batchGetOrFetchUsers(uniq(worksheets.map((w) => w.creator))),
       ]);
     } catch {
       // Best-effort hydration; the worksheet entry is still cached below.
