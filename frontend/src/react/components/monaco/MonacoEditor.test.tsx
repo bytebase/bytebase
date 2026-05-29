@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
     getLanguageId: () => "sql",
     getValue: () => "select 1",
     getValueInRange: () => "",
+    getAllDecorations: () => [],
   };
   const subscription = { dispose: vi.fn() };
   const editor = {

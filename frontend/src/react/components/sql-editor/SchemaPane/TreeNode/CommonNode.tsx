@@ -80,7 +80,7 @@ export function CommonNode({
             className="flex-1 truncate pl-[2px] min-w-16"
           />
         ) : (
-          <span className="pl-[2px]">{text}</span>
+          <span className="flex-1 truncate pl-[2px] min-w-16">{text}</span>
         )
       ) : (
         fallbackText

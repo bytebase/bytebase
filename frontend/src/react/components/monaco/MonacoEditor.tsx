@@ -109,6 +109,11 @@ export interface MonacoEditorProps {
   formatContentOptions?: FormatContentOptions;
 }
 
+// Marker class for the active-statement highlight. Used both to render the
+// decoration and to identify (and clear) all such decorations on the shared
+// model, regardless of which editor lifecycle created them.
+const ACTIVE_STATEMENT_DECORATION_CLASS = "bg-gray-200";
+
 export function MonacoEditor({
   advices = [],
   autoCompleteContext,
@@ -147,6 +152,12 @@ export function MonacoEditor({
   // approach silently no-op'd in some cases (observed after the model
   // mutated between ticks), leaving stale highlights on screen.
   const activeDecorationIdsRef = useRef<string[]>([]);
+  // Guards against re-entering emitSelectionSideEffects. Applying the
+  // active-statement decoration via deltaDecorations can synchronously emit a
+  // cursor/selection-change event (tracked ranges recompute when decorations
+  // change), which would re-enter this handler mid-deltaDecorations — Monaco
+  // forbids nested deltaDecorations ("could lead to leaking decorations").
+  const emittingSideEffectsRef = useRef(false);
   const contentRef = useRef(safeContent);
   const languageRef = useRef(safeLanguage);
   const readOnlyRef = useRef(readOnly);
@@ -207,7 +218,19 @@ export function MonacoEditor({
     const editor = editorRef.current;
     const model = modelRef.current ?? editor?.getModel();
     if (!editor || !model) return;
+    if (emittingSideEffectsRef.current) return;
+    emittingSideEffectsRef.current = true;
+    try {
+      emitSelectionSideEffectsImpl(editor, model);
+    } finally {
+      emittingSideEffectsRef.current = false;
+    }
+  };
 
+  const emitSelectionSideEffectsImpl = (
+    editor: IStandaloneCodeEditor,
+    model: ITextModel
+  ) => {
     const selection = editor.getSelection();
     selectionRef.current = selection;
     onSelectionChangeRef.current?.(selection);
@@ -236,13 +259,28 @@ export function MonacoEditor({
               options: {
                 isWholeLine: false,
                 shouldFillLineOnLineBreak: true,
-                className: "bg-gray-200",
+                className: ACTIVE_STATEMENT_DECORATION_CLASS,
               },
             },
           ]
         : [];
+    // The text model is cached and shared across editor re-creations
+    // (see getOrCreateTextModel) and outlives every editor instance.
+    // Active-statement decorations live on the model, so a decoration
+    // created by a prior editor lifecycle (effect re-run, StrictMode
+    // double-mount, etc.) isn't tracked by this instance's id ref and
+    // would leak as a stacked highlight. Clear ALL active-statement
+    // decorations on the model, not just the one id this instance owns,
+    // so exactly one highlight survives.
+    const staleIds = model
+      .getAllDecorations()
+      .filter((d) => d.options.className === ACTIVE_STATEMENT_DECORATION_CLASS)
+      .map((d) => d.id);
+    const oldIds = Array.from(
+      new Set([...activeDecorationIdsRef.current, ...staleIds])
+    );
     activeDecorationIdsRef.current = editor.deltaDecorations(
-      activeDecorationIdsRef.current,
+      oldIds,
       nextDecorations
     );
     onActiveContentChangeRef.current?.(
@@ -405,8 +443,23 @@ export function MonacoEditor({
           ws.removeEventListener("message", messageHandler!)
         );
       }
-      if (editorRef.current && activeDecorationIdsRef.current.length > 0) {
-        editorRef.current.deltaDecorations(activeDecorationIdsRef.current, []);
+      // Clear ALL active-statement decorations on the (shared, persistent)
+      // model, not just this instance's tracked id, so teardown can't leave
+      // an orphan highlight behind for the next editor lifecycle.
+      const model = modelRef.current ?? editorRef.current?.getModel();
+      if (editorRef.current && model) {
+        const grayIds = model
+          .getAllDecorations()
+          .filter(
+            (d) => d.options.className === ACTIVE_STATEMENT_DECORATION_CLASS
+          )
+          .map((d) => d.id);
+        const oldIds = Array.from(
+          new Set([...activeDecorationIdsRef.current, ...grayIds])
+        );
+        if (oldIds.length > 0) {
+          editorRef.current.deltaDecorations(oldIds, []);
+        }
       }
       activeDecorationIdsRef.current = [];
       if (editorRef.current) {
