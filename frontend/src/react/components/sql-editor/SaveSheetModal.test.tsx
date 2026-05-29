@@ -343,4 +343,24 @@ describe("SaveSheetModal", () => {
 
     unmount();
   });
+
+  test("6. Saved but untitled tab shows modal instead of saving silently", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <SaveSheetModal />
+    );
+    render();
+
+    // Worksheet exists (has a name) but its title is empty — a manual save
+    // should prompt for a title rather than silently re-persisting Untitled.
+    const savedUntitledTab = { ...savedTab, title: "" };
+    emitSaveSheet({ tab: savedUntitledTab });
+
+    const dialog = container.querySelector("[data-testid='dialog']");
+    expect(dialog?.getAttribute("data-open")).toBe("true");
+    expect(
+      mocks.editorWorksheetStore.maybeUpdateWorksheet
+    ).not.toHaveBeenCalled();
+
+    unmount();
+  });
 });

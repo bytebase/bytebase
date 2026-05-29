@@ -28,7 +28,12 @@ export function SaveSheetModal() {
   const [folder, setFolder] = useState("");
   const [rawTab, setRawTab] = useState<SQLEditorTab | undefined>(undefined);
 
-  const needShowModal = (tab: SQLEditorTab) => !tab.worksheet;
+  // A manual save opens the modal when the worksheet has never been saved
+  // OR is still untitled, so the user can give it a title rather than
+  // silently persisting an "Untitled" worksheet. Auto-save never reaches
+  // here (it calls `maybeUpdateWorksheet` directly).
+  const needShowModal = (tab: SQLEditorTab) =>
+    !tab.worksheet || !tab.title.trim();
 
   const doSaveSheet = async (
     tab?: SQLEditorTab,
