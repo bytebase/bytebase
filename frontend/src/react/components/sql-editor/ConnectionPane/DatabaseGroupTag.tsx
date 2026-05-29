@@ -2,9 +2,8 @@ import { Boxes, X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
-import { useDBGroupStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 
 type Props = {
@@ -24,17 +23,13 @@ export function DatabaseGroupTag({
   onUncheck,
 }: Props) {
   const { t } = useTranslation();
-  const store = useDBGroupStore();
+  const fetchDBGroup = useAppStore((s) => s.fetchDBGroup);
 
   useEffect(() => {
-    void store.getOrFetchDBGroupByName(databaseGroupName, {
-      view: DatabaseGroupView.FULL,
-    });
-  }, [store, databaseGroupName]);
+    void fetchDBGroup(databaseGroupName, DatabaseGroupView.FULL);
+  }, [fetchDBGroup, databaseGroupName]);
 
-  const databaseGroup = usePiniaBridge(() =>
-    store.getDBGroupByName(databaseGroupName)
-  );
+  const databaseGroup = useAppStore((s) => s.dbGroupsByName[databaseGroupName]);
 
   if (!databaseGroup || !databaseGroup.name) return null;
 

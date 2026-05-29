@@ -16,16 +16,12 @@ import { AdvancedSearch } from "@/react/components/AdvancedSearch";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { useAppProject } from "@/react/hooks/useAppProject";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import {
-  hasFeature,
-  useDatabaseV1Store,
-  useIssueV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { hasFeature, useIssueV1Store } from "@/store";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -46,12 +42,14 @@ const DEFAULT_SCOPES = [
 export function AccessPane() {
   const { t } = useTranslation();
 
-  const projectStore = useProjectV1Store();
   const searchMyAccessGrants = useAppStore(
     (state) => state.searchMyAccessGrants
   );
+  const fetchDatabases = useAppStore((state) => state.fetchDatabases);
+  const getOrFetchDatabaseByName = useAppStore(
+    (state) => state.getOrFetchDatabaseByName
+  );
   const issueStore = useIssueV1Store();
-  const databaseStore = useDatabaseV1Store();
   const highlightAccessGrantName = useSQLEditorStore(
     (s) => s.highlightAccessGrantName
   );
@@ -82,10 +80,8 @@ export function AccessPane() {
 
   const projectName = useSQLEditorEditorState((s) => s.project);
 
-  const project = useMemo(() => {
-    if (!projectName) return undefined;
-    return projectStore.getProjectByName(projectName as string);
-  }, [projectStore, projectName]);
+  const resolvedProject = useAppProject(projectName as string);
+  const project = projectName ? resolvedProject : undefined;
 
   const hasJITFeature = useMemo(() => hasFeature(PlanFeature.FEATURE_JIT), []);
 
@@ -127,7 +123,7 @@ export function AccessPane() {
         onSearch: async (keyword: string) => {
           const parent = projectName as string | undefined;
           if (!parent) return [];
-          const result = await databaseStore.fetchDatabases({
+          const result = await fetchDatabases({
             parent,
             filter: { query: keyword },
             pageSize: getDefaultPagination(),
@@ -140,7 +136,7 @@ export function AccessPane() {
         },
       },
     ];
-  }, [t, projectName, databaseStore]);
+  }, [t, projectName, fetchDatabases]);
 
   // Build AccessFilter from React SearchParams
   const filter = useMemo((): AccessFilter => {
@@ -264,14 +260,14 @@ export function AccessPane() {
     async (grant: AccessGrant) => {
       const database = grant.targets[0] ?? "";
       const instanceName = database.replace(/\/databases\/.*$/, "");
-      await databaseStore.getOrFetchDatabaseByName(database);
+      await getOrFetchDatabaseByName(database);
       await sqlEditorEvents.emit("execute-sql", {
         connection: { instance: instanceName, database },
         statement: grant.query,
         batchQueryContext: { databases: grant.targets },
       });
     },
-    [databaseStore]
+    [getOrFetchDatabaseByName]
   );
 
   return (

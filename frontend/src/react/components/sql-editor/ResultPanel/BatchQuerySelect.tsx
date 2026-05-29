@@ -15,13 +15,14 @@ import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   getSQLEditorTabsState,
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useDatabaseV1Store, useSQLStore } from "@/store";
+import { pushNotification, useSQLStore } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -82,7 +83,7 @@ export function BatchQuerySelect({
   onSelectedDatabaseChange,
 }: Props) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const sqlStore = useSQLStore();
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
@@ -122,10 +123,10 @@ export function BatchQuerySelect({
 
   const items = useMemo<BatchQueryItem[]>(() => {
     return queriedDatabaseNames.map((name) => ({
-      database: databaseStore.getDatabaseByName(name),
+      database: getDatabaseByName(name),
       context: contextsByDatabase.get(name),
     }));
-  }, [queriedDatabaseNames, contextsByDatabase, databaseStore]);
+  }, [queriedDatabaseNames, contextsByDatabase, getDatabaseByName]);
 
   const showEmptySwitch = useMemo(
     () => items.length > 1 && items.some((item) => isEmptyQueryItem(item)),
@@ -149,9 +150,8 @@ export function BatchQuerySelect({
   }, [filteredItems, selectedDatabase, onSelectedDatabaseChange]);
 
   const databaseList = useMemo(
-    () =>
-      queriedDatabaseNames.map((name) => databaseStore.getDatabaseByName(name)),
-    [queriedDatabaseNames, databaseStore]
+    () => queriedDatabaseNames.map((name) => getDatabaseByName(name)),
+    [queriedDatabaseNames, getDatabaseByName]
   );
 
   // Drop SQL from the export drawer when isDev() is active and any
@@ -170,14 +170,14 @@ export function BatchQuerySelect({
     if (!isDev()) return all;
     if (selectedDatabaseNames.size === 0) return all;
     const allSupportSql = Array.from(selectedDatabaseNames).every((name) => {
-      const db = databaseStore.getDatabaseByName(name);
+      const db = getDatabaseByName(name);
       if (!isValidDatabaseName(db.name)) return true; // skipped at export time
       return SQL_ENGINE_QUOTES.has(getInstanceResource(db).engine);
     });
     return allSupportSql
       ? all
       : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
-  }, [selectedDatabaseNames, databaseStore]);
+  }, [selectedDatabaseNames, getDatabaseByName]);
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);
@@ -246,7 +246,7 @@ export function BatchQuerySelect({
           const groups: DownloadGroup[] = [];
           const limit = options.limit > 0 ? options.limit : Infinity;
           for (const databaseName of Array.from(selectedDatabaseNames)) {
-            const database = databaseStore.getDatabaseByName(databaseName);
+            const database = getDatabaseByName(databaseName);
             // Skip stub-database returns with a WARN toast so the user
             // knows their selection became stale (tab torn down mid-export).
             if (!isValidDatabaseName(database.name)) {
@@ -346,7 +346,7 @@ export function BatchQuerySelect({
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       for (const databaseName of Array.from(selectedDatabaseNames)) {
-        const database = databaseStore.getDatabaseByName(databaseName);
+        const database = getDatabaseByName(databaseName);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {

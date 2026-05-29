@@ -1,8 +1,6 @@
 import { orderBy } from "lodash-es";
-import {
-  useEnvironmentV1Store,
-  useInstanceResourceByName,
-} from "@/store/modules/v1";
+import { useAppStore } from "@/react/stores/app";
+import { useInstanceResourceByName } from "@/store/modules/v1";
 import type {
   SQLEditorTreeFactor as Factor,
   SQLEditorTreeNodeTarget as NodeTarget,
@@ -99,9 +97,9 @@ const mapGroupNode = (
   parent: TreeNode | undefined
 ) => {
   if (factor === "environment") {
-    const environment = useEnvironmentV1Store().getEnvironmentByName(
-      value || ""
-    );
+    const environment = useAppStore
+      .getState()
+      .getEnvironmentByName(value || "");
     return mapTreeNodeByType("environment", environment, parent);
   }
   if (factor === "instance") {

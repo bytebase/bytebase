@@ -63,7 +63,22 @@ const mocks = vi.hoisted(() => {
     })),
     getOrFetchDBGroupByName: vi.fn().mockResolvedValue(undefined),
   };
-  const environmentStore = {
+  const project = {
+    name: "projects/p",
+    title: "Project One",
+  };
+  const treeStore = {
+    state: "READY" as "LOADING" | "READY" | "UNSET",
+    nodeKeysByTarget: vi.fn(() => []),
+  };
+  const instanceStore = {
+    getInstanceByName: vi.fn(),
+  };
+  const appStore = {
+    fetchInstance: vi.fn(async () => undefined),
+    fetchDBGroup: vi.fn(async () => undefined),
+    listDBGroupsForProject: vi.fn(async () => []),
+    dbGroupsByName: {} as Record<string, unknown>,
     environmentList: [
       {
         name: "environments/prod",
@@ -78,19 +93,16 @@ const mocks = vi.hoisted(() => {
       color: "",
       tags: {},
     })),
-  };
-  const projectStore = {
-    getProjectByName: vi.fn(() => ({
-      name: "projects/p",
-      title: "Project One",
+    getDatabaseByName: vi.fn((name: string) => ({
+      name,
+      instanceResource: { engine: 0, title: "", name: "" },
     })),
-  };
-  const treeStore = {
-    state: "READY" as "LOADING" | "READY" | "UNSET",
-    nodeKeysByTarget: vi.fn(() => []),
-  };
-  const instanceStore = {
-    getInstanceByName: vi.fn(),
+    getOrFetchDatabaseByName: vi.fn(async (name: string) => ({ name })),
+    batchGetOrFetchDatabases: vi.fn(async () => []),
+    fetchDatabases: vi
+      .fn()
+      .mockResolvedValue({ databases: [], nextPageToken: "" }),
+    databasesByName: {} as Record<string, unknown>,
   };
   const currentUser = { value: { email: "u@b.com" } };
   return {
@@ -100,10 +112,10 @@ const mocks = vi.hoisted(() => {
     uiStore,
     databaseStore,
     dbGroupStore,
-    environmentStore,
-    projectStore,
+    project,
     treeStore,
     instanceStore,
+    appStore,
     currentUser,
     usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
     pushNotification: vi.fn(),
@@ -130,9 +142,25 @@ vi.mock("@/store", () => ({
   useCurrentUserV1: () => mocks.currentUser,
   useDatabaseV1Store: () => mocks.databaseStore,
   useDBGroupStore: () => mocks.dbGroupStore,
-  useEnvironmentV1Store: () => mocks.environmentStore,
   useInstanceV1Store: () => mocks.instanceStore,
-  useProjectV1Store: () => mocks.projectStore,
+}));
+
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.project,
+}));
+
+vi.mock("@/react/hooks/useAppDatabase", () => ({
+  useAppDatabase: (name: string) => ({
+    name,
+    instanceResource: { engine: 0, title: "", name: "" },
+  }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) => selector(mocks.appStore),
+    { getState: () => mocks.appStore, subscribe: () => () => {} }
+  ),
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({

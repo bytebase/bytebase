@@ -1,16 +1,16 @@
 import { useEffect } from "react";
 import { effectScope, unref } from "vue";
+import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorEditorState,
   useSQLEditorEditorState,
 } from "@/react/stores/sqlEditor/editor";
 import { useSQLEditorTabsStore } from "@/react/stores/sqlEditor/tab";
-import { featureToRef, useProjectV1Store } from "@/store";
+import { featureToRef } from "@/store";
 import { useDatabaseV1ByName } from "@/store/modules/v1/database";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { SQLEditorConnection } from "@/types";
-import { isValidDatabaseName } from "@/types";
+import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -157,11 +157,20 @@ export const useClampResultRowsLimitToPolicy = (project: string): void => {
  * project?". Reads project IAM via Pinia.
  */
 export const useSQLEditorAllowAdmin = (project: string): boolean => {
-  const projectStore = useProjectV1Store();
-  return useVueState(() => {
-    const proj = projectStore.getProjectByName(project);
-    return hasProjectPermissionV2(proj, "bb.sql.admin");
-  });
+  const getProjectByName = useAppStore((s) => s.getProjectByName);
+  const fetchProject = useAppStore((s) => s.fetchProject);
+  // Re-subscribe the IAM watch once the project resolves in the app store
+  // (a non-Vue signal the watch can't track on its own).
+  const cachedProject = useAppStore((s) => s.projectsByName[project]);
+  useEffect(() => {
+    if (isValidProjectName(project)) {
+      void fetchProject(project);
+    }
+  }, [fetchProject, project]);
+  return useVueState(
+    () => hasProjectPermissionV2(getProjectByName(project), "bb.sql.admin"),
+    { deps: [project, cachedProject] }
+  );
 };
 
 /**
@@ -208,9 +217,9 @@ export const useSQLEditorConnection = (
       if (isValidDatabaseName(db.name)) {
         return getDatabaseEnvironment(db);
       }
-      return useEnvironmentV1Store().getEnvironmentByName(
-        instance.environment ?? ""
-      );
+      return useAppStore
+        .getState()
+        .getEnvironmentByName(instance.environment ?? "");
     },
     { deps: [connection.database] }
   );

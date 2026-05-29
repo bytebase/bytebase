@@ -27,6 +27,7 @@ import { ViewsPanel } from "@/react/components/sql-editor/ViewsPanel";
 import { Alert } from "@/react/components/ui/alert";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useAppStore } from "@/react/stores/app";
 import {
   selectEditorPanelSize,
   useSQLEditorStore,
@@ -36,7 +37,7 @@ import {
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -100,7 +101,6 @@ export function Panels() {
 
   const showAIPaneAlongsidePanel = showAIPanel && isShowingCode;
   const { setSchema, updateViewState } = useViewStateNav();
-  const databaseV1Store = useDatabaseV1Store();
   const { execute } = useExecuteSQL();
 
   // AI plugin "run-statement" handler — mirrors Vue's
@@ -115,9 +115,9 @@ export function Panels() {
       updateViewState({ view: "CODE" });
       await nextAnimationFrame();
       const connection = t.connection;
-      const database = await databaseV1Store.getOrFetchDatabaseByName(
-        connection.database
-      );
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(connection.database);
       void execute({
         connection,
         statement,
@@ -129,7 +129,7 @@ export function Panels() {
     return () => {
       off();
     };
-  }, [updateViewState, databaseV1Store, execute]);
+  }, [updateViewState, execute]);
 
   const [databaseMetadata, setDatabaseMetadata] = useState<
     | Awaited<ReturnType<typeof dbSchemaStore.getOrFetchDatabaseMetadata>>

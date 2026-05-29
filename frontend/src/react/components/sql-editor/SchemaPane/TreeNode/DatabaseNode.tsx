@@ -1,5 +1,5 @@
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { useDatabaseV1Store } from "@/store";
+import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
@@ -14,10 +14,9 @@ type Props = {
  * engine icon + database display name (highlight-aware).
  */
 export function DatabaseNode({ node, keyword }: Props) {
-  const databaseStore = useDatabaseV1Store();
   const target = (node as TreeNode<"database">).meta.target;
 
-  const database = databaseStore.getDatabaseByName(target.database);
+  const database = useAppDatabase(target.database);
 
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   const instance = getInstanceResource(database);

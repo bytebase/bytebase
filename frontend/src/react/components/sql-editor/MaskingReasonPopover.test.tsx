@@ -10,7 +10,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useProjectV1Store: vi.fn(),
+  projectData: { name: "projects/proj1", allowJustInTimeAccess: false } as {
+    name: string;
+    allowJustInTimeAccess: boolean;
+  },
   useSQLEditorVueState: vi.fn(),
   hasFeature: vi.fn(() => true),
 }));
@@ -24,8 +27,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useProjectV1Store: mocks.useProjectV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.projectData,
 }));
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
@@ -140,12 +146,10 @@ const makeReason = (overrides?: {
 
 const setupDefaultMocks = (allowJIT = false) => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-  mocks.useProjectV1Store.mockReturnValue({
-    getProjectByName: vi.fn(() => ({
-      name: "projects/proj1",
-      allowJustInTimeAccess: allowJIT,
-    })),
-  });
+  mocks.projectData = {
+    name: "projects/proj1",
+    allowJustInTimeAccess: allowJIT,
+  };
   mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasFeature.mockReturnValue(true);
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());

@@ -52,8 +52,15 @@ vi.mock("@/react/i18n", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
-  useDatabaseV1Store: () => ({ getDatabaseByName: mocks.getDatabaseByName }),
   useDBSchemaV1Store: () => ({ getTableMetadata: mocks.getTableMetadata }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({ getDatabaseByName: mocks.getDatabaseByName }),
+    { getState: () => ({ getDatabaseByName: mocks.getDatabaseByName }) }
+  ),
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({

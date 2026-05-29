@@ -13,6 +13,7 @@ import {
   settingNamePrefix,
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
+import { getEnvironmentId } from "@/store/modules/v1/common";
 import {
   broadcastWorkspaceSwitch,
   workspaceSwitchChannel,
@@ -45,6 +46,12 @@ import {
   getTimeForPbTimestampProtoEs,
 } from "@/types/timestamp";
 import type { Environment } from "@/types/v1/environment";
+import {
+  isValidEnvironmentName,
+  NULL_ENVIRONMENT_NAME,
+  nullEnvironment,
+  unknownEnvironment,
+} from "@/types/v1/environment";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
@@ -288,6 +295,25 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   },
 
   refreshEnvironmentList: async () => get().loadEnvironmentList(true),
+
+  // Mirrors the Pinia `useEnvironmentV1Store().getEnvironmentByName`: maps
+  // a resource name to its environment, falling back to a synthesized
+  // entry (id-as-title) for unknown names when `fallback` is set.
+  getEnvironmentByName: (name, fallback = true) => {
+    if (name === NULL_ENVIRONMENT_NAME) {
+      return nullEnvironment();
+    }
+    const id = getEnvironmentId(name);
+    if (!id) {
+      return unknownEnvironment();
+    }
+    const environment =
+      get().environmentList.find((e) => e.id === id) ?? unknownEnvironment();
+    if (!isValidEnvironmentName(environment.name) && fallback) {
+      return { ...environment, id, name, title: id };
+    }
+    return environment;
+  },
 
   loadSubscription: async () => {
     const existing = get().subscription;

@@ -4,16 +4,12 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useSQLEditorAllowAdmin } from "@/react/hooks/useSQLEditorBridge";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useStorageStore,
-} from "@/store";
+import { pushNotification, useStorageStore } from "@/store";
 import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -34,8 +30,6 @@ type Props = {
  */
 export function ExecuteHint({ database, onClose }: Props) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
-  const projectStore = useProjectV1Store();
   const storageStore = useStorageStore();
   const project = useSQLEditorEditorState((s) => s.project);
   const allowAdmin = useSQLEditorAllowAdmin(project);
@@ -57,12 +51,14 @@ export function ExecuteHint({ database, onClose }: Props) {
 
     onClose();
 
-    const db = await databaseStore.getOrFetchDatabaseByName(connectedDatabase);
+    const db = await useAppStore
+      .getState()
+      .getOrFetchDatabaseByName(connectedDatabase);
     // Fall back to `unknownProject()` (enforceIssueTitle=true) if the project
-    // fetch rejects so the plan page opens with a blank title.
-    const projectInfo = await projectStore
-      .getOrFetchProjectByName(db.project)
-      .catch(() => unknownProject());
+    // can't be resolved so the plan page opens with a blank title.
+    const projectInfo =
+      (await useAppStore.getState().fetchProject(db.project)) ??
+      unknownProject();
 
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
     const statement = tab?.selectedStatement || tab?.statement || "";

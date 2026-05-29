@@ -15,10 +15,9 @@ import { getSQLEditorTabsState } from "./tab";
 import type { SQLEditorSliceCreator, WorksheetSaveSlice } from "./types";
 
 // Pinia store barrel transitively re-imports `@/react/stores/sqlEditor`,
-// so we still pull the Pinia bits in at call time via the helpers below
+// so we still pull the Pinia bits in at call time via the helper below
 // to avoid a TDZ cycle. The new Zustand editor / tab stores are local
 // to this module's directory and safe to import statically.
-const importStores = () => import("@/store");
 const importProjectIamPolicyStore = () =>
   import("@/store/modules/v1/projectIamPolicy");
 
@@ -39,10 +38,8 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   },
 
   maybeSwitchProject: async (projectName) => {
-    const { useProjectV1Store } = await importStores();
     const { useProjectIamPolicyStore } = await importProjectIamPolicyStore();
     const editorStore = getSQLEditorEditorState();
-    const projectStore = useProjectV1Store();
     const projectIamPolicyStore = useProjectIamPolicyStore();
 
     editorStore.setProjectContextReady(false);
@@ -50,7 +47,10 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
       if (!isValidProjectName(projectName)) {
         return;
       }
-      const project = await projectStore.getOrFetchProjectByName(projectName);
+      const project = await useAppStore.getState().fetchProject(projectName);
+      if (!project) {
+        return;
+      }
       // Fetch IAM policy to ensure permission checks work correctly.
       await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
       editorStore.setProject(project.name);

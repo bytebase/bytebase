@@ -10,11 +10,22 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useProjectV1Store: vi.fn(),
+  projectData: {
+    name: "projects/proj1",
+    allowJustInTimeAccess: false,
+    allowRequestRole: true,
+  } as {
+    name: string;
+    allowJustInTimeAccess: boolean;
+    allowRequestRole: boolean;
+  },
   roleList: [] as Array<{ name: string; permissions: string[] }>,
   useSQLEditorVueState: vi.fn(),
   useSubscriptionV1Store: vi.fn(),
   hasFeature: vi.fn(() => true),
+  loadSubscription: vi.fn(),
+  hasInstanceFeature: vi.fn(() => true),
+  appHasFeature: vi.fn(() => true),
   parseStringToResource: vi.fn((s: string) => ({
     databaseFullName: s,
     databaseName: s,
@@ -30,15 +41,21 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useProjectV1Store: mocks.useProjectV1Store,
   useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.projectData,
 }));
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       roleList: mocks.roleList,
+      loadSubscription: mocks.loadSubscription,
+      hasInstanceFeature: mocks.hasInstanceFeature,
+      hasFeature: mocks.appHasFeature,
     }),
 }));
 
@@ -166,13 +183,11 @@ const makePermissionDeniedDetail = (overrides?: {
 
 const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-  mocks.useProjectV1Store.mockReturnValue({
-    getProjectByName: vi.fn(() => ({
-      name: "projects/proj1",
-      allowJustInTimeAccess: allowJIT,
-      allowRequestRole,
-    })),
-  });
+  mocks.projectData = {
+    name: "projects/proj1",
+    allowJustInTimeAccess: allowJIT,
+    allowRequestRole,
+  };
   mocks.roleList = [
     {
       name: "roles/sqlEditorUser",
@@ -188,10 +203,8 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
     },
   ];
   mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
-  mocks.useSubscriptionV1Store.mockReturnValue({
-    hasInstanceFeature: vi.fn(() => false),
-  });
-  mocks.hasFeature.mockReturnValue(true);
+  mocks.hasInstanceFeature.mockReturnValue(false);
+  mocks.appHasFeature.mockReturnValue(true);
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 };
 
@@ -354,9 +367,7 @@ describe("RequestQueryButton", () => {
 
   test("non-JIT role request can default to custom role when feature is enabled", async () => {
     setupDefaultMocks(false, true);
-    mocks.useSubscriptionV1Store.mockReturnValue({
-      hasInstanceFeature: vi.fn(() => true),
-    });
+    mocks.hasInstanceFeature.mockReturnValue(true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
         text={false}

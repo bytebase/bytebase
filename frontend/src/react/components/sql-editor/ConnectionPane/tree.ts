@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   buildTreeImpl,
   mapTreeNodeByType,
 } from "@/react/stores/sqlEditor/tree-utils";
-import {
-  type DatabaseFilter,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import type { DatabaseFilter } from "@/store";
 import type {
   SQLEditorTreeNode,
   StatefulSQLEditorTreeFactor as StatefulFactor,
@@ -90,9 +87,9 @@ export function useSQLEditorTreeByEnvironment(
   environment: string,
   { email }: Options
 ): TreeByEnvironment {
-  const databaseStore = useDatabaseV1Store();
+  const fetchDatabaseList = useAppStore((s) => s.fetchDatabases);
   const project = useSQLEditorEditorState((s) => s.project);
-  const environmentStore = useEnvironmentV1Store();
+  const getEnvironmentByName = useAppStore((s) => s.getEnvironmentByName);
 
   const storageKey = useMemo(
     () => storageKeySqlEditorConnExpanded(environment, email),
@@ -143,17 +140,15 @@ export function useSQLEditorTreeByEnvironment(
       setFetchDataState((prev) => ({ ...prev, loading: true }));
       const pageToken = fetchDataStateRef.current.nextPageToken;
       try {
-        const { databases, nextPageToken } = await databaseStore.fetchDatabases(
-          {
-            parent: project,
-            pageToken,
-            pageSize: getDefaultPagination(),
-            filter: {
-              ...filter,
-              environment,
-            },
-          }
-        );
+        const { databases, nextPageToken } = await fetchDatabaseList({
+          parent: project,
+          pageToken,
+          pageSize: getDefaultPagination(),
+          filter: {
+            ...filter,
+            environment,
+          },
+        });
         databaseListRef.current = pageToken
           ? [...databaseListRef.current, ...databases]
           : [...databases];
@@ -163,7 +158,7 @@ export function useSQLEditorTreeByEnvironment(
         setFetchDataState({ loading: false });
       }
     },
-    [databaseStore, project, environment]
+    [fetchDatabaseList, project, environment]
   );
 
   // Keep a ref to the latest fetchDataState so the debounced fn can read it
@@ -206,14 +201,14 @@ export function useSQLEditorTreeByEnvironment(
       }
       let next = buildTreeImpl(list, [defaultEnvironmentFactor.factor]);
       if (next.length === 0) {
-        const env = environmentStore.getEnvironmentByName(environment);
+        const env = getEnvironmentByName(environment);
         const rootNode = mapTreeNodeByType("environment", env, undefined);
         rootNode.children = [];
         next = [rootNode];
       }
       setTree(next);
     },
-    [environmentStore, environment]
+    [getEnvironmentByName, environment]
   );
 
   return {

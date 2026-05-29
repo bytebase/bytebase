@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     >(),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   routerPush: vi.fn(),
+  projectData: { name: "projects/test" } as { name: string },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -34,6 +35,10 @@ vi.mock("@/react/components/BytebaseLogo", () => ({
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
+}));
+
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.projectData,
 }));
 
 vi.mock("@/router", () => ({

@@ -2,7 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { Check, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getColumnDefaultValuePlaceholder } from "@/react/components/SchemaEditorLite/core/columnDefaultValue";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useAppDatabase } from "@/react/hooks/useAppDatabase";
+import { useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { getInstanceResource } from "@/utils";
@@ -23,16 +24,14 @@ type Props = {
 export function ColumnInfo({ database, schema, table, column }: Props) {
   const { t } = useTranslation();
   const dbSchema = useDBSchemaV1Store();
-  const databaseStore = useDatabaseV1Store();
+  const databaseEntity = useAppDatabase(database);
 
   const columnMetadata =
     dbSchema
       .getTableMetadata({ database, schema, table })
       .columns.find((col) => col.name === column) ??
     create(ColumnMetadataSchema, {});
-  const instanceEngine = getInstanceResource(
-    databaseStore.getDatabaseByName(database)
-  ).engine;
+  const instanceEngine = getInstanceResource(databaseEntity).engine;
 
   const characterSet =
     instanceEngine === Engine.POSTGRES ||

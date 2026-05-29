@@ -1,7 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect } from "react";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
-import { useDatabaseV1Store } from "@/store";
+import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { UNKNOWN_ID } from "@/types/const";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { isValidDatabaseName } from "@/types/v1/database";
@@ -24,18 +22,9 @@ type Props = {
  */
 export function AdminLabel({ tab }: Props) {
   const dbName = tab.connection.database;
-  const databaseStore = useDatabaseV1Store();
-
-  // Mirror Vue's `useDatabaseV1ByName`: fire a fetch on mount and every time
-  // the database resource name changes.
-  useEffect(() => {
-    if (!dbName) return;
-    void databaseStore.getOrFetchDatabaseByName(dbName);
-  }, [databaseStore, dbName]);
-
-  const database = usePiniaBridge(() =>
-    databaseStore.getDatabaseByName(dbName)
-  );
+  // Mirrors Vue's `useDatabaseV1ByName`: self-fetches on mount / name change
+  // and reactively re-reads the cached database.
+  const database = useAppDatabase(dbName);
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);
   const { databaseName } = extractDatabaseResourceName(database.name);

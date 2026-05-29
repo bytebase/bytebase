@@ -9,7 +9,8 @@ import {
   type CancelableTimer,
   createCancelableTimer,
 } from "@/react/lib/cancelableTimer";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,
@@ -329,7 +330,9 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
 const mapRequest = (params: SQLEditorQueryParams): AdminExecuteRequest => {
   const { connection, statement, explain } = params;
 
-  const database = useDatabaseV1Store().getDatabaseByName(connection.database);
+  const database = useAppStore
+    .getState()
+    .getDatabaseByName(connection.database);
   const request = create(AdminExecuteRequestSchema, {
     name: database.name,
     statement: explain ? `EXPLAIN ${statement}` : statement,

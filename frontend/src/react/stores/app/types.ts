@@ -1,11 +1,15 @@
 import type { StateCreator } from "zustand";
+import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { State } from "@/types/proto-es/v1/common_pb";
-import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import type {
+  DatabaseGroup,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import type {
   Changelog,
   ChangelogView,
@@ -141,6 +145,7 @@ export type WorkspaceSlice = {
   ) => Promise<WorkspaceProfileSetting | undefined>;
   loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
   refreshEnvironmentList: () => Promise<Environment[]>;
+  getEnvironmentByName: (name: string, fallback?: boolean) => Environment;
   loadSubscription: () => Promise<Subscription | undefined>;
   refreshSubscription: () => Promise<Subscription | undefined>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
@@ -194,6 +199,7 @@ export type ProjectSlice = {
   projectsByName: Record<string, Project>;
   projectRequests: Record<string, Promise<Project | undefined>>;
   projectErrorsByName: Record<string, Error | undefined>;
+  getProjectByName: (name: string) => Project;
   fetchProject: (name: string) => Promise<Project | undefined>;
   batchFetchProjects: (names: string[]) => Promise<Project[]>;
   searchProjects: (params: ProjectListParams) => Promise<{
@@ -214,27 +220,48 @@ export type DatabaseListParams = {
   parent: string;
   pageSize: number;
   pageToken?: string;
-  filter?: string;
+  // Either a pre-built CEL filter string or a structured `DatabaseFilter`
+  // (built via `buildDatabaseFilter`), matching the legacy Pinia store.
+  filter?: string | DatabaseFilter;
   orderBy?: string;
+  silent?: boolean;
 };
 
 export type DatabaseSlice = {
   databasesByName: Record<string, Database>;
   databaseRequests: Record<string, Promise<Database | undefined>>;
   databaseErrorsByName: Record<string, Error | undefined>;
+  // Synchronous read with the `unknownDatabase` fallback (never null), so
+  // callers can read `.project` / `.instanceResource` without null checks.
+  getDatabaseByName: (name: string) => Database;
   fetchDatabase: (name: string) => Promise<Database | undefined>;
+  // Async read that resolves to the cached/fetched database, or the
+  // `unknownDatabase` fallback for invalid names / fetch failures.
+  getOrFetchDatabaseByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Database>;
   batchFetchDatabases: (names: string[]) => Promise<Database[]>;
+  batchGetOrFetchDatabases: (names: string[]) => Promise<Database[]>;
   fetchDatabases: (params: DatabaseListParams) => Promise<{
     databases: Database[];
     nextPageToken: string;
   }>;
+  syncDatabase: (name: string, refresh?: boolean) => Promise<void>;
 };
 
 export type DBGroupSlice = {
   dbGroupsByName: Record<string, DatabaseGroup>;
+  // Tracks which view (BASIC/FULL) the cached entry was fetched with, so a
+  // FULL request (needs `matchedDatabases`) refetches when only BASIC is
+  // cached.
+  dbGroupViewByName: Record<string, DatabaseGroupView>;
   dbGroupRequests: Record<string, Promise<DatabaseGroup | undefined>>;
   dbGroupErrorsByName: Record<string, Error | undefined>;
-  fetchDBGroup: (name: string) => Promise<DatabaseGroup | undefined>;
+  fetchDBGroup: (
+    name: string,
+    view?: DatabaseGroupView
+  ) => Promise<DatabaseGroup | undefined>;
   listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
 };
 
