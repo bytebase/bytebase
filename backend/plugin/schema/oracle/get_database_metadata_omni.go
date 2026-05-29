@@ -314,7 +314,7 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 			})
 		}
 	case ast.CONSTRAINT_CHECK:
-		e.appendCheckConstraint(table, fallbackName(n.Name, fmt.Sprintf("CHK_%s_%s", table.Name, column.Name)), n.Expr)
+		e.appendCheckConstraint(table, checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%s", table.Name, column.Name)), n.Expr)
 	case ast.CONSTRAINT_FOREIGN:
 		e.appendForeignKey(table, fallbackName(n.Name, fmt.Sprintf("FK_%s_%s", table.Name, column.Name)), []string{column.Name}, n.RefTable, n.RefColumns, n.OnDelete)
 	default:
@@ -351,7 +351,7 @@ func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstra
 			IsConstraint: true,
 		})
 	case ast.CONSTRAINT_CHECK:
-		e.appendCheckConstraint(table, fallbackName(n.Name, fmt.Sprintf("CHK_%s_%d", table.Name, len(table.CheckConstraints)+1)), n.Expr)
+		e.appendCheckConstraint(table, checkConstraintName(table, n.Name, fmt.Sprintf("CHK_%s_%d", table.Name, len(table.CheckConstraints)+1)), n.Expr)
 	case ast.CONSTRAINT_FOREIGN:
 		e.appendForeignKey(table, fallbackName(n.Name, fmt.Sprintf("FK_%s_%d", table.Name, len(table.ForeignKeys)+1)), columns, n.RefTable, n.RefColumns, n.OnDelete)
 	default:
@@ -398,6 +398,29 @@ func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *storepb.Table
 		Name:       name,
 		Expression: e.exprText(expr),
 	})
+}
+
+func checkConstraintName(table *storepb.TableMetadata, name string, fallback string) string {
+	if name != "" {
+		return name
+	}
+	return uniqueCheckConstraintName(table, fallback)
+}
+
+func uniqueCheckConstraintName(table *storepb.TableMetadata, fallback string) string {
+	used := make(map[string]bool)
+	for _, check := range table.CheckConstraints {
+		used[check.Name] = true
+	}
+	if !used[fallback] {
+		return fallback
+	}
+	for i := 2; ; i++ {
+		candidate := fmt.Sprintf("%s_%d", fallback, i)
+		if !used[candidate] {
+			return candidate
+		}
+	}
 }
 
 func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, _ string) {

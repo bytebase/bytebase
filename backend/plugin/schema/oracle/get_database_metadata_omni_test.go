@@ -259,7 +259,7 @@ CREATE TABLE DEPARTMENTS (
 
 CREATE TABLE EMPLOYEES (
     EMP_ID NUMBER PRIMARY KEY,
-    SALARY NUMBER CHECK (SALARY > 0),
+    SALARY NUMBER CHECK (SALARY > 0) CHECK (SALARY < 1000000),
     DEPT_ID NUMBER REFERENCES DEPARTMENTS,
     MANAGER_DEPT_ID NUMBER,
     CONSTRAINT fk_manager_dept FOREIGN KEY (MANAGER_DEPT_ID) REFERENCES DEPARTMENTS
@@ -268,6 +268,7 @@ CREATE TABLE EMPLOYEES (
 			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
 				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY<1000000")
 				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
 				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
 			},
