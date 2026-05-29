@@ -160,6 +160,9 @@ func (x *PaymentInfo) Equal(y *PaymentInfo) bool {
 	if x.CancelAtPeriodEnd != y.CancelAtPeriodEnd {
 		return false
 	}
+	if x.NextPeriodPrice != y.NextPeriodPrice {
+		return false
+	}
 	return true
 }
 

@@ -11172,12 +11172,13 @@ SheetService manages SQL scripts and saved queries.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| total_price | [string](#string) |  |  |
+| total_price | [string](#string) |  | Total amount paid for the current billing period, in the smallest currency unit (e.g. cents). |
 | currency | [string](#string) |  |  |
 | period_start | [string](#string) |  |  |
 | period_end | [string](#string) |  |  |
 | invoice_url | [string](#string) |  | Stripe Billing Portal URL for invoice management. |
 | cancel_at_period_end | [bool](#bool) |  | Whether the subscription is scheduled to cancel at the end of the current billing period. |
+| next_period_price | [string](#string) |  | Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents). Empty when the subscription will not renew (e.g. scheduled to cancel at period end). |
 
 
 

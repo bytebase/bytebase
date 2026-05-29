@@ -934,17 +934,21 @@ func (*GetPaymentInfoRequest) Descriptor() ([]byte, []int) {
 }
 
 type PaymentInfo struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	TotalPrice  string                 `protobuf:"bytes,1,opt,name=total_price,json=totalPrice,proto3" json:"total_price,omitempty"`
-	Currency    string                 `protobuf:"bytes,2,opt,name=currency,proto3" json:"currency,omitempty"`
-	PeriodStart string                 `protobuf:"bytes,3,opt,name=period_start,json=periodStart,proto3" json:"period_start,omitempty"`
-	PeriodEnd   string                 `protobuf:"bytes,4,opt,name=period_end,json=periodEnd,proto3" json:"period_end,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Total amount paid for the current billing period, in the smallest currency unit (e.g. cents).
+	TotalPrice  string `protobuf:"bytes,1,opt,name=total_price,json=totalPrice,proto3" json:"total_price,omitempty"`
+	Currency    string `protobuf:"bytes,2,opt,name=currency,proto3" json:"currency,omitempty"`
+	PeriodStart string `protobuf:"bytes,3,opt,name=period_start,json=periodStart,proto3" json:"period_start,omitempty"`
+	PeriodEnd   string `protobuf:"bytes,4,opt,name=period_end,json=periodEnd,proto3" json:"period_end,omitempty"`
 	// Stripe Billing Portal URL for invoice management.
 	InvoiceUrl string `protobuf:"bytes,5,opt,name=invoice_url,json=invoiceUrl,proto3" json:"invoice_url,omitempty"`
 	// Whether the subscription is scheduled to cancel at the end of the current billing period.
 	CancelAtPeriodEnd bool `protobuf:"varint,6,opt,name=cancel_at_period_end,json=cancelAtPeriodEnd,proto3" json:"cancel_at_period_end,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).
+	// Empty when the subscription will not renew (e.g. scheduled to cancel at period end).
+	NextPeriodPrice string `protobuf:"bytes,7,opt,name=next_period_price,json=nextPeriodPrice,proto3" json:"next_period_price,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PaymentInfo) Reset() {
@@ -1017,6 +1021,13 @@ func (x *PaymentInfo) GetCancelAtPeriodEnd() bool {
 		return x.CancelAtPeriodEnd
 	}
 	return false
+}
+
+func (x *PaymentInfo) GetNextPeriodPrice() string {
+	if x != nil {
+		return x.NextPeriodPrice
+	}
+	return ""
 }
 
 type PurchasePlan struct {
@@ -1611,7 +1622,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x15CancelPurchaseRequest\x12\x1a\n" +
 	"\bfeedback\x18\x01 \x01(\tR\bfeedback\x12\x18\n" +
 	"\acomment\x18\x02 \x01(\tR\acomment\"\x17\n" +
-	"\x15GetPaymentInfoRequest\"\xde\x01\n" +
+	"\x15GetPaymentInfoRequest\"\x8a\x02\n" +
 	"\vPaymentInfo\x12\x1f\n" +
 	"\vtotal_price\x18\x01 \x01(\tR\n" +
 	"totalPrice\x12\x1a\n" +
@@ -1621,7 +1632,8 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"period_end\x18\x04 \x01(\tR\tperiodEnd\x12\x1f\n" +
 	"\vinvoice_url\x18\x05 \x01(\tR\n" +
 	"invoiceUrl\x12/\n" +
-	"\x14cancel_at_period_end\x18\x06 \x01(\bR\x11cancelAtPeriodEnd\"\x81\x02\n" +
+	"\x14cancel_at_period_end\x18\x06 \x01(\bR\x11cancelAtPeriodEnd\x12*\n" +
+	"\x11next_period_price\x18\a \x01(\tR\x0fnextPeriodPrice\"\x81\x02\n" +
 	"\fPurchasePlan\x12)\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x122\n" +
 	"\x15self_service_purchase\x18\x02 \x01(\bR\x13selfServicePurchase\x12E\n" +

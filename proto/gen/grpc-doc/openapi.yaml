@@ -23928,6 +23928,7 @@ components:
         totalPrice:
           type: string
           title: total_price
+          description: Total amount paid for the current billing period, in the smallest currency unit (e.g. cents).
         currency:
           type: string
           title: currency
@@ -23945,6 +23946,12 @@ components:
           type: boolean
           title: cancel_at_period_end
           description: Whether the subscription is scheduled to cancel at the end of the current billing period.
+        nextPeriodPrice:
+          type: string
+          title: next_period_price
+          description: |-
+            Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).
+             Empty when the subscription will not renew (e.g. scheduled to cancel at period end).
       title: PaymentInfo
       additionalProperties: false
     bytebase.v1.PermissionDeniedDetail:

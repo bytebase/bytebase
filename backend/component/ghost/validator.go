@@ -12,11 +12,22 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
+type binlogValidationFailureReason string
+
+const (
+	binlogStatusInaccessible    binlogValidationFailureReason = "binlog_status_inaccessible"
+	binlogDisabled              binlogValidationFailureReason = "binlog_disabled"
+	missingReplicationPrivilege binlogValidationFailureReason = "missing_replication_privilege"
+	unsupportedBinlogFormat     binlogValidationFailureReason = "unsupported_binlog_format"
+	validationQueryFailed       binlogValidationFailureReason = "validation_query_failed"
+)
+
 // BinlogValidationResult contains detailed results of binlog access validation
 type BinlogValidationResult struct {
 	// Core validation state
-	Valid bool
-	Error error
+	Valid         bool
+	Error         error
+	FailureReason binlogValidationFailureReason
 
 	// Detailed findings for specific error messages
 	BinlogEnabled     bool
@@ -48,6 +59,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 
 	if !canAccessBinlog {
 		result.Valid = false
+		result.FailureReason = binlogStatusInaccessible
 		result.Error = errors.New("cannot access binary logs - ensure user has REPLICATION CLIENT privilege")
 		slog.Error("binlog access validation failed: cannot access binary logs",
 			slog.String("host", adminDataSource.GetHost()),
@@ -60,6 +72,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	row := driver.GetDB().QueryRowContext(ctx, "SELECT @@log_bin")
 	if err := row.Scan(&logBin); err != nil {
 		result.Valid = false
+		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check if binary logging is enabled")
 		return result
 	}
@@ -67,6 +80,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	result.BinlogEnabled = (logBin == "1" || strings.ToUpper(logBin) == "ON")
 	if !result.BinlogEnabled {
 		result.Valid = false
+		result.FailureReason = binlogDisabled
 		result.Error = errors.New("binary logging is not enabled on this MySQL instance")
 		return result
 	}
@@ -75,6 +89,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	rows, err := driver.GetDB().QueryContext(ctx, "SHOW GRANTS")
 	if err != nil {
 		result.Valid = false
+		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check user grants")
 		return result
 	}
@@ -100,12 +115,14 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 
 	if err := rows.Err(); err != nil {
 		result.Valid = false
+		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "error reading grants")
 		return result
 	}
 
 	if !result.HasPrivilege {
 		result.Valid = false
+		result.FailureReason = missingReplicationPrivilege
 		result.MissingPrivileges = append(result.MissingPrivileges, "REPLICATION SLAVE")
 		result.Error = errors.New("user does not have REPLICATION SLAVE privilege required for gh-ost")
 		slog.Error("missing REPLICATION SLAVE privilege",
@@ -119,12 +136,14 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	row = driver.GetDB().QueryRowContext(ctx, "SELECT @@binlog_format")
 	if err := row.Scan(&result.BinlogFormat); err != nil {
 		result.Valid = false
+		result.FailureReason = validationQueryFailed
 		result.Error = errors.Wrap(err, "failed to check binlog format")
 		return result
 	}
 
 	if strings.ToUpper(result.BinlogFormat) == "STATEMENT" {
 		result.Valid = false
+		result.FailureReason = unsupportedBinlogFormat
 		result.Error = errors.Errorf("binlog_format is %s, but gh-ost requires ROW or MIXED format", result.BinlogFormat)
 		return result
 	}
@@ -146,32 +165,31 @@ func (r *BinlogValidationResult) GetUserFriendlyError() (title, content string) 
 
 	title = "gh-ost migration prerequisites not met"
 
-	if !r.BinlogEnabled {
-		content = "Binary logging is not enabled on this MySQL instance. Please enable it with:\n" +
-			"SET GLOBAL log_bin=ON (requires MySQL restart)"
-		return title, content
-	}
-
-	if !r.HasPrivilege && len(r.MissingPrivileges) > 0 {
-		content = fmt.Sprintf("Database user is missing required privilege: %s\n", strings.Join(r.MissingPrivileges, ", ")) +
-			"Please grant it with:\n" +
-			"GRANT REPLICATION SLAVE ON *.* TO 'user'@'host'"
-		return title, content
-	}
-
-	if r.BinlogFormat == "STATEMENT" {
-		content = fmt.Sprintf("Current binlog_format is %s, but gh-ost requires ROW or MIXED format.\n", r.BinlogFormat) +
+	switch r.FailureReason {
+	case binlogStatusInaccessible:
+		return title, "Cannot access binary log status. Ensure the Bytebase admin user has REPLICATION CLIENT privilege."
+	case binlogDisabled:
+		return title, "Binary logging is not enabled on this MySQL instance."
+	case missingReplicationPrivilege:
+		missingPrivileges := strings.Join(r.MissingPrivileges, ", ")
+		if missingPrivileges == "" {
+			missingPrivileges = "REPLICATION SLAVE"
+		}
+		return title, fmt.Sprintf("Database user is missing required privilege: %s\n", missingPrivileges) +
+			"Please grant REPLICATION SLAVE or an equivalent replication privilege to the Bytebase admin user."
+	case unsupportedBinlogFormat:
+		return title, fmt.Sprintf("Current binlog_format is %s, but gh-ost requires ROW or MIXED format.\n", r.BinlogFormat) +
 			"Please change it with:\n" +
 			"SET GLOBAL binlog_format='ROW'"
-		return title, content
+	case validationQueryFailed:
+		if r.Error != nil {
+			return title, fmt.Sprintf("Validation failed: %v", r.Error)
+		}
+		return title, "Validation failed"
 	}
 
-	// Generic error fallback
 	if r.Error != nil {
-		content = fmt.Sprintf("Validation failed: %v", r.Error)
-	} else {
-		content = "Unknown validation error occurred"
+		return title, fmt.Sprintf("Validation failed: %v", r.Error)
 	}
-
-	return title, content
+	return title, "Unknown validation error occurred"
 }

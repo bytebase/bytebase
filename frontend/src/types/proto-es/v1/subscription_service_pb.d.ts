@@ -201,6 +201,8 @@ export declare const GetPaymentInfoRequestSchema: GenMessage<GetPaymentInfoReque
  */
 export declare type PaymentInfo = Message<"bytebase.v1.PaymentInfo"> & {
   /**
+   * Total amount paid for the current billing period, in the smallest currency unit (e.g. cents).
+   *
    * @generated from field: string total_price = 1;
    */
   totalPrice: string;
@@ -233,6 +235,14 @@ export declare type PaymentInfo = Message<"bytebase.v1.PaymentInfo"> & {
    * @generated from field: bool cancel_at_period_end = 6;
    */
   cancelAtPeriodEnd: boolean;
+
+  /**
+   * Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).
+   * Empty when the subscription will not renew (e.g. scheduled to cancel at period end).
+   *
+   * @generated from field: string next_period_price = 7;
+   */
+  nextPeriodPrice: string;
 };
 
 /**
