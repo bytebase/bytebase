@@ -334,16 +334,58 @@ func TestCaretInsideBacktickIdentifier(t *testing.T) {
 		pos       int
 		want      bool
 	}{
-		{"SELECT * FROM ", 14, false},  // no backticks
-		{"SELECT * FROM `o", 16, true}, // one open backtick before caret
-		{"SELECT `a`, ", 12, false},    // closed pair before caret
-		{"`", 1, true},                 // single backtick
-		{"ab", 99, false},              // pos clamped past end, no backticks
+		{"SELECT * FROM ", 14, false},         // no backticks
+		{"SELECT * FROM `o", 16, true},        // one open backtick before caret
+		{"SELECT `a`, ", 12, false},           // closed pair before caret
+		{"`", 1, true},                        // single backtick
+		{"ab", 99, false},                     // pos clamped past end, no backticks
+		{"SELECT '`' FROM ", 16, false},       // backtick inside a string literal is ignored
+		{"SELECT /* `x` */ FROM ", 22, false}, // backticks inside a block comment ignored
+		{"SELECT 1 -- `\nFROM ", 19, false},   // backtick inside a line comment ignored
 	}
 	for _, tc := range cases {
 		require.Equal(t, tc.want, caretInsideBacktickIdentifier(tc.statement, tc.pos),
 			"caretInsideBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
 	}
+}
+
+func TestStatementReferencesDatabase(t *testing.T) {
+	cases := []struct {
+		statement string
+		db        string
+		want      bool
+	}{
+		{"SELECT * FROM otherdb.t", "otherdb", true},         // plain qualifier
+		{"SELECT * FROM `otherdb`.t", "otherdb", true},       // backtick-quoted qualifier
+		{"SELECT OTHERDB.t FROM x", "otherdb", true},         // case-insensitive
+		{"SELECT 'otherdb.' FROM t", "otherdb", false},       // inside a string literal
+		{"SELECT /* otherdb. */ * FROM t", "otherdb", false}, // inside a block comment
+		{"SELECT 1 -- otherdb.\n FROM t", "otherdb", false},  // inside a line comment
+		{"SELECT nototherdb.t FROM x", "otherdb", false},     // not at an identifier boundary
+		{"SELECT a FROM t", "otherdb", false},                // not referenced
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.want, statementReferencesDatabase(tc.statement, tc.db),
+			"statementReferencesDatabase(%q, %q)", tc.statement, tc.db)
+	}
+}
+
+// A backtick inside a preceding string literal must not be treated as an open
+// identifier quote: the reserved table name must still be quoted on the way out.
+func TestCompletion_QuotesReservedNameAfterStringLiteralWithBacktick(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "order", Columns: []*storepb.ColumnMetadata{{Name: "id"}}},
+		}}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	stmt := "SELECT '`' FROM "
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeTable, "`order`"),
+		"reserved table must stay quoted despite a backtick in a string literal; got %v", got)
 }
 
 // Cross-database qualified completion: when a statement references a non-default

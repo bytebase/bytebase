@@ -198,7 +198,7 @@ func statementReferencesDatabase(statement, dbName string) bool {
 	if dbName == "" {
 		return false
 	}
-	s := strings.ToLower(statement)
+	s := strings.ToLower(stripStringsAndComments(statement))
 	name := strings.ToLower(dbName)
 	for _, q := range []string{name + ".", "`" + name + "`."} {
 		from := 0
@@ -364,13 +364,106 @@ func caretInsideBacktickIdentifier(statement string, pos int) bool {
 	if pos > len(statement) {
 		pos = len(statement)
 	}
+	masked := stripStringsAndComments(statement)
 	count := 0
 	for i := 0; i < pos; i++ {
-		if statement[i] == '`' {
+		if masked[i] == '`' {
 			count++
 		}
 	}
 	return count%2 == 1
+}
+
+// stripStringsAndComments returns statement with the contents of string literals
+// ('...', "..."), line comments (-- , #), and block comments (/* */) replaced by
+// spaces, preserving byte length (newlines kept) so caret offsets stay valid.
+// Backtick-quoted identifiers are left intact. This lets the lexical heuristics
+// above ignore backticks and database names that appear inside literals or
+// comments rather than as real SQL tokens.
+func stripStringsAndComments(statement string) string {
+	out := []byte(statement)
+	n := len(out)
+	blank := func(i int) {
+		if out[i] != '\n' {
+			out[i] = ' '
+		}
+	}
+	i := 0
+	for i < n {
+		switch c := out[i]; {
+		case c == '\'' || c == '"':
+			q := c
+			blank(i)
+			i++
+			for i < n {
+				if out[i] == '\\' && i+1 < n { // backslash escape
+					blank(i)
+					blank(i + 1)
+					i += 2
+					continue
+				}
+				if out[i] == q {
+					if i+1 < n && out[i+1] == q { // doubled-quote escape
+						blank(i)
+						blank(i + 1)
+						i += 2
+						continue
+					}
+					blank(i)
+					i++
+					break
+				}
+				blank(i)
+				i++
+			}
+		case c == '#':
+			for i < n && out[i] != '\n' {
+				out[i] = ' '
+				i++
+			}
+		case c == '-' && i+1 < n && out[i+1] == '-' && (i+2 >= n || isSpaceByte(out[i+2])):
+			for i < n && out[i] != '\n' {
+				out[i] = ' '
+				i++
+			}
+		case c == '/' && i+1 < n && out[i+1] == '*':
+			blank(i)
+			blank(i + 1)
+			i += 2
+			for i < n {
+				if out[i] == '*' && i+1 < n && out[i+1] == '/' {
+					blank(i)
+					blank(i + 1)
+					i += 2
+					break
+				}
+				blank(i)
+				i++
+			}
+		case c == '`':
+			// Leave backtick-quoted identifiers intact; skip to the closing
+			// backtick so quote characters inside them are not misread.
+			i++
+			for i < n {
+				if out[i] == '`' {
+					if i+1 < n && out[i+1] == '`' { // doubled backtick
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				i++
+			}
+		default:
+			i++
+		}
+	}
+	return string(out)
+}
+
+func isSpaceByte(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }
 
 // lineOffsetToBytePos converts a 1-based line number and 0-based character
