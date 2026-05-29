@@ -113,23 +113,29 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 // one at a time so a single unparseable column type cannot empty the catalog.
 func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	cat := catalog.New()
-	if cCtx.Metadata == nil || cCtx.DefaultDatabase == "" {
-		return cat
-	}
-
-	// Fully load the default database plus any qualifier-referenced database.
-	loadOrder := []string{cCtx.DefaultDatabase}
-	seen := map[string]bool{cCtx.DefaultDatabase: true}
 	allNames := listAllDatabaseNames(ctx, cCtx)
-	for _, name := range allNames {
-		if !seen[name] && statementReferencesDatabase(statement, name) {
-			loadOrder = append(loadOrder, name)
-			seen[name] = true
+
+	// Decide which databases to fully load with their objects. This needs a
+	// metadata fetcher and a database to load from: the default database (if one
+	// is selected) plus any database referenced as a qualifier in the statement.
+	seen := map[string]bool{}
+	var loadOrder []string
+	if cCtx.Metadata != nil {
+		if cCtx.DefaultDatabase != "" {
+			loadOrder = append(loadOrder, cCtx.DefaultDatabase)
+			seen[cCtx.DefaultDatabase] = true
+		}
+		for _, name := range allNames {
+			if !seen[name] && statementReferencesDatabase(statement, name) {
+				loadOrder = append(loadOrder, name)
+				seen[name] = true
+			}
 		}
 	}
 
-	// Register the remaining known database names (name only) so they surface as
-	// database candidates even when not fully loaded.
+	// Register every other known database name (name only) so database-name
+	// candidates surface — this works at the instance level even when no database
+	// is selected (DefaultDatabase empty).
 	var reg strings.Builder
 	for _, name := range allNames {
 		if !seen[name] {
@@ -146,7 +152,9 @@ func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement st
 
 	// Restore the current database to the default so unqualified references
 	// resolve against it.
-	_, _ = cat.Exec("USE "+backtickIdentifier(cCtx.DefaultDatabase)+";", &catalog.ExecOptions{ContinueOnError: true})
+	if cCtx.DefaultDatabase != "" {
+		_, _ = cat.Exec("USE "+backtickIdentifier(cCtx.DefaultDatabase)+";", &catalog.ExecOptions{ContinueOnError: true})
+	}
 	return cat
 }
 

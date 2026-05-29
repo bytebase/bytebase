@@ -280,6 +280,32 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 	}
 }
 
+// When the LSP is connected to an instance without a selected database
+// (DefaultDatabase empty but ListDatabaseNames available), database-name
+// candidates must still surface so the user can pick a database.
+func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
+	meta := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+		return databaseName, model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+			Name:    databaseName,
+			Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+		}, nil, nil, storepb.Engine_TIDB, true), nil
+	}
+	cCtx := base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "", // instance connected without a selected database
+		Metadata:          meta,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
+	}
+
+	stmt := "SELECT * FROM "
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "appdb"),
+		"instance-level db candidate 'appdb' should surface without a default database; got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeDatabase, "otherdb"),
+		"instance-level db candidate 'otherdb' should surface without a default database; got %v", got)
+}
+
 // Completion must be limited to the statement containing the caret: table refs
 // from earlier statements in the buffer must not leak into the candidate set.
 func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
