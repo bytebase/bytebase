@@ -74,6 +74,7 @@ const piniaMocks = vi.hoisted(() => ({
     patchWorksheet: vi.fn(),
     upsertWorksheetOrganizer: vi.fn(),
     createWorksheet: vi.fn(),
+    fetchProject: vi.fn(),
   },
 }));
 

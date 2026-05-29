@@ -20,14 +20,10 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { isDisallowChangeDatabaseError } from "@/react/hooks/useExecuteSQL";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useSQLStore,
-} from "@/store";
+import { pushNotification, useDBSchemaV1Store, useSQLStore } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
@@ -462,7 +458,6 @@ export function ResultView({
 
 function SyncDatabaseButton({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const dbSchemaStore = useDBSchemaV1Store();
   const [syncing, setSyncing] = useState(false);
 
@@ -476,7 +471,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
     setSyncing(true);
     const { databaseName } = extractDatabaseResourceName(database.name);
     try {
-      await databaseStore.syncDatabase(database.name);
+      await useAppStore.getState().syncDatabase(database.name);
       await dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,

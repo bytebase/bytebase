@@ -7,9 +7,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppProject } from "@/react/hooks/useAppProject";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { hasFeature, useProjectV1Store } from "@/store";
+import { hasFeature } from "@/store";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
@@ -30,12 +30,8 @@ export function MaskingReasonPopover({
   const { t } = useTranslation();
   const [showDrawer, setShowDrawer] = useState(false);
 
-  const projectStore = useProjectV1Store();
-
   const projectName = useSQLEditorEditorState((s) => s.project);
-  const project = usePiniaBridge(() =>
-    projectStore.getProjectByName(projectName)
-  );
+  const project = useAppProject(projectName);
 
   const hasJITFeature = useMemo(
     () =>

@@ -20,12 +20,13 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   AccessGrant_Status,
   AccessGrantSchema,
@@ -52,16 +53,15 @@ function MultiDatabaseSelect({
     { name: string; displayName: string }[]
   >([]);
 
-  const databaseStore = useDatabaseV1Store();
+  const fetchDatabases = useAppStore((s) => s.fetchDatabases);
 
   useEffect(() => {
-    databaseStore
-      .fetchDatabases({
-        parent: projectName,
-        filter: { query: "" },
-        pageSize: 100,
-        silent: true,
-      })
+    fetchDatabases({
+      parent: projectName,
+      filter: { query: "" },
+      pageSize: 100,
+      silent: true,
+    })
       .then((result) => {
         setDatabases(
           result.databases.map((db) => {
@@ -73,7 +73,7 @@ function MultiDatabaseSelect({
       .catch(() => {
         /* ignore */
       });
-  }, [databaseStore, projectName]);
+  }, [fetchDatabases, projectName]);
 
   return (
     <Combobox

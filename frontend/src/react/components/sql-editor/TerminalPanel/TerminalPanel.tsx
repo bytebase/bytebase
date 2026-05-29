@@ -5,6 +5,7 @@ import type { IStandaloneCodeEditor } from "@/react/components/monaco/types";
 import { ConnectionHolder } from "@/react/components/sql-editor/ConnectionHolder";
 import { EditorAction } from "@/react/components/sql-editor/EditorAction";
 import { ResultView } from "@/react/components/sql-editor/ResultView";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   getSQLEditorTabsState,
@@ -12,7 +13,6 @@ import {
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
 import { getWebTerminalQuerySession } from "@/react/stores/sqlEditor/webTerminal-service";
-import { useDatabaseV1Store } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import { CompactSQLEditor } from "./CompactSQLEditor";
 import { useHistory } from "./useHistory";
@@ -37,7 +37,10 @@ import { useHistory } from "./useHistory";
  */
 export function TerminalPanel() {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const batchGetOrFetchDatabases = useAppStore(
+    (s) => s.batchGetOrFetchDatabases
+  );
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const updateWebTerminalQueryItem = useSQLEditorStore(
     (s) => s.updateWebTerminalQueryItem
   );
@@ -95,10 +98,10 @@ export function TerminalPanel() {
   // Pre-fetch any database referenced by an existing query item so the
   // ResultView can render `database.environment` etc. synchronously.
   useEffect(() => {
-    void databaseStore.batchGetOrFetchDatabases(
+    void batchGetOrFetchDatabases(
       queryList.map((q) => q?.params?.connection.database ?? "")
     );
-  }, [queryList, databaseStore]);
+  }, [queryList, batchGetOrFetchDatabases]);
 
   const currentQuery = queryList[queryList.length - 1];
   const isEditableQueryItem = (item: WebTerminalQueryItemV1) =>
@@ -211,9 +214,7 @@ export function TerminalPanel() {
             {queryList.map((query) => {
               const editable = isEditableQueryItem(query);
               const database = query.params?.connection.database
-                ? databaseStore.getDatabaseByName(
-                    query.params.connection.database
-                  )
+                ? getDatabaseByName(query.params.connection.database)
                 : undefined;
               return (
                 <div key={query.id} className="relative">

@@ -18,14 +18,11 @@ import { useTranslation } from "react-i18next";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { keyWithPosition } from "@/react/lib/keyWithPosition";
+import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
+import { pushNotification, useDBSchemaV1Store } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
@@ -98,7 +95,7 @@ export type AvailableAction = {
  * Vue reactive computed.
  */
 const engineForDatabase = (database: string): Engine => {
-  const db = useDatabaseV1Store().getDatabaseByName(database);
+  const db = useAppStore.getState().getDatabaseByName(database);
   return getInstanceResource(db).engine;
 };
 
@@ -197,7 +194,7 @@ const runQuery = async (
 };
 
 export function useSchemaPaneActions() {
-  const databaseStore = useDatabaseV1Store();
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const { execute } = useExecuteSQL();
 
   const openNewTab = useCallback(
@@ -260,7 +257,7 @@ export function useSchemaPaneActions() {
       if (!tableOrViewName) return;
 
       const { database, schema } = target;
-      const db = databaseStore.getDatabaseByName(database);
+      const db = getDatabaseByName(database);
       const engine = getInstanceResource(db).engine;
 
       const query = await formatCode(
@@ -275,7 +272,7 @@ export function useSchemaPaneActions() {
       updateCurrentTabViewState({ view: "CODE" });
       await runQuery(execute, db, schema, tableOrViewName, query);
     },
-    [databaseStore, execute]
+    [getDatabaseByName, execute]
   );
 
   const viewDetail = useCallback(
@@ -392,7 +389,7 @@ export function useSchemaPaneContextMenu(
   deps: SchemaMenuDeps
 ): SchemaMenuItem[] {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const dbSchema = useDBSchemaV1Store();
   const { selectAllFromTableOrView, viewDetail, openNewTab } =
     useSchemaPaneActions();
@@ -414,7 +411,7 @@ export function useSchemaPaneContextMenu(
     const { database, schema } = target as NodeTarget<"schema">;
     if (!database) return [];
 
-    const db = databaseStore.getDatabaseByName(database);
+    const db = getDatabaseByName(database);
     const items: SchemaMenuItem[] = [];
 
     if (type === "schema") {
@@ -662,7 +659,7 @@ export function useSchemaPaneContextMenu(
   }, [
     node,
     deps,
-    databaseStore,
+    getDatabaseByName,
     dbSchema,
     notify,
     openNewTab,

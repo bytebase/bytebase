@@ -1,5 +1,6 @@
 import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
+import { useAppProject } from "@/react/hooks/useAppProject";
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -7,7 +8,6 @@ import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
-import { useProjectV1Store } from "@/store";
 import { TabItem } from "./TabItem";
 
 /**
@@ -18,13 +18,11 @@ import { TabItem } from "./TabItem";
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
  */
 export function GutterBar() {
-  const projectStore = useProjectV1Store();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const projectName = useSQLEditorEditorState((s) => s.project);
 
-  const project = usePiniaBridge(() => {
-    return projectName ? projectStore.getProjectByName(projectName) : undefined;
-  });
+  const resolvedProject = useAppProject(projectName);
+  const project = projectName ? resolvedProject : undefined;
 
   const routeProjectParam = usePiniaBridge(
     () => router.currentRoute.value.params.project as string | undefined

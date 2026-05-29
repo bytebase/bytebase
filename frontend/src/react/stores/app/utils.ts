@@ -2,12 +2,20 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import {
   getProjectName,
   getUserName,
+  isValidProjectName,
   projectNamePrefix,
   userNamePrefix,
 } from "@/react/lib/resourceName";
+import type { DatabaseFilter } from "@/store/modules/v1/database";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
+import {
+  isValidEnvironmentName,
+  unknownEnvironment,
+} from "@/types/v1/environment";
+import { isValidInstanceName } from "@/types/v1/instance";
 import type { AppStoreState } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
@@ -42,6 +50,82 @@ export function buildProjectFilter(query: string | undefined) {
     );
   }
   return filters.join(" && ");
+}
+
+// Converts label selectors like "{key}:{v1},{v2}" into API filter clauses
+// (`labels.{key} == "v"` or `labels.{key} in [...]`). Ported verbatim from
+// the legacy Pinia database store.
+function getLabelFilter(labels: string[]): string[] {
+  const labelMap = new Map<string, string[]>();
+  for (const label of labels) {
+    const sections = label.split(":");
+    if (sections.length !== 2) {
+      continue;
+    }
+    const [key, rawValue] = sections;
+    const values = rawValue.split(",");
+    if (!labelMap.has(key)) {
+      labelMap.set(key, []);
+    }
+    labelMap.get(key)?.push(...values);
+  }
+  return [...labelMap.entries()].reduce((result, [key, values]) => {
+    switch (values.length) {
+      case 0:
+        return result;
+      case 1:
+        result.push(`labels.${key} == "${values[0]}"`);
+        return result;
+      default:
+        result.push(
+          `labels.${key} in [${values.map((v) => `"${v}"`).join(", ")}]`
+        );
+        return result;
+    }
+  }, [] as string[]);
+}
+
+// Builds the CEL filter string for `listDatabases` from a structured
+// `DatabaseFilter`. Mirrors the legacy Pinia `getListDatabaseFilter` so the
+// app store lists databases identically to the old store.
+export function buildDatabaseFilter(filter: DatabaseFilter): string {
+  const params: string[] = [];
+  if (isValidProjectName(filter.project)) {
+    params.push(`project == "${filter.project}"`);
+  }
+  if (isValidInstanceName(filter.instance)) {
+    params.push(`instance == "${filter.instance}"`);
+  }
+  if (filter.environment === unknownEnvironment().name) {
+    params.push(`environment == ""`);
+  } else if (isValidEnvironmentName(filter.environment)) {
+    params.push(`environment == "${filter.environment}"`);
+  }
+  if (filter.excludeUnassigned) {
+    params.push(`exclude_unassigned == true`);
+  }
+  if (filter.engines && filter.engines.length > 0) {
+    params.push(
+      `engine in [${filter.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
+    );
+  } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
+    params.push(
+      `!(engine in [${filter.excludeEngines
+        .map((e) => `"${Engine[e]}"`)
+        .join(", ")}])`
+    );
+  }
+  const keyword = filter.query?.trim()?.toLowerCase();
+  if (keyword) {
+    params.push(`name.contains("${keyword}")`);
+  }
+  if (filter.labels) {
+    params.push(...getLabelFilter(filter.labels));
+  }
+  if (filter.table) {
+    params.push(`table.contains("${filter.table}")`);
+  }
+  return params.join(" && ");
 }
 
 function bindingMemberToNames(member: string): string[] {

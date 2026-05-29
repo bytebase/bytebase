@@ -9,8 +9,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useProjectV1Store: vi.fn(),
-  // Zustand editor store project read.
+  // useAppProject (app store) return value.
+  projectData: { name: "projects/proj1", title: "Project 1" } as {
+    name: string;
+    title: string;
+  },
+  // Zustand editor store project name.
   project: "projects/proj1" as string,
   // New zustand store state + setter.
   state: {
@@ -19,7 +23,10 @@ const mocks = vi.hoisted(() => ({
   setHighlightAccessGrantName: vi.fn(),
   searchMyAccessGrants: vi.fn(),
   useIssueV1Store: vi.fn(),
-  useDatabaseV1Store: vi.fn(),
+  fetchDatabases: vi
+    .fn()
+    .mockResolvedValue({ databases: [], nextPageToken: "" }),
+  getOrFetchDatabaseByName: vi.fn().mockResolvedValue({}),
   hasFeature: vi.fn(() => true),
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
   getDefaultPagination: vi.fn(() => 20),
@@ -30,16 +37,20 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useProjectV1Store: mocks.useProjectV1Store,
   useIssueV1Store: mocks.useIssueV1Store,
-  useDatabaseV1Store: mocks.useDatabaseV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.projectData,
 }));
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       searchMyAccessGrants: mocks.searchMyAccessGrants,
+      fetchDatabases: mocks.fetchDatabases,
+      getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
     }),
 }));
 
@@ -226,12 +237,7 @@ const renderIntoContainer = (element: ReactElement) => {
 const setupDefaultMocks = () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
 
-  mocks.useProjectV1Store.mockReturnValue({
-    getProjectByName: vi.fn(() => ({
-      name: "projects/proj1",
-      title: "Project 1",
-    })),
-  });
+  mocks.projectData = { name: "projects/proj1", title: "Project 1" };
 
   mocks.project = "projects/proj1";
 
@@ -246,10 +252,8 @@ const setupDefaultMocks = () => {
     fetchIssueByName: vi.fn().mockResolvedValue({}),
   });
 
-  mocks.useDatabaseV1Store.mockReturnValue({
-    fetchDatabases: vi.fn().mockResolvedValue({ databases: [] }),
-    getOrFetchDatabaseByName: vi.fn().mockResolvedValue({}),
-  });
+  mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+  mocks.getOrFetchDatabaseByName.mockResolvedValue({});
 
   mocks.hasFeature.mockReturnValue(true);
   mocks.getDefaultPagination.mockReturnValue(20);

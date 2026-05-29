@@ -4,19 +4,14 @@ import { cloneDeep, isEmpty } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { getSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   getDatabaseQueryContext,
   getSQLEditorTabsState,
 } from "@/react/stores/sqlEditor/tab";
-import {
-  hasFeature,
-  pushNotification,
-  useDatabaseV1Store,
-  useDBGroupStore,
-  useSQLStore,
-} from "@/store";
+import { hasFeature, pushNotification, useSQLStore } from "@/store";
 import type {
   BBNotificationStyle,
   QueryContextStatus,
@@ -51,9 +46,6 @@ const QUERY_INTERVAL_LIMIT = 1000;
 export const useExecuteSQL = () => {
   const { t } = useTranslation();
   const lastQueryTimeRef = useRef<number | undefined>(undefined);
-  const dbGroupStore = useDBGroupStore();
-  const dbStore = useDatabaseV1Store();
-
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -200,14 +192,10 @@ export const useExecuteSQL = () => {
         if (hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
           for (const databaseGroupName of databaseGroups) {
             try {
-              const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-                databaseGroupName,
-                {
-                  skipCache: false,
-                  silent: true,
-                  view: DatabaseGroupView.FULL,
-                }
-              );
+              const databaseGroup = await useAppStore
+                .getState()
+                .fetchDBGroup(databaseGroupName, DatabaseGroupView.FULL);
+              if (!databaseGroup) continue;
               for (const matchedDatabase of databaseGroup.matchedDatabases) {
                 if (!isValidDatabaseName(matchedDatabase.name)) {
                   continue;
@@ -238,7 +226,9 @@ export const useExecuteSQL = () => {
       }
 
       const isBatch = batchQueryDatabaseSet.size > 1;
-      await dbStore.batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
+      await useAppStore
+        .getState()
+        .batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
 
       for (const databaseName of batchQueryDatabaseSet.values()) {
         // Re-read the latest tab snapshot inside the loop so each
@@ -262,7 +252,7 @@ export const useExecuteSQL = () => {
           }
         }
 
-        const database = dbStore.getDatabaseByName(databaseName);
+        const database = useAppStore.getState().getDatabaseByName(databaseName);
         const resolvedDataSourceId =
           isBatch && loopTab.batchQueryContext.dataSourceType
             ? ((await getValidDataSourceByPolicy(
@@ -288,7 +278,7 @@ export const useExecuteSQL = () => {
         loopState.updateTab(loopTab.id, { databaseQueryContexts: nextMap });
       }
     },
-    [dbStore, dbGroupStore, preflight]
+    [preflight]
   );
 
   const runQuery = useCallback(

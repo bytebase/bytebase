@@ -2,12 +2,12 @@ import { useCallback, useEffect } from "react";
 import { ReadonlyModeNotSupported } from "@/react/components/sql-editor/ReadonlyModeNotSupported";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorTabsState,
   useIsDisconnected,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useDatabaseV1Store } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";
@@ -36,7 +36,6 @@ interface EditorMainProps {
  * the cross-framework boundary stays clean — see Stage 17 design.
  */
 export function EditorMain({ onChangeConnection }: EditorMainProps) {
-  const databaseStore = useDatabaseV1Store();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
@@ -82,9 +81,9 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
     const off = sqlEditorEvents.on(
       "execute-sql",
       async ({ connection, statement, batchQueryContext }) => {
-        const database = await databaseStore.getOrFetchDatabaseByName(
-          connection.database
-        );
+        const database = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(connection.database);
         const newTab = getSQLEditorTabsState().addTab(
           { connection, statement, batchQueryContext },
           /* beside */ true
@@ -103,7 +102,7 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
     return () => {
       off();
     };
-  }, [databaseStore, execute]);
+  }, [execute]);
 
   if (!isDisconnected && !allowReadonlyMode) {
     // Connected to an instance without a read-only data source —

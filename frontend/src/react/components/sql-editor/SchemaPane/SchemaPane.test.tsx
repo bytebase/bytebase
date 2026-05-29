@@ -48,9 +48,29 @@ vi.mock("@/store", () => ({
     syncDatabase: vi.fn(),
     getTableMetadata: vi.fn(),
   }),
-  useDatabaseV1Store: () => ({ getDatabaseByName: vi.fn() }),
   pushNotification: vi.fn(),
 }));
+
+vi.mock("@/react/hooks/useAppDatabase", () => ({
+  useAppDatabase: (name: string) => ({ name }),
+}));
+
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    getDatabaseByName: (name: string) => ({ name }),
+    getOrFetchDatabaseByName: vi.fn(async (name: string) => ({ name })),
+    batchGetOrFetchDatabases: vi.fn(async () => []),
+    syncDatabase: vi.fn(),
+    fetchDatabases: vi.fn(async () => ({ databases: [], nextPageToken: "" })),
+    databasesByName: {} as Record<string, unknown>,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: unknown) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   // Returns plain values now — `database` is the unwrapped object.

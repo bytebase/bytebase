@@ -11,9 +11,12 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   // Pinia bridge — runs the getter against the (mocked) Pinia stores.
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
-  useProjectV1Store: vi.fn(),
-  // Zustand editor store project read.
+  // Zustand editor store project name.
   project: "projects/test" as string,
+  // useAppProject (app store) return value.
+  projectData: { allowJustInTimeAccess: false } as {
+    allowJustInTimeAccess: boolean;
+  },
   // New zustand store.
   state: {
     asidePanelTab: "WORKSHEET" as string,
@@ -30,8 +33,8 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
   usePiniaBridge: mocks.usePiniaBridge,
 }));
 
-vi.mock("@/store", () => ({
-  useProjectV1Store: mocks.useProjectV1Store,
+vi.mock("@/react/hooks/useAppProject", () => ({
+  useAppProject: () => mocks.projectData,
 }));
 
 vi.mock("@/react/stores/sqlEditor/editor", () => ({
@@ -100,9 +103,7 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.project = "projects/test";
-  mocks.useProjectV1Store.mockReturnValue({
-    getProjectByName: () => ({ allowJustInTimeAccess: false }),
-  });
+  mocks.projectData = { allowJustInTimeAccess: false };
   mocks.state.asidePanelTab = "WORKSHEET";
   mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
   ({ GutterBar } = await import("./GutterBar"));
@@ -111,9 +112,7 @@ beforeEach(async () => {
 describe("GutterBar", () => {
   test("renders 3 tabs when project does not allow JIT access", () => {
     mocks.usePiniaBridge.mockImplementation((getter) => getter());
-    mocks.useProjectV1Store.mockReturnValue({
-      getProjectByName: () => ({ allowJustInTimeAccess: false }),
-    });
+    mocks.projectData = { allowJustInTimeAccess: false };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
     const buttons = container.querySelectorAll("button");
@@ -123,9 +122,7 @@ describe("GutterBar", () => {
 
   test("renders 4 tabs when project allows JIT access", () => {
     mocks.usePiniaBridge.mockImplementation((getter) => getter());
-    mocks.useProjectV1Store.mockReturnValue({
-      getProjectByName: () => ({ allowJustInTimeAccess: true }),
-    });
+    mocks.projectData = { allowJustInTimeAccess: true };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
     const buttons = container.querySelectorAll("button");
@@ -135,9 +132,7 @@ describe("GutterBar", () => {
 
   test("click writes asidePanelTab via setAsidePanelTab", () => {
     mocks.usePiniaBridge.mockImplementation((getter) => getter());
-    mocks.useProjectV1Store.mockReturnValue({
-      getProjectByName: () => ({ allowJustInTimeAccess: false }),
-    });
+    mocks.projectData = { allowJustInTimeAccess: false };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
     const buttons = container.querySelectorAll("button");
@@ -150,9 +145,7 @@ describe("GutterBar", () => {
 
   test("logo link has target=_blank and rel=noopener noreferrer", () => {
     mocks.usePiniaBridge.mockImplementation((getter) => getter());
-    mocks.useProjectV1Store.mockReturnValue({
-      getProjectByName: () => ({ allowJustInTimeAccess: false }),
-    });
+    mocks.projectData = { allowJustInTimeAccess: false };
     mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();

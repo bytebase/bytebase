@@ -15,16 +15,30 @@ import { buildProjectFilter, defaultProjectName, toError } from "./utils";
 
 const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 
+// The default project's feature gates. Inlined here (rather than reusing
+// the `@/types/v1/project` helpers) so the app store's load graph stays
+// free of the Pinia actuator store those helpers pull in.
+const PROJECT_DEFAULTS = {
+  state: State.ACTIVE,
+  enforceIssueTitle: true,
+  enforceSqlReview: true,
+  requireIssueApproval: true,
+  requirePlanCheckNoError: true,
+  allowRequestRole: true,
+} as const;
+
 function createDefaultProject(name: string) {
   return createProto(ProjectSchema, {
     name,
     title: "Default project",
-    state: State.ACTIVE,
-    enforceIssueTitle: true,
-    enforceSqlReview: true,
-    requireIssueApproval: true,
-    requirePlanCheckNoError: true,
-    allowRequestRole: true,
+    ...PROJECT_DEFAULTS,
+  });
+}
+
+function createUnknownProject() {
+  return createProto(ProjectSchema, {
+    name: UNKNOWN_PROJECT_NAME,
+    ...PROJECT_DEFAULTS,
   });
 }
 
@@ -35,6 +49,18 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (
   projectsByName: {},
   projectRequests: {},
   projectErrorsByName: {},
+
+  // Mirrors the Pinia `useProjectV1Store().getProjectByName`: always
+  // returns a non-null Project, synthesizing the default-project or
+  // unknown-project placeholder when the name is not in the cache.
+  getProjectByName: (name) => {
+    if (name === UNKNOWN_PROJECT_NAME) return createUnknownProject();
+    const defaultProject = defaultProjectName(get);
+    if (name && name === defaultProject) {
+      return get().projectsByName[name] ?? createDefaultProject(name);
+    }
+    return get().projectsByName[name] ?? createUnknownProject();
+  },
 
   fetchProject: async (name) => {
     const defaultProject = defaultProjectName(get);

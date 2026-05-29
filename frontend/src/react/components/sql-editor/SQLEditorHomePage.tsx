@@ -19,10 +19,11 @@ import {
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppProject } from "@/react/hooks/useAppProject";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
@@ -31,7 +32,6 @@ import {
   useIsDisconnected,
 } from "@/react/stores/sqlEditor/tab";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { unknownProject } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -66,18 +66,16 @@ export function SQLEditorHomePage() {
   const setPendingInsertAtCaret = useSQLEditorStore(
     (s) => s.setPendingInsertAtCaret
   );
-  const databaseStore = useDatabaseV1Store();
-  const projectStore = useProjectV1Store();
 
   const projectContextReady = useSQLEditorEditorState(
     (s) => s.projectContextReady
   );
   const projectName = useSQLEditorEditorState((s) => s.project);
-  const project = usePiniaBridge(() => {
-    if (!projectName) return undefined;
-    const proj = projectStore.getProjectByName(projectName);
-    return proj.name === projectName ? proj : undefined;
-  });
+  const resolvedProject = useAppProject(projectName);
+  const project =
+    projectName && resolvedProject.name === projectName
+      ? resolvedProject
+      : undefined;
   const tab = useCurrentSQLEditorTab();
   const isDisconnected = useIsDisconnected();
 
@@ -98,11 +96,12 @@ export function SQLEditorHomePage() {
     const off = sqlEditorEvents.on(
       "alter-schema",
       async ({ databaseName, schema, table }) => {
-        const database =
-          await databaseStore.getOrFetchDatabaseByName(databaseName);
-        const project = await projectStore
-          .getOrFetchProjectByName(database.project)
-          .catch(() => unknownProject());
+        const database = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(databaseName);
+        const project =
+          (await useAppStore.getState().fetchProject(database.project)) ??
+          unknownProject();
         const exampleSQL = ["ALTER TABLE"];
         if (table) {
           if (schema) exampleSQL.push(`${schema}.${table}`);
@@ -136,7 +135,7 @@ export function SQLEditorHomePage() {
     return () => {
       off();
     };
-  }, [databaseStore, projectStore, navigate, t]);
+  }, [navigate, t]);
 
   // insert-at-caret: flip view to CODE, stage content into
   // pendingInsertAtCaret. The React `<SQLEditor>` reads the same Pinia

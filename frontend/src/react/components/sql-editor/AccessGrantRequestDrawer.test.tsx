@@ -19,7 +19,9 @@ const mocks = vi.hoisted(() => ({
   setAsidePanelTab: vi.fn(),
   setHighlightAccessGrantName: vi.fn(),
   pushNotification: vi.fn(),
-  useDatabaseV1Store: vi.fn(),
+  fetchDatabases: vi
+    .fn()
+    .mockResolvedValue({ databases: [], nextPageToken: "" }),
   createAccessGrant: vi.fn(),
   routerResolve: vi.fn(() => ({ fullPath: "/projects/proj1/issues/123" })),
 }));
@@ -41,7 +43,11 @@ vi.mock("@/react/hooks/useAppState", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useDatabaseV1Store: mocks.useDatabaseV1Store,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({ fetchDatabases: mocks.fetchDatabases }),
 }));
 
 // Zustand editor store — active project read.
@@ -313,9 +319,7 @@ const setupMocks = () => {
   mocks.project = "projects/proj1";
   mocks.currentTabDatabase = "instances/inst1/databases/db1";
 
-  mocks.useDatabaseV1Store.mockReturnValue({
-    fetchDatabases: vi.fn().mockResolvedValue({ databases: [] }),
-  });
+  mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
 
   mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
 };

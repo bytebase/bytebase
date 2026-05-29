@@ -6,7 +6,7 @@ import {
   useComponentPermissionState,
   usePermissionDataReady,
 } from "@/react/components/ComponentPermissionGuard";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppProject } from "@/react/hooks/useAppProject";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { useCurrentRoute, useNavigate } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -28,12 +28,7 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -107,8 +102,6 @@ export function SQLEditorRouteShell() {
   const navigate = useNavigate();
   const route = useCurrentRoute();
   const actuatorStore = useActuatorV1Store();
-  const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -116,11 +109,10 @@ export function SQLEditorRouteShell() {
     (s) => s.projectContextReady
   );
   const projectNameState = useSQLEditorEditorState((s) => s.project);
-  const project = usePiniaBridge(() => {
-    const proj = projectStore.getProjectByName(projectNameState);
-    if (!isValidProjectName(proj.name)) return undefined;
-    return proj;
-  });
+  const resolvedProject = useAppProject(projectNameState);
+  const project = isValidProjectName(resolvedProject.name)
+    ? resolvedProject
+    : undefined;
 
   // Keep the persisted result-row limit within the project's
   // query-data policy maximum (re-clamps if the policy lowers the cap).
@@ -153,9 +145,9 @@ export function SQLEditorRouteShell() {
   }, []);
 
   const fallbackToFirstProject = async () => {
-    const { projects } = await projectStore.fetchProjectList({
+    const { projects } = await useAppStore.getState().searchProjects({
       pageSize: getDefaultPagination(),
-      filter: { excludeDefault: true },
+      pageToken: "",
     });
     return (
       head(projects)?.name ?? actuatorStore.serverInfo?.defaultProject ?? ""
@@ -243,8 +235,16 @@ export function SQLEditorRouteShell() {
     }
     const databaseName = `instances/${route.params.instance}/databases/${route.params.database}`;
     if (!isValidDatabaseName(databaseName)) return false;
-    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    await maybeSwitchProject(database.project);
+    const database = await useAppStore
+      .getState()
+      .getOrFetchDatabaseByName(databaseName);
+    // The app-store getter returns the `unknownDatabase` fallback (rather
+    // than throwing) when the database can't be resolved — e.g. a bookmarked
+    // URL to a deleted or no-longer-readable database. Bail so bootstrap
+    // falls back to the default project instead of opening a bogus
+    // `instances/-1/databases/-1` connection.
+    if (!isValidDatabaseName(database.name)) return false;
+    if (!(await maybeSwitchProject(database.project))) return false;
     const { instance } = extractDatabaseResourceName(database.name);
     const connection = { instance, database: database.name };
     getSQLEditorTabsState().addTab({
@@ -345,25 +345,32 @@ export function SQLEditorRouteShell() {
       }
     }
     if (vals.dbName && isValidDatabaseName(vals.dbName)) {
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        vals.dbName
-      );
-      if (vals.schema) query.schema = vals.schema;
-      if (vals.table) {
-        query.table = vals.table;
-        query.schema = vals.schema ?? "";
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(vals.dbName);
+      // The app-store getter returns the `unknownDatabase` fallback (rather
+      // than throwing) when the database can't be resolved — deleted or
+      // permission revoked. Skip navigation in that case so we don't rewrite
+      // the URL to a bogus `projects/-1/instances/-1/databases/-1` route;
+      // fall through to the instance / default sync instead.
+      if (isValidDatabaseName(database.name)) {
+        if (vals.schema) query.schema = vals.schema;
+        if (vals.table) {
+          query.table = vals.table;
+          query.schema = vals.schema ?? "";
+        }
+        const dbResource = extractDatabaseResourceName(database.name);
+        await navigate.replace({
+          name: SQL_EDITOR_DATABASE_MODULE,
+          params: {
+            project: extractProjectResourceName(database.project),
+            instance: extractInstanceResourceName(dbResource.instance),
+            database: dbResource.databaseName,
+          },
+          query,
+        });
+        return;
       }
-      const dbResource = extractDatabaseResourceName(database.name);
-      await navigate.replace({
-        name: SQL_EDITOR_DATABASE_MODULE,
-        params: {
-          project: extractProjectResourceName(database.project),
-          instance: extractInstanceResourceName(dbResource.instance),
-          database: dbResource.databaseName,
-        },
-        query,
-      });
-      return;
     }
     if (vals.instanceName && isValidInstanceName(vals.instanceName)) {
       if (vals.table) {
