@@ -447,7 +447,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt)
 		Unique:      n.Unique,
 		Type:        "NORMAL",
 		Expressions: []string{},
-		Visible:     true,
+		Visible:     !n.Invisible,
 	}
 	if n.Bitmap {
 		index.Type = "BITMAP"
@@ -477,6 +477,8 @@ func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt)
 	}
 	if isFunctionBased && index.Type == "NORMAL" {
 		index.Type = "FUNCTION-BASED NORMAL"
+	} else if isFunctionBased && index.Type == "BITMAP" {
+		index.Type = "FUNCTION-BASED BITMAP"
 	}
 
 	if materializedView := e.materializedViews[tableName]; materializedView != nil {
@@ -596,9 +598,18 @@ func (e *oracleOmniMetadataExtractor) extractComment(n *ast.CommentStmt) {
 	}
 
 	switch n.ObjectType {
-	case ast.OBJECT_TABLE:
-		if table := e.tables[objectName(n.Object)]; table != nil {
+	case ast.OBJECT_TABLE, ast.OBJECT_VIEW:
+		name := objectName(n.Object)
+		if table := e.tables[name]; table != nil {
 			table.Comment = n.Comment
+			return
+		}
+		if view := e.views[name]; view != nil {
+			view.Comment = n.Comment
+		}
+	case ast.OBJECT_MATERIALIZED_VIEW:
+		if materializedView := e.materializedViews[objectName(n.Object)]; materializedView != nil {
+			materializedView.Comment = n.Comment
 		}
 	default:
 	}

@@ -98,6 +98,58 @@ SELECT EMP_ID, EMAIL FROM EMPLOYEES;
 			},
 		},
 		{
+			name: "comments_on_views_and_materialized_views",
+			ddl: `
+CREATE TABLE PRODUCT_SALES (
+    PRODUCT_ID NUMBER NOT NULL,
+    CATEGORY VARCHAR2(50) NOT NULL,
+    SALES_AMOUNT NUMBER(12,2) NOT NULL
+);
+
+CREATE VIEW PRODUCT_SALES_VIEW AS
+SELECT PRODUCT_ID, CATEGORY, SALES_AMOUNT
+FROM PRODUCT_SALES;
+
+CREATE MATERIALIZED VIEW PRODUCT_SALES_MV
+BUILD IMMEDIATE
+REFRESH COMPLETE ON DEMAND
+AS
+SELECT PRODUCT_ID, CATEGORY, SUM(SALES_AMOUNT) AS TOTAL_REVENUE
+FROM PRODUCT_SALES
+GROUP BY PRODUCT_ID, CATEGORY;
+
+COMMENT ON VIEW PRODUCT_SALES_VIEW IS 'Product sales view';
+COMMENT ON MATERIALIZED VIEW PRODUCT_SALES_MV IS 'Product sales materialized view';
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				schemaMetadata := requireSingleSchema(t, metadata)
+				require.Equal(t, "Product sales view", requireView(t, schemaMetadata, "PRODUCT_SALES_VIEW").Comment)
+				require.Len(t, schemaMetadata.MaterializedViews, 1)
+				require.Equal(t, "PRODUCT_SALES_MV", schemaMetadata.MaterializedViews[0].Name)
+				require.Equal(t, "Product sales materialized view", schemaMetadata.MaterializedViews[0].Comment)
+			},
+		},
+		{
+			name: "index_visibility_and_function_based_bitmap",
+			ddl: `
+CREATE TABLE ORDERS (
+    ID NUMBER PRIMARY KEY,
+    STATUS VARCHAR2(20)
+);
+
+CREATE INDEX idx_orders_status_invisible ON ORDERS(STATUS) INVISIBLE;
+CREATE BITMAP INDEX idx_orders_lower_status ON ORDERS(LOWER(STATUS));
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				orders := requireTable(t, requireSingleSchema(t, metadata), "ORDERS")
+				invisibleIndex := requireIndexMetadata(t, orders, "IDX_ORDERS_STATUS_INVISIBLE")
+				require.False(t, invisibleIndex.Visible)
+				functionBasedBitmapIndex := requireIndexMetadata(t, orders, "IDX_ORDERS_LOWER_STATUS")
+				require.Equal(t, "FUNCTION-BASED BITMAP", functionBasedBitmapIndex.Type)
+				require.True(t, functionBasedBitmapIndex.Visible)
+			},
+		},
+		{
 			name: "instead_of_trigger_on_view",
 			ddl: `
 CREATE TABLE EMPLOYEES (
@@ -360,16 +412,21 @@ func findTable(schemaMetadata *storepb.SchemaMetadata, name string) *storepb.Tab
 
 func requireIndex(t *testing.T, table *storepb.TableMetadata, name string, expressions []string, primary bool, unique bool) {
 	t.Helper()
+	index := requireIndexMetadata(t, table, name)
+	require.Equal(t, expressions, index.Expressions)
+	require.Equal(t, primary, index.Primary)
+	require.Equal(t, unique, index.Unique)
+}
+
+func requireIndexMetadata(t *testing.T, table *storepb.TableMetadata, name string) *storepb.IndexMetadata {
+	t.Helper()
 	for _, index := range table.Indexes {
-		if index.Name != name {
-			continue
+		if index.Name == name {
+			return index
 		}
-		require.Equal(t, expressions, index.Expressions)
-		require.Equal(t, primary, index.Primary)
-		require.Equal(t, unique, index.Unique)
-		return
 	}
 	t.Fatalf("index %q not found in table %q", name, table.Name)
+	return nil
 }
 
 func requireMaterializedViewIndex(t *testing.T, materializedView *storepb.MaterializedViewMetadata, name string, expressions []string, primary bool, unique bool) {
