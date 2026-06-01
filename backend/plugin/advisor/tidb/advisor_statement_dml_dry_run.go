@@ -156,12 +156,18 @@ func (c *statementDmlDryRunChecker) queryInAutoCommit(statement string) error {
 
 // dmlDryRunBatchSQL returns a "BATCH ... DRY RUN ..." statement for node.
 //
-// Behavior-preserving port: the pre-omni advisor set DryRun=1 on a node copy,
-// which pingcap restores as "DRY RUN QUERY". We reproduce that exact mode by
-// injecting "DRY RUN QUERY " before the inner DML keyword. (The injected text
-// preserves the user's original ON/LIMIT clause, comments, and whitespace
-// verbatim — more faithful than a deparser.) A follow-up commit fixes the mode
-// to "DRY RUN" / split-DML, which is the advisor's actual intent.
+// omni has no statement-level SQL deparse, so the DRY RUN form is derived by
+// injecting "DRY RUN " before the inner DML keyword (located via the inner DML
+// node's Loc), preserving the user's original ON/LIMIT clause, comments, and
+// whitespace verbatim — more faithful than a deparser.
+//
+// "DRY RUN" selects TiDB's split-DML dry run (pingcap DryRunSplitDml=2), which
+// validates the generated split DMLs — the batch-splitting logic this advisor
+// exists to check. The pre-omni advisor set DryRun=1, i.e. pingcap's
+// DryRunQuery ("DRY RUN QUERY"), which validates only the shard-splitting
+// SELECT, not the split DMLs — contradicting its own comment. Container-
+// verified: "DRY RUN QUERY" passes a bad inner-DML WHERE that "DRY RUN" rejects
+// (the advisor's EXPLAIN step also rejects it, so the net advice is unchanged).
 //
 // If the source already specifies a dry-run mode, it is run as-is; injecting
 // again would yield "DRY RUN DRY RUN".
@@ -173,7 +179,7 @@ func dmlDryRunBatchSQL(ostmt OmniStmt, node *ast.BatchStmt) (string, bool) {
 	if !ok || loc.Start <= 0 || loc.Start > len(ostmt.Text) {
 		return "", false
 	}
-	return ostmt.Text[:loc.Start] + "DRY RUN QUERY " + ostmt.Text[loc.Start:], true
+	return ostmt.Text[:loc.Start] + "DRY RUN " + ostmt.Text[loc.Start:], true
 }
 
 // dmlDryRunInnerSQL slices the inner DML out of the original BATCH statement
