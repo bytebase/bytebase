@@ -131,6 +131,12 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
   SELECT "TEST".* FROM test SUBPARTITION (sp1) WHERE c1 = 2;`,
 		},
+		{
+			name:  "update from appends source table list",
+			input: "UPDATE test t SET c1 = s.c1 FROM source_table s WHERE t.id = s.id;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "T".* FROM test t, source_table s WHERE t.id = s.id;`,
+		},
 	}
 
 	for _, tc := range tests {

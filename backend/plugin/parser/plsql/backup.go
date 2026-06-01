@@ -280,7 +280,12 @@ func writeSuffixSelectClause(buf *strings.Builder, node oracleast.StmtNode, full
 		suffix = oracleDMLTargetText(fullSQL, n.Table, n.PartitionExt, n.Alias)
 		if n.WhereClause != nil && n.SetClauses != nil && n.SetClauses.Len() > 0 {
 			if setClause, ok := n.SetClauses.Items[n.SetClauses.Len()-1].(*oracleast.SetClause); ok {
-				suffix = joinOracleSuffix(suffix, oracleWhereSuffix(fullSQL, setClause.Loc.End, n.WhereClause))
+				whereStart := setClause.Loc.End
+				if fromText, fromEnd, ok := oracleListText(fullSQL, n.FromClause); ok {
+					suffix += ", " + fromText
+					whereStart = fromEnd
+				}
+				suffix = joinOracleSuffix(suffix, oracleWhereSuffix(fullSQL, whereStart, n.WhereClause))
 			}
 		}
 	case *oracleast.DeleteStmt:
@@ -315,6 +320,25 @@ func oracleDMLTargetText(sql string, name *oracleast.ObjectName, partitionExt *o
 func oracleDMLTrailingText(sql string, start, end int) string {
 	text := strings.TrimSpace(oracleLocText(sql, start, end))
 	return strings.TrimSpace(strings.TrimSuffix(text, ";"))
+}
+
+func oracleListText(sql string, list *oracleast.List) (string, int, bool) {
+	if list == nil || list.Len() == 0 {
+		return "", 0, false
+	}
+	start, ok := oracleNodeLoc(list.Items[0])
+	if !ok {
+		return "", 0, false
+	}
+	end, ok := oracleNodeLoc(list.Items[list.Len()-1])
+	if !ok {
+		return "", 0, false
+	}
+	text := strings.TrimSpace(oracleLocText(sql, start.Start, end.End))
+	if text == "" {
+		return "", 0, false
+	}
+	return text, end.End, true
 }
 
 func oracleWhereSuffix(sql string, start int, where oracleast.ExprNode) string {
