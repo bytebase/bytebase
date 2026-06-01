@@ -83,7 +83,6 @@ import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useProjectIamPolicyStore,
   useProjectV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
@@ -1244,7 +1243,10 @@ function EditMemberRoleDrawer({
   const findWorkspaceRolesByMember = useAppStore(
     (state) => state.findWorkspaceRolesByMember
   );
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
+  const updateProjectIamPolicy = useAppStore(
+    (state) => state.updateProjectIamPolicy
+  );
   const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
   const settingV1Store = useSettingV1Store();
   const roleList = useAppStore((state) => state.roleList);
@@ -1263,7 +1265,7 @@ function EditMemberRoleDrawer({
   // Active bindings come first, expired ones last; original order is preserved within each group.
   const liveProjectRoleBindings = useVueState(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+    const policy = getProjectIamPolicy(projectName);
     const matching = policy.bindings.filter((b) =>
       b.members.includes(member.binding)
     );
@@ -1340,9 +1342,7 @@ function EditMemberRoleDrawer({
       return;
     setIsRequesting(true);
     try {
-      const policy = structuredClone(
-        projectIamPolicyStore.getProjectIamPolicy(projectName)
-      );
+      const policy = structuredClone(getProjectIamPolicy(projectName));
       const match = policy.bindings.find(
         (b) =>
           b.role === roleBinding.role &&
@@ -1353,7 +1353,7 @@ function EditMemberRoleDrawer({
         match.members = match.members.filter((m) => m !== member.binding);
       }
       policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
-      await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+      await updateProjectIamPolicy(projectName, policy);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -1377,9 +1377,7 @@ function EditMemberRoleDrawer({
     setIsRequesting(true);
     try {
       if (projectName) {
-        const policy = structuredClone(
-          projectIamPolicyStore.getProjectIamPolicy(projectName)
-        );
+        const policy = structuredClone(getProjectIamPolicy(projectName));
         if (isEditMode) {
           // Remove member from unconditional bindings only;
           // preserve conditional bindings (expiration, database scope)
@@ -1544,7 +1542,7 @@ function EditMemberRoleDrawer({
             }
           }
         }
-        await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+        await updateProjectIamPolicy(projectName, policy);
       } else {
         if (isEditMode) {
           await patchWorkspaceIamPolicy([
@@ -1587,14 +1585,12 @@ function EditMemberRoleDrawer({
     setIsRequesting(true);
     try {
       if (projectName) {
-        const policy = structuredClone(
-          projectIamPolicyStore.getProjectIamPolicy(projectName)
-        );
+        const policy = structuredClone(getProjectIamPolicy(projectName));
         for (const binding of policy.bindings) {
           binding.members = binding.members.filter((m) => m !== member.binding);
         }
         policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
-        await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+        await updateProjectIamPolicy(projectName, policy);
       } else {
         await patchWorkspaceIamPolicy([{ member: member.binding, roles: [] }]);
       }
@@ -1904,7 +1900,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
+  const updateProjectIamPolicy = useAppStore(
+    (state) => state.updateProjectIamPolicy
+  );
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
 
   const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
   const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
@@ -1938,16 +1940,14 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // Fetch project IAM policy on mount
   useEffect(() => {
     if (projectName) {
-      projectIamPolicyStore.getOrFetchProjectIamPolicy(projectName);
+      void loadProjectIamPolicy(projectName);
     } else {
       void fetchWorkspaceIamPolicy();
     }
-  }, [projectName, projectIamPolicyStore, fetchWorkspaceIamPolicy]);
+  }, [projectName, loadProjectIamPolicy, fetchWorkspaceIamPolicy]);
 
   const projectIamPolicy = useVueState(() =>
-    projectName
-      ? projectIamPolicyStore.getProjectIamPolicy(projectName)
-      : undefined
+    projectName ? getProjectIamPolicy(projectName) : undefined
   );
 
   // `useVueState` ensures we re-render whenever any reactive dep
@@ -2005,10 +2005,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
             );
           }
           policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
-          await projectIamPolicyStore.updateProjectIamPolicy(
-            projectName,
-            policy
-          );
+          await updateProjectIamPolicy(projectName, policy);
         } else {
           await patchWorkspaceIamPolicy(
             selectedMembers.map((m) => ({ member: m, roles: [] }))
@@ -2039,7 +2036,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           b.members = b.members.filter((member) => member !== binding.binding);
         }
         policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
-        await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+        await updateProjectIamPolicy(projectName, policy);
       } else {
         await patchWorkspaceIamPolicy([{ member: binding.binding, roles: [] }]);
       }

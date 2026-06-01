@@ -5,7 +5,8 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
-import { usePermissionStore, useProjectV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useProjectV1Store } from "@/store";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseExportSchemaButton } from "./DatabaseExportSchemaButton";
@@ -27,20 +28,23 @@ export function DatabaseDetailActions({
 }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const permissionStore = usePermissionStore();
+  const hasProjectPermissionFn = useAppStore(
+    (state) => state.hasProjectPermission
+  );
+  const hasWorkspacePermissionFn = useAppStore(
+    (state) => state.hasWorkspacePermission
+  );
   const project = useVueState(() =>
     projectStore.getProjectByName(database.project)
   );
   const hasProjectPermission = useMemo(
     () => (permission: Permission) => {
-      if (permissionStore.currentPermissions.has(permission)) {
+      if (hasWorkspacePermissionFn(permission)) {
         return true;
       }
-      return project
-        ? permissionStore.currentPermissionsInProjectV1(project).has(permission)
-        : false;
+      return project ? hasProjectPermissionFn(project, permission) : false;
     },
-    [permissionStore, project]
+    [hasProjectPermissionFn, hasWorkspacePermissionFn, project]
   );
 
   const canUpdate = useMemo(

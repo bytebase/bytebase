@@ -11,6 +11,7 @@ import {
   BindingSchema,
   GetIamPolicyRequestSchema,
   type IamPolicy,
+  IamPolicySchema,
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { ListRolesRequestSchema } from "@/types/proto-es/v1/role_service_pb";
@@ -159,6 +160,48 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       },
     }));
     return request;
+  },
+
+  getProjectIamPolicy: (project) => {
+    return (
+      get().projectPoliciesByName[project] ?? createProto(IamPolicySchema, {})
+    );
+  },
+
+  updateProjectIamPolicy: async (project, policy) => {
+    // Dedupe members within each binding (mirrors the Pinia store's
+    // pre-write normalization).
+    const deduped = cloneDeep(policy);
+    for (const binding of deduped.bindings) {
+      if (binding.members) {
+        binding.members = [...new Set(binding.members)];
+      }
+    }
+    const updated = await projectServiceClientConnect.setIamPolicy(
+      createProto(SetIamPolicyRequestSchema, {
+        resource: project,
+        policy: deduped,
+        etag: deduped.etag,
+      })
+    );
+    set((state) => ({
+      projectPoliciesByName: {
+        ...state.projectPoliciesByName,
+        [project]: updated,
+      },
+    }));
+    // Bridge to the Pinia projectIamPolicy store so the legacy
+    // permission chain sees the updated policy. setProjectIamPolicy also
+    // invalidates the Pinia permission cache by project.
+    try {
+      const { useProjectIamPolicyStore } = await import(
+        "@/store/modules/v1/projectIamPolicy"
+      );
+      useProjectIamPolicyStore().setProjectIamPolicy(project, updated);
+    } catch {
+      // Pinia not available — app-store cache is already populated.
+    }
+    return updated;
   },
 
   fetchWorkspaceIamPolicy: async () => {

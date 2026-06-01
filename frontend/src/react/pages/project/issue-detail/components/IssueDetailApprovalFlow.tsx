@@ -20,11 +20,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
-import {
-  pushNotification,
-  useProjectIamPolicyStore,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   ApprovalStatus,
@@ -57,7 +53,9 @@ export function IssueDetailApprovalFlow() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const issue = page.issue;
 
@@ -65,10 +63,8 @@ export function IssueDetailApprovalFlow() {
     void projectStore
       .getOrFetchProjectByName(projectName)
       .catch(() => undefined);
-    void projectIamPolicyStore
-      .getOrFetchProjectIamPolicy(projectName)
-      .catch(() => undefined);
-  }, [projectIamPolicyStore, projectName, projectStore]);
+    void loadProjectIamPolicy(projectName).catch(() => undefined);
+  }, [loadProjectIamPolicy, projectName, projectStore]);
 
   if (!issue) {
     return null;
@@ -505,7 +501,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const page = useIssueDetailContext();
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -566,7 +562,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   }, [currentUserEmail, issue.creator, stepApprover?.status]);
 
   const groupNamesKey = useVueState(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+    const policy = getProjectIamPolicy(projectName);
     const names: string[] = [];
     for (const binding of policy.bindings) {
       if (binding.role !== step || isBindingPolicyExpired(binding)) {
@@ -589,7 +585,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   }, [groupNames, batchGetOrFetchGroups]);
 
   const candidateEmailsKey = useVueState(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+    const policy = getProjectIamPolicy(projectName);
     const memberMap = memberMapToRolesInProjectIAM(
       policy,
       step,
