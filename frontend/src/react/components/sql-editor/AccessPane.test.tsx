@@ -104,6 +104,10 @@ vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   PlanFeature: { FEATURE_JIT: 5 },
 }));
 
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useSQLEditorFeature: () => mocks.hasFeature(),
+}));
+
 vi.mock("@/react/components/AdvancedSearch", () => ({
   AdvancedSearch: ({
     placeholder,
