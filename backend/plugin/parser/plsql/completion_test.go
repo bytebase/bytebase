@@ -249,9 +249,10 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want:  columns("C1", "C2"),
 		},
 		{
-			name:  "unqualified select from derived table exposes derived columns",
-			input: "SELECT | FROM (SELECT c1 FROM t1) x",
-			want:  columns("C1"),
+			name:    "unqualified select from derived table exposes derived columns",
+			input:   "SELECT | FROM (SELECT c1 FROM t2) x",
+			want:    columns("C1"),
+			notWant: columns("C2"),
 		},
 		{
 			name:  "lateral alias columns",

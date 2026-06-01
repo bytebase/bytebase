@@ -570,7 +570,7 @@ func (c *Completer) insertColumnContextCandidates(schemaEntries, tableEntries, c
 		}
 	}
 	if table == "" {
-		c.insertReferenceAliasCandidates(tableEntries, schemas, tables)
+		c.insertReferenceAliasCandidates(tableEntries)
 	}
 
 	if len(tables) > 0 {
@@ -675,7 +675,7 @@ func (c *Completer) insertAliasColumns(entries CompletionMap, alias string) {
 	}
 }
 
-func (c *Completer) insertReferenceAliasCandidates(tableEntries CompletionMap, schemas, tables map[string]bool) {
+func (c *Completer) insertReferenceAliasCandidates(tableEntries CompletionMap) {
 	for _, reference := range c.references {
 		switch reference := reference.(type) {
 		case *base.PhysicalTableReference:
@@ -694,45 +694,6 @@ func (c *Completer) insertReferenceAliasCandidates(tableEntries CompletionMap, s
 		default:
 		}
 	}
-	for _, reference := range c.scopeReferences {
-		if reference.Kind != oracleparser.RangeReferenceSubquery {
-			continue
-		}
-		for source := range c.querySpanSourceTables(reference) {
-			schemas[source.schema] = true
-			tables[source.table] = true
-		}
-	}
-}
-
-type completionSourceTable struct {
-	schema string
-	table  string
-}
-
-func (c *Completer) querySpanSourceTables(reference oracleparser.RangeReference) map[completionSourceTable]bool {
-	if reference.BodyLoc.Start < 0 || reference.BodyLoc.End <= reference.BodyLoc.Start || reference.BodyLoc.End > len(c.sql) {
-		return nil
-	}
-	alias := reference.Alias
-	if alias == "" {
-		alias = "x"
-	}
-	span, err := c.querySpan(fmt.Sprintf("SELECT * FROM (%s) %s", c.sql[reference.BodyLoc.Start:reference.BodyLoc.End], quoteIdentifierForSQL(alias)))
-	if err != nil || span == nil || span.NotFoundError != nil {
-		return nil
-	}
-	tables := make(map[completionSourceTable]bool)
-	for column := range span.SourceColumns {
-		schema := column.Database
-		if schema == "" {
-			schema = c.defaultDatabase
-		}
-		if schema != "" && column.Table != "" {
-			tables[completionSourceTable{schema: schema, table: column.Table}] = true
-		}
-	}
-	return tables
 }
 
 func (c *Completer) querySpan(statement string) (*base.QuerySpan, error) {
