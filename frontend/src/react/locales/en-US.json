@@ -1589,6 +1589,13 @@
       "ddl-warning": "In the selected environments, {{kind}} statements can be directly run in SQL Editor without approval.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "edit-member": "Edit member - {{member}}",
+      "expiration-presets": {
+        "one-month": "1 month",
+        "one-week": "1 week",
+        "one-year": "1 year",
+        "three-months": "3 months"
+      },
+      "expires-at": "Expires: {{date}}",
       "never-expires": "Never",
       "request-role": {
         "disabled-reason": {

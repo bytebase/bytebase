@@ -1589,6 +1589,13 @@
       "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "edit-member": "Editar miembro - {{member}}",
+      "expiration-presets": {
+        "one-month": "1 mes",
+        "one-week": "1 semana",
+        "one-year": "1 año",
+        "three-months": "3 meses"
+      },
+      "expires-at": "Caduca: {{date}}",
       "never-expires": "Nunca",
       "request-role": {
         "disabled-reason": {

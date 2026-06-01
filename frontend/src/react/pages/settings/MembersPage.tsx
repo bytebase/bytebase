@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import dayjs from "dayjs";
 import {
   Building2,
   ChevronDown,
@@ -40,6 +41,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -92,6 +94,7 @@ import {
   ALL_USERS_USER_EMAIL,
   type DatabaseResource,
   isDefaultProject,
+  PresetRoleType,
   userBindingPrefix,
 } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -860,22 +863,18 @@ function MemberTableByRole({
 // ============================================================
 
 interface ExpirationPreset {
-  label: string;
-  days?: number;
+  labelKey: string;
+  days: number;
 }
 
-function getExpirationPresets(t: (key: string) => string): ExpirationPreset[] {
-  return [
-    { label: t("project.members.never-expires") },
-    { label: "1 day", days: 1 },
-    { label: "3 days", days: 3 },
-    { label: "1 week", days: 7 },
-    { label: "1 month", days: 30 },
-    { label: "3 months", days: 90 },
-    { label: "6 months", days: 180 },
-    { label: "1 year", days: 365 },
-  ];
-}
+// A small set of common presets. Users needing any other duration pick the
+// "Custom" option, which reveals a datetime picker.
+const EXPIRATION_PRESETS: ExpirationPreset[] = [
+  { labelKey: "project.members.expiration-presets.one-week", days: 7 },
+  { labelKey: "project.members.expiration-presets.one-month", days: 30 },
+  { labelKey: "project.members.expiration-presets.three-months", days: 90 },
+  { labelKey: "project.members.expiration-presets.one-year", days: 365 },
+];
 
 function computeExpirationTimestamp(days?: number): number | undefined {
   if (days === undefined) return undefined;
@@ -893,6 +892,52 @@ function formatExpirationDate(timestampMs?: number): string {
   });
 }
 
+// Validates the form's expiration against the workspace cap. "Never" (no
+// timestamp) is only allowed when no cap is configured; a chosen timestamp
+// must be in the future and within the cap.
+function isExpirationValid(
+  form: RoleBindingFormState,
+  maximumRoleExpirationDays: number | undefined
+): boolean {
+  if (form.expirationTimestampInMS === undefined) {
+    return maximumRoleExpirationDays === undefined;
+  }
+  const now = Date.now();
+  if (form.expirationTimestampInMS <= now) return false;
+  if (
+    maximumRoleExpirationDays !== undefined &&
+    form.expirationTimestampInMS > now + maximumRoleExpirationDays * 86400000
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function ExpirationChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "px-2.5 py-1 text-xs rounded-sm border transition-colors",
+        selected
+          ? "bg-accent text-accent-text border-accent"
+          : "bg-background text-control border-control-border hover:bg-control-bg"
+      )}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ============================================================
 // ProjectRoleBindingForm — one role binding form in create mode
 // ============================================================
@@ -903,6 +948,8 @@ interface RoleBindingFormState {
   reason: string;
   expirationDays: number | undefined;
   expirationTimestampInMS: number | undefined;
+  // When true, the user picked a custom datetime instead of a preset.
+  expirationCustom: boolean;
   databaseMode: DatabaseMode;
   databaseResources: DatabaseResource[];
   exprGroup: ConditionGroupExpr;
@@ -996,18 +1043,44 @@ function ProjectRoleBindingForm({
   onRemove,
   canRemove,
   projectName,
+  maximumRoleExpirationDays,
 }: {
   form: RoleBindingFormState;
   onChange: (updated: RoleBindingFormState) => void;
   onRemove: () => void;
   canRemove: boolean;
   projectName: string;
+  maximumRoleExpirationDays: number | undefined;
 }) {
   const { t } = useTranslation();
 
   const roleList = useAppStore((state) => state.roleList);
 
-  const expirationPresets = useMemo(() => getExpirationPresets(t), [t]);
+  const visibleExpirationPresets = useMemo(
+    () =>
+      EXPIRATION_PRESETS.filter(
+        (preset) =>
+          maximumRoleExpirationDays === undefined ||
+          preset.days <= maximumRoleExpirationDays
+      ),
+    [maximumRoleExpirationDays]
+  );
+  const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
+  const maxDatetime =
+    maximumRoleExpirationDays !== undefined
+      ? dayjs()
+          .add(maximumRoleExpirationDays, "days")
+          .format("YYYY-MM-DDTHH:mm")
+      : undefined;
+  const now = Date.now();
+  const expirationIsInPast =
+    form.expirationCustom &&
+    form.expirationTimestampInMS !== undefined &&
+    form.expirationTimestampInMS <= now;
+  const expirationExceedsMax =
+    form.expirationTimestampInMS !== undefined &&
+    maximumRoleExpirationDays !== undefined &&
+    form.expirationTimestampInMS > now + maximumRoleExpirationDays * 86400000;
   const factorList = useMemo<Factor[]>(
     () => [
       CEL_ATTRIBUTE_RESOURCE_DATABASE,
@@ -1071,11 +1144,37 @@ function ProjectRoleBindingForm({
     onChange({ ...form, reason });
   };
 
-  const handleExpirationChange = (days: number | undefined) => {
+  const handlePresetChange = (days: number | undefined) => {
     onChange({
       ...form,
+      expirationCustom: false,
       expirationDays: days,
       expirationTimestampInMS: computeExpirationTimestamp(days),
+    });
+  };
+
+  const handleCustomClick = () => {
+    // Seed the picker with the current timestamp, or a default 1 week
+    // (clamped to the cap) when switching from "Never".
+    const seedDays =
+      maximumRoleExpirationDays !== undefined
+        ? Math.min(7, maximumRoleExpirationDays)
+        : 7;
+    onChange({
+      ...form,
+      expirationCustom: true,
+      expirationDays: undefined,
+      expirationTimestampInMS:
+        form.expirationTimestampInMS ?? computeExpirationTimestamp(seedDays),
+    });
+  };
+
+  const handleCustomDateChange = (value: string | undefined) => {
+    onChange({
+      ...form,
+      expirationCustom: true,
+      expirationDays: undefined,
+      expirationTimestampInMS: value ? dayjs(value).valueOf() : undefined,
     });
   };
 
@@ -1192,28 +1291,68 @@ function ProjectRoleBindingForm({
           <span className="ml-0.5 text-error">*</span>
         </label>
         <div className="flex flex-wrap gap-1.5">
-          {expirationPresets.map((preset) => {
-            const isSelected = form.expirationDays === preset.days;
-            return (
-              <button
-                key={preset.label}
-                type="button"
-                className={cn(
-                  "px-2.5 py-1 text-xs rounded-sm border transition-colors",
-                  isSelected
-                    ? "bg-accent text-accent-text border-accent"
-                    : "bg-background text-control border-control-border hover:bg-control-bg"
-                )}
-                onClick={() => handleExpirationChange(preset.days)}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
+          {/* "Never" is only offered when the workspace sets no cap. */}
+          {maximumRoleExpirationDays === undefined && (
+            <ExpirationChip
+              label={t("project.members.never-expires")}
+              selected={
+                !form.expirationCustom && form.expirationDays === undefined
+              }
+              onClick={() => handlePresetChange(undefined)}
+            />
+          )}
+          {visibleExpirationPresets.map((preset) => (
+            <ExpirationChip
+              key={preset.days}
+              label={t(preset.labelKey)}
+              selected={
+                !form.expirationCustom && form.expirationDays === preset.days
+              }
+              onClick={() => handlePresetChange(preset.days)}
+            />
+          ))}
+          <ExpirationChip
+            label={t("common.custom")}
+            selected={form.expirationCustom}
+            onClick={handleCustomClick}
+          />
         </div>
-        {form.expirationTimestampInMS && (
+        {form.expirationCustom && (
+          <ExpirationPicker
+            value={
+              form.expirationTimestampInMS
+                ? dayjs(form.expirationTimestampInMS).format("YYYY-MM-DDTHH:mm")
+                : undefined
+            }
+            onChange={handleCustomDateChange}
+            minDate={minDatetime}
+            maxDate={maxDatetime}
+          />
+        )}
+        {maximumRoleExpirationDays !== undefined && (
+          <p className="text-xs text-control-light">
+            {t("project.members.request-role.max-expiration-hint", {
+              days: maximumRoleExpirationDays,
+            })}
+          </p>
+        )}
+        {expirationIsInPast && (
+          <p className="text-xs text-error">
+            {t("project.members.request-role.expiration-must-be-future")}
+          </p>
+        )}
+        {expirationExceedsMax && (
+          <p className="text-xs text-error">
+            {t("project.members.request-role.expiration-exceeds-max", {
+              days: maximumRoleExpirationDays,
+            })}
+          </p>
+        )}
+        {!form.expirationCustom && form.expirationTimestampInMS && (
           <span className="text-xs text-control-light">
-            Expires: {formatExpirationDate(form.expirationTimestampInMS)}
+            {t("project.members.expires-at", {
+              date: formatExpirationDate(form.expirationTimestampInMS),
+            })}
           </span>
         )}
       </div>
@@ -1293,6 +1432,7 @@ function EditMemberRoleDrawer({
     reason: "",
     expirationDays: 7,
     expirationTimestampInMS: computeExpirationTimestamp(7),
+    expirationCustom: false,
     databaseMode: "ALL",
     databaseResources: [],
     exprGroup: wrapAsGroup(emptySimpleExpr()),
@@ -1300,6 +1440,17 @@ function EditMemberRoleDrawer({
   }));
 
   useEscapeKey(true, onClose);
+
+  // Workspace-configured maximum role expiration, in days. PROJECT_OWNER
+  // grants are exempt; returns undefined when no cap is set. Mirrors
+  // RequestRoleSheet so direct grants and role requests behave the same.
+  const maximumRoleExpirationDays = useVueState(() => {
+    if (form.role === PresetRoleType.PROJECT_OWNER) return undefined;
+    const seconds =
+      settingV1Store.workspaceProfile.maximumRoleExpiration?.seconds;
+    if (!seconds) return undefined;
+    return Math.floor(Number(seconds) / (60 * 60 * 24));
+  });
 
   // Helpers for project edit mode
   const getSingleBindingRows = useCallback(
@@ -1610,6 +1761,7 @@ function EditMemberRoleDrawer({
   const allowConfirm = isProjectCreateMode
     ? selectedBindings.length > 0 &&
       !!form.role &&
+      isExpirationValid(form, maximumRoleExpirationDays) &&
       !(
         roleHasDatabaseLimitation(form.role) &&
         form.databaseMode === "SELECT" &&
@@ -1837,6 +1989,7 @@ function EditMemberRoleDrawer({
                   onRemove={() => {}}
                   canRemove={false}
                   projectName={projectName}
+                  maximumRoleExpirationDays={maximumRoleExpirationDays}
                 />
               </div>
             ) : (
