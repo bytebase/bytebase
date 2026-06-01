@@ -10,16 +10,15 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
+import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
-  featureToRef,
   getColumnCatalog,
   getTableCatalog,
-  useDatabaseCatalog,
-  useSettingV1Store,
-} from "@/store";
+} from "@/react/stores/app/databaseCatalog";
+import { router } from "@/router";
+import { featureToRef, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -117,8 +116,7 @@ export function DatabaseObjectExplorer({
   const hasSensitiveDataFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
   );
-  const databaseCatalog = useDatabaseCatalog(database.name, false);
-  const catalog = useVueState(() => databaseCatalog.value);
+  const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
   const classificationConfig = useVueState(() =>
     settingStore.getProjectClassification(

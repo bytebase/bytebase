@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => {
     useVueState: vi.fn(),
     useDBSchemaV1Store: vi.fn(),
     useDatabaseCatalog: vi.fn(),
+    updateDatabaseCatalog: vi.fn(),
     useSubscriptionV1Store: vi.fn(),
     getColumnCatalog: vi.fn(() => ({
       semanticType: "",
@@ -92,10 +93,14 @@ vi.mock("@/router", () => ({
 // getters via the app store. Route the existing `mocks.useDBSchemaV1Store`
 // shape through `useAppStore` so the per-scenario `.mockReturnValue({...})`
 // calls in test bodies keep working without further changes.
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (s: unknown) => unknown) =>
-    selector(mocks.useDBSchemaV1Store()),
-}));
+vi.mock("@/react/stores/app", () => {
+  const useAppStore = (selector: (s: unknown) => unknown) =>
+    selector(mocks.useDBSchemaV1Store());
+  useAppStore.getState = () => ({
+    updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+  });
+  return { useAppStore };
+});
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
   useAppDatabaseMetadata: (name: string) =>
@@ -103,12 +108,18 @@ vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseCatalog: mocks.useDatabaseCatalog,
   useSubscriptionV1Store: mocks.useSubscriptionV1Store,
-  getColumnCatalog: mocks.getColumnCatalog,
-  getTableCatalog: mocks.getTableCatalog,
   useSettingV1Store: mocks.useSettingV1Store,
   featureToRef: mocks.featureToRef,
+}));
+
+vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
+  useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/react/stores/app/databaseCatalog", () => ({
+  getColumnCatalog: mocks.getColumnCatalog,
+  getTableCatalog: mocks.getTableCatalog,
 }));
 
 vi.mock("@/utils", () => ({
@@ -339,10 +350,10 @@ beforeEach(async () => {
   });
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({
-    value: {
-      schemas: [],
-    },
+    schemas: [],
   });
+  mocks.updateDatabaseCatalog.mockReset();
+  mocks.updateDatabaseCatalog.mockResolvedValue(undefined);
   mocks.getColumnCatalog.mockReset();
   mocks.getColumnCatalog.mockReturnValue({
     semanticType: "",

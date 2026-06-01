@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
   useSettingV1Store: vi.fn(),
   useSubscriptionV1Store: vi.fn(),
   useDatabaseCatalog: vi.fn(),
-  useDatabaseCatalogV1Store: vi.fn(),
+  updateDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
   pushNotification: vi.fn(),
   getOrFetchSettingByName: vi.fn(),
@@ -125,12 +125,25 @@ vi.mock("@/react/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  getTableCatalog: mocks.getTableCatalog,
   pushNotification: mocks.pushNotification,
-  useDatabaseCatalog: mocks.useDatabaseCatalog,
-  useDatabaseCatalogV1Store: mocks.useDatabaseCatalogV1Store,
   useSettingV1Store: mocks.useSettingV1Store,
   useSubscriptionV1Store: mocks.useSubscriptionV1Store,
+}));
+
+vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
+  useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/react/stores/app/databaseCatalog", () => ({
+  getTableCatalog: mocks.getTableCatalog,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+    }),
+  },
 }));
 
 vi.mock("@/utils", () => ({
@@ -275,15 +288,11 @@ beforeEach(async () => {
   });
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({
-    value: {
-      name: "instances/inst1/databases/db/catalog",
-      schemas: [],
-    },
+    name: "instances/inst1/databases/db/catalog",
+    schemas: [],
   });
-  mocks.useDatabaseCatalogV1Store.mockReset();
-  mocks.useDatabaseCatalogV1Store.mockReturnValue({
-    updateDatabaseCatalog: vi.fn().mockResolvedValue(undefined),
-  });
+  mocks.updateDatabaseCatalog.mockReset();
+  mocks.updateDatabaseCatalog.mockResolvedValue(undefined);
   mocks.getTableCatalog.mockReset();
   mocks.getTableCatalog.mockImplementation(
     (
@@ -708,25 +717,20 @@ describe("TableDetailDialog", () => {
   });
 
   test("restores the legacy NoSQL catalog editor and upload flow", async () => {
-    const updateDatabaseCatalog = vi.fn().mockResolvedValue(undefined);
+    const updateDatabaseCatalog = mocks.updateDatabaseCatalog;
     mocks.useDatabaseCatalog.mockReturnValue({
-      value: {
-        name: "instances/inst1/databases/db/catalog",
-        schemas: [
-          {
-            name: "",
-            tables: [
-              create(TableCatalogSchema, {
-                name: "orders",
-                classification: "PII",
-              }),
-            ],
-          },
-        ],
-      },
-    });
-    mocks.useDatabaseCatalogV1Store.mockReturnValue({
-      updateDatabaseCatalog,
+      name: "instances/inst1/databases/db/catalog",
+      schemas: [
+        {
+          name: "",
+          tables: [
+            create(TableCatalogSchema, {
+              name: "orders",
+              classification: "PII",
+            }),
+          ],
+        },
+      ],
     });
 
     const { container, render, unmount } = renderIntoContainer(

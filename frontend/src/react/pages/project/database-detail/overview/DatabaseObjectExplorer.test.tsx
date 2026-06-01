@@ -83,11 +83,17 @@ vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseCatalog: mocks.useDatabaseCatalog,
-  getColumnCatalog: mocks.getColumnCatalog,
-  getTableCatalog: mocks.getTableCatalog,
   featureToRef: mocks.featureToRef,
   useSettingV1Store: mocks.useSettingV1Store,
+}));
+
+vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
+  useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/react/stores/app/databaseCatalog", () => ({
+  getColumnCatalog: mocks.getColumnCatalog,
+  getTableCatalog: mocks.getTableCatalog,
 }));
 
 vi.mock("@/utils", () => ({
@@ -230,9 +236,7 @@ beforeEach(async () => {
   });
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({
-    value: {
-      schemas: [],
-    },
+    schemas: [],
   });
   mocks.getColumnCatalog.mockReset();
   mocks.getColumnCatalog.mockReturnValue({

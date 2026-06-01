@@ -3,6 +3,7 @@ import { createAccessGrantSlice } from "./accessGrant";
 import { createAuthSlice } from "./auth";
 import { createChangelogSlice } from "./changelog";
 import { createDatabaseSlice } from "./database";
+import { createDatabaseCatalogSlice } from "./databaseCatalog";
 import { createDBGroupSlice } from "./dbGroup";
 import { createDBSchemaSlice } from "./dbSchema";
 import { createGroupSlice } from "./group";
@@ -62,6 +63,7 @@ export const createAppStore = () =>
     ...createRolloutSlice(...args),
     ...createPlanSlice(...args),
     ...createIssueCommentSlice(...args),
+    ...createDatabaseCatalogSlice(...args),
     ...createReleaseSlice(...args),
     ...createRevisionSlice(...args),
     ...createChangelogSlice(...args),

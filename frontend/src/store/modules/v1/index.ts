@@ -2,7 +2,6 @@ export * from "./actuator";
 export * from "./auth";
 export * from "./common";
 export * from "./database";
-export * from "./databaseCatalog";
 export * from "./dbSchema";
 export * from "./environment";
 export * from "./group";

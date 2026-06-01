@@ -55,10 +55,19 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseCatalog: mocks.useDatabaseCatalog,
-  getTableCatalog: mocks.getTableCatalog,
   featureToRef: mocks.featureToRef,
   useSettingV1Store: mocks.useSettingV1Store,
+}));
+
+vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
+  useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/react/stores/app/databaseCatalog", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/react/stores/app/databaseCatalog")
+  >()),
+  getTableCatalog: mocks.getTableCatalog,
 }));
 
 vi.mock("@/utils", () => ({
@@ -226,9 +235,7 @@ beforeEach(async () => {
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.useDatabaseCatalog.mockReset();
-  mocks.useDatabaseCatalog.mockReturnValue({
-    value: { schemas: [] },
-  });
+  mocks.useDatabaseCatalog.mockReturnValue({ schemas: [] });
   mocks.getTableCatalog.mockReset();
   mocks.getTableCatalog.mockReturnValue({
     classification: "PII",

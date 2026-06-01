@@ -1,7 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
-import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import type {
   ColumnCatalog,
   TableCatalog,
@@ -28,7 +29,7 @@ export const updateColumnCatalog = async ({
   columnCatalog: Partial<ColumnCatalog>;
   notification: string;
 }) => {
-  const dbCatalogStore = useDatabaseCatalogV1Store();
+  const dbCatalogStore = useAppStore.getState();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
 
   const pendingUpdateCatalog = cloneDeep(catalog);
@@ -98,7 +99,7 @@ export const updateTableCatalog = async ({
   tableCatalog: Partial<TableCatalog>;
   notification?: string;
 }) => {
-  const dbCatalogStore = useDatabaseCatalogV1Store();
+  const dbCatalogStore = useAppStore.getState();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
 
   const pendingUpdateCatalog = cloneDeep(catalog);

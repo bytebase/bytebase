@@ -7,6 +7,7 @@ import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { State } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseGroup,
   DatabaseGroupView,
@@ -775,6 +776,18 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export type DatabaseCatalogSlice = {
+  catalogsByName: Record<string, DatabaseCatalog>;
+  catalogRequests: Record<string, Promise<DatabaseCatalog>>;
+  getDatabaseCatalog: (database: string) => DatabaseCatalog;
+  getOrFetchDatabaseCatalog: (params: {
+    database: string;
+    skipCache?: boolean;
+    silent?: boolean;
+  }) => Promise<DatabaseCatalog>;
+  updateDatabaseCatalog: (catalog: DatabaseCatalog) => Promise<DatabaseCatalog>;
+};
+
 export type IssueCommentSlice = {
   // Cache keyed by issue resource name → its comment list.
   issueCommentsByIssue: Record<string, IssueComment[]>;
@@ -853,6 +866,7 @@ export type AppStoreState = AuthSlice &
   DBSchemaSlice &
   RolloutSlice &
   PlanSlice &
-  IssueCommentSlice;
+  IssueCommentSlice &
+  DatabaseCatalogSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;
