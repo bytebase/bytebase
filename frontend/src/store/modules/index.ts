@@ -6,7 +6,6 @@ export * from "./sqlReview";
 export * from "./user";
 export * from "./serviceAccount";
 export * from "./workloadIdentity";
-export * from "./workspaceApprovalSetting";
 export * from "./role";
 export * from "./utils";
 

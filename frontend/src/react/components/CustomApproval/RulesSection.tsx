@@ -26,7 +26,8 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
-import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
+import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
+import { pushNotification } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source as RuleSource } from "@/types/proto-es/v1/setting_service_pb";
