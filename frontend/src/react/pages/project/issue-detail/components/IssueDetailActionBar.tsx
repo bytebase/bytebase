@@ -44,6 +44,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -53,12 +54,7 @@ import {
   buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
 } from "@/router/dashboard/projectV1RouteHelpers";
-import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useProjectV1Store,
-  useSQLStore,
-} from "@/store";
+import { pushNotification, useProjectV1Store, useSQLStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ApproveIssueRequestSchema,

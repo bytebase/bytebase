@@ -32,12 +32,12 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
+import { router } from "@/router";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   extractUserEmail,
   pushNotification,

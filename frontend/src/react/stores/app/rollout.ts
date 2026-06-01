@@ -2,11 +2,8 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { rolloutServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { unknownRollout } from "@/types/rollout";
-import {
-  GetRolloutRequestSchema,
-  type Rollout,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import type { AppSliceCreator, RolloutSlice } from "./types";
 
 export const createRolloutSlice: AppSliceCreator<RolloutSlice> = (

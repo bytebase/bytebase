@@ -22,7 +22,9 @@ export const buildPlanFilter = (find: PlanFind): string => {
     filter.push(`creator == "${find.creator}"`);
   }
   if (find.createdTsAfter) {
-    filter.push(`create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`);
+    filter.push(
+      `create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`
+    );
   }
   if (find.createdTsBefore) {
     filter.push(
@@ -79,7 +81,9 @@ export const createPlanSlice: AppSliceCreator<PlanSlice> = (_set, get) => ({
       })
     );
     // Prefetch the plan creators so consumers can resolve them synchronously.
-    await get().batchGetOrFetchUsers(uniq(plans.map((plan: Plan) => plan.creator)));
+    await get().batchGetOrFetchUsers(
+      uniq(plans.map((plan: Plan) => plan.creator))
+    );
     return { nextPageToken, plans };
   },
 });

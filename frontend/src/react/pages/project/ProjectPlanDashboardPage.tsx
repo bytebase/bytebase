@@ -53,6 +53,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -65,7 +66,6 @@ import {
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
-import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,

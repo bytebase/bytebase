@@ -20,14 +20,14 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store } from "@/store";
-import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
+import { router } from "@/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { pushNotification, useProjectV1Store } from "@/store";
+import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   ApprovalStatus,
   RiskLevel,
