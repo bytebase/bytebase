@@ -18,6 +18,7 @@ import { createProjectSlice } from "./project";
 import { createProjectWebhookSlice } from "./projectWebhook";
 import { createReleaseSlice } from "./release";
 import { createRevisionSlice } from "./revision";
+import { createPlanSlice } from "./plan";
 import { createRoleSlice } from "./role";
 import { createRolloutSlice } from "./rollout";
 import { createServiceAccountSlice } from "./serviceAccount";
@@ -58,6 +59,7 @@ export const createAppStore = () =>
     ...createUserSlice(...args),
     ...createRoleSlice(...args),
     ...createRolloutSlice(...args),
+    ...createPlanSlice(...args),
     ...createReleaseSlice(...args),
     ...createRevisionSlice(...args),
     ...createChangelogSlice(...args),

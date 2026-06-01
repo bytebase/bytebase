@@ -39,6 +39,7 @@ import type {
   PolicyType,
   QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
@@ -751,6 +752,30 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export interface PlanFind {
+  project: string;
+  query?: string;
+  creator?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  hasIssue?: boolean;
+  hasRollout?: boolean;
+  specType?: string;
+  state?: "ACTIVE" | "DELETED";
+}
+
+export type ListPlanParams = {
+  find: PlanFind;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type PlanSlice = {
+  listPlans: (
+    params: ListPlanParams
+  ) => Promise<{ plans: Plan[]; nextPageToken: string }>;
+};
+
 export type RolloutSlice = {
   rolloutsByName: Record<string, Rollout>;
   fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
@@ -785,6 +810,7 @@ export type AppStoreState = AuthSlice &
   IssueSlice &
   PolicySlice &
   DBSchemaSlice &
-  RolloutSlice;
+  RolloutSlice &
+  PlanSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

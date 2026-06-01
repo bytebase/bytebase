@@ -65,11 +65,8 @@ import {
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
+import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  buildPlanFindBySearchParams,
-  usePlanStore,
-} from "@/store/modules/v1/plan";
 import {
   formatEnvironmentName,
   getTimeForPbTimestampProtoEs,
@@ -121,7 +118,6 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const planStore = usePlanStore();
   const projectStore = useProjectV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
@@ -230,14 +226,14 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 
   const fetchPlanList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const { nextPageToken, plans } = await planStore.listPlans({
+      const { nextPageToken, plans } = await useAppStore.getState().listPlans({
         find: planFilter,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
       });
       return { list: plans, nextPageToken };
     },
-    [planStore, planFilter]
+    [planFilter]
   );
 
   const paged = usePagedData<Plan>({
