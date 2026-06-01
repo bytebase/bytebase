@@ -4,9 +4,8 @@ import {
   rolloutServiceClientConnect,
   sheetServiceClientConnect,
 } from "@/connect";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useRolloutStore } from "@/store";
+import { unknownRollout } from "@/types";
 import {
   GetTaskRunLogRequestSchema,
   type Task,
@@ -156,7 +155,6 @@ export const buildReleaseSheetFetchResult = (
 export const useTaskRunLogData = (
   taskRunName?: string
 ): UseTaskRunLogDataResult => {
-  const rolloutStore = useRolloutStore();
   const fetchRelease = useAppStore((state) => state.fetchRelease);
 
   const [entries, setEntries] = useState<TaskRunLogEntry[]>([]);
@@ -189,7 +187,8 @@ export const useTaskRunLogData = (
     }
 
     setMetadataFetchState({ status: "loading" });
-    void rolloutStore
+    void useAppStore
+      .getState()
       .fetchRolloutByName(rolloutName, true)
       .then((fetchedRollout) => {
         if (version !== metadataFetchVersion.current) return;
@@ -210,12 +209,18 @@ export const useTaskRunLogData = (
           error: getErrorMessage(error),
         });
       });
-  }, [rolloutName, rolloutStore, taskRunName]);
+  }, [rolloutName, taskRunName]);
 
-  const rollout = useVueState(() => {
-    if (!rolloutName) return undefined;
-    return rolloutStore.getRolloutByName(rolloutName);
-  });
+  // Subscribe to the cached entry directly (stable ref) and derive the unknown
+  // fallback outside the selector — a selector returning `unknownRollout()`
+  // would yield a fresh object each call and loop forever.
+  const cachedRollout = useAppStore((state) =>
+    rolloutName ? state.rolloutsByName[rolloutName] : undefined
+  );
+  const rollout = useMemo(
+    () => (rolloutName ? (cachedRollout ?? unknownRollout()) : undefined),
+    [rolloutName, cachedRollout]
+  );
 
   const task = useMemo(
     () => getTaskFromRollout(taskRunName, rollout),

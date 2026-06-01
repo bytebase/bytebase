@@ -43,6 +43,7 @@ import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
   Setting,
@@ -750,6 +751,13 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export type RolloutSlice = {
+  rolloutsByName: Record<string, Rollout>;
+  fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
+  // Synchronous cache read; returns `unknownRollout()` on miss.
+  getRolloutByName: (name: string) => Rollout;
+};
+
 export type AppStoreState = AuthSlice &
   WorkspaceSlice &
   IamSlice &
@@ -776,6 +784,7 @@ export type AppStoreState = AuthSlice &
   SQLSlice &
   IssueSlice &
   PolicySlice &
-  DBSchemaSlice;
+  DBSchemaSlice &
+  RolloutSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;
