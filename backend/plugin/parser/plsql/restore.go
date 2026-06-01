@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
-
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -30,34 +28,77 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	results, err := ParsePLSQL(originalSQL)
+	node, err := findFirstOracleDML(originalSQL)
 	if err != nil {
 		return "", err
 	}
-	if len(results) == 0 {
-		return "", errors.New("no parse results")
-	}
-
-	// For restore SQL generation, we only examine the first statement to determine
-	// the table structure and operation type, even if extractSQL returns multiple statements.
-	// This is because:
-	// 1. All statements modify the same table (validated during backup creation)
-	// 2. All statements are the same operation type (UPDATE or DELETE)
-	// 3. The restore SQL is generated based on the backup table contents, not by
-	//    reversing individual statements - we just need to know the table structure
-	tree := results[0].Tree
-	if tree == nil {
-		return "", errors.Errorf("no parse result")
+	if node == nil {
+		return "", errors.New("no DML statement found in extracted SQL")
 	}
 
 	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
 	if truncated {
 		sqlForComment += "..."
 	}
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem)
+	return doGenerate(ctx, rCtx, sqlForComment, node, backupItem)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree antlr.Tree, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func findFirstOracleDML(statement string) (oracleast.StmtNode, error) {
+	node, err := findFirstOracleDMLOnce(statement)
+	if err == nil {
+		return node, nil
+	}
+	if !strings.Contains(statement, "\n") {
+		return nil, errors.Wrap(err, "failed to parse statement")
+	}
+
+	lines := strings.Split(statement, "\n")
+	for start := range lines {
+		var candidate strings.Builder
+		for end := start; end < len(lines); end++ {
+			line := strings.TrimSpace(lines[end])
+			if line == "" && candidate.Len() == 0 {
+				continue
+			}
+			if candidate.Len() > 0 {
+				candidate.WriteByte('\n')
+			}
+			candidate.WriteString(lines[end])
+			node, candidateErr := findFirstOracleDMLOnce(candidate.String())
+			if candidateErr != nil {
+				continue
+			}
+			if node != nil {
+				return node, nil
+			}
+		}
+	}
+	return nil, errors.Wrap(err, "failed to parse statement")
+}
+
+func findFirstOracleDMLOnce(statement string) (oracleast.StmtNode, error) {
+	list, err := ParsePLSQLOmni(statement)
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		return nil, nil
+	}
+	for _, item := range list.Items {
+		raw, ok := item.(*oracleast.RawStmt)
+		if !ok || raw.Stmt == nil {
+			continue
+		}
+		switch raw.Stmt.(type) {
+		case *oracleast.UpdateStmt, *oracleast.DeleteStmt:
+			return raw.Stmt, nil
+		default:
+		}
+	}
+	return nil, nil
+}
+
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node oracleast.StmtNode, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -97,16 +138,13 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		table:            tableMetadata,
 		isFirst:          true,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(g, tree)
-	if g.err != nil {
-		return "", g.err
+	if err := g.generate(node); err != nil {
+		return "", err
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
 }
 
 type generator struct {
-	*parser.BasePlSqlParserListener
-
 	backupDatabase   string
 	backupTable      string
 	originalDatabase string
@@ -118,15 +156,26 @@ type generator struct {
 	ctx     context.Context
 	rCtx    base.RestoreContext
 	result  string
-	err     error
 }
 
-func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if !IsTopLevelStatement(ctx.GetParent()) || !g.isFirst {
-		return
+func (g *generator) generate(node oracleast.StmtNode) error {
+	if !g.isFirst {
+		return nil
 	}
-
 	g.isFirst = false
+
+	switch n := node.(type) {
+	case *oracleast.DeleteStmt:
+		g.generateDelete()
+	case *oracleast.UpdateStmt:
+		return g.generateUpdate(n)
+	default:
+		return errors.Errorf("unexpected statement type: %T", node)
+	}
+	return nil
+}
+
+func (g *generator) generateDelete() {
 	columnList := quoteOracleColumns(g.restorableColumns())
 	g.result = fmt.Sprintf(`INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s";`, g.originalDatabase, g.originalTable, columnList, columnList, g.backupDatabase, g.backupTable)
 }
@@ -186,129 +235,105 @@ func (g *generator) findDisjointUniqueKey(columns []string) ([]string, error) {
 	return nil, errors.Errorf("no disjoint unique key found for %s.%s", g.originalDatabase, g.originalTable)
 }
 
-func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if !IsTopLevelStatement(ctx.GetParent()) || !g.isFirst {
-		return
-	}
-
-	g.isFirst = false
-
-	l := &updateElemListener{}
-	antlr.ParseTreeWalkerDefault.Walk(l, ctx)
-	if l.err != nil {
-		g.err = l.err
-		return
-	}
-
-	uk, err := g.findDisjointUniqueKey(l.result)
+func (g *generator) generateUpdate(stmt *oracleast.UpdateStmt) error {
+	updateColumns := extractOmniUpdateColumns(stmt)
+	uk, err := g.findDisjointUniqueKey(updateColumns)
 	if err != nil {
-		g.err = err
-		return
+		return err
 	}
 
 	var buf strings.Builder
 	if _, err := fmt.Fprintf(&buf, "MERGE INTO \"%s\".\"%s\" t\nUSING \"%s\".\"%s\" b\n  ON(", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
-		g.err = err
-		return
+		return err
 	}
 	for i, column := range uk {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, " AND"); err != nil {
-				g.err = err
-				return
+				return err
 			}
 		}
 		if _, err := fmt.Fprintf(&buf, " t.\"%s\" = b.\"%s\"", column, column); err != nil {
-			g.err = err
-			return
+			return err
 		}
 	}
 	if _, err := fmt.Fprint(&buf, ")\nWHEN MATCHED THEN\n  UPDATE SET"); err != nil {
-		g.err = err
-		return
+		return err
 	}
-	for i, field := range l.result {
+	for i, field := range updateColumns {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ","); err != nil {
-				g.err = err
-				return
+				return err
 			}
 		}
 		// The field is written by user and no need to escape.
 		if _, err := fmt.Fprintf(&buf, " t.\"%s\" = b.\"%s\"", field, field); err != nil {
-			g.err = err
-			return
+			return err
 		}
 	}
 	if _, err := fmt.Fprint(&buf, "\nWHEN NOT MATCHED THEN\n INSERT ("); err != nil {
-		g.err = err
-		return
+		return err
 	}
 	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
-				g.err = err
-				return
+				return err
 			}
 		}
 		if _, err := fmt.Fprintf(&buf, "\"%s\"", column); err != nil {
-			g.err = err
-			return
+			return err
 		}
 	}
 	if _, err := fmt.Fprint(&buf, ") VALUES ("); err != nil {
-		g.err = err
-		return
+		return err
 	}
 	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
-				g.err = err
-				return
+				return err
 			}
 		}
 		if _, err := fmt.Fprintf(&buf, "b.\"%s\"", column); err != nil {
-			g.err = err
-			return
+			return err
 		}
 	}
 	if _, err := fmt.Fprint(&buf, ");"); err != nil {
-		g.err = err
-		return
+		return err
 	}
 	g.result = buf.String()
+	return nil
 }
 
-type updateElemListener struct {
-	*parser.BasePlSqlParserListener
-
-	result []string
-	err    error
+func extractOmniUpdateColumns(stmt *oracleast.UpdateStmt) []string {
+	var result []string
+	if stmt == nil || stmt.SetClauses == nil {
+		return result
+	}
+	for _, item := range stmt.SetClauses.Items {
+		clause, ok := item.(*oracleast.SetClause)
+		if !ok {
+			continue
+		}
+		if clause.Column != nil {
+			result = append(result, clause.Column.Column)
+		}
+		for _, column := range omniColumnRefList(clause.Columns) {
+			result = append(result, column.Column)
+		}
+	}
+	return result
 }
 
-func (l *updateElemListener) EnterColumn_based_update_set_clause(ctx *parser.Column_based_update_set_clauseContext) {
-	if l.err != nil {
-		return
+func omniColumnRefList(list *oracleast.List) []*oracleast.ColumnRef {
+	if list == nil {
+		return nil
 	}
-	if ctx.Column_name() != nil {
-		_, _, columnName, err := plsqlNormalizeColumnName("", ctx.Column_name())
-		if err != nil {
-			l.err = errors.Wrapf(err, "failed to normalize column name")
-			return
-		}
-		l.result = append(l.result, columnName)
-		return
-	}
-	if ctx.Paren_column_list() != nil {
-		for _, column := range ctx.Paren_column_list().Column_list().AllColumn_name() {
-			_, _, columnName, err := plsqlNormalizeColumnName("", column)
-			if err != nil {
-				l.err = errors.Wrapf(err, "failed to normalize column name")
-				return
-			}
-			l.result = append(l.result, columnName)
+	result := make([]*oracleast.ColumnRef, 0, len(list.Items))
+	for _, item := range list.Items {
+		if column, ok := item.(*oracleast.ColumnRef); ok {
+			result = append(result, column)
 		}
 	}
+	return result
 }
 
 func extractSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {

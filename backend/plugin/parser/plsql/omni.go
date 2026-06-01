@@ -1,6 +1,8 @@
 package plsql
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"unicode/utf8"
 
@@ -86,6 +88,9 @@ func ParsePLSQLOmni(sql string) (*ast.List, error) {
 		}
 		parsed, err := oracleparser.Parse(statement.Text)
 		if err != nil {
+			if statement.Range != nil {
+				return nil, offsetOracleParseError(err, int(statement.Range.Start))
+			}
 			return nil, err
 		}
 		if parsed == nil {
@@ -97,6 +102,16 @@ func ParsePLSQLOmni(sql string) (*ast.List, error) {
 		list.Items = append(list.Items, parsed.Items...)
 	}
 	return list, nil
+}
+
+func offsetOracleParseError(err error, offset int) error {
+	var parseErr *oracleparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+	adjusted := *parseErr
+	adjusted.Position += offset
+	return &adjusted
 }
 
 type omniLocOffsetter int
@@ -177,5 +192,27 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	return &storepb.Position{
 		Line:   line,
 		Column: runeCol + 1, // convert to 1-based
+	}
+}
+
+func convertOmniError(err error, stmt base.Statement) error {
+	var parseErr *oracleparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
+	if stmt.Start != nil {
+		if pos.Line == 1 {
+			pos.Column += stmt.Start.Column - 1
+		}
+		pos.Line += stmt.Start.Line - 1
+	}
+
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    msg,
+		RawMessage: parseErr.Message,
 	}
 }
