@@ -20,8 +20,8 @@ import {
 } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { ensureUserFullName } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { ensureUserFullName } from "@/utils/v1/user";
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
   if (binding.parsedExpr) {

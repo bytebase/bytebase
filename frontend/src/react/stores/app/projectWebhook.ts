@@ -6,7 +6,7 @@ import {
   TestWebhookRequestSchema,
   UpdateWebhookRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
-import { extractProjectWebhookID } from "@/utils";
+import { extractProjectWebhookID } from "@/utils/v1/projectWebhook";
 import type { AppSliceCreator, ProjectWebhookSlice } from "./types";
 
 export const createProjectWebhookSlice: AppSliceCreator<ProjectWebhookSlice> = (

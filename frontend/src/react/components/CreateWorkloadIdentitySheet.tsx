@@ -22,7 +22,6 @@ import {
   useActuatorV1Store,
   useProjectV1Store,
 } from "@/store";
-import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
 import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
@@ -135,7 +134,10 @@ function WorkloadIdentityForm({
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
+  const updateProjectIamPolicy = useAppStore(
+    (state) => state.updateProjectIamPolicy
+  );
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
@@ -328,9 +330,7 @@ function WorkloadIdentityForm({
     member: string,
     newRoles: string[]
   ) => {
-    const policy = structuredClone(
-      projectIamPolicyStore.getProjectIamPolicy(projectName)
-    );
+    const policy = structuredClone(getProjectIamPolicy(projectName));
     for (const binding of policy.bindings) {
       binding.members = binding.members.filter((m) => m !== member);
     }
@@ -349,7 +349,7 @@ function WorkloadIdentityForm({
         );
       }
     }
-    await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+    await updateProjectIamPolicy(projectName, policy);
   };
 
   const handleCreate = async () => {

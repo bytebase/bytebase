@@ -80,14 +80,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const getWorkspaceRolesByName = useAppStore(
     (state) => state.getWorkspaceRolesByName
   );
-  const fetchWorkspaceIamPolicy = useAppStore(
-    (state) => state.fetchWorkspaceIamPolicy
-  );
   const actuatorStore = useActuatorV1Store();
-
-  useEffect(() => {
-    void fetchWorkspaceIamPolicy();
-  }, [fetchWorkspaceIamPolicy]);
 
   // --- Reactive Vue state ---
   const legacyCurrentUser = useCurrentUser();
