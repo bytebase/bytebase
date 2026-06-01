@@ -95,9 +95,20 @@ func lineColumnToByteOffset(sql string, line, column int) int {
 	for i := 0; i < len(sql); i++ {
 		if currentLine == line {
 			pos := i
-			for c := 0; c < column && pos < len(sql); c++ {
-				_, size := utf8.DecodeRuneInString(sql[pos:])
+			for c := 0; c < column && pos < len(sql); {
+				r, size := utf8.DecodeRuneInString(sql[pos:])
+				if r == '\n' {
+					return pos
+				}
+				unitCount := 1
+				if r > 0xFFFF {
+					unitCount = 2
+				}
+				if c+unitCount > column {
+					return pos
+				}
 				pos += size
+				c += unitCount
 			}
 			if pos > len(sql) {
 				return len(sql)
@@ -1297,6 +1308,8 @@ func lineColumnAtByteOffset(sql string, offset int) (int, int) {
 		if r == '\n' {
 			line++
 			column = 0
+		} else if r > 0xFFFF {
+			column += 2
 		} else {
 			column++
 		}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -99,6 +100,15 @@ func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
 	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")
 	require.NotContains(t, source, "github.com/bytebase/parser/plsql")
 	require.NotContains(t, source, "CodeCompletionCore")
+}
+
+func TestCompletionByteOffsetUsesUTF16Columns(t *testing.T) {
+	input := "SELECT '😀' FROM t1 WHERE | AND c1 = 1"
+	statement, caretLine, caretOffset := catchCaretUTF16(input)
+
+	_, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
+
+	require.Equal(t, strings.Index(input, "|"), byteOffset)
 }
 
 func TestCompletionLongTailTableSources(t *testing.T) {
@@ -1444,6 +1454,27 @@ func catchCaret(s string) (string, int, int) {
 			column = 0
 		default:
 			column++
+		}
+	}
+	return s, -1, -1
+}
+
+func catchCaretUTF16(s string) (string, int, int) {
+	line := 1
+	column := 0
+	for i, c := range s {
+		switch c {
+		case '|':
+			return s[:i] + s[i+1:], line, column
+		case '\n':
+			line++
+			column = 0
+		default:
+			if c > 0xFFFF {
+				column += 2
+			} else {
+				column++
+			}
 		}
 	}
 	return s, -1, -1
