@@ -34,7 +34,6 @@ import {
   getProjectNameAndDatabaseGroupName,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useSheetV1Store,
 } from "@/store";
 import {
   isValidDatabaseGroupName,
@@ -179,7 +178,6 @@ function IssueDetailDatabaseChangeOptions({
 }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const sheetStore = useSheetV1Store();
   const [sheetStatement, setSheetStatement] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
@@ -322,7 +320,7 @@ function IssueDetailDatabaseChangeOptions({
       const uid = extractSheetUID(sheetName);
       const sheet = uid.startsWith("-")
         ? getLocalSheetByName(sheetName)
-        : await sheetStore.getOrFetchSheetByName(sheetName);
+        : await useAppStore.getState().getOrFetchSheetByName(sheetName);
       if (!sheet || canceled) {
         return;
       }
@@ -336,7 +334,7 @@ function IssueDetailDatabaseChangeOptions({
     return () => {
       canceled = true;
     };
-  }, [selectedSpec, sheetStore]);
+  }, [selectedSpec]);
 
   useEffect(() => {
     let canceled = false;

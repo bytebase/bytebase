@@ -210,9 +210,6 @@ const stableDBGroupStore = {
   get fetchDBGroupListByProjectName() {
     return mocks.fetchDBGroupListByProjectName;
   },
-};
-
-const stableSheetStore = {
   get createSheet() {
     return mocks.createSheet;
   },
@@ -226,7 +223,6 @@ vi.mock("@/store", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
   useProjectV1Store: () => stableProjectStore,
   useDatabaseV1Store: () => stableDatabaseStore,
-  useSheetV1Store: () => stableSheetStore,
   useSettingV1Store: () => stableSettingStore,
   pushNotification: mocks.pushNotification,
 }));

@@ -72,7 +72,6 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSheetV1Store,
 } from "@/store";
 import {
   isValidDatabaseGroupName,
@@ -719,7 +718,6 @@ function OptionsSection({
     projectStore.getProjectByName(`projects/${page.projectId}`)
   );
   const databaseStore = useDatabaseV1Store();
-  const sheetStore = useSheetV1Store();
   const [sheetStatement, setSheetStatementValue] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
@@ -836,7 +834,7 @@ function OptionsSection({
       const uid = extractSheetUID(sheetName);
       const sheet = uid.startsWith("-")
         ? getLocalSheetByName(sheetName)
-        : await sheetStore.getOrFetchSheetByName(sheetName);
+        : await useAppStore.getState().getOrFetchSheetByName(sheetName);
       if (!sheet || canceled) return;
       const statement = getSheetStatement(sheet);
       setSheetStatementValue(statement);
@@ -846,7 +844,7 @@ function OptionsSection({
     return () => {
       canceled = true;
     };
-  }, [selectedSpec, sheetStore]);
+  }, [selectedSpec]);
 
   useEffect(() => {
     let canceled = false;

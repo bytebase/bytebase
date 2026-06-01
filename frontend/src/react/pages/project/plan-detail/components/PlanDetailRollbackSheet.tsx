@@ -23,9 +23,10 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store, useSheetV1Store } from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import {
   CreatePlanRequestSchema,
   Plan_ChangeDatabaseConfigSchema,
@@ -63,7 +64,6 @@ export function PlanDetailRollbackSheet({
   }>;
 }) {
   const { t } = useTranslation();
-  const sheetStore = useSheetV1Store();
   const projectStore = useProjectV1Store();
   const normalizedProjectName = projectName.startsWith("projects/")
     ? projectName
@@ -324,7 +324,7 @@ export function PlanDetailRollbackSheet({
                 const specs = [];
                 for (const preview of previews) {
                   if (!preview.statement) continue;
-                  const sheet = await sheetStore.createSheet(
+                  const sheet = await useAppStore.getState().createSheet(
                     projectName,
                     create(SheetSchema, {
                       name: `${projectName}/sheets/${uuidv4()}`,

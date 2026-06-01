@@ -24,7 +24,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useSheetV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import type {
   Release,
   Release_File,
@@ -39,6 +39,7 @@ import {
   CreateRevisionRequestSchema,
   Revision_Type,
 } from "@/types/proto-es/v1/revision_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 enum Step {
   SELECT_SOURCE = 1,
@@ -75,7 +76,6 @@ export function ImportRevisionSheet({
   const listAllRevisionsByDatabase = useAppStore(
     (state) => state.listAllRevisionsByDatabase
   );
-  const sheetStore = useSheetV1Store();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedSource, setSelectedSource] = useState<"release" | "local">(
@@ -290,9 +290,12 @@ export function ImportRevisionSheet({
       let requests: CreateRevisionRequest[] = [];
       if (selectedSource === "local") {
         for (const file of localFiles) {
-          const sheet = await sheetStore.createSheet(projectName, {
-            content: new TextEncoder().encode(file.content),
-          });
+          const sheet = await useAppStore.getState().createSheet(
+            projectName,
+            create(SheetSchema, {
+              content: new TextEncoder().encode(file.content),
+            })
+          );
           requests.push(
             create(CreateRevisionRequestSchema, {
               parent: databaseName,
@@ -355,7 +358,6 @@ export function ImportRevisionSheet({
     selectedFiles,
     selectedRelease,
     selectedSource,
-    sheetStore,
     t,
   ]);
 

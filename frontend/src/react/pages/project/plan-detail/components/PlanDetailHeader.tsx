@@ -17,12 +17,13 @@ import {
 } from "@/react/components/ui/popover";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { pushNotification, useSheetV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   CreateIssueRequestSchema,
@@ -59,7 +60,6 @@ export function PlanDetailHeader() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, setEditing } = page;
-  const sheetStore = useSheetV1Store();
   const currentUser = page.currentUser;
   const project = page.project;
   const [title, setTitle] = useState(page.plan.title);
@@ -313,7 +313,9 @@ export function PlanDetailHeader() {
       const uid = extractSheetUID(config.sheet);
       if (uid.startsWith("-")) {
         const local = getLocalSheetByName(config.sheet);
-        const createdSheet = await sheetStore.createSheet(project.name, local);
+        const createdSheet = await useAppStore
+          .getState()
+          .createSheet(project.name, local);
         removeLocalSheet(config.sheet);
         config.sheet = createdSheet.name;
       }

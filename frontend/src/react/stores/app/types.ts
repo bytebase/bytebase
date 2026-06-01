@@ -367,6 +367,8 @@ export type SheetSlice = {
   sheetErrorsByName: Record<string, Error | undefined>;
   fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
   createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+  getSheetByName: (name: string) => Sheet | undefined;
+  getOrFetchSheetByName: (name: string) => Promise<Sheet | undefined>;
 };
 
 export type WorksheetView = "FULL" | "BASIC";

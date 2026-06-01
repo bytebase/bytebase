@@ -33,7 +33,6 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useSettingV1Store,
-  useSheetV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
@@ -94,7 +93,6 @@ export function DataExportPrepSheet({
 }: DataExportPrepSheetProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const sheetStore = useSheetV1Store();
   const dbStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const settingStore = useSettingV1Store();
@@ -238,7 +236,9 @@ export function DataExportPrepSheet({
     try {
       const sheet = create(SheetSchema, {});
       setSheetStatement(sheet, statement);
-      const createdSheet = await sheetStore.createSheet(project.name, sheet);
+      const createdSheet = await useAppStore
+        .getState()
+        .createSheet(project.name, sheet);
 
       const spec = create(Plan_SpecSchema, {
         id: uuidv4(),
