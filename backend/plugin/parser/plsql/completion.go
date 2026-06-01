@@ -137,6 +137,10 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 		}
 	}
 
+	if c.querySceneDisallowsCompletion() {
+		return nil, nil
+	}
+
 	completionContext := oracleparser.CollectCompletion(c.sql, c.cursorByteOffset)
 	if completionContext != nil {
 		c.completionPrefix = completionContext.Prefix
@@ -151,7 +155,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	if candidates == nil {
 		candidates = oracleparser.Collect(c.sql, c.cursorByteOffset)
 	}
-	return c.convertCandidates(candidates)
+	return c.filterCandidatesByScene(c.convertCandidates(candidates)), nil
 }
 
 type CompletionMap map[string]base.Candidate
@@ -167,6 +171,12 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	}
 	slices.SortFunc(result, compareCandidates)
 	return result
+}
+
+var oracleQuerySceneStartKeywords = map[string]bool{
+	"EXPLAIN": true,
+	"SELECT":  true,
+	"WITH":    true,
 }
 
 func compareCandidates(i, j base.Candidate) int {
@@ -311,7 +321,7 @@ func (c *Completer) columnCandidate(schema, table, name, typ string, notNull boo
 	}
 }
 
-func (c *Completer) convertCandidates(candidates *oracleparser.CandidateSet) ([]base.Candidate, error) {
+func (c *Completer) convertCandidates(candidates *oracleparser.CandidateSet) []base.Candidate {
 	keywordEntries := make(CompletionMap)
 	functionEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
@@ -374,7 +384,7 @@ func (c *Completer) convertCandidates(candidates *oracleparser.CandidateSet) ([]
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
 	result = append(result, sequenceEntries.toSlice()...)
-	return c.filterCandidatesByPrefix(result), nil
+	return c.filterCandidatesByPrefix(result)
 }
 
 func (c *Completer) insertCompletionIntentCandidates(keywordEntries, functionEntries, schemaEntries, tableEntries, columnEntries, viewEntries, sequenceEntries CompletionMap) {
@@ -1114,6 +1124,80 @@ func (c *Completer) listAllDatabases() []string {
 		}
 	}
 	return result
+}
+
+func (c *Completer) filterCandidatesByScene(candidates []base.Candidate) []base.Candidate {
+	if c.scene != base.SceneTypeQuery || !c.isAtStatementStartCompletion() {
+		return candidates
+	}
+	var result []base.Candidate
+	for _, candidate := range candidates {
+		if candidate.Type == base.CandidateTypeKeyword && !oracleQuerySceneStartKeywords[strings.ToUpper(candidate.Text)] {
+			continue
+		}
+		result = append(result, candidate)
+	}
+	return result
+}
+
+func (c *Completer) querySceneDisallowsCompletion() bool {
+	if c.scene != base.SceneTypeQuery {
+		return false
+	}
+	idx := c.currentStatementFirstTokenIndex()
+	if idx < 0 {
+		return false
+	}
+	if c.tokens[idx].End >= c.cursorByteOffset {
+		return false
+	}
+	if strings.EqualFold(c.tokens[idx].Str, "EXPLAIN") {
+		return false
+	}
+	switch c.tokens[idx].Type {
+	case oracleparser.SELECT, oracleparser.WITH:
+		return false
+	default:
+		return true
+	}
+}
+
+func (c *Completer) isAtStatementStartCompletion() bool {
+	collectOffset := c.cursorByteOffset - len(c.completionPrefix)
+	if collectOffset < 0 {
+		collectOffset = 0
+	}
+	start := c.currentStatementStartTokenIndex(collectOffset)
+	if start >= len(c.tokens) {
+		return true
+	}
+	token := c.tokens[start]
+	return token.Type == ';' || token.Loc >= collectOffset
+}
+
+func (c *Completer) currentStatementFirstTokenIndex() int {
+	start := c.currentStatementStartTokenIndex(c.cursorByteOffset)
+	if start >= len(c.tokens) {
+		return -1
+	}
+	token := c.tokens[start]
+	if token.Loc >= c.cursorByteOffset || token.Type == ';' {
+		return -1
+	}
+	return start
+}
+
+func (c *Completer) currentStatementStartTokenIndex(offset int) int {
+	start := 0
+	for i, token := range c.tokens {
+		if token.Loc >= offset {
+			break
+		}
+		if token.Type == ';' {
+			start = i + 1
+		}
+	}
+	return start
 }
 
 func (c *Completer) listTables(schema string) []string {

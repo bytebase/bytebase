@@ -1139,6 +1139,50 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 	}
 }
 
+func TestCompletionQuerySceneRestrictsTopLevelWrites(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    []completionCandidateSpec
+		notWant []completionCandidateSpec
+	}{
+		{
+			name:    "statement start offers query keywords only",
+			input:   "|",
+			want:    keywords("SELECT", "WITH", "EXPLAIN"),
+			notWant: keywords("INSERT", "UPDATE", "DELETE", "MERGE", "CREATE", "ALTER", "DROP", "TRUNCATE"),
+		},
+		{
+			name:    "statement start prefix keeps matching query keyword",
+			input:   "SEL|",
+			want:    keywords("SELECT"),
+			notWant: keywords("INSERT", "UPDATE", "CREATE", "DROP"),
+		},
+		{
+			name:    "write statement does not offer object candidates",
+			input:   "DROP TABLE |",
+			notWant: tables("T1", "T2"),
+		},
+		{
+			name:  "select table reference still offers tables",
+			input: "SELECT * FROM |",
+			want:  tables("T1", "T2"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := completeOracleForTestWithScene(t, tt.input, base.SceneTypeQuery)
+			for _, want := range tt.want {
+				require.Truef(t, hasCompletionCandidate(result, want), "missing %s candidate %q in %v", want.typ, want.text, result)
+			}
+			for _, notWant := range tt.notWant {
+				require.Falsef(t, hasCompletionCandidate(result, notWant), "unexpected %s candidate %q in %v", notWant.typ, notWant.text, result)
+			}
+		})
+	}
+}
+
 func completionColumnTexts(candidates []base.Candidate) []string {
 	var columns []string
 	for _, candidate := range candidates {
@@ -1156,10 +1200,14 @@ type completionCandidateSpec struct {
 }
 
 func completeOracleForTest(t *testing.T, input string) []base.Candidate {
+	return completeOracleForTestWithScene(t, input, base.SceneTypeAll)
+}
+
+func completeOracleForTestWithScene(t *testing.T, input string, scene base.SceneType) []base.Candidate {
 	t.Helper()
 	text, caretLine, caretOffset := catchCaret(input)
 	result, err := base.Completion(context.Background(), storepb.Engine_ORACLE, base.CompletionContext{
-		Scene:             base.SceneTypeAll,
+		Scene:             scene,
 		DefaultDatabase:   "SCHEMA1",
 		Metadata:          getMetadataForTest,
 		ListDatabaseNames: listDatabaseNamesForTest,
