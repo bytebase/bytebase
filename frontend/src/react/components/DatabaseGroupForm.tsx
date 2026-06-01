@@ -19,7 +19,8 @@ import {
   FactorList,
   getDatabaseGroupOptionConfigMap,
 } from "@/react/lib/database-group/utils";
-import { pushNotification, useDBGroupStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -57,7 +58,6 @@ export function DatabaseGroupForm({
   onCreated,
 }: DatabaseGroupFormProps) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
 
   const [title, setTitle] = useState("");
   const [resourceId, setResourceId] = useState("");
@@ -109,7 +109,7 @@ export function DatabaseGroupForm({
     async (id: string): Promise<ValidatedMessage[]> => {
       try {
         const name = `${project.name}/${databaseGroupNamePrefix}${id}`;
-        await dbGroupStore.getOrFetchDBGroupByName(name, {
+        await useAppStore.getState().getOrFetchDBGroupByName(name, {
           silent: true,
           view: DatabaseGroupView.FULL,
         });
@@ -120,7 +120,7 @@ export function DatabaseGroupForm({
         return [];
       }
     },
-    [project.name, dbGroupStore]
+    [project.name]
   );
 
   const doConfirm = async () => {
@@ -152,7 +152,7 @@ export function DatabaseGroupForm({
     }
 
     if (isCreating) {
-      await dbGroupStore.createDatabaseGroup({
+      await useAppStore.getState().createDatabaseGroup({
         projectName: project.name,
         databaseGroup: create(DatabaseGroupSchema, {
           name: `${project.name}/databaseGroups/${resourceId}`,
@@ -177,7 +177,7 @@ export function DatabaseGroupForm({
       ) {
         updateMask.push("database_expr");
       }
-      await dbGroupStore.updateDatabaseGroup(
+      await useAppStore.getState().updateDatabaseGroup(
         {
           ...databaseGroup,
           title,

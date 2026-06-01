@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
-import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useDatabaseV1Store } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -51,7 +52,6 @@ export function MatchedDatabaseView({
   matchedNamesRef.current = matchedNames;
 
   const pageSize = getDefaultPagination();
-  const dbGroupStore = useDBGroupStore();
   const databaseStore = useDatabaseV1Store();
 
   const toggleSection = useCallback((name: string) => {
@@ -145,7 +145,7 @@ export function MatchedDatabaseView({
       try {
         const names = presetNames
           ? presetNames
-          : await dbGroupStore.fetchDatabaseGroupMatchList({
+          : await useAppStore.getState().fetchDatabaseGroupMatchList({
               projectName: project,
               expr,
             });
@@ -205,7 +205,7 @@ export function MatchedDatabaseView({
       }
     }, DEBOUNCE_SEARCH_DELAY);
     return () => clearTimeout(timerRef.current);
-  }, [expr, project, presetNames, dbGroupStore, databaseStore, pageSize]);
+  }, [expr, project, presetNames, databaseStore, pageSize]);
 
   const hasMoreMatched = matchedToken < matchedNames.length;
   const hasMoreUnmatched = !!unmatchedToken;

@@ -18,14 +18,15 @@ import {
 } from "@/react/components/ui/dropdown-menu";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
-import { hasFeature, useDBGroupStore, useProjectV1Store } from "@/store";
+import { hasFeature, useProjectV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { isValidDatabaseGroupName } from "@/types";
+import { isValidDatabaseGroupName, unknownDatabaseGroup } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -42,15 +43,19 @@ export function ProjectDatabaseGroupDetailPage({
 }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const dbGroupStore = useDBGroupStore();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
   const resourceName = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
 
-  const databaseGroup = useVueState(() =>
-    dbGroupStore.getDBGroupByName(resourceName)
+  // Subscribe to the cached entry directly (stable ref) and derive the
+  // unknown fallback outside the selector — returning `unknownDatabaseGroup()`
+  // from the selector would yield a fresh object each call and loop forever.
+  const cachedGroup = useAppStore((s) => s.dbGroupsByName[resourceName]);
+  const databaseGroup = useMemo(
+    () => cachedGroup ?? unknownDatabaseGroup(),
+    [cachedGroup]
   );
 
   const [editing, setEditing] = useState(false);
@@ -58,11 +63,11 @@ export function ProjectDatabaseGroupDetailPage({
 
   // Fetch the database group on mount
   useEffect(() => {
-    dbGroupStore.getOrFetchDBGroupByName(resourceName, {
+    useAppStore.getState().getOrFetchDBGroupByName(resourceName, {
       skipCache: true,
       view: DatabaseGroupView.FULL,
     });
-  }, [resourceName, dbGroupStore]);
+  }, [resourceName]);
 
   const hasDatabaseGroupFeature = useVueState(() =>
     hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)
@@ -100,10 +105,10 @@ export function ProjectDatabaseGroupDetailPage({
   );
 
   const handleDelete = useCallback(async () => {
-    await dbGroupStore.deleteDatabaseGroup(resourceName);
+    await useAppStore.getState().deleteDatabaseGroup(resourceName);
     router.push({ name: PROJECT_V1_ROUTE_DATABASE_GROUPS });
     setShowDeleteDialog(false);
-  }, [resourceName, dbGroupStore]);
+  }, [resourceName]);
 
   if (!databaseGroup || !project) return null;
   if (!isValidDatabaseGroupName(databaseGroup.name)) return null;

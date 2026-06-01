@@ -226,11 +226,14 @@ vi.mock("@/store", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
   useProjectV1Store: () => stableProjectStore,
   useDatabaseV1Store: () => stableDatabaseStore,
-  useDBGroupStore: () => stableDBGroupStore,
   useSheetV1Store: () => stableSheetStore,
   useSettingV1Store: () => stableSettingStore,
   experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: { getState: () => stableDBGroupStore },
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
