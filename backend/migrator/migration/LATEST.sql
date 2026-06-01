@@ -37,6 +37,9 @@ CREATE TABLE vcs_provider_user (
 CREATE INDEX idx_vcs_provider_user_workspace_last_seen_at
     ON vcs_provider_user(workspace, last_seen_at DESC);
 
+CREATE INDEX idx_vcs_provider_user_last_seen_at
+    ON vcs_provider_user(last_seen_at);
+
 CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
