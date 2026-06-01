@@ -351,9 +351,9 @@ func (c *Completer) convertCandidates(candidates *oracleparser.CandidateSet) ([]
 			case "schema_ref":
 				schemaEntries.insertDatabases(c)
 			case "table_ref":
-				c.insertTableContextCandidates(schemaEntries, tableEntries, viewEntries, sequenceEntries)
+				c.insertTableReferenceCandidates(schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			case "sequence_ref":
-				sequenceEntries.insertSequences(c, c.completionSchemas(""))
+				sequenceEntries.insertSequences(c, c.sequenceCompletionSchemas())
 			case "columnref":
 				c.insertColumnContextCandidates(schemaEntries, tableEntries, columnEntries, viewEntries, sequenceEntries)
 			default:
@@ -385,10 +385,12 @@ func (c *Completer) insertCompletionIntentCandidates(keywordEntries, functionEnt
 		switch kind {
 		case oracleparser.ObjectKindSchema:
 			schemaEntries.insertDatabases(c)
-		case oracleparser.ObjectKindTable, oracleparser.ObjectKindView:
-			c.insertTableContextCandidates(schemaEntries, tableEntries, viewEntries, sequenceEntries)
+		case oracleparser.ObjectKindTable:
+			c.insertTableIntentCandidates(schemaEntries, tableEntries)
+		case oracleparser.ObjectKindView:
+			c.insertViewIntentCandidates(schemaEntries, viewEntries)
 		case oracleparser.ObjectKindSequence:
-			sequenceEntries.insertSequences(c, c.completionSchemas(""))
+			sequenceEntries.insertSequences(c, c.sequenceCompletionSchemas())
 		case oracleparser.ObjectKindColumn:
 			c.insertColumnContextCandidates(schemaEntries, tableEntries, columnEntries, viewEntries, sequenceEntries)
 		case oracleparser.ObjectKindFunction:
@@ -424,6 +426,55 @@ func (c *Completer) insertTableContextCandidates(schemaEntries, tableEntries, vi
 	tableEntries.insertTables(c, schemas)
 	viewEntries.insertViews(c, schemas)
 	sequenceEntries.insertSequences(c, schemas)
+}
+
+func (c *Completer) insertTableReferenceCandidates(schemaEntries, tableEntries, viewEntries, sequenceEntries CompletionMap) {
+	if c.completionIntentOnly(oracleparser.ObjectKindTable) {
+		c.insertTableIntentCandidates(schemaEntries, tableEntries)
+		return
+	}
+	if c.completionIntentOnly(oracleparser.ObjectKindView) {
+		c.insertViewIntentCandidates(schemaEntries, viewEntries)
+		return
+	}
+	c.insertTableContextCandidates(schemaEntries, tableEntries, viewEntries, sequenceEntries)
+}
+
+func (c *Completer) completionIntentOnly(kind oracleparser.ObjectKind) bool {
+	return c.completionIntent != nil && len(c.completionIntent.ObjectKinds) == 1 && c.completionIntent.ObjectKinds[0] == kind
+}
+
+func (c *Completer) insertTableIntentCandidates(schemaEntries, tableEntries CompletionMap) {
+	schema := c.completionSchemaQualifier()
+	if schema == "" {
+		schemaEntries.insertDatabases(c)
+	}
+	tableEntries.insertTables(c, c.completionSchemas(schema))
+}
+
+func (c *Completer) insertViewIntentCandidates(schemaEntries, viewEntries CompletionMap) {
+	schema := c.completionSchemaQualifier()
+	if schema == "" {
+		schemaEntries.insertDatabases(c)
+	}
+	viewEntries.insertViews(c, c.completionSchemas(schema))
+}
+
+func (c *Completer) sequenceCompletionSchemas() map[string]bool {
+	return c.completionSchemas(c.completionSchemaQualifier())
+}
+
+func (c *Completer) completionSchemaQualifier() string {
+	if c.completionIntent != nil {
+		if schema := c.completionIntent.Qualifier.Schema; schema != "" {
+			return schema
+		}
+	}
+	parts := c.qualifierParts()
+	if len(parts) == 1 {
+		return parts[0]
+	}
+	return ""
 }
 
 func (c *Completer) insertColumnContextCandidates(schemaEntries, tableEntries, columnEntries, viewEntries, sequenceEntries CompletionMap) {
@@ -905,20 +956,7 @@ func (c *Completer) selectItemAliases() []string {
 	if !c.isInAliasAllowedContext() {
 		return nil
 	}
-	stmtStart, stmtEnd := c.statementTokenBounds()
-	selectIdx := -1
-	fromIdx := -1
-	for i := stmtStart; i < stmtEnd; i++ {
-		switch c.tokens[i].Type {
-		case oracleparser.SELECT:
-			selectIdx = i
-		case oracleparser.FROM:
-			if selectIdx >= 0 && fromIdx < 0 {
-				fromIdx = i
-			}
-		default:
-		}
-	}
+	selectIdx, fromIdx := c.currentQueryBlockSelectFrom()
 	if selectIdx < 0 || fromIdx < 0 {
 		return nil
 	}
@@ -949,6 +987,52 @@ func (c *Completer) selectItemAliases() []string {
 	}
 	slices.Sort(aliases)
 	return aliases
+}
+
+func (c *Completer) currentQueryBlockSelectFrom() (int, int) {
+	stmtStart, stmtEnd := c.statementTokenBounds()
+	targetDepth := c.depthAtToken(c.caretTokenIndex)
+	selectIdx := -1
+	fromIdx := -1
+	depth := 0
+	for i := stmtStart; i < stmtEnd && i < c.caretTokenIndex; i++ {
+		if c.tokens[i].Type == ')' && depth > 0 {
+			depth--
+		}
+		if depth == targetDepth {
+			switch c.tokens[i].Type {
+			case oracleparser.SELECT:
+				selectIdx = i
+				fromIdx = -1
+			case oracleparser.FROM:
+				if selectIdx >= 0 && fromIdx < 0 {
+					fromIdx = i
+				}
+			default:
+			}
+		}
+		if c.tokens[i].Type == '(' {
+			depth++
+		}
+	}
+	return selectIdx, fromIdx
+}
+
+func (c *Completer) depthAtToken(index int) int {
+	stmtStart, _ := c.statementTokenBounds()
+	depth := 0
+	for i := stmtStart; i < index && i < len(c.tokens); i++ {
+		switch c.tokens[i].Type {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		default:
+		}
+	}
+	return depth
 }
 
 func selectAliasFromTokens(tokens []oracleparser.Token) string {

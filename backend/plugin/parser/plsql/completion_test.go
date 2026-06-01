@@ -446,6 +446,11 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want:  columns("C1", "C_ALIAS"),
 		},
 		{
+			name:  "select alias survives nested select in order by",
+			input: "SELECT c1 AS c_alias FROM t1 WHERE EXISTS (SELECT c1 FROM t2) ORDER BY |",
+			want:  columns("C1", "C_ALIAS"),
+		},
+		{
 			name:    "select alias is not available in where",
 			input:   "SELECT c1 AS c_alias FROM t1 WHERE |",
 			want:    columns("C1"),
@@ -1098,9 +1103,10 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want:  tables("T1", "T2"),
 		},
 		{
-			name:  "drop schema qualified view reference offers views",
-			input: "DROP VIEW schema1.|",
-			want:  views("V1"),
+			name:    "drop schema qualified view reference offers only views",
+			input:   "DROP VIEW schema1.|",
+			want:    views("V1"),
+			notWant: append(tables("T1", "T2"), sequences("SEQ1", "USER_ID_SEQ")...),
 		},
 		{
 			name:  "view schema qualified table reference offers views",
@@ -1111,6 +1117,12 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			name:  "sequence schema qualified reference offers sequences",
 			input: "DROP SEQUENCE schema1.|",
 			want:  sequences("SEQ1", "USER_ID_SEQ"),
+		},
+		{
+			name:    "sequence schema qualified reference uses non default schema",
+			input:   "DROP SEQUENCE schema2.|",
+			want:    sequences("SCHEMA2_SEQ"),
+			notWant: sequences("SEQ1", "USER_ID_SEQ"),
 		},
 	}
 
@@ -1290,6 +1302,11 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 											SELECT *
 											FROM t1
 							`,
+						},
+					},
+					Sequences: []*storepb.SequenceMetadata{
+						{
+							Name: "SCHEMA2_SEQ",
 						},
 					},
 				},
