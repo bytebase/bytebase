@@ -143,7 +143,7 @@ export type WorkspaceSlice = {
     workspace: Workspace,
     updateMask: string[]
   ) => Promise<Workspace>;
-  switchWorkspace: (workspaceName: string) => Promise<void>;
+  switchWorkspace: (workspaceName: string, redirect?: boolean) => Promise<void>;
   loadWorkspaceProfile: (
     force?: boolean
   ) => Promise<WorkspaceProfileSetting | undefined>;
@@ -195,6 +195,14 @@ export type IamSlice = {
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
   loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  fetchWorkspaceIamPolicy: () => Promise<IamPolicy>;
+  patchWorkspaceIamPolicy: (
+    batchPatch: { member: string; roles: string[] }[]
+  ) => Promise<void>;
+  workspaceRoleMapToUsers: () => Map<string, Set<string>>;
+  workspaceUserMapToRoles: () => Map<string, Set<string>>;
+  findWorkspaceRolesByMember: (member: string) => string[];
+  getWorkspaceRolesByName: (name: string) => Set<string>;
   hasWorkspacePermission: (permission: Permission) => boolean;
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
 };

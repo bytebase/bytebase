@@ -21,7 +21,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
 import {
@@ -134,10 +133,12 @@ function WorkloadIdentityForm({
   onUpdated,
 }: Omit<CreateWorkloadIdentitySheetProps, "open">) {
   const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
+  const patchWorkspaceIamPolicy = useAppStore(
+    (state) => state.patchWorkspaceIamPolicy
+  );
   const createWorkloadIdentity = useAppStore(
     (state) => state.createWorkloadIdentity
   );
@@ -375,7 +376,7 @@ function WorkloadIdentityForm({
           roles
         );
       } else {
-        await workspaceStore.patchIamPolicy([{ member, roles }]);
+        await patchWorkspaceIamPolicy([{ member, roles }]);
       }
     }
 

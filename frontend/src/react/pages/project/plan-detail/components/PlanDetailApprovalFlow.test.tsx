@@ -49,9 +49,6 @@ const mocks = vi.hoisted(() => ({
       title: "Project Owner",
     },
   ],
-  workspaceStore: {
-    roleMapToUsers: new Map(),
-  },
   issueCommentStore: {
     getIssueComments: vi.fn(() => mocks.comments),
     listIssueComments: vi.fn(async () => ({ issueComments: mocks.comments })),
@@ -82,7 +79,6 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
-  useWorkspaceV1Store: () => mocks.workspaceStore,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

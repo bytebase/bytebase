@@ -6,10 +6,9 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useCurrentUser, useWorkspace } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { pushNotification, useWorkspaceV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -19,15 +18,23 @@ export function ProfileSetupPage() {
   const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
   const updateWorkspace = useAppStore((state) => state.updateWorkspace);
-  const workspaceStore = useWorkspaceV1Store();
+  const fetchWorkspaceIamPolicy = useAppStore(
+    (state) => state.fetchWorkspaceIamPolicy
+  );
   const workspace = useWorkspace();
-  const workspacePolicy = useVueState(() => workspaceStore.workspaceIamPolicy);
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+
+  // The member count below gates the workspace-rename field, so make sure the
+  // policy is loaded even when this page is reached outside the setup flow.
+  useEffect(() => {
+    void fetchWorkspaceIamPolicy();
+  }, [fetchWorkspaceIamPolicy]);
 
   // Show workspace name field only if the user is the sole member of the
   // workspace (i.e. they just created it), not when they were invited.
   const canRenameWorkspace =
     hasWorkspacePermissionV2("bb.workspaces.update") &&
-    workspacePolicy.bindings.reduce(
+    (workspacePolicy?.bindings ?? []).reduce(
       (count, b) => count + b.members.length,
       0
     ) === 1;

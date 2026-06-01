@@ -78,6 +78,7 @@ const mocks = vi.hoisted(() => ({
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
   getIamPolicy: vi.fn(),
+  setIamPolicy: vi.fn(),
   listRoles: vi.fn(),
   updateRole: vi.fn(),
   deleteRole: vi.fn(),
@@ -268,6 +269,7 @@ vi.mock("@/connect", () => ({
     getWorkspace: mocks.getWorkspace,
     updateWorkspace: mocks.updateWorkspace,
     getIamPolicy: mocks.getIamPolicy,
+    setIamPolicy: mocks.setIamPolicy,
   },
 }));
 
@@ -669,6 +671,84 @@ describe("useAppStore", () => {
     await store.getState().updateWorkspace(updated, ["logo"]);
 
     expect(store.getState().workspace).toBe(active);
+  });
+
+  test("patchWorkspaceIamPolicy adds the member to the requested role bindings", async () => {
+    const existing = createProto(IamPolicySchema, {
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    const setPolicy = createProto(IamPolicySchema, {
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com", "user:bob@example.com"],
+        }),
+        createProto(BindingSchema, {
+          role: "roles/workspaceAdmin",
+          members: ["user:bob@example.com"],
+        }),
+      ],
+    });
+    mocks.setIamPolicy.mockResolvedValue(setPolicy);
+    const store = createAppStore();
+    store.setState({ workspacePolicy: existing });
+
+    await store.getState().patchWorkspaceIamPolicy([
+      {
+        member: "user:bob@example.com",
+        roles: ["roles/workspaceMember", "roles/workspaceAdmin"],
+      },
+    ]);
+
+    expect(mocks.setIamPolicy).toHaveBeenCalledTimes(1);
+    const request = mocks.setIamPolicy.mock.calls[0][0] as {
+      policy: { bindings: { role: string; members: string[] }[] };
+    };
+    // Existing member binding gains bob, and a new admin binding is appended.
+    expect(
+      request.policy.bindings.map(({ role, members }) => ({ role, members }))
+    ).toEqual([
+      {
+        role: "roles/workspaceMember",
+        members: ["user:alice@example.com", "user:bob@example.com"],
+      },
+      {
+        role: "roles/workspaceAdmin",
+        members: ["user:bob@example.com"],
+      },
+    ]);
+    expect(store.getState().workspacePolicy).toBe(setPolicy);
+  });
+
+  test("workspaceUserMapToRoles inverts policy bindings to member -> roles", () => {
+    const policy = createProto(IamPolicySchema, {
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com", "user:bob@example.com"],
+        }),
+        createProto(BindingSchema, {
+          role: "roles/workspaceAdmin",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    const store = createAppStore();
+    store.setState({ workspacePolicy: policy });
+
+    const map = store.getState().workspaceUserMapToRoles();
+    expect([...(map.get("users/alice@example.com") ?? [])].sort()).toEqual([
+      "roles/workspaceAdmin",
+      "roles/workspaceMember",
+    ]);
+    expect([...(map.get("users/bob@example.com") ?? [])]).toEqual([
+      "roles/workspaceMember",
+    ]);
   });
 
   test("create archive and restore update activated user count when server info is loaded", async () => {
