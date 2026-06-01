@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardHeader } from "@/react/components/header/DashboardHeader";
-import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import type {
   DashboardBodyShellProps,
   DashboardShellTargets,
@@ -46,6 +47,36 @@ export function DashboardBodyShell({
 
   const showWorkspaceChrome = variant === "workspace" && !isRootPath;
   const showHeader = variant === "issues" || showWorkspaceChrome;
+  const mobileSidebarOverlay = (
+    <div
+      className={cn(
+        "fixed inset-0 md:hidden",
+        LAYER_SURFACE_CLASS,
+        isMobileSidebarOpen ? "" : "pointer-events-none"
+      )}
+    >
+      <button
+        aria-label={t("common.close-mobile-sidebar")}
+        className={cn(
+          "absolute inset-0 bg-black/20 transition-opacity",
+          isMobileSidebarOpen ? "opacity-100" : "opacity-0"
+        )}
+        type="button"
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+      <div
+        className={cn(
+          "absolute inset-y-0 left-0 w-52 bg-control-bg transition-transform",
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div
+          ref={mobileSidebarRef}
+          className="h-full overflow-y-auto bg-control-bg"
+        />
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     setIsMobileSidebarOpen(false);
@@ -73,34 +104,7 @@ export function DashboardBodyShell({
       <div className="flex flex-1 overflow-hidden">
         {showWorkspaceChrome ? (
           <>
-            <div
-              className={cn(
-                "fixed inset-0 md:hidden",
-                LAYER_SURFACE_CLASS,
-                isMobileSidebarOpen ? "" : "pointer-events-none"
-              )}
-            >
-              <button
-                aria-label={t("common.close-mobile-sidebar")}
-                className={cn(
-                  "absolute inset-0 bg-black/20 transition-opacity",
-                  isMobileSidebarOpen ? "opacity-100" : "opacity-0"
-                )}
-                type="button"
-                onClick={() => setIsMobileSidebarOpen(false)}
-              />
-              <div
-                className={cn(
-                  "absolute inset-y-0 left-0 w-52 bg-control-bg transition-transform",
-                  isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-                )}
-              >
-                <div
-                  ref={mobileSidebarRef}
-                  className="h-full overflow-y-auto bg-control-bg"
-                />
-              </div>
-            </div>
+            {createPortal(mobileSidebarOverlay, getLayerRoot("overlay"))}
 
             <aside
               className={cn("shrink-0", isDesktop ? "flex" : "hidden")}

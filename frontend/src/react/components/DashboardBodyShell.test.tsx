@@ -6,6 +6,7 @@ import type {
   DashboardShellTargets,
 } from "@/react/dashboard-shell";
 import { DashboardBodyShell } from "./DashboardBodyShell";
+import { LAYER_ROOT_ID } from "./ui/layer";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -170,6 +171,11 @@ describe("DashboardBodyShell", () => {
     expect(targets.mobileSidebar?.parentElement?.className).toContain(
       "translate-x-0"
     );
+    expect(
+      document
+        .getElementById(LAYER_ROOT_ID.overlay)
+        ?.contains(targets.mobileSidebar)
+    ).toBe(true);
 
     harness.unmount();
   });
