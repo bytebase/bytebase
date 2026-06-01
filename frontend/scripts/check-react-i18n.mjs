@@ -48,6 +48,9 @@ const DYNAMIC_PREFIXES = [
   "common.skipped",
   "common.under-review",
   "issue.table.approved",
+  // Role-grant expiration presets, rendered via t(preset.labelKey) in
+  // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
+  "project.members.expiration-presets.",
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

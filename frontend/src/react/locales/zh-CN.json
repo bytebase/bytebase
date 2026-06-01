@@ -1589,6 +1589,13 @@
       "ddl-warning": "在所选环境中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需审批。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "edit-member": "编辑成员 - {{member}}",
+      "expiration-presets": {
+        "one-month": "1 个月",
+        "one-week": "1 周",
+        "one-year": "1 年",
+        "three-months": "3 个月"
+      },
+      "expires-at": "过期时间：{{date}}",
       "never-expires": "永不",
       "request-role": {
         "disabled-reason": {

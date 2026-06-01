@@ -1589,6 +1589,13 @@
       "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "edit-member": "メンバー編集 - {{member}}",
+      "expiration-presets": {
+        "one-month": "1か月",
+        "one-week": "1週間",
+        "one-year": "1年",
+        "three-months": "3か月"
+      },
+      "expires-at": "有効期限: {{date}}",
       "never-expires": "なし",
       "request-role": {
         "disabled-reason": {
