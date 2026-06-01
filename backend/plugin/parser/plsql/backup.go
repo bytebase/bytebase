@@ -20,6 +20,8 @@ const (
 	maxTableNameLengthBefore12_2 = 30
 )
 
+var errNoBackupableDML = errors.New("no parse results")
+
 func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_ORACLE, TransformDMLToSelect)
 }
@@ -219,7 +221,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	}
 
 	if len(result) == 0 {
-		return nil, errors.New("no parse results")
+		return nil, errNoBackupableDML
 	}
 	return result, nil
 }

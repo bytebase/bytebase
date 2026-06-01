@@ -370,6 +370,9 @@ func extractSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (s
 		containsSourceTable := false
 		tables, err := prepareTransformation(sourceDatabase, list[i].Text)
 		if err != nil {
+			if err == errNoBackupableDML {
+				continue
+			}
 			return "", errors.Wrap(err, "failed to prepare transformation")
 		}
 		for _, table := range tables {
