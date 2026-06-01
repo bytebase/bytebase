@@ -300,11 +300,6 @@ vi.mock("@/store", () => ({
     hasFeature: () => true,
     userCountLimit: 10,
   }),
-  useWorkspaceV1Store: () => ({
-    findRolesByMember: () => [],
-    patchIamPolicy: vi.fn(),
-    workspaceIamPolicy: { bindings: [] },
-  }),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -319,6 +314,10 @@ vi.mock("@/react/stores/app", () => ({
     selector({
       batchGetOrFetchUsers: vi.fn(async () => []),
       roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+      workspacePolicy: { bindings: [] },
+      patchWorkspaceIamPolicy: vi.fn(),
+      findWorkspaceRolesByMember: () => [],
+      fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
     }),
 }));
 

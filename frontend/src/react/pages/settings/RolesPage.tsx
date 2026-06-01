@@ -53,11 +53,7 @@ import {
   displayRoleTitleFromList,
 } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useSubscriptionV1Store,
-  useWorkspaceV1Store,
-} from "@/store";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import {
   BASIC_WORKSPACE_PERMISSIONS,
@@ -678,7 +674,9 @@ export function RolesPage() {
   const listRoles = useAppStore((state) => state.listRoles);
   const getRoleByName = useAppStore((state) => state.getRoleByName);
   const deleteRole = useAppStore((state) => state.deleteRole);
-  const workspaceStore = useWorkspaceV1Store();
+  const fetchWorkspaceIamPolicy = useAppStore(
+    (state) => state.fetchWorkspaceIamPolicy
+  );
   const subscriptionStore = useSubscriptionV1Store();
 
   const [ready, setReady] = useState(false);
@@ -707,6 +705,9 @@ export function RolesPage() {
 
   // Fetch roles on mount and handle query param
   useEffect(() => {
+    // The workspace IAM policy backs the "users with this role" list shown in
+    // the delete confirmation; load it (and referenced groups) alongside roles.
+    void fetchWorkspaceIamPolicy();
     listRoles()
       .then(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -741,7 +742,8 @@ export function RolesPage() {
     }
 
     const usersWithRole = [
-      ...(workspaceStore.roleMapToUsers.get(role.name) ?? new Set()),
+      ...(useAppStore.getState().workspaceRoleMapToUsers().get(role.name) ??
+        new Set<string>()),
     ];
     setDeleteResources(usersWithRole);
     setDeleteTarget(role);

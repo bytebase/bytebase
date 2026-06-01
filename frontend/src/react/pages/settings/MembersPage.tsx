@@ -87,7 +87,6 @@ import {
   useProjectV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -1239,7 +1238,12 @@ function EditMemberRoleDrawer({
   initialBindings?: string[];
 }) {
   const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
+  const patchWorkspaceIamPolicy = useAppStore(
+    (state) => state.patchWorkspaceIamPolicy
+  );
+  const findWorkspaceRolesByMember = useAppStore(
+    (state) => state.findWorkspaceRolesByMember
+  );
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
   const settingV1Store = useSettingV1Store();
@@ -1543,18 +1547,18 @@ function EditMemberRoleDrawer({
         await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
       } else {
         if (isEditMode) {
-          await workspaceStore.patchIamPolicy([
+          await patchWorkspaceIamPolicy([
             { member: member.binding, roles: selectedRoles },
           ]);
         } else {
           const batchPatch = selectedBindings.map((binding) => {
-            const existedRoles = workspaceStore.findRolesByMember(binding);
+            const existedRoles = findWorkspaceRolesByMember(binding);
             return {
               member: binding,
               roles: [...new Set([...selectedRoles, ...existedRoles])],
             };
           });
-          await workspaceStore.patchIamPolicy(batchPatch);
+          await patchWorkspaceIamPolicy(batchPatch);
         }
       }
       pushNotification({
@@ -1592,9 +1596,7 @@ function EditMemberRoleDrawer({
         policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
         await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
       } else {
-        await workspaceStore.patchIamPolicy([
-          { member: member.binding, roles: [] },
-        ]);
+        await patchWorkspaceIamPolicy([{ member: member.binding, roles: [] }]);
       }
       pushNotification({
         module: "bytebase",
@@ -1891,7 +1893,13 @@ function EditMemberRoleDrawer({
 
 export function MembersPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const patchWorkspaceIamPolicy = useAppStore(
+    (state) => state.patchWorkspaceIamPolicy
+  );
+  const fetchWorkspaceIamPolicy = useAppStore(
+    (state) => state.fetchWorkspaceIamPolicy
+  );
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
@@ -1931,8 +1939,10 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   useEffect(() => {
     if (projectName) {
       projectIamPolicyStore.getOrFetchProjectIamPolicy(projectName);
+    } else {
+      void fetchWorkspaceIamPolicy();
     }
-  }, [projectName, projectIamPolicyStore]);
+  }, [projectName, projectIamPolicyStore, fetchWorkspaceIamPolicy]);
 
   const projectIamPolicy = useVueState(() =>
     projectName
@@ -1947,17 +1957,20 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // render; the table component handles that with content-based change
   // detection (a group-bindings signature) so its expand-cache only
   // resets on real membership changes.
+  // Keep this in useVueState so it re-runs when the Pinia user/group/
+  // service-account/workload-identity stores that getMemberBindings reads
+  // for member metadata change. The workspace IAM policy itself now comes
+  // from the app store: subscribing to `workspacePolicy` above re-renders
+  // this component on policy changes, and useVueState reads the latest getter
+  // each render, so both reactivity sources are covered.
   const memberBindings = useVueState(() =>
     getMemberBindings({
       policies:
         projectName && projectIamPolicy
           ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
-          : [
-              {
-                level: "WORKSPACE" as const,
-                policy: workspaceStore.workspaceIamPolicy,
-              },
-            ],
+          : workspacePolicy
+            ? [{ level: "WORKSPACE" as const, policy: workspacePolicy }]
+            : [],
       searchText: memberSearchText,
       ignoreRoles: EMPTY_ROLE_SET,
     })
@@ -1997,7 +2010,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
             policy
           );
         } else {
-          await workspaceStore.patchIamPolicy(
+          await patchWorkspaceIamPolicy(
             selectedMembers.map((m) => ({ member: m, roles: [] }))
           );
         }
@@ -2028,9 +2041,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
         await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
       } else {
-        await workspaceStore.patchIamPolicy([
-          { member: binding.binding, roles: [] },
-        ]);
+        await patchWorkspaceIamPolicy([{ member: binding.binding, roles: [] }]);
       }
       pushNotification({
         module: "bytebase",
