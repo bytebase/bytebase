@@ -1,4 +1,7 @@
-import { getIssueCommentType, IssueCommentType } from "@/store";
+import {
+  getIssueCommentType,
+  IssueCommentType,
+} from "@/react/stores/app/issueComment";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";

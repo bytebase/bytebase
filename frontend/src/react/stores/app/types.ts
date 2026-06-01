@@ -33,16 +33,22 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Issue,
+  IssueComment,
+  ListIssueCommentsRequest,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Policy,
   PolicyType,
   QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
   Setting,
@@ -70,6 +76,7 @@ import type {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import type { IssueFilter } from "@/types/v1/issue/issue";
 import type { SQLResultSetV1 } from "@/types/v1/sql";
 import type { AccessGrantFilterStatus } from "@/utils";
 
@@ -664,8 +671,17 @@ export type PolicySlice = {
 // thin wrapper around `issueServiceClientConnect.getIssue`. Returns the
 // fresh issue (no cache) and pre-fetches the owning project into the app
 // store so downstream code can read it synchronously.
+export type ListIssueParams = {
+  find: IssueFilter;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type IssueSlice = {
   fetchIssueByName: (name: string, silent?: boolean) => Promise<Issue>;
+  listIssues: (
+    params: ListIssueParams
+  ) => Promise<{ nextPageToken: string; issues: Issue[] }>;
 };
 
 // Stateless SQL service slice (mirrors the legacy Pinia `useSQLStore`):
@@ -750,6 +766,55 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export type IssueCommentSlice = {
+  // Cache keyed by issue resource name → its comment list.
+  issueCommentsByIssue: Record<string, IssueComment[]>;
+  listIssueComments: (
+    request: ListIssueCommentsRequest
+  ) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  createIssueComment: (params: {
+    issueName: string;
+    comment: string;
+  }) => Promise<void>;
+  updateIssueComment: (params: {
+    issueCommentName: string;
+    comment: string;
+  }) => Promise<void>;
+  // Synchronous cache read; returns a stable empty array on miss.
+  getIssueComments: (issueName: string) => IssueComment[];
+};
+
+export interface PlanFind {
+  project: string;
+  query?: string;
+  creator?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  hasIssue?: boolean;
+  hasRollout?: boolean;
+  specType?: string;
+  state?: "ACTIVE" | "DELETED";
+}
+
+export type ListPlanParams = {
+  find: PlanFind;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type PlanSlice = {
+  listPlans: (
+    params: ListPlanParams
+  ) => Promise<{ plans: Plan[]; nextPageToken: string }>;
+};
+
+export type RolloutSlice = {
+  rolloutsByName: Record<string, Rollout>;
+  fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
+  // Synchronous cache read; returns `unknownRollout()` on miss.
+  getRolloutByName: (name: string) => Rollout;
+};
+
 export type AppStoreState = AuthSlice &
   WorkspaceSlice &
   IamSlice &
@@ -776,6 +841,9 @@ export type AppStoreState = AuthSlice &
   SQLSlice &
   IssueSlice &
   PolicySlice &
-  DBSchemaSlice;
+  DBSchemaSlice &
+  RolloutSlice &
+  PlanSlice &
+  IssueCommentSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

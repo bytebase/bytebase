@@ -44,6 +44,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -53,12 +54,7 @@ import {
   buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
 } from "@/router/dashboard/projectV1RouteHelpers";
-import {
-  pushNotification,
-  useIssueCommentStore,
-  useProjectV1Store,
-  useSQLStore,
-} from "@/store";
+import { pushNotification, useProjectV1Store, useSQLStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ApproveIssueRequestSchema,
@@ -100,7 +96,6 @@ export function IssueDetailActionBar() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const issueCommentStore = useIssueCommentStore();
   const sqlStore = useSQLStore();
   const currentUser = useCurrentUser();
   const [pendingConfirmAction, setPendingConfirmAction] =
@@ -241,13 +236,13 @@ export function IssueDetailActionBar() {
     if (!page.issue?.name) {
       return;
     }
-    await issueCommentStore.listIssueComments(
+    await useAppStore.getState().listIssueComments(
       create(ListIssueCommentsRequestSchema, {
         parent: page.issue.name,
         pageSize: 1000,
       })
     );
-  }, [issueCommentStore, page.issue?.name]);
+  }, [page.issue?.name]);
 
   const handleRefreshIssueDetailState = useCallback(async () => {
     await refreshIssueDetailState(page);
@@ -744,7 +739,6 @@ function IssueDetailReviewPopover({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const issueCommentStore = useIssueCommentStore();
   const popoverRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
@@ -788,7 +782,7 @@ function IssueDetailReviewPopover({
         );
         page.patchState({ issue: response });
       } else {
-        await issueCommentStore.createIssueComment({
+        await useAppStore.getState().createIssueComment({
           issueName: issue.name,
           comment,
         });
@@ -831,7 +825,6 @@ function IssueDetailReviewPopover({
   }, [
     comment,
     issue,
-    issueCommentStore,
     onOpenChange,
     onRefreshIssueComments,
     onRefreshState,

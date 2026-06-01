@@ -12,9 +12,9 @@ import {
 } from "@/react/components/IssueTable";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { refreshIssueList, useIssueV1Store } from "@/store";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
@@ -27,7 +27,6 @@ import {
 
 export function MyIssuesPage() {
   const { t } = useTranslation();
-  const issueStore = useIssueV1Store();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -111,14 +110,16 @@ export function MyIssuesPage() {
 
   const fetchIssueList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const { nextPageToken, issues } = await issueStore.listIssues({
-        find: issueFilter,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-      });
+      const { nextPageToken, issues } = await useAppStore
+        .getState()
+        .listIssues({
+          find: issueFilter,
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+        });
       return { list: issues, nextPageToken };
     },
-    [issueStore, issueFilter]
+    [issueFilter]
   );
 
   const paged = usePagedData<Issue>({
