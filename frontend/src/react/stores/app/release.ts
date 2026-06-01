@@ -2,7 +2,7 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { releaseServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { isValidReleaseName, unknownRelease } from "@/types";
+import { isValidReleaseName } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import {
@@ -89,7 +89,7 @@ export const createReleaseSlice: AppSliceCreator<ReleaseSlice> = (
     );
   },
 
-  getReleaseByName: (name) => get().releasesByName[name] ?? unknownRelease(),
+  getReleaseByName: (name) => get().releasesByName[name],
 
   updateRelease: async (release, updateMask) => {
     const response = await releaseServiceClientConnect.updateRelease(

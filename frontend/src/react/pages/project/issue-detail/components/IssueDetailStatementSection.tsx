@@ -141,7 +141,7 @@ export function IssueDetailStatementSection({
     const load = async () => {
       if (isValidReleaseName(releaseName)) {
         const cached = useAppStore.getState().getReleaseByName(releaseName);
-        if (isValidReleaseName(cached.name)) {
+        if (cached) {
           return;
         }
         try {
