@@ -42,6 +42,7 @@ import {
 import { ensureSuggestOverrideStyle } from "./suggest-icons";
 import {
   getOrCreateTextModel,
+  getUriByFilename,
   restoreViewState,
   storeViewState,
 } from "./text-model";
@@ -594,6 +595,7 @@ export function MonacoEditor({
       databaseName: string;
       scene?: string;
       schema?: string;
+      documentUri?: string;
     } = {
       instanceId: "",
       databaseName: "",
@@ -612,6 +614,13 @@ export function MonacoEditor({
     }
     const apply = debounce(async () => {
       const client = await initializeLSPClient();
+      // Tell the server which document this metadata is for, so it can
+      // reschedule diagnostics for exactly this document once the engine is
+      // known (see the backend setMetadata handler). Matches the model URI
+      // the LSP client opened the document with.
+      params.documentUri = (
+        await getUriByFilename(generatedFilename)
+      ).toString();
       await executeCommand(client, "setMetadata", [params]);
     }, 500);
     void apply();
