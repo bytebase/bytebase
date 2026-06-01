@@ -63,8 +63,14 @@ export const useAppDatabaseMetadata = (
     getOrFetchDatabaseMetadata,
   ]);
 
+  // Prefer the subscribed cache entry so consumers passing `filter` /
+  // `limit` see their fetched result. `getDatabaseMetadata` only reads
+  // the unfiltered `::0` slot; using it as the primary return would
+  // make filtered/limited fetches resolve into a cache slot the hook
+  // never returns from. Fall back to `getDatabaseMetadata` for the
+  // empty-cache case so the return type stays non-nullable.
   return useMemo(
-    () => getDatabaseMetadata(database),
+    () => cached ?? getDatabaseMetadata(database),
     [getDatabaseMetadata, database, cached]
   );
 };
