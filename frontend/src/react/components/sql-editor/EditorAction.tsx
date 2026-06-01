@@ -19,7 +19,6 @@ import {
   useIsDisconnected,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useUIStateStore } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
@@ -44,7 +43,6 @@ type Props = {
  */
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
-  const uiStateStore = useUIStateStore();
   const { currentSheet: currentWorksheet } = useWorksheetAndTab();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
@@ -132,7 +130,7 @@ export function EditorAction({ onExecute }: Props) {
       explain: false,
       selection: currentTab.editorState.selection,
     });
-    uiStateStore.saveIntroStateByKey({
+    useAppStore.getState().saveIntroStateByKey({
       key: "data.query",
       newState: true,
     });

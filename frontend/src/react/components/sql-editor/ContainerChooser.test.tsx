@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   router: {
     currentRoute: { value: { query: {} } },
+    afterEach: () => () => {},
   },
 }));
 

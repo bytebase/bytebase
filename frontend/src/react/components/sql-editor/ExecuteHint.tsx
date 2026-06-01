@@ -9,7 +9,6 @@ import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useStorageStore } from "@/store";
 import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -17,6 +16,7 @@ import {
   extractProjectResourceName,
   getDatabaseEnvironment,
 } from "@/utils";
+import { putBlob } from "@/utils/blob-storage";
 import { AdminModeButton } from "./AdminModeButton";
 
 type Props = {
@@ -30,7 +30,6 @@ type Props = {
  */
 export function ExecuteHint({ database, onClose }: Props) {
   const { t } = useTranslation();
-  const storageStore = useStorageStore();
   const project = useSQLEditorEditorState((s) => s.project);
   const allowAdmin = useSQLEditorAllowAdmin(project);
 
@@ -41,7 +40,7 @@ export function ExecuteHint({ database, onClose }: Props) {
     const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
     const connectedDatabase = currentTab?.connection.database ?? "";
     if (!connectedDatabase) {
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "CRITICAL",
         title: t("sql-editor.no-database-selected"),
@@ -63,7 +62,7 @@ export function ExecuteHint({ database, onClose }: Props) {
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
     const statement = tab?.selectedStatement || tab?.statement || "";
     const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-    storageStore.put(sqlStorageKey, statement);
+    void putBlob(sqlStorageKey, statement);
     const { databaseName } = extractDatabaseResourceName(db.name);
 
     const query: Record<string, string> = {

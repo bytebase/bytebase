@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   instanceAllowsSchemaScopedQuery: vi.fn(),
   router: {
     currentRoute: { value: { query: {} } },
+    afterEach: () => () => {},
   },
 }));
 

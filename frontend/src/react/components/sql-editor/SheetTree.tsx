@@ -59,7 +59,6 @@ import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { pushNotification } from "@/store";
 import {
   openWorksheetByName,
   revealNodes,
@@ -1157,7 +1156,7 @@ export function SheetTree({
                   folders: worksheet.folders,
                   database: worksheet.database,
                 });
-                pushNotification({
+                useAppStore.getState().notify({
                   module: "bytebase",
                   style: "INFO",
                   title: t("sheet.notifications.duplicate-success"),

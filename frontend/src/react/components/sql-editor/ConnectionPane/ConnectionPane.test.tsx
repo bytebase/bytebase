@@ -218,7 +218,7 @@ vi.mock("@/store/modules", () => ({
   useDBGroupStore: () => mocks.dbGroupStore,
 }));
 
-vi.mock("@/store/modules/v1/common", () => ({
+vi.mock("@/react/lib/resourceName", () => ({
   instanceNamePrefix: "instances/",
 }));
 

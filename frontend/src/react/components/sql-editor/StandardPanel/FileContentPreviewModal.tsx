@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
-import { pushNotification } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { ENCODINGS, type Encoding, readFileAsArrayBuffer } from "@/utils";
 
 interface FileContentPreviewModalProps {
@@ -54,7 +54,7 @@ export function FileContentPreviewModal({
       .catch((error) => {
         if (cancelled) return;
         console.error(error);
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "CRITICAL",
           title: "Failed to read file",

@@ -1,16 +1,14 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
+import { isValidDatabaseName } from "@/types";
 import { UNKNOWN_ID } from "@/types/const";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
-import {
-  getConnectionForSQLEditorTab,
-  getDatabaseEnvironment,
-  hexToRgb,
-} from "@/utils";
+import { hexToRgb } from "@/utils";
 import { AdminLabel } from "./AdminLabel";
 import { Label } from "./Label";
 import { Prefix } from "./Prefix";
@@ -56,15 +54,15 @@ export function TabItem({
   const isCurrentTab = tab.id === currentTabId;
 
   // Derive the environment tint (used as the top border on the current tab).
-  // Wrapped in `usePiniaBridge` so the tab re-renders when the Pinia
-  // database/environment state hydrates async — without this the tab
-  // sticks on the fallback `#4f46e5` indigo even after the environment
-  // resolves, which is what made the React tabs look more saturated
-  // than the Vue version.
-  const environmentTintColor = usePiniaBridge(() => {
-    const { database } = getConnectionForSQLEditorTab(tab);
-    if (!database) return undefined;
-    const environment = getDatabaseEnvironment(database);
+  // Subscribes via the app store so the tab re-renders when the database
+  // and its environment hydrate async — without this the tab sticks on
+  // the fallback `#4f46e5` indigo and looks more saturated than intended.
+  const database = useAppDatabase(tab.connection.database ?? "");
+  const environmentTintColor = useAppStore((s) => {
+    if (!isValidDatabaseName(database.name)) return undefined;
+    const environment = s.getEnvironmentByName(
+      database.effectiveEnvironment ?? ""
+    );
     if (!environment || environment.id === String(UNKNOWN_ID)) return undefined;
     return environment.color || undefined;
   });

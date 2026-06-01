@@ -28,7 +28,6 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -101,7 +100,6 @@ export function SQLEditorRouteShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const route = useCurrentRoute();
-  const actuatorStore = useActuatorV1Store();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -150,7 +148,9 @@ export function SQLEditorRouteShell() {
       pageToken: "",
     });
     return (
-      head(projects)?.name ?? actuatorStore.serverInfo?.defaultProject ?? ""
+      head(projects)?.name ??
+      useAppStore.getState().serverInfo?.defaultProject ??
+      ""
     );
   };
 
@@ -197,7 +197,7 @@ export function SQLEditorRouteShell() {
       return false;
     }
     if (!isWorksheetReadableV1(sheet)) {
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "CRITICAL",
         title: t("common.access-denied"),

@@ -16,7 +16,6 @@ const mocks = vi.hoisted(() => ({
         project?: unknown
       ) => [boolean, string | undefined]
     >(),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   routerPush: vi.fn(),
   projectData: { name: "projects/test" } as { name: string },
 }));
@@ -31,10 +30,6 @@ vi.mock("@/react/components/PermissionGuard", () => ({
 
 vi.mock("@/react/components/BytebaseLogo", () => ({
   BytebaseLogo: () => null,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/hooks/useAppProject", () => ({
@@ -86,8 +81,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  // Default: workspace logo empty, both permissions granted.
-  mocks.useVueState.mockReturnValue("");
+  // Default: both permissions granted.
   mocks.usePermissionCheck.mockReturnValue([true, undefined]);
   ({ Welcome } = await import("./Welcome"));
 });

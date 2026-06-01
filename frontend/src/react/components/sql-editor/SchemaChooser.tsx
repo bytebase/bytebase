@@ -2,11 +2,11 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useVueRoute } from "@/react/hooks/useVueRoute";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
 import { useDBSchemaV1Store } from "@/store";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
 import { ConnectChooser } from "./ConnectChooser";
@@ -69,9 +69,7 @@ export function SchemaChooser() {
   // tracked both `route.query.schema` and `tab.value` (the latter via the
   // setter's reactive reads) so that switching to a new tab with the URL
   // query still present re-seeded the new tab's connection.schema.
-  const queryParam = usePiniaBridge(
-    () => router.currentRoute.value.query.schema as string | undefined
-  );
+  const queryParam = useVueRoute().query.schema as string | undefined;
   const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   useEffect(() => {
     if (queryParam) handleChange(queryParam);

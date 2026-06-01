@@ -4,7 +4,6 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "@/react/stores/app";
-import { hasFeature } from "@/store";
 import {
   migrateDraftsFromCache,
   migrateTabViewState,
@@ -623,11 +622,12 @@ export const useIsInBatchMode = (): boolean =>
     const tab = s.tabsById.get(s.currentTabId);
     if (!tab) return false;
     if (tab.mode === "ADMIN") return false;
-    if (!hasFeature(PlanFeature.FEATURE_BATCH_QUERY)) return false;
+    const appStore = useAppStore.getState();
+    if (!appStore.hasFeature(PlanFeature.FEATURE_BATCH_QUERY)) return false;
     const ctx = tab.batchQueryContext;
     if (!ctx) return false;
     const { databaseGroups = [], databases = [] } = ctx;
-    if (!hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
+    if (!appStore.hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
       return databases.length > 1;
     }
     return databaseGroups.length > 0 || databases.length > 1;

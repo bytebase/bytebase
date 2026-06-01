@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { pushNotification } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { isDescendantOf } from "@/utils/dom";
 import { extractSQLRowValuePlain } from "@/utils/v1/sql";
@@ -336,7 +336,7 @@ export function SQLResultViewProvider({
       setCopying(true);
       try {
         await navigator.clipboard.writeText(payload);
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "SUCCESS",
           title: t("common.copied"),
@@ -344,7 +344,7 @@ export function SQLResultViewProvider({
       } catch (err) {
         const errors = [t("common.failed")];
         if (err instanceof Error) errors.push(err.message);
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "WARN",
           title: errors.join(": "),

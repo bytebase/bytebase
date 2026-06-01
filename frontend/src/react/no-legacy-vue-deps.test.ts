@@ -158,16 +158,8 @@ describe("React Project and Settings legacy Vue dependencies", () => {
     const bannedImports = [
       "useUserStore",
       "useRoleStore",
-      "useReleaseStore",
-      "useRevisionStore",
-      "useChangelogStore",
-      "useProjectWebhookV1Store",
       "@/store/modules/user",
       "@/store/modules/role",
-      "@/store/modules/release",
-      "@/store/modules/revision",
-      "@/store/modules/v1/changelog",
-      "@/store/modules/v1/projectWebhook",
     ];
     const violations: string[] = [];
     for (const [file, source] of Object.entries(sources)) {

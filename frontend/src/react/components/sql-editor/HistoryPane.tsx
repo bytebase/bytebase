@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
+import { useAppStore } from "@/react/stores/app";
 import type { QueryHistoryFilter } from "@/react/stores/sqlEditor";
 import {
   selectQueryHistoryEntry,
@@ -21,7 +22,6 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";
@@ -131,7 +131,7 @@ export function HistoryPane() {
   const handleCopy = async (statement: string) => {
     try {
       await navigator.clipboard.writeText(statement);
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),

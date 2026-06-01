@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
 import { cloneDeep, isEmpty } from "lodash-es";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useAppStore } from "@/react/stores/app";
@@ -11,7 +11,6 @@ import {
   getDatabaseQueryContext,
   getSQLEditorTabsState,
 } from "@/react/stores/sqlEditor/tab";
-import { hasFeature, pushNotification, useSQLStore } from "@/store";
 import type {
   BBNotificationStyle,
   QueryContextStatus,
@@ -46,12 +45,20 @@ const QUERY_INTERVAL_LIMIT = 1000;
 export const useExecuteSQL = () => {
   const { t } = useTranslation();
   const lastQueryTimeRef = useRef<number | undefined>(undefined);
+  // Eagerly fetch the subscription so the batch-query / database-group
+  // gates below see the licensed plan when the user clicks Run. The hook
+  // is mounted by `EditorMain` on every tab open, so this fires once per
+  // tab; `loadSubscription` itself dedupes via an in-flight request.
+  const loadSubscription = useAppStore((s) => s.loadSubscription);
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
   const notify = (
     type: BBNotificationStyle,
     title: string,
     description?: string
   ) => {
-    pushNotification({
+    useAppStore.getState().notify({
       module: "bytebase",
       style: type,
       title,
@@ -173,9 +180,10 @@ export const useExecuteSQL = () => {
       ]);
 
       // Check if the user selects multiple databases to query.
+      const appStore = useAppStore.getState();
       if (
         freshTab.batchQueryContext &&
-        hasFeature(PlanFeature.FEATURE_BATCH_QUERY)
+        appStore.hasFeature(PlanFeature.FEATURE_BATCH_QUERY)
       ) {
         const { databases = [], databaseGroups = [] } =
           freshTab.batchQueryContext;
@@ -189,7 +197,7 @@ export const useExecuteSQL = () => {
           batchQueryDatabaseSet.add(databaseResourceName);
         }
 
-        if (hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
+        if (appStore.hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
           for (const databaseGroupName of databaseGroups) {
             try {
               const databaseGroup = await useAppStore
@@ -324,7 +332,6 @@ export const useExecuteSQL = () => {
       if (!abortController) {
         return;
       }
-      const sqlStore = useSQLStore();
 
       const dataSourceId = context.params.connection.dataSourceId;
 
@@ -343,7 +350,7 @@ export const useExecuteSQL = () => {
         ...(context.params.queryOption ?? ({} as QueryOption)),
         redisRunCommandsOn: editorState.redisCommandOption,
       });
-      const resultSet = await sqlStore.query(
+      const resultSet = await useAppStore.getState().query(
         create(QueryRequestSchema, {
           name: database.name,
           ...(dataSourceId ? { dataSourceId } : {}),

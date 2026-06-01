@@ -14,13 +14,6 @@ import { getSQLEditorEditorState } from "./editor";
 import { getSQLEditorTabsState } from "./tab";
 import type { SQLEditorSliceCreator, WorksheetSaveSlice } from "./types";
 
-// Pinia store barrel transitively re-imports `@/react/stores/sqlEditor`,
-// so we still pull the Pinia bits in at call time via the helper below
-// to avoid a TDZ cycle. The new Zustand editor / tab stores are local
-// to this module's directory and safe to import statically.
-const importProjectIamPolicyStore = () =>
-  import("@/store/modules/v1/projectIamPolicy");
-
 export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   WorksheetSaveSlice
 > = (set, get) => ({
@@ -38,9 +31,7 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   },
 
   maybeSwitchProject: async (projectName) => {
-    const { useProjectIamPolicyStore } = await importProjectIamPolicyStore();
     const editorStore = getSQLEditorEditorState();
-    const projectIamPolicyStore = useProjectIamPolicyStore();
 
     editorStore.setProjectContextReady(false);
     try {
@@ -51,8 +42,11 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
       if (!project) {
         return;
       }
-      // Fetch IAM policy to ensure permission checks work correctly.
-      await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
+      // Fetch IAM policy so `hasProjectPermissionV2` sees the bindings. The
+      // Pinia permission store falls back to `app.projectPoliciesByName` when
+      // its own cache is empty, so populating the app `iam` slice is enough
+      // (see `src/store/modules/v1/permission.ts`).
+      await useAppStore.getState().loadProjectIamPolicy(project.name);
       editorStore.setProject(project.name);
       await sqlEditorEvents.emit("project-context-ready", {
         project: project.name,
