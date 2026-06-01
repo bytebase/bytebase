@@ -30,12 +30,7 @@ import {
   isCurrentColumnException,
 } from "@/react/lib/sensitive-data/utils";
 import { useAppStore } from "@/react/stores/app";
-import {
-  featureToRef,
-  pushNotification,
-  usePolicyV1Store,
-  useSettingV1Store,
-} from "@/store";
+import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type { Permission } from "@/types";
 import type {
   ColumnCatalog,
@@ -190,7 +185,6 @@ const itemKey = (item: MaskData) => {
 
 export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const policyStore = usePolicyV1Store();
   const settingStore = useSettingV1Store();
 
   const catalog = useDatabaseCatalog(database.name, false);
@@ -297,10 +291,12 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     showGrantAccessDialog && checkedColumnList.length > 0;
 
   const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
-    const policy = await policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: database.project,
-      policyType: PolicyType.MASKING_EXEMPTION,
-    });
+    const policy = await useAppStore
+      .getState()
+      .getOrFetchPolicyByParentAndType({
+        parentPath: database.project,
+        policyType: PolicyType.MASKING_EXEMPTION,
+      });
     if (!policy) {
       return;
     }
@@ -324,7 +320,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       }),
     };
 
-    await policyStore.upsertPolicy({
+    await useAppStore.getState().upsertPolicy({
       parentPath: database.project,
       policy,
     });

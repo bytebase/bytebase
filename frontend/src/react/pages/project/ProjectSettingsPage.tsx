@@ -17,6 +17,7 @@ import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
 import { router } from "@/router";
@@ -28,7 +29,6 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
-  usePolicyV1Store,
   useProjectV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -131,7 +131,6 @@ function ApprovalFlowIndicator({
 export function ProjectSettingsPage() {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const policyStore = usePolicyV1Store();
   const reviewStore = useSQLReviewStore();
   const subscriptionStore = useSubscriptionV1Store();
 
@@ -183,8 +182,8 @@ export function ProjectSettingsPage() {
   const [enforceReview, setEnforceReview] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
 
-  const queryDataPolicy = useVueState(() =>
-    policyStore.getQueryDataPolicyByParent(projectName)
+  const queryDataPolicy = useAppStore((s) =>
+    s.getQueryDataPolicyByParent(projectName)
   );
   const getInitialMaxRows = useCallback(() => {
     const rows = Number(queryDataPolicy?.maximumResultRows ?? 0);
@@ -263,11 +262,11 @@ export function ProjectSettingsPage() {
     if (lastFetchedProject.current === projectName) return;
     lastFetchedProject.current = projectName;
     useSQLReviewStore.getState().fetchReviewPolicyList();
-    policyStore.getOrFetchPolicyByParentAndType({
+    useAppStore.getState().getOrFetchPolicyByParentAndType({
       parentPath: projectName,
       policyType: PolicyType.DATA_QUERY,
     });
-  }, [policyStore, projectName]);
+  }, [projectName]);
 
   // Sync review policy state when it loads or changes externally
   useEffect(() => {
@@ -433,7 +432,7 @@ export function ProjectSettingsPage() {
       // 2. Max rows policy (separate API)
       const maxRowsValue = maxRows ?? 0;
       if (maxRowsValue !== getInitialMaxRows()) {
-        await policyStore.upsertPolicy({
+        await useAppStore.getState().upsertPolicy({
           parentPath: projectName,
           policy: {
             type: PolicyType.DATA_QUERY,
@@ -545,7 +544,6 @@ export function ProjectSettingsPage() {
     project,
     projectStore,
     reviewStore,
-    policyStore,
     projectName,
     title,
     labelKVList,

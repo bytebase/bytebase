@@ -61,6 +61,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { getEmptyRolloutPolicy } from "@/react/stores/app/policy";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import {
@@ -76,10 +77,6 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import {
-  getEmptyRolloutPolicy,
-  usePolicyV1Store,
-} from "@/store/modules/v1/policy";
 import {
   formatEnvironmentName,
   isValidEnvironmentName,
@@ -651,7 +648,6 @@ function EnvironmentDetail({
 }) {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
-  const policyStore = usePolicyV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
@@ -694,10 +690,12 @@ function EnvironmentDetail({
   useEffect(() => {
     const fetchPolicy = async () => {
       const envName = formatEnvironmentName(environment.id);
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: envName,
-        policyType: PolicyType.ROLLOUT_POLICY,
-      });
+      const policy = await useAppStore
+        .getState()
+        .getOrFetchPolicyByParentAndType({
+          parentPath: envName,
+          policyType: PolicyType.ROLLOUT_POLICY,
+        });
       const result =
         policy ??
         create(PolicySchema, {
@@ -710,7 +708,7 @@ function EnvironmentDetail({
       setOriginalRolloutPolicy(cloneDeep(result));
     };
     fetchPolicy();
-  }, [environment.id, policyStore]);
+  }, [environment.id]);
 
   // Check for related resources (instances/databases)
   const instanceStore = useInstanceV1Store();
@@ -809,7 +807,7 @@ function EnvironmentDetail({
 
     // Update rollout policy if changed
     if (policyChanged && rolloutPolicy) {
-      await policyStore.upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: formatEnvironmentName(environment.id),
         policy: rolloutPolicy,
       });
@@ -1444,7 +1442,6 @@ function ReorderSheetInner({
 export function EnvironmentsPage() {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
-  const policyStore = usePolicyV1Store();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
   );
@@ -1545,7 +1542,7 @@ export function EnvironmentsPage() {
 
     const isCustomized = !isEqual(rolloutPolicy, DEFAULT_POLICY);
     if (isCustomized) {
-      await policyStore.upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: `${environmentNamePrefix}${createdEnvironment.id}`,
         policy: rolloutPolicy,
       });

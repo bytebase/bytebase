@@ -35,10 +35,10 @@ import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
 } from "@/react/lib/sensitive-data/components-utils";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  usePolicyV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -358,7 +358,6 @@ function MaskingRuleConfig({
 
 export function GlobalMaskingPage() {
   const { t } = useTranslation();
-  const policyStore = usePolicyV1Store();
   const actuatorStore = useActuatorV1Store();
   const settingStore = useSettingV1Store();
   const subscriptionStore = useSubscriptionV1Store();
@@ -422,10 +421,12 @@ export function GlobalMaskingPage() {
 
   useEffect(() => {
     const load = async () => {
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: actuatorStore.workspaceResourceName,
-        policyType: PolicyType.MASKING_RULE,
-      });
+      const policy = await useAppStore
+        .getState()
+        .getOrFetchPolicyByParentAndType({
+          parentPath: actuatorStore.workspaceResourceName,
+          policyType: PolicyType.MASKING_RULE,
+        });
       if (policy) {
         const rules =
           policy.policy?.case === "maskingRulePolicy"
@@ -460,7 +461,7 @@ export function GlobalMaskingPage() {
         }),
       },
     };
-    await policyStore.upsertPolicy({
+    await useAppStore.getState().upsertPolicy({
       parentPath: actuatorStore.workspaceResourceName,
       policy: patch,
     });
@@ -572,7 +573,8 @@ export function GlobalMaskingPage() {
               disabled={processing}
               onClick={() => {
                 setReorderRules(false);
-                policyStore
+                useAppStore
+                  .getState()
                   .getOrFetchPolicyByParentAndType({
                     parentPath: actuatorStore.workspaceResourceName,
                     policyType: PolicyType.MASKING_RULE,

@@ -178,10 +178,8 @@ const mocks = vi.hoisted(() => {
     featureToRef: vi.fn(() => ({ value: true })),
     useVueState: vi.fn((getter: () => unknown) => getter()),
     useDatabaseCatalog: vi.fn(() => makeDatabaseCatalog()),
-    usePolicyV1Store: vi.fn(() => ({
-      getOrFetchPolicyByParentAndType: vi.fn(),
-      upsertPolicy: vi.fn(),
-    })),
+    getOrFetchPolicyByParentAndType: vi.fn(),
+    upsertPolicy: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
     useSettingV1Store: vi.fn(() => ({
       getOrFetchSettingByName: vi.fn(),
@@ -372,7 +370,6 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
   pushNotification: mocks.pushNotification,
-  usePolicyV1Store: mocks.usePolicyV1Store,
   useSettingV1Store: mocks.useSettingV1Store,
 }));
 
@@ -384,6 +381,8 @@ vi.mock("@/react/stores/app", () => ({
   useAppStore: {
     getState: () => ({
       updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+      getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
+      upsertPolicy: mocks.upsertPolicy,
     }),
   },
 }));
@@ -473,11 +472,8 @@ beforeEach(async () => {
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue(makeDatabaseCatalog());
-  mocks.usePolicyV1Store.mockReset();
-  mocks.usePolicyV1Store.mockReturnValue({
-    getOrFetchPolicyByParentAndType: vi.fn(),
-    upsertPolicy: vi.fn(),
-  });
+  mocks.getOrFetchPolicyByParentAndType.mockReset();
+  mocks.upsertPolicy.mockReset();
   mocks.updateDatabaseCatalog.mockReset();
   mocks.updateDatabaseCatalog.mockResolvedValue(undefined);
   mocks.useSettingV1Store.mockReset();

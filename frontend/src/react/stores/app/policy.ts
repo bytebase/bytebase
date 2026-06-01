@@ -5,11 +5,13 @@ import { silentContextKey } from "@/connect/context-key";
 import {
   DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
+  type Policy,
   PolicyResourceType,
   PolicySchema,
   PolicyType,
   type QueryDataPolicy,
   QueryDataPolicySchema,
+  RolloutPolicySchema,
   UpdatePolicyRequestSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { AppSliceCreator, PolicySlice } from "./types";
@@ -53,6 +55,23 @@ const EMPTY_QUERY_DATA_POLICY: QueryDataPolicy = createProto(
   QueryDataPolicySchema,
   { maximumResultRows: -1 }
 );
+
+// Pure helper relocated from the legacy Pinia policy module.
+export const getEmptyRolloutPolicy = (
+  parentPath: string,
+  resourceType: PolicyResourceType
+): Policy =>
+  createProto(PolicySchema, {
+    name: policyResourceName(parentPath, PolicyType.ROLLOUT_POLICY),
+    inheritFromParent: false,
+    type: PolicyType.ROLLOUT_POLICY,
+    resourceType,
+    enforce: true,
+    policy: {
+      case: "rolloutPolicy",
+      value: createProto(RolloutPolicySchema, { automatic: false, roles: [] }),
+    },
+  });
 
 const policyResourceName = (parent: string, policyType: PolicyType) =>
   replacePolicyTypeNameToLowerCase(

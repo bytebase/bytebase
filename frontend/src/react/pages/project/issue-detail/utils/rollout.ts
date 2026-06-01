@@ -1,5 +1,4 @@
 import { useAppStore } from "@/react/stores/app";
-import { usePolicyV1Store } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
@@ -60,7 +59,6 @@ export const canRolloutTasks = ({
     return true;
   }
 
-  const policyStore = usePolicyV1Store();
   const projectIamPolicy = useAppStore
     .getState()
     .getProjectIamPolicy(project.name);
@@ -72,7 +70,7 @@ export const canRolloutTasks = ({
       return false;
     }
 
-    const rolloutPolicy = policyStore.getPolicyByParentAndType({
+    const rolloutPolicy = useAppStore.getState().getPolicyByParentAndType({
       parentPath: environment,
       policyType: PolicyType.ROLLOUT_POLICY,
     });
@@ -116,14 +114,12 @@ export const preloadRolloutPermissionContext = async ({
     return;
   }
 
-  const policyStore = usePolicyV1Store();
-
   await Promise.allSettled([
     useAppStore.getState().loadProjectIamPolicy(projectName),
   ]);
 
   const policyResults = await Promise.allSettled([
-    policyStore.getOrFetchPolicyByParentAndType({
+    useAppStore.getState().getOrFetchPolicyByParentAndType({
       parentPath: environment,
       policyType: PolicyType.ROLLOUT_POLICY,
     }),
