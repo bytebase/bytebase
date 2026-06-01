@@ -14,13 +14,11 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store } from "@/store";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetID } from "@/utils";
@@ -42,11 +40,7 @@ type Props = {
  */
 export function SharePopoverBody({ worksheet }: Props) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-
-  const workspaceExternalURL = usePiniaBridge(
-    () => actuatorStore.serverInfo?.externalUrl
-  );
+  const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
   const currentUser = useCurrentUser();
   const tabStatus = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.status
@@ -123,13 +117,13 @@ export function SharePopoverBody({ worksheet }: Props) {
 
     try {
       await navigator.clipboard.writeText(sharedTabLink);
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),
       });
     } catch {
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.updated"),
@@ -145,7 +139,7 @@ export function SharePopoverBody({ worksheet }: Props) {
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(sharedTabLink);
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),

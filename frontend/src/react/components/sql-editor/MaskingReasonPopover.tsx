@@ -8,8 +8,8 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { useAppProject } from "@/react/hooks/useAppProject";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { hasFeature } from "@/store";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
@@ -32,11 +32,13 @@ export function MaskingReasonPopover({
 
   const projectName = useSQLEditorEditorState((s) => s.project);
   const project = useAppProject(projectName);
+  const hasJITFeatureFlag = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_JIT)
+  );
 
   const hasJITFeature = useMemo(
-    () =>
-      !!project?.allowJustInTimeAccess && hasFeature(PlanFeature.FEATURE_JIT),
-    [project]
+    () => !!project?.allowJustInTimeAccess && hasJITFeatureFlag,
+    [project, hasJITFeatureFlag]
   );
 
   const targets = useMemo(() => (database ? [database] : []), [database]);

@@ -23,6 +23,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { router } from "@/router";
 import {
   pushNotification,
@@ -39,7 +40,6 @@ import {
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import {
   isValidDatabaseName,
   UNKNOWN_ENVIRONMENT_NAME,

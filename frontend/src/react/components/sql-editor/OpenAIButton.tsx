@@ -15,9 +15,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   useIsDisconnected,
@@ -25,7 +25,6 @@ import {
 } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 
@@ -52,23 +51,20 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
   const { t } = useTranslation();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
-  const settingV1Store = useSettingV1Store();
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   // Make sure the AI setting is resolved before we gate the enabled state.
   useEffect(() => {
-    void settingV1Store.getOrFetchSettingByName(
-      Setting_SettingName.AI,
-      true /* silent */
-    );
-  }, [settingV1Store]);
+    void getOrFetchSettingByName(Setting_SettingName.AI, true /* silent */);
+  }, [getOrFetchSettingByName]);
 
   const isDisconnected = useIsDisconnected();
   const currentMode = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.mode
   );
-  const openAIEnabled = usePiniaBridge(() => {
-    const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  const openAIEnabled = useAppStore((s) => {
+    const setting = s.getSettingByName(Setting_SettingName.AI);
     return setting?.value?.value?.case === "ai"
       ? setting.value.value.value.enabled
       : false;

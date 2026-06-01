@@ -10,7 +10,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
-  useActuatorV1Store: vi.fn(),
+  serverInfo: { externalUrl: "https://example.com" } as
+    | { externalUrl: string }
+    | undefined,
   useCurrentUser: vi.fn(),
   patchWorksheet: vi.fn().mockResolvedValue({}),
   // `useSQLEditorTabState(selector)` runs `selector` against this stub
@@ -36,16 +38,22 @@ vi.mock("@/react/hooks/useAppState", () => ({
   useCurrentUser: mocks.useCurrentUser,
 }));
 
-vi.mock("@/store", () => ({
-  useActuatorV1Store: mocks.useActuatorV1Store,
-  pushNotification: mocks.pushNotification,
-}));
-
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({ patchWorksheet: mocks.patchWorksheet }),
-  },
-}));
+vi.mock("@/react/stores/app", () => {
+  // `notify` reuses the `pushNotification` vi.fn so the existing test
+  // assertions on `mocks.pushNotification` keep working after the migration
+  // from the Pinia helper to the app-store notification slice.
+  const state = () => ({
+    serverInfo: mocks.serverInfo,
+    patchWorksheet: mocks.patchWorksheet,
+    notify: mocks.pushNotification,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: ReturnType<typeof state>) => unknown) => selector(state()),
+      { getState: state }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
   useSQLEditorTabState: (
@@ -135,9 +143,7 @@ beforeEach(async () => {
 
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
 
-  mocks.useActuatorV1Store.mockReturnValue({
-    serverInfo: { externalUrl: "https://example.com" },
-  });
+  mocks.serverInfo = { externalUrl: "https://example.com" };
   mocks.useCurrentUser.mockReturnValue({
     email: "test@example.com",
     name: "users/test@example.com",

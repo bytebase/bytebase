@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
@@ -25,13 +25,27 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Policy,
+  PolicyType,
+  QueryDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
-import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
+import type {
+  Setting,
+  Setting_SettingName,
+  WorkspaceProfileSetting,
+} from "@/types/proto-es/v1/setting_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import type {
+  ExportRequest,
+  QueryRequest,
+} from "@/types/proto-es/v1/sql_service_pb";
 import type {
   PlanFeature,
   PlanType,
@@ -48,6 +62,7 @@ import type {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import type { SQLResultSetV1 } from "@/types/v1/sql";
 import type { AccessGrantFilterStatus } from "@/utils";
 
 export type ProjectListParams = {
@@ -132,6 +147,11 @@ export type WorkspaceSlice = {
   workspaceProfileRequest?: Promise<WorkspaceProfileSetting | undefined>;
   environmentList: Environment[];
   environmentRequest?: Promise<Environment[]>;
+  // General-purpose setting cache, mirrors the legacy Pinia
+  // `useSettingV1Store` API. Keyed by the setting's resource name
+  // (`settings/{Setting_SettingName}`).
+  settingsByName: Record<string, Setting>;
+  settingRequests: Record<string, Promise<Setting | undefined>>;
   appFeatures: AppFeatures;
   subscription?: Subscription;
   subscriptionRequest?: Promise<Subscription | undefined>;
@@ -150,6 +170,11 @@ export type WorkspaceSlice = {
   loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
   refreshEnvironmentList: () => Promise<Environment[]>;
   getEnvironmentByName: (name: string, fallback?: boolean) => Environment;
+  getSettingByName: (name: Setting_SettingName) => Setting | undefined;
+  getOrFetchSettingByName: (
+    name: Setting_SettingName,
+    silent?: boolean
+  ) => Promise<Setting | undefined>;
   loadSubscription: () => Promise<Subscription | undefined>;
   refreshSubscription: () => Promise<Subscription | undefined>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
@@ -549,6 +574,47 @@ export type PreferencesSlice = {
   recordRecentVisit: (path: string) => void;
   removeRecentVisit: (path: string) => void;
   resetQuickstartProgress: () => void;
+  saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
+};
+
+// Org policy slice (mirrors the SQL-editor-used subset of the Pinia
+// `usePolicyV1Store`): keyed by the policy resource name. Async fetchers
+// dedupe via `policyRequests`. `getQueryDataPolicyByParent` returns a stable
+// empty fallback when the policy isn't cached.
+export type PolicySlice = {
+  policyMapByName: Record<string, Policy>;
+  policyRequests: Record<string, Promise<Policy | undefined>>;
+  getPolicyByName: (name: string) => Policy | undefined;
+  getOrFetchPolicyByName: (
+    name: string,
+    refresh?: boolean
+  ) => Promise<Policy | undefined>;
+  getPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+  }) => Policy | undefined;
+  getOrFetchPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+    refresh?: boolean;
+  }) => Promise<Policy | undefined>;
+  getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
+};
+
+// Stateless issue service slice (mirrors the legacy Pinia `useIssueV1Store`):
+// thin wrapper around `issueServiceClientConnect.getIssue`. Returns the
+// fresh issue (no cache) and pre-fetches the owning project into the app
+// store so downstream code can read it synchronously.
+export type IssueSlice = {
+  fetchIssueByName: (name: string, silent?: boolean) => Promise<Issue>;
+};
+
+// Stateless SQL service slice (mirrors the legacy Pinia `useSQLStore`):
+// thin wrappers around `sqlServiceClientConnect.query` / `.export` with the
+// SQL editor's permission-denied / silent context conventions.
+export type SQLSlice = {
+  query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
+  exportData: (params: ExportRequest) => Promise<Uint8Array>;
 };
 
 export type AppStoreState = AuthSlice &
@@ -573,6 +639,9 @@ export type AppStoreState = AuthSlice &
   ChangelogSlice &
   ProjectWebhookSlice &
   NotificationSlice &
-  PreferencesSlice;
+  PreferencesSlice &
+  SQLSlice &
+  IssueSlice &
+  PolicySlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

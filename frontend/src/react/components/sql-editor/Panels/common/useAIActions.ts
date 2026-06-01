@@ -2,8 +2,7 @@ import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
 import type { ChatAction } from "@/plugins/ai/types";
 import type { MonacoModule } from "@/react/components/monaco/types";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
-import { useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 interface UseAIActionsOptions {
@@ -29,17 +28,21 @@ export function useAIActions({
   actions,
   callback,
 }: UseAIActionsOptions) {
-  const settingStore = useSettingV1Store();
-  // Subscribe to the Pinia setting so the registered Monaco actions
-  // re-register or unregister live when an admin toggles AI access
-  // while the editor is mounted (matches the Vue `watchEffect` behavior
-  // in `editor-actions.ts`).
-  const aiEnabled = usePiniaBridge(() => readEnabled(settingStore));
-  // Defensive fetch — the global `ProvideAIContext.vue` triggers this
-  // on app mount, but a deep-link to a code panel can race that.
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  // Subscribe to the AI setting so the registered Monaco actions re-register
+  // or unregister live when an admin toggles AI access while the editor is
+  // mounted (matches the Vue `watchEffect` behavior in `editor-actions.ts`).
+  const aiEnabled = useAppStore((s) => {
+    const setting = s.getSettingByName(Setting_SettingName.AI);
+    return setting?.value?.value?.case === "ai"
+      ? (setting.value.value.value.enabled ?? false)
+      : false;
+  });
+  // Defensive fetch — the SQL editor route doesn't load the AI setting at
+  // bootstrap, and a deep-link to a code panel can land here first.
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(Setting_SettingName.AI, true);
-  }, [settingStore]);
+    void getOrFetchSettingByName(Setting_SettingName.AI, true);
+  }, [getOrFetchSettingByName]);
 
   useEffect(() => {
     if (!monaco || !editor || !aiEnabled) return;
@@ -120,14 +123,4 @@ export function useAIActions({
       subscriptions.forEach((sub) => sub.dispose());
     };
   }, [monaco, editor, aiEnabled, actions, callback]);
-}
-
-function readEnabled(
-  settingStore: ReturnType<typeof useSettingV1Store>
-): boolean {
-  const setting = settingStore.getSettingByName(Setting_SettingName.AI);
-  if (setting?.value?.value?.case === "ai") {
-    return setting.value.value.value.enabled ?? false;
-  }
-  return false;
 }

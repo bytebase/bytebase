@@ -5,9 +5,9 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { router } from "@/router";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 import {

@@ -17,12 +17,12 @@ import {
 } from "@/react/components/monaco/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useWorksheetAndTab } from "@/react/hooks/useWorksheetAndTab";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useUIStateStore } from "@/store";
 import {
   dialectOfEngineV1,
   isValidDatabaseName,
@@ -57,15 +57,15 @@ interface SQLEditorProps {
  *
  * Listens to `sqlEditorEvents` for `format-content`,
  * `set-editor-selection`, `append-editor-content`. The active editor
- * instance is published to `activeSQLEditorRef` (Vue `shallowRef`
- * singleton) so the legacy ResultView's ErrorView keeps working.
+ * instance is published to `activeSQLEditorRef` (plain mutable
+ * singleton) so ResultView's ErrorView "Goto Error" action can
+ * imperatively focus the editor.
  *
  * Exposes `getActiveStatement` via `useImperativeHandle` so EditorMain
  * (parent) can read the active selection or full statement when a query
  * is run from the toolbar.
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
-  const uiStateStore = useUIStateStore();
   const { isReadOnly: readonly } = useWorksheetAndTab();
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const setPendingInsertAtCaret = useSQLEditorStore(
@@ -207,12 +207,12 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         selection: newTab ? null : tab.editorState.selection,
       };
       onExecuteRef.current(params, newTab);
-      uiStateStore.saveIntroStateByKey({
+      useAppStore.getState().saveIntroStateByKey({
         key: "data.query",
         newState: true,
       });
     },
-    [getActiveStatement, uiStateStore]
+    [getActiveStatement]
   );
 
   // ----- onReady: register Monaco actions + commands -----

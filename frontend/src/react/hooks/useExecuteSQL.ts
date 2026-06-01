@@ -11,7 +11,6 @@ import {
   getDatabaseQueryContext,
   getSQLEditorTabsState,
 } from "@/react/stores/sqlEditor/tab";
-import { hasFeature, pushNotification, useSQLStore } from "@/store";
 import type {
   BBNotificationStyle,
   QueryContextStatus,
@@ -51,7 +50,7 @@ export const useExecuteSQL = () => {
     title: string,
     description?: string
   ) => {
-    pushNotification({
+    useAppStore.getState().notify({
       module: "bytebase",
       style: type,
       title,
@@ -173,9 +172,10 @@ export const useExecuteSQL = () => {
       ]);
 
       // Check if the user selects multiple databases to query.
+      const appStore = useAppStore.getState();
       if (
         freshTab.batchQueryContext &&
-        hasFeature(PlanFeature.FEATURE_BATCH_QUERY)
+        appStore.hasFeature(PlanFeature.FEATURE_BATCH_QUERY)
       ) {
         const { databases = [], databaseGroups = [] } =
           freshTab.batchQueryContext;
@@ -189,7 +189,7 @@ export const useExecuteSQL = () => {
           batchQueryDatabaseSet.add(databaseResourceName);
         }
 
-        if (hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
+        if (appStore.hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
           for (const databaseGroupName of databaseGroups) {
             try {
               const databaseGroup = await useAppStore
@@ -324,7 +324,6 @@ export const useExecuteSQL = () => {
       if (!abortController) {
         return;
       }
-      const sqlStore = useSQLStore();
 
       const dataSourceId = context.params.connection.dataSourceId;
 
@@ -343,7 +342,7 @@ export const useExecuteSQL = () => {
         ...(context.params.queryOption ?? ({} as QueryOption)),
         redisRunCommandsOn: editorState.redisCommandOption,
       });
-      const resultSet = await sqlStore.query(
+      const resultSet = await useAppStore.getState().query(
         create(QueryRequestSchema, {
           name: database.name,
           ...(dataSourceId ? { dataSourceId } : {}),

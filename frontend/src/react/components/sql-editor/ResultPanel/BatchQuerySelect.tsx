@@ -22,7 +22,6 @@ import {
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useSQLStore } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -84,7 +83,7 @@ export function BatchQuerySelect({
 }: Props) {
   const { t } = useTranslation();
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
-  const sqlStore = useSQLStore();
+  const exportData = useAppStore((s) => s.exportData);
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
@@ -250,7 +249,7 @@ export function BatchQuerySelect({
             // Skip stub-database returns with a WARN toast so the user
             // knows their selection became stale (tab torn down mid-export).
             if (!isValidDatabaseName(database.name)) {
-              pushNotification({
+              useAppStore.getState().notify({
                 module: "bytebase",
                 style: "WARN",
                 title: t("sql-editor.batch-export.failed-for-db", {
@@ -268,7 +267,7 @@ export function BatchQuerySelect({
               resultSet?.error ||
               resultSet?.results.find((r) => r.error)?.error;
             if (resultError) {
-              pushNotification({
+              useAppStore.getState().notify({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: t("sql-editor.batch-export.failed-for-db", {
@@ -290,7 +289,7 @@ export function BatchQuerySelect({
                   options.limit > r.rows.length
               )
             ) {
-              pushNotification({
+              useAppStore.getState().notify({
                 module: "bytebase",
                 style: "WARN",
                 title: t("sql-editor.batch-export.failed-for-db", {
@@ -350,7 +349,7 @@ export function BatchQuerySelect({
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
-          const content = await sqlStore.exportData(
+          const content = await exportData(
             create(ExportRequestSchema, {
               name: databaseName,
               ...(context.params.connection.dataSourceId
@@ -371,7 +370,7 @@ export function BatchQuerySelect({
             }.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
           });
         } catch (e) {
-          pushNotification({
+          useAppStore.getState().notify({
             module: "bytebase",
             style: "CRITICAL",
             title: t("sql-editor.batch-export.failed-for-db", {

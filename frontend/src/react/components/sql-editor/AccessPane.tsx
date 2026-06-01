@@ -21,7 +21,6 @@ import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { hasFeature, useIssueV1Store } from "@/store";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -49,7 +48,7 @@ export function AccessPane() {
   const getOrFetchDatabaseByName = useAppStore(
     (state) => state.getOrFetchDatabaseByName
   );
-  const issueStore = useIssueV1Store();
+  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const highlightAccessGrantName = useSQLEditorStore(
     (s) => s.highlightAccessGrantName
   );
@@ -83,7 +82,9 @@ export function AccessPane() {
   const resolvedProject = useAppProject(projectName as string);
   const project = projectName ? resolvedProject : undefined;
 
-  const hasJITFeature = useMemo(() => hasFeature(PlanFeature.FEATURE_JIT), []);
+  const hasJITFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_JIT)
+  );
 
   // Build scope options for AdvancedSearch (React-compatible, no Vue renderers)
   const scopeOptions = useMemo((): ScopeOption[] => {
@@ -167,7 +168,7 @@ export function AccessPane() {
       const results = await Promise.all(
         pendingWithIssue.map(async (g) => {
           try {
-            const issue = await issueStore.fetchIssueByName(g.issue, true);
+            const issue = await fetchIssueByName(g.issue, true);
             return { grantName: g.name, issue };
           } catch {
             return undefined;
@@ -184,7 +185,7 @@ export function AccessPane() {
         return next;
       });
     },
-    [issueStore]
+    [fetchIssueByName]
   );
 
   const fetchAccessGrants = useCallback(

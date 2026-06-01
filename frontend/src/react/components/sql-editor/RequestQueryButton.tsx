@@ -5,7 +5,6 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useAppProject } from "@/react/hooks/useAppProject";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
 import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
 import { useAppStore } from "@/react/stores/app";
@@ -90,12 +89,14 @@ export function RequestQueryButton({
   const hasCustomRoleFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
-  const defaultQueryRole = usePiniaBridge(() =>
-    getDefaultQueryRole(
-      roleList,
-      permissionDeniedDetail.requiredPermissions,
-      hasCustomRoleFeature
-    )
+  const defaultQueryRole = useMemo(
+    () =>
+      getDefaultQueryRole(
+        roleList,
+        permissionDeniedDetail.requiredPermissions,
+        hasCustomRoleFeature
+      ),
+    [roleList, permissionDeniedDetail.requiredPermissions, hasCustomRoleFeature]
   );
 
   const useJIT = useMemo(

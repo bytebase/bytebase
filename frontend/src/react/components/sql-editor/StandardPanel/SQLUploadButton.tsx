@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
-import { pushNotification } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { MAX_UPLOAD_FILE_SIZE_MB } from "@/utils";
 import { FileContentPreviewModal } from "./FileContentPreviewModal";
 
@@ -57,7 +57,7 @@ export function SQLUploadButton({
         return;
       }
       if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "CRITICAL",
           title: t("issue.upload-sql-file-max-size-exceeded", {

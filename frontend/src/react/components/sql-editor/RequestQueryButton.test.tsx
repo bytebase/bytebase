@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   projectData: {
     name: "projects/proj1",
     allowJustInTimeAccess: false,
@@ -34,10 +33,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/store", () => ({
@@ -205,7 +200,6 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
   mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasInstanceFeature.mockReturnValue(false);
   mocks.appHasFeature.mockReturnValue(true);
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 };
 
 beforeEach(async () => {

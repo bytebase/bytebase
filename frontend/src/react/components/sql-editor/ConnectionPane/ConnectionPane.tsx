@@ -28,6 +28,8 @@ import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
+import { instanceNamePrefix } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -38,9 +40,6 @@ import {
   useIsInBatchMode,
   useSupportBatchMode,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification } from "@/store";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type {
   BatchQueryContext,
   QueryDataSourceType,
@@ -492,7 +491,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       if (ok) {
         setShowConnectionPanel(false);
       } else {
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "CRITICAL",
           title: t("sql-editor.no-queriable-database"),
@@ -525,7 +524,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       });
       const ok = await onBatchQueryContextChange(ctx);
       if (next.length > 0 && !ok) {
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "CRITICAL",
           title: t("sql-editor.no-queriable-database"),

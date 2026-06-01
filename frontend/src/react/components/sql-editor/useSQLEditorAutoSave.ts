@@ -5,7 +5,6 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 
 const AUTO_SAVE_DEBOUNCE_MS = 2000;
@@ -87,7 +86,7 @@ export function useSQLEditorAutoSave() {
       if (getSQLEditorTabsState().tabsById.get(tabId)?.status === "SAVING") {
         getSQLEditorTabsState().updateTab(tabId, { status: "DIRTY" });
       }
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "CRITICAL",
         title: "Auto-save failed",

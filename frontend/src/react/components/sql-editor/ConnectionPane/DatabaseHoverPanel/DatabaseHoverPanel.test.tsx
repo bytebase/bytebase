@@ -16,7 +16,6 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useHoverState: vi.fn(),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -25,10 +24,6 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("./hover-state", () => ({
   useHoverState: mocks.useHoverState,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/store", () => ({}));
@@ -98,7 +93,6 @@ const makeDatabaseNode = (): SQLEditorTreeNode =>
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useVueState.mockImplementation((getter) => getter());
   ({ DatabaseHoverPanel } = await import("./DatabaseHoverPanel"));
 });
 

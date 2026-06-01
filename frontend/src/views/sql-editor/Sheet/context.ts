@@ -17,7 +17,6 @@ import {
   subscribeSQLEditorTabsState,
   useSQLEditorTabsStore,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useCurrentUserV1 } from "@/store";
 import type { SQLEditorTab, SQLEditorTabMode } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
@@ -265,8 +264,8 @@ const currentScope = (): { project: string; email: string } | null => {
   const project = getSQLEditorEditorState().project;
   if (!project) return null;
   try {
-    const me = useCurrentUserV1();
-    return { project, email: me?.value?.email ?? "" };
+    const email = useAppStore.getState().currentUser?.email ?? "";
+    return { project, email };
   } catch {
     return null;
   }
@@ -607,16 +606,12 @@ const worksheetsForView = (view: SheetViewMode): Worksheet[] => {
   if (view !== "my" && view !== "shared") return [];
   const filter = useSheetContextStore.getState().filter;
   const project = getSQLEditorEditorState().project;
-  // Use the Pinia current user — the same source the worksheet FETCH
-  // filter uses (`fetchSheetListFor`), so it's reliably populated by the
-  // time worksheets land. The app store's `currentUser` can still be
-  // empty here, which would misclassify every worksheet as "shared".
-  let email = "";
-  try {
-    email = useCurrentUserV1()?.value?.email ?? "";
-  } catch {
-    email = "";
-  }
+  // SQLEditorLayout awaits `loadCurrentUser()` in its bootstrap, so by the
+  // time worksheets land here the app-store `currentUser` is populated.
+  // Empty `email` falls through to creator `"users/"`, which matches no
+  // worksheets — they'd render as Shared rather than Mine, same fallback
+  // the previous Pinia path had.
+  const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
   let list = useAppStore
     .getState()
@@ -698,20 +693,20 @@ const fetchSheetListFor = async (view: SheetViewMode) => {
   state.setViewIsLoading(view, true);
   try {
     const sheetStore = useAppStore.getState();
-    const me = useCurrentUserV1();
+    const email = sheetStore.currentUser?.email ?? "";
     const project = getSQLEditorEditorState().project;
     switch (view) {
       case "my":
         await sheetStore.fetchWorksheetList(
           project,
-          `creator == "users/${me.value.email}"`
+          `creator == "users/${email}"`
         );
         break;
       case "shared":
         await sheetStore.fetchWorksheetList(
           project,
           [
-            `creator != "users/${me.value.email}"`,
+            `creator != "users/${email}"`,
             `visibility in ["${Worksheet_Visibility[Worksheet_Visibility.PROJECT_READ]}","${Worksheet_Visibility[Worksheet_Visibility.PROJECT_WRITE]}"]`,
           ].join(" && ")
         );
@@ -768,12 +763,9 @@ const getViewContext = (view: SheetViewMode): ViewContext => {
 // ---- side effects (initialized lazily on first use) ------------------------
 
 const isWorksheetCreator = (worksheet: { creator: string }) => {
-  try {
-    const me = useCurrentUserV1();
-    return worksheet.creator === `users/${me.value.email}`;
-  } catch {
-    return false;
-  }
+  const email = useAppStore.getState().currentUser?.email;
+  if (!email) return false;
+  return worksheet.creator === `users/${email}`;
 };
 
 const batchUpdateWorksheetFolders = async (
@@ -1115,7 +1107,7 @@ export const openWorksheetByName = async ({
   if (!sheet) return undefined;
 
   if (!isWorksheetReadableV1(sheet)) {
-    pushNotification({
+    useAppStore.getState().notify({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.access-denied"),

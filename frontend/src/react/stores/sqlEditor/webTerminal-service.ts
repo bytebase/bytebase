@@ -10,7 +10,6 @@ import {
   createCancelableTimer,
 } from "@/react/lib/cancelableTimer";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification } from "@/store";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,
@@ -263,7 +262,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     }
     for (const result of resultSet.results) {
       for (const message of result.messages) {
-        pushNotification({
+        useAppStore.getState().notify({
           module: "bytebase",
           style: "INFO",
           title: QueryResult_Message_Level[message.level],

@@ -1,7 +1,7 @@
 import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
 import { useAppProject } from "@/react/hooks/useAppProject";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useVueRoute } from "@/react/hooks/useVueRoute";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -24,9 +24,7 @@ export function GutterBar() {
   const resolvedProject = useAppProject(projectName);
   const project = projectName ? resolvedProject : undefined;
 
-  const routeProjectParam = usePiniaBridge(
-    () => router.currentRoute.value.params.project as string | undefined
-  );
+  const routeProjectParam = useVueRoute().params.project as string | undefined;
 
   const logoHref = routeProjectParam
     ? router.resolve({

@@ -41,14 +41,21 @@ vi.mock("@/react/hooks/useAppState", () => ({
   }),
 }));
 
-vi.mock("@/store", () => ({
-  pushNotification: mocks.pushNotification,
-}));
-
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({ fetchDatabases: mocks.fetchDatabases }),
-}));
+vi.mock("@/react/stores/app", () => {
+  // `notify` reuses the `pushNotification` vi.fn so the existing test
+  // assertions on `mocks.pushNotification` keep working after the migration
+  // from the Pinia helper to the app-store notification slice.
+  const state = () => ({
+    fetchDatabases: mocks.fetchDatabases,
+    notify: mocks.pushNotification,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: ReturnType<typeof state>) => unknown) => selector(state()),
+      { getState: state }
+    ),
+  };
+});
 
 // Zustand editor store — active project read.
 vi.mock("@/react/stores/sqlEditor/editor", () => ({

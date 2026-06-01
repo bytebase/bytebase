@@ -78,4 +78,14 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     writeJson(key, next);
     emitReactQuickstartReset({ keys: QUICKSTART_RESET_KEYS });
   },
+
+  // Mirrors the Pinia `useUIStateStore.saveIntroStateByKey`: persists a
+  // single intro flag (e.g. `data.query`) to the per-user localStorage map.
+  saveIntroStateByKey: ({ key, newState }) => {
+    const email = getCurrentUserEmail(get);
+    if (!email) return;
+    const storageKey = storageKeyIntroState(email);
+    const previous = readJson<Record<string, boolean>>(storageKey, {});
+    writeJson(storageKey, { ...previous, [key]: newState });
+  },
 });

@@ -1,4 +1,5 @@
 import { Code, ConnectError } from "@connectrpc/connect";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import {
   getProjectName,
   getUserName,
@@ -6,7 +7,6 @@ import {
   projectNamePrefix,
   userNamePrefix,
 } from "@/react/lib/resourceName";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

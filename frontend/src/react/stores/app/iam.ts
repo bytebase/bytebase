@@ -77,7 +77,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       .getIamPolicy(
         createProto(GetIamPolicyRequestSchema, { resource: project })
       )
-      .then((policy) => {
+      .then(async (policy) => {
         set((state) => {
           const { [project]: _, ...projectPolicyRequests } =
             state.projectPolicyRequests;
@@ -89,6 +89,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
             projectPolicyRequests,
           };
         });
+        // Bridge to the Pinia projectIamPolicy store so the legacy
+        // `usePermissionStore.currentPermissionsInProjectV1` chain sees
+        // the policy without a second fetch. Dynamic import to avoid a
+        // static module-load cycle (Pinia projectIamPolicy transitively
+        // imports `@/store` chains that would re-enter this app store).
+        try {
+          const { useProjectIamPolicyStore } = await import(
+            "@/store/modules/v1/projectIamPolicy"
+          );
+          useProjectIamPolicyStore().setProjectIamPolicy(project, policy);
+        } catch {
+          // Pinia not available (e.g. some isolated test). Safe to ignore —
+          // the app-store cache is already populated.
+        }
         return policy;
       })
       .catch(() => {

@@ -1,5 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import semver from "semver";
 import {
@@ -10,6 +11,7 @@ import {
   userServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import {
   settingNamePrefix,
   workspaceNamePrefix,
@@ -144,6 +146,8 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   serverInfoTs: 0,
   workspaceList: [],
   environmentList: [],
+  settingsByName: {},
+  settingRequests: {},
   appFeatures: defaultAppProfile().features,
 
   loadServerInfo: async () => {
@@ -335,6 +339,59 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return { ...environment, id, name, title: id };
     }
     return environment;
+  },
+
+  // Mirrors the Pinia `useSettingV1Store`: general-purpose setting cache
+  // keyed by resource name (`settings/{Setting_SettingName}`). Used for AI /
+  // workspace-profile / etc.
+  getSettingByName: (name) => {
+    const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
+    return get().settingsByName[resourceName];
+  },
+
+  getOrFetchSettingByName: async (name, silent = false) => {
+    const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
+    const cached = get().settingsByName[resourceName];
+    if (cached) return cached;
+    const pending = get().settingRequests[resourceName];
+    if (pending) return pending;
+
+    const request = settingServiceClientConnect
+      .getSetting(
+        createProto(GetSettingRequestSchema, { name: resourceName }),
+        {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        }
+      )
+      .then((response) => {
+        set((state) => {
+          const { [resourceName]: _, ...settingRequests } =
+            state.settingRequests;
+          return {
+            settingsByName: {
+              ...state.settingsByName,
+              [response.name]: response,
+            },
+            settingRequests,
+          };
+        });
+        return response;
+      })
+      .catch(() => {
+        set((state) => {
+          const { [resourceName]: _, ...settingRequests } =
+            state.settingRequests;
+          return { settingRequests };
+        });
+        return undefined;
+      });
+    set((state) => ({
+      settingRequests: {
+        ...state.settingRequests,
+        [resourceName]: request,
+      },
+    }));
+    return request;
   },
 
   loadSubscription: async () => {
