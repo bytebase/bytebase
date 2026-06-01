@@ -247,14 +247,14 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Tri
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName.String}
 		trigger := &storepb.TriggerMetadata{
-			Name: triggerName.String,
-			Body: constructTriggerBody(description.String, triggerBody.String),
+			Name: common.SanitizeUTF8String(triggerName.String),
+			Body: constructTriggerBody(common.SanitizeUTF8String(description.String), common.SanitizeUTF8String(triggerBody.String)),
 		}
 		if triggerType.Valid {
-			trigger.Timing = triggerType.String
+			trigger.Timing = common.SanitizeUTF8String(triggerType.String)
 		}
 		if triggeringEvent.Valid {
-			trigger.Event = triggeringEvent.String
+			trigger.Event = common.SanitizeUTF8String(triggeringEvent.String)
 		}
 		// Add trigger comment if available
 		triggerKey := db.TableKey{Schema: schemaName, Table: triggerName.String}
