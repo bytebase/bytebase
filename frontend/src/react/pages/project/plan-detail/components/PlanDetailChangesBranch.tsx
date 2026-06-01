@@ -61,6 +61,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
@@ -70,7 +71,6 @@ import {
   getProjectNameAndDatabaseGroupName,
   pushNotification,
   useDatabaseV1Store,
-  useDBGroupStore,
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
@@ -78,6 +78,7 @@ import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
   isValidReleaseName,
+  unknownDatabaseGroup,
 } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
@@ -718,7 +719,6 @@ function OptionsSection({
     projectStore.getProjectByName(`projects/${page.projectId}`)
   );
   const databaseStore = useDatabaseV1Store();
-  const dbGroupStore = useDBGroupStore();
   const sheetStore = useSheetV1Store();
   const [sheetStatement, setSheetStatementValue] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
@@ -737,10 +737,9 @@ function OptionsSection({
           return [databaseStore.getDatabaseByName(target)];
         }
         if (isValidDatabaseGroupName(target)) {
-          const dbGroup = dbGroupStore.getDBGroupByName(
-            target,
-            DatabaseGroupView.FULL
-          );
+          const dbGroup = useAppStore
+            .getState()
+            .getDBGroupByName(target, DatabaseGroupView.FULL);
           return (dbGroup.matchedDatabases ?? []).map((database) =>
             databaseStore.getDatabaseByName(database.name)
           );
@@ -822,8 +821,8 @@ function OptionsSection({
     if (targets.length === 0) {
       return;
     }
-    void fetchTargets(targets, dbGroupStore, databaseStore);
-  }, [databaseStore, dbGroupStore, targets]);
+    void fetchTargets(targets, databaseStore);
+  }, [databaseStore, targets]);
 
   useEffect(() => {
     let canceled = false;
@@ -1209,7 +1208,6 @@ function TargetsSection({
 }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbGroupStore = useDBGroupStore();
   const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
@@ -1231,7 +1229,8 @@ function TargetsSection({
       .flatMap((target) => {
         if (!isValidDatabaseGroupName(target)) return [target];
         return (
-          dbGroupStore
+          useAppStore
+            .getState()
             .getDBGroupByName(target)
             .matchedDatabases?.map((database) => database.name) ?? []
         );
@@ -1239,7 +1238,7 @@ function TargetsSection({
       .filter(
         (name) => !databaseStore.getDatabaseByName(name).effectiveEnvironment
       );
-  }, [databaseStore, dbGroupStore, isLoadingTargets, targets]);
+  }, [databaseStore, isLoadingTargets, targets]);
   const filteredTargets = useMemo(
     () =>
       filterPlanTargets({
@@ -1271,7 +1270,7 @@ function TargetsSection({
       }
       setIsLoadingTargets(true);
       try {
-        await fetchTargets(visibleTargets, dbGroupStore, databaseStore);
+        await fetchTargets(visibleTargets, databaseStore);
       } finally {
         if (!canceled) setIsLoadingTargets(false);
       }
@@ -1280,7 +1279,7 @@ function TargetsSection({
     return () => {
       canceled = true;
     };
-  }, [databaseStore, dbGroupStore, targets, visibleTargets]);
+  }, [databaseStore, targets, visibleTargets]);
 
   useEffect(() => {
     if (!showAllTargetsDialog) return;
@@ -1289,7 +1288,7 @@ function TargetsSection({
     const load = async () => {
       setIsLoadingAllTargets(true);
       try {
-        await fetchTargets(targets, dbGroupStore, databaseStore);
+        await fetchTargets(targets, databaseStore);
       } finally {
         if (!canceled) setIsLoadingAllTargets(false);
       }
@@ -1298,7 +1297,7 @@ function TargetsSection({
     return () => {
       canceled = true;
     };
-  }, [databaseStore, dbGroupStore, showAllTargetsDialog, targets]);
+  }, [databaseStore, showAllTargetsDialog, targets]);
 
   return (
     <>
@@ -1782,17 +1781,17 @@ function DatabaseGroupSelector({
   onSelectedGroupChange: (name: string | undefined) => void;
 }) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
   const [groups, setGroups] = useState<DatabaseGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    dbGroupStore
+    useAppStore
+      .getState()
       .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
       .then((result) => setGroups(result))
       .finally(() => setLoading(false));
-  }, [dbGroupStore, projectName]);
+  }, [projectName]);
 
   if (loading) {
     return (
@@ -1865,9 +1864,18 @@ export function DatabaseGroupTarget({
 }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbGroupStore = useDBGroupStore();
   const [searchText, setSearchText] = useState("");
-  const dbGroup = dbGroupStore.getDBGroupByName(target, DatabaseGroupView.FULL);
+  // Subscribe to the cached FULL entry directly (stable ref); deriving the
+  // unknown fallback inside the selector would loop on a fresh object each call.
+  const cachedGroup = useAppStore((s) =>
+    s.dbGroupViewByName[target] === DatabaseGroupView.FULL
+      ? s.dbGroupsByName[target]
+      : undefined
+  );
+  const dbGroup = useMemo(
+    () => cachedGroup ?? unknownDatabaseGroup(),
+    [cachedGroup]
+  );
   const matchedDatabases = dbGroup.matchedDatabases ?? [];
   const { extraDatabases, inlineDatabases } = splitInlineDatabases(
     matchedDatabases,
@@ -1892,10 +1900,12 @@ export function DatabaseGroupTarget({
 
   useEffect(() => {
     const load = async () => {
-      const group = await dbGroupStore.getOrFetchDBGroupByName(target, {
-        view: DatabaseGroupView.FULL,
-        silent: true,
-      });
+      const group = await useAppStore
+        .getState()
+        .getOrFetchDBGroupByName(target, {
+          view: DatabaseGroupView.FULL,
+          silent: true,
+        });
       const databaseNames =
         group.matchedDatabases?.map((database) => database.name) ?? [];
       if (databaseNames.length > 0) {
@@ -1903,7 +1913,7 @@ export function DatabaseGroupTarget({
       }
     };
     void load();
-  }, [databaseStore, dbGroupStore, target]);
+  }, [databaseStore, target]);
 
   const route = {
     name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
@@ -2038,7 +2048,6 @@ function parseStatement(statement: string): {
 
 async function fetchTargets(
   targets: string[],
-  dbGroupStore: ReturnType<typeof useDBGroupStore>,
   databaseStore: ReturnType<typeof useDatabaseV1Store>
 ) {
   await Promise.all(
@@ -2048,10 +2057,12 @@ async function fetchTargets(
         return;
       }
       if (isValidDatabaseGroupName(target)) {
-        const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(target, {
-          silent: true,
-          view: DatabaseGroupView.FULL,
-        });
+        const dbGroup = await useAppStore
+          .getState()
+          .getOrFetchDBGroupByName(target, {
+            silent: true,
+            view: DatabaseGroupView.FULL,
+          });
         const databaseNames =
           dbGroup.matchedDatabases?.map((database) => database.name) ?? [];
         if (databaseNames.length > 0) {
