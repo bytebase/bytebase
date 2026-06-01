@@ -1,4 +1,5 @@
 import type { StateCreator } from "zustand";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
@@ -317,6 +318,39 @@ export type DBGroupSlice = {
     view?: DatabaseGroupView
   ) => Promise<DatabaseGroup | undefined>;
   listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
+  // Synchronous cache read. Returns `unknownDatabaseGroup()` when absent or
+  // when a FULL view is requested but only BASIC is cached.
+  getDBGroupByName: (name: string, view?: DatabaseGroupView) => DatabaseGroup;
+  getOrFetchDBGroupByName: (
+    name: string,
+    options?: {
+      skipCache?: boolean;
+      silent?: boolean;
+      view?: DatabaseGroupView;
+    }
+  ) => Promise<DatabaseGroup>;
+  fetchDBGroupListByProjectName: (
+    projectName: string,
+    view: DatabaseGroupView
+  ) => Promise<DatabaseGroup[]>;
+  createDatabaseGroup: (params: {
+    projectName: string;
+    databaseGroup: Pick<
+      DatabaseGroup,
+      "$typeName" | "name" | "title" | "databaseExpr"
+    >;
+    databaseGroupId: string;
+    validateOnly?: boolean;
+  }) => Promise<DatabaseGroup>;
+  updateDatabaseGroup: (
+    databaseGroup: DatabaseGroup,
+    updateMask: string[]
+  ) => Promise<DatabaseGroup>;
+  deleteDatabaseGroup: (name: string) => Promise<void>;
+  fetchDatabaseGroupMatchList: (params: {
+    projectName: string;
+    expr: ConditionGroupExpr;
+  }) => Promise<string[]>;
 };
 
 export type SheetSlice = {
