@@ -12,10 +12,6 @@
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "Token 已过期"
   },
-  "branch": {
-    "index": {},
-    "table-partition": {}
-  },
   "common": {
     "access-denied": "拒绝访问",
     "active": "开启",
@@ -23,7 +19,6 @@
     "closed": "已关闭",
     "database": "数据库",
     "databases": "数据库",
-    "date": {},
     "dingtalk": "钉钉",
     "discord": "Discord",
     "draft": "草稿",
@@ -33,7 +28,6 @@
     "feishu": "飞书",
     "google-chat": "Google Chat",
     "groups": "分组",
-    "hard-delete": {},
     "home": "主页",
     "instance": "实例",
     "instances": "实例",
@@ -75,9 +69,6 @@
     },
     "sync-schema": {
       "title": "库表同步"
-    },
-    "transfer": {
-      "errors": {}
     }
   },
   "error-page": {
@@ -87,9 +78,6 @@
   "export-center": {
     "self": "导出中心"
   },
-  "export-data": {
-    "error": {}
-  },
   "gitops": {
     "self": "GitOps"
   },
@@ -97,7 +85,6 @@
     "new-instance": "新实例"
   },
   "issue": {
-    "sql-check": {},
     "table": {
       "approved": "已审批"
     },
@@ -105,9 +92,6 @@
       "change-database": "变更数据库",
       "export-data": "导出数据"
     }
-  },
-  "landing": {
-    "quick-link": {}
   },
   "multi-factor": {
     "self": "多重认证"
@@ -206,11 +190,6 @@
       "self": "工作空间成员"
     }
   },
-  "schema-designer": {},
-  "schema-editor": {
-    "foreign-key": {},
-    "table": {}
-  },
   "settings": {
     "members": {
       "all-users": "全部用户",
@@ -306,7 +285,6 @@
     "sql-download-unavailable": "当前连接不支持 SQL 下载。"
   },
   "sql-review": {
-    "category": {},
     "create": {
       "breadcrumb": "创建审核策略"
     },
@@ -332,7 +310,6 @@
     }
   },
   "task": {
-    "check-result": {},
     "status": {
       "available": "就绪",
       "canceled": "取消",

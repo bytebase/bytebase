@@ -12,10 +12,6 @@
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの有効期限が切れました"
   },
-  "branch": {
-    "index": {},
-    "table-partition": {}
-  },
   "common": {
     "access-denied": "アクセスが拒否されました",
     "active": "アクティブ",
@@ -23,7 +19,6 @@
     "closed": "閉まっている",
     "database": "データベース",
     "databases": "データベース",
-    "date": {},
     "dingtalk": "DingTalk",
     "discord": "Discord",
     "draft": "下書き",
@@ -33,7 +28,6 @@
     "feishu": "Feishu",
     "google-chat": "Google Chat",
     "groups": "グループ",
-    "hard-delete": {},
     "home": "ホームページ",
     "instance": "インスタンス",
     "instances": "インスタンス",
@@ -75,9 +69,6 @@
     },
     "sync-schema": {
       "title": "データベーステーブルの同期"
-    },
-    "transfer": {
-      "errors": {}
     }
   },
   "error-page": {
@@ -87,9 +78,6 @@
   "export-center": {
     "self": "エクスポートセンター"
   },
-  "export-data": {
-    "error": {}
-  },
   "gitops": {
     "self": "GitOps"
   },
@@ -97,17 +85,13 @@
     "new-instance": "新しいインスタンス"
   },
   "issue": {
-    "sql-check": {},
     "table": {
-      "approved": "Approved"
+      "approved": "承認済み"
     },
     "title": {
       "change-database": "データベースの変更",
       "export-data": "データをエクスポート"
     }
-  },
-  "landing": {
-    "quick-link": {}
   },
   "multi-factor": {
     "self": "多要素認証"
@@ -206,11 +190,6 @@
       "self": "ワークスペースメンバー"
     }
   },
-  "schema-designer": {},
-  "schema-editor": {
-    "foreign-key": {},
-    "table": {}
-  },
   "settings": {
     "members": {
       "all-users": "すべてのユーザー",
@@ -291,7 +270,7 @@
     "shared": "共有"
   },
   "sql-editor": {
-    "access-grants": "Access Grants",
+    "access-grants": "アクセス権限",
     "batch-query": {
       "select-data-source": {
         "admin": "管理者",
@@ -301,12 +280,11 @@
     "download-encryption-failed": "ダウンロードの暗号化に失敗しました。",
     "download-failed": "ダウンロードに失敗しました。",
     "download-too-large": "ダウンロードするには結果が大きすぎます。行数を減らすか、エクスポートを使用してください。",
-    "expired": "Expired",
+    "expired": "期限切れ",
     "self": "SQLエディタ",
     "sql-download-unavailable": "この接続では SQL ダウンロードを利用できません。"
   },
   "sql-review": {
-    "category": {},
     "create": {
       "breadcrumb": "SQL レビューポリシーを作成する"
     },
@@ -332,7 +310,6 @@
     }
   },
   "task": {
-    "check-result": {},
     "status": {
       "available": "利用可能",
       "canceled": "キャンセル",

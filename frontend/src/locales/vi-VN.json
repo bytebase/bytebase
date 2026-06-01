@@ -12,10 +12,6 @@
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
   },
-  "branch": {
-    "index": {},
-    "table-partition": {}
-  },
   "common": {
     "access-denied": "Truy cập bị từ chối",
     "active": "Hoạt động",
@@ -23,7 +19,6 @@
     "closed": "Đã đóng",
     "database": "Cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
-    "date": {},
     "dingtalk": "DingTalk",
     "discord": "Discord",
     "draft": "Bản nháp",
@@ -33,7 +28,6 @@
     "feishu": "Feishu",
     "google-chat": "Google Chat",
     "groups": "Nhóm",
-    "hard-delete": {},
     "home": "Trang chủ",
     "instance": "Phiên bản",
     "instances": "Phiên bản",
@@ -75,9 +69,6 @@
     },
     "sync-schema": {
       "title": "Đồng bộ lược đồ"
-    },
-    "transfer": {
-      "errors": {}
     }
   },
   "error-page": {
@@ -87,9 +78,6 @@
   "export-center": {
     "self": "Trung tâm xuất"
   },
-  "export-data": {
-    "error": {}
-  },
   "gitops": {
     "self": "GitOps"
   },
@@ -97,17 +85,13 @@
     "new-instance": "Phiên bản mới"
   },
   "issue": {
-    "sql-check": {},
     "table": {
-      "approved": "Approved"
+      "approved": "Đã phê duyệt"
     },
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
       "export-data": "Xuất dữ liệu"
     }
-  },
-  "landing": {
-    "quick-link": {}
   },
   "multi-factor": {
     "self": "Xác thực đa yếu tố"
@@ -206,11 +190,6 @@
       "self": "Thành viên không gian làm việc"
     }
   },
-  "schema-designer": {},
-  "schema-editor": {
-    "foreign-key": {},
-    "table": {}
-  },
   "settings": {
     "members": {
       "all-users": "Tất cả người dùng",
@@ -291,7 +270,7 @@
     "shared": "Được chia sẻ"
   },
   "sql-editor": {
-    "access-grants": "Access Grants",
+    "access-grants": "Quyền truy cập",
     "batch-query": {
       "select-data-source": {
         "admin": "Quản trị viên",
@@ -301,12 +280,11 @@
     "download-encryption-failed": "Không thể mã hóa bản tải xuống.",
     "download-failed": "Tải xuống thất bại.",
     "download-too-large": "Kết quả quá lớn để tải xuống. Hãy giảm số dòng hoặc sử dụng Xuất.",
-    "expired": "Expired",
+    "expired": "Đã hết hạn",
     "self": "Trình soạn thảo SQL",
     "sql-download-unavailable": "Tải xuống SQL không khả dụng cho kết nối này."
   },
   "sql-review": {
-    "category": {},
     "create": {
       "breadcrumb": "Tạo chính sách đánh giá SQL"
     },
@@ -332,7 +310,6 @@
     }
   },
   "task": {
-    "check-result": {},
     "status": {
       "available": "Có sẵn",
       "canceled": "Đã hủy",
