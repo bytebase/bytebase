@@ -2,6 +2,10 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test } from "vitest";
+import {
+  LAYER_ROOT_ID,
+  LAYER_SURFACE_CLASS,
+} from "@/react/components/ui/layer";
 import { EllipsisCell } from "./EllipsisCell";
 
 (
@@ -61,6 +65,27 @@ describe("EllipsisCell", () => {
     });
     // scrollWidth === clientWidth in jsdom, so the tooltip is suppressed.
     expect(document.querySelector("[role='tooltip']")).toBeNull();
+    unmount();
+  });
+
+  test("mounts overflowing tooltip on the overlay surface layer", () => {
+    const { container, unmount } = renderIntoContainer(
+      <EllipsisCell content="very long cell content" />
+    );
+    const span = container.querySelector("span") as HTMLSpanElement;
+    Object.defineProperties(span, {
+      clientWidth: { configurable: true, value: 40 },
+      scrollWidth: { configurable: true, value: 160 },
+    });
+
+    act(() => {
+      span.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    });
+
+    const overlayRoot = document.getElementById(LAYER_ROOT_ID.overlay);
+    const tooltip = overlayRoot?.querySelector("[role='tooltip']");
+    expect(tooltip).toBeInstanceOf(HTMLSpanElement);
+    expect(tooltip?.className).toContain(LAYER_SURFACE_CLASS);
     unmount();
   });
 });
