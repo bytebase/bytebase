@@ -26,6 +26,7 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -33,11 +34,14 @@ import {
   getProjectNameAndDatabaseGroupName,
   pushNotification,
   useDatabaseV1Store,
-  useDBGroupStore,
   useEnvironmentV1Store,
   useSettingV1Store,
 } from "@/store";
-import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
+import {
+  isValidDatabaseGroupName,
+  isValidDatabaseName,
+  unknownDatabaseGroup,
+} from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
@@ -588,19 +592,18 @@ function IssueDetailDatabaseExportExecutionHistory({
 function IssueDetailDatabaseExportTargets({ targets }: { targets: string[] }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbGroupStore = useDBGroupStore();
 
   useEffect(() => {
     for (const target of targets) {
       if (isValidDatabaseName(target)) {
         void databaseStore.getOrFetchDatabaseByName(target);
       } else if (isValidDatabaseGroupName(target)) {
-        void dbGroupStore.getOrFetchDBGroupByName(target, {
+        void useAppStore.getState().getOrFetchDBGroupByName(target, {
           view: DatabaseGroupView.FULL,
         });
       }
     }
-  }, [databaseStore, dbGroupStore, targets]);
+  }, [databaseStore, targets]);
 
   if (targets.length === 0) {
     return (
@@ -678,10 +681,11 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
   const databaseStore = useDatabaseV1Store();
-  const databaseGroup = useVueState(() =>
-    dbGroupStore.getDBGroupByName(target)
+  const cachedGroup = useAppStore((s) => s.dbGroupsByName[target]);
+  const databaseGroup = useMemo(
+    () => cachedGroup ?? unknownDatabaseGroup(),
+    [cachedGroup]
   );
   const databases = useMemo(
     () => databaseGroup.matchedDatabases?.map((db) => db.name) ?? [],
@@ -693,11 +697,11 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
     if (!isValidDatabaseGroupName(target)) {
       return;
     }
-    void dbGroupStore.getOrFetchDBGroupByName(target, {
+    void useAppStore.getState().getOrFetchDBGroupByName(target, {
       silent: true,
       view: DatabaseGroupView.FULL,
     });
-  }, [dbGroupStore, target]);
+  }, [target]);
 
   useEffect(() => {
     if (databases.length > 0) {
