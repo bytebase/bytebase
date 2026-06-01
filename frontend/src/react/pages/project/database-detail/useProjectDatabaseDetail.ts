@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { LocationQueryRaw } from "vue-router";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { isDefaultProject } from "@/types/v1/project";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
@@ -34,7 +35,9 @@ export function useProjectDatabaseDetail({
   revisionId,
 }: UseProjectDatabaseDetailOptions) {
   const databaseStore = useDatabaseV1Store();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const getOrFetchDatabaseMetadata = useAppStore(
+    (s) => s.getOrFetchDatabaseMetadata
+  );
   const fullDatabaseName = `instances/${instanceId}/databases/${databaseName}`;
   const database = useVueState(() =>
     databaseStore.getDatabaseByName(fullDatabaseName)
@@ -49,7 +52,7 @@ export function useProjectDatabaseDetail({
       .getOrFetchDatabaseByName(fullDatabaseName)
       .then(async (db) => {
         try {
-          await dbSchemaStore.getOrFetchDatabaseMetadata({
+          await getOrFetchDatabaseMetadata({
             database: db.name,
             silent: true,
           });
@@ -92,7 +95,7 @@ export function useProjectDatabaseDetail({
     changelogId,
     databaseName,
     databaseStore,
-    dbSchemaStore,
+    getOrFetchDatabaseMetadata,
     fullDatabaseName,
     instanceId,
     projectId,

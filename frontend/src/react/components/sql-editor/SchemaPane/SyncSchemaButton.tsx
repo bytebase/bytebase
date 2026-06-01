@@ -7,7 +7,6 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
 /**
@@ -24,7 +23,6 @@ import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 export function SyncSchemaButton({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { database } = useConnectionOfCurrentSQLEditorTab();
-  const dbSchemaStore = useDBSchemaV1Store();
 
   const [isSyncing, setIsSyncing] = useState(false);
   const disabled = !isValidDatabaseName(database.name);
@@ -33,8 +31,9 @@ export function SyncSchemaButton({ className }: { className?: string }) {
     if (disabled) return;
     setIsSyncing(true);
     try {
-      await useAppStore.getState().syncDatabase(database.name, true);
-      await dbSchemaStore.getOrFetchDatabaseMetadata({
+      const appStore = useAppStore.getState();
+      await appStore.syncDatabase(database.name, true);
+      await appStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,
       });

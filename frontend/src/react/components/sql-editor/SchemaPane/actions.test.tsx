@@ -52,16 +52,20 @@ vi.mock("@/react/i18n", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
-  useDBSchemaV1Store: () => ({ getTableMetadata: mocks.getTableMetadata }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({ getDatabaseByName: mocks.getDatabaseByName }),
-    { getState: () => ({ getDatabaseByName: mocks.getDatabaseByName }) }
-  ),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    getDatabaseByName: mocks.getDatabaseByName,
+    getTableMetadata: mocks.getTableMetadata,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (state: unknown) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
   // actions.tsx only reaches the store imperatively via getSQLEditorTabsState

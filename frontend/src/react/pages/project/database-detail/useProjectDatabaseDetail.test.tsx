@@ -62,7 +62,22 @@ vi.mock("@/router/dashboard/projectV1", () => ({
 
 vi.mock("@/store", () => ({
   useDatabaseV1Store: () => mocks.databaseStore,
-  useDBSchemaV1Store: () => mocks.dbSchemaStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (s: unknown) => unknown) =>
+      selector({
+        getOrFetchDatabaseMetadata:
+          mocks.dbSchemaStore.getOrFetchDatabaseMetadata,
+      }),
+    {
+      getState: () => ({
+        getOrFetchDatabaseMetadata:
+          mocks.dbSchemaStore.getOrFetchDatabaseMetadata,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/utils", () => ({

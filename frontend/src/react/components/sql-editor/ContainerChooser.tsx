@@ -1,13 +1,12 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useVueRoute } from "@/react/hooks/useVueRoute";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ConnectChooser } from "./ConnectChooser";
 
@@ -20,7 +19,6 @@ const OptionValueUnspecified = "-1";
  */
 export function ContainerChooser() {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
   const engine = instance.engine;
@@ -28,9 +26,11 @@ export function ContainerChooser() {
   const tabTable = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.table
   );
-  const schemas = usePiniaBridge(
-    () => dbSchemaStore.getDatabaseMetadata(databaseName).schemas
-  );
+  // Parent SchemaPane (E4 migration) drives the metadata fetch; here we
+  // only need the cached read.
+  const { schemas } = useAppDatabaseMetadata(databaseName, {
+    autoFetch: false,
+  });
 
   const show = engine === Engine.COSMOSDB;
 

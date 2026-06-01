@@ -9,13 +9,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   // Selector hook over the Zustand tabs store; returns the current tab's
   // `connection.schema` (and `currentTabId` for the seed effect).
   tabSchema: undefined as string | undefined,
   currentTabId: "tab1",
   getSQLEditorTabsState: vi.fn(),
-  useDBSchemaV1Store: vi.fn(),
+  metadata: { schemas: [] as Array<{ name: string }> },
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   instanceAllowsSchemaScopedQuery: vi.fn(),
   router: {
@@ -28,12 +27,8 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
-}));
-
-vi.mock("@/store", () => ({
-  useDBSchemaV1Store: mocks.useDBSchemaV1Store,
+vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: () => mocks.metadata,
 }));
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
@@ -126,12 +121,9 @@ beforeEach(async () => {
     tabsById: new Map([["tab1", { connection: {} }]]),
     updateCurrentTab: vi.fn(),
   });
-  mocks.useDBSchemaV1Store.mockReturnValue({
-    getDatabaseMetadata: vi.fn(() => ({
-      schemas: [{ name: "public" }, { name: "private" }],
-    })),
-  });
-  mocks.usePiniaBridge.mockImplementation((getter) => getter());
+  mocks.metadata = {
+    schemas: [{ name: "public" }, { name: "private" }],
+  };
   mocks.instanceAllowsSchemaScopedQuery.mockReturnValue(true);
   ({ SchemaChooser } = await import("./SchemaChooser"));
 });

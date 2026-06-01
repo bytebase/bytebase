@@ -16,11 +16,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
@@ -90,7 +87,9 @@ function SchemaEditorSheetBody({
   onMaximizedChange,
 }: BodyProps) {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const getOrFetchDatabaseMetadata = useAppStore(
+    (s) => s.getOrFetchDatabaseMetadata
+  );
   const databaseStore = useDatabaseV1Store();
   const schemaEditorRef = useRef<SchemaEditorHandle>(null);
 
@@ -146,7 +145,7 @@ function SchemaEditorSheetBody({
       setTargets([]);
       try {
         const [metadata, database] = await Promise.all([
-          dbSchemaStore.getOrFetchDatabaseMetadata({
+          getOrFetchDatabaseMetadata({
             database: databaseName,
             skipCache: true,
             limit: 200,
@@ -170,7 +169,7 @@ function SchemaEditorSheetBody({
         }
       }
     },
-    [dbSchemaStore, databaseStore]
+    [getOrFetchDatabaseMetadata, databaseStore]
   );
 
   useEffect(() => {

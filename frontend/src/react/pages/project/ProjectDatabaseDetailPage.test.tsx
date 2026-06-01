@@ -134,7 +134,7 @@ const mocks = vi.hoisted(() => {
     })),
     useDBSchemaV1Store: vi.fn(() => ({
       getOrFetchDatabaseMetadata: vi.fn(),
-      getDatabaseMetadata: vi.fn(() => undefined as unknown),
+      getDatabaseMetadata: vi.fn((_name: string) => undefined as unknown),
       getSchemaList: vi.fn(() => [] as unknown[]),
       getTableList: vi.fn(() => [] as unknown[]),
     })),
@@ -273,8 +273,21 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useProjectV1Store: mocks.useProjectV1Store,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
-  useDBSchemaV1Store: mocks.useDBSchemaV1Store,
   usePermissionStore: mocks.usePermissionStore,
+}));
+
+// Page composes child panels that now read dbSchema getters via the app
+// store. Route the existing `mocks.useDBSchemaV1Store` shape through
+// `useAppStore` so the per-scenario `.mockReturnValue({...})` calls keep
+// working unchanged.
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (s: unknown) => unknown) =>
+    selector(mocks.useDBSchemaV1Store()),
+}));
+
+vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: (name: string) =>
+    mocks.useDBSchemaV1Store().getDatabaseMetadata?.(name) ?? { schemas: [] },
 }));
 
 vi.mock("@/react/components/database", () => ({

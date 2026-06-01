@@ -4,6 +4,7 @@ import { createAuthSlice } from "./auth";
 import { createChangelogSlice } from "./changelog";
 import { createDatabaseSlice } from "./database";
 import { createDBGroupSlice } from "./dbGroup";
+import { createDBSchemaSlice } from "./dbSchema";
 import { createGroupSlice } from "./group";
 import { createIamSlice } from "./iam";
 import { createIdentityProviderSlice } from "./identityProvider";
@@ -44,6 +45,7 @@ export const createAppStore = () =>
     ...createInstanceSlice(...args),
     ...createDatabaseSlice(...args),
     ...createDBGroupSlice(...args),
+    ...createDBSchemaSlice(...args),
     ...createSheetSlice(...args),
     ...createWorksheetSlice(...args),
     ...createInstanceRoleSlice(...args),

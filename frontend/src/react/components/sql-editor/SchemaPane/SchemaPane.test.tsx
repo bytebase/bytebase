@@ -63,6 +63,10 @@ vi.mock("@/react/stores/app", () => {
     syncDatabase: vi.fn(),
     fetchDatabases: vi.fn(async () => ({ databases: [], nextPageToken: "" })),
     databasesByName: {} as Record<string, unknown>,
+    // SchemaPane reads cached metadata reactively via this getter; return
+    // undefined so the tree stays empty unless a test seeds the cache.
+    getCachedDatabaseMetadata: () => undefined,
+    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
   };
   return {
     useAppStore: Object.assign(

@@ -120,6 +120,17 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     });
     const response = await settingServiceClientConnect.updateSetting(request);
     settingMapByName.set(response.name, response);
+    // Bridge: keep the React app-store setting cache in sync so React
+    // consumers (e.g. SQL editor's `OpenAIButton`) see the fresh value
+    // without a page refresh. Dynamic-imported to avoid a static
+    // module-load cycle (the app store transitively imports `@/store`).
+    try {
+      const { useAppStore } = await import("@/react/stores/app");
+      useAppStore.getState().setSettingByName(response);
+    } catch {
+      // App store not available (some isolated test). Pinia cache is
+      // already updated above.
+    }
     return response;
   };
 

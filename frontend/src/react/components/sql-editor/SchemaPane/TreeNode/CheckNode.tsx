@@ -1,4 +1,4 @@
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
 import { CheckConstraintIcon } from "./icons";
@@ -13,21 +13,20 @@ type Props = {
  * trailing tag with the resolved check expression (if metadata is loaded).
  */
 export function CheckNode({ node, keyword }: Props) {
-  const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"check">).meta.target;
-
-  const checkMetadata = (() => {
-    if ("table" in target) {
-      const { database, schema, table, check } = target;
-      const tableMetadata = dbSchema.getTableMetadata({
-        database,
-        schema,
-        table,
-      });
-      return tableMetadata?.checkConstraints.find((c) => c.name === check);
-    }
-    return undefined;
-  })();
+  const hasTable = "table" in target;
+  const tableMetadata = useAppStore((s) =>
+    hasTable
+      ? s.getTableMetadata({
+          database: target.database,
+          schema: target.schema,
+          table: target.table,
+        })
+      : undefined
+  );
+  const checkMetadata = hasTable
+    ? tableMetadata?.checkConstraints.find((c) => c.name === target.check)
+    : undefined;
 
   return (
     <CommonNode

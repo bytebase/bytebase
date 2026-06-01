@@ -27,11 +27,11 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
-  useDBSchemaV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -70,7 +70,9 @@ import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const removeDatabaseMetadataCache = useAppStore(
+    (s) => s.removeDatabaseMetadataCache
+  );
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
   const projectStore = useProjectV1Store();
@@ -266,7 +268,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     try {
       await databaseStore.batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
-        dbSchemaStore.removeCache(name);
+        removeDatabaseMetadataCache(name);
       }
       pushNotification({
         module: "bytebase",
@@ -283,7 +285,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, dbSchemaStore, t]);
+  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {

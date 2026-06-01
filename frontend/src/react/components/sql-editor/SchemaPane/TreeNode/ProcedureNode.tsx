@@ -1,4 +1,4 @@
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
 import { ProcedureIcon } from "./icons";
@@ -14,13 +14,11 @@ type Props = {
  * Oracle expose overloads where signature is the disambiguator).
  */
 export function ProcedureNode({ node, keyword }: Props) {
-  const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"procedure">).meta.target;
-
-  const procedureMetadata = dbSchema.getSchemaMetadata({
-    database: target.database,
-    schema: target.schema,
-  })?.procedures[target.position];
+  const schemaMetadata = useAppStore((s) =>
+    s.getSchemaMetadata({ database: target.database, schema: target.schema })
+  );
+  const procedureMetadata = schemaMetadata?.procedures[target.position];
 
   return (
     <CommonNode

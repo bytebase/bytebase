@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
@@ -47,36 +47,45 @@ function findColumn(parent: { columns: ColumnMetadata[] }, name: string) {
  * hundreds of children.
  */
 export function ColumnNode({ node, keyword }: Props) {
-  const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"column">).meta.target;
-
-  const tableMetadata = useMemo(() => {
-    if ("table" in target) {
-      const { database, schema, table } = target;
-      return dbSchema.getTableMetadata({ database, schema, table });
-    }
-    return undefined;
-  }, [target, dbSchema]);
+  // Subscribe to the relevant slice of metadata up front. Selectors run
+  // unconditionally per the rules of hooks; the target shape dictates
+  // which one is read.
+  const tableMetadata = useAppStore((s) =>
+    "table" in target
+      ? s.getTableMetadata({
+          database: target.database,
+          schema: target.schema,
+          table: target.table,
+        })
+      : undefined
+  );
+  const schemaMetadata = useAppStore((s) =>
+    "externalTable" in target || "view" in target
+      ? s.getSchemaMetadata({
+          database: target.database,
+          schema: target.schema,
+        })
+      : undefined
+  );
 
   const columnMetadata = useMemo(() => {
-    const { database, schema, column } = target;
+    const { column } = target;
     if ("table" in target && tableMetadata) {
       return findColumn(tableMetadata, column);
     }
     if ("externalTable" in target) {
-      const schemaMetadata = dbSchema.getSchemaMetadata({ database, schema });
       const ext = schemaMetadata?.externalTables.find(
         (t) => t.name === target.externalTable
       );
       return ext ? findColumn(ext, column) : undefined;
     }
     if ("view" in target) {
-      const schemaMetadata = dbSchema.getSchemaMetadata({ database, schema });
       const view = schemaMetadata?.views.find((v) => v.name === target.view);
       return view ? findColumn(view, column) : undefined;
     }
     return undefined;
-  }, [target, tableMetadata, dbSchema]);
+  }, [target, tableMetadata, schemaMetadata]);
 
   const { isPrimaryKey, isIndex } = useMemo(() => {
     if (!("table" in target) || !tableMetadata) {

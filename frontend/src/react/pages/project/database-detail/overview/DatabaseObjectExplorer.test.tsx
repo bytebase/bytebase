@@ -68,8 +68,21 @@ vi.mock("@/router", () => ({
   },
 }));
 
+// The component now reads dbSchema getters via the app store. Route the
+// existing `mocks.useDBSchemaV1Store` shape through `useAppStore` so the
+// test bodies' per-scenario `.mockReturnValue({ getSchemaList, ... })`
+// calls keep working without further changes.
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (s: unknown) => unknown) =>
+    selector(mocks.useDBSchemaV1Store()),
+}));
+
+vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: (name: string) =>
+    mocks.useDBSchemaV1Store().getDatabaseMetadata?.(name) ?? { schemas: [] },
+}));
+
 vi.mock("@/store", () => ({
-  useDBSchemaV1Store: mocks.useDBSchemaV1Store,
   useDatabaseCatalog: mocks.useDatabaseCatalog,
   getColumnCatalog: mocks.getColumnCatalog,
   getTableCatalog: mocks.getTableCatalog,

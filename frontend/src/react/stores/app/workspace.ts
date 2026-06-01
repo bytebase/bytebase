@@ -351,6 +351,15 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     return get().settingsByName[resourceName];
   },
 
+  setSettingByName: (setting) => {
+    set((state) => ({
+      settingsByName: {
+        ...state.settingsByName,
+        [setting.name]: setting,
+      },
+    }));
+  },
+
   getOrFetchSettingByName: async (name, silent = false) => {
     const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
     const cached = get().settingsByName[resourceName];

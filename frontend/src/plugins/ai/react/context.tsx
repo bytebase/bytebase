@@ -9,13 +9,14 @@ import {
   useRef,
   useState,
 } from "react";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   getCurrentSQLEditorTab,
   useCurrentSQLEditorTab,
 } from "@/react/stores/sqlEditor/tab";
-import { useDBSchemaV1Store, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { AISetting } from "@/types/proto-es/v1/setting_service_pb";
@@ -118,25 +119,12 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const { instance, database } = useConnectionOfCurrentSQLEditorTab();
   const engine: Engine | undefined = instance.engine;
 
-  // Fetch database metadata on database change (mirrors Vue
-  // `useMetadata`'s `watchEffect` + cache read). `useDBSchemaV1Store`
-  // dedupes concurrent fetches, so firing this from the React effect
-  // doesn't race with another caller. We read the cache via
-  // `useVueState` (re-subscribed per database) so cache hydration
-  // triggers a re-render.
+  // `useAppDatabaseMetadata` self-fetches and subscribes; the app-store
+  // dbSchema slice dedupes concurrent fetches, so this stays cheap even
+  // if another mount triggers the same fetch in parallel.
   const databaseName = database.name;
-  const dbSchemaStore = useDBSchemaV1Store();
-  useEffect(() => {
-    if (!databaseName) return;
-    void dbSchemaStore.getOrFetchDatabaseMetadata({ database: databaseName });
-  }, [databaseName, dbSchemaStore]);
-  const databaseMetadata = useVueState<DatabaseMetadata | undefined>(
-    () =>
-      databaseName
-        ? dbSchemaStore.getDatabaseMetadata(databaseName)
-        : undefined,
-    { deps: [databaseName] }
-  );
+  const fetchedMetadata = useAppDatabaseMetadata(databaseName ?? "");
+  const databaseMetadata = databaseName ? fetchedMetadata : undefined;
 
   const schema: string | undefined = currentTab?.connection.schema;
 

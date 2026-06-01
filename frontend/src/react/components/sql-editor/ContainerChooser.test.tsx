@@ -9,11 +9,14 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   tabTable: undefined as string | undefined,
   currentTabId: "tab1",
   getSQLEditorTabsState: vi.fn(),
-  useDBSchemaV1Store: vi.fn(),
+  // Default schemas shape — tests override `mocks.metadata` to drive
+  // different option lists.
+  metadata: {
+    schemas: [] as Array<{ name: string; tables: { name: string }[] }>,
+  },
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   router: {
     currentRoute: { value: { query: {} } },
@@ -25,12 +28,8 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
-}));
-
-vi.mock("@/store", () => ({
-  useDBSchemaV1Store: mocks.useDBSchemaV1Store,
+vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: () => mocks.metadata,
 }));
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
@@ -131,17 +130,14 @@ beforeEach(async () => {
     tabsById: new Map([["tab1", { connection: {} }]]),
     updateCurrentTab: vi.fn(),
   });
-  mocks.useDBSchemaV1Store.mockReturnValue({
-    getDatabaseMetadata: vi.fn(() => ({
-      schemas: [
-        {
-          name: "default",
-          tables: [{ name: "container1" }, { name: "container2" }],
-        },
-      ],
-    })),
-  });
-  mocks.usePiniaBridge.mockImplementation((getter) => getter());
+  mocks.metadata = {
+    schemas: [
+      {
+        name: "default",
+        tables: [{ name: "container1" }, { name: "container2" }],
+      },
+    ],
+  };
   ({ ContainerChooser } = await import("./ContainerChooser"));
 });
 

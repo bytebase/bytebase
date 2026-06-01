@@ -23,7 +23,6 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { useDBSchemaV1Store } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
@@ -473,7 +472,6 @@ export function ResultView({
 
 function SyncDatabaseButton({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const [syncing, setSyncing] = useState(false);
 
   if (!isValidDatabaseName(database.name)) return null;
@@ -486,8 +484,9 @@ function SyncDatabaseButton({ database }: { database: Database }) {
     setSyncing(true);
     const { databaseName } = extractDatabaseResourceName(database.name);
     try {
-      await useAppStore.getState().syncDatabase(database.name);
-      await dbSchemaStore.getOrFetchDatabaseMetadata({
+      const appStore = useAppStore.getState();
+      await appStore.syncDatabase(database.name);
+      await appStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,
       });
