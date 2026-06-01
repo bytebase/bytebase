@@ -14,7 +14,5 @@ export * from "./project";
 export * from "./projectIamPolicy";
 export * from "./setting";
 export * from "./sheet";
-export * from "./sql";
-export * from "./storage";
 export * from "./subscription";
 export * from "./workspace";

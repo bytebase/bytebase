@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-import { useStorageStore } from "@/store";
+import { keyValueStorage } from "@/react/lib/keyValueStorage";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -68,13 +68,12 @@ const maybeSetInitialSQLForSpec = (spec: Plan_Spec, initialSQL: InitialSQL) => {
 const extractInitialSQLFromQuery = async (
   query: Record<string, string>
 ): Promise<InitialSQL> => {
-  const storageStore = useStorageStore();
   if (query.sql) {
     return { sql: query.sql };
   }
   if (query.sqlStorageKey) {
     return {
-      sql: (await storageStore.get<string>(query.sqlStorageKey)) || "",
+      sql: (await keyValueStorage.get<string>(query.sqlStorageKey)) || "",
     };
   }
   const sqlMapText = query.sqlMap;
@@ -91,7 +90,7 @@ const extractInitialSQLFromQuery = async (
   if (query.sqlMapStorageKey) {
     return {
       sqlMap:
-        (await storageStore.get<Record<string, string>>(
+        (await keyValueStorage.get<Record<string, string>>(
           query.sqlMapStorageKey
         )) || {},
     };

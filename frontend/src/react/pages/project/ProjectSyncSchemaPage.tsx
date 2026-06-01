@@ -45,6 +45,7 @@ import {
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
+import { keyValueStorage } from "@/react/lib/keyValueStorage";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -55,7 +56,6 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
-  useStorageStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -412,7 +412,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     });
     query.databaseList = Object.keys(sqlMap).join(",");
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    useStorageStore().put(sqlMapStorageKey, sqlMap);
+    void keyValueStorage.put(sqlMapStorageKey, sqlMap);
     query.sqlMapStorageKey = sqlMapStorageKey;
     if (!project) return; // defensive: should not happen if the page rendered
     applyPlanTitleToQuery(query, project, () =>
