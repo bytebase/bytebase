@@ -10,8 +10,6 @@ export * from "./workspaceApprovalSetting";
 export * from "./role";
 export * from "./dbGroup";
 export * from "./utils";
-export * from "./release";
-export * from "./revision";
 export * from "./rollout";
 
 export * from "./v1";

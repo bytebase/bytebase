@@ -108,9 +108,19 @@ export const useProjectIamPolicyStore = defineStore(
       return getProjectIamPolicy(project);
     };
 
+    // Bridge entry-point so an external fetcher (e.g. the Zustand app
+    // `iam` slice) can cache its result here and reuse the permission
+    // chain without a second RPC. Also invalidates the role-list cache,
+    // matching `fetchProjectIamPolicy`.
+    const setProjectIamPolicy = (project: string, policy: IamPolicy) => {
+      policyMap.set(project, policy);
+      usePermissionStore().invalidCacheByProject(project);
+    };
+
     return {
       getProjectIamPolicy,
       getOrFetchProjectIamPolicy,
+      setProjectIamPolicy,
       updateProjectIamPolicy,
     };
   }

@@ -40,7 +40,13 @@ vi.mock("@/store", () => ({
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: {
-    getState: () => ({ getWorksheetByName: mocks.getWorksheetByName }),
+    getState: () => ({
+      getWorksheetByName: mocks.getWorksheetByName,
+      // `EditorAction.handleRunQuery` records the data-query intro flag via
+      // the migrated preferences slice. Tests don't assert against this, so a
+      // bare noop keeps the call surface satisfied.
+      saveIntroStateByKey: vi.fn(),
+    }),
   },
 }));
 

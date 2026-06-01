@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   getSQLEditorEditorState,
@@ -10,9 +10,7 @@ import {
 import { useIsDisconnected } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { useActuatorV1Store } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { AccessPane } from "./AccessPane";
 import { ActionBar } from "./AsidePanel/ActionBar";
 import { GutterBar } from "./GutterBar";
@@ -36,7 +34,6 @@ import { WorksheetPane } from "./WorksheetPane";
  */
 export function AsidePanel() {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
   const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
@@ -46,12 +43,26 @@ export function AsidePanel() {
     (s) => s.projectContextReady
   );
 
-  const allowAccessDefaultProject = usePiniaBridge(() => {
-    const name = actuatorStore.serverInfo?.defaultProject ?? "";
-    return hasProjectPermissionV2(defaultProject(name), "bb.projects.get");
-  });
-  const allowCreateProject = usePiniaBridge(() =>
-    hasWorkspacePermissionV2("bb.projects.create")
+  const defaultProjectName = useAppStore(
+    (s) => s.serverInfo?.defaultProject ?? ""
+  );
+  // Self-fetch workspace permission state — the SQL editor route doesn't
+  // mount the dashboard shells that hydrate roles + workspace IAM, so the
+  // permission selectors below would otherwise read empty state.
+  const loadWorkspacePermissionState = useAppStore(
+    (s) => s.loadWorkspacePermissionState
+  );
+  useEffect(() => {
+    void loadWorkspacePermissionState();
+  }, [loadWorkspacePermissionState]);
+  const allowAccessDefaultProject = useAppStore((s) =>
+    s.hasProjectPermission(
+      defaultProject(defaultProjectName),
+      "bb.projects.get"
+    )
+  );
+  const allowCreateProject = useAppStore((s) =>
+    s.hasWorkspacePermission("bb.projects.create")
   );
 
   const handleSwitchProject = useCallback(

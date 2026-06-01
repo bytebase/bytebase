@@ -23,6 +23,11 @@ const mocks = vi.hoisted(() => ({
     mocks.state.showAIPanel = v;
   }),
   useSettingV1Store: vi.fn(),
+  // App-store AI setting + fetch — the component reads
+  // `useAppStore((s) => s.getSettingByName(AI))` for the enabled state and
+  // `useAppStore((s) => s.getOrFetchSettingByName)` in an effect.
+  aiSetting: undefined as unknown,
+  getOrFetchSettingByName: vi.fn().mockResolvedValue(undefined),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
   nextAnimationFrame: vi.fn(() => Promise.resolve()),
@@ -42,6 +47,14 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
 
 vi.mock("@/store", () => ({
   useSettingV1Store: mocks.useSettingV1Store,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (s: unknown) => unknown) =>
+    selector({
+      getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+      getSettingByName: () => mocks.aiSetting,
+    }),
 }));
 
 // `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook.
@@ -220,22 +233,18 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
   mocks.tabState.isDisconnected = values.isDisconnected;
   mocks.tabState.currentMode = values.currentMode;
 
-  const settingStore = {
-    getOrFetchSettingByName: vi.fn().mockResolvedValue(undefined),
-    getSettingByName: vi.fn(),
-  };
+  // `openAIEnabled` is derived from the app-store AI setting in the
+  // component (`s.getSettingByName(AI)` → `.value.value.case === "ai"
+  // ? .enabled : false`). Build a setting whose shape matches the
+  // configured value.
+  mocks.aiSetting = values.openAIEnabled
+    ? { value: { value: { case: "ai", value: { enabled: true } } } }
+    : undefined;
 
-  mocks.useSettingV1Store.mockReturnValue(settingStore);
   // Migrated hook returns PLAIN values — no Vue `.value` wrapper.
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
     instance: values.instance,
   });
-
-  // `openAIEnabled` is resolved via the Pinia bridge getter; surface the
-  // configured value directly (it's the only bridge read in OpenAIButton).
-  mocks.usePiniaBridge.mockImplementation(() => values.openAIEnabled);
-
-  return { settingStore };
 };
 
 beforeEach(async () => {

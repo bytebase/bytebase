@@ -32,8 +32,13 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/store", () => ({
-  pushNotification: mocks.pushNotification,
+vi.mock("@/react/stores/app", () => ({
+  // Route `useAppStore.getState().notify(...)` through the same vi.fn the
+  // tests asserted against under the legacy `pushNotification` API so the
+  // assertion bodies stay readable.
+  useAppStore: {
+    getState: () => ({ notify: mocks.pushNotification }),
+  },
 }));
 
 // Zustand tab store — selector hook + imperative getter.

@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { ConnectError } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { InfoIcon, LoaderCircle } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DataExportButton,
@@ -23,8 +23,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useDBSchemaV1Store, useSQLStore } from "@/store";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { useDBSchemaV1Store } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
@@ -32,6 +31,7 @@ import {
   type PermissionDeniedDetail,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { buildDownloadBlob } from "@/utils/sql-download";
@@ -72,9 +72,30 @@ export function ResultView({
   dark = false,
 }: ResultViewProps) {
   const { t } = useTranslation();
-  const policyStore = usePolicyV1Store();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
+  // Env-level data-query policy via the app store. Subscribe to the
+  // derived `QueryDataPolicy` directly — the slice returns a stable empty
+  // singleton when nothing is cached, so this is safe for
+  // `useSyncExternalStore` snapshot comparisons.
+  const environment = database.effectiveEnvironment;
+  const envQueryDataPolicy = useAppStore((s) =>
+    environment ? s.getQueryDataPolicyByParent(environment) : undefined
+  );
+  const getOrFetchPolicyByParentAndType = useAppStore(
+    (s) => s.getOrFetchPolicyByParentAndType
+  );
+  // Settings pages populate the env policy in Pinia, but the SQL editor
+  // route doesn't fetch it on its own — self-fetch so the read above
+  // resolves to a real policy (not the empty fallback) and copy-disable
+  // gates fire even on a fresh editor visit.
+  useEffect(() => {
+    if (!environment) return;
+    void getOrFetchPolicyByParentAndType({
+      parentPath: environment,
+      policyType: PolicyType.DATA_QUERY,
+    });
+  }, [environment, getOrFetchPolicyByParentAndType]);
   // The editor's per-execution row limit. A result whose .rows.length
   // exactly equals this is probably truncated; fewer rows is probably
   // complete. Used by the dev-path export to WARN only when the user's
@@ -113,15 +134,9 @@ export function ResultView({
 
   const disallowCopyingData = useMemo(() => {
     if (queryDataPolicy?.disableCopyData) return true;
-    const environment = database.effectiveEnvironment;
-    if (
-      environment &&
-      policyStore.getQueryDataPolicyByParent(environment).disableCopyData
-    ) {
-      return true;
-    }
+    if (envQueryDataPolicy?.disableCopyData) return true;
     return false;
-  }, [queryDataPolicy, database, policyStore]);
+  }, [queryDataPolicy, envQueryDataPolicy]);
 
   const filteredResults = useMemo(() => {
     if (!resultSet) return [];
@@ -217,7 +232,7 @@ export function ResultView({
               r.rows.length === executedLimit && options.limit > r.rows.length
           )
         ) {
-          pushNotification({
+          useAppStore.getState().notify({
             module: "bytebase",
             style: "WARN",
             title: t("sql-editor.batch-export.failed-for-db", {
@@ -271,7 +286,7 @@ export function ResultView({
     const admin =
       tabsState.tabsById.get(tabsState.currentTabId)?.mode === "ADMIN";
     try {
-      const content = await useSQLStore().exportData(
+      const content = await useAppStore.getState().exportData(
         create(ExportRequestSchema, {
           name: database.name,
           ...(executeParams.connection.dataSourceId
@@ -476,7 +491,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
         database: database.name,
         skipCache: true,
       });
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -485,7 +500,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
         ),
       });
     } catch (error) {
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "CRITICAL",
         title: t("db.failed-to-sync-schema-for-database-database-value-name", {

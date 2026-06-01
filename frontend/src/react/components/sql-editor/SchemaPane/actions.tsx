@@ -22,7 +22,7 @@ import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useDBSchemaV1Store } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
@@ -396,7 +396,7 @@ export function useSchemaPaneContextMenu(
 
   const notify = useCallback(
     (key: string) => {
-      pushNotification({
+      useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t(key),

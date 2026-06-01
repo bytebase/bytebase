@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { BannersWrapper } from "@/react/components/BannersWrapper";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { RequestDrawerHost } from "./RequestDrawerHost";
@@ -24,8 +23,10 @@ import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
  *  - the `<SQLEditorRouteShell>` once `ready` flips true.
  */
 export function SQLEditorLayout() {
-  const settingStore = useSettingV1Store();
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const loadEnvironmentList = useAppStore((s) => s.loadEnvironmentList);
+  const loadServerInfo = useAppStore((s) => s.loadServerInfo);
+  const loadCurrentUser = useAppStore((s) => s.loadCurrentUser);
   // Boots the per-view watchers (selectedKeys ↔ active tab) the moment
   // the layout appears. The sheet-context singleton is module-level and
   // lazy — calling it here ensures the watchers are wired before any
@@ -39,17 +40,22 @@ export function SQLEditorLayout() {
     void (async () => {
       await router.isReady();
       await Promise.all([
-        settingStore.getOrFetchSettingByName(
-          Setting_SettingName.WORKSPACE_PROFILE
-        ),
+        getOrFetchSettingByName(Setting_SettingName.WORKSPACE_PROFILE),
         loadEnvironmentList(),
+        loadServerInfo(),
+        loadCurrentUser(),
       ]);
       if (!cancelled) setReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [settingStore, loadEnvironmentList]);
+  }, [
+    getOrFetchSettingByName,
+    loadEnvironmentList,
+    loadServerInfo,
+    loadCurrentUser,
+  ]);
 
   useSQLEditorAutoSave();
 

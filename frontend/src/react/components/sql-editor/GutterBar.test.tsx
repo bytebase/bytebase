@@ -59,6 +59,7 @@ vi.mock("@/router", () => ({
   router: {
     resolve: mocks.routerResolve,
     currentRoute: { value: { params: {} } },
+    afterEach: () => () => {},
   },
 }));
 

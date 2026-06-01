@@ -9,6 +9,8 @@ import { createIamSlice } from "./iam";
 import { createIdentityProviderSlice } from "./identityProvider";
 import { createInstanceSlice } from "./instance";
 import { createInstanceRoleSlice } from "./instanceRole";
+import { createIssueSlice } from "./issue";
+import { createPolicySlice } from "./policy";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
@@ -18,6 +20,7 @@ import { createRevisionSlice } from "./revision";
 import { createRoleSlice } from "./role";
 import { createServiceAccountSlice } from "./serviceAccount";
 import { createSheetSlice } from "./sheet";
+import { createSQLSlice } from "./sql";
 import { createUserSlice } from "./user";
 import { createWorksheetSlice } from "./worksheet";
 import { createWorkspaceSlice } from "./workspace";
@@ -57,6 +60,9 @@ export const createAppStore = () =>
     ...createProjectWebhookSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
+    ...createSQLSlice(...args),
+    ...createIssueSlice(...args),
+    ...createPolicySlice(...args),
   }));
 
 export const useAppStore = createAppStore();

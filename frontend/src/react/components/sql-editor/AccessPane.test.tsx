@@ -22,11 +22,11 @@ const mocks = vi.hoisted(() => ({
   },
   setHighlightAccessGrantName: vi.fn(),
   searchMyAccessGrants: vi.fn(),
-  useIssueV1Store: vi.fn(),
   fetchDatabases: vi
     .fn()
     .mockResolvedValue({ databases: [], nextPageToken: "" }),
   getOrFetchDatabaseByName: vi.fn().mockResolvedValue({}),
+  fetchIssueByName: vi.fn().mockResolvedValue({}),
   hasFeature: vi.fn(() => true),
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
   getDefaultPagination: vi.fn(() => 20),
@@ -34,11 +34,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/store", () => ({
-  useIssueV1Store: mocks.useIssueV1Store,
-  hasFeature: mocks.hasFeature,
 }));
 
 vi.mock("@/react/hooks/useAppProject", () => ({
@@ -51,6 +46,8 @@ vi.mock("@/react/stores/app", () => ({
       searchMyAccessGrants: mocks.searchMyAccessGrants,
       fetchDatabases: mocks.fetchDatabases,
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      fetchIssueByName: mocks.fetchIssueByName,
+      hasFeature: mocks.hasFeature,
     }),
 }));
 
@@ -105,6 +102,10 @@ vi.mock("@/types/proto-es/v1/access_grant_service_pb", () => ({
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   PlanFeature: { FEATURE_JIT: 5 },
+}));
+
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useSQLEditorFeature: () => mocks.hasFeature(),
 }));
 
 vi.mock("@/react/components/AdvancedSearch", () => ({
@@ -248,9 +249,7 @@ const setupDefaultMocks = () => {
     nextPageToken: "",
   });
 
-  mocks.useIssueV1Store.mockReturnValue({
-    fetchIssueByName: vi.fn().mockResolvedValue({}),
-  });
+  mocks.fetchIssueByName.mockResolvedValue({});
 
   mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
   mocks.getOrFetchDatabaseByName.mockResolvedValue({});

@@ -19,7 +19,6 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSheetContextByView: vi.fn(),
   useClickOutside: vi.fn(),
   onSelectCallback: vi.fn(),
@@ -27,10 +26,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/views/sql-editor/Sheet", () => ({
@@ -163,7 +158,6 @@ const makeFolderNode = (
 const setupDefaultMocks = () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
   mocks.useClickOutside.mockImplementation(() => undefined);
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
   const rootNode = makeFolderNode("/my", [
     makeFolderNode("/my/foo"),

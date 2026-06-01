@@ -1,14 +1,18 @@
-import { shallowRef } from "vue";
 import { type IStandaloneCodeEditor } from "@/react/components/monaco/types";
 
-export const activeSQLEditorRef = shallowRef<IStandaloneCodeEditor>();
+// Plain mutable holders — only ever read/written imperatively from event
+// handlers (no `watch`, no React subscription), so a `{ value }` object
+// matches every call site's `.value` access without dragging Vue's
+// reactivity system in.
+export const activeSQLEditorRef: { value: IStandaloneCodeEditor | undefined } =
+  {
+    value: undefined,
+  };
 
 /**
- * Tracks the live "active statement" — Monaco's delimited statement
- * under the cursor, or the full editor content as fallback. The React
+ * Tracks the live "active statement" — Monaco's delimited statement under
+ * the cursor, or the full editor content as fallback. The React
  * `SQLEditor` writes here via `onActiveContentChange`; the React
- * `EditorMain` reads it when the toolbar's "Run" button is pressed
- * (and Stage 22's still-Vue AI plugin can read it via the same Vue
- * `shallowRef` since the bridge shares Vue's reactivity system).
+ * `EditorMain` reads it when the toolbar's "Run" button is pressed.
  */
-export const activeStatementRef = shallowRef<string>("");
+export const activeStatementRef: { value: string } = { value: "" };

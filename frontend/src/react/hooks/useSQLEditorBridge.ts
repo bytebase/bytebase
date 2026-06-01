@@ -1,130 +1,112 @@
-import { useEffect } from "react";
-import { effectScope, unref } from "vue";
+import { useEffect, useMemo } from "react";
+import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorEditorState,
   useSQLEditorEditorState,
 } from "@/react/stores/sqlEditor/editor";
 import { useSQLEditorTabsStore } from "@/react/stores/sqlEditor/tab";
-import { featureToRef } from "@/store";
-import { useDatabaseV1ByName } from "@/store/modules/v1/database";
-import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { SQLEditorConnection } from "@/types";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  PolicyType,
+  type QueryDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import {
-  getDatabaseEnvironment,
-  getInstanceResource,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
-import { useVueState } from "./useVueState";
-
-/**
- * Module-level caches for Vue composables that create persistent
- * `watch` / `watchEffect` / `computed` / `ref` instances. Calling
- * these composables directly inside React render bodies would leak a
- * fresh Vue effect on every render — and the immediate-mode watch
- * inside `useDatabaseV1ByName` / `useQueryDataPolicy` would refetch
- * synchronously, mutate Pinia state, trigger our `useVueState` to
- * re-render, and create yet another effect... an infinite loop.
- *
- * Caching by argument value runs the composable exactly once per
- * unique input; subsequent renders reuse the same refs. A detached
- * `effectScope` keeps the Vue effects alive for the app's lifetime.
- */
-const policyScopeCache = new Map<
-  string,
-  ReturnType<typeof useQueryDataPolicy>
->();
-
-const getCachedQueryDataPolicy = (project: string) => {
-  let cached = policyScopeCache.get(project);
-  if (!cached) {
-    const scope = effectScope(true);
-    cached = scope.run(() => useQueryDataPolicy(project))!;
-    policyScopeCache.set(project, cached);
-  }
-  return cached;
-};
-
-const databaseScopeCache = new Map<
-  string,
-  ReturnType<typeof useDatabaseV1ByName>
->();
-
-const getCachedDatabaseV1ByName = (name: string) => {
-  let cached = databaseScopeCache.get(name);
-  if (!cached) {
-    const scope = effectScope(true);
-    cached = scope.run(() => useDatabaseV1ByName(name))!;
-    databaseScopeCache.set(name, cached);
-  }
-  return cached;
-};
-
-// `featureToRef` returns a fresh `computed()` per call. Calling it
-// directly inside a React render (e.g. `usePiniaBridge(() =>
-// featureToRef(X).value)`) leaks an orphaned computed on every render —
-// each stays subscribed to the subscription store, so a plan change
-// re-evaluates an ever-growing pile of dead computeds. Cache one
-// computed per feature in a detached scope.
-const featureRefCache = new Map<PlanFeature, ReturnType<typeof featureToRef>>();
-
-const getCachedFeatureRef = (feature: PlanFeature) => {
-  let cached = featureRefCache.get(feature);
-  if (!cached) {
-    const scope = effectScope(true);
-    cached = scope.run(() => featureToRef(feature))!;
-    featureRefCache.set(feature, cached);
-  }
-  return cached;
-};
+import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
 
 /**
  * React access to a workspace-level plan feature flag. Re-renders when
  * the subscription plan changes. (For instance-scoped features pass the
  * instance through a dedicated hook — none of the SQL editor's current
  * gates are instance-scoped.)
+ *
+ * Self-loads the subscription so SQL editor gates don't silently fall
+ * back to FREE on first render. Mirrors `usePlanFeature` — without this
+ * the hook would depend on an unrelated ancestor (e.g. `Watermark`)
+ * having already triggered `loadSubscription`.
  */
 export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
-  const ref = getCachedFeatureRef(feature);
-  return useVueState(() => unref(ref));
+  const loadSubscription = useAppStore((s) => s.loadSubscription);
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
+  return useAppStore((s) => s.hasFeature(feature));
+};
+
+// Mirrors the Pinia `formatQueryDataPolicy` helper: normalizes
+// `maximumResultRows` so `-1`/`0` (= unlimited) becomes `Number.MAX_VALUE`,
+// which lets `Math.min` collapse the workspace/project merge cleanly.
+type FormattedQueryDataPolicy = {
+  disableCopyData: boolean;
+  disableExport: boolean;
+  allowAdminDataSource: boolean;
+  maximumResultRows: number;
+};
+
+const formatQueryDataPolicy = (
+  policy: QueryDataPolicy | undefined
+): FormattedQueryDataPolicy => {
+  const max = policy?.maximumResultRows ?? -1;
+  return {
+    disableCopyData: policy?.disableCopyData ?? false,
+    disableExport: policy?.disableExport ?? false,
+    allowAdminDataSource: policy?.allowAdminDataSource ?? false,
+    maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
+  };
 };
 
 /**
- * React-native bridges over the SQL editor's Pinia dependencies. These
- * hooks live in `react/hooks/` so the migration acceptance grep on
- * `react/components/sql-editor/**` and `react/stores/sqlEditor/**`
- * stays empty of `useVueState` calls — components import from here
- * instead of bridging Pinia inline.
- */
-
-type FormattedQueryDataPolicy = ReturnType<
-  typeof useQueryDataPolicy
->["policy"] extends { value: infer V }
-  ? V
-  : never;
-
-/**
- * React access to the active project's QueryDataPolicy. Returns the
- * formatted policy shape exposed by `useQueryDataPolicy` — a merged
- * workspace + project policy view, not the raw proto.
+ * React access to the active project's QueryDataPolicy. Mirrors the
+ * legacy Pinia `useQueryDataPolicy`: fetches the workspace-level and
+ * project-level DATA_QUERY policies and merges them — the project's
+ * `maximumResultRows` only wins when it's tighter than the workspace cap.
  */
 export const useSQLEditorQueryDataPolicy = (
   project: string
 ): FormattedQueryDataPolicy => {
-  const { policy } = getCachedQueryDataPolicy(project);
-  // `getCachedQueryDataPolicy` returns a per-project cached ref; the
-  // project changes via Zustand (invisible to Vue's watch), so without
-  // `deps` the subscription stays on the previous project's policy and
-  // misses the new project's async fetch. Re-subscribe on `project`.
-  return useVueState(() => unref(policy), {
-    deps: [project],
-  }) as FormattedQueryDataPolicy;
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
+  const workspacePolicy = useAppStore((s) =>
+    workspaceResourceName
+      ? s.getQueryDataPolicyByParent(workspaceResourceName)
+      : undefined
+  );
+  const projectPolicy = useAppStore((s) =>
+    project ? s.getQueryDataPolicyByParent(project) : undefined
+  );
+  const getOrFetchPolicyByParentAndType = useAppStore(
+    (s) => s.getOrFetchPolicyByParentAndType
+  );
+
+  // Self-fetch both policies. The SQL editor route doesn't load org
+  // policies on its own; the Pinia version's `watchEffect` did this
+  // implicitly via the cached scope.
+  useEffect(() => {
+    if (!workspaceResourceName) return;
+    void getOrFetchPolicyByParentAndType({
+      parentPath: workspaceResourceName,
+      policyType: PolicyType.DATA_QUERY,
+    });
+  }, [workspaceResourceName, getOrFetchPolicyByParentAndType]);
+  useEffect(() => {
+    if (!project) return;
+    void getOrFetchPolicyByParentAndType({
+      parentPath: project,
+      policyType: PolicyType.DATA_QUERY,
+    });
+  }, [project, getOrFetchPolicyByParentAndType]);
+
+  return useMemo(() => {
+    const ws = formatQueryDataPolicy(workspacePolicy);
+    const proj = formatQueryDataPolicy(projectPolicy);
+    return {
+      ...ws,
+      maximumResultRows: Math.min(ws.maximumResultRows, proj.maximumResultRows),
+    };
+  }, [workspacePolicy, projectPolicy]);
 };
 
 /**
@@ -136,15 +118,13 @@ export const useSQLEditorQueryDataPolicy = (
  * is no re-render loop.
  */
 export const useClampResultRowsLimitToPolicy = (project: string): void => {
-  const { policy } = getCachedQueryDataPolicy(project);
-  const maximumResultRows = useVueState(() => unref(policy).maximumResultRows, {
-    deps: [project],
-  });
+  const { maximumResultRows } = useSQLEditorQueryDataPolicy(project);
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   useEffect(() => {
     if (
       typeof maximumResultRows === "number" &&
       maximumResultRows > 0 &&
+      maximumResultRows < Number.MAX_VALUE &&
       resultRowsLimit > maximumResultRows
     ) {
       getSQLEditorEditorState().setResultRowsLimit(maximumResultRows);
@@ -154,22 +134,20 @@ export const useClampResultRowsLimitToPolicy = (project: string): void => {
 
 /**
  * React access to "can the current user run admin SQL against this
- * project?". Reads project IAM via Pinia.
+ * project?". Self-fetches the project + its IAM policy so the SQL editor
+ * route (which doesn't preload either) gets a correct answer once both
+ * resolve.
  */
 export const useSQLEditorAllowAdmin = (project: string): boolean => {
-  const getProjectByName = useAppStore((s) => s.getProjectByName);
   const fetchProject = useAppStore((s) => s.fetchProject);
-  // Re-subscribe the IAM watch once the project resolves in the app store
-  // (a non-Vue signal the watch can't track on its own).
-  const cachedProject = useAppStore((s) => s.projectsByName[project]);
+  const loadProjectIamPolicy = useAppStore((s) => s.loadProjectIamPolicy);
   useEffect(() => {
-    if (isValidProjectName(project)) {
-      void fetchProject(project);
-    }
-  }, [fetchProject, project]);
-  return useVueState(
-    () => hasProjectPermissionV2(getProjectByName(project), "bb.sql.admin"),
-    { deps: [project, cachedProject] }
+    if (!isValidProjectName(project)) return;
+    void fetchProject(project);
+    void loadProjectIamPolicy(project);
+  }, [fetchProject, loadProjectIamPolicy, project]);
+  return useAppStore((s) =>
+    s.hasProjectPermission(s.getProjectByName(project), "bb.sql.admin")
   );
 };
 
@@ -177,7 +155,13 @@ export const useSQLEditorAllowAdmin = (project: string): boolean => {
  * React access to the workspace-wide "list projects" permission.
  */
 export const useSQLEditorAllowViewAllProjects = (): boolean => {
-  return useVueState(() => hasWorkspacePermissionV2("bb.projects.list"));
+  const loadWorkspacePermissionState = useAppStore(
+    (s) => s.loadWorkspacePermissionState
+  );
+  useEffect(() => {
+    void loadWorkspacePermissionState();
+  }, [loadWorkspacePermissionState]);
+  return useAppStore((s) => s.hasWorkspacePermission("bb.projects.list"));
 };
 
 /**
@@ -195,36 +179,16 @@ export interface SQLEditorConnectionDetail {
 export const useSQLEditorConnection = (
   connection: SQLEditorConnection
 ): SQLEditorConnectionDetail => {
-  const { database } = getCachedDatabaseV1ByName(connection.database);
-  // `getCachedDatabaseV1ByName` returns a DIFFERENT cached Vue ref when
-  // `connection.database` changes (e.g. a tab switch to an uncached
-  // database). The database name arrives via Zustand, which Vue's watch
-  // can't observe, so without `deps` each watch stays attached to the
-  // first render's ref — leaving stale/placeholder values and missing
-  // the async cache hydration of the new database. Re-subscribe on the
-  // database name so the watches track the current ref.
-  const databaseValue = useVueState(() => unref(database), {
-    deps: [connection.database],
-  });
-
-  const instance = useVueState(() => getInstanceResource(unref(database)), {
-    deps: [connection.database],
-  });
-
-  const environment = useVueState(
-    () => {
-      const db = unref(database);
-      if (isValidDatabaseName(db.name)) {
-        return getDatabaseEnvironment(db);
-      }
-      return useAppStore
-        .getState()
-        .getEnvironmentByName(instance.environment ?? "");
-    },
-    { deps: [connection.database] }
-  );
-
-  return { connection, database: databaseValue, instance, environment };
+  const database = useAppDatabase(connection.database);
+  const instance = useMemo(() => getInstanceResource(database), [database]);
+  const getEnvironmentByName = useAppStore((s) => s.getEnvironmentByName);
+  const environment = useMemo(() => {
+    if (isValidDatabaseName(database.name)) {
+      return getDatabaseEnvironment(database);
+    }
+    return getEnvironmentByName(instance.environment ?? "");
+  }, [database, instance, getEnvironmentByName]);
+  return { connection, database, instance, environment };
 };
 
 // Stable empty-connection sentinel. `emptySQLEditorConnection()`

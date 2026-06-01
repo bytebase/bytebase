@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   buildTreeImpl,
   mapTreeNodeByType,
 } from "@/react/stores/sqlEditor/tree-utils";
-import type { DatabaseFilter } from "@/store";
 import type {
   SQLEditorTreeNode,
   StatefulSQLEditorTreeFactor as StatefulFactor,

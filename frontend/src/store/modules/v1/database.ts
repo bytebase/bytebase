@@ -5,6 +5,10 @@ import { defineStore } from "pinia";
 import { computed, markRaw, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+// Canonical definition lives in `@/react/lib/databaseFilter`; re-exported
+// here so existing `from "@/store/modules/v1/database"` consumers keep
+// working until they migrate to the React-lib path.
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import type { MaybeRef } from "@/types";
 import {
   isValidDatabaseName,
@@ -46,19 +50,7 @@ import {
 import { useDBSchemaV1Store } from "./dbSchema";
 import { useProjectV1Store } from "./project";
 
-export interface DatabaseFilter {
-  project?: string;
-  instance?: string;
-  environment?: string;
-  query?: string;
-  showDeleted?: boolean;
-  excludeUnassigned?: boolean;
-  // label should be "{label key}:{label value}" format
-  labels?: string[];
-  engines?: Engine[];
-  excludeEngines?: Engine[];
-  table?: string;
-}
+export type { DatabaseFilter };
 
 const isValidParentName = (parent: string): boolean => {
   if (parent.startsWith(workspaceNamePrefix)) {
