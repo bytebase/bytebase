@@ -15,6 +15,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+// APIBaseURL is the Bitbucket Cloud API URL used by Bitbucket Pipelines.
+const APIBaseURL = "http://api.bitbucket.org/2.0" //nolint:revive
+
+const pipelinesProxyURL = "http://localhost:29418"
+
 // Define a struct for the report data
 type Report struct {
 	Title      string `json:"title"`
@@ -44,16 +49,9 @@ func CreateBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	if repoOwner == "" || repoSlug == "" || commit == "" {
 		return errors.Errorf("BITBUCKET_REPO_OWNER, BITBUCKET_REPO_SLUG, and BITBUCKET_COMMIT environment variables must be set")
 	}
-	proxy, err := url.Parse("http://localhost:29418")
-	if err != nil {
-		return err
-	}
-	transport := &http.Transport{
-		Proxy: http.ProxyURL(proxy),
-	}
-	client := &http.Client{Transport: transport}
+	client := NewHTTPClient(APIBaseURL)
 
-	reportURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase", repoOwner, repoSlug, commit)
+	reportURL := fmt.Sprintf("%s/repositories/%s/%s/commit/%s/reports/bytebase", APIBaseURL, repoOwner, repoSlug, commit)
 	var warningCount, errorCount int
 	for _, result := range checkResponse.Results {
 		for _, advice := range result.Advices {
@@ -138,8 +136,25 @@ func CreateBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling json")
 	}
-	annotationsURL := fmt.Sprintf("http://api.bitbucket.org/2.0/repositories/%s/%s/commit/%s/reports/bytebase/annotations", repoOwner, repoSlug, commit)
+	annotationsURL := fmt.Sprintf("%s/repositories/%s/%s/commit/%s/reports/bytebase/annotations", APIBaseURL, repoOwner, repoSlug, commit)
 	return sendPutRequest(client, http.MethodPost, annotationsURL, string(annotationsData))
+}
+
+// NewHTTPClient returns the Bitbucket HTTP client. Bitbucket Pipelines reaches
+// the public API through its localhost proxy.
+func NewHTTPClient(apiURL string) *http.Client {
+	if apiURL != APIBaseURL {
+		return http.DefaultClient
+	}
+	proxyURL, err := url.Parse(pipelinesProxyURL)
+	if err != nil {
+		return http.DefaultClient
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		},
+	}
 }
 
 func sendPutRequest(client *http.Client, method, url, data string) error {

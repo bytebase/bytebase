@@ -170,7 +170,7 @@ export type WorkspaceSlice = {
     workspace: Workspace,
     updateMask: string[]
   ) => Promise<Workspace>;
-  switchWorkspace: (workspaceName: string) => Promise<void>;
+  switchWorkspace: (workspaceName: string, redirect?: boolean) => Promise<void>;
   loadWorkspaceProfile: (
     force?: boolean
   ) => Promise<WorkspaceProfileSetting | undefined>;
@@ -220,6 +220,7 @@ export type WorkspaceSlice = {
   activatedInstanceCount: () => number;
   totalInstanceCount: () => number;
   userCountInIam: () => number;
+  activeVcsUserCount: () => number;
 };
 
 export type IamSlice = {
@@ -231,6 +232,19 @@ export type IamSlice = {
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
   loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  getProjectIamPolicy: (project: string) => IamPolicy;
+  updateProjectIamPolicy: (
+    project: string,
+    policy: IamPolicy
+  ) => Promise<IamPolicy>;
+  fetchWorkspaceIamPolicy: () => Promise<IamPolicy>;
+  patchWorkspaceIamPolicy: (
+    batchPatch: { member: string; roles: string[] }[]
+  ) => Promise<void>;
+  workspaceRoleMapToUsers: () => Map<string, Set<string>>;
+  workspaceUserMapToRoles: () => Map<string, Set<string>>;
+  findWorkspaceRolesByMember: (member: string) => string[];
+  getWorkspaceRolesByName: (name: string) => Set<string>;
   hasWorkspacePermission: (permission: Permission) => boolean;
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
 };
@@ -506,7 +520,7 @@ export type ReleaseSlice = {
     silent?: boolean
   ) => Promise<Release | undefined>;
   getReleasesByProject: (project: string) => Release[];
-  getReleaseByName: (name: string) => Release;
+  getReleaseByName: (name: string) => Release | undefined;
   updateRelease: (
     release: Partial<Release>,
     updateMask: string[]

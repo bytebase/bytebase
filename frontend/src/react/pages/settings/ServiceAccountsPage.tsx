@@ -39,10 +39,8 @@ import {
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
 import {
   getServiceAccountNameInBinding,
   getServiceAccountSuffix,
@@ -432,10 +430,15 @@ function ServiceAccountForm({
   const updateServiceAccount = useAppStore(
     (state) => state.updateServiceAccount
   );
-  const workspaceStore = useWorkspaceV1Store();
+  const patchWorkspaceIamPolicy = useAppStore(
+    (state) => state.patchWorkspaceIamPolicy
+  );
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
+  const updateProjectIamPolicy = useAppStore(
+    (state) => state.updateProjectIamPolicy
+  );
 
   const projectEntity = useVueState(() =>
     project ? projectStore.getProjectByName(project) : undefined
@@ -503,9 +506,7 @@ function ServiceAccountForm({
     member: string,
     newRoles: string[]
   ) => {
-    const policy = structuredClone(
-      projectIamPolicyStore.getProjectIamPolicy(projectName)
-    );
+    const policy = structuredClone(getProjectIamPolicy(projectName));
     for (const binding of policy.bindings) {
       binding.members = binding.members.filter((m) => m !== member);
     }
@@ -524,7 +525,7 @@ function ServiceAccountForm({
         );
       }
     }
-    await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
+    await updateProjectIamPolicy(projectName, policy);
   };
 
   const handleCreate = async () => {
@@ -543,7 +544,7 @@ function ServiceAccountForm({
           roles
         );
       } else {
-        await workspaceStore.patchIamPolicy([{ member, roles }]);
+        await patchWorkspaceIamPolicy([{ member, roles }]);
       }
     }
 

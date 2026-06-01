@@ -53,11 +53,7 @@ import {
   displayRoleTitleFromList,
 } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useSubscriptionV1Store,
-  useWorkspaceV1Store,
-} from "@/store";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import {
   BASIC_WORKSPACE_PERMISSIONS,
@@ -678,7 +674,6 @@ export function RolesPage() {
   const listRoles = useAppStore((state) => state.listRoles);
   const getRoleByName = useAppStore((state) => state.getRoleByName);
   const deleteRole = useAppStore((state) => state.deleteRole);
-  const workspaceStore = useWorkspaceV1Store();
   const subscriptionStore = useSubscriptionV1Store();
 
   const [ready, setReady] = useState(false);
@@ -705,7 +700,10 @@ export function RolesPage() {
     );
   }, [roleList]);
 
-  // Fetch roles on mount and handle query param
+  // Fetch roles on mount and handle query param. The workspace IAM policy
+  // and its referenced groups (used by the "users with this role" delete
+  // confirmation) are loaded centrally by useEnsureWorkspaceCommonData in
+  // the dashboard shell, so this page doesn't need to hedge here.
   useEffect(() => {
     listRoles()
       .then(() => {
@@ -741,7 +739,8 @@ export function RolesPage() {
     }
 
     const usersWithRole = [
-      ...(workspaceStore.roleMapToUsers.get(role.name) ?? new Set()),
+      ...(useAppStore.getState().workspaceRoleMapToUsers().get(role.name) ??
+        new Set<string>()),
     ];
     setDeleteResources(usersWithRole);
     setDeleteTarget(role);

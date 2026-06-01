@@ -54,7 +54,6 @@ import {
   useActuatorV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import { getUserFullNameByType } from "@/store/modules/v1/common";
 import {
@@ -508,10 +507,11 @@ function UserForm({
   const { t } = useTranslation();
   const createUser = useAppStore((state) => state.createUser);
   const updateUser = useAppStore((state) => state.updateUser);
-  const workspaceStore = useWorkspaceV1Store();
+  const patchWorkspaceIamPolicy = useAppStore(
+    (state) => state.patchWorkspaceIamPolicy
+  );
   const settingV1Store = useSettingV1Store();
 
-  const userMapToRoles = useVueState(() => workspaceStore.userMapToRoles);
   const passwordRestriction = useVueState(
     () => settingV1Store.workspaceProfile.passwordRestriction
   );
@@ -543,7 +543,13 @@ function UserForm({
     if (!user || !isEditMode) {
       return [PresetRoleType.WORKSPACE_MEMBER];
     }
-    const roles = userMapToRoles.get(getUserFullNameByType(user));
+    // Read a one-shot snapshot of the workspace role map at mount. The parent
+    // page loads the workspace IAM policy, so it is populated by the time an
+    // edit sheet opens; reading via getState keeps this baseline mount-only.
+    const roles = useAppStore
+      .getState()
+      .workspaceUserMapToRoles()
+      .get(getUserFullNameByType(user));
     return roles ? [...roles] : [];
   }, []);
   const initialTitle = user?.title ?? "";
@@ -676,7 +682,7 @@ function UserForm({
     });
     if (roles.length > 0) {
       try {
-        await workspaceStore.patchIamPolicy([
+        await patchWorkspaceIamPolicy([
           {
             member: getUserEmailInBinding(createdUser.email),
             roles,
@@ -721,7 +727,7 @@ function UserForm({
     }
 
     if (!isEqual([...initialRoles].sort(), [...roles].sort())) {
-      await workspaceStore.patchIamPolicy([
+      await patchWorkspaceIamPolicy([
         {
           member: getUserEmailInBinding(updatedUser.email),
           roles,

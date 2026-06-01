@@ -44,7 +44,6 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useSettingV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import {
   AccountType,
@@ -77,7 +76,10 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const updateUser = useAppStore((state) => state.updateUser);
   const updateEmail = useAppStore((state) => state.updateEmail);
   const roleList = useAppStore((state) => state.roleList);
-  const workspaceStore = useWorkspaceV1Store();
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const getWorkspaceRolesByName = useAppStore(
+    (state) => state.getWorkspaceRolesByName
+  );
   const actuatorStore = useActuatorV1Store();
 
   // --- Reactive Vue state ---
@@ -89,9 +91,11 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
   const user = principalEmail ? (principalUser ?? unknownUser()) : currentUser;
 
-  const userRoles = useVueState(() => [
-    ...workspaceStore.getWorkspaceRolesByName(user.name),
-  ]);
+  const userRoles = useMemo(
+    () => [...getWorkspaceRolesByName(user.name)],
+    // Recompute when the policy changes; getWorkspaceRolesByName reads it.
+    [getWorkspaceRolesByName, user.name, workspacePolicy]
+  );
 
   const passwordRestriction = useVueState(
     () => settingV1Store.workspaceProfile.passwordRestriction

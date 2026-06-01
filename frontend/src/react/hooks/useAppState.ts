@@ -139,6 +139,7 @@ export function useServerState() {
   );
   const totalInstanceCount = useAppStore((state) => state.totalInstanceCount());
   const userCountInIam = useAppStore((state) => state.userCountInIam());
+  const activeVcsUserCount = useAppStore((state) => state.activeVcsUserCount());
   useEffect(() => {
     void loadServerInfo();
   }, [loadServerInfo]);
@@ -153,6 +154,7 @@ export function useServerState() {
     activatedInstanceCount,
     totalInstanceCount,
     userCountInIam,
+    activeVcsUserCount,
   };
 }
 

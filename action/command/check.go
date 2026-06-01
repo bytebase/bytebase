@@ -78,6 +78,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			},
 			Targets:     w.Targets,
 			CustomRules: w.CustomRules,
+			VcsUser:     getVCSUser(platform),
 		})
 		if err != nil {
 			return err

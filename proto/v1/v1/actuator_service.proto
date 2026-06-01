@@ -145,4 +145,7 @@ message ActuatorInfo {
 
   // The number of users in the workspace IAM (for seat limit display).
   int32 user_count_in_iam = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The number of active VCS users seen in the active window.
+  int32 active_vcs_user_count = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

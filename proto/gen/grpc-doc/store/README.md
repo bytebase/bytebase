@@ -345,6 +345,9 @@
     - [PrincipalType](#bytebase-store-PrincipalType)
     - [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType)
   
+- [store/vcs_provider_user.proto](#store_vcs_provider_user-proto)
+    - [VCSProviderUserPayload](#bytebase-store-VCSProviderUserPayload)
+  
 - [store/worksheet.proto](#store_worksheet-proto)
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
   
@@ -5515,6 +5518,38 @@ ProviderType identifies the CI/CD platform.
 | GITHUB | 1 |  |
 | GITLAB | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_vcs_provider_user-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/vcs_provider_user.proto
+
+
+
+<a name="bytebase-store-VCSProviderUserPayload"></a>
+
+### VCSProviderUserPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_name | [string](#string) |  |  |
+| display_name | [string](#string) |  |  |
+
+
+
+
+
+ 
 
  
 

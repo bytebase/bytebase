@@ -81,6 +81,7 @@ func (c *DataCleaner) cleanup(ctx context.Context) {
 	c.cleanupWebRefreshTokens(ctx)
 	c.cleanupEmailVerificationCodes(ctx)
 	c.cleanupStaleHeartbeats(ctx)
+	c.cleanupExpiredVCSProviderUsers(ctx)
 }
 
 func (c *DataCleaner) detectStaleTaskRuns(ctx context.Context) {
@@ -124,6 +125,17 @@ func (c *DataCleaner) cleanupExportArchives(ctx context.Context) {
 	}
 	if rowsAffected > 0 {
 		slog.Info("Cleaned up expired export archives", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) cleanupExpiredVCSProviderUsers(ctx context.Context) {
+	rowsAffected, err := c.store.DeleteExpiredVCSProviderUsers(ctx, store.VCSProviderUserActiveWindow)
+	if err != nil {
+		slog.Error("Failed to clean up expired VCS provider users", log.BBError(err))
+		return
+	}
+	if rowsAffected > 0 {
+		slog.Info("Cleaned up expired VCS provider users", slog.Int64("count", rowsAffected))
 	}
 }
 

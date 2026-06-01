@@ -49,9 +49,6 @@ const mocks = vi.hoisted(() => ({
       title: "Project Owner",
     },
   ],
-  workspaceStore: {
-    roleMapToUsers: new Map(),
-  },
   issueCommentStore: {
     getIssueComments: vi.fn(() => mocks.comments),
     listIssueComments: vi.fn(async () => ({ issueComments: mocks.comments })),
@@ -80,9 +77,7 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
-  useWorkspaceV1Store: () => mocks.workspaceStore,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -96,6 +91,11 @@ vi.mock("@/react/stores/app", () => ({
       batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
       getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
       roleList: mocks.roleList,
+      loadProjectIamPolicy:
+        mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy,
+      // The approval flow now subscribes to projectPoliciesByName directly
+      // so the candidate list re-renders when the policy resolves.
+      projectPoliciesByName: { "projects/p1": { bindings: [] } },
     }),
 }));
 

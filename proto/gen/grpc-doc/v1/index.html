@@ -2498,6 +2498,10 @@
                   <a href="#bytebase.v1.UpdateReleaseRequest"><span class="badge">M</span>UpdateReleaseRequest</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.VCSUser"><span class="badge">M</span>VCSUser</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Release.Type"><span class="badge">E</span>Release.Type</a>
@@ -2782,6 +2786,10 @@
               
                 <li>
                   <a href="#bytebase.v1.CreatePurchaseRequest"><span class="badge">M</span>CreatePurchaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExportVCSProviderUsersRequest"><span class="badge">M</span>ExportVCSProviderUsersRequest</a>
                 </li>
               
                 <li>
@@ -19934,6 +19942,13 @@ Format: projects/{id} </p></td>
                   <td><p>The number of users in the workspace IAM (for seat limit display). </p></td>
                 </tr>
               
+                <tr>
+                  <td>active_vcs_user_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of active VCS users seen in the active window. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -27697,6 +27712,14 @@ Example: &#34;All tables must have a primary key&#34;
 Example: &#34;VARCHAR columns should specify a maximum length&#34; </p></td>
                 </tr>
               
+                <tr>
+                  <td>vcs_user</td>
+                  <td><a href="#bytebase.v1.VCSUser">VCSUser</a></td>
+                  <td></td>
+                  <td><p>The non-bot VCS pull request or merge request creator observed by bytebase-release.
+If absent, Bytebase skips VCS user tracking and VCS user limit enforcement. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28247,6 +28270,51 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to be updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.VCSUser">VCSUser</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>display_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -31416,6 +31484,13 @@ Required. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ExportVCSProviderUsersRequest">ExportVCSProviderUsersRequest</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.GetPaymentInfoRequest">GetPaymentInfoRequest</h3>
         <p></p>
 
@@ -32581,6 +32656,13 @@ If there is expired license, we will return a free plan subscription with the ex
               </tr>
             
               <tr>
+                <td>ExportVCSProviderUsers</td>
+                <td><a href="#bytebase.v1.ExportVCSProviderUsersRequest">ExportVCSProviderUsersRequest</a></td>
+                <td><a href="#google.api.HttpBody">.google.api.HttpBody</a></td>
+                <td><p>Exports active VCS users as CSV.</p></td>
+              </tr>
+            
+              <tr>
                 <td>UploadLicense</td>
                 <td><a href="#bytebase.v1.UploadLicenseRequest">UploadLicenseRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
@@ -32655,6 +32737,16 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
                 <td>GetSubscription</td>
                 <td>GET</td>
                 <td>/v1/subscription</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ExportVCSProviderUsers</td>
+                <td>GET</td>
+                <td>/v1/subscription:vcsProviderUsersExport</td>
                 <td></td>
               </tr>
               

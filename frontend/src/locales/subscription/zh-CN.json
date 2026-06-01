@@ -17,5 +17,13 @@
     },
     "title": "版本",
     "try": "免费试用"
+  },
+  "vcs-users": {
+    "active": "活跃 VCS 用户",
+    "download": "下载活跃 VCS 用户",
+    "download-failure": {
+      "description": "请稍后重试。",
+      "title": "下载活跃 VCS 用户失败"
+    }
   }
 }

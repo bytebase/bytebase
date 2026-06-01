@@ -1,6 +1,10 @@
-import { Copy, Pencil } from "lucide-react";
+import { createContextValues } from "@connectrpc/connect";
+import dayjs from "dayjs";
+import { Copy, Download, Pencil } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { subscriptionServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -52,6 +56,7 @@ export function SubscriptionPage({
     userCountInIam,
     totalInstanceCount,
     activatedInstanceCount,
+    activeVcsUserCount,
     workspaceResourceName,
   } = useServerState();
   const isSelfHostLicense =
@@ -123,6 +128,36 @@ export function SubscriptionPage({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API not available
+    }
+  };
+
+  const handleDownloadVCSUsers = async () => {
+    try {
+      const body =
+        await subscriptionServiceClientConnect.exportVCSProviderUsers(
+          {},
+          {
+            contextValues: createContextValues().set(silentContextKey, true),
+          }
+        );
+      const blob = new Blob([new TextDecoder().decode(body.data)], {
+        type: body.contentType || "text/csv; charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `active-vcs-users.${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch {
+      notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("subscription.vcs-users.download-failure.title"),
+        description: t("subscription.vcs-users.download-failure.description"),
+      });
     }
   };
 
@@ -206,6 +241,29 @@ export function SubscriptionPage({
           </div>
           <div className="mt-1 text-4xl flex items-center gap-2">
             {userCountInIam}
+            <span className="font-mono text-control-light">/</span>
+            {userLimit}
+          </div>
+        </div>
+
+        {/* Active VCS user count */}
+        <div className="flex flex-col text-left">
+          <div className="flex items-center gap-x-2 text-main">
+            {t("subscription.vcs-users.active")}
+            {allowManage && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void handleDownloadVCSUsers()}
+                title={t("subscription.vcs-users.download")}
+                aria-label={t("subscription.vcs-users.download")}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="mt-1 text-4xl flex items-center gap-2">
+            {activeVcsUserCount}
             <span className="font-mono text-control-light">/</span>
             {userLimit}
           </div>

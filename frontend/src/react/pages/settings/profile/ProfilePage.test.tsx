@@ -36,9 +36,8 @@ const mocks = vi.hoisted(() => ({
       requireMfa: false,
     },
   })),
-  useWorkspaceV1Store: vi.fn(() => ({
-    getWorkspaceRolesByName: vi.fn(() => []),
-  })),
+  getWorkspaceRolesByName: vi.fn(() => new Set<string>()),
+  fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
   useActuatorV1Store: vi.fn(() => ({
     isSaaSMode: false,
   })),
@@ -75,6 +74,9 @@ vi.mock("@/react/stores/app", () => ({
       updateUser: mocks.updateUser,
       updateEmail: mocks.updateEmail,
       roleList: [],
+      workspacePolicy: undefined,
+      getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
+      fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
     }),
 }));
 
@@ -84,7 +86,6 @@ vi.mock("@/store", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
   useSettingV1Store: mocks.useSettingV1Store,
-  useWorkspaceV1Store: mocks.useWorkspaceV1Store,
 }));
 
 vi.mock("@/router", () => ({

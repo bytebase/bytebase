@@ -1,4 +1,5 @@
-import { usePolicyV1Store, useProjectIamPolicyStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { usePolicyV1Store } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
@@ -59,11 +60,10 @@ export const canRolloutTasks = ({
     return true;
   }
 
-  const projectIamPolicyStore = useProjectIamPolicyStore();
   const policyStore = usePolicyV1Store();
-  const projectIamPolicy = projectIamPolicyStore.getProjectIamPolicy(
-    project.name
-  );
+  const projectIamPolicy = useAppStore
+    .getState()
+    .getProjectIamPolicy(project.name);
   const memberRoles = memberMapToRolesInProjectIAM(projectIamPolicy);
   const userRoles = memberRoles.get(currentUser.name);
 
@@ -117,10 +117,9 @@ export const preloadRolloutPermissionContext = async ({
   }
 
   const policyStore = usePolicyV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
 
   await Promise.allSettled([
-    projectIamPolicyStore.getOrFetchProjectIamPolicy(projectName),
+    useAppStore.getState().loadProjectIamPolicy(projectName),
   ]);
 
   const policyResults = await Promise.allSettled([

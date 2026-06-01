@@ -218,6 +218,17 @@ message CheckReleaseRequest {
   // Example: "All tables must have a primary key"
   // Example: "VARCHAR columns should specify a maximum length"
   string custom_rules = 4;
+
+  // The non-bot VCS pull request or merge request creator observed by bytebase-release.
+  // If absent, Bytebase skips VCS user tracking and VCS user limit enforcement.
+  VCSUser vcs_user = 5;
+}
+
+message VCSUser {
+  VCSType vcs_type = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string display_name = 4;
 }
 
 message CheckReleaseResponse {

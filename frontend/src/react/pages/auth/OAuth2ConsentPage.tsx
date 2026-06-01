@@ -10,10 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useActuatorV1Store, useAuthStore, useWorkspaceV1Store } from "@/store";
+import { useActuatorV1Store, useAuthStore } from "@/store";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -30,7 +32,9 @@ export function OAuth2ConsentPage() {
   // despite Pinia memoizing the factory.
   const authStore = useAuthStore();
   const actuatorStore = useActuatorV1Store();
-  const workspaceStore = useWorkspaceV1Store();
+  const loadWorkspace = useAppStore((state) => state.loadWorkspace);
+  const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
+  const switchWorkspace = useAppStore((state) => state.switchWorkspace);
 
   const isLoggedIn = useVueState(() => authStore.isLoggedIn);
   // Workspace context shown on the consent card. On SaaS, every Bytebase
@@ -38,8 +42,14 @@ export function OAuth2ConsentPage() {
   // implicit workspace. We display it so the user can confirm which
   // workspace this OAuth grant will be bound to.
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const currentWorkspace = useVueState(() => workspaceStore.currentWorkspace);
-  const workspaceList = useVueState(() => workspaceStore.workspaceList);
+  const currentWorkspace = useWorkspace();
+  const workspaceList = useAppStore((state) => state.workspaceList);
+
+  // Ensure the app store has loaded the current workspace for the consent
+  // card. Idempotent: loadWorkspace returns the cached value when present.
+  useEffect(() => {
+    void loadWorkspace();
+  }, [loadWorkspace]);
 
   const query = router.currentRoute.value.query;
   const clientId = (query.client_id as string) || "";
@@ -99,11 +109,11 @@ export function OAuth2ConsentPage() {
   useEffect(() => {
     if (!isSaaSMode || prefetchRef.current) return;
     prefetchRef.current = true;
-    workspaceStore.fetchWorkspaceList().catch(() => {});
-  }, [isSaaSMode, workspaceStore]);
+    loadWorkspaceList().catch(() => {});
+  }, [isSaaSMode, loadWorkspaceList]);
 
   // Switch the active workspace in-place, preserving the consent flow.
-  // Uses the workspace store's withoutRedirect variant so that
+  // Calls switchWorkspace with redirect=false so that
   //   (a) the bb-workspace-switch channel notification is posted on the
   //       store's own channel instance, so the store's onmessage listener
   //       in *this* tab does NOT fire (BroadcastChannel excludes the
@@ -116,7 +126,7 @@ export function OAuth2ConsentPage() {
     if (!workspaceName || workspaceName === currentWorkspace?.name) return;
     setSubmitting(true);
     try {
-      await workspaceStore.switchWorkspaceWithoutRedirect(workspaceName);
+      await switchWorkspace(workspaceName, false);
       globalThis.location.reload();
     } catch {
       setError(t("oauth2.consent.error-switch-failed"));

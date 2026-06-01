@@ -159,6 +159,31 @@ func (x *CheckReleaseRequest) Equal(y *CheckReleaseRequest) bool {
 	if x.CustomRules != y.CustomRules {
 		return false
 	}
+	if !x.VcsUser.Equal(y.VcsUser) {
+		return false
+	}
+	return true
+}
+
+func (x *VCSUser) Equal(y *VCSUser) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.VcsType != y.VcsType {
+		return false
+	}
+	if x.UserId != y.UserId {
+		return false
+	}
+	if x.UserName != y.UserName {
+		return false
+	}
+	if x.DisplayName != y.DisplayName {
+		return false
+	}
 	return true
 }
 

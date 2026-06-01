@@ -237,7 +237,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     return updated;
   },
 
-  switchWorkspace: async (workspaceName: string) => {
+  switchWorkspace: async (workspaceName: string, redirect = true) => {
     await authServiceClientConnect.switchWorkspace(
       createProto(SwitchWorkspaceRequestSchema, {
         workspace: workspaceName,
@@ -246,8 +246,10 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     );
     // Notify other tabs to reload with the new workspace.
     broadcastWorkspaceSwitch(workspaceName);
-    // Full-reload to the landing page to reset all frontend state.
-    window.location.href = "/";
+    if (redirect) {
+      // Full-reload to the landing page to reset all frontend state.
+      window.location.href = "/";
+    }
   },
 
   loadWorkspaceProfile: async (force = false) => {
@@ -602,4 +604,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   totalInstanceCount: () => get().serverInfo?.totalInstanceCount ?? 0,
 
   userCountInIam: () => get().serverInfo?.userCountInIam ?? 0,
+
+  activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 });

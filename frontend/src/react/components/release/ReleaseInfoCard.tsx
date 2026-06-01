@@ -25,9 +25,8 @@ export function ReleaseInfoCard({
   releaseName: string;
 }>) {
   const { t } = useTranslation();
-  // useReleaseByName returns a sentinel unknownRelease() when the release
-  // can't be found, so `release` is truthy even on a miss. Treat it as
-  // missing when the name doesn't parse as a real release resource name.
+  // Treat the release as missing when it's absent or its name doesn't parse
+  // as a real release resource name.
   const effectiveRelease =
     release && isValidReleaseName(release.name) ? release : undefined;
   const releaseTitle = useMemo(() => {

@@ -17,5 +17,13 @@
     },
     "title": "Plan",
     "try": "Empezar la prueba gratuita"
+  },
+  "vcs-users": {
+    "active": "Usuarios VCS activos",
+    "download": "Descargar usuarios VCS activos",
+    "download-failure": {
+      "description": "Inténtelo de nuevo más tarde.",
+      "title": "No se pudieron descargar los usuarios VCS activos"
+    }
   }
 }

@@ -279,11 +279,6 @@ vi.mock("@/store", () => ({
     isSaaSMode: false,
     userCountInIam: 1,
   }),
-  useProjectIamPolicyStore: () => ({
-    getOrFetchProjectIamPolicy: vi.fn(),
-    getProjectIamPolicy: () => projectIamPolicy,
-    updateProjectIamPolicy: mockUpdateProjectIamPolicy,
-  }),
   useProjectV1Store: () => ({
     getProjectByName: (name: string) => ({
       allowRequestRole: true,
@@ -300,11 +295,6 @@ vi.mock("@/store", () => ({
     hasFeature: () => true,
     userCountLimit: 10,
   }),
-  useWorkspaceV1Store: () => ({
-    findRolesByMember: () => [],
-    patchIamPolicy: vi.fn(),
-    workspaceIamPolicy: { bindings: [] },
-  }),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -319,6 +309,17 @@ vi.mock("@/react/stores/app", () => ({
     selector({
       batchGetOrFetchUsers: vi.fn(async () => []),
       roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+      workspacePolicy: { bindings: [] },
+      patchWorkspaceIamPolicy: vi.fn(),
+      findWorkspaceRolesByMember: () => [],
+      fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
+      // MembersPage now subscribes to projectPoliciesByName directly so it
+      // re-renders when loadProjectIamPolicy() resolves. The getter form is
+      // still used inside async handlers.
+      projectPoliciesByName: { "projects/sample-project": projectIamPolicy },
+      getProjectIamPolicy: () => projectIamPolicy,
+      updateProjectIamPolicy: mockUpdateProjectIamPolicy,
+      loadProjectIamPolicy: vi.fn(async () => undefined),
     }),
 }));
 

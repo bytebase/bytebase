@@ -46,9 +46,6 @@ vi.mock("@/store", () => ({
   useSettingV1Store: () => ({
     updateWorkspaceProfile: mocks.updateWorkspaceProfile,
   }),
-  useWorkspaceV1Store: () => ({
-    fetchIamPolicy: mocks.fetchIamPolicy,
-  }),
 }));
 
 vi.mock("@/react/stores/app", () => ({
@@ -60,6 +57,7 @@ vi.mock("@/react/stores/app", () => ({
     {
       getState: () => ({
         listRoles: mocks.listRoles,
+        fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
       }),
     }
   ),

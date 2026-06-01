@@ -22,11 +22,7 @@ import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useProjectIamPolicyStore,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   getIssueCommentType,
@@ -86,7 +82,9 @@ function PlanDetailApprovalFlowContent({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
   const issueCommentStore = useIssueCommentStore();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const issue = page.issue;
@@ -95,10 +93,8 @@ function PlanDetailApprovalFlowContent({
     void projectStore
       .getOrFetchProjectByName(projectName)
       .catch(() => undefined);
-    void projectIamPolicyStore
-      .getOrFetchProjectIamPolicy(projectName)
-      .catch(() => undefined);
-  }, [projectIamPolicyStore, projectName, projectStore]);
+    void loadProjectIamPolicy(projectName).catch(() => undefined);
+  }, [loadProjectIamPolicy, projectName, projectStore]);
 
   useEffect(() => {
     if (mode !== "review") {
@@ -667,7 +663,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const { patchState } = page;
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -689,8 +684,13 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
   const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const projectIamPolicy = useVueState(() =>
-    projectIamPolicyStore.getProjectIamPolicy(projectName)
+  // Subscribe directly to the Zustand project IAM cache so this step
+  // re-renders the moment loadProjectIamPolicy() resolves. Wrapping the
+  // Zustand getter in useVueState would only react to Vue dependencies
+  // and miss the Zustand write, leaving the candidates list empty on a
+  // cold plan page.
+  const projectIamPolicy = useAppStore(
+    (state) => state.projectPoliciesByName[projectName]
   );
   const stepApprover = issue.approvers[stepIndex];
 
