@@ -1,21 +1,25 @@
 {
-  "activity.sentence.added-spec": "añadió",
-  "activity.sentence.canceled-issue": "closed the issue",
-  "activity.sentence.changed-description": "changed description",
-  "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
-  "activity.sentence.changed-labels": "changed labels",
-  "activity.sentence.changed-targets-of": "cambió los targets de",
-  "activity.sentence.created-issue": "created issue",
-  "activity.sentence.disabled-prior-backup-on": "desactivó prior backup en",
-  "activity.sentence.enabled-prior-backup-on": "activó prior backup en",
-  "activity.sentence.modified-sql-of": "modificó el SQL de",
-  "activity.sentence.removed-spec": "eliminó",
-  "activity.sentence.reopened-issue": "reopened issue",
-  "activity.sentence.resolved-issue": "marcó la incidencia como completada",
-  "activity.sentence.review-done-rollout-created": "Revisión completada, rollout creado",
-  "activity.sentence.review-done-rollout-created-for-plan": "Revisión completada, rollout creado para el plan",
-  "activity.sentence.review-skipped-rollout-created": "Revisión omitida, rollout creado",
-  "activity.sentence.review-skipped-rollout-created-for-plan": "Revisión omitida, rollout creado para el plan",
+  "activity": {
+    "sentence": {
+      "added-spec": "añadió",
+      "canceled-issue": "cerró el issue",
+      "changed-description": "cambió la descripción",
+      "changed-from-to": "cambió {{name}} de \"{{oldValue}}\" a \"{{newValue}}\"",
+      "changed-labels": "cambió las etiquetas",
+      "changed-targets-of": "cambió los objetivos de",
+      "created-issue": "creó el issue",
+      "disabled-prior-backup-on": "desactivó el respaldo previo en",
+      "enabled-prior-backup-on": "activó el respaldo previo en",
+      "modified-sql-of": "modificó el SQL de",
+      "removed-spec": "eliminó",
+      "reopened-issue": "reabrió el issue",
+      "resolved-issue": "marcó la incidencia como completada",
+      "review-done-rollout-created": "Revisión completada, rollout creado",
+      "review-done-rollout-created-for-plan": "Revisión completada, rollout creado para el plan",
+      "review-skipped-rollout-created": "Revisión omitida, rollout creado",
+      "review-skipped-rollout-created-for-plan": "Revisión omitida, rollout creado para el plan"
+    }
+  },
   "agent": {
     "active-only-chats": "Solo activos",
     "ai-not-configured": {
@@ -52,6 +56,7 @@
     "reply": "Responder",
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
+    "self": "Asistente",
     "send": "Enviar",
     "stop": "Detener",
     "tool-answer": "Respuesta",
@@ -69,7 +74,6 @@
     "unarchive-all-chats": "Desarchivar todos los chats",
     "unarchive-chat": "Desarchivar chat"
   },
-  "agent.self": "Asistente",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -152,9 +156,9 @@
       "create-admin-account": "Crear cuenta de administrador",
       "existing-user": "¿Ya tienes una cuenta?",
       "title": "Registre su cuenta"
-    }
+    },
+    "token-expired-title": "Token expirado"
   },
-  "auth.token-expired-title": "Token expirado",
   "banner": {
     "external-url": "Bytebase no ha configurado --external-url",
     "license-expired": "Su licencia para {{plan}} ha expirado el {{expireAt}}.",
@@ -182,7 +186,7 @@
         "or": {
           "description": "Cualquiera de los siguientes es verdadero..."
         },
-        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
+        "tooltip": "Un grupo de condiciones es un conjunto de condiciones conectadas por los operadores \"Y\" y \"O\"."
       },
       "input-value": "Valor de entrada",
       "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
@@ -192,9 +196,9 @@
   },
   "changelog": {
     "current-schema-empty": "El esquema actual está vacío",
-    "no-schema-change": "No schema change",
+    "no-schema-change": "Sin cambios de esquema",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
-    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema mediante Bytebase",
     "self": "Changelog",
     "show-diff": "Mostrar diferencias"
   },
@@ -205,47 +209,54 @@
     "actions": "Acciones",
     "activated": "Activado",
     "active": "Activo",
+    "activity": "Actividad",
     "add": "Agregar",
     "add-permissions": "Agregar permisos",
     "added": "Agregado",
     "address": "Dirección",
-    "admin": "Admin",
+    "admin": "Administrador",
     "all": "Todos",
     "allow": "Permitir",
-    "approve": "Approve",
+    "and": "y",
+    "approve": "Aprobar",
     "approved": "Aprobado",
     "archive": "Archivo",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "archive-resource": "Archive {{type}}",
+    "archive-description": "Marcar \"{{name}}\" como archivado y de solo lectura.",
+    "archive-resource": "Archivar {{type}}",
     "archived": "Archivada",
     "back": "Volver",
+    "back-to-workspace": "Volver al espacio de trabajo",
     "bypassed": "Omitido",
     "cancel": "Cancelar",
     "cannot-undo-this-action": "No se puede deshacer esta acción",
+    "catalog": "Catálogo",
     "changelog": "Changelog",
     "classification-level": "Nivel de clasificación",
     "clear": "Limpiar",
     "clear-filters": "Limpiar filtros",
     "close": "Cerrar",
+    "close-mobile-sidebar": "Cerrar barra lateral móvil",
     "closed": "Cerrado",
+    "collapse": "Contraer",
+    "column": "Columna",
     "comment": "Comentario",
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
     "confirm": "Confirmar",
-    "confirm-archive": "Archive Resource?",
-    "confirm-delete": "Delete Resource?",
-    "confirm-to-revert": "Confirm to revert your editing?",
+    "confirm-archive": "¿Archivar recurso?",
+    "confirm-delete": "¿Eliminar recurso?",
+    "confirm-to-revert": "¿Confirmar para revertir su edición?",
     "continue-anyway": "De todas maneras, continúe",
     "copied": "Copiado",
     "copy": "Copiar",
-    "copy-failed": "Copy failed",
+    "copy-failed": "Error al copiar",
     "create": "Crear",
     "created": "Creado",
     "created-at": "Creado",
     "creating": "Creando...",
     "creator": "Creador",
     "custom": "Personalizado",
-    "danger-zone": "Danger Zone",
+    "danger-zone": "Zona de peligro",
     "database": "Base de datos",
     "database-group": "Grupo de bases de datos",
     "databases": "Bases de datos",
@@ -253,28 +264,29 @@
     "default": "Predeterminado",
     "definition": "Definición",
     "delete": "Eliminar",
-    "delete-resource": "Delete {{type}}",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
+    "delete-resource": "Eliminar {{type}}",
+    "delete-resource-description": "Una vez que elimine \"{{name}}\", no habrá vuelta atrás. Por favor, esté seguro.",
     "deleted": "Eliminado",
     "deny": "Denegar",
     "description": "Descripción",
-    "deselect-all": "Deselect all",
+    "deselect-all": "Deseleccionar todo",
     "detail": "Detalle",
     "detailed-guide": "guía detallada",
-    "disable": "Disable",
+    "disable": "Deshabilitar",
     "discard-changes": "Descartar cambios",
     "dismiss": "Descartar",
     "done": "Hecho",
     "download": "Descargar",
     "draft": "Borrador",
     "duplicate": "Duplicar",
-    "duration": "Duration",
+    "duration": "Duración",
     "edit": "Editar",
+    "edited": "editado",
     "email": "Correo electrónico",
     "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
-    "empty": "Empty",
+    "empty": "Vacío",
     "enable": "Habilitar",
-    "enabled": "Enabled",
+    "enabled": "Habilitado",
     "environment": "Entorno",
     "environment-name": "Nombre del entorno",
     "environments": "Entornos",
@@ -287,7 +299,7 @@
       "size-limit": "El tamaño del archivo debe ser menor que {{size}} MiB",
       "type-limit": "Solo se admiten archivos {{extension}}"
     },
-    "filter": "Filter",
+    "filter": "Filtrar",
     "filter-by-name": "Filtrar por nombre",
     "fork": "Bifurcación",
     "from": "Desde",
@@ -299,22 +311,28 @@
     "home": "Inicio",
     "id": "ID",
     "import": "Importar",
+    "in-progress": "En progreso",
     "info": "Información",
     "instance": "Instancia",
     "instances": "Instancias",
-    "is-required": "is required",
+    "is-required": "es obligatorio",
+    "issue": "Issue",
     "issues": "Incidencias",
-    "items": "items",
+    "items": "elementos",
     "key": "Clave",
     "labels": "Etiquetas",
+    "language": "Idioma",
     "learn-more": "Aprender más",
     "leave-without-saving": "¿Salir sin guardar?",
+    "license": "Licencia",
+    "line": "Línea",
     "load-more": "Cargar más",
     "loading": "Cargando",
     "logout": "Cerrar sesión",
     "manage": "Administrar",
-    "manually-select": "Manually select",
+    "manually-select": "Seleccionar manualmente",
     "maximize": "Maximizar",
+    "members": "Miembros",
     "members_one": "Miembro",
     "members_other": "Miembros",
     "minutes": "Minutos",
@@ -330,8 +348,11 @@
     "no-data": "Sin datos",
     "not-started": "No iniciado",
     "ok": "OK",
+    "only-creator-allowed-export": "Solo el creador puede exportar",
+    "open": "Abrir",
+    "operation": "Operación",
     "operations": "Operaciones",
-    "optional": "Optional",
+    "optional": "Opcional",
     "or": "o",
     "overview": "Resumen",
     "password": "Contraseña",
@@ -339,27 +360,32 @@
     "permissions": "Permisos",
     "plan": "Plan",
     "preview": "Previsualización",
-    "previous": "Previous",
+    "previous": "Anterior",
     "project": "Proyecto",
     "projects": "Proyectos",
     "query": "Consulta",
     "read-only": "Solo lectura",
     "reason": "Razón",
+    "recent": "Recientes",
     "refresh": "Actualizar",
     "regenerate": "Regenerar",
-    "reject": "Reject",
+    "reject": "Rechazar",
     "rejected": "Rechazado",
     "release": "Versión",
+    "remaining": "restantes",
     "remove": "Eliminar",
+    "removed": "Eliminado",
+    "reopen": "Reabrir",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
     "reset": "Restablecer",
-    "resource": "Resource",
+    "resource": "Recurso",
     "resource-not-found": "Recurso no encontrado",
     "resources": "Recursos",
     "restore": "Restaurar",
-    "restored": "Restored",
+    "restored": "Restaurado",
+    "retry": "Reintentar",
     "revert": "Revertir",
     "revoke": "Revocar",
     "revoked": "Revocado",
@@ -373,7 +399,7 @@
       "self": "filas"
     },
     "rows-per-page": "Filas por página",
-    "run": "Run",
+    "run": "Ejecutar",
     "running": "En ejecución",
     "save": "Guardar",
     "schema": "Esquema",
@@ -382,14 +408,17 @@
     "search-for-more": "Buscar más",
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
-    "selected": "selected",
+    "selected": "seleccionado",
     "sensitive-placeholder": "Sensible - solo escritura",
     "setting": "Configuración",
     "settings": "Configuraciones",
     "share": "Compartir",
+    "show-less": "Mostrar menos",
+    "show-more": "Mostrar más",
     "sign-in": "Iniciar sesión",
     "sign-in-as-admin": "Iniciar sesión como administrador",
     "sign-up": "Registrarse",
+    "skip": "Omitir",
     "skipped": "Omitido",
     "snapshot": "Instantánea",
     "sql": "SQL",
@@ -397,10 +426,12 @@
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
-    "submit": "Submit",
+    "submit": "Enviar",
     "succeed": "Tener éxito",
+    "success": "Éxito",
     "system": "Sistema",
     "table": "Tabla",
+    "task": "Tarea",
     "text-wrap": "Ajuste de texto",
     "tips": "Consejos",
     "title": "Título",
@@ -408,10 +439,12 @@
     "total": "Total",
     "total-n-items": "Total {{n}} elementos",
     "transfer": "Transferir",
+    "troubleshoot": "Solucionar problemas",
     "type": "Tipo",
     "type-to-search": "Escriba para buscar",
     "unassigned": "No asignado",
     "under-review": "En revisión",
+    "unknown": "Desconocido",
     "unlimited": "Ilimitado",
     "untitled": "Sin título",
     "update": "Actualizar",
@@ -426,100 +459,14 @@
     "version": "Versión",
     "view": "Ver",
     "view-details": "Ver Detalles",
+    "view-doc": "Ver doc",
     "visibility": "Visibilidad",
+    "want-help": "¿Quiere ayuda?",
     "warning": "Advertencia",
     "webhooks": "Webhooks",
     "write-only": "solo escritura",
     "you": "tu"
   },
-  "common.activity": "Actividad",
-  "common.add": "Agregar",
-  "common.admin": "Admin",
-  "common.all": "Todos",
-  "common.and": "y",
-  "common.archive": "Archivo",
-  "common.archived": "Archivada",
-  "common.back-to-workspace": "Back to workspace",
-  "common.cancel": "Cancelar",
-  "common.cannot-undo-this-action": "No se puede deshacer esta acción",
-  "common.catalog": "Catálogo",
-  "common.close": "Cerrar",
-  "common.close-mobile-sidebar": "Close mobile sidebar",
-  "common.collapse": "Contraer",
-  "common.column": "Columna",
-  "common.comment": "Comment",
-  "common.confirm": "Confirmar",
-  "common.continue-anyway": "De todas maneras, continúe",
-  "common.copy": "Copiar",
-  "common.create": "Crear",
-  "common.creating": "Creando...",
-  "common.custom": "Personalizado",
-  "common.database": "Base de datos",
-  "common.database-group": "Grupo de bases de datos",
-  "common.databases": "Bases de datos",
-  "common.default": "predeterminado",
-  "common.delete": "Eliminar",
-  "common.delete-resource": "Delete {{type}}",
-  "common.deleted": "Eliminado",
-  "common.detail": "Detail",
-  "common.detailed-guide": "guía detallada",
-  "common.edit": "Editar",
-  "common.edited": "edited",
-  "common.environment": "Entorno",
-  "common.import": "Importar",
-  "common.in-progress": "En progreso",
-  "common.issue": "Issue",
-  "common.key": "Clave",
-  "common.labels": "Etiquetas",
-  "common.language": "Language",
-  "common.learn-more": "Aprender más",
-  "common.license": "License",
-  "common.line": "Línea",
-  "common.load-more": "Cargar más",
-  "common.loading": "Cargando",
-  "common.logout": "Cerrar sesión",
-  "common.members": "Miembros",
-  "common.minutes": "Minutos",
-  "common.n-more": "{{n}} más",
-  "common.no-data": "Sin datos",
-  "common.only-creator-allowed-export": "Only the creator is allowed to export",
-  "common.open": "Abrir",
-  "common.operation": "Operación",
-  "common.optional": "Opcional",
-  "common.or": "o",
-  "common.overview": "Resumen",
-  "common.password": "Contraseña",
-  "common.project": "Proyecto",
-  "common.read-only": "Solo lectura",
-  "common.recent": "Recientes",
-  "common.remaining": "restantes",
-  "common.remove": "Eliminar",
-  "common.removed": "Eliminado",
-  "common.reopen": "Reabrir",
-  "common.restore": "Restaurar",
-  "common.retry": "Reintentar",
-  "common.role.self": "Rol",
-  "common.rollout": "Implementar",
-  "common.save": "Guardar",
-  "common.sensitive-placeholder": "Sensible - solo escritura",
-  "common.show-less": "Mostrar menos",
-  "common.show-more": "Mostrar más",
-  "common.skip": "Omitir",
-  "common.success": "Éxito",
-  "common.task": "Tarea",
-  "common.troubleshoot": "Solucionar problemas",
-  "common.unknown": "Desconocido",
-  "common.unlimited": "Ilimitado",
-  "common.updated": "Actualizado",
-  "common.updating": "Actualizando",
-  "common.user": "Usuario",
-  "common.username": "Nombre de usuario",
-  "common.value": "Valor",
-  "common.version": "Versión",
-  "common.view-doc": "Ver doc",
-  "common.want-help": "Want help",
-  "common.warning": "Advertencia",
-  "common.write-only": "solo escritura",
   "create-db": {
     "cluster": "Clúster",
     "database-owner-name": "Nombre del propietario de la base de datos",
@@ -558,14 +505,18 @@
     "issue-review": {
       "and-n-other-users": "{{names}} y {{count}} otros usuarios",
       "approved-by": "Aprobado por",
+      "approved-issue": "aprobó el issue",
       "disallow-approve-reason": {
-        "some-task-checks-are-still-running": "Some task checks are still running.",
-        "some-task-checks-didnt-pass": "Some task checks didn't pass."
+        "some-task-checks-are-still-running": "Algunas comprobaciones de tareas aún se están ejecutando.",
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no se superaron."
       },
       "generating-approval-flow": "Generando flujo de aprobación",
       "re-request-review": "Volver a solicitar revisión",
       "re-request-review-success": "Revisión solicitada nuevamente con éxito",
+      "re-requested-review": "volvió a solicitar la revisión del issue",
       "rejected-by": "Rechazado por",
+      "rejected-issue": "rechazó el issue",
+      "retry-approval-finding": "Reintentar",
       "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
     },
     "risk": {
@@ -608,17 +559,13 @@
     },
     "self": "Aprobación personalizada"
   },
-  "custom-approval.issue-review.approved-issue": "approved issue",
-  "custom-approval.issue-review.re-requested-review": "re-requested issue review",
-  "custom-approval.issue-review.rejected-issue": "rejected issue",
-  "custom-approval.issue-review.retry-approval-finding": "Reintentar",
   "data-source": {
     "additional-node-addresses": "Direcciones de nodos adicionales",
     "automatic-query-data-source": "Automática",
     "connection-string-schema": "Esquema de cadena de conexión",
     "connection-type": "Tipo de conección",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
-    "direct-connection": "Direct Connection",
+    "direct-connection": "Conexión directa",
     "extra-params": {
       "description": "Parámetros adicionales para la cadena de conexión de la base de datos",
       "self": "Parámetros adicionales"
@@ -686,47 +633,16 @@
     },
     "ssl-connection": "Conexión SSL"
   },
-  "data-source.additional-node-addresses": "Direcciones de nodos adicionales",
-  "data-source.connection-string-schema": "Esquema de cadena de conexión",
-  "data-source.connection-type": "Tipo de conección",
-  "data-source.delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
-  "data-source.direct-connection": "Direct Connection",
-  "data-source.extra-params.description": "Parámetros adicionales para la cadena de conexión de la base de datos",
-  "data-source.extra-params.self": "Parámetros adicionales",
-  "data-source.no-read-only-data-source": "Sin fuente de datos de solo lectura",
-  "data-source.private-key-passphrase": "Frase de contraseña de clave privada",
-  "data-source.private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada",
-  "data-source.private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
-  "data-source.read-replica-host": "Anfitrión de réplica de lectura",
-  "data-source.read-replica-port": "Puerto de réplica de lectura",
-  "data-source.replica-set": "Conjunto de réplicas",
-  "data-source.snowflake-keypair-tip": "Autenticación de par de claves",
-  "data-source.ssh-connection": "Conexión SSH",
-  "data-source.ssh-type.none": "Ninguno",
-  "data-source.ssh-type.tunnel-and-private-key": "Túnel + Clave Privada",
-  "data-source.ssh.host": "Anfitrión",
-  "data-source.ssh.password": "Contraseña",
-  "data-source.ssh.port": "Puerto",
-  "data-source.ssh.private-key": "Clave Privada",
-  "data-source.ssh.ssh-key": "Clave del SSH",
-  "data-source.ssh.user": "Nombre de usuario",
-  "data-source.ssl-connection": "Conexión SSL",
-  "data-source.ssl.ca-cert": "Certificado de CA",
-  "data-source.ssl.ca-path": "Ruta del certificado de CA",
-  "data-source.ssl.client-cert": "Certificado del cliente",
-  "data-source.ssl.client-cert-path": "Ruta del certificado del cliente",
-  "data-source.ssl.client-key": "Clave del cliente",
-  "data-source.ssl.client-key-path": "Ruta de la clave del cliente",
-  "data-source.ssl.verify-certificate": "Verificar certificado TLS",
-  "data-source.ssl.verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro",
   "database": {
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
     "all": "Todas las bases de datos",
     "change-database": "Modificar base de datos",
     "checks": "Verificaciones",
     "classification": {
-      "description": "Define classification levels to apply consistent masking policies across columns and databases."
+      "description": "Defina niveles de clasificación para aplicar políticas de enmascaramiento coherentes en columnas y bases de datos.",
+      "self": "Clasificación"
     },
+    "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
     "data-size": "Tamaño de datos",
@@ -734,9 +650,13 @@
     "edit-labels": "Editar etiquetas",
     "edit-schema": "Modificar esquema",
     "engine": "Motor",
-    "expression": "Expression",
+    "export-schema": "Exportar esquema",
+    "export-schema-multi-file": "Multi-archivo (ZIP)",
+    "export-schema-single-file": "Archivo único",
+    "expression": "Expresión",
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
+    "failed-to-export-schema": "Error al exportar el esquema",
     "filter-database": "Filtrar base de datos",
     "foreign-key": {
       "reference": "Referencia"
@@ -744,6 +664,7 @@
     "foreign-keys": "claves foráneas",
     "index-size": "Tamaño del índice",
     "indexes": "Índices",
+    "labels": "Etiquetas de base de datos",
     "last-sync": "Última sincronización",
     "mixed-label-values": "valores mixtos",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
@@ -790,30 +711,31 @@
       "unspecified": "No especificado"
     },
     "select": "Seleccionar base de datos",
+    "successfully-exported-schema": "Esquema exportado correctamente",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
     "sync-database": "Sincronizar base de datos",
     "sync-schema": {
-      "copy-schema": "Copy schema",
-      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
-      "generated-ddl-statement": "Generated DDL statement",
+      "copy-schema": "Copiar esquema",
+      "description": "Bytebase admite la sincronización de un esquema a una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
+      "generated-ddl-statement": "Sentencia DDL generada",
       "message": {
-        "no-diff-found": "No diff found.",
-        "no-target-databases": "No target databases",
-        "select-a-target-database-first": "Please select a target database first."
+        "no-diff-found": "No se encontraron diferencias.",
+        "no-target-databases": "No hay bases de datos de destino",
+        "select-a-target-database-first": "Por favor, seleccione primero una base de datos de destino."
       },
-      "no-diff": "No diff",
-      "preview-issue": "Preview issue",
-      "schema-change": "Schema change",
-      "schema-change-preview": "Preview Schema change for '{{database}}'",
-      "select-source-schema": "Select source schema",
-      "select-target-databases": "Select target databases",
-      "source-schema": "Source schema",
-      "synchronize-statements": "Corresponding generated DDL statements",
-      "synchronize-statements-description": "You can further edit the generated DDL statements",
-      "target-databases": "Target databases",
+      "no-diff": "Sin diferencias",
+      "preview-issue": "Previsualizar issue",
+      "schema-change": "Cambio de esquema",
+      "schema-change-preview": "Previsualización del cambio de esquema para '{{database}}'",
+      "select-source-schema": "Seleccionar esquema de origen",
+      "select-target-databases": "Seleccionar bases de datos de destino",
+      "source-schema": "Esquema de origen",
+      "synchronize-statements": "Sentencias DDL generadas correspondientes",
+      "synchronize-statements-description": "Puede editar aún más las sentencias DDL generadas",
+      "target-databases": "Bases de datos de destino",
       "title": "Sincronizar esquema",
-      "with-diff": "With diff"
+      "with-diff": "Con diferencias"
     },
     "sync-schema-button": "Sincronizar esquema",
     "sync-status": "Estado de sincronización",
@@ -832,29 +754,18 @@
   },
   "database-group": {
     "condition": {
-      "self": "Condition"
+      "self": "Condición"
     },
-    "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
-    "no-matched-databases": "No matched databases",
-    "select": "Select database group",
-    "unmatched-database": "Unmatched database"
+    "delete-group": "Eliminar el grupo de bases de datos {{name}}",
+    "matched-database": "Base de datos coincidente",
+    "no-matched-databases": "No hay bases de datos coincidentes",
+    "select": "Seleccionar grupo de bases de datos",
+    "unmatched-database": "Base de datos no coincidente"
   },
-  "database.classification.self": "Clasificación",
-  "database.column": "Columna",
-  "database.engine": "Motor",
-  "database.export-schema": "Exportar esquema",
-  "database.export-schema-multi-file": "Multi-archivo (ZIP)",
-  "database.export-schema-single-file": "Archivo único",
-  "database.failed-to-export-schema": "Error al exportar el esquema",
-  "database.filter-database": "Filtrar base de datos",
-  "database.labels": "Etiquetas de base de datos",
-  "database.revision.delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer.",
-  "database.revision.self": "Revisión",
-  "database.successfully-exported-schema": "Esquema exportado correctamente",
-  "database.sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
-  "database.sync-database": "Sincronizar base de datos",
   "db": {
+    "catalog": {
+      "description": "Editar y cargar el catálogo de tablas."
+    },
     "character-set": "Juego de caracteres",
     "collation": "Colación",
     "collections": "Colecciones",
@@ -897,11 +808,6 @@
     "triggers": "Desencadenantes",
     "views": "Vistas"
   },
-  "db.catalog.description": "Editar y cargar el catálogo de tablas.",
-  "db.failed-to-sync-schema": "No se pudo sincronizar el esquema",
-  "db.n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
-  "db.start-to-sync-schema": "Comenzar a sincronizar el esquema",
-  "db.syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
   "environment": {
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "reorder": "Reordenar entornos",
@@ -921,7 +827,6 @@
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
     "password-optional": "Cifrar con contraseña (opcional)"
   },
-  "export-data.password-optional": "Contraseña (opcional)",
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
@@ -949,7 +854,7 @@
     },
     "workflow": {
       "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
-      "file-hint": "Guardar como {{filePath}} en su repositorio",
+      "file-hint": "Guardar como {{filePath}} en su repositorio {{repository}}",
       "provider-not-match": "La workload identity seleccionada solo funciona para {{provider}}.",
       "self-hosted-runner": "Runner self-hosted",
       "title": "Generación de archivo de flujo de trabajo"
@@ -994,6 +899,7 @@
     "connection-options": "Opciones de conexión",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",
+    "default-role": "Rol predeterminado",
     "endpoint": "Punto final",
     "external-id": "ID externo",
     "external-id-description": "ID externo para seguridad adicional al asumir el rol (opcional)",
@@ -1016,9 +922,9 @@
     "external-secret-vault": {
       "vault-auth-type": {
         "approle": {
-          "role-id": "Auth role id",
+          "role-id": "ID de rol de autenticación",
           "secret-env-name": "Nombre del entorno",
-          "secret-id": "Auth secret id",
+          "secret-id": "ID de secreto de autenticación",
           "secret-plain-text": "Texto sin formato",
           "self": "AppRole"
         },
@@ -1027,12 +933,12 @@
           "self": "Token"
         }
       },
-      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-engine-name": "Nombre del motor de secretos",
       "vault-secret-engine-tips": "Solo admite motor KV v2.",
-      "vault-secret-key": "Secret key",
-      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Clave del secreto",
+      "vault-secret-path": "Ruta del secreto",
       "vault-tls-config": "Configuración TLS de Vault (opcional)",
-      "vault-url": "Vault URL"
+      "vault-url": "URL de Vault"
     },
     "failed-to-connect-instance": "Error al conectar la instancia.",
     "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
@@ -1045,10 +951,66 @@
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
-      "credential-source": "Credential Source",
+      "credential-source": "Origen de credenciales",
       "saas-default-credential-restriction": "Las credenciales predeterminadas no están disponibles en Bytebase Cloud por seguridad. Proporcione credenciales específicas.",
       "specific-credential": "Credencial específica",
       "tenant-id": "Tenant ID"
+    },
+    "info": {
+      "configure-database-user": {
+        "link": "Configurar usuario de base de datos"
+      },
+      "connect-instance": {
+        "link": "Conectar su instancia"
+      },
+      "mongodb": {
+        "authentication": {
+          "content": "Cree un usuario dedicado \"{{user}}\" para Bytebase en la base de datos admin:"
+        },
+        "host": {
+          "content": "Introduzca el nombre de host o la dirección IP de su servidor MongoDB. Para MongoDB Atlas, use el host de la cadena de conexión del diálogo de conexión de su clúster."
+        },
+        "ssh": {
+          "content": "Use un túnel SSH para conectarse a instancias MongoDB en redes privadas. Esto es útil cuando la base de datos está detrás de un firewall o en una VPC."
+        },
+        "ssl": {
+          "content": "MongoDB Atlas y otros servicios MongoDB alojados en la nube requieren conexiones SSL de forma predeterminada. Habilite SSL y proporcione el certificado de CA si es necesario."
+        }
+      },
+      "mysql": {
+        "authentication": {
+          "content": "Cree un usuario dedicado \"{{user}}\" para que Bytebase administre su base de datos. Ejecute el siguiente SQL:"
+        },
+        "host": {
+          "content": "Introduzca el nombre de host o la dirección IP de su servidor MySQL. Para bases de datos alojadas en la nube (AWS RDS, Google Cloud SQL), use el endpoint proporcionado por su proveedor de nube."
+        },
+        "ssh": {
+          "content": "Use un túnel SSH para conectarse a bases de datos en redes privadas que no son accesibles directamente desde Bytebase. Esto enruta la conexión a través de un bastión/jump host."
+        },
+        "ssl": {
+          "content": "Las bases de datos MySQL alojadas en la nube (AWS RDS, Google Cloud SQL, Azure Database) suelen requerir conexiones SSL. Habilite SSL y cargue el certificado de CA proporcionado por su proveedor de nube."
+        }
+      },
+      "postgresql": {
+        "authentication": {
+          "content": "Cree un usuario dedicado \"{{user}}\" para que Bytebase administre su base de datos. Ejecute el siguiente SQL como superusuario:"
+        },
+        "host": {
+          "content": "Introduzca el nombre de host o la dirección IP de su servidor PostgreSQL. Para bases de datos alojadas en la nube, use el endpoint proporcionado por su proveedor de nube."
+        },
+        "ssh": {
+          "content": "Use un túnel SSH para conectarse a bases de datos en redes privadas que no son accesibles directamente desde Bytebase. Esto enruta la conexión a través de un bastión/jump host."
+        },
+        "ssl": {
+          "content": "Las bases de datos PostgreSQL alojadas en la nube (AWS RDS, Google Cloud SQL, Azure Database) suelen requerir conexiones SSL. Habilite SSL y cargue el certificado de CA proporcionado por su proveedor de nube."
+        }
+      },
+      "ssh-tunnel": {
+        "link": "Túnel SSH"
+      },
+      "ssl-tls-connection": {
+        "link": "Conexión SSL/TLS"
+      }
     },
     "info-panel": {
       "no-info": "No hay información adicional disponible para este motor."
@@ -1089,6 +1051,7 @@
       "basic-info": "Información básica",
       "connection": "Conexión"
     },
+    "select-database-user": "Seleccionar usuario de base de datos",
     "selected-n-instances_one": "{{count}} instancia seleccionada",
     "selected-n-instances_other": "{{count}} instancias seleccionadas",
     "sentence": {
@@ -1173,146 +1136,6 @@
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
-  "instance.account-locator": "Localizadora de cuentas",
-  "instance.archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
-  "instance.archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
-  "instance.authentication-database": "Base de datos de autenticación",
-  "instance.connection-info": "Información de conexión",
-  "instance.connection-options": "Opciones de conexión",
-  "instance.create-gcp-credentials": "Para crear credenciales, consulte",
-  "instance.database-region": "Región de la base de datos",
-  "instance.default-role": "Rol predeterminado",
-  "instance.endpoint": "Punto final",
-  "instance.external-id": "ID externo",
-  "instance.external-id-description": "ID externo para seguridad adicional al asumir el rol (opcional)",
-  "instance.external-id-placeholder": "ID externo opcional",
-  "instance.external-link": "Enlace externo",
-  "instance.external-secret-azure.secret-name": "Nombre del secreto",
-  "instance.external-secret-azure.secret-name-tips": "El nombre del secreto almacenado en Azure Key Vault.",
-  "instance.external-secret-azure.vault-url": "URL del Key Vault",
-  "instance.external-secret-azure.vault-url-tips": "La URL del Key Vault debe ser similar a \"https://myvault.vault.azure.net/\".",
-  "instance.external-secret-gcp.secret-name": "nombre completo secreto",
-  "instance.external-secret-gcp.secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\".",
-  "instance.external-secret-vault.vault-auth-type.approle.role-id": "Auth role id",
-  "instance.external-secret-vault.vault-auth-type.approle.secret-env-name": "Nombre del entorno",
-  "instance.external-secret-vault.vault-auth-type.approle.secret-id": "Auth secret id",
-  "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text": "Texto sin formato",
-  "instance.external-secret-vault.vault-auth-type.approle.self": "AppRole",
-  "instance.external-secret-vault.vault-auth-type.self": "Tipo de autenticación",
-  "instance.external-secret-vault.vault-auth-type.token.self": "Token",
-  "instance.external-secret-vault.vault-secret-engine-name": "Secret engine name",
-  "instance.external-secret-vault.vault-secret-engine-tips": "Solo admite motor KV v2.",
-  "instance.external-secret-vault.vault-secret-key": "Secret key",
-  "instance.external-secret-vault.vault-secret-path": "Secret path",
-  "instance.external-secret-vault.vault-tls-config": "Configuración TLS de Vault (opcional)",
-  "instance.external-secret-vault.vault-url": "Vault URL",
-  "instance.external-secret.key-name": "Clave secreta",
-  "instance.external-secret.secret-name": "Nombre secreto",
-  "instance.failed-to-connect-instance": "Error al conectar la instancia.",
-  "instance.failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
-  "instance.find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
-  "instance.find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
-  "instance.force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
-  "instance.grants": "Concesiones",
-  "instance.host-or-socket": "Host o Socket",
-  "instance.iam-extension.client-id": "Client ID",
-  "instance.iam-extension.client-secret": "Client Secret",
-  "instance.iam-extension.credential-source": "Credential Source",
-  "instance.iam-extension.saas-default-credential-restriction": "Las credenciales predeterminadas no están disponibles en Bytebase Cloud por seguridad. Proporcione credenciales específicas.",
-  "instance.iam-extension.specific-credential": "Credencial específica",
-  "instance.iam-extension.tenant-id": "Tenant ID",
-  "instance.info-panel.no-info": "No hay información adicional disponible para este motor.",
-  "instance.info.configure-database-user.link": "Configurar usuario de base de datos",
-  "instance.info.connect-instance.link": "Conectar su instancia",
-  "instance.info.mongodb.authentication.content": "Cree un usuario dedicado \"{{user}}\" para Bytebase en la base de datos admin:",
-  "instance.info.mongodb.host.content": "Introduzca el nombre de host o la dirección IP de su servidor MongoDB. Para MongoDB Atlas, use el host de la cadena de conexión del diálogo de conexión de su clúster.",
-  "instance.info.mongodb.ssh.content": "Use un túnel SSH para conectarse a instancias MongoDB en redes privadas. Esto es útil cuando la base de datos está detrás de un firewall o en una VPC.",
-  "instance.info.mongodb.ssl.content": "MongoDB Atlas y otros servicios MongoDB alojados en la nube requieren conexiones SSL de forma predeterminada. Habilite SSL y proporcione el certificado de CA si es necesario.",
-  "instance.info.mysql.authentication.content": "Cree un usuario dedicado \"{{user}}\" para que Bytebase administre su base de datos. Ejecute el siguiente SQL:",
-  "instance.info.mysql.host.content": "Introduzca el nombre de host o la dirección IP de su servidor MySQL. Para bases de datos alojadas en la nube (AWS RDS, Google Cloud SQL), use el endpoint proporcionado por su proveedor de nube.",
-  "instance.info.mysql.ssh.content": "Use un túnel SSH para conectarse a bases de datos en redes privadas que no son accesibles directamente desde Bytebase. Esto enruta la conexión a través de un bastión/jump host.",
-  "instance.info.mysql.ssl.content": "Las bases de datos MySQL alojadas en la nube (AWS RDS, Google Cloud SQL, Azure Database) suelen requerir conexiones SSL. Habilite SSL y cargue el certificado de CA proporcionado por su proveedor de nube.",
-  "instance.info.postgresql.authentication.content": "Cree un usuario dedicado \"{{user}}\" para que Bytebase administre su base de datos. Ejecute el siguiente SQL como superusuario:",
-  "instance.info.postgresql.host.content": "Introduzca el nombre de host o la dirección IP de su servidor PostgreSQL. Para bases de datos alojadas en la nube, use el endpoint proporcionado por su proveedor de nube.",
-  "instance.info.postgresql.ssh.content": "Use un túnel SSH para conectarse a bases de datos en redes privadas que no son accesibles directamente desde Bytebase. Esto enruta la conexión a través de un bastión/jump host.",
-  "instance.info.postgresql.ssl.content": "Las bases de datos PostgreSQL alojadas en la nube (AWS RDS, Google Cloud SQL, Azure Database) suelen requerir conexiones SSL. Habilite SSL y cargue el certificado de CA proporcionado por su proveedor de nube.",
-  "instance.info.ssh-tunnel.link": "Túnel SSH",
-  "instance.info.ssl-tls-connection.link": "Conexión SSL/TLS",
-  "instance.instance-id": "ID de la instancia",
-  "instance.instance-name": "Nombre de la instancia",
-  "instance.new-instance": "Nueva instancia",
-  "instance.no-environment": "Esta instancia no ha sido ligada al entorno.",
-  "instance.no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
-  "instance.no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
-  "instance.no-password": "Sin contraseña",
-  "instance.parameter-name-placeholder": "Nombre de parámetro",
-  "instance.parameter-value-placeholder": "Valor de parámetro",
-  "instance.password-type.aws-iam": "AWS RDS IAM",
-  "instance.password-type.azure-iam": "Azure IAM",
-  "instance.password-type.external-secret-aws": "AWS Secrets Manager",
-  "instance.password-type.external-secret-azure": "Azure Key Vault",
-  "instance.password-type.external-secret-gcp": "GCP Secret Manager",
-  "instance.password-type.external-secret-vault": "Vault (KV v2)",
-  "instance.password-type.google-iam": "Google Cloud SQL IAM",
-  "instance.password-type.password": "Contraseña",
-  "instance.password-write-only": "SU_DB_PWD - solo escritura",
-  "instance.port": "Puerto",
-  "instance.project-id": "ID del proyecto",
-  "instance.restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
-  "instance.role-arn": "ARN del rol",
-  "instance.role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
-  "instance.role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
-  "instance.scan-interval.default-never": "Predeterminado (nunca)",
-  "instance.scan-interval.description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
-  "instance.scan-interval.min-value": "Valor mínimo {{value}} minutos",
-  "instance.scan-interval.self": "Intervalo de escaneo",
-  "instance.section.basic-info": "Información básica",
-  "instance.section.connection": "Conexión",
-  "instance.select-database-user": "Seleccionar usuario de base de datos",
-  "instance.sentence.aws-rds.mysql.template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% y otorgarle los privilegios necesarios.",
-  "instance.sentence.aws-rds.postgresql.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' y otorgarle los privilegios necesarios.",
-  "instance.sentence.console.snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)",
-  "instance.sentence.create-admin-user": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones DDL y DML (no SELECT).",
-  "instance.sentence.create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
-  "instance.sentence.create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
-  "instance.sentence.create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
-  "instance.sentence.create-user-example.clickhouse.sql-driven-workflow": "Flujo de trabajo impulsado por SQL",
-  "instance.sentence.create-user-example.clickhouse.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {{link}} y luego ejecutar la siguiente consulta para crear el usuario.",
-  "instance.sentence.create-user-example.mysql.template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios.",
-  "instance.sentence.create-user-example.postgresql.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER.",
-  "instance.sentence.create-user-example.postgresql.warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
-  "instance.sentence.create-user-example.redis.template": "A continuación se muestra un ejemplo para crear el usuario {{user}} con la contraseña {{password}} y otorgar al usuario los privilegios necesarios.",
-  "instance.sentence.create-user-example.snowflake.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios.",
-  "instance.sentence.firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
-  "instance.sentence.google-cloud-sql.instance-name": "Nombre de conexión de instancia",
-  "instance.sentence.google-cloud-sql.instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
-  "instance.sentence.google-cloud-sql.mysql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@'%'. Otorgue a este usuario los privilegios necesarios.",
-  "instance.sentence.google-cloud-sql.postgresql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@project-id.iam. Otorgue al usuario los privilegios necesarios.",
-  "instance.sentence.host.none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket",
-  "instance.sentence.proxy.snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto",
-  "instance.show-how-to-create": "Mostrar cómo crear",
-  "instance.snowflake-web-console": "Consola web de Snowflake",
-  "instance.successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
-  "instance.successfully-connected-instance": "Instancia conectada correctamente.",
-  "instance.successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{{0}}'.",
-  "instance.successfully-restored-instance": "Se restauró exitosamente la instancia '{{0}}'.",
-  "instance.successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{{0}}'.",
-  "instance.sync-databases.add-database": "+ Agregar base de datos, presione enter para enviar",
-  "instance.sync-databases.description": "Sincronizar sólo bases de datos seleccionadas.",
-  "instance.sync-databases.search-database": "Buscar en la base de datos",
-  "instance.sync-databases.self": "Sincronizar bases de datos",
-  "instance.sync-databases.sync-all": "Sincronizar todas las bases de datos",
-  "instance.sync.self": "Instancia de sincronización",
-  "instance.sync.sync-all": "Sincronizar todas las bases de datos",
-  "instance.sync.sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos.",
-  "instance.sync.sync-new": "Sincronizar únicamente bases de datos nuevas",
-  "instance.syncing": "Sincronizando...",
-  "instance.test-connection": "Probar conexión",
-  "instance.testing-connection": "Probando conexión",
-  "instance.type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
-  "instance.unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
-  "instance.users": "Usuarios",
-  "instance.your-snowflake-account-locator": "Su localizador de cuentas Snowflake",
   "issue": {
     "access-grant": {
       "advanced-search": {
@@ -1322,9 +1145,10 @@
           }
         }
       },
-      "details": "Access Grant Details",
-      "expired-at": "Expired at"
+      "details": "Detalles de la concesión de acceso",
+      "expired-at": "Expiró el"
     },
+    "action-anyway": "{{action}} de todos modos",
     "advanced-search": {
       "filter": "Filtrar",
       "scope": {
@@ -1367,13 +1191,13 @@
           "title": "Etiqueta de emisión"
         },
         "issue-type": {
-          "description": "Filter by issue type",
-          "title": "Type",
+          "description": "Filtrar por tipo de issue",
+          "title": "Tipo",
           "value": {
-            "access-grant": "Access Grant",
-            "database-change": "Database Change",
-            "database-export": "Database Export",
-            "role-grant": "Role Grant"
+            "access-grant": "Concesión de acceso",
+            "database-change": "Cambio de base de datos",
+            "database-export": "Exportación de base de datos",
+            "role-grant": "Concesión de rol"
           }
         },
         "label": {
@@ -1408,6 +1232,20 @@
       "reopened": "reabierto"
     },
     "checks-manual-rollout-hint": "La aprobación ya se completó, pero el rollout no se creó automáticamente porque este plan todavía tiene verificaciones fallidas. Ve a Plan para continuar.",
+    "checks-warning-hint": "Algunas verificaciones no pasaron. Continúa solo si es esperado.",
+    "comment-editor": {
+      "nothing-to-preview": "Nada que previsualizar",
+      "preview": "Previsualización",
+      "toolbar": {
+        "bold": "Insertar texto en negrita",
+        "code": "Insertar fragmento de código SQL",
+        "hashtag": "Insertar hashtag",
+        "header": "Insertar texto de encabezado",
+        "link": "Insertar un enlace"
+      },
+      "write": "Escribir"
+    },
+    "create-rollout": "Crear rollout",
     "data-export": {
       "download-tooltip": "Disponible por 24 horas",
       "file-expired": "Archivo expirado",
@@ -1415,8 +1253,13 @@
       "limits": "Límites",
       "options": "Opciones de exportación"
     },
+    "issue-name": "Nombre de la incidencia",
     "labels": "Etiquetas de problema",
     "leave-a-comment": "Dejar un comentario...",
+    "my-issues": "Mis issues",
+    "no-description-provided": "No se proporcionó ninguna descripción",
+    "options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
+    "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "review": {
       "approve-description": "Enviar comentarios y aprobar este problema",
       "comment-description": "Enviar comentarios generales sin aprobación",
@@ -1433,8 +1276,8 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "details": "Role Grant Details",
-      "expired-at": "Expired at",
+      "details": "Detalles de la concesión de rol",
+      "expired-at": "Expiró el",
       "manually-select": "selección manual",
       "use-cel": "Usar expresión CEL"
     },
@@ -1445,6 +1288,7 @@
       "sort": "Ordenar",
       "updated": "Fecha de actualización"
     },
+    "statement-from-sheet-warning": "Esta sentencia se carga desde una hoja de gran tamaño. La previsualización puede estar truncada.",
     "status-transition": {
       "modal": {
         "close": "¿Cerrar el problema?",
@@ -1453,14 +1297,18 @@
     },
     "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
     "table": {
-      "approval-progress": "{{approved}}/{{total}} Approvals",
-      "approved": "Approved",
+      "approval-progress": "{{approved}}/{{total}} aprobaciones",
+      "approved": "Aprobado",
       "closed": "Cerrado",
       "creator": "Creador",
       "name": "Nombre",
       "open": "Abierto",
       "updated": "Actualizado",
-      "waiting-role": "Waiting: {{role}}"
+      "waiting-role": "Esperando: {{role}}"
+    },
+    "task-run": {
+      "logs": "Registros",
+      "session": "Sesión"
     },
     "title": {
       "change-database": "Modificar base de datos",
@@ -1469,34 +1317,13 @@
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
-    "upload-sql": "Upload SQL",
+    "transaction-mode": {
+      "label": "Modo de transacción"
+    },
+    "upload-sql": "Subir SQL",
+    "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({{size}}).",
     "waiting-approval": "A la espera de la aprobación"
   },
-  "issue.action-anyway": "{{action}} de todos modos",
-  "issue.checks-warning-hint": "Algunas verificaciones no pasaron. Continúa solo si es esperado.",
-  "issue.comment-editor.nothing-to-preview": "Nothing to preview",
-  "issue.comment-editor.preview": "Preview",
-  "issue.comment-editor.toolbar.bold": "Insert bold text",
-  "issue.comment-editor.toolbar.code": "Insert SQL code snippet",
-  "issue.comment-editor.toolbar.hashtag": "Insert hashtag",
-  "issue.comment-editor.toolbar.header": "Insert heading text",
-  "issue.comment-editor.toolbar.link": "Insert a link",
-  "issue.comment-editor.write": "Write",
-  "issue.create-rollout": "Crear rollout",
-  "issue.data-export.format": "Formato",
-  "issue.data-export.limits": "Límites",
-  "issue.data-export.options": "Opciones",
-  "issue.issue-name": "Nombre de la incidencia",
-  "issue.my-issues": "Mis issues",
-  "issue.no-description-provided": "No se proporcionó ninguna descripción",
-  "issue.options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
-  "issue.overwrite-current-statement": "Sobrescribir la declaración SQL actual",
-  "issue.review.self": "Review",
-  "issue.statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
-  "issue.task-run.logs": "Registros",
-  "issue.task-run.session": "Sesión",
-  "issue.transaction-mode.label": "Modo de transacción",
-  "issue.upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({{size}}).",
   "label": {
     "add-label": "Agregar etiqueta",
     "empty-label-value": "Valor",
@@ -1507,12 +1334,6 @@
       "value-necessary": "Se requiere un valor"
     }
   },
-  "label.add-label": "Agregar etiqueta",
-  "label.empty-label-value": "Valor",
-  "label.error.key-duplicated": "Claves duplicadas",
-  "label.error.key-necessary": "Se requiere una clave",
-  "label.error.max-value-length-exceeded": "La longitud del valor no puede exceder {{length}} caracteres",
-  "label.error.value-necessary": "Se requiere un valor",
   "landing": {
     "changelog-for-version": "Registro de cambios para {{version}}",
     "last-visit": "Última visita",
@@ -1561,91 +1382,114 @@
     }
   },
   "plan": {
+    "add-spec": "Agregar cambio",
+    "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
     "checks": {
-      "self": "Verificaciones"
+      "completed": "Se completaron las verificaciones del plan",
+      "failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
+      "no-check-results": "No hay resultados de verificación",
+      "no-results-match-filters": "No hay resultados que coincidan con los filtros",
+      "self": "Verificaciones",
+      "started": "Se iniciaron las verificaciones del plan"
     },
     "create-plan": "Crear plan",
+    "description": {
+      "placeholder": "Agregar descripción"
+    },
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
+    "ghost": {
+      "requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}"
+    },
+    "go-to-plan-page": "Ir a la página del plan",
+    "isolation-level": {
+      "read-committed": "Lectura confirmada",
+      "read-uncommitted": "Lectura no confirmada",
+      "repeatable-read": "Lectura repetible",
+      "self": "Nivel de Aislamiento",
+      "serializable": "Serializable"
+    },
+    "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
     "meta": {
       "created-by-at": "Creado por {{user}} · {{time}}"
     },
     "navigator": {
       "changes": "Cambios",
+      "checks": "Verificaciones",
       "deploy": "Desplegar",
-      "review": "Revisión"
+      "review": "Revisión",
+      "statement-empty": "La sentencia está vacía"
     },
     "new-plan": "Nuevo plan",
+    "options": {
+      "no-options-available": "No hay opciones disponibles",
+      "self": "Opciones"
+    },
+    "overview": {
+      "no-checks": "Sin verificaciones"
+    },
+    "phase": {
+      "create-rollout-action": "Crear rollout manualmente",
+      "deploy-approval-must-complete": "El flujo de aprobación debe completarse.",
+      "deploy-approval-optional": "La aprobación puede omitirse según la configuración actual del proyecto.",
+      "deploy-approval-pending": "Completa el flujo de aprobación antes de que el rollout pueda continuar automáticamente.",
+      "deploy-approval-ready": "La aprobación ya está completa para este plan.",
+      "deploy-checks-blocked": "Las verificaciones fallidas están bloqueando la creación automática del rollout.",
+      "deploy-checks-must-pass": "Las comprobaciones deben aprobarse.",
+      "deploy-checks-optional": "Las verificaciones fallidas no bloquearán el rollout manual en este proyecto.",
+      "deploy-checks-ready": "Las verificaciones ya permiten la creación automática del rollout.",
+      "deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
+      "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
+      "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
+      "deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
+      "deploy-manual-create-description-readonly": "Un usuario con el permiso Create Rollout puede crear el rollout manualmente.",
+      "hide-details": "Ocultar detalles",
+      "review-description": "Envíe para revisión para continuar",
+      "show-details": "Mostrar detalles"
+    },
     "plans": "Planes",
+    "pre-backup": {
+      "requirements-not-met": "Los requisitos de copia previa no se cumplen para: {{databases}}"
+    },
+    "ready-for-review": "Listo para revisión",
+    "run": "Volver a verificar",
+    "select-isolation-level": "Seleccionar nivel de aislamiento",
+    "select-targets": "Seleccionar destinos",
+    "spec": {
+      "change": "Cambio",
+      "type": {
+        "database-change": "Cambio de base de datos"
+      }
+    },
+    "state": {
+      "close-confirm": "¿Cerrar este plan?",
+      "reopen-confirm": "¿Reabrir este plan?"
+    },
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
+    "summary": {
+      "last-approved-by": "Última aprobación por {{name}}",
+      "n-changes": "{{n}} cambios",
+      "n-database-groups": "{{n}} grupos de bases de datos",
+      "n-databases": "{{n}} bases de datos",
+      "n-error": "{{n}} error",
+      "n-of-m-approved": "{{n}} de {{m}} aprobadas",
+      "n-of-m-tasks": "{{n}}/{{m}} tareas",
+      "n-passed": "{{n}} aprobadas",
+      "n-warning": "{{n}} advertencia"
+    },
     "targets": {
-      "title": "Objetivos"
-    }
+      "no-targets-found": "No se encontraron objetivos",
+      "non-env-warning": {
+        "one": "{{count}} base de datos se excluirá del despliegue porque no tiene un entorno efectivo:",
+        "other": "{{count}} bases de datos se excluirán del despliegue porque no tienen un entorno efectivo:"
+      },
+      "title": "Objetivos",
+      "view-all": "Ver todo ({{count}})"
+    },
+    "title-required": "El título es obligatorio",
+    "view-discussion": "Ver discusión"
   },
-  "plan.add-spec": "Agregar cambio",
-  "plan.add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
-  "plan.checks.completed": "Se completaron las verificaciones del plan",
-  "plan.checks.failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
-  "plan.checks.no-check-results": "No hay resultados de verificación",
-  "plan.checks.no-results-match-filters": "No hay resultados que coincidan con los filtros",
-  "plan.checks.started": "Se iniciaron las verificaciones del plan",
-  "plan.description.placeholder": "Agregar descripción",
-  "plan.ghost.requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}",
-  "plan.go-to-plan-page": "Ir a la página del plan",
-  "plan.isolation-level.read-committed": "Lectura confirmada",
-  "plan.isolation-level.read-uncommitted": "Lectura no confirmada",
-  "plan.isolation-level.repeatable-read": "Lectura repetible",
-  "plan.isolation-level.self": "Nivel de Aislamiento",
-  "plan.isolation-level.serializable": "Serializable",
-  "plan.labels-required-for-review": "Se requieren etiquetas antes de la revisión",
-  "plan.navigator.checks": "Verificaciones",
-  "plan.navigator.statement-empty": "La sentencia está vacía",
-  "plan.options.no-options-available": "No hay opciones disponibles",
-  "plan.options.self": "Opciones",
-  "plan.overview.no-checks": "Sin verificaciones",
-  "plan.phase.create-rollout-action": "Crear rollout manualmente",
-  "plan.phase.deploy-approval-must-complete": "El flujo de aprobación debe completarse.",
-  "plan.phase.deploy-approval-optional": "La aprobación puede omitirse según la configuración actual del proyecto.",
-  "plan.phase.deploy-approval-pending": "Completa el flujo de aprobación antes de que el rollout pueda continuar automáticamente.",
-  "plan.phase.deploy-approval-ready": "La aprobación ya está completa para este plan.",
-  "plan.phase.deploy-checks-blocked": "Las verificaciones fallidas están bloqueando la creación automática del rollout.",
-  "plan.phase.deploy-checks-must-pass": "Las comprobaciones deben aprobarse.",
-  "plan.phase.deploy-checks-optional": "Las verificaciones fallidas no bloquearán el rollout manual en este proyecto.",
-  "plan.phase.deploy-checks-ready": "Las verificaciones ya permiten la creación automática del rollout.",
-  "plan.phase.deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
-  "plan.phase.deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
-  "plan.phase.deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
-  "plan.phase.deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
-  "plan.phase.deploy-manual-create-description-readonly": "Un usuario con el permiso Create Rollout puede crear el rollout manualmente.",
-  "plan.phase.hide-details": "Ocultar detalles",
-  "plan.phase.review-description": "Envíe para revisión para continuar",
-  "plan.phase.show-details": "Mostrar detalles",
-  "plan.pre-backup.requirements-not-met": "Los requisitos de copia previa no se cumplen para: {{databases}}",
-  "plan.ready-for-review": "Listo para revisión",
-  "plan.run": "Volver a verificar",
-  "plan.select-isolation-level": "Seleccionar nivel de aislamiento",
-  "plan.select-targets": "Seleccionar destinos",
-  "plan.spec.change": "Cambio",
-  "plan.spec.type.database-change": "Cambio de base de datos",
-  "plan.state.close-confirm": "¿Cerrar este plan?",
-  "plan.state.reopen-confirm": "¿Reabrir este plan?",
-  "plan.summary.last-approved-by": "Última aprobación por {{name}}",
-  "plan.summary.n-changes": "{{n}} cambios",
-  "plan.summary.n-database-groups": "{{n}} grupos de bases de datos",
-  "plan.summary.n-databases": "{{n}} bases de datos",
-  "plan.summary.n-error": "{{n}} error",
-  "plan.summary.n-of-m-approved": "{{n}} de {{m}} aprobadas",
-  "plan.summary.n-of-m-tasks": "{{n}}/{{m}} tareas",
-  "plan.summary.n-passed": "{{n}} aprobadas",
-  "plan.summary.n-warning": "{{n}} advertencia",
-  "plan.targets.no-targets-found": "No se encontraron objetivos",
-  "plan.targets.non-env-warning.one": "{{count}} base de datos se excluirá del despliegue porque no tiene un entorno efectivo:",
-  "plan.targets.non-env-warning.other": "{{count}} bases de datos se excluirán del despliegue porque no tienen un entorno efectivo:",
-  "plan.targets.title": "Objetivos",
-  "plan.targets.view-all": "Ver todo ({{count}})",
-  "plan.title-required": "El título es obligatorio",
-  "plan.view-discussion": "Ver discusión",
   "plugin": {
     "ai": {
       "actions": {
@@ -1745,7 +1589,7 @@
       "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "edit-member": "Editar miembro - {{member}}",
-      "never-expires": "Never",
+      "never-expires": "Nunca",
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
@@ -1766,9 +1610,10 @@
     "overview": {
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
     },
+    "select": "Seleccionar proyecto",
     "settings": {
-      "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
-      "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
+      "confirm-archive-project": "Archivar \"{{name}}\" lo hará de solo lectura y lo ocultará de las listas de proyectos activos. Se conservarán todos los issues, bases de datos y configuraciones. Puede restaurarlo más tarde desde la lista de proyectos archivados.",
+      "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "issue-related": {
         "allow-jit": {
           "description": "Una vez habilitado, los usuarios pueden solicitar y usar el acceso justo a tiempo en el Editor SQL.",
@@ -1871,14 +1716,12 @@
       "webhook-url": "URL del webhook"
     }
   },
-  "project.select": "Seleccionar proyecto",
   "quick-action": {
     "create-db": "Crear base de datos",
+    "create-project": "Crear proyecto",
     "new-project": "Nuevo Proyecto",
     "request-export-data": "Solicitar exportación"
   },
-  "quick-action.create-project": "Create project",
-  "quick-action.new-project": "Nuevo Proyecto",
   "quick-start": {
     "guide": "haga clic en el paso para probarlo",
     "notice": {
@@ -1886,6 +1729,7 @@
       "title": "Guía de inicio rápido omitida"
     },
     "query-data": "Consultar datos",
+    "self": "Inicio rápido",
     "view-an-issue": "Ver una incidencia",
     "visit-database": "Visitar Bases de datos",
     "visit-environment": "Visitar Entornos",
@@ -1893,26 +1737,25 @@
     "visit-member": "Visitar Miembro | Miembros",
     "visit-project": "Visitar Proyectos"
   },
-  "quick-start.self": "Quick Start",
   "release": {
-    "and-n-more-files": "and {{count}} more files",
-    "change-tip": "This change is linked to a release artifact.",
+    "and-n-more-files": "y {{count}} archivos más",
+    "change-tip": "Este cambio está vinculado a un artefacto de versión.",
     "file": "Archivo de lanzamiento",
     "file-type": {
-      "declarative": "Declarative",
-      "unspecified": "Unspecified",
-      "versioned": "Versioned"
+      "declarative": "Declarativo",
+      "unspecified": "Sin especificar",
+      "versioned": "Versionado"
     },
     "files": "Archivos",
-    "not-found": "Release not found",
+    "not-found": "Versión no encontrada",
     "releases": "Lanzamientos",
     "total-files": "Total de {{}} archivos",
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
-    "vcs-source": "VCS Source",
+    "vcs-source": "Origen de VCS",
     "vcs-type": {
-      "unspecified": "Unknown VCS"
+      "unspecified": "VCS desconocido"
     },
-    "view-all-files": "View all files"
+    "view-all-files": "Ver todos los archivos"
   },
   "remind": {
     "role-expire": {
@@ -1938,13 +1781,6 @@
       "pattern": "La identificación {{resource}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número."
     }
   },
-  "resource-id.cannot-be-changed-later": "No se puede cambiar posteriormente.",
-  "resource-id.description": "El ID de {{resource}} es un identificador único. No se puede cambiar una vez creado.",
-  "resource-id.self": "ID de {{resource}}",
-  "resource-id.validation.duplicated": "El ID de {{resource}} ya existe. Por favor, elige otro.",
-  "resource-id.validation.empty": "El ID {{resource}} no puede estar vacío",
-  "resource-id.validation.overflow": "El ID de {{resource}} es demasiado largo. Debe tener menos de 64 caracteres.",
-  "resource-id.validation.pattern": "La identificación {{resource}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
   "role": {
     "custom-roles": {
       "self": "Roles personalizados"
@@ -1966,6 +1802,7 @@
     }
   },
   "rollout": {
+    "bypass-stage-requirements": "Omitir advertencias",
     "no-stages": "No hay etapas disponibles",
     "no-tasks-created": "Aún no se han creado tareas",
     "pending-tasks-preview": {
@@ -1982,47 +1819,48 @@
       "self_one": "Etapa",
       "self_other": "Etapas"
     },
+    "task": {
+      "no-tasks": "No hay tareas en esta etapa",
+      "selected-count": "{{count}} tarea seleccionada",
+      "statement-truncated-hint": "Declaración truncada debido al gran tamaño."
+    },
     "task-execution-errors": "Errores de ejecución de tareas"
   },
-  "rollout.bypass-stage-requirements": "Omitir advertencias",
-  "rollout.task.no-tasks": "No hay tareas en esta etapa",
-  "rollout.task.selected-count": "{{count}} tarea seleccionada",
-  "rollout.task.statement-truncated-hint": "Declaración truncada debido al gran tamaño.",
   "schema-diagram": {
     "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
   },
   "schema-editor": {
     "actions": {
-      "add-column": "Add column",
-      "add-index": "Add index",
-      "add-partition": "Add partition",
-      "create-function": "Create function",
-      "create-procedure": "Create procedure",
-      "create-schema": "Create schema",
-      "create-table": "New table",
-      "create-view": "Create view",
-      "drop": "Drop",
-      "drop-schema": "Drop schema",
-      "drop-table": "Drop table",
-      "rename": "Rename",
-      "rename-table": "Rename table",
-      "restore": "Restore"
+      "add-column": "Añadir columna",
+      "add-index": "Añadir índice",
+      "add-partition": "Añadir partición",
+      "create-function": "Crear función",
+      "create-procedure": "Crear procedimiento",
+      "create-schema": "Crear esquema",
+      "create-table": "Nueva tabla",
+      "create-view": "Crear vista",
+      "drop": "Eliminar",
+      "drop-schema": "Eliminar esquema",
+      "drop-table": "Eliminar tabla",
+      "rename": "Renombrar",
+      "rename-table": "Renombrar tabla",
+      "restore": "Restaurar"
     },
     "column": {
-      "comment": "Comment",
-      "default": "Default",
+      "comment": "Comentario",
+      "default": "Predeterminado",
       "foreign-key": "Clave foránea",
-      "name": "Name",
+      "name": "Nombre",
       "name-placeholder": "Nombre de la columna",
-      "not-null": "Not Null",
+      "not-null": "No nulo",
       "on-update": "En actualización",
-      "operations": "Operations",
-      "primary": "Primary",
-      "type": "Type"
+      "operations": "Operaciones",
+      "primary": "Primaria",
+      "type": "Tipo"
     },
-    "columns": "Columns",
-    "create-foreign-key": "Create Foreign Key",
+    "columns": "Columnas",
+    "create-foreign-key": "Crear clave foránea",
     "database": {
       "collation": "Colación",
       "comment": "Comentario",
@@ -2032,43 +1870,43 @@
     "default": {
       "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
-    "edit-foreign-key": "Edit Foreign Key",
+    "edit-foreign-key": "Editar clave foránea",
     "foreign-key": {
-      "name": "Foreign Key Name",
-      "referenced-column": "Referenced Column",
-      "referenced-schema": "Referenced Schema",
-      "referenced-table": "Referenced Table"
+      "name": "Nombre de la clave foránea",
+      "referenced-column": "Columna referenciada",
+      "referenced-schema": "Esquema referenciado",
+      "referenced-table": "Tabla referenciada"
     },
     "index": {
-      "columns": "Columns",
+      "columns": "Columnas",
       "dependency-columns": "Columnas dependientes",
       "indexes": "Índices",
-      "primary": "Primary",
-      "unique": "Unique"
+      "primary": "Primaria",
+      "unique": "Única"
     },
-    "indexes": "Indexes",
+    "indexes": "Índices",
     "insert-sql": "Insertar SQL",
     "no-diff": "No hay cambios para aplicar",
     "partition": {
-      "expression": "Expression",
-      "type": "Type",
-      "value": "Value"
+      "expression": "Expresión",
+      "type": "Tipo",
+      "value": "Valor"
     },
-    "partitions": "Partitions",
-    "preview": "Preview",
-    "raw-sql": "Raw SQL",
+    "partitions": "Particiones",
+    "preview": "Previsualización",
+    "raw-sql": "SQL sin procesar",
     "schema": {
-      "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name",
+      "duplicate-name": "El nombre del esquema ya existe",
+      "name-placeholder": "Nombre del esquema",
       "select": "Seleccionar esquema"
     },
     "select-object-hint": "Selecciona un objeto de base de datos del árbol para editarlo",
     "self": "Editor de esquema",
     "table": {
-      "duplicate-name": "Table name already exists",
-      "name-placeholder": "Table name",
-      "no-match": "No tables match the search",
-      "no-tables": "No tables"
+      "duplicate-name": "El nombre de la tabla ya existe",
+      "name-placeholder": "Nombre de la tabla",
+      "no-match": "Ninguna tabla coincide con la búsqueda",
+      "no-tables": "No hay tablas"
     },
     "table-partition": {
       "expression": "Expresión",
@@ -2093,16 +1931,14 @@
       "value-placeholder": "Valor de etiqueta..."
     }
   },
-  "setting.label.key-placeholder": "Clave de etiqueta...",
-  "setting.label.value-placeholder": "Valor de etiqueta...",
   "settings": {
     "general": {
       "workspace": {
         "access-token-duration": {
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
-          "hours": "Hour(s)",
-          "minutes": "Minute(s)",
-          "self": "Access token duration"
+          "description": "Cuánto tiempo permanecen válidos los tokens de acceso antes de requerir una renovación. Las duraciones más cortas mejoran la seguridad.",
+          "hours": "Hora(s)",
+          "minutes": "Minuto(s)",
+          "self": "Duración del token de acceso"
         },
         "account": "Cuenta",
         "ai-assistant": {
@@ -2114,7 +1950,7 @@
           },
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
+          "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS.",
           "endpoint": {
             "description": "Proporcione una implementación privada del Punto de conexión de API.",
             "self": "Punto de conexión de API"
@@ -2145,7 +1981,7 @@
           "self": "Anuncio"
         },
         "announcement-alert-level": {
-          "description": "Level",
+          "description": "Nivel",
           "field": {
             "critical": "Importante",
             "info": "Común",
@@ -2185,6 +2021,7 @@
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
+          "go-to-workspace": "Ir al espacio de trabajo",
           "self": "Página de destino predeterminada",
           "sql-editor": {
             "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente, adecuado para uso de una sola persona o entornos que no requieren supervisión.",
@@ -2235,7 +2072,7 @@
           "self": "Tiempo de espera de sesión inactiva"
         },
         "log": "Registro",
-        "logo": "Logo",
+        "logo": "Logotipo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
         "maximum-role-expiration": {
@@ -2280,10 +2117,10 @@
           }
         },
         "refresh-token-duration": {
-          "days": "Day(s)",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
-          "hours": "Hour(s)",
-          "self": "Refresh token duration"
+          "days": "Día(s)",
+          "description": "Con qué frecuencia los usuarios deben volver a autenticarse por completo. Las actualizaciones de configuración requieren que los usuarios inicien sesión de nuevo para que los cambios surtan efecto.",
+          "hours": "Hora(s)",
+          "self": "Duración del token de renovación"
         },
         "require-2fa": {
           "description": "Cuando está habilitado, los usuarios que no tienen la autenticación de dos factores habilitada para sus cuentas personales serán obligados a configurarla.",
@@ -2331,8 +2168,8 @@
       },
       "add-member": "Agregar miembro",
       "all-users": "Todos los usuarios",
-      "assign-role": "Assign role",
-      "cannot-revoke-self": "You cannot revoke yourself",
+      "assign-role": "Asignar rol",
+      "cannot-revoke-self": "No puede revocarse a sí mismo",
       "copy-service-key": "Copiar Clave de Servicio",
       "entra-sync": {
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
@@ -2346,7 +2183,7 @@
       },
       "grant-access": "Conceder acceso",
       "groups": {
-        "external-readonly": "External group is read-only.",
+        "external-readonly": "El grupo externo es de solo lectura.",
         "form": {
           "description": "Descripción",
           "email": "Correo electrónico",
@@ -2391,27 +2228,27 @@
       "view-by-roles": "Ver por roles",
       "workload-identities": "Identidades de Carga de Trabajo",
       "workload-identity": "Workload Identity",
-      "workload-identity-advanced": "Advanced Settings",
-      "workload-identity-all-branches-tags": "All branches and tags",
-      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
-      "workload-identity-audience": "Audience",
-      "workload-identity-branch": "Branch",
-      "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-advanced": "Configuración avanzada",
+      "workload-identity-all-branches-tags": "Todas las ramas y etiquetas",
+      "workload-identity-allowed-branches-tags": "Ramas/etiquetas permitidas",
+      "workload-identity-audience": "Audiencia",
+      "workload-identity-branch": "Rama",
+      "workload-identity-branch-hint": "Dejar vacío para todas las ramas",
       "workload-identity-gitlab-url": "GitLab URL",
-      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
-      "workload-identity-group": "Group / Username",
-      "workload-identity-issuer": "Issuer URL",
-      "workload-identity-owner": "Organization / Username",
-      "workload-identity-platform": "Platform",
-      "workload-identity-project": "Project",
-      "workload-identity-project-hint": "Leave empty to allow all projects",
-      "workload-identity-repo": "Repository",
-      "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
-      "workload-identity-specific-branch": "Specific branch",
-      "workload-identity-specific-tag": "Specific tag",
-      "workload-identity-subject": "Subject Pattern",
-      "workload-identity-tag": "Tag",
-      "workload-identity-tag-hint": "Leave empty to allow all tags"
+      "workload-identity-gitlab-url-hint": "La URL de su instancia de GitLab",
+      "workload-identity-group": "Grupo / Nombre de usuario",
+      "workload-identity-issuer": "URL del emisor",
+      "workload-identity-owner": "Organización / Nombre de usuario",
+      "workload-identity-platform": "Plataforma",
+      "workload-identity-project": "Proyecto",
+      "workload-identity-project-hint": "Dejar vacío para permitir todos los proyectos",
+      "workload-identity-repo": "Repositorio",
+      "workload-identity-repo-hint": "Dejar vacío para todos los repositorios de la organización",
+      "workload-identity-specific-branch": "Rama específica",
+      "workload-identity-specific-tag": "Etiqueta específica",
+      "workload-identity-subject": "Patrón de sujeto",
+      "workload-identity-tag": "Etiqueta",
+      "workload-identity-tag-hint": "Dejar vacío para permitir todas las etiquetas"
     },
     "profile": {
       "display-name": "Su nombre",
@@ -2477,14 +2314,14 @@
         }
       },
       "classification": {
-        "empty-classification": "The \"classification\" field is empty",
-        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
-        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
-        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
-        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
-        "invalid-json": "Invalid JSON format",
-        "missing-classification": "Missing \"classification\" field",
-        "missing-levels": "Missing \"levels\" field"
+        "empty-classification": "El campo \"classification\" está vacío",
+        "guide-classification": "\"classification\" asigna cada categoría por ID. Las categorías hoja deben referenciar un número de nivel; las categorías padre omiten el nivel.",
+        "guide-hierarchy": "Los ID utilizan una jerarquía separada por guiones (por ejemplo, \"1\" es un padre, \"1-1\" y \"1-2\" son sus hijos).",
+        "guide-intro": "Edite el JSON de clasificación a continuación. Se proporciona una plantilla de ejemplo cuando no hay ninguna clasificación configurada.",
+        "guide-levels": "\"levels\" define niveles de sensibilidad con números consecutivos a partir de 1 (por ejemplo, 1 = Público, 2 = Interno, 3 = Confidencial).",
+        "invalid-json": "Formato JSON no válido",
+        "missing-classification": "Falta el campo \"classification\"",
+        "missing-levels": "Falta el campo \"levels\""
       },
       "global-rules": {
         "condition-order": "Orden de condición",
@@ -2621,7 +2458,6 @@
       }
     }
   },
-  "settings.general.workspace.default-landing-page.go-to-workspace": "Go to workspace",
   "setup": {
     "basic-info": "Información básica",
     "data": {
@@ -2666,7 +2502,7 @@
     "search-sheets": "Hojas de búsqueda"
   },
   "sql-editor": {
-    "access-grants": "Access Grants",
+    "access-grants": "Concesiones de acceso",
     "access-search": {
       "scope": {
         "database": {
@@ -2677,16 +2513,16 @@
         }
       }
     },
-    "access-type-unmask": "See unmasked sensitive data",
-    "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "access-type-unmask": "Ver datos sensibles sin enmascarar",
+    "activate-access": "Activar",
+    "activate-confirm": "¿Está seguro de que desea activar esta concesión de acceso?",
     "add-a-new-instance": "Agregar nueva instancia",
     "admin-mode": {
       "exit": "Salir del modo administrador",
       "self": "Modo administrador"
     },
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
-    "and-n-more-databases": "and {{n}} more databases",
+    "and-n-more-databases": "y {{n}} bases de datos más",
     "batch-export": {
       "database-no-longer-available": "La base de datos ya no está disponible en la pestaña actual.",
       "export-limit-exceeds-executed": "El límite de exportación {{exportLimit}} supera el límite de filas de la consulta ejecutada ({{executedLimit}}); se exportarán solo las filas en caché.",
@@ -2732,20 +2568,20 @@
     "download-too-large-cells": "La descarga tiene {{cells}} celdas en {{statements}} sentencia(s); el límite es {{limit}}. Reduzca el número de filas o use Exportar.",
     "download-too-large-xlsx-columns": "XLSX no puede superar {{limit}} columnas; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
     "download-too-large-xlsx-rows": "XLSX no puede superar {{limit}} filas de datos; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
-    "duration-day": "{{days}} day",
-    "duration-days": "{{days}} days",
+    "duration-day": "{{days}} día",
+    "duration-days": "{{days}} días",
     "duration-hour": "{{hours}} hora",
     "duration-hours": "{{hours}} horas",
     "execute-query": "Ejecutar consulta",
     "executing-query": "Ejecutando consulta",
-    "expire-at": "Expire at {{time}}",
-    "expire-in": "Expire in {{time}}",
-    "expired": "Expired",
+    "expire-at": "Expira el {{time}}",
+    "expire-in": "Expira en {{time}}",
+    "expired": "Expirado",
     "format": "Formato",
     "format-default": "Predeterminado",
-    "format-sql": "Format SQL",
+    "format-sql": "Formatear SQL",
     "generate-sql": "Generar SQL",
-    "grant-type-unmask": "Unmask",
+    "grant-type-unmask": "Desenmascarar",
     "hex-format": "Formato hexadecimal",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2754,14 +2590,14 @@
       }
     },
     "invalid-database": "Base de datos no válida {{database}}",
-    "jit": "Just-In-Time Access",
+    "jit": "Acceso Just-In-Time",
     "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
     "next-row": "Siguiente fila",
-    "no-access-requests": "No access requests",
+    "no-access-requests": "No hay solicitudes de acceso",
     "no-data-available": "No hay datos disponibles",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
@@ -2795,15 +2631,15 @@
       "single-node": "Nodo único"
     },
     "request-aborted": "El usuario abortó la solicitud",
-    "request-access": "Request Access",
-    "request-data-access": "Request Data Access",
-    "request-jit": "Request just-in-time access",
+    "request-access": "Solicitar acceso",
+    "request-data-access": "Solicitar acceso a datos",
+    "request-jit": "Solicitar acceso just-in-time",
     "request-query": "Solicitar consulta",
     "result-limit": {
       "self": "Límite de resultados"
     },
-    "revoke-access": "Revoke",
-    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "revoke-access": "Revocar",
+    "revoke-confirm": "¿Está seguro de que desea revocar esta concesión de acceso?",
     "rows": {
       "self": "filas"
     },
@@ -2844,13 +2680,13 @@
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Vista de tabla",
     "text-format": "Formato de texto",
-    "unmask-warning": "The query result may include unmasked sensitive data.",
+    "unmask-warning": "El resultado de la consulta puede incluir datos sensibles sin enmascarar.",
     "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "vertical-display": "Pantalla vertical",
     "view-database-detail": "Ver detalle de la base de datos",
     "view-detail": "Ver detalle",
-    "view-issue": "View Issue",
+    "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
     "web-socket": {
@@ -2862,9 +2698,9 @@
         "title": "Servidor de lenguaje"
       },
       "errors": {
-        "description": "Auto Completion might be limited or disabled.",
-        "disconnected": "WebSocket disconnected",
-        "title": "WebSocket connection failed"
+        "description": "El autocompletado puede estar limitado o deshabilitado.",
+        "disconnected": "WebSocket desconectado",
+        "title": "Error de conexión de WebSocket"
       }
     }
   },
@@ -2938,7 +2774,7 @@
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-update-failed": "No se pudo actualizar la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
-    "review-policy": "Review policy",
+    "review-policy": "Política de revisión",
     "rule": {
       "ADVICE_ONLINE_MIGRATION": {
         "component": {
@@ -3678,23 +3514,23 @@
       "billing-period": "Período de facturación",
       "cancel": "Cancelar suscripción",
       "cancel-dialog": {
-        "comment-label": "Anything else you'd like to share? (optional)",
-        "comment-placeholder": "Tell us more so we can improve...",
-        "confirm": "Confirm cancellation",
-        "description": "We're sorry to see you go. Your feedback helps us improve.",
-        "keep": "Keep subscription",
+        "comment-label": "¿Algo más que le gustaría compartir? (opcional)",
+        "comment-placeholder": "Cuéntenos más para que podamos mejorar...",
+        "confirm": "Confirmar cancelación",
+        "description": "Lamentamos que se vaya. Sus comentarios nos ayudan a mejorar.",
+        "keep": "Mantener suscripción",
         "reason": {
-          "customer-service": "Customer service issues",
-          "low-quality": "Quality didn't meet expectations",
-          "missing-features": "Missing features I need",
-          "other": "Other reason",
-          "switched-service": "Switched to a different product",
-          "too-complex": "Too complex to use",
-          "too-expensive": "Too expensive",
-          "unused": "Not using it enough"
+          "customer-service": "Problemas con la atención al cliente",
+          "low-quality": "La calidad no cumplió las expectativas",
+          "missing-features": "Faltan funciones que necesito",
+          "other": "Otro motivo",
+          "switched-service": "Cambié a un producto diferente",
+          "too-complex": "Demasiado complejo de usar",
+          "too-expensive": "Demasiado caro",
+          "unused": "No lo uso lo suficiente"
         },
-        "reason-label": "Why are you canceling? (required)",
-        "title": "Cancel your subscription"
+        "reason-label": "¿Por qué cancela? (obligatorio)",
+        "title": "Cancelar su suscripción"
       },
       "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {{date}}.",
       "canceled": "Suscripción cancelada",
@@ -3704,8 +3540,8 @@
         "percentage-off": "primer mes {{value}}% de descuento",
         "price-off": "${{value}} de descuento"
       },
-      "enterprise-description": "Scale your business securely while staying compliant.",
-      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "enterprise-description": "Escale su negocio de forma segura manteniendo el cumplimiento normativo.",
+      "free-description": "Diseñado para desarrolladores individuales, proyectos paralelos y experimentos.",
       "manage-invoices": "Gestionar facturas",
       "next-period-price": "Precio del próximo período",
       "payment-info": "Información de pago",
@@ -3713,7 +3549,7 @@
       "pending-title": "Completando su compra...",
       "per-user-per-month": "/ usuario / mes",
       "privacy-policy": "Política de privacidad",
-      "pro-description": "Built for teams creating production-ready applications.",
+      "pro-description": "Creado para equipos que desarrollan aplicaciones listas para producción.",
       "seats": "Usuarios",
       "see-comparison": "Ver comparación detallada de funciones",
       "subscribe": "Suscribirse ahora",
@@ -3761,20 +3597,37 @@
       }
     }
   },
-  "subscription.instance-assignment.assign-license": "Asignar licencia",
-  "subscription.instance-assignment.n-license-remain": "permanecer {{n}}",
-  "subscription.usage.instance-count.runoutof": "Te has quedado sin tu cuota de instancias {{total}}.",
-  "subscription.usage.instance-count.title": "Límite de cantidad de instancias",
   "task": {
+    "affected-rows": "Filas afectadas",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "cancel-task-description": "Las ejecuciones de tareas pendientes y disponibles se cancelan inmediatamente. Las ejecuciones en curso reciben una solicitud de cancelación de mejor esfuerzo y pueden seguir ejecutándose; vuelva a intentarlo si es necesario.",
+    "check-type": {
+      "affected-rows": {
+        "description": "Estimado por información estadística.",
+        "self": "Filas afectadas"
+      },
+      "sql-review": {
+        "description": "Analiza la sentencia SQL en busca de posibles problemas y ofrece recomendaciones. Incluye reglas integradas y sus reglas personalizadas.",
+        "self": "Revisión de SQL"
+      }
+    },
     "created": "Creado",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "error": {
       "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"
     },
+    "executed-by": "Ejecutado por",
     "execution-time": "Tiempo de ejecución",
+    "no-cancelable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
+    "no-runnable-tasks": "No hay tareas ejecutables",
+    "no-selectable-tasks": "No hay tareas seleccionables",
+    "no-skippable-tasks": "No hay tareas que se puedan omitir",
+    "no-tasks-selected": "No hay tareas seleccionadas",
+    "online-migration": {
+      "self": "Migración en línea"
+    },
+    "prior-backup": "Respaldo previo",
     "run-immediately": {
       "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación.",
       "self": "Corre inmediatamente"
@@ -3784,7 +3637,9 @@
       "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda.",
       "self": "Programar para más tarde"
     },
+    "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
+    "select-task": "Seleccionar tarea",
     "skip-prior-backup": "Omitir respaldo previo",
     "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
     "skip-task": "Saltar tarea | Saltar tareas",
@@ -3799,56 +3654,55 @@
       "skipped": "Omitido"
     }
   },
-  "task-run.blocked-sessions": "Sesiones bloqueadas",
-  "task-run.blocked-sessions-description": "Las sesiones que están bloqueadas por la sesión actual.",
-  "task-run.blocking-sessions": "Sesiones bloqueantes",
-  "task-run.blocking-sessions-description": "Las sesiones que están bloqueando la sesión actual.",
-  "task-run.history": "Historial",
-  "task-run.latest": "Último",
-  "task-run.latest-logs": "Últimos registros",
-  "task-run.log-detail.backing-up": "haciendo copia de seguridad...",
-  "task-run.log-detail.backup-completed": "completadas ({{count}} tablas)",
-  "task-run.log-detail.completed": "Completado",
-  "task-run.log-detail.computing": "computación...",
-  "task-run.log-detail.dumping": "dumping...",
-  "task-run.log-detail.retry-attempt": "intento {{current}}/{{max}}",
-  "task-run.log-detail.syncing": "sincronizando...",
-  "task-run.log-type.command-execute": "Comando Ejecutar",
-  "task-run.log-type.compute-diff": "Calcular diferencia",
-  "task-run.log-type.database-sync": "Sincronización de bases de datos",
-  "task-run.log-type.ghost-migration": "Migración gh-ost",
-  "task-run.log-type.prior-backup": "Copia de seguridad previa",
-  "task-run.log-type.release-file-execute": "Archivo de lanzamiento",
-  "task-run.log-type.retry": "Reintentar",
-  "task-run.log-type.schema-dump": "Volcado de esquema",
-  "task-run.log-type.transaction": "Transacción",
-  "task-run.log-viewer.collapse-all": "Contraer todo",
-  "task-run.log-viewer.expand-all": "Expandir todo",
-  "task-run.log-viewer.multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
-  "task-run.log-viewer.replica-n": "Réplica #{{n}}",
-  "task-run.log-viewer.summary": "{{sections}} secciones · {{entries}} entradas",
-  "task-run.no-session-found": "No se encontró sesión",
-  "task-run.rollback.available": "{{count}} rollback disponible",
-  "task-run.rollback.no-statement-generated": "No se generó ninguna sentencia",
-  "task-run.rollback.preview-statement.description": "Revisa las sentencias de rollback generadas antes de crear el plan de rollback.",
-  "task-run.status.enqueued": "Esperando a ser ejecutada.",
-  "task-run.status.enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",
-  "task-run.status.waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {{time}}.",
-  "task.affected-rows": "Filas afectadas",
-  "task.check-type.affected-rows.description": "Estimado por información estadística.",
-  "task.check-type.affected-rows.self": "Filas afectadas",
-  "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
-  "task.check-type.sql-review.self": "SQL review",
-  "task.executed-by": "Ejecutado por",
-  "task.no-cancelable-tasks": "No hay tareas cancelables",
-  "task.no-runnable-tasks": "No hay tareas ejecutables",
-  "task.no-selectable-tasks": "No hay tareas seleccionables",
-  "task.no-skippable-tasks": "No hay tareas que se puedan omitir",
-  "task.no-tasks-selected": "No hay tareas seleccionadas",
-  "task.online-migration.self": "Migración en línea",
-  "task.prior-backup": "Respaldo previo",
-  "task.scheduled-time": "Hora programada",
-  "task.select-task": "Seleccionar tarea",
+  "task-run": {
+    "blocked-sessions": "Sesiones bloqueadas",
+    "blocked-sessions-description": "Las sesiones que están bloqueadas por la sesión actual.",
+    "blocking-sessions": "Sesiones bloqueantes",
+    "blocking-sessions-description": "Las sesiones que están bloqueando la sesión actual.",
+    "history": "Historial",
+    "latest": "Último",
+    "latest-logs": "Últimos registros",
+    "log-detail": {
+      "backing-up": "haciendo copia de seguridad...",
+      "backup-completed": "completadas ({{count}} tablas)",
+      "completed": "Completado",
+      "computing": "computación...",
+      "dumping": "dumping...",
+      "retry-attempt": "intento {{current}}/{{max}}",
+      "syncing": "sincronizando..."
+    },
+    "log-type": {
+      "command-execute": "Comando Ejecutar",
+      "compute-diff": "Calcular diferencia",
+      "database-sync": "Sincronización de bases de datos",
+      "ghost-migration": "Migración gh-ost",
+      "prior-backup": "Copia de seguridad previa",
+      "release-file-execute": "Archivo de lanzamiento",
+      "retry": "Reintentar",
+      "schema-dump": "Volcado de esquema",
+      "transaction": "Transacción"
+    },
+    "log-viewer": {
+      "collapse-all": "Contraer todo",
+      "expand-all": "Expandir todo",
+      "multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
+      "replica-n": "Réplica #{{n}}",
+      "summary": "{{sections}} secciones · {{entries}} entradas"
+    },
+    "no-session-found": "No se encontró sesión",
+    "rollback": {
+      "available": "{{count}} rollback disponible",
+      "no-statement-generated": "No se generó ninguna sentencia",
+      "preview-statement": {
+        "description": "Revisa las sentencias de rollback generadas antes de crear el plan de rollback."
+      }
+    },
+    "status": {
+      "enqueued": "Esperando a ser ejecutada.",
+      "enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",
+      "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {{time}}."
+    }
+  },
   "two-factor": {
     "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
     "disable": {
