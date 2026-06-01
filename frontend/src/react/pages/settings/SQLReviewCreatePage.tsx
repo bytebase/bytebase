@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSQLReviewStore } from "@/store";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { ReviewCreation } from "../../components/sql-review/ReviewCreation";
 
 export function SQLReviewCreatePage() {

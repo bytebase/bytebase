@@ -17,6 +17,7 @@ import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
 import { router } from "@/router";
 import {
@@ -29,7 +30,6 @@ import {
   pushNotification,
   usePolicyV1Store,
   useProjectV1Store,
-  useSQLReviewStore,
   useSubscriptionV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

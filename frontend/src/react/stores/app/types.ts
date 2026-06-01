@@ -669,6 +669,11 @@ export type PolicySlice = {
     refresh?: boolean;
   }) => Promise<Policy | undefined>;
   getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
+  upsertPolicy: (params: {
+    parentPath: string;
+    policy: Partial<Policy>;
+  }) => Promise<Policy>;
+  deletePolicy: (name: string) => Promise<void>;
 };
 
 // Stateless issue service slice (mirrors the legacy Pinia `useIssueV1Store`):

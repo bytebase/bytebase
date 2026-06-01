@@ -61,6 +61,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -72,7 +73,6 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useSQLReviewStore,
   useSubscriptionV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";

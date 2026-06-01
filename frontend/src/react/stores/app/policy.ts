@@ -3,13 +3,34 @@ import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { orgPolicyServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import {
+  DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
+  PolicyResourceType,
   PolicySchema,
   PolicyType,
   type QueryDataPolicy,
   QueryDataPolicySchema,
+  UpdatePolicyRequestSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { AppSliceCreator, PolicySlice } from "./types";
+
+// Mirror of the Pinia `getUpdateMaskFromPolicyType`.
+const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
+  switch (policyType) {
+    case PolicyType.ROLLOUT_POLICY:
+      return [PolicySchema.field.rolloutPolicy.name];
+    case PolicyType.MASKING_EXEMPTION:
+      return [PolicySchema.field.maskingExemptionPolicy.name];
+    case PolicyType.MASKING_RULE:
+      return [PolicySchema.field.maskingRulePolicy.name];
+    case PolicyType.DATA_QUERY:
+      return [PolicySchema.field.queryDataPolicy.name];
+    case PolicyType.TAG:
+      return [PolicySchema.field.tagPolicy.name];
+    default:
+      throw new Error(`unexpected policy type ${policyType}`);
+  }
+};
 
 // Inlined to keep the app store's load graph free of `@/store/modules/v1/common`.
 const POLICY_NAME_PREFIX = "policies/";
@@ -116,5 +137,42 @@ export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
     return policy?.policy?.case === "queryDataPolicy"
       ? policy.policy.value
       : EMPTY_QUERY_DATA_POLICY;
+  },
+
+  upsertPolicy: async ({ parentPath, policy }) => {
+    if (!policy.type) {
+      throw new Error("policy type is required");
+    }
+    const name = policyResourceName(parentPath, policy.type);
+    const response = await orgPolicyServiceClientConnect.updatePolicy(
+      createProto(UpdatePolicyRequestSchema, {
+        policy: createProto(PolicySchema, {
+          name,
+          inheritFromParent: policy.inheritFromParent ?? false,
+          type: policy.type,
+          resourceType:
+            policy.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
+          enforce: policy.enforce ?? false,
+          policy: policy.policy,
+        }),
+        updateMask: { paths: getUpdateMaskFromPolicyType(policy.type) },
+        allowMissing: true,
+      })
+    );
+    set((state) => ({
+      policyMapByName: { ...state.policyMapByName, [response.name]: response },
+    }));
+    return response;
+  },
+
+  deletePolicy: async (name) => {
+    await orgPolicyServiceClientConnect.deletePolicy(
+      createProto(DeletePolicyRequestSchema, { name })
+    );
+    const key = replacePolicyTypeNameToLowerCase(name);
+    set((state) => {
+      const { [key]: _removed, ...policyMapByName } = state.policyMapByName;
+      return { policyMapByName };
+    });
   },
 });
