@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
 import { cloneDeep, isEmpty } from "lodash-es";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useAppStore } from "@/react/stores/app";
@@ -45,6 +45,14 @@ const QUERY_INTERVAL_LIMIT = 1000;
 export const useExecuteSQL = () => {
   const { t } = useTranslation();
   const lastQueryTimeRef = useRef<number | undefined>(undefined);
+  // Eagerly fetch the subscription so the batch-query / database-group
+  // gates below see the licensed plan when the user clicks Run. The hook
+  // is mounted by `EditorMain` on every tab open, so this fires once per
+  // tab; `loadSubscription` itself dedupes via an in-flight request.
+  const loadSubscription = useAppStore((s) => s.loadSubscription);
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
   const notify = (
     type: BBNotificationStyle,
     title: string,

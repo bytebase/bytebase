@@ -17,6 +17,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useAppProject } from "@/react/hooks/useAppProject";
+import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -82,9 +83,7 @@ export function AccessPane() {
   const resolvedProject = useAppProject(projectName as string);
   const project = projectName ? resolvedProject : undefined;
 
-  const hasJITFeature = useAppStore((s) =>
-    s.hasFeature(PlanFeature.FEATURE_JIT)
-  );
+  const hasJITFeature = useSQLEditorFeature(PlanFeature.FEATURE_JIT);
 
   // Build scope options for AdvancedSearch (React-compatible, no Vue renderers)
   const scopeOptions = useMemo((): ScopeOption[] => {
