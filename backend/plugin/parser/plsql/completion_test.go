@@ -512,6 +512,12 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want:  columns("C1", "C2"),
 		},
 		{
+			name:    "schema qualified alias excludes same table from other schema",
+			input:   "SELECT a.| FROM schema1.t1 a JOIN schema4.t1 b ON a.c1 = b.c1",
+			want:    columns("C1"),
+			notWant: columns("SCHEMA4_ONLY"),
+		},
+		{
 			name:  "join table prefix keeps matching tables",
 			input: "SELECT * FROM t1 JOIN t|",
 			want:  tables("T1", "T2"),
@@ -1326,6 +1332,30 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 											SELECT *
 											FROM t1
 							`,
+						},
+					},
+				},
+			},
+		}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
+	case "SCHEMA4":
+		return "SCHEMA4", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+			Name: databaseName,
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name: "T1",
+							Columns: []*storepb.ColumnMetadata{
+								{
+									Name: "C1",
+									Type: "int",
+								},
+								{
+									Name: "SCHEMA4_ONLY",
+									Type: "int",
+								},
+							},
 						},
 					},
 				},

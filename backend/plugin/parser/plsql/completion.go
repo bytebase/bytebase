@@ -435,28 +435,11 @@ func (c *Completer) insertColumnContextCandidates(schemaEntries, tableEntries, c
 	schemas := make(map[string]bool)
 	if schema != "" {
 		schemas[schema] = true
-	} else {
+	} else if table == "" {
 		for _, reference := range c.references {
 			if physical, ok := reference.(*base.PhysicalTableReference); ok && physical.Schema != "" {
 				schemas[physical.Schema] = true
 			}
-		}
-	}
-	if len(schemas) == 0 {
-		schemas[c.defaultDatabase] = true
-	}
-	schemas[""] = true
-
-	if table == "" {
-		schemaEntries.insertDatabases(c)
-		tableEntries.insertTables(c, schemas)
-		viewEntries.insertViews(c, schemas)
-		sequenceEntries.insertSequences(c, schemas)
-		for _, alias := range c.selectItemAliases() {
-			columnEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeColumn,
-				Text: c.quotedIdentifierIfNeeded(alias),
-			})
 		}
 	}
 
@@ -471,6 +454,8 @@ func (c *Completer) insertColumnContextCandidates(schemaEntries, tableEntries, c
 					if reference.Schema != "" {
 						schemas[reference.Schema] = true
 					}
+				} else if strings.EqualFold(reference.Table, table) && reference.Schema != "" {
+					schemas[reference.Schema] = true
 				}
 			case *base.VirtualTableReference:
 				if strings.EqualFold(reference.Table, table) {
@@ -504,6 +489,24 @@ func (c *Completer) insertColumnContextCandidates(schemaEntries, tableEntries, c
 		}
 	} else {
 		columnEntries.insertAllColumns(c)
+	}
+
+	if len(schemas) == 0 {
+		schemas[c.defaultDatabase] = true
+	}
+	schemas[""] = true
+
+	if table == "" {
+		schemaEntries.insertDatabases(c)
+		tableEntries.insertTables(c, schemas)
+		viewEntries.insertViews(c, schemas)
+		sequenceEntries.insertSequences(c, schemas)
+		for _, alias := range c.selectItemAliases() {
+			columnEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeColumn,
+				Text: c.quotedIdentifierIfNeeded(alias),
+			})
+		}
 	}
 	if table == "" {
 		c.insertReferenceAliasCandidates(tableEntries, schemas, tables)
