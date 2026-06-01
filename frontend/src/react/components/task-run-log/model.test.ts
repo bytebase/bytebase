@@ -39,10 +39,6 @@ vi.mock("@/react/stores/app", () => ({
   useAppStore: () => vi.fn(),
 }));
 
-vi.mock("@/store", () => ({
-  useRolloutStore: () => ({}),
-}));
-
 vi.mock("@/utils", () => ({
   extractRolloutNameFromTaskRunName: () => "",
   extractTaskNameFromTaskRunName: () => "",

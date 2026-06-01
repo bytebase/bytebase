@@ -9,6 +9,5 @@ export * from "./workloadIdentity";
 export * from "./workspaceApprovalSetting";
 export * from "./role";
 export * from "./utils";
-export * from "./rollout";
 
 export * from "./v1";
