@@ -385,17 +385,13 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			}
 			args := setMetadataParams.Arguments[0]
 			h.setMetadata(args)
-			// The engine type is derived from the metadata. The active
-			// document may have opened before its metadata arrived, running
-			// diagnostics with ENGINE_UNSPECIFIED (no parser, so no statement
-			// ranges were sent). Reschedule diagnostics for that document now
-			// that the engine is known, so consumers like the active-statement
-			// highlight get populated without waiting for the first edit.
-			//
-			// Scope this to the document that sent the metadata: the metadata
-			// is connection-global, so rescheduling other open documents would
-			// reparse them with this document's engine and clobber their
-			// (differently-engined) results.
+			// Statement ranges (used by the active-statement highlight) need
+			// the engine, which is derived from this metadata. Compute them for
+			// the document that sent it, now that the engine is known — this is
+			// what populates the highlight on first open and tab switch.
+			// Scoped to args.DocumentURI: the metadata is connection-global, so
+			// rescheduling other open documents would reparse them with this
+			// document's engine.
 			if uri := args.DocumentURI; uri != "" {
 				if content, found := h.GetFS().get(uri); found {
 					h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, uri, string(content), h)

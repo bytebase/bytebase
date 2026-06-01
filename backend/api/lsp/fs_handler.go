@@ -62,17 +62,6 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 		}
 		return do(params.TextDocument.URI, func() error {
 			fs.DidOpen(&params)
-			uri := params.TextDocument.URI
-			content, found := fs.get(uri)
-			if !found {
-				return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
-			}
-
-			// Compute diagnostics (and statement ranges) on open so consumers
-			// like the SQL Editor's active-statement highlight have data
-			// without waiting for the first edit.
-			h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, uri, string(content), h)
-
 			return nil
 		})
 	case LSPMethodTextDocumentDidChange:
