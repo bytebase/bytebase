@@ -12,10 +12,6 @@
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
   },
-  "branch": {
-    "index": {},
-    "table-partition": {}
-  },
   "common": {
     "access-denied": "Acceso denegado",
     "active": "Activo",
@@ -23,7 +19,6 @@
     "closed": "Cerrado",
     "database": "Base de datos",
     "databases": "Bases de datos",
-    "date": {},
     "dingtalk": "DingTalk",
     "discord": "Discord",
     "draft": "Borrador",
@@ -33,7 +28,6 @@
     "feishu": "Feishu",
     "google-chat": "Google Chat",
     "groups": "Grupos",
-    "hard-delete": {},
     "home": "Inicio",
     "instance": "Instancia",
     "instances": "Instancias",
@@ -75,9 +69,6 @@
     },
     "sync-schema": {
       "title": "Sincronizar esquema"
-    },
-    "transfer": {
-      "errors": {}
     }
   },
   "error-page": {
@@ -87,9 +78,6 @@
   "export-center": {
     "self": "centro de exportacion"
   },
-  "export-data": {
-    "error": {}
-  },
   "gitops": {
     "self": "GitOps"
   },
@@ -97,17 +85,13 @@
     "new-instance": "Nueva instancia"
   },
   "issue": {
-    "sql-check": {},
     "table": {
-      "approved": "Approved"
+      "approved": "Aprobado"
     },
     "title": {
       "change-database": "Modificar base de datos",
       "export-data": "Exportar datos"
     }
-  },
-  "landing": {
-    "quick-link": {}
   },
   "multi-factor": {
     "self": "Autenticación de múltiples factores"
@@ -206,11 +190,6 @@
       "self": "Miembro del espacio de trabajo"
     }
   },
-  "schema-designer": {},
-  "schema-editor": {
-    "foreign-key": {},
-    "table": {}
-  },
   "settings": {
     "members": {
       "all-users": "Todos los usuarios",
@@ -291,7 +270,7 @@
     "shared": "Compartido"
   },
   "sql-editor": {
-    "access-grants": "Access Grants",
+    "access-grants": "Permisos de acceso",
     "batch-query": {
       "select-data-source": {
         "admin": "Administración",
@@ -301,12 +280,11 @@
     "download-encryption-failed": "Error al cifrar la descarga.",
     "download-failed": "Error en la descarga.",
     "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
-    "expired": "Expired",
+    "expired": "Expirado",
     "self": "Editor de SQL",
     "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión."
   },
   "sql-review": {
-    "category": {},
     "create": {
       "breadcrumb": "Crear política de revisión SQL"
     },
@@ -332,7 +310,6 @@
     }
   },
   "task": {
-    "check-result": {},
     "status": {
       "available": "Disponible",
       "canceled": "Cancelado",

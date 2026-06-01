@@ -12,10 +12,6 @@
     "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
   },
-  "branch": {
-    "index": {},
-    "table-partition": {}
-  },
   "common": {
     "access-denied": "Access denied",
     "active": "Active",
@@ -23,7 +19,6 @@
     "closed": "Closed",
     "database": "Database",
     "databases": "Databases",
-    "date": {},
     "dingtalk": "DingTalk",
     "discord": "Discord",
     "draft": "Draft",
@@ -33,7 +28,6 @@
     "feishu": "Feishu",
     "google-chat": "Google Chat",
     "groups": "Groups",
-    "hard-delete": {},
     "home": "Home",
     "instance": "Instance",
     "instances": "Instances",
@@ -75,9 +69,6 @@
     },
     "sync-schema": {
       "title": "Sync Schema"
-    },
-    "transfer": {
-      "errors": {}
     }
   },
   "error-page": {
@@ -87,9 +78,6 @@
   "export-center": {
     "self": "Export Center"
   },
-  "export-data": {
-    "error": {}
-  },
   "gitops": {
     "self": "GitOps"
   },
@@ -97,7 +85,6 @@
     "new-instance": "New Instance"
   },
   "issue": {
-    "sql-check": {},
     "table": {
       "approved": "Approved"
     },
@@ -105,9 +92,6 @@
       "change-database": "Change database",
       "export-data": "Export data"
     }
-  },
-  "landing": {
-    "quick-link": {}
   },
   "multi-factor": {
     "self": "Multi-factor authentication"
@@ -206,11 +190,6 @@
       "self": "Workspace Member"
     }
   },
-  "schema-designer": {},
-  "schema-editor": {
-    "foreign-key": {},
-    "table": {}
-  },
   "settings": {
     "members": {
       "all-users": "All users",
@@ -306,7 +285,6 @@
     "sql-download-unavailable": "SQL download is unavailable for this connection."
   },
   "sql-review": {
-    "category": {},
     "create": {
       "breadcrumb": "Create SQL review policy"
     },
@@ -332,7 +310,6 @@
     }
   },
   "task": {
-    "check-result": {},
     "status": {
       "available": "Available",
       "canceled": "Canceled",

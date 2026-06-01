@@ -416,7 +416,7 @@
       "title": "Prohibir el uso de la cláusula \"ORDER BY\" en las declaraciones \"UPDATE\" y \"DELETE\""
     },
     "STATEMENT_DISALLOW_RM_TBL_CASCADE": {
-      "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error",
+      "description": "Usar la opción \"CASCADE\" al eliminar una tabla puede hacer que se eliminen o modifiquen una gran cantidad de objetos dependientes, lo que puede causar resultados inesperados. Nivel de error sugerido: Error",
       "title": "Prohibir el uso de CASCADE al eliminar una tabla"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
