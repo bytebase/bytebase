@@ -58,8 +58,10 @@ export function SQLReviewDetailPage({
 
   // Fetch policy
   useEffect(() => {
-    store.getOrFetchReviewPolicyByName(sqlReviewName, false);
-  }, [store, sqlReviewName]);
+    useSQLReviewStore
+      .getState()
+      .getOrFetchReviewPolicyByName(sqlReviewName, false);
+  }, [sqlReviewName]);
 
   const reviewPolicy = useVueState(
     () =>

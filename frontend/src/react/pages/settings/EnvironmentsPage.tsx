@@ -474,9 +474,10 @@ function SQLReviewSectionInner(
 
   // Fetch the full review policy list and the current resource's policy on mount
   useEffect(() => {
-    reviewStore.fetchReviewPolicyList();
-    reviewStore.getOrFetchReviewPolicyByResource(resourcePath, true);
-  }, [resourcePath, reviewStore]);
+    const store = useSQLReviewStore.getState();
+    store.fetchReviewPolicyList();
+    store.getOrFetchReviewPolicyByResource(resourcePath, true);
+  }, [resourcePath]);
 
   const isDirty =
     enforce !== (currentPolicy?.enforce ?? false) ||
@@ -487,9 +488,10 @@ function SQLReviewSectionInner(
   }, [isDirty, onDirtyChange]);
 
   const saveSQLReview = useCallback(async () => {
+    const store = useSQLReviewStore.getState();
     if (!isEqual(currentPolicy, pendingPolicy)) {
       if (currentPolicy) {
-        await reviewStore.upsertReviewConfigTag({
+        await store.upsertReviewConfigTag({
           oldResources: [...currentPolicy.resources],
           newResources: currentPolicy.resources.filter(
             (r) => r !== resourcePath
@@ -498,7 +500,7 @@ function SQLReviewSectionInner(
         });
       }
       if (pendingPolicy) {
-        await reviewStore.upsertReviewConfigTag({
+        await store.upsertReviewConfigTag({
           oldResources: [...pendingPolicy.resources],
           newResources: [...pendingPolicy.resources, resourcePath],
           review: pendingPolicy.id,
@@ -506,12 +508,12 @@ function SQLReviewSectionInner(
       }
     }
     if (pendingPolicy && pendingPolicy.enforce !== enforce) {
-      await reviewStore.upsertReviewPolicy({
+      await store.upsertReviewPolicy({
         id: pendingPolicy.id,
         enforce,
       });
     }
-  }, [currentPolicy, pendingPolicy, enforce, resourcePath, reviewStore]);
+  }, [currentPolicy, pendingPolicy, enforce, resourcePath]);
 
   const revertSQLReview = useCallback(() => {
     setPendingPolicy(currentPolicy);

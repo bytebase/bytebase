@@ -66,25 +66,28 @@ function ApprovalFlowIndicator({
   source: WorkspaceApprovalSetting_Rule_Source;
 }) {
   const { t } = useTranslation();
-  const approvalStore = useWorkspaceApprovalSettingStore();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!hasWorkspacePermissionV2("bb.settings.get")) return;
-    approvalStore.fetchConfig().then(() => setReady(true));
-  }, [approvalStore]);
+    useWorkspaceApprovalSettingStore
+      .getState()
+      .fetchConfig()
+      .then(() => setReady(true));
+  }, []);
 
   const status = useMemo((): "source" | "fallback" | "none" => {
     if (!ready) return "none";
-    if (approvalStore.getRulesBySource(source).length > 0) return "source";
+    const store = useWorkspaceApprovalSettingStore.getState();
+    if (store.getRulesBySource(source).length > 0) return "source";
     if (
-      approvalStore.getRulesBySource(
+      store.getRulesBySource(
         WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED
       ).length > 0
     )
       return "fallback";
     return "none";
-  }, [ready, approvalStore, source]);
+  }, [ready, source]);
 
   if (!ready) return null;
 
@@ -259,12 +262,12 @@ export function ProjectSettingsPage() {
   useEffect(() => {
     if (lastFetchedProject.current === projectName) return;
     lastFetchedProject.current = projectName;
-    reviewStore.fetchReviewPolicyList();
+    useSQLReviewStore.getState().fetchReviewPolicyList();
     policyStore.getOrFetchPolicyByParentAndType({
       parentPath: projectName,
       policyType: PolicyType.DATA_QUERY,
     });
-  }, [reviewStore, policyStore, projectName]);
+  }, [policyStore, projectName]);
 
   // Sync review policy state when it loads or changes externally
   useEffect(() => {

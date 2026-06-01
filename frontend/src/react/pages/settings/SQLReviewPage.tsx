@@ -247,8 +247,8 @@ export function SQLReviewPage() {
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    sqlReviewStore.fetchReviewPolicyList();
-  }, [sqlReviewStore]);
+    useSQLReviewStore.getState().fetchReviewPolicyList();
+  }, []);
 
   const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
 

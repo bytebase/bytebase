@@ -3,11 +3,9 @@ import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { ReviewCreation } from "../../components/sql-review/ReviewCreation";
 
 export function SQLReviewCreatePage() {
-  const sqlReviewStore = useSQLReviewStore();
-
   useEffect(() => {
-    sqlReviewStore.fetchReviewPolicyList();
-  }, [sqlReviewStore]);
+    useSQLReviewStore.getState().fetchReviewPolicyList();
+  }, []);
 
   const [selectedResources] = useState(() => {
     const url = new URL(window.location.href);
