@@ -23,9 +23,19 @@ import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
  * the subscription plan changes. (For instance-scoped features pass the
  * instance through a dedicated hook — none of the SQL editor's current
  * gates are instance-scoped.)
+ *
+ * Self-loads the subscription so SQL editor gates don't silently fall
+ * back to FREE on first render. Mirrors `usePlanFeature` — without this
+ * the hook would depend on an unrelated ancestor (e.g. `Watermark`)
+ * having already triggered `loadSubscription`.
  */
-export const useSQLEditorFeature = (feature: PlanFeature): boolean =>
-  useAppStore((s) => s.hasFeature(feature));
+export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
+  const loadSubscription = useAppStore((s) => s.loadSubscription);
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
+  return useAppStore((s) => s.hasFeature(feature));
+};
 
 // Mirrors the Pinia `formatQueryDataPolicy` helper: normalizes
 // `maximumResultRows` so `-1`/`0` (= unlimited) becomes `Number.MAX_VALUE`,
