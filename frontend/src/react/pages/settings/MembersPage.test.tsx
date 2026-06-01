@@ -207,6 +207,7 @@ vi.mock("@/plugins/cel", () => ({
 vi.mock("@/types", () => ({
   ALL_USERS_USER_EMAIL: "allUsers",
   isDefaultProject: () => false,
+  PresetRoleType: { PROJECT_OWNER: "roles/projectOwner" },
   userBindingPrefix: "user:",
 }));
 
@@ -290,6 +291,7 @@ vi.mock("@/store", () => ({
   useSettingV1Store: () => ({
     getOrFetchSettingByName: vi.fn(),
     getSettingByName: () => undefined,
+    workspaceProfile: {},
   }),
   useSubscriptionV1Store: () => ({
     hasFeature: () => true,
