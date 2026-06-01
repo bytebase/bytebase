@@ -696,21 +696,6 @@ func (c *Completer) insertReferenceAliasCandidates(tableEntries CompletionMap) {
 	}
 }
 
-func (c *Completer) querySpan(statement string) (*base.QuerySpan, error) {
-	return GetQuerySpan(
-		c.ctx,
-		base.GetQuerySpanContext{
-			InstanceID:              c.instanceID,
-			GetDatabaseMetadataFunc: c.getMetadata,
-			ListDatabaseNamesFunc:   c.listDatabaseNames,
-		},
-		base.Statement{Text: statement},
-		c.defaultDatabase,
-		"",
-		false,
-	)
-}
-
 func convertCompletionVirtualReference(reference oracleparser.RangeReference) *base.VirtualTableReference {
 	table := reference.Alias
 	if table == "" {
