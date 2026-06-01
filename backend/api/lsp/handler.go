@@ -383,15 +383,23 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 					Message: fmt.Sprintf("permission denied: %v", err),
 				}
 			}
-			h.setMetadata(setMetadataParams.Arguments[0])
-			// The engine type is derived from the metadata. A document that
-			// opened before the metadata arrived had its diagnostics run with
-			// ENGINE_UNSPECIFIED (no parser, so no statement ranges were
-			// sent). Reschedule diagnostics for open documents now that the
-			// engine is known, so consumers like the active-statement
+			args := setMetadataParams.Arguments[0]
+			h.setMetadata(args)
+			// The engine type is derived from the metadata. The active
+			// document may have opened before its metadata arrived, running
+			// diagnostics with ENGINE_UNSPECIFIED (no parser, so no statement
+			// ranges were sent). Reschedule diagnostics for that document now
+			// that the engine is known, so consumers like the active-statement
 			// highlight get populated without waiting for the first edit.
-			for _, doc := range h.GetFS().listOpen() {
-				h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, doc.uri, string(doc.content), h)
+			//
+			// Scope this to the document that sent the metadata: the metadata
+			// is connection-global, so rescheduling other open documents would
+			// reparse them with this document's engine and clobber their
+			// (differently-engined) results.
+			if uri := args.DocumentURI; uri != "" {
+				if content, found := h.GetFS().get(uri); found {
+					h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, uri, string(content), h)
+				}
 			}
 			return nil, nil
 		default:

@@ -9,25 +9,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-// openDocument is a document tracked by the in-memory file system. The
-// original URI is retained alongside the content so callers can enumerate open
-// documents (the map is keyed by mem-FS path, which is not reversible to a URI
-// in the general case).
-type openDocument struct {
-	uri     lsp.DocumentURI
-	content []byte
-}
-
 // MemFS is an in-memory file system.
 type MemFS struct {
 	mu sync.Mutex
-	m  map[string]openDocument
+	m  map[string][]byte
 }
 
 // NewMemFS returns a new in-memory file system.
 func NewMemFS() *MemFS {
 	return &MemFS{
-		m: make(map[string]openDocument),
+		m: make(map[string][]byte),
 	}
 }
 
@@ -97,7 +88,7 @@ func (fs *MemFS) set(uri lsp.DocumentURI, content []byte) {
 	path := uriToMemFSPath(uri)
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	fs.m[path] = openDocument{uri: uri, content: content}
+	fs.m[path] = content
 }
 
 func (fs *MemFS) del(uri lsp.DocumentURI) {
@@ -111,19 +102,8 @@ func (fs *MemFS) get(uri lsp.DocumentURI) ([]byte, bool) {
 	path := uriToMemFSPath(uri)
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	doc, found := fs.m[path]
-	return doc.content, found
-}
-
-// listOpen returns a snapshot of all currently open documents.
-func (fs *MemFS) listOpen() []openDocument {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-	docs := make([]openDocument, 0, len(fs.m))
-	for _, doc := range fs.m {
-		docs = append(docs, doc)
-	}
-	return docs
+	content, found := fs.m[path]
+	return content, found
 }
 
 func uriToMemFSPath(uri lsp.DocumentURI) string {

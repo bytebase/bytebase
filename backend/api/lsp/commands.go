@@ -35,4 +35,9 @@ type SetMetadataCommandArguments struct {
 	// 	in other words, SELECT statements only.
 	// If the scene is "all", it will return completion items for all statements.
 	Scene string `json:"scene,omitempty"`
+	// The DocumentURI is the URI of the document this metadata applies to.
+	// The metadata is connection-global, but the engine it derives is only
+	// valid for the active document that sent it, so diagnostics are
+	// rescheduled for this URI only (see the setMetadata command handler).
+	DocumentURI lsp.DocumentURI `json:"documentUri,omitempty"`
 }
