@@ -509,7 +509,7 @@ export type ReleaseSlice = {
     silent?: boolean
   ) => Promise<Release | undefined>;
   getReleasesByProject: (project: string) => Release[];
-  getReleaseByName: (name: string) => Release;
+  getReleaseByName: (name: string) => Release | undefined;
   updateRelease: (
     release: Partial<Release>,
     updateMask: string[]

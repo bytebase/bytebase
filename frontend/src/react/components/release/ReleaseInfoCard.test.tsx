@@ -111,10 +111,9 @@ describe("ReleaseInfoCard", () => {
     unmount();
   });
 
-  test("renders the not-found state when release is the unknown sentinel", async () => {
+  test("renders the not-found state when release has a placeholder name", async () => {
     ({ ReleaseInfoCard } = await import("./ReleaseInfoCard"));
-    // useReleaseByName returns an unknownRelease() sentinel on miss; its
-    // name is the placeholder "projects/-1/releases/-1" which fails
+    // A release whose name is the placeholder "projects/-1/releases/-1" fails
     // isValidReleaseName. The component must treat that as not-found.
     const sentinel = create(ReleaseSchema, {
       name: "projects/-1/releases/-1",

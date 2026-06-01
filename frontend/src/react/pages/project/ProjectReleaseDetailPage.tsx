@@ -1,4 +1,4 @@
-import { Clock4, EllipsisVertical, Link2 } from "lucide-react";
+import { Clock4, EllipsisVertical, Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
@@ -54,15 +54,21 @@ export function ProjectReleaseDetailPage({
   const project = useVueState(() =>
     projectV1Store.getProjectByName(projectName)
   );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
     void projectV1Store.getOrFetchProjectByName(projectName).catch((error) => {
       if (!cancelled) console.error("Failed to fetch project", error);
     });
-    void fetchRelease(releaseName).catch((error) => {
-      if (!cancelled) console.error("Failed to fetch release", error);
-    });
+    void fetchRelease(releaseName)
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch release", error);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -80,9 +86,25 @@ export function ProjectReleaseDetailPage({
   const [archiveOpen, setArchiveOpen] = useState(false);
 
   const releaseDisplayName = useMemo(() => {
-    const parts = release.name.split("/");
-    return parts[parts.length - 1] || release.name;
-  }, [release.name]);
+    const name = release?.name ?? releaseName;
+    const parts = name.split("/");
+    return parts[parts.length - 1] || name;
+  }, [release?.name, releaseName]);
+
+  if (!release) {
+    return (
+      <div className="flex flex-col items-start gap-y-4 p-4">
+        <h1 className="text-xl font-medium truncate">{releaseDisplayName}</h1>
+        {isLoading ? (
+          <div className="flex w-full items-center justify-center py-10">
+            <LoaderCircle className="h-4 w-4 animate-spin text-control-light" />
+          </div>
+        ) : (
+          <div className="text-control-light">{t("release.not-found")}</div>
+        )}
+      </div>
+    );
+  }
 
   const isActive = release.state === State.ACTIVE;
   const isDeleted = release.state === State.DELETED;

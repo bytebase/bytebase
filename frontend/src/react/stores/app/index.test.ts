@@ -862,6 +862,18 @@ describe("useAppStore", () => {
     );
   });
 
+  test("returns undefined for an unknown release", () => {
+    const store = createAppStore();
+
+    // getReleaseByName backs the useReleaseByName Zustand selector. Returning a
+    // freshly-constructed sentinel on every call made the selector snapshot
+    // change each render, triggering an infinite re-render loop on cache miss.
+    // A stable undefined avoids that, matching the other cache-miss getters.
+    expect(
+      store.getState().getReleaseByName("projects/a/releases/miss")
+    ).toBeUndefined();
+  });
+
   test("deduplicates release fetches and clears failed requests", async () => {
     mocks.getRelease.mockResolvedValueOnce(releaseA);
     const store = createAppStore();
