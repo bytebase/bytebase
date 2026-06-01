@@ -107,6 +107,7 @@ const mocks = vi.hoisted(() => ({
   listDatabases: vi.fn(),
   listChangelogs: vi.fn(),
   getChangelog: vi.fn(),
+  getDatabaseMetadata: vi.fn(),
   getDatabaseGroup: vi.fn(),
   listDatabaseGroups: vi.fn(),
   getSheet: vi.fn(),
@@ -190,6 +191,7 @@ vi.mock("@/connect", () => ({
     listDatabases: mocks.listDatabases,
     listChangelogs: mocks.listChangelogs,
     getChangelog: mocks.getChangelog,
+    getDatabaseMetadata: mocks.getDatabaseMetadata,
   },
   databaseGroupServiceClientConnect: {
     getDatabaseGroup: mocks.getDatabaseGroup,
@@ -1738,5 +1740,84 @@ describe("useAppStore", () => {
       })
     );
     window.removeEventListener(ReactShellBridgeEvent.quickstartReset, listener);
+  });
+
+  test("caches database metadata and reuses inflight request", async () => {
+    const {
+      DatabaseMetadataSchema,
+      SchemaMetadataSchema,
+      TableMetadataSchema,
+    } = await import("@/types/proto-es/v1/database_service_pb");
+    const metadata = createProto(DatabaseMetadataSchema, {
+      name: "instances/i1/databases/db1/metadata",
+      schemas: [
+        createProto(SchemaMetadataSchema, {
+          name: "public",
+          tables: [createProto(TableMetadataSchema, { name: "users" })],
+        }),
+      ],
+    });
+    mocks.getDatabaseMetadata.mockResolvedValue(metadata);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store
+        .getState()
+        .getOrFetchDatabaseMetadata({ database: "instances/i1/databases/db1" }),
+      store
+        .getState()
+        .getOrFetchDatabaseMetadata({ database: "instances/i1/databases/db1" }),
+    ]);
+
+    expect(first).toBe(metadata);
+    expect(second).toBe(metadata);
+    // Concurrent calls dedupe through `metadataRequests`.
+    expect(mocks.getDatabaseMetadata).toHaveBeenCalledTimes(1);
+
+    // Sync derived getters resolve through the cached metadata.
+    expect(
+      store.getState().getTableMetadata({
+        database: "instances/i1/databases/db1",
+        schema: "public",
+        table: "users",
+      }).name
+    ).toBe("users");
+    // Unknown table falls back to an empty TableMetadata placeholder
+    // (mirrors the legacy Pinia store's behavior).
+    expect(
+      store.getState().getTableMetadata({
+        database: "instances/i1/databases/db1",
+        schema: "public",
+        table: "missing",
+      }).name
+    ).toBe("");
+  });
+
+  test("keeps metadata cache isolated by filter and limit", async () => {
+    const { DatabaseMetadataSchema, SchemaMetadataSchema } = await import(
+      "@/types/proto-es/v1/database_service_pb"
+    );
+    const fullMetadata = createProto(DatabaseMetadataSchema, {
+      name: "instances/i1/databases/db1/metadata",
+      schemas: [createProto(SchemaMetadataSchema, { name: "public" })],
+    });
+    const filteredMetadata = createProto(DatabaseMetadataSchema, {
+      name: "instances/i1/databases/db1/metadata",
+      schemas: [createProto(SchemaMetadataSchema, { name: "filtered" })],
+    });
+    mocks.getDatabaseMetadata
+      .mockResolvedValueOnce(fullMetadata)
+      .mockResolvedValueOnce(filteredMetadata);
+    const store = createAppStore();
+
+    await store
+      .getState()
+      .getOrFetchDatabaseMetadata({ database: "instances/i1/databases/db1" });
+    await store.getState().getOrFetchDatabaseMetadata({
+      database: "instances/i1/databases/db1",
+      filter: `schema == "filtered"`,
+    });
+
+    expect(mocks.getDatabaseMetadata).toHaveBeenCalledTimes(2);
   });
 });

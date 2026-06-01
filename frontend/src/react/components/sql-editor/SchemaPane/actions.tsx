@@ -22,7 +22,6 @@ import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { useDBSchemaV1Store } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
@@ -390,7 +389,10 @@ export function useSchemaPaneContextMenu(
 ): SchemaMenuItem[] {
   const { t } = useTranslation();
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
-  const dbSchema = useDBSchemaV1Store();
+  // Imperative reads happen inside `onSelect` callbacks below; resolve
+  // metadata at call time via `useAppStore.getState()` so we don't
+  // subscribe (and re-derive the menu) on every metadata cache update.
+  const getTableMetadata = useAppStore((s) => s.getTableMetadata);
   const { selectAllFromTableOrView, viewDetail, openNewTab } =
     useSchemaPaneActions();
 
@@ -475,7 +477,7 @@ export function useSchemaPaneContextMenu(
           label: t("sql-editor.copy-all-column-names"),
           icon: <Copy className="size-4" />,
           onSelect: () => {
-            const tableMetadata = dbSchema.getTableMetadata({
+            const tableMetadata = getTableMetadata({
               database,
               schema,
               table,
@@ -573,7 +575,7 @@ export function useSchemaPaneContextMenu(
         });
         if (type === "table") {
           const { table } = target as NodeTarget<"table">;
-          const tableMetadata = dbSchema.getTableMetadata({
+          const tableMetadata = getTableMetadata({
             database,
             schema,
             table,
@@ -660,7 +662,7 @@ export function useSchemaPaneContextMenu(
     node,
     deps,
     getDatabaseByName,
-    dbSchema,
+    getTableMetadata,
     notify,
     openNewTab,
     selectAllFromTableOrView,

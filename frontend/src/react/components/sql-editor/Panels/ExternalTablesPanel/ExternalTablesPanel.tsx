@@ -1,9 +1,8 @@
 import { ChevronLeft, Table as TableIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
-import { useDBSchemaV1Store } from "@/store";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { ColumnsTable } from "../common/tables/ColumnsTable";
 import { useViewStateNav } from "../common/useViewStateNav";
@@ -15,14 +14,12 @@ import { ExternalTablesTable } from "./ExternalTablesTable";
  * the CodeViewer/AI carve-out that gates other panels.
  */
 export function ExternalTablesPanel() {
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
   const databaseName = database.name;
   const db = database;
-  const databaseMetadata = usePiniaBridge(
-    () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
-    { deep: true }
-  );
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    autoFetch: false,
+  });
 
   const {
     schema: schemaName,
@@ -34,12 +31,12 @@ export function ExternalTablesPanel() {
   const [tableKeyword, setTableKeyword] = useState("");
   const [columnKeyword, setColumnKeyword] = useState("");
 
-  const schema = databaseMetadata?.schemas.find((s) => s.name === schemaName);
+  const schema = databaseMetadata.schemas.find((s) => s.name === schemaName);
   const externalTable = schema?.externalTables.find(
     (t) => t.name === detail?.externalTable
   );
 
-  if (!db || !databaseMetadata || !schema) return null;
+  if (!db || !schema) return null;
 
   return (
     <div className="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col">

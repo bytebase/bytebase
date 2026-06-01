@@ -3,7 +3,7 @@ import { Check, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getColumnDefaultValuePlaceholder } from "@/react/components/SchemaEditorLite/core/columnDefaultValue";
 import { useAppDatabase } from "@/react/hooks/useAppDatabase";
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { getInstanceResource } from "@/utils";
@@ -23,13 +23,13 @@ type Props = {
  */
 export function ColumnInfo({ database, schema, table, column }: Props) {
   const { t } = useTranslation();
-  const dbSchema = useDBSchemaV1Store();
   const databaseEntity = useAppDatabase(database);
+  const tableMetadata = useAppStore((s) =>
+    s.getTableMetadata({ database, schema, table })
+  );
 
   const columnMetadata =
-    dbSchema
-      .getTableMetadata({ database, schema, table })
-      .columns.find((col) => col.name === column) ??
+    tableMetadata.columns.find((col) => col.name === column) ??
     create(ColumnMetadataSchema, {});
   const instanceEngine = getInstanceResource(databaseEntity).engine;
 

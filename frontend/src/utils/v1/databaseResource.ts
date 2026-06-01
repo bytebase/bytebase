@@ -1,5 +1,5 @@
 import { flatten, isUndefined } from "lodash-es";
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -129,10 +129,9 @@ export const getSchemaOrTableTreeOptions = ({
     // do not support table level select for MongoDB.
     return [];
   }
-  const dbSchemaStore = useDBSchemaV1Store();
-  const databaseMetadata = dbSchemaStore.getDatabaseMetadataWithoutDefault(
-    database.name
-  );
+  const databaseMetadata = useAppStore
+    .getState()
+    .getCachedDatabaseMetadata(database.name);
   if (!databaseMetadata) {
     return undefined;
   }

@@ -1,4 +1,4 @@
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
 import { IndexIcon, PrimaryKeyIcon } from "./icons";
@@ -13,18 +13,17 @@ type Props = {
  * marked `primary`, IndexIcon otherwise.
  */
 export function IndexNode({ node, keyword }: Props) {
-  const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"index">).meta.target;
-
-  const isPrimaryKey = (() => {
-    const { database, schema, table, index } = target;
-    const tableMetadata = dbSchema.getTableMetadata({
-      database,
-      schema,
-      table,
-    });
-    return !!tableMetadata.indexes.find((i) => i.name === index)?.primary;
-  })();
+  const tableMetadata = useAppStore((s) =>
+    s.getTableMetadata({
+      database: target.database,
+      schema: target.schema,
+      table: target.table,
+    })
+  );
+  const isPrimaryKey = !!tableMetadata.indexes.find(
+    (i) => i.name === target.index
+  )?.primary;
 
   return (
     <CommonNode

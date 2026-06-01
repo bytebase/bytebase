@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { useTranslation } from "react-i18next";
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import {
   TablePartitionMetadata_Type,
   TablePartitionMetadataSchema,
@@ -22,12 +22,12 @@ export function TablePartitionInfo({
   partition,
 }: Props) {
   const { t } = useTranslation();
-  const dbSchema = useDBSchemaV1Store();
+  const tableMetadata = useAppStore((s) =>
+    s.getTableMetadata({ database, schema, table })
+  );
 
   const partitionMetadata =
-    dbSchema
-      .getTableMetadata({ database, schema, table })
-      .partitions.find((p) => p.name === partition) ??
+    tableMetadata.partitions.find((p) => p.name === partition) ??
     create(TablePartitionMetadataSchema, {});
 
   return (

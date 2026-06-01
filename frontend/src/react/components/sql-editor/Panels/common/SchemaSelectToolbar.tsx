@@ -6,9 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
-import { useDBSchemaV1Store } from "@/store";
 import { hasSchemaProperty } from "@/utils";
 import { useViewStateNav } from "./useViewStateNav";
 
@@ -21,19 +20,16 @@ import { useViewStateNav } from "./useViewStateNav";
  */
 export function SchemaSelectToolbar() {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database, instance } = useConnectionOfCurrentSQLEditorTab();
   const databaseName = database.name;
   const engine = instance.engine;
-  const databaseMetadata = usePiniaBridge(
-    () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
-    { deep: true }
-  );
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    autoFetch: false,
+  });
 
   const { schema, setSchema } = useViewStateNav();
 
   if (engine === undefined || !hasSchemaProperty(engine)) return null;
-  if (!databaseMetadata) return null;
 
   const options = databaseMetadata.schemas.map((s) => ({
     label: s.name || t("db.schema.default"),

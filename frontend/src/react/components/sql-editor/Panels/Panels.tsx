@@ -1,5 +1,5 @@
 import { Loader2, ShieldAlert } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
@@ -25,6 +25,7 @@ import { TerminalPanel } from "@/react/components/sql-editor/TerminalPanel/Termi
 import { TriggersPanel } from "@/react/components/sql-editor/TriggersPanel";
 import { ViewsPanel } from "@/react/components/sql-editor/ViewsPanel";
 import { Alert } from "@/react/components/ui/alert";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useAppStore } from "@/react/stores/app";
@@ -37,7 +38,6 @@ import {
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useDBSchemaV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -78,7 +78,6 @@ export function Panels() {
   const handleEditorPanelResize = useSQLEditorStore(
     (s) => s.handleEditorPanelResize
   );
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useCurrentSQLEditorTab();
@@ -131,25 +130,11 @@ export function Panels() {
     };
   }, [updateViewState, execute]);
 
-  const [databaseMetadata, setDatabaseMetadata] = useState<
-    | Awaited<ReturnType<typeof dbSchemaStore.getOrFetchDatabaseMetadata>>
-    | undefined
-  >();
-  useEffect(() => {
-    if (!databaseName || !isValidDatabaseName(databaseName)) {
-      setDatabaseMetadata(undefined);
-      return;
-    }
-    let cancelled = false;
-    void dbSchemaStore
-      .getOrFetchDatabaseMetadata({ database: databaseName, silent: true })
-      .then((meta) => {
-        if (!cancelled) setDatabaseMetadata(meta);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [databaseName, dbSchemaStore]);
+  // Parent drives the metadata fetch for the whole Panels subtree;
+  // children call `useAppDatabaseMetadata(..., { autoFetch: false })`.
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    silent: true,
+  });
 
   // Pin the active schema to a sensible default whenever the tab,
   // database metadata, or current schema changes (mirrors the Vue
@@ -158,7 +143,6 @@ export function Panels() {
   const currentSchema = tab?.viewState?.schema;
   useEffect(() => {
     if (!tabId) return;
-    if (!databaseMetadata) return;
     if (
       !isValidDatabaseName(
         extractDatabaseResourceName(databaseMetadata.name).database

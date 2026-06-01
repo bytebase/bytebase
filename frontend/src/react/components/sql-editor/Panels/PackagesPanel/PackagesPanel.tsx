@@ -1,27 +1,24 @@
 import { ChevronLeft, Package } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
   extractKeyWithPosition,
   keyWithPosition,
 } from "@/react/lib/keyWithPosition";
-import { useDBSchemaV1Store } from "@/store";
 import { CodeViewer } from "../common/CodeViewer";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";
 import { PackagesTable } from "./PackagesTable";
 
 export function PackagesPanel() {
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
   const databaseName = database.name;
   const db = database;
-  const databaseMetadata = usePiniaBridge(
-    () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
-    { deep: true }
-  );
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    autoFetch: false,
+  });
 
   const {
     schema: schemaName,
@@ -32,7 +29,7 @@ export function PackagesPanel() {
 
   const [keyword, setKeyword] = useState("");
 
-  const schema = databaseMetadata?.schemas.find((s) => s.name === schemaName);
+  const schema = databaseMetadata.schemas.find((s) => s.name === schemaName);
   const [packName, packPosition] = extractKeyWithPosition(
     detail?.package ?? ""
   );
@@ -40,7 +37,7 @@ export function PackagesPanel() {
     (p, i) => p.name === packName && i === packPosition
   );
 
-  if (!db || !databaseMetadata || !schema) return null;
+  if (!db || !schema) return null;
 
   if (pack) {
     return (

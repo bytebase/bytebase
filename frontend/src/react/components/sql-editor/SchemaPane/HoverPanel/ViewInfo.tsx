@@ -1,4 +1,4 @@
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { CommonText } from "./CommonText";
 
 type Props = {
@@ -9,7 +9,8 @@ type Props = {
 
 /** Replaces `HoverPanel/ViewInfo.vue`. Just the view's comment, wrapped. */
 export function ViewInfo({ database, schema, view }: Props) {
-  const dbSchema = useDBSchemaV1Store();
-  const viewMetadata = dbSchema.getViewMetadata({ database, schema, view });
+  const viewMetadata = useAppStore((s) =>
+    s.getViewMetadata({ database, schema, view })
+  );
   return <CommonText content={viewMetadata.comment} />;
 }

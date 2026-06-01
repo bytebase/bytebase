@@ -19,12 +19,12 @@ import {
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
 } from "@/store";
-import { useDBSchemaV1Store } from "@/store/modules/v1/dbSchema";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -100,7 +100,9 @@ export function DatabaseResourceSelector({
 }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const getOrFetchDatabaseMetadata = useAppStore(
+    (s) => s.getOrFetchDatabaseMetadata
+  );
   const environmentStore = useEnvironmentV1Store();
   const instanceStore = useInstanceV1Store();
 
@@ -694,7 +696,7 @@ export function DatabaseResourceSelector({
         if (!metadataMap.has(dbName) && !loadingMetadata.has(dbName)) {
           setLoadingMetadata((prev) => new Set(prev).add(dbName));
           try {
-            const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+            const metadata = await getOrFetchDatabaseMetadata({
               database: dbName,
             });
             setMetadataMap((prev) => new Map(prev).set(dbName, metadata));
@@ -711,7 +713,12 @@ export function DatabaseResourceSelector({
       }
       setExpandedDatabases(next);
     },
-    [expandedDatabases, metadataMap, loadingMetadata, dbSchemaStore]
+    [
+      expandedDatabases,
+      metadataMap,
+      loadingMetadata,
+      getOrFetchDatabaseMetadata,
+    ]
   );
 
   const toggleExpandSchema = useCallback(

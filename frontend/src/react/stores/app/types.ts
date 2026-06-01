@@ -14,8 +14,15 @@ import type {
   Changelog,
   ChangelogView,
   Database,
+  DatabaseMetadata,
+  ExtensionMetadata,
+  ExternalTableMetadata,
+  FunctionMetadata,
   GetChangelogRequest,
   ListChangelogsRequest,
+  SchemaMetadata,
+  TableMetadata,
+  ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
@@ -175,6 +182,10 @@ export type WorkspaceSlice = {
     name: Setting_SettingName,
     silent?: boolean
   ) => Promise<Setting | undefined>;
+  // Bridge: lets the legacy Pinia `useSettingV1Store.upsertSetting` push
+  // updates into the app store after a save, so still-app-store consumers
+  // (e.g. SQL editor's `OpenAIButton`) see fresh values without a refresh.
+  setSettingByName: (setting: Setting) => void;
   loadSubscription: () => Promise<Subscription | undefined>;
   refreshSubscription: () => Promise<Subscription | undefined>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
@@ -617,6 +628,80 @@ export type SQLSlice = {
   exportData: (params: ExportRequest) => Promise<Uint8Array>;
 };
 
+export interface GetOrFetchDatabaseMetadataParams {
+  database: string;
+  skipCache?: boolean;
+  silent?: boolean;
+  // Limit the number of returned tables per schema.
+  limit?: number;
+  // CEL filter, e.g. `schema == "public" && table.contains("user")`.
+  filter?: string;
+}
+
+export type DBSchemaSlice = {
+  // Cache key: `${metadataResourceName}::${filter}::${limit}` — mirrors the
+  // Pinia store's `[name, filter, limit]` triple so filtered/sliced fetches
+  // don't collide with full-metadata fetches.
+  metadataByName: Record<string, DatabaseMetadata>;
+  metadataRequests: Record<string, Promise<DatabaseMetadata>>;
+
+  getDatabaseMetadata: (database: string) => DatabaseMetadata;
+  // Returns the cached metadata reference (or undefined when uncached)
+  // without the fresh-placeholder fallback `getDatabaseMetadata` adds.
+  // Mirrors the legacy Pinia `getDatabaseMetadataWithoutDefault` — used by
+  // consumers (e.g. SchemaPane) that need to distinguish "not loaded
+  // yet" from "loaded but empty".
+  getCachedDatabaseMetadata: (database: string) => DatabaseMetadata | undefined;
+  getSchemaList: (database: string) => SchemaMetadata[];
+  getSchemaMetadata: (params: {
+    database: string;
+    schema: string;
+  }) => SchemaMetadata | undefined;
+  // List getters mirror the legacy Pinia store API. Each composes from
+  // the cached `DatabaseMetadata` and falls back to an empty array if
+  // metadata isn't loaded yet (matching the legacy contract).
+  getTableList: (params: {
+    database: string;
+    schema?: string;
+  }) => TableMetadata[];
+  getViewList: (params: {
+    database: string;
+    schema?: string;
+  }) => ViewMetadata[];
+  getExternalTableList: (params: {
+    database: string;
+    schema?: string;
+  }) => ExternalTableMetadata[];
+  getFunctionList: (params: {
+    database: string;
+    schema?: string;
+  }) => FunctionMetadata[];
+  getExtensionList: (database: string) => ExtensionMetadata[];
+  // Invalidates all cache entries (across filter/limit variants) for a
+  // database. Used by list pages that want a fresh metadata fetch on
+  // next access (mirrors Pinia `removeCache`).
+  removeDatabaseMetadataCache: (database: string) => void;
+  getTableMetadata: (params: {
+    database: string;
+    table: string;
+    schema?: string;
+  }) => TableMetadata;
+  getExternalTableMetadata: (params: {
+    database: string;
+    schema?: string;
+    externalTable: string;
+  }) => ExternalTableMetadata;
+  getViewMetadata: (params: {
+    database: string;
+    schema?: string;
+    view: string;
+  }) => ViewMetadata;
+
+  getOrFetchDatabaseMetadata: (
+    params: GetOrFetchDatabaseMetadataParams
+  ) => Promise<DatabaseMetadata>;
+};
+
 export type AppStoreState = AuthSlice &
   WorkspaceSlice &
   IamSlice &
@@ -642,6 +727,7 @@ export type AppStoreState = AuthSlice &
   PreferencesSlice &
   SQLSlice &
   IssueSlice &
-  PolicySlice;
+  PolicySlice &
+  DBSchemaSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

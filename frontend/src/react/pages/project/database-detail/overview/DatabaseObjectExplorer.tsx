@@ -9,14 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   featureToRef,
   getColumnCatalog,
   getTableCatalog,
   useDatabaseCatalog,
-  useDBSchemaV1Store,
   useSettingV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -79,36 +80,31 @@ export function DatabaseObjectExplorer({
   onExternalTableSearchKeywordChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const settingStore = useSettingV1Store();
   const databaseEngine = getDatabaseEngine(database);
   const supportsSchema = hasSchemaProperty(databaseEngine);
-  const schemaList = useVueState(() =>
-    dbSchemaStore.getSchemaList(database.name)
-  );
-  const tableList = useVueState(() =>
-    dbSchemaStore.getTableList({
+  const schemaList = useAppStore((s) => s.getSchemaList(database.name));
+  const tableList = useAppStore((s) =>
+    s.getTableList({
       database: database.name,
       schema: selectedSchemaName,
     })
   );
-  const viewList = useVueState(() =>
-    dbSchemaStore.getViewList({
+  const viewList = useAppStore((s) =>
+    s.getViewList({
       database: database.name,
       schema: selectedSchemaName,
     })
   );
-  const extensionList = useVueState(() =>
-    dbSchemaStore.getExtensionList(database.name)
-  );
-  const externalTableList = useVueState(() =>
-    dbSchemaStore.getExternalTableList({
+  const extensionList = useAppStore((s) => s.getExtensionList(database.name));
+  const externalTableList = useAppStore((s) =>
+    s.getExternalTableList({
       database: database.name,
       schema: selectedSchemaName,
     })
   );
-  const functionList = useVueState(() =>
-    dbSchemaStore.getFunctionList({
+  const functionList = useAppStore((s) =>
+    s.getFunctionList({
       database: database.name,
       schema: selectedSchemaName,
     })
@@ -117,9 +113,7 @@ export function DatabaseObjectExplorer({
     const table = router.currentRoute.value.query.table;
     return typeof table === "string" ? table : "";
   });
-  const databaseMetadata = useVueState(() =>
-    dbSchemaStore.getDatabaseMetadata(database.name)
-  );
+  const databaseMetadata = useAppDatabaseMetadata(database.name);
   const hasSensitiveDataFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
   );

@@ -36,11 +36,11 @@ import {
 } from "@/react/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
-  useDBSchemaV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -79,7 +79,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const removeDatabaseMetadataCache = useAppStore(
+    (s) => s.removeDatabaseMetadataCache
+  );
   const instanceName = `${instanceNamePrefix}${instanceId}`;
   const instance = useVueState(() =>
     instanceStore.getInstanceByName(instanceName)
@@ -131,7 +133,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     try {
       await databaseStore.batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
-        dbSchemaStore.removeCache(name);
+        removeDatabaseMetadataCache(name);
       }
       pushNotification({
         module: "bytebase",
@@ -148,7 +150,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, dbSchemaStore, t]);
+  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {

@@ -1,4 +1,4 @@
-import { useDBSchemaV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
 import { FunctionIcon } from "./icons";
@@ -11,13 +11,11 @@ type Props = {
 /** Replaces `TreeNode/FunctionNode.vue`. Same signature-vs-name fallback
  *  as ProcedureNode. */
 export function FunctionNode({ node, keyword }: Props) {
-  const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"function">).meta.target;
-
-  const functionMetadata = dbSchema.getSchemaMetadata({
-    database: target.database,
-    schema: target.schema,
-  })?.functions[target.position];
+  const schemaMetadata = useAppStore((s) =>
+    s.getSchemaMetadata({ database: target.database, schema: target.schema })
+  );
+  const functionMetadata = schemaMetadata?.functions[target.position];
 
   return (
     <CommonNode

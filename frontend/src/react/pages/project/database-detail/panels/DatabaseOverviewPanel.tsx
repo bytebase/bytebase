@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useDBSchemaV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseProject, hasProjectPermissionV2 } from "@/utils";
 import { DatabaseObjectExplorer } from "../overview/DatabaseObjectExplorer";
@@ -14,10 +14,7 @@ export function DatabaseOverviewPanel({
   database: Database;
   hasSchemaPermission?: boolean;
 }) {
-  const dbSchemaStore = useDBSchemaV1Store();
-  const schemaList = useVueState(() =>
-    dbSchemaStore.getSchemaList(database.name)
-  );
+  const schemaList = useAppStore((s) => s.getSchemaList(database.name));
   const routeSchema = useVueState(() => {
     const schema = router.currentRoute.value.query.schema;
     return typeof schema === "string" ? schema : "";

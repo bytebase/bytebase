@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import { DatabaseOverviewInfo } from "@/react/pages/project/database-detail/overview/DatabaseOverviewInfo";
-import { useDBSchemaV1Store } from "@/store";
 import {
   getInstanceResource,
   instanceV1SupportsExternalTable,
@@ -23,14 +22,12 @@ import { ViewsTable } from "../ViewsPanel/ViewsTable";
 
 export function InfoPanel() {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
   const databaseName = database.name;
   const db = database;
-  const databaseMetadata = usePiniaBridge(
-    () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
-    { deep: true }
-  );
+  const databaseMetadata = useAppDatabaseMetadata(databaseName ?? "", {
+    autoFetch: false,
+  });
 
   const { schema: schemaName, updateViewState } = useViewStateNav();
 
@@ -42,7 +39,7 @@ export function InfoPanel() {
   const [externalTables, setExternalTables] = useState("");
   const [packages, setPackages] = useState("");
 
-  if (!db || !databaseMetadata) return null;
+  if (!db) return null;
   const schema = databaseMetadata.schemas.find((s) => s.name === schemaName);
   const instance = getInstanceResource(db);
   const showSequences = instanceV1SupportsSequence(instance);

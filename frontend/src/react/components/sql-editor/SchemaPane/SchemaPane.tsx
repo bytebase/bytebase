@@ -20,16 +20,14 @@ import { Input } from "@/react/components/ui/input";
 import { Tree, type TreeDataNode } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useDBSchemaV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type {
-  DatabaseMetadata,
   GetSchemaStringRequest_ObjectType,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
@@ -97,8 +95,10 @@ export function SchemaPane() {
 
 function SchemaPaneInner() {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
+  const getOrFetchDatabaseMetadata = useAppStore(
+    (s) => s.getOrFetchDatabaseMetadata
+  );
   const hoverState = useHoverState();
 
   const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
@@ -120,21 +120,19 @@ function SchemaPaneInner() {
     setSearchPattern("");
   }, [currentTabId]);
 
-  // Reactive read of the cached metadata. Returns the live dbSchema
-  // cache entry (or null when uncached) so the tree rebuilds whenever
-  // the metadata for this database changes — including a manual sync via
+  // Reactive read of the cached metadata. Returns the live cache entry
+  // (or null when uncached) so the tree rebuilds whenever the metadata
+  // for this database changes — including a manual sync via
   // SyncSchemaButton, which refetches with `skipCache` and replaces the
-  // entry. `getDatabaseMetadataWithoutDefault` returns a stable
-  // `undefined` when uncached (vs `getDatabaseMetadata`'s fresh empty
-  // object), keeping the snapshot reference stable across renders.
-  const metadata = useVueState<DatabaseMetadata | null>(
-    () =>
+  // entry. `getCachedDatabaseMetadata` returns a stable `undefined` when
+  // uncached (vs `getDatabaseMetadata`'s fresh empty object), keeping
+  // the snapshot reference stable across renders.
+  const metadata =
+    useAppStore((s) =>
       isValidDatabaseName(database.name)
-        ? (dbSchemaStore.getDatabaseMetadataWithoutDefault(database.name) ??
-          null)
-        : null,
-    { deps: [database.name] }
-  );
+        ? s.getCachedDatabaseMetadata(database.name)
+        : undefined
+    ) ?? null;
   const [isFetching, setIsFetching] = useState(false);
 
   // Trigger the fetch on database change (the store de-duplicates). The
@@ -147,15 +145,13 @@ function SchemaPaneInner() {
     }
     setIsFetching(true);
     let cancelled = false;
-    void dbSchemaStore
-      .getOrFetchDatabaseMetadata({ database: database.name })
-      .finally(() => {
-        if (!cancelled) setIsFetching(false);
-      });
+    void getOrFetchDatabaseMetadata({ database: database.name }).finally(() => {
+      if (!cancelled) setIsFetching(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [database.name, dbSchemaStore]);
+  }, [database.name, getOrFetchDatabaseMetadata]);
 
   const totalTableCount = useMemo(() => {
     if (!metadata) return 0;

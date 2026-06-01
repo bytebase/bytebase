@@ -97,10 +97,18 @@ vi.mock("@/react/components/AdvancedSearch", () => ({
   ),
 }));
 
-vi.mock("@/store/modules/v1/dbSchema", () => ({
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-  }),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+      }),
+    {
+      getState: () => ({
+        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/react/components/EnvironmentLabel", () => ({

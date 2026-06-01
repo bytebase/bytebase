@@ -64,14 +64,13 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("@/store", () => ({
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-  }),
-}));
-
 vi.mock("@/react/stores/app", () => ({
-  useAppStore: { getState: () => ({ syncDatabase: mocks.syncDatabase }) },
+  useAppStore: {
+    getState: () => ({
+      syncDatabase: mocks.syncDatabase,
+      getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+    }),
+  },
 }));
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({

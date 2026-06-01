@@ -24,12 +24,12 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
-  useDBSchemaV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -64,7 +64,9 @@ import {
 export function DatabasesPage() {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
-  const dbSchemaStore = useDBSchemaV1Store();
+  const removeDatabaseMetadataCache = useAppStore(
+    (s) => s.removeDatabaseMetadataCache
+  );
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
   const uiStateStore = useUIStateStore();
@@ -383,7 +385,7 @@ export function DatabasesPage() {
     try {
       await databaseStore.batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
-        dbSchemaStore.removeCache(name);
+        removeDatabaseMetadataCache(name);
       }
       pushNotification({
         module: "bytebase",
@@ -400,7 +402,7 @@ export function DatabasesPage() {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, dbSchemaStore, t]);
+  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {

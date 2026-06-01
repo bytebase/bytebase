@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useDBSchemaV1Store } from "@/store";
+import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
   type Database,
@@ -14,11 +13,8 @@ import {
 
 export function DatabaseOverviewInfo({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const dbSchemaStore = useDBSchemaV1Store();
   const databaseEngine = getDatabaseEngine(database);
-  const databaseSchemaMetadata = useVueState(() =>
-    dbSchemaStore.getDatabaseMetadata(database.name)
-  );
+  const databaseSchemaMetadata = useAppDatabaseMetadata(database.name);
   const lastSyncDate = database.successfulSyncTime
     ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
     : undefined;
