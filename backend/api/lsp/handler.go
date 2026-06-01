@@ -384,6 +384,15 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 				}
 			}
 			h.setMetadata(setMetadataParams.Arguments[0])
+			// The engine type is derived from the metadata. A document that
+			// opened before the metadata arrived had its diagnostics run with
+			// ENGINE_UNSPECIFIED (no parser, so no statement ranges were
+			// sent). Reschedule diagnostics for open documents now that the
+			// engine is known, so consumers like the active-statement
+			// highlight get populated without waiting for the first edit.
+			for _, doc := range h.GetFS().listOpen() {
+				h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, doc.uri, string(doc.content), h)
+			}
 			return nil, nil
 		default:
 			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: fmt.Sprintf("command not supported: %s", params.Command)}
