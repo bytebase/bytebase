@@ -50,19 +50,6 @@ const mocks = vi.hoisted(() => {
     getDatabaseByName: vi.fn(() => undefined),
     getOrFetchDatabaseByName: vi.fn().mockResolvedValue(undefined),
   };
-  const dbGroupStore = {
-    fetchDBGroupListByProjectName: vi.fn().mockResolvedValue([]),
-    // The component reads `.name` and `.matchedDatabases` off the result
-    // and validates `.name` via `isValidDatabaseGroupName`. Returning an
-    // unknown-name placeholder preserves the "skip invalid" branch
-    // without leaking real groups into tests that don't set them up.
-    getDBGroupByName: vi.fn(() => ({
-      name: "",
-      matchedDatabases: [],
-      title: "",
-    })),
-    getOrFetchDBGroupByName: vi.fn().mockResolvedValue(undefined),
-  };
   const project = {
     name: "projects/p",
     title: "Project One",
@@ -111,7 +98,6 @@ const mocks = vi.hoisted(() => {
     features,
     uiStore,
     databaseStore,
-    dbGroupStore,
     project,
     treeStore,
     instanceStore,
@@ -144,7 +130,6 @@ vi.mock("@/react/hooks/useAppState", () => ({
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useDatabaseV1Store: () => mocks.databaseStore,
-  useDBGroupStore: () => mocks.dbGroupStore,
   useInstanceV1Store: () => mocks.instanceStore,
 }));
 
@@ -212,10 +197,6 @@ vi.mock("@/react/stores/sqlEditor", () => ({
       },
       treeNodeKeysByTarget: mocks.treeStore.nodeKeysByTarget,
     }),
-}));
-
-vi.mock("@/store/modules", () => ({
-  useDBGroupStore: () => mocks.dbGroupStore,
 }));
 
 vi.mock("@/react/lib/resourceName", () => ({
