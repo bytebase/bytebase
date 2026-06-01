@@ -1,11 +1,14 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DashboardFrameShellProps } from "@/react/dashboard-shell";
-import { useAppStore } from "@/react/stores/app";
+import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";
 import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { BannersWrapper } from "./BannersWrapper";
 
+// Legacy Pinia bootstrap kept alongside the app-store bootstrap because the
+// remaining Vue surfaces still read from these Pinia stores. Once those Vue
+// readers are migrated this block can go away.
 const loadLegacyDashboardState = () => {
   return Promise.all([
     useEnvironmentV1Store().fetchEnvironments(),
@@ -18,31 +21,24 @@ const loadLegacyDashboardState = () => {
 export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [initialized, setInitialized] = useState(false);
-  const loadCurrentUser = useAppStore((state) => state.loadCurrentUser);
-  const loadEnvironmentList = useAppStore((state) => state.loadEnvironmentList);
-  const loadWorkspaceProfile = useAppStore(
-    (state) => state.loadWorkspaceProfile
-  );
+  const [legacyReady, setLegacyReady] = useState(false);
+  const commonDataReady = useEnsureWorkspaceCommonData();
 
   useEffect(() => {
     let mounted = true;
-    void Promise.all([
-      loadCurrentUser(),
-      loadEnvironmentList(),
-      loadWorkspaceProfile(),
-      loadLegacyDashboardState(),
-    ])
+    void loadLegacyDashboardState()
       .catch(() => undefined)
       .then(() => {
         if (mounted) {
-          setInitialized(true);
+          setLegacyReady(true);
         }
       });
     return () => {
       mounted = false;
     };
-  }, [loadCurrentUser, loadEnvironmentList, loadWorkspaceProfile]);
+  }, []);
+
+  const initialized = commonDataReady && legacyReady;
 
   useEffect(() => {
     if (!initialized) return;

@@ -11,6 +11,7 @@ import {
   BindingSchema,
   GetIamPolicyRequestSchema,
   type IamPolicy,
+  IamPolicySchema,
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { ListRolesRequestSchema } from "@/types/proto-es/v1/role_service_pb";
@@ -91,8 +92,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         .getIamPolicy(
           createProto(GetIamPolicyRequestSchema, { resource: policyResource })
         )
-        .then((workspacePolicy) => {
+        .then(async (workspacePolicy) => {
           set({ workspacePolicy, workspacePolicyRequest: undefined });
+          // Prefetch groups referenced by the policy so derived role/user
+          // maps (and any UI that resolves group display names) read from
+          // a populated cache. Without this every page that reads the
+          // policy had to hedge with its own fetchWorkspaceIamPolicy().
+          const groupMembers = workspacePolicy.bindings
+            .flatMap((binding) => binding.members)
+            .filter((member) => member.startsWith(groupBindingPrefix));
+          if (groupMembers.length > 0) {
+            await get()
+              .batchGetOrFetchGroups(groupMembers)
+              .catch(() => []);
+          }
           return workspacePolicy;
         })
         .catch(() => {
@@ -133,11 +146,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         // the policy without a second fetch. Dynamic import to avoid a
         // static module-load cycle (Pinia projectIamPolicy transitively
         // imports `@/store` chains that would re-enter this app store).
+        // Also run composePolicyBindings so the Pinia user / group /
+        // service-account / workload-identity stores that `getMemberBindings`
+        // reads from are populated — without this prefetch, the project
+        // members table renders "unknown" titles until some unrelated
+        // load happens.
         try {
-          const { useProjectIamPolicyStore } = await import(
-            "@/store/modules/v1/projectIamPolicy"
-          );
+          const { useProjectIamPolicyStore, composePolicyBindings } =
+            await import("@/store/modules/v1/projectIamPolicy");
           useProjectIamPolicyStore().setProjectIamPolicy(project, policy);
+          // Prefetch policy members into the Pinia user / group /
+          // service-account / workload-identity stores so getMemberBindings
+          // can resolve titles immediately. This is the same step the
+          // legacy fetchProjectIamPolicy path used to run.
+          await composePolicyBindings(policy.bindings);
         } catch {
           // Pinia not available (e.g. some isolated test). Safe to ignore —
           // the app-store cache is already populated.
@@ -159,6 +181,52 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       },
     }));
     return request;
+  },
+
+  getProjectIamPolicy: (project) => {
+    return (
+      get().projectPoliciesByName[project] ?? createProto(IamPolicySchema, {})
+    );
+  },
+
+  updateProjectIamPolicy: async (project, policy) => {
+    // Dedupe members within each binding (mirrors the Pinia store's
+    // pre-write normalization).
+    const deduped = cloneDeep(policy);
+    for (const binding of deduped.bindings) {
+      if (binding.members) {
+        binding.members = [...new Set(binding.members)];
+      }
+    }
+    const updated = await projectServiceClientConnect.setIamPolicy(
+      createProto(SetIamPolicyRequestSchema, {
+        resource: project,
+        policy: deduped,
+        etag: deduped.etag,
+      })
+    );
+    set((state) => ({
+      projectPoliciesByName: {
+        ...state.projectPoliciesByName,
+        [project]: updated,
+      },
+    }));
+    // Bridge to the Pinia projectIamPolicy store so the legacy
+    // permission chain sees the updated policy. setProjectIamPolicy also
+    // invalidates the Pinia permission cache by project. composePolicyBindings
+    // refreshes the Pinia user / group / service-account / workload-identity
+    // stores that getMemberBindings reads — without it the members table
+    // could render stale titles for newly granted members.
+    try {
+      const { useProjectIamPolicyStore, composePolicyBindings } = await import(
+        "@/store/modules/v1/projectIamPolicy"
+      );
+      useProjectIamPolicyStore().setProjectIamPolicy(project, updated);
+      await composePolicyBindings(updated.bindings);
+    } catch {
+      // Pinia not available — app-store cache is already populated.
+    }
+    return updated;
   },
 
   fetchWorkspaceIamPolicy: async () => {

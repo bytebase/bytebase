@@ -23,7 +23,7 @@ import {
   UpdateEmailRequestSchema,
   UpdateUserRequestSchema,
 } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName } from "@/utils";
+import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";

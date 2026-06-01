@@ -19,7 +19,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useIssueV1Store,
-  useProjectIamPolicyStore,
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
@@ -73,7 +72,9 @@ export function Quickstart() {
   const uiStateStore = useUIStateStore();
   const actuatorStore = useActuatorV1Store();
   const issueStore = useIssueV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
 
   const quickStartEnabled = useVueState(() => actuatorStore.quickStartEnabled);
   const hidden = useVueState(() => uiStateStore.getIntroStateByKey("hidden"));
@@ -124,14 +125,14 @@ export function Quickstart() {
         setSampleProject(undefined);
         return;
       }
-      await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
+      await loadProjectIamPolicy(project.name);
       if (cancelled) return;
       setSampleProject(project);
     })();
     return () => {
       cancelled = true;
     };
-  }, [quickStartEnabled, projectStore, projectIamPolicyStore]);
+  }, [quickStartEnabled, projectStore, loadProjectIamPolicy]);
 
   useEffect(() => {
     if (!sampleProject) {

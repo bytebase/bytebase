@@ -10,8 +10,12 @@ const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(),
   fetchEnvironments: vi.fn(),
   loadCurrentUser: vi.fn(),
+  loadServerInfo: vi.fn(),
+  loadWorkspace: vi.fn(),
   loadEnvironmentList: vi.fn(),
   loadWorkspaceProfile: vi.fn(),
+  loadWorkspacePermissionState: vi.fn(),
+  loadSubscription: vi.fn(),
   useAppStore: vi.fn(),
 }));
 
@@ -38,18 +42,30 @@ beforeEach(async () => {
   mocks.getOrFetchSettingByName.mockReset();
   mocks.fetchEnvironments.mockReset();
   mocks.loadCurrentUser.mockReset();
+  mocks.loadServerInfo.mockReset();
+  mocks.loadWorkspace.mockReset();
   mocks.loadEnvironmentList.mockReset();
   mocks.loadWorkspaceProfile.mockReset();
+  mocks.loadWorkspacePermissionState.mockReset();
+  mocks.loadSubscription.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
   mocks.fetchEnvironments.mockResolvedValue([]);
   mocks.loadCurrentUser.mockResolvedValue(undefined);
+  mocks.loadServerInfo.mockResolvedValue(undefined);
+  mocks.loadWorkspace.mockResolvedValue(undefined);
   mocks.loadEnvironmentList.mockResolvedValue([]);
   mocks.loadWorkspaceProfile.mockResolvedValue(undefined);
+  mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
+  mocks.loadSubscription.mockResolvedValue(undefined);
   mocks.useAppStore.mockImplementation((selector) =>
     selector({
       loadCurrentUser: mocks.loadCurrentUser,
+      loadServerInfo: mocks.loadServerInfo,
+      loadWorkspace: mocks.loadWorkspace,
       loadEnvironmentList: mocks.loadEnvironmentList,
       loadWorkspaceProfile: mocks.loadWorkspaceProfile,
+      loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
+      loadSubscription: mocks.loadSubscription,
     })
   );
   ({ DashboardFrameShell } = await import("./DashboardFrameShell"));

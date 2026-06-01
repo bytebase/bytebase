@@ -1,9 +1,9 @@
 import { SquareTerminal } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { usePermissionStore } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { defaultProject, isDefaultProject } from "@/types/v1/project";
 
@@ -32,7 +32,12 @@ export function DatabaseSQLEditorButton({
   onFailed?: (database: Database) => void;
 }) {
   const { t } = useTranslation();
-  const permissionStore = usePermissionStore();
+  const hasProjectPermissionFn = useAppStore(
+    (state) => state.hasProjectPermission
+  );
+  const hasWorkspacePermissionFn = useAppStore(
+    (state) => state.hasWorkspacePermission
+  );
 
   const handleClick = useCallback(() => {
     if (disabled) {
@@ -40,12 +45,13 @@ export function DatabaseSQLEditorButton({
     }
 
     if (isDefaultProject(database.project)) {
-      if (
-        !permissionStore.currentPermissions.has("bb.sql.select") &&
-        !permissionStore
-          .currentPermissionsInProjectV1(defaultProject(database.project))
-          .has("bb.sql.select")
-      ) {
+      const canQuery =
+        hasWorkspacePermissionFn("bb.sql.select") ||
+        hasProjectPermissionFn(
+          defaultProject(database.project),
+          "bb.sql.select"
+        );
+      if (!canQuery) {
         onFailed?.(database);
         return;
       }
@@ -67,7 +73,13 @@ export function DatabaseSQLEditorButton({
     }
 
     window.open(route.fullPath, "_blank");
-  }, [database, disabled, onFailed, permissionStore]);
+  }, [
+    database,
+    disabled,
+    hasProjectPermissionFn,
+    hasWorkspacePermissionFn,
+    onFailed,
+  ]);
 
   return (
     <dd

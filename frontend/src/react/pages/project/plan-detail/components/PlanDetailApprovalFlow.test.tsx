@@ -77,7 +77,6 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
 }));
 
@@ -92,6 +91,11 @@ vi.mock("@/react/stores/app", () => ({
       batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
       getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
       roleList: mocks.roleList,
+      loadProjectIamPolicy:
+        mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy,
+      // The approval flow now subscribes to projectPoliciesByName directly
+      // so the candidate list re-renders when the policy resolves.
+      projectPoliciesByName: { "projects/p1": { bindings: [] } },
     }),
 }));
 
