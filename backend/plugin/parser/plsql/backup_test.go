@@ -70,3 +70,81 @@ func TestBackup(t *testing.T) {
 		yamltest.Record(t, filepath, tests)
 	}
 }
+
+func TestBackupOmniBoundaryCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantSQL string
+	}{
+		{
+			name:  "update returning is not copied into select suffix",
+			input: "UPDATE test SET c1 = 1 WHERE c1 = 2 RETURNING c1 INTO :old_c1;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test WHERE c1 = 2;`,
+		},
+		{
+			name:  "delete returning is not copied into select suffix",
+			input: "DELETE FROM test WHERE c1 = 2 RETURNING c1 INTO :old_c1;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test WHERE c1 = 2;`,
+		},
+		{
+			name:  "update log errors is not copied into select suffix",
+			input: "UPDATE test SET c1 = 1 WHERE c1 = 2 LOG ERRORS INTO err$_test REJECT LIMIT UNLIMITED;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test WHERE c1 = 2;`,
+		},
+		{
+			name:  "where keyword in block comment",
+			input: "UPDATE test SET c1 = 1 WHERE /* WHERE */ c1 = 2;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test WHERE /* WHERE */ c1 = 2;`,
+		},
+		{
+			name:  "where keyword in string literal",
+			input: "DELETE FROM test WHERE note = 'WHERE should stay literal';",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test WHERE note = 'WHERE should stay literal';`,
+		},
+		{
+			name:  "update without where backs up whole table",
+			input: "UPDATE test SET c1 = 1;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test;`,
+		},
+		{
+			name:  "delete without where backs up whole table",
+			input: "DELETE FROM test;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test;`,
+		},
+		{
+			name:  "update partition target",
+			input: "UPDATE test PARTITION (p1) SET c1 = 1 WHERE c1 = 2;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test PARTITION (p1) WHERE c1 = 2;`,
+		},
+		{
+			name:  "delete subpartition target",
+			input: "DELETE FROM test SUBPARTITION (sp1) WHERE c1 = 2;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "TEST".* FROM test SUBPARTITION (sp1) WHERE c1 = 2;`,
+		},
+		{
+			name:  "update from appends source table list",
+			input: "UPDATE test t SET c1 = s.c1 FROM source_table s WHERE t.id = s.id;",
+			wantSQL: `CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+  SELECT "T".* FROM test t, source_table s WHERE t.id = s.id;`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, tc.input, "DB", "backupDB", "rollback")
+			require.NoError(t, err)
+			require.Len(t, result, 1)
+			require.Equal(t, tc.wantSQL, result[0].Statement)
+		})
+	}
+}

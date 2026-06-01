@@ -1,9 +1,9 @@
 package plsql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/plsql"
-	"github.com/pkg/errors"
+	"strings"
+
+	oracleast "github.com/bytebase/omni/oracle/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,7 +18,7 @@ func init() {
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	changedResources := model.NewChangedResources(dbMetadata)
-	l := &plsqlChangedResourceExtractListener{
+	extractor := &omniChangedResourceExtractor{
 		currentSchema:    currentDatabase,
 		dbMetadata:       dbMetadata,
 		changedResources: changedResources,
@@ -26,24 +26,22 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, ast := range asts {
-		antlrAST, ok := base.GetANTLRAST(ast)
+		omniAST, ok := ast.(*OmniAST)
 		if !ok {
-			return nil, errors.New("expected ANTLR AST for Oracle")
+			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(l, antlrAST.Tree)
+		extractor.extract(omniAST)
 	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS:       l.sampleDMLs,
-		DMLCount:         l.dmlCount,
-		InsertCount:      l.insertCount,
+		SampleDMLS:       extractor.sampleDMLs,
+		DMLCount:         extractor.dmlCount,
+		InsertCount:      extractor.insertCount,
 	}, nil
 }
 
-type plsqlChangedResourceExtractListener struct {
-	*parser.BasePlSqlParserListener
-
+type omniChangedResourceExtractor struct {
 	currentSchema    string
 	dbMetadata       *model.DatabaseMetadata
 	changedResources *model.ChangedResources
@@ -51,264 +49,159 @@ type plsqlChangedResourceExtractListener struct {
 	sampleDMLs       []string
 	dmlCount         int
 	insertCount      int
-
-	// Internal data structure used temporarily.
-	text string
 }
 
-func (l *plsqlChangedResourceExtractListener) EnterUnit_statement(ctx *parser.Unit_statementContext) {
-	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-}
-
-// EnterCreate_table is called when production create_table is entered.
-func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	var schema string
-	if ctx.Schema_name() != nil {
-		schema = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	tableName := NormalizeIdentifierContext(ctx.Table_name().Identifier())
-	l.changedResources.AddTable(
-		schema,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: tableName,
-		},
-		false)
-}
-
-// EnterDrop_table is called when production drop_table is entered.
-func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	if ctx.Tableview_name() == nil {
+func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
+	if a == nil || a.Node == nil {
 		return
 	}
 
-	var schema, table string
-	if ctx.Tableview_name().Id_expression() == nil {
-		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
+	switch n := a.Node.(type) {
+	case *oracleast.CreateTableStmt:
+		e.addTable(n.Name, false)
+	case *oracleast.DropStmt:
+		if n.ObjectType == oracleast.OBJECT_TABLE {
+			for _, name := range omniObjectNameList(n.Names) {
+				e.addTable(name, true)
+			}
+		}
+		if n.ObjectType == oracleast.OBJECT_INDEX {
+			for _, name := range omniObjectNameList(n.Names) {
+				e.addIndexTable(name)
+			}
+		}
+	case *oracleast.AlterTableStmt:
+		affected := true
+		for _, cmd := range omniAlterTableCmdList(n.Actions) {
+			if cmd.Action == oracleast.AT_RENAME {
+				affected = false
+				break
+			}
+		}
+		e.addTable(n.Name, affected)
+	case *oracleast.CreateIndexStmt:
+		e.addTable(n.Table, false)
+	case *oracleast.InsertStmt:
+		e.extractInsert(n, a.Text)
+	case *oracleast.UpdateStmt:
+		e.addTable(n.Table, false)
+		e.trackDML(a.Text)
+	case *oracleast.DeleteStmt:
+		e.addTable(n.Table, false)
+		e.trackDML(a.Text)
+	default:
 	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddTable(
-		schema,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		true)
 }
 
-// EnterAlter_table is called when production alter_table is entered.
-func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	if ctx.Tableview_name() == nil {
+func (e *omniChangedResourceExtractor) extractInsert(stmt *oracleast.InsertStmt, text string) {
+	if stmt.Table != nil {
+		e.addTable(stmt.Table, false)
+	}
+	for _, item := range omniInsertIntoList(stmt.MultiTable) {
+		e.addTable(item.Table, false)
+	}
+
+	if stmt.Table != nil && stmt.Values != nil {
+		e.insertCount++
 		return
 	}
-
-	var schema, table string
-	if ctx.Tableview_name().Id_expression() == nil {
-		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddTable(
-		schema,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		true)
+	e.trackDML(text)
 }
 
-// EnterAlter_table_properties is called when production alter_table_properties is entered.
-func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *parser.Alter_table_propertiesContext) {
-	if ctx.RENAME() == nil {
+func (e *omniChangedResourceExtractor) addTable(name *oracleast.ObjectName, affected bool) {
+	if name == nil || name.Name == "" {
 		return
 	}
-
-	// Rename table.
-	var schema, table string
-	if ctx.Tableview_name().Id_expression() == nil {
-		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
-		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
-	}
+	schema := name.Schema
 	if schema == "" {
-		schema = l.currentSchema
+		schema = e.currentSchema
 	}
-
-	l.changedResources.AddTable(
+	e.changedResources.AddTable(
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name: table,
+			Name: name.Name,
 		},
-		false)
+		affected,
+	)
 }
 
-// EnterAlter_table is called when production create_index is entered.
-func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Create_indexContext) {
-	tableIndexClause := ctx.Table_index_clause()
-	if tableIndexClause == nil {
+func (e *omniChangedResourceExtractor) addIndexTable(name *oracleast.ObjectName) {
+	if e.dbMetadata == nil || name == nil || name.Name == "" {
 		return
 	}
-
-	var schema, table string
-	if tableIndexClause.Tableview_name().Id_expression() == nil {
-		table = NormalizeIdentifierContext(tableIndexClause.Tableview_name().Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(tableIndexClause.Tableview_name().Identifier())
-		table = NormalizeIDExpression(tableIndexClause.Tableview_name().Id_expression())
-	}
+	schema := name.Schema
 	if schema == "" {
-		schema = l.currentSchema
+		schema = e.currentSchema
 	}
-
-	l.changedResources.AddTable(
-		schema,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		false)
-}
-
-// EnterDrop_index is called when production drop_index is entered.
-func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_indexContext) {
-	schema, index := NormalizeIndexName(ctx.Index_name())
-	if schema == "" {
-		schema = l.currentSchema
-	}
-	foundSchema := l.dbMetadata.GetSchemaMetadata(schema)
+	foundSchema := e.dbMetadata.GetSchemaMetadata(schema)
 	if foundSchema == nil {
 		return
 	}
-	foundIndex := foundSchema.GetIndex(index)
+	foundIndex := foundSchema.GetIndex(name.Name)
 	if foundIndex == nil {
 		return
 	}
-	foundTable := foundIndex.GetTableProto().GetName()
-
-	l.changedResources.AddTable(
+	e.changedResources.AddTable(
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name: foundTable,
+			Name: foundIndex.GetTableProto().GetName(),
 		},
-		false)
+		false,
+	)
 }
 
-func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.Insert_statementContext) {
-	var resources []base.SchemaResource
-	if ctx.Single_table_insert() != nil {
-		resources = append(resources, l.extractTableReference(ctx.Single_table_insert().Insert_into_clause().General_table_ref())...)
+func (e *omniChangedResourceExtractor) trackDML(text string) {
+	e.dmlCount++
+	if len(e.sampleDMLs) < common.MaximumLintExplainSize {
+		e.sampleDMLs = append(e.sampleDMLs, omniStatementText(text))
 	}
-	if ctx.Multi_table_insert() != nil {
-		for _, item := range ctx.Multi_table_insert().AllMulti_table_element() {
-			resources = append(resources, l.extractTableReference(item.Insert_into_clause().General_table_ref())...)
+}
+
+func omniStatementText(text string) string {
+	text = strings.TrimSpace(text)
+	if strings.HasSuffix(text, ";") {
+		return text
+	}
+	return text + ";"
+}
+
+func omniObjectNameList(list *oracleast.List) []*oracleast.ObjectName {
+	if list == nil {
+		return nil
+	}
+	names := make([]*oracleast.ObjectName, 0, len(list.Items))
+	for _, item := range list.Items {
+		if name, ok := item.(*oracleast.ObjectName); ok {
+			names = append(names, name)
 		}
-		if ctx.Multi_table_insert().Conditional_insert_clause() != nil {
-			conditionCtx := ctx.Multi_table_insert().Conditional_insert_clause()
-			for _, item := range conditionCtx.AllConditional_insert_when_part() {
-				for _, multiItem := range item.AllMulti_table_element() {
-					resources = append(resources, l.extractTableReference(multiItem.Insert_into_clause().General_table_ref())...)
-				}
-			}
-			if conditionCtx.Conditional_insert_else_part() != nil {
-				for _, item := range conditionCtx.Conditional_insert_else_part().AllMulti_table_element() {
-					resources = append(resources, l.extractTableReference(item.Insert_into_clause().General_table_ref())...)
-				}
-			}
+	}
+	return names
+}
+
+func omniAlterTableCmdList(list *oracleast.List) []*oracleast.AlterTableCmd {
+	if list == nil {
+		return nil
+	}
+	cmds := make([]*oracleast.AlterTableCmd, 0, len(list.Items))
+	for _, item := range list.Items {
+		if cmd, ok := item.(*oracleast.AlterTableCmd); ok {
+			cmds = append(cmds, cmd)
 		}
 	}
-	for _, resource := range resources {
-		l.changedResources.AddTable(
-			resource.Database,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: resource.Table,
-			},
-			false,
-		)
-	}
-
-	if ctx.Single_table_insert() != nil && ctx.Single_table_insert().Values_clause() != nil {
-		// Oracle allows only one value.
-		// https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlreferencefornosql/insert-statement.html
-		l.insertCount++
-		return
-	}
-	// Track DMLs.
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
+	return cmds
 }
 
-func (l *plsqlChangedResourceExtractListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	// Track DMLs.
-	resources := l.extractTableReference(ctx.General_table_ref())
-	for _, resource := range resources {
-		l.changedResources.AddTable(
-			resource.Database,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: resource.Table,
-			},
-			false,
-		)
+func omniInsertIntoList(list *oracleast.List) []*oracleast.InsertIntoClause {
+	if list == nil {
+		return nil
 	}
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
+	clauses := make([]*oracleast.InsertIntoClause, 0, len(list.Items))
+	for _, item := range list.Items {
+		if clause, ok := item.(*oracleast.InsertIntoClause); ok {
+			clauses = append(clauses, clause)
+		}
 	}
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	// Track DMLs.
-	resources := l.extractTableReference(ctx.General_table_ref())
-	for _, resource := range resources {
-		l.changedResources.AddTable(
-			resource.Database,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: resource.Table,
-			},
-			false,
-		)
-	}
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
-}
-
-func (l *plsqlChangedResourceExtractListener) extractTableReference(ctx parser.IGeneral_table_refContext) []base.SchemaResource {
-	resources := make([]base.SchemaResource, 0)
-	if ctx == nil {
-		return resources
-	}
-
-	if ctx.Dml_table_expression_clause() != nil && ctx.Dml_table_expression_clause().Tableview_name() != nil {
-		_, schema, table := NormalizeTableViewName(l.currentSchema, ctx.Dml_table_expression_clause().Tableview_name())
-		resources = append(resources, base.SchemaResource{
-			Database: schema,
-			Table:    table,
-		})
-	}
-
-	return resources
+	return clauses
 }

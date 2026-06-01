@@ -3,13 +3,12 @@ package plsql
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
-
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/generated-go/store"
@@ -20,6 +19,8 @@ const (
 	maxTableNameLengthAfter12_2  = 128
 	maxTableNameLengthBefore12_2 = 30
 )
+
+var errNoBackupableDML = errors.New("no parse results")
 
 func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_ORACLE, TransformDMLToSelect)
@@ -44,11 +45,13 @@ type TableReference struct {
 }
 
 type statementInfo struct {
-	offset    int
-	statement string
-	tree      antlr.ParserRuleContext
-	table     *TableReference
-	baseLine  int
+	offset        int
+	statement     string
+	node          oracleast.StmtNode
+	table         *TableReference
+	startPosition *store.Position
+	endPosition   *store.Position
+	fullSQL       string
 }
 
 // TransformDMLToSelect transforms DML statement to SELECT statement.
@@ -160,7 +163,7 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 				}
 			}
 		}
-		if err := writeSuffixSelectClause(&buf, info.tree); err != nil {
+		if err := writeSuffixSelectClause(&buf, info.node, info.fullSQL); err != nil {
 			return nil, errors.Wrap(err, "failed to write suffix select clause")
 		}
 	}
@@ -174,188 +177,240 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 		SourceSchema:    table.Schema,
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
-		StartPosition: &store.Position{
-			Line:   int32(statementInfoList[0].tree.GetStart().GetLine() + statementInfoList[0].baseLine),
-			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-		},
-		EndPosition: &store.Position{
-			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine() + statementInfoList[len(statementInfoList)-1].baseLine),
-			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-		},
+		StartPosition:   zeroBasedColumnPosition(statementInfoList[0].startPosition),
+		EndPosition:     zeroBasedColumnPosition(statementInfoList[len(statementInfoList)-1].endPosition),
 	}, nil
 }
 
-func writeSuffixSelectClause(buf *strings.Builder, tree antlr.Tree) error {
-	extractor := &suffixSelectClauseExtractor{
-		buf: buf,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-	return extractor.err
-}
-
-type suffixSelectClauseExtractor struct {
-	*parser.BasePlSqlParserListener
-
-	buf *strings.Builder
-	err error
-}
-
-func (e *suffixSelectClauseExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if e.err != nil || !IsTopLevelStatement(ctx.GetParent()) {
-		return
-	}
-
-	if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.General_table_ref())); err != nil {
-		e.err = errors.Wrap(err, "failed to write to buffer")
-		return
-	}
-
-	if ctx.Where_clause() != nil {
-		if _, err := e.buf.WriteString(" "); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
-			return
-		}
-		if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
-			return
-		}
-	}
-}
-
-func (e *suffixSelectClauseExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if e.err != nil || !IsTopLevelStatement(ctx.GetParent()) {
-		return
-	}
-
-	if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.General_table_ref())); err != nil {
-		e.err = errors.Wrap(err, "failed to write to buffer")
-		return
-	}
-
-	if ctx.Where_clause() != nil {
-		if _, err := e.buf.WriteString(" "); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
-			return
-		}
-		if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
-			return
-		}
-	}
-}
-
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	results, err := ParsePLSQL(statement)
+	statements, err := SplitSQL(statement)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse PLSQL")
-	}
-	if len(results) == 0 {
-		return nil, errors.New("no parse results")
+		return nil, errors.Wrap(err, "failed to split PLSQL")
 	}
 
-	extractor := &dmlExtractor{
-		databaseName: databaseName,
+	var result []statementInfo
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
+	for i, stmt := range statements {
+		if stmt.Empty {
+			continue
+		}
+		list, err := ParsePLSQLOmni(stmt.Text)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse PLSQL")
+		}
+		for _, item := range list.Items {
+			raw, ok := item.(*oracleast.RawStmt)
+			if !ok || raw.Stmt == nil {
+				continue
+			}
+			info := extractOmniDML(databaseName, raw.Stmt, stmt.Text)
+			if info == nil {
+				continue
+			}
+			info.offset = i
+			if stmt.Range != nil {
+				info.startPosition = positionMapper.Position(int(stmt.Range.Start) + raw.Loc.Start)
+				info.endPosition = positionMapper.Position(int(stmt.Range.Start) + max(raw.Loc.End-1, raw.Loc.Start))
+			} else {
+				info.startPosition = stmt.Start
+				info.endPosition = stmt.End
+			}
+			info.fullSQL = stmt.Text
+			result = append(result, *info)
+		}
 	}
 
-	// Walk each ANTLRAST tree to extract DML statements
-	for _, result := range results {
-		extractor.baseLine = base.GetLineOffset(result.StartPosition)
-		antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
+	if len(result) == 0 {
+		return nil, errNoBackupableDML
 	}
-
-	return extractor.dmls, nil
+	return result, nil
 }
 
-func IsTopLevelStatement(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-	switch ctx := ctx.(type) {
-	case *parser.Unit_statementContext, *parser.Sql_scriptContext:
-		return true
-	case *parser.Data_manipulation_language_statementsContext:
-		return IsTopLevelStatement(ctx.GetParent())
+func extractOmniDML(databaseName string, node oracleast.StmtNode, fullSQL string) *statementInfo {
+	switch n := node.(type) {
+	case *oracleast.DeleteStmt:
+		table := omniDMLTableReference(databaseName, n.Table, n.Alias, StatementTypeDelete)
+		if table == nil {
+			return nil
+		}
+		return &statementInfo{
+			statement: extractOmniStatementText(fullSQL, n.Loc),
+			node:      n,
+			table:     table,
+		}
+	case *oracleast.UpdateStmt:
+		table := omniDMLTableReference(databaseName, n.Table, n.Alias, StatementTypeUpdate)
+		if table == nil {
+			return nil
+		}
+		return &statementInfo{
+			statement: extractOmniStatementText(fullSQL, n.Loc),
+			node:      n,
+			table:     table,
+		}
 	default:
-		return false
+		return nil
 	}
 }
 
-type dmlExtractor struct {
-	*parser.BasePlSqlParserListener
-
-	databaseName string
-	dmls         []statementInfo
-	offset       int
-	baseLine     int
-}
-
-func (e *dmlExtractor) ExitUnit_statement(_ *parser.Unit_statementContext) {
-	e.offset++
-}
-
-func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
-	e.offset++
-}
-
-func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if IsTopLevelStatement(ctx.GetParent()) {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
-		extractor.table.StatementType = StatementTypeDelete
-
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     extractor.table,
-			baseLine:  e.baseLine,
-		})
+func omniDMLTableReference(databaseName string, name *oracleast.ObjectName, alias *oracleast.Alias, statementType StatementType) *TableReference {
+	if name == nil || name.Name == "" {
+		return nil
 	}
-}
-
-func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if IsTopLevelStatement(ctx.GetParent()) {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
-		extractor.table.StatementType = StatementTypeUpdate
-
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     extractor.table,
-			baseLine:  e.baseLine,
-		})
+	schema := name.Schema
+	hasSchema := schema != ""
+	if schema == "" {
+		schema = databaseName
 	}
+	table := &TableReference{
+		Database:      schema,
+		HasSchema:     hasSchema,
+		Schema:        schema,
+		Table:         name.Name,
+		StatementType: statementType,
+	}
+	if alias != nil {
+		table.Alias = alias.Name
+	}
+	return table
 }
 
-type tableExtractor struct {
-	*parser.BasePlSqlParserListener
-
-	databaseName string
-	table        *TableReference
+func writeSuffixSelectClause(buf *strings.Builder, node oracleast.StmtNode, fullSQL string) error {
+	suffix := ""
+	switch n := node.(type) {
+	case *oracleast.UpdateStmt:
+		suffix = oracleDMLTargetText(fullSQL, n.Table, n.PartitionExt, n.Alias)
+		if n.WhereClause != nil && n.SetClauses != nil && n.SetClauses.Len() > 0 {
+			if setClause, ok := n.SetClauses.Items[n.SetClauses.Len()-1].(*oracleast.SetClause); ok {
+				whereStart := setClause.Loc.End
+				if fromText, fromEnd, ok := oracleListText(fullSQL, n.FromClause); ok {
+					suffix += ", " + fromText
+					whereStart = fromEnd
+				}
+				suffix = joinOracleSuffix(suffix, oracleWhereSuffix(fullSQL, whereStart, n.WhereClause))
+			}
+		}
+	case *oracleast.DeleteStmt:
+		targetEnd := n.Table.Loc.End
+		if n.PartitionExt != nil {
+			targetEnd = n.PartitionExt.Loc.End
+		}
+		if n.Alias != nil {
+			targetEnd = n.Alias.Loc.End
+		}
+		suffix = joinOracleSuffix(oracleDMLTargetText(fullSQL, n.Table, n.PartitionExt, n.Alias), oracleWhereSuffix(fullSQL, targetEnd, n.WhereClause))
+	default:
+	}
+	_, err := buf.WriteString(suffix)
+	return err
 }
 
-func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
-	dmlTableExpr := ctx.Dml_table_expression_clause()
-	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
-		_, schemaName, tableName := NormalizeTableViewName("", dmlTableExpr.Tableview_name())
-		e.table = &TableReference{
-			Database:  schemaName,
-			HasSchema: true,
-			Schema:    schemaName,
-			Table:     tableName,
+func oracleDMLTargetText(sql string, name *oracleast.ObjectName, partitionExt *oracleast.PartitionExtClause, alias *oracleast.Alias) string {
+	if name == nil {
+		return ""
+	}
+	end := name.Loc.End
+	if partitionExt != nil {
+		end = partitionExt.Loc.End
+	}
+	if alias != nil {
+		end = alias.Loc.End
+	}
+	return strings.TrimSpace(oracleLocText(sql, name.Loc.Start, end))
+}
+
+func oracleDMLTrailingText(sql string, start, end int) string {
+	text := strings.TrimSpace(oracleLocText(sql, start, end))
+	return strings.TrimSpace(strings.TrimSuffix(text, ";"))
+}
+
+func oracleListText(sql string, list *oracleast.List) (string, int, bool) {
+	if list == nil || list.Len() == 0 {
+		return "", 0, false
+	}
+	start, ok := oracleNodeLoc(list.Items[0])
+	if !ok {
+		return "", 0, false
+	}
+	end, ok := oracleNodeLoc(list.Items[list.Len()-1])
+	if !ok {
+		return "", 0, false
+	}
+	text := strings.TrimSpace(oracleLocText(sql, start.Start, end.End))
+	if text == "" {
+		return "", 0, false
+	}
+	return text, end.End, true
+}
+
+func oracleWhereSuffix(sql string, start int, where oracleast.ExprNode) string {
+	loc, ok := oracleNodeLoc(where)
+	if !ok {
+		return ""
+	}
+	return oracleDMLTrailingText(sql, start, loc.End)
+}
+
+func oracleNodeLoc(node oracleast.Node) (oracleast.Loc, bool) {
+	if node == nil {
+		return oracleast.Loc{}, false
+	}
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return oracleast.Loc{}, false
+	}
+	elem := value.Elem()
+	if elem.Kind() != reflect.Struct {
+		return oracleast.Loc{}, false
+	}
+	field := elem.FieldByName("Loc")
+	if !field.IsValid() || field.Type() != reflect.TypeOf(oracleast.Loc{}) {
+		return oracleast.Loc{}, false
+	}
+	loc, ok := field.Interface().(oracleast.Loc)
+	if !ok || loc.End <= loc.Start {
+		return oracleast.Loc{}, false
+	}
+	return loc, true
+}
+
+func oracleLocText(sql string, start, end int) string {
+	if start < 0 {
+		start = 0
+	}
+	if end <= 0 || end > len(sql) {
+		end = len(sql)
+	}
+	if start >= end || start >= len(sql) {
+		return ""
+	}
+	return sql[start:end]
+}
+
+func joinOracleSuffix(parts ...string) string {
+	var nonEmpty []string
+	for _, part := range parts {
+		if part != "" {
+			nonEmpty = append(nonEmpty, part)
 		}
-		if schemaName == "" {
-			e.table.Schema = e.databaseName
-			e.table.HasSchema = false
-		}
-		if ctx.Table_alias() != nil {
-			e.table.Alias = NormalizeTableAlias(ctx.Table_alias())
-		}
+	}
+	return strings.Join(nonEmpty, " ")
+}
+
+func extractOmniStatementText(sql string, loc oracleast.Loc) string {
+	return strings.TrimSpace(strings.TrimSuffix(oracleLocText(sql, loc.Start, loc.End), ";"))
+}
+
+func zeroBasedColumnPosition(pos *store.Position) *store.Position {
+	if pos == nil {
+		return nil
+	}
+	column := pos.Column
+	if column > 0 {
+		column--
+	}
+	return &store.Position{
+		Line:   pos.Line,
+		Column: column,
 	}
 }

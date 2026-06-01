@@ -1,10 +1,12 @@
 package plsql
 
 import (
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
 )
 
+//nolint:unused
 func plsqlNormalizeColumnName(currentSchema string, ctx plsql.IColumn_nameContext) (string, string, string, error) {
 	var buf []string
 	buf = append(buf, NormalizeIdentifierContext(ctx.Identifier()))
@@ -63,4 +65,18 @@ func NormalizeQuotedString(ctx plsql.IQuoted_stringContext) string {
 
 	raw := ctx.GetText()
 	return raw[1 : len(raw)-1]
+}
+
+func IsTopLevelStatement(ctx antlr.Tree) bool {
+	if ctx == nil {
+		return true
+	}
+	switch ctx := ctx.(type) {
+	case *plsql.Unit_statementContext, *plsql.Sql_scriptContext:
+		return true
+	case *plsql.Data_manipulation_language_statementsContext:
+		return IsTopLevelStatement(ctx.GetParent())
+	default:
+		return false
+	}
 }
