@@ -383,7 +383,20 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 					Message: fmt.Sprintf("permission denied: %v", err),
 				}
 			}
-			h.setMetadata(setMetadataParams.Arguments[0])
+			args := setMetadataParams.Arguments[0]
+			h.setMetadata(args)
+			// Statement ranges (used by the active-statement highlight) need
+			// the engine, which is derived from this metadata. Compute them for
+			// the document that sent it, now that the engine is known — this is
+			// what populates the highlight on first open and tab switch.
+			// Scoped to args.DocumentURI: the metadata is connection-global, so
+			// rescheduling other open documents would reparse them with this
+			// document's engine.
+			if uri := args.DocumentURI; uri != "" {
+				if content, found := h.GetFS().get(uri); found {
+					h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, uri, string(content), h)
+				}
+			}
 			return nil, nil
 		default:
 			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: fmt.Sprintf("command not supported: %s", params.Command)}

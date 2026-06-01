@@ -176,7 +176,16 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
         {detail && (
           <div
             className={cn(
-              "h-full flex flex-col gap-y-2",
+              // `flex-1 min-h-0` instead of `h-full` so the wrapper absorbs
+              // the space remaining after `SheetHeader` (not 100vh). The
+              // `min-h-0` lets the inner `flex-1 overflow-auto` block
+              // actually clip and scroll — without it, the scroll region
+              // expands to fit its content and the bottom rows render past
+              // the viewport.
+              // Match `SheetBody`'s `px-6 py-4` so the toolbar buttons
+              // and the content code block don't bleed to the sheet's
+              // raw edges.
+              "flex-1 min-h-0 flex flex-col gap-y-2 px-6 py-4",
               dark ? "text-white" : "text-main"
             )}
           >
