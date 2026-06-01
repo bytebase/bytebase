@@ -1893,9 +1893,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
-  const fetchWorkspaceIamPolicy = useAppStore(
-    (state) => state.fetchWorkspaceIamPolicy
-  );
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
@@ -1903,9 +1900,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
-  );
-  const loadProjectIamPolicy = useAppStore(
-    (state) => state.loadProjectIamPolicy
   );
 
   const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
@@ -1937,15 +1931,10 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
 
-  // Fetch project IAM policy on mount
-  useEffect(() => {
-    if (projectName) {
-      void loadProjectIamPolicy(projectName);
-    } else {
-      void fetchWorkspaceIamPolicy();
-    }
-  }, [projectName, loadProjectIamPolicy, fetchWorkspaceIamPolicy]);
-
+  // IAM policy loads are owned by the parent shells: ProjectRouteShell
+  // loads project IAM on /projects/:projectId/members, and
+  // DashboardFrameShell's useEnsureWorkspaceCommonData loads workspace IAM
+  // (+ referenced groups) on /settings/members. This page just reads them.
   const projectIamPolicy = useVueState(() =>
     projectName ? getProjectIamPolicy(projectName) : undefined
   );

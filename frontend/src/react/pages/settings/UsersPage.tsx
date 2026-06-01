@@ -926,15 +926,6 @@ export function UsersPage() {
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
-  const fetchWorkspaceIamPolicy = useAppStore(
-    (state) => state.fetchWorkspaceIamPolicy
-  );
-
-  // Load the workspace IAM policy (and the groups it references) so the
-  // create/edit user sheet can resolve each user's current roles at open.
-  useEffect(() => {
-    void fetchWorkspaceIamPolicy();
-  }, [fetchWorkspaceIamPolicy]);
 
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
 

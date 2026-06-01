@@ -92,8 +92,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         .getIamPolicy(
           createProto(GetIamPolicyRequestSchema, { resource: policyResource })
         )
-        .then((workspacePolicy) => {
+        .then(async (workspacePolicy) => {
           set({ workspacePolicy, workspacePolicyRequest: undefined });
+          // Prefetch groups referenced by the policy so derived role/user
+          // maps (and any UI that resolves group display names) read from
+          // a populated cache. Without this every page that reads the
+          // policy had to hedge with its own fetchWorkspaceIamPolicy().
+          const groupMembers = workspacePolicy.bindings
+            .flatMap((binding) => binding.members)
+            .filter((member) => member.startsWith(groupBindingPrefix));
+          if (groupMembers.length > 0) {
+            await get()
+              .batchGetOrFetchGroups(groupMembers)
+              .catch(() => []);
+          }
           return workspacePolicy;
         })
         .catch(() => {
