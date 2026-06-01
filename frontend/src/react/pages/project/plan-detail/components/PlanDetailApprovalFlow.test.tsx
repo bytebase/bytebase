@@ -93,7 +93,9 @@ vi.mock("@/react/stores/app", () => ({
       roleList: mocks.roleList,
       loadProjectIamPolicy:
         mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy,
-      getProjectIamPolicy: mocks.projectIamPolicyStore.getProjectIamPolicy,
+      // The approval flow now subscribes to projectPoliciesByName directly
+      // so the candidate list re-renders when the policy resolves.
+      projectPoliciesByName: { "projects/p1": { bindings: [] } },
     }),
 }));
 

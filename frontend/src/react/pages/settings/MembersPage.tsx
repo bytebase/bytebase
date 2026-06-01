@@ -1897,7 +1897,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
@@ -1935,8 +1934,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // loads project IAM on /projects/:projectId/members, and
   // DashboardFrameShell's useEnsureWorkspaceCommonData loads workspace IAM
   // (+ referenced groups) on /settings/members. This page just reads them.
-  const projectIamPolicy = useVueState(() =>
-    projectName ? getProjectIamPolicy(projectName) : undefined
+  // Subscribe directly to the Zustand projectPoliciesByName slice so the
+  // member table re-renders when loadProjectIamPolicy / updateProjectIamPolicy
+  // writes to the app store. Wrapping `getProjectIamPolicy()` in
+  // `useVueState` would only re-render on Vue reactivity changes and miss
+  // these Zustand writes.
+  const projectIamPolicy = useAppStore((state) =>
+    projectName ? state.projectPoliciesByName[projectName] : undefined
   );
 
   // `useVueState` ensures we re-render whenever any reactive dep

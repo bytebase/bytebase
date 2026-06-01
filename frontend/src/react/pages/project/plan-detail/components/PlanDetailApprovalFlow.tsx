@@ -663,7 +663,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const { patchState } = page;
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -685,7 +684,14 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
   const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const projectIamPolicy = useVueState(() => getProjectIamPolicy(projectName));
+  // Subscribe directly to the Zustand project IAM cache so this step
+  // re-renders the moment loadProjectIamPolicy() resolves. Wrapping the
+  // Zustand getter in useVueState would only react to Vue dependencies
+  // and miss the Zustand write, leaving the candidates list empty on a
+  // cold plan page.
+  const projectIamPolicy = useAppStore(
+    (state) => state.projectPoliciesByName[projectName]
+  );
   const stepApprover = issue.approvers[stepIndex];
 
   const status = useMemo<ApprovalStepStatus>(() => {

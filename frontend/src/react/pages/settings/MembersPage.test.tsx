@@ -313,6 +313,10 @@ vi.mock("@/react/stores/app", () => ({
       patchWorkspaceIamPolicy: vi.fn(),
       findWorkspaceRolesByMember: () => [],
       fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
+      // MembersPage now subscribes to projectPoliciesByName directly so it
+      // re-renders when loadProjectIamPolicy() resolves. The getter form is
+      // still used inside async handlers.
+      projectPoliciesByName: { "projects/sample-project": projectIamPolicy },
       getProjectIamPolicy: () => projectIamPolicy,
       updateProjectIamPolicy: mockUpdateProjectIamPolicy,
       loadProjectIamPolicy: vi.fn(async () => undefined),
