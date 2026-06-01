@@ -141,8 +141,11 @@ vi.mock("@/store", () => ({
   useProjectV1Store: () => stableProjectStore,
   useInstanceV1Store: () => stableInstanceStore,
   useEnvironmentV1Store: () => ({ environmentList: [] }),
-  experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
   pushNotification: vi.fn(),
+}));
+
+vi.mock("@/react/stores/app/issue", () => ({
+  experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

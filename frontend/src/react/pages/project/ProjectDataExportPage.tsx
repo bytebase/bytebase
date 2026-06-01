@@ -20,7 +20,6 @@ import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes
 import {
   useDatabaseV1Store,
   useInstanceV1Store,
-  useIssueV1Store,
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -47,7 +46,6 @@ import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const issueStore = useIssueV1Store();
   const projectStore = useProjectV1Store();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
@@ -193,14 +191,16 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
 
   const fetchIssueList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const { nextPageToken, issues } = await issueStore.listIssues({
-        find: issueFilter,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-      });
+      const { nextPageToken, issues } = await useAppStore
+        .getState()
+        .listIssues({
+          find: issueFilter,
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+        });
       return { list: issues, nextPageToken };
     },
-    [issueStore, issueFilter]
+    [issueFilter]
   );
 
   const paged = usePagedData<Issue>({

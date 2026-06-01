@@ -14,9 +14,10 @@ import { Alert } from "@/react/components/ui/alert";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { refreshIssueList, useIssueV1Store, useUIStateStore } from "@/store";
+import { useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -36,7 +37,6 @@ export function ProjectIssueDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const issueStore = useIssueV1Store();
   const uiStateStore = useUIStateStore();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
@@ -159,14 +159,16 @@ export function ProjectIssueDashboardPage({
 
   const fetchIssueList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const { nextPageToken, issues } = await issueStore.listIssues({
-        find: issueFilter,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-      });
+      const { nextPageToken, issues } = await useAppStore
+        .getState()
+        .listIssues({
+          find: issueFilter,
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+        });
       return { list: issues, nextPageToken };
     },
-    [issueStore, issueFilter]
+    [issueFilter]
   );
 
   const paged = usePagedData<Issue>({

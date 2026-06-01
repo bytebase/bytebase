@@ -24,11 +24,11 @@ import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
-  experimentalCreateIssueByPlan,
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,

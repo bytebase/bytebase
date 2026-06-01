@@ -76,6 +76,7 @@ import type {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import type { IssueFilter } from "@/types/v1/issue/issue";
 import type { SQLResultSetV1 } from "@/types/v1/sql";
 import type { AccessGrantFilterStatus } from "@/utils";
 
@@ -670,8 +671,17 @@ export type PolicySlice = {
 // thin wrapper around `issueServiceClientConnect.getIssue`. Returns the
 // fresh issue (no cache) and pre-fetches the owning project into the app
 // store so downstream code can read it synchronously.
+export type ListIssueParams = {
+  find: IssueFilter;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type IssueSlice = {
   fetchIssueByName: (name: string, silent?: boolean) => Promise<Issue>;
+  listIssues: (
+    params: ListIssueParams
+  ) => Promise<{ nextPageToken: string; issues: Issue[] }>;
 };
 
 // Stateless SQL service slice (mirrors the legacy Pinia `useSQLStore`):

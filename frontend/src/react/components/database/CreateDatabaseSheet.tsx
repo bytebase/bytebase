@@ -20,9 +20,9 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
 import {
-  experimentalCreateIssueByPlan,
   pushNotification,
   useEnvironmentV1Store,
   useInstanceV1Store,

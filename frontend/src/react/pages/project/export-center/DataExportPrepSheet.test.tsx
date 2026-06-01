@@ -228,12 +228,15 @@ vi.mock("@/store", () => ({
   useDatabaseV1Store: () => stableDatabaseStore,
   useSheetV1Store: () => stableSheetStore,
   useSettingV1Store: () => stableSettingStore,
-  experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
   pushNotification: mocks.pushNotification,
 }));
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: { getState: () => stableDBGroupStore },
+}));
+
+vi.mock("@/react/stores/app/issue", () => ({
+  experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

@@ -78,12 +78,9 @@ export async function extractRouteContext(
   // Issue context
   if (projectId && issueId) {
     try {
-      const { useIssueV1Store } = await import("@/store");
-      const store = useIssueV1Store();
-      const issue = await store.fetchIssueByName(
-        `projects/${projectId}/issues/${issueId}`,
-        true
-      );
+      const issue = await useAppStore
+        .getState()
+        .fetchIssueByName(`projects/${projectId}/issues/${issueId}`, true);
       if (issue?.name) {
         ctx.issue = {
           name: issue.name,

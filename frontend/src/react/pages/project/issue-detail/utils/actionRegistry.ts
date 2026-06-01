@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { first, orderBy } from "lodash-es";
-import { candidatesOfApprovalStepV1, extractUserEmail } from "@/store";
+import { extractUserEmail } from "@/store";
 import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -28,6 +28,7 @@ import {
   isValidPlanName,
 } from "@/utils";
 import { isApprovalCompleted } from "./approval";
+import { candidatesOfApprovalStepV1 } from "./approvalCandidates";
 
 export type IssueReviewAction = "ISSUE_REVIEW";
 export type IssueStatusAction = "ISSUE_STATUS_CLOSE" | "ISSUE_STATUS_REOPEN";

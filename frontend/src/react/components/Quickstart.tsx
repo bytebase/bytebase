@@ -18,7 +18,6 @@ import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useActuatorV1Store,
-  useIssueV1Store,
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
@@ -71,7 +70,6 @@ export function Quickstart() {
   const projectStore = useProjectV1Store();
   const uiStateStore = useUIStateStore();
   const actuatorStore = useActuatorV1Store();
-  const issueStore = useIssueV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -142,10 +140,12 @@ export function Quickstart() {
     }
     let cancelled = false;
     void (async () => {
-      const issue = await issueStore.fetchIssueByName(
-        `${sampleProject.name}/issues/${SAMPLE_ISSUE_ID}`,
-        true /* silent */
-      );
+      const issue = await useAppStore
+        .getState()
+        .fetchIssueByName(
+          `${sampleProject.name}/issues/${SAMPLE_ISSUE_ID}`,
+          true /* silent */
+        );
       if (!cancelled) setSampleIssueExists(!!issue);
     })();
     void (async () => {
@@ -160,7 +160,7 @@ export function Quickstart() {
     return () => {
       cancelled = true;
     };
-  }, [sampleProject, issueStore]);
+  }, [sampleProject]);
 
   // ---- intro list (memoized + permission-filtered) ----------------------
 
