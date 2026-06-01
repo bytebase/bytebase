@@ -33,7 +33,11 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Issue,
+  IssueComment,
+  ListIssueCommentsRequest,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Policy,
   PolicyType,
@@ -752,6 +756,24 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export type IssueCommentSlice = {
+  // Cache keyed by issue resource name → its comment list.
+  issueCommentsByIssue: Record<string, IssueComment[]>;
+  listIssueComments: (
+    request: ListIssueCommentsRequest
+  ) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  createIssueComment: (params: {
+    issueName: string;
+    comment: string;
+  }) => Promise<void>;
+  updateIssueComment: (params: {
+    issueCommentName: string;
+    comment: string;
+  }) => Promise<void>;
+  // Synchronous cache read; returns a stable empty array on miss.
+  getIssueComments: (issueName: string) => IssueComment[];
+};
+
 export interface PlanFind {
   project: string;
   query?: string;
@@ -811,6 +833,7 @@ export type AppStoreState = AuthSlice &
   PolicySlice &
   DBSchemaSlice &
   RolloutSlice &
-  PlanSlice;
+  PlanSlice &
+  IssueCommentSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

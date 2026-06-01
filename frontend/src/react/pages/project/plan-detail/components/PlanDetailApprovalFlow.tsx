@@ -27,8 +27,7 @@ import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   getIssueCommentType,
   IssueCommentType,
-  useIssueCommentStore,
-} from "@/store/modules/v1/issueComment";
+} from "@/react/stores/app/issueComment";
 import {
   ApprovalStatus,
   RiskLevel,
@@ -85,7 +84,6 @@ function PlanDetailApprovalFlowContent({
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
-  const issueCommentStore = useIssueCommentStore();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const issue = page.issue;
 
@@ -103,7 +101,8 @@ function PlanDetailApprovalFlowContent({
     if (!issue?.name) {
       return;
     }
-    void issueCommentStore
+    void useAppStore
+      .getState()
       .listIssueComments(
         create(ListIssueCommentsRequestSchema, {
           parent: issue.name,
@@ -111,15 +110,13 @@ function PlanDetailApprovalFlowContent({
         })
       )
       .catch(() => undefined);
-  }, [issue?.name, issueCommentStore, mode]);
+  }, [issue?.name, mode]);
 
-  const comments = useVueState(() => {
-    if (!issue) return EMPTY_COMMENTS;
-    const list = issueCommentStore.getIssueComments(issue.name);
-    // The store returns a fresh `[]` on cache miss; normalise to a stable
-    // reference so useSyncExternalStore can short-circuit re-renders.
-    return list.length > 0 ? list : EMPTY_COMMENTS;
-  });
+  // `getIssueComments` returns a stable empty array on miss, so reading it
+  // inside the selector won't loop.
+  const comments = useAppStore((state) =>
+    issue ? state.getIssueComments(issue.name) : EMPTY_COMMENTS
+  );
   const lastRejection = useMemo(() => {
     if (!issue || issue.approvalStatus !== ApprovalStatus.REJECTED) {
       return undefined;

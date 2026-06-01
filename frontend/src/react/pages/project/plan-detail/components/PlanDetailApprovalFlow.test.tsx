@@ -85,18 +85,26 @@ vi.mock("@/react/hooks/useAppState", () => ({
 }));
 
 vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      batchGetOrFetchGroups: mocks.batchGetOrFetchGroups,
-      batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
-      getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
-      roleList: mocks.roleList,
-      loadProjectIamPolicy:
-        mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy,
-      // The approval flow now subscribes to projectPoliciesByName directly
-      // so the candidate list re-renders when the policy resolves.
-      projectPoliciesByName: { "projects/p1": { bindings: [] } },
-    }),
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        batchGetOrFetchGroups: mocks.batchGetOrFetchGroups,
+        batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
+        getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+        roleList: mocks.roleList,
+        loadProjectIamPolicy:
+          mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy,
+        // The approval flow now subscribes to projectPoliciesByName directly
+        // so the candidate list re-renders when the policy resolves.
+        projectPoliciesByName: { "projects/p1": { bindings: [] } },
+        getIssueComments: mocks.issueCommentStore.getIssueComments,
+      }),
+    {
+      getState: () => ({
+        listIssueComments: mocks.issueCommentStore.listIssueComments,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/store/modules/v1/common", () => ({
@@ -105,13 +113,12 @@ vi.mock("@/store/modules/v1/common", () => ({
   userNamePrefix: "users/",
 }));
 
-vi.mock("@/store/modules/v1/issueComment", () => ({
+vi.mock("@/react/stores/app/issueComment", () => ({
   IssueCommentType: {
     APPROVAL: "APPROVAL",
   },
   getIssueCommentType: (comment: { event?: { case?: string } }) =>
     comment.event?.case === "approval" ? "APPROVAL" : "USER_COMMENT",
-  useIssueCommentStore: () => mocks.issueCommentStore,
 }));
 
 vi.mock("@/utils", () => ({

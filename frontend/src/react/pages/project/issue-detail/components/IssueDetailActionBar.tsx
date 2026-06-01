@@ -53,9 +53,9 @@ import {
   buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
 } from "@/router/dashboard/projectV1RouteHelpers";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
-  useIssueCommentStore,
   useProjectV1Store,
   useSQLStore,
 } from "@/store";
@@ -100,7 +100,6 @@ export function IssueDetailActionBar() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const issueCommentStore = useIssueCommentStore();
   const sqlStore = useSQLStore();
   const currentUser = useCurrentUser();
   const [pendingConfirmAction, setPendingConfirmAction] =
@@ -241,13 +240,13 @@ export function IssueDetailActionBar() {
     if (!page.issue?.name) {
       return;
     }
-    await issueCommentStore.listIssueComments(
+    await useAppStore.getState().listIssueComments(
       create(ListIssueCommentsRequestSchema, {
         parent: page.issue.name,
         pageSize: 1000,
       })
     );
-  }, [issueCommentStore, page.issue?.name]);
+  }, [page.issue?.name]);
 
   const handleRefreshIssueDetailState = useCallback(async () => {
     await refreshIssueDetailState(page);
@@ -744,7 +743,6 @@ function IssueDetailReviewPopover({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const issueCommentStore = useIssueCommentStore();
   const popoverRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
@@ -788,7 +786,7 @@ function IssueDetailReviewPopover({
         );
         page.patchState({ issue: response });
       } else {
-        await issueCommentStore.createIssueComment({
+        await useAppStore.getState().createIssueComment({
           issueName: issue.name,
           comment,
         });
@@ -831,7 +829,6 @@ function IssueDetailReviewPopover({
   }, [
     comment,
     issue,
-    issueCommentStore,
     onOpenChange,
     onRefreshIssueComments,
     onRefreshState,

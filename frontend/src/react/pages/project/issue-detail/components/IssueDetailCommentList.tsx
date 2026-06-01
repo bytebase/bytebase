@@ -35,11 +35,12 @@ import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
-  extractUserEmail,
   getIssueCommentType,
   IssueCommentType,
+} from "@/react/stores/app/issueComment";
+import {
+  extractUserEmail,
   pushNotification,
-  useIssueCommentStore,
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
@@ -76,6 +77,9 @@ import {
   type SpecDiffEntry,
 } from "../utils/diffPlanSpecs";
 
+// Stable empty reference for the no-issue branch of the comments selector.
+const EMPTY_ISSUE_COMMENTS: IssueComment[] = [];
+
 function useIssueRefTransform(projectName: string | undefined) {
   const { t } = useTranslation();
   return useCallback(
@@ -107,14 +111,15 @@ export function IssueDetailCommentList() {
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
-  const issueCommentStore = useIssueCommentStore();
   const currentUser = useCurrentUser();
   const routeHash = useVueState(() => router.currentRoute.value.hash);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const issueName = page.issue?.name || page.plan?.issue || "";
-  const issueComments = useVueState(() =>
-    issueName ? issueCommentStore.getIssueComments(issueName) : []
+  // `getIssueComments` returns a stable empty array on miss, so reading it
+  // inside the selector won't loop.
+  const issueComments = useAppStore((state) =>
+    issueName ? state.getIssueComments(issueName) : EMPTY_ISSUE_COMMENTS
   );
   const issueUpdateKey = `${page.issue?.updateTime?.seconds ?? ""}:${page.issue?.updateTime?.nanos ?? ""}`;
   const [activeCommentName, setActiveCommentName] = useState<string>();
@@ -148,7 +153,7 @@ export function IssueDetailCommentList() {
     const run = async () => {
       try {
         setIsRefreshing(true);
-        await issueCommentStore.listIssueComments(
+        await useAppStore.getState().listIssueComments(
           create(ListIssueCommentsRequestSchema, {
             parent: issueName,
             pageSize: 1000,
@@ -164,7 +169,7 @@ export function IssueDetailCommentList() {
     return () => {
       canceled = true;
     };
-  }, [issueCommentStore, issueName, issueUpdateKey]);
+  }, [issueName, issueUpdateKey]);
 
   useEffect(() => {
     if (!routeHash.match(/^#activity(\d+)/)) {
@@ -196,7 +201,7 @@ export function IssueDetailCommentList() {
     if (!issueName) {
       return;
     }
-    await issueCommentStore.listIssueComments(
+    await useAppStore.getState().listIssueComments(
       create(ListIssueCommentsRequestSchema, {
         parent: issueName,
         pageSize: 1000,
@@ -235,7 +240,7 @@ export function IssueDetailCommentList() {
     if (!activeComment || !allowUpdateComment) {
       return;
     }
-    await issueCommentStore.updateIssueComment({
+    await useAppStore.getState().updateIssueComment({
       issueCommentName: activeComment.name,
       comment: editContent,
     });
@@ -247,7 +252,7 @@ export function IssueDetailCommentList() {
     if (!issueName || !newComment) {
       return;
     }
-    await issueCommentStore.createIssueComment({
+    await useAppStore.getState().createIssueComment({
       issueName,
       comment: newComment,
     });

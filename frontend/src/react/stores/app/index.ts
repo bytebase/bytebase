@@ -8,6 +8,7 @@ import { createDBSchemaSlice } from "./dbSchema";
 import { createGroupSlice } from "./group";
 import { createIamSlice } from "./iam";
 import { createIdentityProviderSlice } from "./identityProvider";
+import { createIssueCommentSlice } from "./issueComment";
 import { createInstanceSlice } from "./instance";
 import { createInstanceRoleSlice } from "./instanceRole";
 import { createIssueSlice } from "./issue";
@@ -60,6 +61,7 @@ export const createAppStore = () =>
     ...createRoleSlice(...args),
     ...createRolloutSlice(...args),
     ...createPlanSlice(...args),
+    ...createIssueCommentSlice(...args),
     ...createReleaseSlice(...args),
     ...createRevisionSlice(...args),
     ...createChangelogSlice(...args),
