@@ -87,7 +87,6 @@ export function SQLEditorHomePage() {
   }, []);
   const hideSidebar = windowWidth < 800;
 
-  const [sidebarSize, setSidebarSize] = useState(25);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   // alter-schema: open a new tab to the plan editor with a pre-filled
@@ -211,12 +210,7 @@ export function SQLEditorHomePage() {
       <PanelGroup orientation="horizontal" className="h-full">
         {!hideSidebar && (
           <>
-            <Panel
-              defaultSize={`${sidebarSize}%`}
-              minSize="10%"
-              maxSize="40%"
-              onResize={(size) => setSidebarSize(size.asPercentage)}
-            >
+            <Panel defaultSize="25%" minSize="10%" maxSize="40%">
               <div className="h-full">
                 <AsidePanel />
               </div>

@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { debounce, orderBy } from "lodash-es";
 import { Loader2 } from "lucide-react";
 import {
-  type MutableRefObject,
   type ReactNode,
   useEffect,
   useMemo,
@@ -36,6 +35,10 @@ import {
   initializeLSPClient,
   subscribeConnectionState,
 } from "./lsp-client";
+import {
+  getStatementRanges,
+  setStatementRanges,
+} from "./statement-range-store";
 import { ensureSuggestOverrideStyle } from "./suggest-icons";
 import {
   getOrCreateTextModel,
@@ -168,7 +171,6 @@ export function MonacoEditor({
   const onActiveContentChangeRef = useRef(onActiveContentChange);
   const onReadyRef = useRef(onReady);
   const isApplyingExternalChangeRef = useRef(false);
-  const activeRangeByUriRef = useRef<Map<string, MonacoTypeRange[]>>(new Map());
   const selectionRef = useRef<Selection | null>(null);
   const generatedFilename = useMemo(() => {
     if (filename) {
@@ -240,7 +242,7 @@ export function MonacoEditor({
     onSelectContentRef.current?.(selectedContent);
 
     const cursorPosition = editor.getPosition();
-    const ranges = activeRangeByUriRef.current.get(model.uri.toString()) ?? [];
+    const ranges = getStatementRanges(model.uri.toString());
     const activeRange =
       selection && !selection.isEmpty()
         ? selection
@@ -408,7 +410,7 @@ export function MonacoEditor({
           wsPromise?.then((ws) => {
             if (!ws || disposed) return;
             messageHandler = (message: MessageEvent) => {
-              processStatementRangeMessage(message, activeRangeByUriRef);
+              processStatementRangeMessage(message);
               emitSelectionSideEffects();
             };
             ws.addEventListener("message", messageHandler);
@@ -840,10 +842,7 @@ const attachFormatAction = (
   });
 };
 
-const processStatementRangeMessage = (
-  message: MessageEvent,
-  ref: MutableRefObject<Map<string, MonacoTypeRange[]>>
-) => {
+const processStatementRangeMessage = (message: MessageEvent) => {
   if (typeof message.data !== "string") return;
   if (!message.data.includes("$/textDocument/statementRanges")) return;
   try {
@@ -873,7 +872,7 @@ const processStatementRangeMessage = (
       startColumn: range.start.character + 1,
       endColumn: range.end.character + 1,
     }));
-    ref.current.set(payload.params.uri, ranges);
+    setStatementRanges(payload.params.uri, ranges);
   } catch (e) {
     console.debug("[sql-editor:statementRanges] failed to parse LSP message", {
       data: message.data,
