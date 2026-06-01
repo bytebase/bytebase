@@ -20,7 +20,7 @@ import {
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
-import { extractWorksheetID } from "@/utils";
+import { extractWorksheetID } from "@/utils/v1/worksheet";
 import type { AppSliceCreator, WorksheetSlice, WorksheetView } from "./types";
 
 const cacheKey = (uid: string, view: WorksheetView) => `${uid}:${view}`;

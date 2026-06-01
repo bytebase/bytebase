@@ -674,9 +674,6 @@ export function RolesPage() {
   const listRoles = useAppStore((state) => state.listRoles);
   const getRoleByName = useAppStore((state) => state.getRoleByName);
   const deleteRole = useAppStore((state) => state.deleteRole);
-  const fetchWorkspaceIamPolicy = useAppStore(
-    (state) => state.fetchWorkspaceIamPolicy
-  );
   const subscriptionStore = useSubscriptionV1Store();
 
   const [ready, setReady] = useState(false);
@@ -703,11 +700,11 @@ export function RolesPage() {
     );
   }, [roleList]);
 
-  // Fetch roles on mount and handle query param
+  // Fetch roles on mount and handle query param. The workspace IAM policy
+  // and its referenced groups (used by the "users with this role" delete
+  // confirmation) are loaded centrally by useEnsureWorkspaceCommonData in
+  // the dashboard shell, so this page doesn't need to hedge here.
   useEffect(() => {
-    // The workspace IAM policy backs the "users with this role" list shown in
-    // the delete confirmation; load it (and referenced groups) alongside roles.
-    void fetchWorkspaceIamPolicy();
     listRoles()
       .then(() => {
         const urlParams = new URLSearchParams(window.location.search);

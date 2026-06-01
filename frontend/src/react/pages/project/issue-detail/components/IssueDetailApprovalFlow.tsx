@@ -20,11 +20,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
-import {
-  pushNotification,
-  useProjectIamPolicyStore,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   ApprovalStatus,
@@ -57,7 +53,9 @@ export function IssueDetailApprovalFlow() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const issue = page.issue;
 
@@ -65,10 +63,8 @@ export function IssueDetailApprovalFlow() {
     void projectStore
       .getOrFetchProjectByName(projectName)
       .catch(() => undefined);
-    void projectIamPolicyStore
-      .getOrFetchProjectIamPolicy(projectName)
-      .catch(() => undefined);
-  }, [projectIamPolicyStore, projectName, projectStore]);
+    void loadProjectIamPolicy(projectName).catch(() => undefined);
+  }, [loadProjectIamPolicy, projectName, projectStore]);
 
   if (!issue) {
     return null;
@@ -505,7 +501,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const page = useIssueDetailContext();
   const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -565,10 +560,19 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     );
   }, [currentUserEmail, issue.creator, stepApprover?.status]);
 
-  const groupNamesKey = useVueState(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+  // Subscribe directly to the Zustand project IAM cache so groupNames /
+  // candidateEmails recompute the moment loadProjectIamPolicy() resolves.
+  // Wrapping the Zustand getter in useVueState would only react to Vue
+  // dependencies and miss the Zustand write, leaving the approval step
+  // empty on a cold issue page.
+  const projectIamPolicy = useAppStore(
+    (state) => state.projectPoliciesByName[projectName]
+  );
+
+  const groupNames = useMemo(() => {
+    if (!projectIamPolicy) return [];
     const names: string[] = [];
-    for (const binding of policy.bindings) {
+    for (const binding of projectIamPolicy.bindings) {
       if (binding.role !== step || isBindingPolicyExpired(binding)) {
         continue;
       }
@@ -578,20 +582,17 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
         }
       }
     }
-    return [...new Set(names)].sort().join("\u0000");
-  });
-  const groupNames = useMemo(() => {
-    return groupNamesKey ? groupNamesKey.split("\u0000") : [];
-  }, [groupNamesKey]);
+    return [...new Set(names)].sort();
+  }, [projectIamPolicy, step]);
 
   useEffect(() => {
     void batchGetOrFetchGroups(groupNames).catch(() => undefined);
   }, [groupNames, batchGetOrFetchGroups]);
 
-  const candidateEmailsKey = useVueState(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+  const candidateEmails = useMemo(() => {
+    if (!projectIamPolicy) return [];
     const memberMap = memberMapToRolesInProjectIAM(
-      policy,
+      projectIamPolicy,
       step,
       getGroupByIdentifier
     );
@@ -601,11 +602,8 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
         candidates.push(fullname);
       }
     }
-    return [...new Set(candidates)].sort().join("\u0000");
-  });
-  const candidateEmails = useMemo(() => {
-    return candidateEmailsKey ? candidateEmailsKey.split("\u0000") : [];
-  }, [candidateEmailsKey]);
+    return [...new Set(candidates)].sort();
+  }, [projectIamPolicy, step, getGroupByIdentifier]);
 
   const isCurrentUserInCandidates = useMemo(() => {
     return candidateEmails.includes(`${userNamePrefix}${currentUserEmail}`);

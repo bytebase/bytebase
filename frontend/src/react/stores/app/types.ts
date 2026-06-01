@@ -220,6 +220,11 @@ export type IamSlice = {
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
   loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  getProjectIamPolicy: (project: string) => IamPolicy;
+  updateProjectIamPolicy: (
+    project: string,
+    policy: IamPolicy
+  ) => Promise<IamPolicy>;
   fetchWorkspaceIamPolicy: () => Promise<IamPolicy>;
   patchWorkspaceIamPolicy: (
     batchPatch: { member: string; roles: string[] }[]
