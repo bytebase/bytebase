@@ -9,6 +9,7 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	http "net/http"
 	strings "strings"
 )
@@ -36,6 +37,9 @@ const (
 	// SubscriptionServiceGetSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's GetSubscription RPC.
 	SubscriptionServiceGetSubscriptionProcedure = "/bytebase.v1.SubscriptionService/GetSubscription"
+	// SubscriptionServiceExportVCSProviderUsersProcedure is the fully-qualified name of the
+	// SubscriptionService's ExportVCSProviderUsers RPC.
+	SubscriptionServiceExportVCSProviderUsersProcedure = "/bytebase.v1.SubscriptionService/ExportVCSProviderUsers"
 	// SubscriptionServiceUploadLicenseProcedure is the fully-qualified name of the
 	// SubscriptionService's UploadLicense RPC.
 	SubscriptionServiceUploadLicenseProcedure = "/bytebase.v1.SubscriptionService/UploadLicense"
@@ -65,6 +69,8 @@ type SubscriptionServiceClient interface {
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Exports active VCS users as CSV.
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -98,6 +104,12 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			httpClient,
 			baseURL+SubscriptionServiceGetSubscriptionProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
+			connect.WithClientOptions(opts...),
+		),
+		exportVCSProviderUsers: connect.NewClient[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody](
+			httpClient,
+			baseURL+SubscriptionServiceExportVCSProviderUsersProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("ExportVCSProviderUsers")),
 			connect.WithClientOptions(opts...),
 		),
 		uploadLicense: connect.NewClient[v1.UploadLicenseRequest, v1.Subscription](
@@ -147,19 +159,25 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription       *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
-	uploadLicense         *connect.Client[v1.UploadLicenseRequest, v1.Subscription]
-	createPurchase        *connect.Client[v1.CreatePurchaseRequest, v1.PurchaseResponse]
-	updatePurchase        *connect.Client[v1.UpdatePurchaseRequest, v1.PurchaseResponse]
-	cancelPurchase        *connect.Client[v1.CancelPurchaseRequest, v1.PurchaseResponse]
-	getPaymentInfo        *connect.Client[v1.GetPaymentInfoRequest, v1.PaymentInfo]
-	verifyCheckoutSession *connect.Client[v1.VerifyCheckoutSessionRequest, v1.VerifyCheckoutSessionResponse]
-	listPurchasePlans     *connect.Client[v1.ListPurchasePlansRequest, v1.ListPurchasePlansResponse]
+	getSubscription        *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
+	exportVCSProviderUsers *connect.Client[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody]
+	uploadLicense          *connect.Client[v1.UploadLicenseRequest, v1.Subscription]
+	createPurchase         *connect.Client[v1.CreatePurchaseRequest, v1.PurchaseResponse]
+	updatePurchase         *connect.Client[v1.UpdatePurchaseRequest, v1.PurchaseResponse]
+	cancelPurchase         *connect.Client[v1.CancelPurchaseRequest, v1.PurchaseResponse]
+	getPaymentInfo         *connect.Client[v1.GetPaymentInfoRequest, v1.PaymentInfo]
+	verifyCheckoutSession  *connect.Client[v1.VerifyCheckoutSessionRequest, v1.VerifyCheckoutSessionResponse]
+	listPurchasePlans      *connect.Client[v1.ListPurchasePlansRequest, v1.ListPurchasePlansResponse]
 }
 
 // GetSubscription calls bytebase.v1.SubscriptionService.GetSubscription.
 func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
 	return c.getSubscription.CallUnary(ctx, req)
+}
+
+// ExportVCSProviderUsers calls bytebase.v1.SubscriptionService.ExportVCSProviderUsers.
+func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, req *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+	return c.exportVCSProviderUsers.CallUnary(ctx, req)
 }
 
 // UploadLicense calls bytebase.v1.SubscriptionService.UploadLicense.
@@ -203,6 +221,8 @@ type SubscriptionServiceHandler interface {
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Exports active VCS users as CSV.
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -232,6 +252,12 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		SubscriptionServiceGetSubscriptionProcedure,
 		svc.GetSubscription,
 		connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
+		connect.WithHandlerOptions(opts...),
+	)
+	subscriptionServiceExportVCSProviderUsersHandler := connect.NewUnaryHandler(
+		SubscriptionServiceExportVCSProviderUsersProcedure,
+		svc.ExportVCSProviderUsers,
+		connect.WithSchema(subscriptionServiceMethods.ByName("ExportVCSProviderUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
 	subscriptionServiceUploadLicenseHandler := connect.NewUnaryHandler(
@@ -280,6 +306,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		switch r.URL.Path {
 		case SubscriptionServiceGetSubscriptionProcedure:
 			subscriptionServiceGetSubscriptionHandler.ServeHTTP(w, r)
+		case SubscriptionServiceExportVCSProviderUsersProcedure:
+			subscriptionServiceExportVCSProviderUsersHandler.ServeHTTP(w, r)
 		case SubscriptionServiceUploadLicenseProcedure:
 			subscriptionServiceUploadLicenseHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCreatePurchaseProcedure:
@@ -305,6 +333,10 @@ type UnimplementedSubscriptionServiceHandler struct{}
 
 func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.ExportVCSProviderUsers is not implemented"))
 }
 
 func (UnimplementedSubscriptionServiceHandler) UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error) {

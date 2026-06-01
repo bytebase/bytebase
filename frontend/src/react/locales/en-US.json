@@ -3762,6 +3762,14 @@
         "title": "User count limit",
         "upgrade": "Upgrade to get more user quota."
       }
+    },
+    "vcs-users": {
+      "active": "Active VCS users",
+      "download": "Download active VCS users",
+      "download-failure": {
+        "description": "Please try again later.",
+        "title": "Failed to download active VCS users"
+      }
     }
   },
   "subscription.instance-assignment.assign-license": "Assign License",

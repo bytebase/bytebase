@@ -274,8 +274,10 @@ type ActuatorInfo struct {
 	DefaultProject string `protobuf:"bytes,26,opt,name=default_project,json=defaultProject,proto3" json:"default_project,omitempty"`
 	// The number of users in the workspace IAM (for seat limit display).
 	UserCountInIam int32 `protobuf:"varint,27,opt,name=user_count_in_iam,json=userCountInIam,proto3" json:"user_count_in_iam,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// The number of active VCS users seen in the active window.
+	ActiveVcsUserCount int32 `protobuf:"varint,28,opt,name=active_vcs_user_count,json=activeVcsUserCount,proto3" json:"active_vcs_user_count,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -448,6 +450,13 @@ func (x *ActuatorInfo) GetUserCountInIam() int32 {
 	return 0
 }
 
+func (x *ActuatorInfo) GetActiveVcsUserCount() int32 {
+	if x != nil {
+		return x.ActiveVcsUserCount
+	}
+	return 0
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
@@ -463,7 +472,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
 	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xaa\a\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xe2\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -485,7 +494,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
 	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x12,\n" +
 	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
-	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIamJ\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
+	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIam\x126\n" +
+	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCountJ\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\x9d\x03\n" +
 	"\x0fActuatorService\x12\x9c\x01\n" +

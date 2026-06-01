@@ -3751,6 +3751,14 @@
         "title": "Giới hạn số lượng người dùng",
         "upgrade": "Nâng cấp để có thêm hạn ngạch người dùng."
       }
+    },
+    "vcs-users": {
+      "active": "Người dùng VCS đang hoạt động",
+      "download": "Tải xuống người dùng VCS đang hoạt động",
+      "download-failure": {
+        "description": "Vui lòng thử lại sau.",
+        "title": "Không thể tải xuống người dùng VCS đang hoạt động"
+      }
     }
   },
   "subscription.instance-assignment.assign-license": "Gán giấy phép",

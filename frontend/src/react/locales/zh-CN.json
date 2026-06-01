@@ -3751,6 +3751,14 @@
         "title": "用户数量限制",
         "upgrade": "升级来获取更多用户额度。"
       }
+    },
+    "vcs-users": {
+      "active": "活跃 VCS 用户",
+      "download": "下载活跃 VCS 用户",
+      "download-failure": {
+        "description": "请稍后重试。",
+        "title": "下载活跃 VCS 用户失败"
+      }
     }
   },
   "subscription.instance-assignment.assign-license": "分配证书",

@@ -595,4 +595,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   totalInstanceCount: () => get().serverInfo?.totalInstanceCount ?? 0,
 
   userCountInIam: () => get().serverInfo?.userCountInIam ?? 0,
+
+  activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 });

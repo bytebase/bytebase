@@ -256,6 +256,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 user_count_in_iam = 27;
    */
   userCountInIam: number;
+
+  /**
+   * The number of active VCS users seen in the active window.
+   *
+   * @generated from field: int32 active_vcs_user_count = 28;
+   */
+  activeVcsUserCount: number;
 };
 
 /**

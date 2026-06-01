@@ -17,5 +17,13 @@
     },
     "title": "Cộng đồng",
     "try": "Bắt đầu dùng thử miễn phí"
+  },
+  "vcs-users": {
+    "active": "Người dùng VCS đang hoạt động",
+    "download": "Tải xuống người dùng VCS đang hoạt động",
+    "download-failure": {
+      "description": "Vui lòng thử lại sau.",
+      "title": "Không thể tải xuống người dùng VCS đang hoạt động"
+    }
   }
 }

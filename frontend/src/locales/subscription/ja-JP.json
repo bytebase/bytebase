@@ -17,5 +17,13 @@
     },
     "title": "コミュニティ",
     "try": "無料トライアルを開始する"
+  },
+  "vcs-users": {
+    "active": "アクティブな VCS ユーザー",
+    "download": "アクティブな VCS ユーザーをダウンロード",
+    "download-failure": {
+      "description": "後でもう一度お試しください。",
+      "title": "アクティブな VCS ユーザーのダウンロードに失敗しました"
+    }
   }
 }

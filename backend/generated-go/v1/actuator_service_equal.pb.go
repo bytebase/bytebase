@@ -133,5 +133,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.UserCountInIam != y.UserCountInIam {
 		return false
 	}
+	if x.ActiveVcsUserCount != y.ActiveVcsUserCount {
+		return false
+	}
 	return true
 }

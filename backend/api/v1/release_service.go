@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/enterprise"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -32,17 +33,20 @@ type ReleaseService struct {
 	store        *store.Store
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
+	license      *enterprise.LicenseService
 }
 
 func NewReleaseService(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
+	licenseService *enterprise.LicenseService,
 ) *ReleaseService {
 	return &ReleaseService{
 		store:        store,
 		sheetManager: sheetManager,
 		dbFactory:    dbFactory,
+		license:      licenseService,
 	}
 }
 

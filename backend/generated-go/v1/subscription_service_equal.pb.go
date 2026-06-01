@@ -13,6 +13,16 @@ func (x *GetSubscriptionRequest) Equal(y *GetSubscriptionRequest) bool {
 	return true
 }
 
+func (x *ExportVCSProviderUsersRequest) Equal(y *ExportVCSProviderUsersRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
 func (x *UploadLicenseRequest) Equal(y *UploadLicenseRequest) bool {
 	if x == y {
 		return true
