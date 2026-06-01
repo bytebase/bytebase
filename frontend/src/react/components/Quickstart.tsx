@@ -19,7 +19,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
-  useUIStateStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -68,37 +67,32 @@ export function Quickstart() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const projectStore = useProjectV1Store();
-  const uiStateStore = useUIStateStore();
   const actuatorStore = useActuatorV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
 
   const quickStartEnabled = useVueState(() => actuatorStore.quickStartEnabled);
-  const hidden = useVueState(() => uiStateStore.getIntroStateByKey("hidden"));
+  const hidden = useAppStore((s) => s.getIntroStateByKey("hidden"));
 
   // Subscribe to each task's done flag so the line-through + progress
   // bar update live.
-  const issueVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("issue.visit")
+  const issueVisited = useAppStore((s) => s.getIntroStateByKey("issue.visit"));
+  const dataQueried = useAppStore((s) => s.getIntroStateByKey("data.query"));
+  const projectVisited = useAppStore((s) =>
+    s.getIntroStateByKey("project.visit")
   );
-  const dataQueried = useVueState(() =>
-    uiStateStore.getIntroStateByKey("data.query")
+  const environmentVisited = useAppStore((s) =>
+    s.getIntroStateByKey("environment.visit")
   );
-  const projectVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("project.visit")
+  const instanceVisited = useAppStore((s) =>
+    s.getIntroStateByKey("instance.visit")
   );
-  const environmentVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("environment.visit")
+  const databaseVisited = useAppStore((s) =>
+    s.getIntroStateByKey("database.visit")
   );
-  const instanceVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("instance.visit")
-  );
-  const databaseVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("database.visit")
-  );
-  const memberVisited = useVueState(() =>
-    uiStateStore.getIntroStateByKey("member.visit")
+  const memberVisited = useAppStore((s) =>
+    s.getIntroStateByKey("member.visit")
   );
 
   // ---- async sample fetches --------------------------------------------
@@ -277,19 +271,18 @@ export function Quickstart() {
   }, [currentStep, introList.length]);
 
   const handleHide = (silent = false) => {
-    void uiStateStore
-      .saveIntroStateByKey({ key: "hidden", newState: true })
-      .then(() => {
-        if (!silent) {
-          pushNotification({
-            module: "bytebase",
-            style: "INFO",
-            title: t("quick-start.notice.title"),
-            description: t("quick-start.notice.desc"),
-            manualHide: true,
-          });
-        }
+    useAppStore
+      .getState()
+      .saveIntroStateByKey({ key: "hidden", newState: true });
+    if (!silent) {
+      pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: t("quick-start.notice.title"),
+        description: t("quick-start.notice.desc"),
+        manualHide: true,
       });
+    }
   };
 
   if (!showQuickstart || introList.length === 0) {

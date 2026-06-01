@@ -64,7 +64,6 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
-  useUIStateStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -123,8 +122,6 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
-  const uiStateStore = useUIStateStore();
-
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const me = useCurrentUser();
@@ -133,10 +130,12 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 
   // Hint dismissal
   const HINT_KEY = "plan.hint-dismissed";
-  const hideHint = useVueState(() => uiStateStore.getIntroStateByKey(HINT_KEY));
+  const hideHint = useAppStore((s) => s.getIntroStateByKey(HINT_KEY));
   const dismissHint = useCallback(() => {
-    uiStateStore.saveIntroStateByKey({ key: HINT_KEY, newState: true });
-  }, [uiStateStore]);
+    useAppStore
+      .getState()
+      .saveIntroStateByKey({ key: HINT_KEY, newState: true });
+  }, []);
 
   // Search
   const defaultSearchParams = useCallback(

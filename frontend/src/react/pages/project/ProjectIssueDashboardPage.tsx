@@ -13,11 +13,9 @@ import {
 import { Alert } from "@/react/components/ui/alert";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -37,7 +35,6 @@ export function ProjectIssueDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const uiStateStore = useUIStateStore();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -47,10 +44,12 @@ export function ProjectIssueDashboardPage({
 
   // Hint
   const HINT_KEY = "issue.hint-dismissed";
-  const hideHint = useVueState(() => uiStateStore.getIntroStateByKey(HINT_KEY));
+  const hideHint = useAppStore((s) => s.getIntroStateByKey(HINT_KEY));
   const dismissHint = useCallback(() => {
-    uiStateStore.saveIntroStateByKey({ key: HINT_KEY, newState: true });
-  }, [uiStateStore]);
+    useAppStore
+      .getState()
+      .saveIntroStateByKey({ key: HINT_KEY, newState: true });
+  }, []);
 
   // Read-only scopes
   const readonlyScopes: VueSearchScope[] = useMemo(

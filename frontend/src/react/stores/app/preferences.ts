@@ -25,9 +25,10 @@ const QUICKSTART_RESET_KEYS = [
 ];
 
 export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
-  _set,
+  set,
   get
 ) => ({
+  introStateVersion: 0,
   setRecentProject: (name) => {
     const email = getCurrentUserEmail(get);
     if (!email || !name) return;
@@ -76,7 +77,21 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
       ...Object.fromEntries(QUICKSTART_RESET_KEYS.map((key) => [key, false])),
     };
     writeJson(key, next);
+    set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
     emitReactQuickstartReset({ keys: QUICKSTART_RESET_KEYS });
+  },
+
+  // Mirrors the Pinia `useUIStateStore.getIntroStateByKey`. Reads the per-user
+  // localStorage map; `introStateVersion` (read by callers' selectors) is what
+  // makes a subsequent `saveIntroStateByKey` re-trigger the read.
+  getIntroStateByKey: (key) => {
+    const email = getCurrentUserEmail(get);
+    if (!email) return false;
+    const map = readJson<Record<string, boolean>>(
+      storageKeyIntroState(email),
+      {}
+    );
+    return map[key] ?? false;
   },
 
   // Mirrors the Pinia `useUIStateStore.saveIntroStateByKey`: persists a
@@ -87,5 +102,6 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     const storageKey = storageKeyIntroState(email);
     const previous = readJson<Record<string, boolean>>(storageKey, {});
     writeJson(storageKey, { ...previous, [key]: newState });
+    set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
   },
 });

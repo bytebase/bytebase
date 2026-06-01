@@ -65,6 +65,7 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
 import {
@@ -74,7 +75,6 @@ import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
-  useUIStateStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { InstanceFilter } from "@/store/modules/v1/instance";
@@ -675,15 +675,15 @@ export function InstancesPage() {
   );
 
   // Mark instance visit on mount
-  const uiStateStore = useUIStateStore();
   useEffect(() => {
-    if (!uiStateStore.getIntroStateByKey("instance.visit")) {
-      uiStateStore.saveIntroStateByKey({
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("instance.visit")) {
+      store.saveIntroStateByKey({
         key: "instance.visit",
         newState: true,
       });
     }
-  }, [uiStateStore]);
+  }, []);
 
   // Sync search state to URL
   useEffect(() => {

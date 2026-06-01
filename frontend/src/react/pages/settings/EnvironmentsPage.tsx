@@ -74,7 +74,6 @@ import {
   useInstanceV1Store,
   useSQLReviewStore,
   useSubscriptionV1Store,
-  useUIStateStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -1444,7 +1443,6 @@ export function EnvironmentsPage() {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
   const policyStore = usePolicyV1Store();
-  const uiStateStore = useUIStateStore();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
   );
@@ -1468,13 +1466,14 @@ export function EnvironmentsPage() {
 
   // Initialize selected tab and intro state
   useEffect(() => {
-    if (!uiStateStore.getIntroStateByKey("environment.visit")) {
-      uiStateStore.saveIntroStateByKey({
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("environment.visit")) {
+      store.saveIntroStateByKey({
         key: "environment.visit",
         newState: true,
       });
     }
-  }, [uiStateStore]);
+  }, []);
 
   // Select from hash or default to first
   useEffect(() => {
