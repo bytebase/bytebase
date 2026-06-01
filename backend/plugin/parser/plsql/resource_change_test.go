@@ -136,3 +136,35 @@ func TestExtractChangedResourcesDropIndexUsesMetadata(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestExtractChangedResourcesSkipsANTLRFallbackAST(t *testing.T) {
+	statement := `UPDATE t1 SET c1 = 5;
+CREATE OR REPLACE TRIGGER trg
+BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
+REFERENCING OLD AS o NEW AS n
+FOR EACH ROW
+WHEN (n.col1 > 0)
+BEGIN
+  :n.col2 := :o.col2 + 1;
+END;`
+	changedResources := model.NewChangedResources(nil /* dbMetadata */)
+	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
+	want := &base.ChangeSummary{
+		ChangedResources: changedResources,
+		SampleDMLS: []string{
+			"UPDATE t1 SET c1 = 5;",
+		},
+		DMLCount: 1,
+	}
+
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	require.Len(t, asts, 2)
+	_, ok := asts[1].(*base.ANTLRAST)
+	require.True(t, ok)
+
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}

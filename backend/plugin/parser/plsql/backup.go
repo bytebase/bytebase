@@ -277,7 +277,7 @@ func writeSuffixSelectClause(buf *strings.Builder, node oracleast.StmtNode, full
 	suffix := ""
 	switch n := node.(type) {
 	case *oracleast.UpdateStmt:
-		suffix = oracleDMLTargetText(fullSQL, n.Table, n.Alias)
+		suffix = oracleDMLTargetText(fullSQL, n.Table, n.PartitionExt, n.Alias)
 		if n.WhereClause != nil && n.SetClauses != nil && n.SetClauses.Len() > 0 {
 			if setClause, ok := n.SetClauses.Items[n.SetClauses.Len()-1].(*oracleast.SetClause); ok {
 				suffix = joinOracleSuffix(suffix, oracleWhereSuffix(fullSQL, setClause.Loc.End, n.WhereClause))
@@ -285,21 +285,27 @@ func writeSuffixSelectClause(buf *strings.Builder, node oracleast.StmtNode, full
 		}
 	case *oracleast.DeleteStmt:
 		targetEnd := n.Table.Loc.End
+		if n.PartitionExt != nil {
+			targetEnd = n.PartitionExt.Loc.End
+		}
 		if n.Alias != nil {
 			targetEnd = n.Alias.Loc.End
 		}
-		suffix = joinOracleSuffix(oracleDMLTargetText(fullSQL, n.Table, n.Alias), oracleWhereSuffix(fullSQL, targetEnd, n.WhereClause))
+		suffix = joinOracleSuffix(oracleDMLTargetText(fullSQL, n.Table, n.PartitionExt, n.Alias), oracleWhereSuffix(fullSQL, targetEnd, n.WhereClause))
 	default:
 	}
 	_, err := buf.WriteString(suffix)
 	return err
 }
 
-func oracleDMLTargetText(sql string, name *oracleast.ObjectName, alias *oracleast.Alias) string {
+func oracleDMLTargetText(sql string, name *oracleast.ObjectName, partitionExt *oracleast.PartitionExtClause, alias *oracleast.Alias) string {
 	if name == nil {
 		return ""
 	}
 	end := name.Loc.End
+	if partitionExt != nil {
+		end = partitionExt.Loc.End
+	}
 	if alias != nil {
 		end = alias.Loc.End
 	}

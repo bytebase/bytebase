@@ -379,11 +379,14 @@ func extractSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (s
 			}
 		}
 		if containsSourceTable {
-			result = append(result, list[i].Text)
+			result = append(result, normalizeExtractedRestoreSQL(list[i].Text))
 		}
 	}
-	// Statements include their leading whitespace and trailing semicolons.
-	return strings.Join(result, ""), nil
+	return strings.Join(result, "\n"), nil
+}
+
+func normalizeExtractedRestoreSQL(statement string) string {
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(statement), ";"))
 }
 
 func equalOrLess(a, b *storepb.Position) bool {

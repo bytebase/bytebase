@@ -41,3 +41,18 @@ func TestDiagnoseUsesOmniParseErrorPosition(t *testing.T) {
 		})
 	}
 }
+
+func TestDiagnoseFallsBackToANTLR(t *testing.T) {
+	statement := `CREATE OR REPLACE TRIGGER trg
+BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
+REFERENCING OLD AS o NEW AS n
+FOR EACH ROW
+WHEN (n.col1 > 0)
+BEGIN
+  :n.col2 := :o.col2 + 1;
+END;`
+
+	diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, statement)
+	require.NoError(t, err)
+	require.Empty(t, diagnostics)
+}

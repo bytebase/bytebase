@@ -3,8 +3,6 @@ package plsql
 import (
 	"strings"
 
-	"github.com/pkg/errors"
-
 	oracleast "github.com/bytebase/omni/oracle/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -30,7 +28,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	for _, ast := range asts {
 		omniAST, ok := ast.(*OmniAST)
 		if !ok {
-			return nil, errors.New("expected omni AST for Oracle")
+			continue
 		}
 		extractor.extract(omniAST)
 	}

@@ -122,6 +122,17 @@ UPDATE test SET c1 = 2 WHERE c1 = 2;`
 		require.Contains(t, result, `UPDATE SET t."C1" = b."C1"`)
 	})
 
+	t.Run("same-line multi statement", func(t *testing.T) {
+		input := `UPDATE test SET c1 = 1 WHERE c1 = 1; UPDATE test SET c1 = 2 WHERE c1 = 2;`
+
+		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+		}, input, restoreBackupItem(0, math.MaxInt32))
+		require.NoError(t, err)
+		require.Contains(t, result, "UPDATE test SET c1 = 1 WHERE c1 = 1\nUPDATE test SET c1 = 2 WHERE c1 = 2")
+		require.Contains(t, result, `UPDATE SET t."C1" = b."C1"`)
+	})
+
 	t.Run("multi-line delete", func(t *testing.T) {
 		input := `DELETE FROM test
 WHERE c1 = 1;`
