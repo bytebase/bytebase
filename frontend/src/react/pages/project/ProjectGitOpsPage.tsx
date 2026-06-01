@@ -25,7 +25,6 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { useDBGroupStore } from "@/store/modules/dbGroup";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -42,7 +41,6 @@ import {
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
-  const dbGroupStore = useDBGroupStore();
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const listWorkloadIdentities = useAppStore(
@@ -112,7 +110,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   // Database group options
   const [dbGroupOptions, setDbGroupOptions] = useState<ComboboxOption[]>([]);
   useEffect(() => {
-    dbGroupStore
+    useAppStore
+      .getState()
       .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
       .then((groups) => {
         setDbGroupOptions(
@@ -123,7 +122,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         );
       })
       .catch(() => {});
-  }, [projectName, dbGroupStore]);
+  }, [projectName]);
 
   // Database options for individual selection
   const [dbOptions, setDbOptions] = useState<ComboboxOption[]>([]);
