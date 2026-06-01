@@ -146,11 +146,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         // the policy without a second fetch. Dynamic import to avoid a
         // static module-load cycle (Pinia projectIamPolicy transitively
         // imports `@/store` chains that would re-enter this app store).
+        // Also run composePolicyBindings so the Pinia user / group /
+        // service-account / workload-identity stores that `getMemberBindings`
+        // reads from are populated — without this prefetch, the project
+        // members table renders "unknown" titles until some unrelated
+        // load happens.
         try {
-          const { useProjectIamPolicyStore } = await import(
-            "@/store/modules/v1/projectIamPolicy"
-          );
+          const { useProjectIamPolicyStore, composePolicyBindings } =
+            await import("@/store/modules/v1/projectIamPolicy");
           useProjectIamPolicyStore().setProjectIamPolicy(project, policy);
+          // Prefetch policy members into the Pinia user / group /
+          // service-account / workload-identity stores so getMemberBindings
+          // can resolve titles immediately. This is the same step the
+          // legacy fetchProjectIamPolicy path used to run.
+          await composePolicyBindings(policy.bindings);
         } catch {
           // Pinia not available (e.g. some isolated test). Safe to ignore —
           // the app-store cache is already populated.
@@ -204,12 +213,16 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     }));
     // Bridge to the Pinia projectIamPolicy store so the legacy
     // permission chain sees the updated policy. setProjectIamPolicy also
-    // invalidates the Pinia permission cache by project.
+    // invalidates the Pinia permission cache by project. composePolicyBindings
+    // refreshes the Pinia user / group / service-account / workload-identity
+    // stores that getMemberBindings reads — without it the members table
+    // could render stale titles for newly granted members.
     try {
-      const { useProjectIamPolicyStore } = await import(
+      const { useProjectIamPolicyStore, composePolicyBindings } = await import(
         "@/store/modules/v1/projectIamPolicy"
       );
       useProjectIamPolicyStore().setProjectIamPolicy(project, updated);
+      await composePolicyBindings(updated.bindings);
     } catch {
       // Pinia not available — app-store cache is already populated.
     }
