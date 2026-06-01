@@ -229,10 +229,6 @@ vi.mock("@/store", () => ({
     getDatabaseByName: mocks.getDatabaseByName,
     batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases,
   }),
-  useDBGroupStore: () => ({
-    getDBGroupByName: mocks.getDBGroupByName,
-    getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
-  }),
   useEnvironmentV1Store: () => ({
     getEnvironmentByName: mocks.getEnvironmentByName,
   }),
@@ -244,7 +240,30 @@ vi.mock("@/store", () => ({
 vi.mock("@/types", () => ({
   isValidDatabaseGroupName: mocks.isValidDatabaseGroupName,
   isValidDatabaseName: mocks.isValidDatabaseName,
+  unknownDatabaseGroup: () => ({ name: "", matchedDatabases: [] }),
 }));
+
+vi.mock("@/react/stores/app", () => {
+  // The migrated component reads dbGroup state two ways: imperative
+  // `useAppStore.getState().<method>()` and the reactive selector
+  // `useAppStore((s) => s.dbGroupsByName[name])`. Delegate the map lookup to
+  // the existing `getDBGroupByName` mock so per-test setup keeps working.
+  const dbGroupsByName = new Proxy({} as Record<string, unknown>, {
+    get: (_t, key) =>
+      typeof key === "string" ? mocks.getDBGroupByName(key) : undefined,
+  });
+  const useAppStore = Object.assign(
+    (selector: (s: { dbGroupsByName: Record<string, unknown> }) => unknown) =>
+      selector({ dbGroupsByName }),
+    {
+      getState: () => ({
+        getDBGroupByName: mocks.getDBGroupByName,
+        getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
+      }),
+    }
+  );
+  return { useAppStore };
+});
 
 vi.mock("@/utils", () => ({
   extractDatabaseResourceName: mocks.extractDatabaseResourceName,
