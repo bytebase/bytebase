@@ -16,7 +16,7 @@
 - Modify `proto/v1/v1/release_service.proto`: add `VCSUser` and optional `CheckReleaseRequest.vcs_user`.
 - Modify `proto/v1/v1/actuator_service.proto`: add `active_vcs_user_count` to `ActuatorInfo`.
 - Modify `proto/v1/v1/subscription_service.proto`: add `google.api.HttpBody` import and `ExportVCSProviderUsers`.
-- Create `backend/migrator/migration/3.18/0003##vcs_provider_user.sql`: add table and index.
+- Create `backend/migrator/migration/3.19/0000##vcs_provider_user.sql`: add table and index.
 - Modify `backend/migrator/migration/LATEST.sql`: add table and index.
 - Modify `backend/migrator/migrator_test.go`: update latest migration path.
 - Create `backend/store/vcs_provider_user.go`: store model, count, touch, list/export helpers.
@@ -49,7 +49,7 @@
 - Modify: `proto/v1/v1/release_service.proto`
 - Modify: `proto/v1/v1/actuator_service.proto`
 - Modify: `proto/v1/v1/subscription_service.proto`
-- Create: `backend/migrator/migration/3.18/0003##vcs_provider_user.sql`
+- Create: `backend/migrator/migration/3.19/0000##vcs_provider_user.sql`
 - Modify: `backend/migrator/migration/LATEST.sql`
 - Modify: `backend/migrator/migrator_test.go`
 
@@ -127,7 +127,7 @@ message ExportVCSProviderUsersRequest {}
 
 - [ ] **Step 5: Add migration**
 
-Create `backend/migrator/migration/3.18/0003##vcs_provider_user.sql`:
+Create `backend/migrator/migration/3.19/0000##vcs_provider_user.sql`:
 
 ```sql
 CREATE TABLE vcs_provider_user (
@@ -152,8 +152,8 @@ Insert the same `CREATE TABLE` and `CREATE INDEX` into `backend/migrator/migrati
 In `backend/migrator/migrator_test.go`, update:
 
 ```go
-require.Equal(t, semver.MustParse("3.18.3"), *files[len(files)-1].version)
-require.Equal(t, "migration/3.18/0003##vcs_provider_user.sql", files[len(files)-1].path)
+require.Equal(t, semver.MustParse("3.19.0"), *files[len(files)-1].version)
+require.Equal(t, "migration/3.19/0000##vcs_provider_user.sql", files[len(files)-1].path)
 ```
 
 - [ ] **Step 8: Generate proto code**
