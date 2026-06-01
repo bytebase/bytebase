@@ -23,8 +23,6 @@ import (
 type openAIRequest struct {
 	Model    string          `json:"model"`
 	Messages []openAIMessage `json:"messages"`
-	TopP     float64         `json:"top_p"`
-	Stop     []string        `json:"stop,omitempty"`
 }
 
 type openAIMessage struct {
@@ -78,13 +76,12 @@ type geminiResponse struct {
 
 // claudeRequest represents the payload for Claude API requests.
 type claudeRequest struct {
-	Model         string          `json:"model"`
-	Messages      []claudeMessage `json:"messages"`
-	MaxTokens     int             `json:"max_tokens"`
-	Temperature   float64         `json:"temperature"`
-	TopP          float64         `json:"top_p"`
-	TopK          int             `json:"top_k"`
-	StopSequences []string        `json:"stop_sequences,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []claudeMessage `json:"messages"`
+	MaxTokens   int             `json:"max_tokens"`
+	Temperature float64         `json:"temperature"`
+	TopP        float64         `json:"top_p"`
+	TopK        int             `json:"top_k"`
 }
 
 type claudeMessage struct {
@@ -124,17 +121,7 @@ func (s *SQLService) AICompletion(ctx context.Context, req *connect.Request[v1pb
 }
 
 func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
-	payload := openAIRequest{
-		Model: aiSetting.Model,
-		TopP:  1.0,
-		Stop:  []string{"#", ";"},
-	}
-	for _, m := range request.Messages {
-		payload.Messages = append(payload.Messages, openAIMessage{
-			Role:    m.Role,
-			Content: m.Content,
-		})
-	}
+	payload := buildOpenAICompletionRequest(aiSetting.Model, request)
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Errorf("failed to marshal OpenAI request payload: %s", err)
@@ -187,6 +174,19 @@ func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		})
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func buildOpenAICompletionRequest(model string, request *v1pb.AICompletionRequest) openAIRequest {
+	payload := openAIRequest{
+		Model: model,
+	}
+	for _, m := range request.Messages {
+		payload.Messages = append(payload.Messages, openAIMessage{
+			Role:    m.Role,
+			Content: m.Content,
+		})
+	}
+	return payload
 }
 
 // Gemini API docs: https://ai.google.dev/gemini-api/docs
@@ -306,13 +306,12 @@ func callClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	payload := claudeRequest{
-		Model:         aiSetting.Model,
-		Messages:      messages,
-		MaxTokens:     4096,
-		Temperature:   0.7,
-		TopP:          0.95,
-		TopK:          0,
-		StopSequences: []string{"#", ";"},
+		Model:       aiSetting.Model,
+		Messages:    messages,
+		MaxTokens:   4096,
+		Temperature: 0.7,
+		TopP:        0.95,
+		TopK:        0,
 	}
 
 	payloadBytes, err := json.Marshal(payload)
