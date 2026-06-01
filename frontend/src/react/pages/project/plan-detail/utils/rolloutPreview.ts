@@ -1,9 +1,6 @@
 import { create } from "@bufbuild/protobuf";
-import {
-  useDatabaseV1Store,
-  useDBGroupStore,
-  useEnvironmentV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
@@ -101,12 +98,13 @@ async function extractAndExpandDatabaseTargets(
 async function expandDatabaseGroup(
   databaseGroupName: string
 ): Promise<string[]> {
-  const dbGroupStore = useDBGroupStore();
   try {
-    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      databaseGroupName,
-      { view: DatabaseGroupView.FULL, silent: true }
-    );
+    const dbGroup = await useAppStore
+      .getState()
+      .getOrFetchDBGroupByName(databaseGroupName, {
+        view: DatabaseGroupView.FULL,
+        silent: true,
+      });
     return dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
   } catch {
     return [];

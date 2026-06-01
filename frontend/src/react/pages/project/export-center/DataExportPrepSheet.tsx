@@ -23,6 +23,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -30,7 +31,6 @@ import {
   experimentalCreateIssueByPlan,
   pushNotification,
   useDatabaseV1Store,
-  useDBGroupStore,
   useProjectV1Store,
   useSettingV1Store,
   useSheetV1Store,
@@ -96,7 +96,6 @@ export function DataExportPrepSheet({
   const currentUser = useCurrentUser();
   const sheetStore = useSheetV1Store();
   const dbStore = useDatabaseV1Store();
-  const dbGroupStore = useDBGroupStore();
   const projectStore = useProjectV1Store();
   const settingStore = useSettingV1Store();
 
@@ -178,12 +177,12 @@ export function DataExportPrepSheet({
       if (isValidDatabaseName(target)) {
         dbStore.getOrFetchDatabaseByName(target);
       } else if (isValidDatabaseGroupName(target)) {
-        dbGroupStore.getOrFetchDBGroupByName(target, {
+        useAppStore.getState().getOrFetchDBGroupByName(target, {
           view: DatabaseGroupView.FULL,
         });
       }
     }
-  }, [targets, dbStore, dbGroupStore]);
+  }, [targets, dbStore]);
 
   // Reset on open or when seed changes while open
   const seedKey = seed?.selectedDatabaseNames?.join(",") ?? "";
@@ -866,19 +865,19 @@ function DatabaseGroupSelector({
   onSelectedGroupChange: (name: string | undefined) => void;
 }) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
   const [groups, setGroups] = useState<DatabaseGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    dbGroupStore
+    useAppStore
+      .getState()
       .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
       .then((result) => {
         setGroups(result);
       })
       .finally(() => setLoading(false));
-  }, [projectName, dbGroupStore]);
+  }, [projectName]);
 
   if (loading) {
     return (

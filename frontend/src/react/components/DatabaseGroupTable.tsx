@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseGroupDataTable } from "@/react/components/DatabaseGroupDataTable";
 import { SearchInput } from "@/react/components/ui/search-input";
-import { useDBGroupStore } from "@/store/modules";
+import { useAppStore } from "@/react/stores/app";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 
@@ -62,7 +62,6 @@ export function DatabaseGroupTable({
   searchPlaceholder,
 }: Props) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
 
   const [search, setSearch] = useState("");
   const [internalList, setInternalList] = useState<DatabaseGroup[]>([]);
@@ -74,7 +73,8 @@ export function DatabaseGroupTable({
     let cancelled = false;
     setInternalReady(false);
     setInternalList([]);
-    void dbGroupStore
+    void useAppStore
+      .getState()
       .fetchDBGroupListByProjectName(projectName, view)
       .then((groups) => {
         if (cancelled) return;
@@ -84,7 +84,7 @@ export function DatabaseGroupTable({
     return () => {
       cancelled = true;
     };
-  }, [dbGroupStore, projectName, view, externalList]);
+  }, [projectName, view, externalList]);
 
   const sourceList = externalList ?? internalList;
   const loading =

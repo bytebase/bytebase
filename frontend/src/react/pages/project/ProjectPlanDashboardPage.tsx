@@ -61,7 +61,6 @@ import {
 import {
   pushNotification,
   useDatabaseV1Store,
-  useDBGroupStore,
   useEnvironmentV1Store,
   useProjectV1Store,
   useUIStateStore,
@@ -1119,19 +1118,19 @@ function DatabaseGroupSelector({
   onSelectedGroupChange: (name: string | undefined) => void;
 }) {
   const { t } = useTranslation();
-  const dbGroupStore = useDBGroupStore();
   const [groups, setGroups] = useState<DatabaseGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    dbGroupStore
+    useAppStore
+      .getState()
       .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
       .then((result) => {
         setGroups(result);
       })
       .finally(() => setLoading(false));
-  }, [projectName, dbGroupStore]);
+  }, [projectName]);
 
   if (loading) {
     return (

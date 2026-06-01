@@ -8,7 +8,6 @@ export * from "./serviceAccount";
 export * from "./workloadIdentity";
 export * from "./workspaceApprovalSetting";
 export * from "./role";
-export * from "./dbGroup";
 export * from "./utils";
 export * from "./rollout";
 

@@ -1,7 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ReactShellBridgeEvent } from "@/react/shell-bridge";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
+import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   AccessGrant_Status,
@@ -9,7 +9,10 @@ import {
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  DatabaseGroupSchema,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import {
   ChangelogSchema,
   ChangelogView,
@@ -1911,5 +1914,44 @@ describe("useAppStore", () => {
     });
 
     expect(mocks.getDatabaseMetadata).toHaveBeenCalledTimes(2);
+  });
+
+  describe("getDBGroupByName / getOrFetchDBGroupByName cache semantics", () => {
+    test("getDBGroupByName returns unknownDatabaseGroup when absent", () => {
+      const store = createAppStore();
+      const group = store
+        .getState()
+        .getDBGroupByName("projects/p/databaseGroups/x");
+      expect(isValidDatabaseGroupName(group.name)).toBe(false);
+    });
+
+    test("getDBGroupByName with FULL view misses a BASIC-only cache entry", () => {
+      const store = createAppStore();
+      const name = "projects/p/databaseGroups/g";
+      store.setState({
+        dbGroupsByName: {
+          [name]: createProto(DatabaseGroupSchema, { name, title: "g" }),
+        },
+        dbGroupViewByName: { [name]: DatabaseGroupView.BASIC },
+      });
+      expect(store.getState().getDBGroupByName(name).name).toBe(name);
+      const full = store
+        .getState()
+        .getDBGroupByName(name, DatabaseGroupView.FULL);
+      expect(isValidDatabaseGroupName(full.name)).toBe(false);
+    });
+
+    test("getOrFetchDBGroupByName returns cached entry without a request", async () => {
+      const store = createAppStore();
+      const name = "projects/p/databaseGroups/g";
+      store.setState({
+        dbGroupsByName: {
+          [name]: createProto(DatabaseGroupSchema, { name, title: "g" }),
+        },
+        dbGroupViewByName: { [name]: DatabaseGroupView.BASIC },
+      });
+      const group = await store.getState().getOrFetchDBGroupByName(name);
+      expect(group.name).toBe(name);
+    });
   });
 });
