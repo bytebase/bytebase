@@ -280,3 +280,76 @@ func TestAsPingCapASTLineTrackingMatchesCanonical(t *testing.T) {
 	a.Equal(2, bridged.Node.OriginTextPosition(),
 		"sanity: ALTER TABLE on line 2 of the input should report OriginTextPosition=2")
 }
+
+// TestAsPingCapASTLineTrackingMatchesCanonicalBlankLines exercises the
+// leadingNewlinesStripped arithmetic in applyTiDBLineTracking (BYT-9381). With
+// blank lines between statements, the native pingcap parser strips the leading
+// newlines from the second statement's Text(), so the bridge must add them back
+// to report the correct absolute OriginTextPosition. The single-newline sibling
+// test above keeps leadingNewlinesStripped == 0 and so never covers this path;
+// a regression in the arithmetic would otherwise land silently.
+func TestAsPingCapASTLineTrackingMatchesCanonicalBlankLines(t *testing.T) {
+	a := require.New(t)
+
+	// Two blank lines between the statements: ALTER TABLE is on line 4.
+	multi := "CREATE TABLE foo (id INT);\n\n\nALTER TABLE foo ADD COLUMN x INT NOT NULL;"
+
+	canonical, err := ParseTiDBForSyntaxCheck(multi)
+	a.NoError(err)
+	a.Len(canonical, 2)
+	canonicalSecond, ok := canonical[1].(*AST)
+	a.True(ok)
+
+	splits, err := base.SplitMultiSQL(storepb.Engine_TIDB, multi)
+	a.NoError(err)
+	a.GreaterOrEqual(len(splits), 2)
+	secondSplit := splits[1]
+
+	o := &OmniAST{
+		Text:          secondSplit.Text,
+		StartPosition: &storepb.Position{Line: int32(secondSplit.BaseLine()) + 1},
+	}
+	bridged, ok := o.AsPingCapAST()
+	a.True(ok)
+
+	a.Equal(
+		canonicalSecond.Node.OriginTextPosition(),
+		bridged.Node.OriginTextPosition(),
+		"bridge OriginTextPosition must match ParseTiDBForSyntaxCheck across blank lines",
+	)
+	a.Equal(4, bridged.Node.OriginTextPosition(),
+		"sanity: ALTER TABLE on line 4 (after two blank lines) should report OriginTextPosition=4")
+}
+
+// TestApplyTiDBLineTracking pins the leading-newline arithmetic directly across
+// the edges the integration tests don't all exercise: no leading whitespace
+// (line 1), single vs multiple leading newlines, CRLF line endings, a non-zero
+// baseLine, and non-newline leading whitespace (BYT-9381).
+func TestApplyTiDBLineTracking(t *testing.T) {
+	nodes, err := ParseTiDB("SELECT 1", "", "")
+	require.NoError(t, err)
+	require.Len(t, nodes, 1)
+	node := nodes[0]
+
+	cases := []struct {
+		name     string
+		baseLine int
+		text     string
+		want     int
+	}{
+		{"no leading whitespace is line 1", 0, "SELECT 1", 1},
+		{"single leading newline", 0, "\nSELECT 1", 2},
+		{"three leading newlines (the BYT-9381 bug)", 0, "\n\n\nSELECT 1", 4},
+		{"CRLF leading newlines count once each", 0, "\r\n\r\n\r\nSELECT 1", 4},
+		{"non-zero baseLine plus two newlines", 5, "\n\nSELECT 1", 8},
+		{"leading spaces and tabs, no newline", 0, "  \tSELECT 1", 1},
+		{"mixed leading whitespace with one newline", 0, "  \n  SELECT 1", 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := applyTiDBLineTracking(node, tc.baseLine, tc.text)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
