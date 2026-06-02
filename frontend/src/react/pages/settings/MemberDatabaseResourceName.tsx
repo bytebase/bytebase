@@ -1,7 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useDatabaseV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -14,7 +15,6 @@ export function MemberDatabaseResourceName({
   resource?: DatabaseResource;
 }) {
   const databaseStore = useDatabaseV1Store();
-  const instanceStore = useInstanceV1Store();
 
   const display = useVueState(() => {
     if (!resource) {
@@ -27,7 +27,7 @@ export function MemberDatabaseResourceName({
     const database = databaseStore.getDatabaseByName(resource.databaseFullName);
     const expectedInstanceName = `instances/${instanceName}`;
     const instance = instanceName
-      ? instanceStore.getInstanceByName(expectedInstanceName)
+      ? useAppStore.getState().getInstanceByName(expectedInstanceName)
       : undefined;
     const validInstance =
       instance?.name === expectedInstanceName ? instance : undefined;

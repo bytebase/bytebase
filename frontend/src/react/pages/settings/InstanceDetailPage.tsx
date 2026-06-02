@@ -42,7 +42,6 @@ import {
   useActuatorV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -63,6 +62,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { unknownInstance } from "@/types/v1/instance";
 import {
   extractProjectResourceName,
   getDefaultPagination,
@@ -77,14 +77,15 @@ const isInstanceHash = (x: unknown): x is InstanceHash =>
 
 export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
-  const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
   const instanceName = `${instanceNamePrefix}${instanceId}`;
-  const instance = useVueState(() =>
-    instanceStore.getInstanceByName(instanceName)
+  const cachedInstance = useAppStore((s) => s.instancesByName[instanceName]);
+  const instance = useMemo(
+    () => cachedInstance ?? unknownInstance(),
+    [cachedInstance, instanceName]
   );
 
   const [selectedTab, setSelectedTab] = useState<InstanceHash>("overview");
@@ -253,14 +254,12 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     },
     [databaseStore, refresh, t]
   );
-  // Trigger a Pinia-side fetch on mount. The parent `InstanceRouteShell`
-  // populates the React-side `useAppStore` cache, but this page reads
-  // from the Pinia v1 store (`useInstanceV1Store`) — they're separate
-  // caches. Without this, hard-refreshing the page shows "Unknown
-  // instance" because the Pinia cache hasn't been hydrated.
+  // Trigger a fetch on mount so the instance is hydrated into the
+  // `useAppStore` cache. Without this, hard-refreshing the page shows
+  // "Unknown instance" because the cache hasn't been populated yet.
   useEffect(() => {
-    void instanceStore.getOrFetchInstanceByName(instanceName);
-  }, [instanceStore, instanceName]);
+    void useAppStore.getState().getOrFetchInstanceByName(instanceName);
+  }, [instanceName]);
 
   // Sync tab with URL hash
   useEffect(() => {
@@ -286,10 +285,10 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
   const syncSchema = useCallback(
     async (enableFullSync: boolean) => {
-      await instanceStore.syncInstance(instance.name, enableFullSync);
+      await useAppStore.getState().syncInstance(instance.name, enableFullSync);
       databaseStore.removeCacheByInstance(instance.name);
     },
-    [instance.name, instanceStore, databaseStore]
+    [instance.name, databaseStore]
   );
 
   // Database filter

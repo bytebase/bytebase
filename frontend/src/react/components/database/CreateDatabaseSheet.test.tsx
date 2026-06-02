@@ -131,17 +131,22 @@ const stableProjectStore = {
   },
   fetchProjectList: vi.fn().mockResolvedValue({ projects: [] }),
 };
-const stableInstanceStore = {
-  get getOrFetchInstanceByName() {
-    return mocks.getOrFetchInstanceByName;
-  },
-};
-
 vi.mock("@/store", () => ({
   useProjectV1Store: () => stableProjectStore,
-  useInstanceV1Store: () => stableInstanceStore,
   useEnvironmentV1Store: () => ({ environmentList: [] }),
   pushNotification: vi.fn(),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({ getOrFetchInstanceByName: mocks.getOrFetchInstanceByName }),
+    {
+      getState: () => ({
+        getOrFetchInstanceByName: mocks.getOrFetchInstanceByName,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/react/stores/app/issue", () => ({

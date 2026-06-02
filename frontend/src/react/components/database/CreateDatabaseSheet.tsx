@@ -20,12 +20,12 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
 import {
   pushNotification,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -65,7 +65,6 @@ export function CreateDatabaseSheet({
 }: CreateDatabaseSheetProps) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
   const currentUser = useCurrentUser();
 
@@ -241,7 +240,7 @@ export function CreateDatabaseSheet({
       )
     ) {
       const fetchId = ++instanceFetchRef.current;
-      const full = await instanceStore.getOrFetchInstanceByName(name);
+      const full = await useAppStore.getState().getOrFetchInstanceByName(name);
       if (fetchId !== instanceFetchRef.current) return;
       if (full?.roles) {
         setInstanceRoles(

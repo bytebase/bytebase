@@ -5,7 +5,7 @@ import type {
   ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { useInstanceV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   extractEnvironmentResourceName,
@@ -27,11 +27,10 @@ export function useCommonSearchScopeOptions(
   supportOptionIdList: SearchScopeId[]
 ): ScopeOption[] {
   const { t } = useTranslation();
-  const instanceStore = useInstanceV1Store();
 
   const searchInstance = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const resp = await instanceStore.fetchInstanceList({
+      const resp = await useAppStore.getState().fetchInstanceList({
         pageToken: undefined,
         pageSize: getDefaultPagination(),
         filter: { query: keyword },
@@ -55,7 +54,7 @@ export function useCommonSearchScopeOptions(
         };
       });
     },
-    [instanceStore]
+    []
   );
 
   return useMemo(() => {

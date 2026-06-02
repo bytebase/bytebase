@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Combobox } from "@/react/components/ui/combobox";
-import { useInstanceV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, getDefaultPagination } from "@/utils";
@@ -29,7 +29,6 @@ export function InstanceSelect({
   engines,
 }: InstanceSelectProps) {
   const { t } = useTranslation();
-  const instanceStore = useInstanceV1Store();
   const [instances, setInstances] = useState<Instance[]>([]);
 
   // Stabilize engines array to avoid re-fetching on every render
@@ -50,14 +49,15 @@ export function InstanceSelect({
 
   const fetchInstances = useCallback(
     (query: string) => {
-      instanceStore
+      useAppStore
+        .getState()
         .fetchInstanceList({
           pageSize: getDefaultPagination(),
           filter: { query, engines: stableEngines },
         })
         .then((result) => setInstances(result.instances));
     },
-    [instanceStore, stableEngines]
+    [stableEngines]
   );
 
   useEffect(() => {

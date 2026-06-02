@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import { useInstanceV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
@@ -37,7 +37,6 @@ export function DataSourceSection({
     readonlyDataSourceList,
     hasReadOnlyDataSource,
   } = ctx;
-  const instanceStore = useInstanceV1Store();
 
   const allowUpdate = hasWorkspacePermissionV2("bb.instances.update");
 
@@ -67,7 +66,7 @@ export function DataSourceSection({
   const handleDeleteDataSource = useCallback(
     async (ds: EditDataSource) => {
       if (instance && !ds.pendingCreate) {
-        await instanceStore.deleteDataSource(instance, ds);
+        await useAppStore.getState().deleteDataSource(instance, ds);
       }
       setDataSourceEditState((prev) => {
         const dataSources = prev.dataSources.filter((d) => d.id !== ds.id);
@@ -80,7 +79,7 @@ export function DataSourceSection({
         return { dataSources, editingDataSourceId };
       });
     },
-    [instance, instanceStore, setDataSourceEditState]
+    [instance, setDataSourceEditState]
   );
 
   const handleDataSourceChange = useCallback(
