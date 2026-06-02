@@ -16,6 +16,7 @@ import {
   unknownEnvironment,
 } from "@/types/v1/environment";
 import { isValidInstanceName } from "@/types/v1/instance";
+import { workspaceCacheScope } from "@/utils/storage-keys";
 import type { AppStoreState } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
@@ -25,6 +26,15 @@ const ALL_USERS_NAME = `${userNamePrefix}allUsers`;
 
 export function getCurrentUserEmail(get: () => AppStoreState): string {
   return get().currentUser?.email ?? "";
+}
+
+// Workspace segment for localStorage cache keys — "" for self-host (keys stay
+// shared/unchanged), the workspace name for SaaS (keys are workspace-isolated).
+export function getWorkspaceCacheScope(get: () => AppStoreState): string {
+  return workspaceCacheScope(
+    get().isSaaSMode(),
+    get().currentUser?.workspace ?? ""
+  );
 }
 
 export function readJson<T>(key: string, fallback: T): T {

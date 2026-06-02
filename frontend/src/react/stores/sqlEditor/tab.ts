@@ -24,6 +24,7 @@ import {
   getSheetStatement,
   storageKeySqlEditorCurrentTab,
   storageKeySqlEditorTabs,
+  workspaceCacheScope,
 } from "@/utils";
 import {
   getSQLEditorEditorState,
@@ -120,31 +121,50 @@ const safeWrite = (key: string, value: unknown) => {
 const isPersistentTabArray = (v: unknown): v is PersistentTab[] =>
   Array.isArray(v);
 
-const currentScope = (): { project: string; email: string } | null => {
+const currentScope = (): {
+  wsScope: string;
+  project: string;
+  email: string;
+} | null => {
   const project = getSQLEditorEditorState().project;
   if (!project) return null;
   // The current user is loaded into the app store during tab hydration
   // (see hydrateProjectTabs), so it's available by the time tabs are
   // persisted on user actions.
-  const email = useAppStore.getState().currentUser?.email ?? "";
-  return { project, email };
+  const state = useAppStore.getState();
+  const email = state.currentUser?.email ?? "";
+  const wsScope = workspaceCacheScope(
+    state.isSaaSMode(),
+    state.currentUser?.workspace ?? ""
+  );
+  return { wsScope, project, email };
 };
 
 const persistOpenTabs = (openTabs: PersistentTab[]) => {
   const scope = currentScope();
   if (!scope) return;
-  safeWrite(storageKeySqlEditorTabs(scope.project, scope.email), openTabs);
+  safeWrite(
+    storageKeySqlEditorTabs(scope.wsScope, scope.project, scope.email),
+    openTabs
+  );
 };
 
 const persistCurrentTabId = (id: string) => {
   const scope = currentScope();
   if (!scope) return;
-  safeWrite(storageKeySqlEditorCurrentTab(scope.project, scope.email), id);
+  safeWrite(
+    storageKeySqlEditorCurrentTab(scope.wsScope, scope.project, scope.email),
+    id
+  );
 };
 
-const readOpenTabs = (project: string, email: string): PersistentTab[] =>
+const readOpenTabs = (
+  wsScope: string,
+  project: string,
+  email: string
+): PersistentTab[] =>
   safeRead<PersistentTab[]>(
-    storageKeySqlEditorTabs(project, email),
+    storageKeySqlEditorTabs(wsScope, project, email),
     (v) => (isPersistentTabArray(v) ? v : undefined),
     []
   );
@@ -396,9 +416,14 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
   // Ensure the current user is loaded so tab storage is scoped to the
   // right email — the SQL editor route doesn't otherwise populate it.
   await useAppStore.getState().loadCurrentUser();
-  const email = useAppStore.getState().currentUser?.email ?? "";
+  const state = useAppStore.getState();
+  const email = state.currentUser?.email ?? "";
+  const wsScope = workspaceCacheScope(
+    state.isSaaSMode(),
+    state.currentUser?.workspace ?? ""
+  );
 
-  const storedTabs = readOpenTabs(project, email);
+  const storedTabs = readOpenTabs(wsScope, project, email);
 
   const hydratedTabs: SQLEditorTab[] = [];
   const validPersistent: PersistentTab[] = [];

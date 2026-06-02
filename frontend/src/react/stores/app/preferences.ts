@@ -7,6 +7,7 @@ import {
 import type { AppSliceCreator, PreferencesSlice } from "./types";
 import {
   getCurrentUserEmail,
+  getWorkspaceCacheScope,
   MAX_RECENT_PROJECT,
   MAX_RECENT_VISIT,
   readJson,
@@ -32,7 +33,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   setRecentProject: (name) => {
     const email = getCurrentUserEmail(get);
     if (!email || !name) return;
-    const key = storageKeyRecentProjects(email);
+    const key = storageKeyRecentProjects(getWorkspaceCacheScope(get), email);
     const previous = readJson<string[]>(key, []);
     writeJson(
       key,
@@ -46,7 +47,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   recordRecentVisit: (path) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyRecentVisit(email);
+    const key = storageKeyRecentVisit(getWorkspaceCacheScope(get), email);
     const previous = readJson<string[]>(key, []);
     const pathOnly = path.replace(/[?#].*$/, "");
     const next = [
@@ -59,7 +60,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   removeRecentVisit: (path) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyRecentVisit(email);
+    const key = storageKeyRecentVisit(getWorkspaceCacheScope(get), email);
     const previous = readJson<string[]>(key, []);
     writeJson(
       key,

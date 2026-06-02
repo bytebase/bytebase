@@ -6,9 +6,9 @@ import {
   STORAGE_KEY_ONBOARDING,
   STORAGE_KEY_SCHEMA_EDITOR_PREVIEW,
   STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
-  STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
+  storageKeySqlEditorLastProject,
 } from "./storage-keys";
 import { migrateStorageKeys } from "./storage-migrate";
 
@@ -179,7 +179,7 @@ describe("SQL editor migrations", () => {
       '"projects/my-project"'
     );
     migrateStorageKeys();
-    expect(localStorage.getItem(STORAGE_KEY_SQL_EDITOR_LAST_PROJECT)).toBe(
+    expect(localStorage.getItem(storageKeySqlEditorLastProject(""))).toBe(
       '"projects/my-project"'
     );
     expect(
@@ -507,7 +507,7 @@ describe("full migration scenario", () => {
     expect(localStorage.getItem(STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT)).toBe(
       "100"
     );
-    expect(localStorage.getItem(STORAGE_KEY_SQL_EDITOR_LAST_PROJECT)).toBe(
+    expect(localStorage.getItem(storageKeySqlEditorLastProject(""))).toBe(
       '"projects/p1"'
     );
     expect(

@@ -16,6 +16,7 @@ import {
   getDefaultPagination,
   isDatabaseV1Queryable,
   storageKeySqlEditorConnExpanded,
+  workspaceCacheScope,
 } from "@/utils";
 
 const defaultEnvironmentFactor: StatefulFactor = {
@@ -90,10 +91,17 @@ export function useSQLEditorTreeByEnvironment(
   const fetchDatabaseList = useAppStore((s) => s.fetchDatabases);
   const project = useSQLEditorEditorState((s) => s.project);
   const getEnvironmentByName = useAppStore((s) => s.getEnvironmentByName);
+  const isSaaS = useAppStore((s) => s.isSaaSMode());
+  const workspace = useAppStore((s) => s.currentUser?.workspace ?? "");
 
   const storageKey = useMemo(
-    () => storageKeySqlEditorConnExpanded(environment, email),
-    [environment, email]
+    () =>
+      storageKeySqlEditorConnExpanded(
+        workspaceCacheScope(isSaaS, workspace),
+        environment,
+        email
+      ),
+    [isSaaS, workspace, environment, email]
   );
 
   const [tree, setTree] = useState<SQLEditorTreeNode[]>([]);

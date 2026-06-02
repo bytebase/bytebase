@@ -29,6 +29,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import type {
@@ -347,6 +348,12 @@ function SingleResultViewInner({
     [rows, columns, cellValueMatches]
   );
 
+  // Tracks whether the previous searchParams already resolved to the
+  // "active search, zero matches" state. Used to fire the no-results
+  // notification only on the transition into that state — typing extra
+  // characters that keep the match set empty must not re-notify.
+  const wasInNoResultsRef = useRef(false);
+
   useEffect(() => {
     const next = getNextCandidateRowIndex(0, searchParams);
     const indexes: number[] = [];
@@ -357,7 +364,19 @@ function SingleResultViewInner({
     }
     setSearchCandidateRowIndexs(indexes);
     setSearchCandidateActiveIndex(0);
-  }, [searchParams, getNextCandidateRowIndex]);
+
+    const searchActive =
+      searchParams.query.trim().length > 0 || searchParams.scopes.length > 0;
+    const isNoResults = searchActive && indexes.length === 0;
+    if (isNoResults && !wasInNoResultsRef.current) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "INFO",
+        title: t("sql-editor.search-no-result"),
+      });
+    }
+    wasInNoResultsRef.current = isNoResults;
+  }, [searchParams, getNextCandidateRowIndex, t]);
 
   const activeRowIndex =
     searchCandidateRowIndexs[searchCandidateActiveIndex] ?? -1;

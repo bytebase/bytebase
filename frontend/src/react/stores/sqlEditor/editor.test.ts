@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
-  STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
+  storageKeySqlEditorLastProject,
 } from "@/utils/storage-keys";
 import {
   getSQLEditorEditorState,
@@ -63,7 +63,7 @@ describe("useSQLEditorEditorStore", () => {
     const next = getSQLEditorEditorState();
     expect(next.project).toBe("projects/alpha");
     expect(next.projectContextReady).toBe(true);
-    expect(JSON.parse(storage.get(STORAGE_KEY_SQL_EDITOR_LAST_PROJECT)!)).toBe(
+    expect(JSON.parse(storage.get(storageKeySqlEditorLastProject(""))!)).toBe(
       "projects/alpha"
     );
   });

@@ -21,7 +21,7 @@ import {
 } from "@/react/stores/app/utils";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { displayRoleTitle, formatAbsoluteDateTime } from "@/utils";
-import { storageKeyIamRemind } from "@/utils/storage-keys";
+import { storageKeyIamRemind, workspaceCacheScope } from "@/utils/storage-keys";
 
 interface IAMRemindDialogProps {
   project: Project;
@@ -32,6 +32,7 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
   const route = useCurrentRoute();
   const navigate = useNavigate();
   const currentUser = useAppStore((state) => state.currentUser);
+  const isSaaS = useAppStore((state) => state.isSaaSMode());
   const roles = useAppStore((state) => state.roles);
   const policy = useAppStore(
     (state) => state.projectPoliciesByName[project.name]
@@ -59,7 +60,10 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
   }, [currentUser, policy, roles]);
 
   const storageKey = currentUser?.email
-    ? storageKeyIamRemind(currentUser.email)
+    ? storageKeyIamRemind(
+        workspaceCacheScope(isSaaS, currentUser.workspace),
+        currentUser.email
+      )
     : "";
   const remindKey =
     pendingExpireRoles.length > 0

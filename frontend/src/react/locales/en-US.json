@@ -2656,6 +2656,7 @@
     "scroll-to-bottom": "Scroll to the bottom",
     "scroll-to-top": "Scroll to the top",
     "search-history-by-statement": "Search by statement",
+    "search-no-result": "No matching result found",
     "search-scope-column-description": "Column with {{type}} type. Enter a value and press Enter to jump to the matching row.",
     "search-scope-row-number-description": "Enter a row number to jump to that row.",
     "search-scope-row-number-title": "Row number",

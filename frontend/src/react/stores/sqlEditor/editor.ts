@@ -1,12 +1,14 @@
 import { useSyncExternalStore } from "react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import { useAppStore } from "@/react/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
+  storageKeySqlEditorLastProject,
+  workspaceCacheScope,
 } from "@/utils/storage-keys";
 
 export interface SQLEditorEditorState {
@@ -53,9 +55,25 @@ const safeWrite = (key: string, value: unknown) => {
   }
 };
 
+// Workspace-scoped in SaaS so the last project of workspace A is never read
+// after switching to workspace B (where it doesn't exist). Reads the app store
+// at call time; if it isn't hydrated yet the scope falls back to "" and the
+// project is re-resolved from the route anyway.
+const lastProjectKey = () => {
+  const state = useAppStore.getState();
+  // Defensive: this runs at module-init (store may be pre-hydration) and the
+  // app store is mocked in some tests, so isSaaSMode may be absent. Default to
+  // the unscoped (self-host) key in that case.
+  const isSaaS =
+    typeof state?.isSaaSMode === "function" ? state.isSaaSMode() : false;
+  return storageKeySqlEditorLastProject(
+    workspaceCacheScope(isSaaS, state?.currentUser?.workspace ?? "")
+  );
+};
+
 const readProject = () =>
   safeRead<string>(
-    STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
+    lastProjectKey(),
     (v) => (typeof v === "string" ? v : undefined),
     ""
   );
@@ -95,7 +113,7 @@ export const useSQLEditorEditorStore: UseBoundStore<
         s.project = project;
         s.projectContextReady = true;
       });
-      safeWrite(STORAGE_KEY_SQL_EDITOR_LAST_PROJECT, project);
+      safeWrite(lastProjectKey(), project);
     },
     setProjectContextReady(ready) {
       set((s) => {

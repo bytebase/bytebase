@@ -30,6 +30,7 @@ import {
   storageKeySqlEditorWorksheetFilter,
   storageKeySqlEditorWorksheetFolder,
   storageKeySqlEditorWorksheetTree,
+  workspaceCacheScope,
 } from "@/utils";
 import { type SheetViewMode, SheetViewModeList } from "./types";
 
@@ -260,12 +261,21 @@ const safeWriteJSON = (key: string, value: unknown) => {
   }
 };
 
-const currentScope = (): { project: string; email: string } | null => {
+const currentScope = (): {
+  wsScope: string;
+  project: string;
+  email: string;
+} | null => {
   const project = getSQLEditorEditorState().project;
   if (!project) return null;
   try {
-    const email = useAppStore.getState().currentUser?.email ?? "";
-    return { project, email };
+    const state = useAppStore.getState();
+    const email = state.currentUser?.email ?? "";
+    const wsScope = workspaceCacheScope(
+      state.isSaaSMode(),
+      state.currentUser?.workspace ?? ""
+    );
+    return { wsScope, project, email };
   } catch {
     return null;
   }
@@ -285,12 +295,16 @@ const reloadFromStorage = () => {
   if (!scope) return;
 
   const filter = safeReadJSON(
-    storageKeySqlEditorWorksheetFilter(scope.project, scope.email),
+    storageKeySqlEditorWorksheetFilter(
+      scope.wsScope,
+      scope.project,
+      scope.email
+    ),
     (v) => (isWorksheetFilter(v) ? v : undefined)
   ) ?? { ...INITIAL_FILTER };
 
   const expandedArray = safeReadJSON<string[]>(
-    storageKeySqlEditorWorksheetTree(scope.project, scope.email),
+    storageKeySqlEditorWorksheetTree(scope.wsScope, scope.project, scope.email),
     (v) =>
       Array.isArray(v) && v.every((entry) => typeof entry === "string")
         ? (v as string[])
@@ -315,7 +329,12 @@ const reloadFromStorage = () => {
 
   for (const view of ["my", "shared", "draft"] as const) {
     const folders = safeReadJSON<string[]>(
-      storageKeySqlEditorWorksheetFolder(scope.project, view, scope.email),
+      storageKeySqlEditorWorksheetFolder(
+        scope.wsScope,
+        scope.project,
+        view,
+        scope.email
+      ),
       (v) =>
         Array.isArray(v) && v.every((entry) => typeof entry === "string")
           ? (v as string[])
@@ -339,7 +358,11 @@ const persistFilter = (filter: WorksheetFilter) => {
   const scope = currentScope();
   if (!scope) return;
   safeWriteJSON(
-    storageKeySqlEditorWorksheetFilter(scope.project, scope.email),
+    storageKeySqlEditorWorksheetFilter(
+      scope.wsScope,
+      scope.project,
+      scope.email
+    ),
     filter
   );
 };
@@ -347,16 +370,22 @@ const persistFilter = (filter: WorksheetFilter) => {
 const persistExpandedKeys = (keys: Set<string>) => {
   const scope = currentScope();
   if (!scope) return;
-  safeWriteJSON(storageKeySqlEditorWorksheetTree(scope.project, scope.email), [
-    ...keys,
-  ]);
+  safeWriteJSON(
+    storageKeySqlEditorWorksheetTree(scope.wsScope, scope.project, scope.email),
+    [...keys]
+  );
 };
 
 const persistViewFolders = (view: SheetViewMode, folders: string[]) => {
   const scope = currentScope();
   if (!scope) return;
   safeWriteJSON(
-    storageKeySqlEditorWorksheetFolder(scope.project, view, scope.email),
+    storageKeySqlEditorWorksheetFolder(
+      scope.wsScope,
+      scope.project,
+      view,
+      scope.email
+    ),
     folders
   );
 };

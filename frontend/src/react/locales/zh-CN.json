@@ -2656,6 +2656,7 @@
     "scroll-to-bottom": "滚动到底部",
     "scroll-to-top": "滚动到顶部",
     "search-history-by-statement": "搜索 SQL 语句",
+    "search-no-result": "未找到匹配的结果",
     "search-scope-column-description": "{{type}} 类型的列。输入值并按回车跳转到匹配行。",
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
