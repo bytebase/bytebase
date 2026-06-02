@@ -1,3 +1,4 @@
+import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import type { StateCreator } from "zustand";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
@@ -61,8 +62,10 @@ import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type {
+  DataClassificationSetting_DataClassificationConfig,
   Setting,
   Setting_SettingName,
+  SettingValue,
   WorkspaceProfileSetting,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
@@ -71,8 +74,11 @@ import type {
   QueryRequest,
 } from "@/types/proto-es/v1/sql_service_pb";
 import type {
+  BillingInterval,
+  PaymentInfo,
   PlanFeature,
   PlanType,
+  PurchasePlan,
   Subscription,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import type {
@@ -180,8 +186,17 @@ export type WorkspaceSlice = {
   appFeatures: AppFeatures;
   subscription?: Subscription;
   subscriptionRequest?: Promise<Subscription | undefined>;
+  // Subscription purchase metadata (SaaS). Mirrors the legacy Pinia
+  // `useSubscriptionV1Store` `purchasePlans` / `paymentInfo` refs.
+  purchasePlans: PurchasePlan[];
+  paymentInfo?: PaymentInfo;
   loadServerInfo: () => Promise<ActuatorInfo | undefined>;
   refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
+  // Alias for the legacy Pinia `actuatorStore.fetchServerInfo(workspace?)`
+  // so consumers map 1:1. Delegates to the slice's refresh path.
+  fetchServerInfo: (
+    workspaceResourceName?: string
+  ) => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceList: () => Promise<Workspace[]>;
   updateWorkspace: (
@@ -204,6 +219,14 @@ export type WorkspaceSlice = {
   // updates into the app store after a save, so still-app-store consumers
   // (e.g. SQL editor's `OpenAIButton`) see fresh values without a refresh.
   setSettingByName: (setting: Setting) => void;
+  // Writes a setting to the server and updates the cache. Mirrors the legacy
+  // Pinia `useSettingV1Store().upsertSetting`.
+  upsertSetting: (params: {
+    name: Setting_SettingName;
+    value: SettingValue;
+    validateOnly?: boolean;
+    updateMask?: FieldMask;
+  }) => Promise<Setting>;
   loadSubscription: () => Promise<Subscription | undefined>;
   refreshSubscription: () => Promise<Subscription | undefined>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
@@ -239,6 +262,49 @@ export type WorkspaceSlice = {
   totalInstanceCount: () => number;
   userCountInIam: () => number;
   activeVcsUserCount: () => number;
+  activeUserCount: () => number;
+  enableOnboarding: () => boolean;
+  quickStartEnabled: () => boolean;
+  setupSample: () => Promise<void>;
+  // Data-classification config from the DATA_CLASSIFICATION setting cache.
+  classification: () => DataClassificationSetting_DataClassificationConfig[];
+  getProjectClassification: (
+    classificationId: string
+  ) => DataClassificationSetting_DataClassificationConfig | undefined;
+  updateWorkspaceProfile: (params: {
+    payload: Partial<WorkspaceProfileSetting>;
+    updateMask: FieldMask;
+  }) => Promise<void>;
+  fetchEnvironments: (silent?: boolean) => Promise<void>;
+  createEnvironment: (
+    environment: Partial<Environment>
+  ) => Promise<Environment>;
+  updateEnvironment: (update: Partial<Environment>) => Promise<Environment>;
+  deleteEnvironment: (name: string) => Promise<void>;
+  reorderEnvironmentList: (
+    orderedEnvironmentList: Environment[]
+  ) => Promise<Environment[]>;
+  setSubscription: (subscription: Subscription) => void;
+  hasSplitInstanceLicense: () => boolean;
+  pollSubscriptionUntil: (
+    predicate: (subscription: Subscription) => boolean,
+    options?: { timeoutMs?: number; intervalMs?: number; signal?: AbortSignal }
+  ) => Promise<Subscription | undefined>;
+  createPurchase: (
+    plan: PlanType,
+    interval: BillingInterval,
+    seats: number
+  ) => Promise<string>;
+  updatePurchase: (
+    plan: PlanType,
+    interval: BillingInterval,
+    seats: number,
+    etag: string
+  ) => Promise<string>;
+  cancelPurchase: (feedback: string, comment: string) => Promise<void>;
+  fetchPaymentInfo: () => Promise<PaymentInfo | undefined>;
+  verifyCheckoutSession: (sessionId: string) => Promise<string>;
+  fetchPurchasePlans: () => Promise<PurchasePlan[] | undefined>;
 };
 
 export type IamSlice = {

@@ -32,17 +32,28 @@ import {
 import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import {
   DatabaseChangeMode,
+  type DataClassificationSetting_DataClassificationConfig,
   type EnvironmentSetting_Environment,
   EnvironmentSetting_EnvironmentSchema,
+  EnvironmentSettingSchema,
   GetSettingRequestSchema,
   Setting_SettingName,
+  SettingSchema,
+  SettingValueSchema,
+  UpdateSettingRequestSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  CancelPurchaseRequestSchema,
+  CreatePurchaseRequestSchema,
+  GetPaymentInfoRequestSchema,
   GetSubscriptionRequestSchema,
+  ListPurchasePlansRequestSchema,
   PlanType,
+  UpdatePurchaseRequestSchema,
   UploadLicenseRequestSchema,
+  VerifyCheckoutSessionRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   UpdateWorkspaceRequestSchema,
@@ -139,471 +150,746 @@ function isSelfHostLicense() {
   return import.meta.env.MODE.toLowerCase() !== "release-aws";
 }
 
+function convertEnvironmentsToSetting(
+  environments: Environment[]
+): EnvironmentSetting_Environment[] {
+  return environments.map((env) =>
+    createProto(EnvironmentSetting_EnvironmentSchema, {
+      name: env.name,
+      id: env.id,
+      title: env.title,
+      color: env.color,
+      tags: env.tags,
+    })
+  );
+}
+
 export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
-) => ({
-  serverInfoTs: 0,
-  workspaceList: [],
-  environmentList: [],
-  settingsByName: {},
-  settingRequests: {},
-  appFeatures: defaultAppProfile().features,
-
-  loadServerInfo: async () => {
-    const existing = get().serverInfo;
-    if (existing) return existing;
-    const pending = get().serverInfoRequest;
-    if (pending) return pending;
-    const request = actuatorServiceClientConnect
-      .getActuatorInfo({ name: get().currentUser?.workspace ?? "" })
-      .then((info) => {
-        set({
-          serverInfo: info,
-          serverInfoRequest: undefined,
-          serverInfoTs: Date.now(),
-        });
-        return info;
-      })
-      .catch(() => {
-        set({ serverInfoRequest: undefined });
-        return undefined;
-      });
-    set({ serverInfoRequest: request });
-    return request;
-  },
-
-  refreshServerInfo: async () => {
-    const info = await actuatorServiceClientConnect.getActuatorInfo({
-      name: get().currentUser?.workspace ?? get().serverInfo?.workspace ?? "",
+) => {
+  // Persist the ENVIRONMENT setting and re-derive the cached environment list
+  // from the server's response (mirrors the legacy Pinia env store).
+  const writeEnvironmentSetting = async (
+    environments: EnvironmentSetting_Environment[]
+  ): Promise<Environment[]> => {
+    const response = await get().upsertSetting({
+      name: Setting_SettingName.ENVIRONMENT,
+      value: createProto(SettingValueSchema, {
+        value: {
+          case: "environment",
+          value: createProto(EnvironmentSettingSchema, { environments }),
+        },
+      }),
     });
-    set({ serverInfo: info, serverInfoTs: Date.now() });
-    return info;
-  },
+    const next =
+      response.value?.value?.case === "environment"
+        ? convertEnvironmentList(response.value.value.value.environments)
+        : [];
+    set({ environmentList: next });
+    return next;
+  };
 
-  loadWorkspace: async () => {
-    // Always re-fetch currentUser to get the latest auth context.
-    // The cached currentUser may be from before login (undefined or stale).
-    const user = await userServiceClientConnect
-      .getCurrentUser({})
-      .catch(() => undefined);
-    if (user) {
-      set({ currentUser: user });
-    }
-    const name =
-      user?.workspace ||
-      get().currentUser?.workspace ||
-      get().serverInfo?.workspace ||
-      `${workspaceNamePrefix}-`;
-    // Return cached workspace if it matches the current auth context.
-    const existing = get().workspace;
-    if (existing?.name === name) return existing;
-    const pending = get().workspaceRequest;
-    if (pending) return pending;
-    const request = workspaceServiceClientConnect
-      .getWorkspace({ name })
-      .then((workspace) => {
-        set({ workspace, workspaceRequest: undefined });
-        return workspace;
-      })
-      .catch(() => {
-        set({ workspaceRequest: undefined });
-        return undefined;
-      });
-    set({ workspaceRequest: request });
-    return request;
-  },
+  return {
+    serverInfoTs: 0,
+    workspaceList: [],
+    environmentList: [],
+    settingsByName: {},
+    settingRequests: {},
+    appFeatures: defaultAppProfile().features,
+    purchasePlans: [],
 
-  loadWorkspaceList: async () => {
-    const resp = await workspaceServiceClientConnect.listWorkspaces({});
-    set({ workspaceList: resp.workspaces });
-    return resp.workspaces;
-  },
-
-  updateWorkspace: async (workspace: Workspace, updateMask: string[]) => {
-    const updated = await workspaceServiceClientConnect.updateWorkspace(
-      createProto(UpdateWorkspaceRequestSchema, {
-        workspace,
-        updateMask: createProto(FieldMaskSchema, { paths: updateMask }),
-      })
-    );
-    set((state) => ({
-      workspace:
-        state.workspace?.name === updated.name ? updated : state.workspace,
-      workspaceList: state.workspaceList.map((ws) =>
-        ws.name === updated.name ? updated : ws
-      ),
-    }));
-    return updated;
-  },
-
-  switchWorkspace: async (workspaceName: string, redirect = true) => {
-    await authServiceClientConnect.switchWorkspace(
-      createProto(SwitchWorkspaceRequestSchema, {
-        workspace: workspaceName,
-        web: true,
-      })
-    );
-    // Notify other tabs to reload with the new workspace.
-    broadcastWorkspaceSwitch(workspaceName);
-    if (redirect) {
-      // Full-reload to the landing page to reset all frontend state.
-      window.location.href = "/";
-    }
-  },
-
-  loadWorkspaceProfile: async (force = false) => {
-    const existing = get().workspaceProfile;
-    if (!force && existing) return existing;
-    const pending = get().workspaceProfileRequest;
-    if (!force && pending) return pending;
-    // request is captured so .then handlers can identity-check against
-    // the latest in-flight request before writing — protects against an
-    // older in-flight request resolving after a newer forced reload.
-    const request = settingServiceClientConnect
-      .getSetting(
-        createProto(GetSettingRequestSchema, {
-          name: workspaceProfileSettingName,
+    loadServerInfo: async () => {
+      const existing = get().serverInfo;
+      if (existing) return existing;
+      const pending = get().serverInfoRequest;
+      if (pending) return pending;
+      const request = actuatorServiceClientConnect
+        .getActuatorInfo({ name: get().currentUser?.workspace ?? "" })
+        .then((info) => {
+          set({
+            serverInfo: info,
+            serverInfoRequest: undefined,
+            serverInfoTs: Date.now(),
+          });
+          return info;
         })
-      )
-      .then((setting) => {
-        if (get().workspaceProfileRequest !== request) {
-          return get().workspaceProfile;
-        }
-        const settingValue = setting.value?.value;
-        const profile =
-          settingValue?.case === "workspaceProfile"
-            ? settingValue.value
-            : createProto(WorkspaceProfileSettingSchema, {});
-        set({
-          workspaceProfile: profile,
-          workspaceProfileRequest: undefined,
-          appFeatures: appFeaturesFromDatabaseChangeMode(
-            profile.databaseChangeMode
-          ),
+        .catch(() => {
+          set({ serverInfoRequest: undefined });
+          return undefined;
         });
-        return profile;
-      })
-      .catch(() => {
-        if (get().workspaceProfileRequest === request) {
-          set({ workspaceProfileRequest: undefined });
-        }
-        return undefined;
-      });
-    set({ workspaceProfileRequest: request });
-    return request;
-  },
+      set({ serverInfoRequest: request });
+      return request;
+    },
 
-  loadEnvironmentList: async (force = false) => {
-    const existing = get().environmentList;
-    if (!force && existing.length > 0) return existing;
-    const pending = get().environmentRequest;
-    if (pending) return pending;
-    const request = settingServiceClientConnect
-      .getSetting(
-        createProto(GetSettingRequestSchema, {
-          name: environmentSettingName,
+    refreshServerInfo: async () => {
+      const info = await actuatorServiceClientConnect.getActuatorInfo({
+        name: get().currentUser?.workspace ?? get().serverInfo?.workspace ?? "",
+      });
+      set({ serverInfo: info, serverInfoTs: Date.now() });
+      return info;
+    },
+
+    loadWorkspace: async () => {
+      // Always re-fetch currentUser to get the latest auth context.
+      // The cached currentUser may be from before login (undefined or stale).
+      const user = await userServiceClientConnect
+        .getCurrentUser({})
+        .catch(() => undefined);
+      if (user) {
+        set({ currentUser: user });
+      }
+      const name =
+        user?.workspace ||
+        get().currentUser?.workspace ||
+        get().serverInfo?.workspace ||
+        `${workspaceNamePrefix}-`;
+      // Return cached workspace if it matches the current auth context.
+      const existing = get().workspace;
+      if (existing?.name === name) return existing;
+      const pending = get().workspaceRequest;
+      if (pending) return pending;
+      const request = workspaceServiceClientConnect
+        .getWorkspace({ name })
+        .then((workspace) => {
+          set({ workspace, workspaceRequest: undefined });
+          return workspace;
         })
-      )
-      .then((setting) => {
-        const settingValue = setting.value?.value;
-        const environments =
-          settingValue?.case === "environment"
-            ? convertEnvironmentList(settingValue.value.environments)
-            : [];
-        set({ environmentList: environments, environmentRequest: undefined });
-        return environments;
-      })
-      .catch(() => {
-        set({ environmentRequest: undefined });
-        return [];
-      });
-    set({ environmentRequest: request });
-    return request;
-  },
-
-  refreshEnvironmentList: async () => get().loadEnvironmentList(true),
-
-  // Mirrors the Pinia `useEnvironmentV1Store().getEnvironmentByName`: maps
-  // a resource name to its environment, falling back to a synthesized
-  // entry (id-as-title) for unknown names when `fallback` is set.
-  getEnvironmentByName: (name, fallback = true) => {
-    if (name === NULL_ENVIRONMENT_NAME) {
-      return nullEnvironment();
-    }
-    const id = getEnvironmentId(name);
-    if (!id) {
-      return unknownEnvironment();
-    }
-    const environment =
-      get().environmentList.find((e) => e.id === id) ?? unknownEnvironment();
-    if (!isValidEnvironmentName(environment.name) && fallback) {
-      return { ...environment, id, name, title: id };
-    }
-    return environment;
-  },
-
-  // Mirrors the Pinia `useSettingV1Store`: general-purpose setting cache
-  // keyed by resource name (`settings/{Setting_SettingName}`). Used for AI /
-  // workspace-profile / etc.
-  getSettingByName: (name) => {
-    const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
-    return get().settingsByName[resourceName];
-  },
-
-  setSettingByName: (setting) => {
-    set((state) => ({
-      settingsByName: {
-        ...state.settingsByName,
-        [setting.name]: setting,
-      },
-    }));
-  },
-
-  getOrFetchSettingByName: async (name, silent = false) => {
-    const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
-    const cached = get().settingsByName[resourceName];
-    if (cached) return cached;
-    const pending = get().settingRequests[resourceName];
-    if (pending) return pending;
-
-    const request = settingServiceClientConnect
-      .getSetting(
-        createProto(GetSettingRequestSchema, { name: resourceName }),
-        {
-          contextValues: createContextValues().set(silentContextKey, silent),
-        }
-      )
-      .then((response) => {
-        set((state) => {
-          const { [resourceName]: _, ...settingRequests } =
-            state.settingRequests;
-          return {
-            settingsByName: {
-              ...state.settingsByName,
-              [response.name]: response,
-            },
-            settingRequests,
-          };
+        .catch(() => {
+          set({ workspaceRequest: undefined });
+          return undefined;
         });
-        return response;
-      })
-      .catch(() => {
-        set((state) => {
-          const { [resourceName]: _, ...settingRequests } =
-            state.settingRequests;
-          return { settingRequests };
+      set({ workspaceRequest: request });
+      return request;
+    },
+
+    loadWorkspaceList: async () => {
+      const resp = await workspaceServiceClientConnect.listWorkspaces({});
+      set({ workspaceList: resp.workspaces });
+      return resp.workspaces;
+    },
+
+    updateWorkspace: async (workspace: Workspace, updateMask: string[]) => {
+      const updated = await workspaceServiceClientConnect.updateWorkspace(
+        createProto(UpdateWorkspaceRequestSchema, {
+          workspace,
+          updateMask: createProto(FieldMaskSchema, { paths: updateMask }),
+        })
+      );
+      set((state) => ({
+        workspace:
+          state.workspace?.name === updated.name ? updated : state.workspace,
+        workspaceList: state.workspaceList.map((ws) =>
+          ws.name === updated.name ? updated : ws
+        ),
+      }));
+      return updated;
+    },
+
+    switchWorkspace: async (workspaceName: string, redirect = true) => {
+      await authServiceClientConnect.switchWorkspace(
+        createProto(SwitchWorkspaceRequestSchema, {
+          workspace: workspaceName,
+          web: true,
+        })
+      );
+      // Notify other tabs to reload with the new workspace.
+      broadcastWorkspaceSwitch(workspaceName);
+      if (redirect) {
+        // Full-reload to the landing page to reset all frontend state.
+        window.location.href = "/";
+      }
+    },
+
+    loadWorkspaceProfile: async (force = false) => {
+      const existing = get().workspaceProfile;
+      if (!force && existing) return existing;
+      const pending = get().workspaceProfileRequest;
+      if (!force && pending) return pending;
+      // request is captured so .then handlers can identity-check against
+      // the latest in-flight request before writing — protects against an
+      // older in-flight request resolving after a newer forced reload.
+      const request = settingServiceClientConnect
+        .getSetting(
+          createProto(GetSettingRequestSchema, {
+            name: workspaceProfileSettingName,
+          })
+        )
+        .then((setting) => {
+          if (get().workspaceProfileRequest !== request) {
+            return get().workspaceProfile;
+          }
+          const settingValue = setting.value?.value;
+          const profile =
+            settingValue?.case === "workspaceProfile"
+              ? settingValue.value
+              : createProto(WorkspaceProfileSettingSchema, {});
+          set({
+            workspaceProfile: profile,
+            workspaceProfileRequest: undefined,
+            appFeatures: appFeaturesFromDatabaseChangeMode(
+              profile.databaseChangeMode
+            ),
+          });
+          return profile;
+        })
+        .catch(() => {
+          if (get().workspaceProfileRequest === request) {
+            set({ workspaceProfileRequest: undefined });
+          }
+          return undefined;
         });
-        return undefined;
+      set({ workspaceProfileRequest: request });
+      return request;
+    },
+
+    loadEnvironmentList: async (force = false) => {
+      const existing = get().environmentList;
+      if (!force && existing.length > 0) return existing;
+      const pending = get().environmentRequest;
+      if (pending) return pending;
+      const request = settingServiceClientConnect
+        .getSetting(
+          createProto(GetSettingRequestSchema, {
+            name: environmentSettingName,
+          })
+        )
+        .then((setting) => {
+          const settingValue = setting.value?.value;
+          const environments =
+            settingValue?.case === "environment"
+              ? convertEnvironmentList(settingValue.value.environments)
+              : [];
+          set({ environmentList: environments, environmentRequest: undefined });
+          return environments;
+        })
+        .catch(() => {
+          set({ environmentRequest: undefined });
+          return [];
+        });
+      set({ environmentRequest: request });
+      return request;
+    },
+
+    refreshEnvironmentList: async () => get().loadEnvironmentList(true),
+
+    // Mirrors the Pinia `useEnvironmentV1Store().getEnvironmentByName`: maps
+    // a resource name to its environment, falling back to a synthesized
+    // entry (id-as-title) for unknown names when `fallback` is set.
+    getEnvironmentByName: (name, fallback = true) => {
+      if (name === NULL_ENVIRONMENT_NAME) {
+        return nullEnvironment();
+      }
+      const id = getEnvironmentId(name);
+      if (!id) {
+        return unknownEnvironment();
+      }
+      const environment =
+        get().environmentList.find((e) => e.id === id) ?? unknownEnvironment();
+      if (!isValidEnvironmentName(environment.name) && fallback) {
+        return { ...environment, id, name, title: id };
+      }
+      return environment;
+    },
+
+    // Mirrors the Pinia `useSettingV1Store`: general-purpose setting cache
+    // keyed by resource name (`settings/{Setting_SettingName}`). Used for AI /
+    // workspace-profile / etc.
+    getSettingByName: (name) => {
+      const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
+      return get().settingsByName[resourceName];
+    },
+
+    setSettingByName: (setting) => {
+      set((state) => ({
+        settingsByName: {
+          ...state.settingsByName,
+          [setting.name]: setting,
+        },
+      }));
+    },
+
+    upsertSetting: async ({
+      name,
+      value,
+      validateOnly = false,
+      updateMask,
+    }) => {
+      const response = await settingServiceClientConnect.updateSetting(
+        createProto(UpdateSettingRequestSchema, {
+          setting: createProto(SettingSchema, {
+            name: `${settingNamePrefix}${Setting_SettingName[name]}`,
+            value,
+          }),
+          validateOnly,
+          allowMissing: true,
+          updateMask,
+        })
+      );
+      get().setSettingByName(response);
+      return response;
+    },
+
+    getOrFetchSettingByName: async (name, silent = false) => {
+      const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
+      const cached = get().settingsByName[resourceName];
+      if (cached) return cached;
+      const pending = get().settingRequests[resourceName];
+      if (pending) return pending;
+
+      const request = settingServiceClientConnect
+        .getSetting(
+          createProto(GetSettingRequestSchema, { name: resourceName }),
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
+        )
+        .then((response) => {
+          set((state) => {
+            const { [resourceName]: _, ...settingRequests } =
+              state.settingRequests;
+            return {
+              settingsByName: {
+                ...state.settingsByName,
+                [response.name]: response,
+              },
+              settingRequests,
+            };
+          });
+          return response;
+        })
+        .catch(() => {
+          set((state) => {
+            const { [resourceName]: _, ...settingRequests } =
+              state.settingRequests;
+            return { settingRequests };
+          });
+          return undefined;
+        });
+      set((state) => ({
+        settingRequests: {
+          ...state.settingRequests,
+          [resourceName]: request,
+        },
+      }));
+      return request;
+    },
+
+    loadSubscription: async () => {
+      const existing = get().subscription;
+      if (existing) return existing;
+      const pending = get().subscriptionRequest;
+      if (pending) return pending;
+      const request = subscriptionServiceClientConnect
+        .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
+        .then((subscription) => {
+          set({ subscription, subscriptionRequest: undefined });
+          syncSubscriptionToPinia(subscription);
+          return subscription;
+        })
+        .catch(() => {
+          set({ subscriptionRequest: undefined });
+          return undefined;
+        });
+      set({ subscriptionRequest: request });
+      return request;
+    },
+
+    refreshSubscription: async () => {
+      const request = subscriptionServiceClientConnect
+        .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
+        .then((subscription) => {
+          set({ subscription, subscriptionRequest: undefined });
+          syncSubscriptionToPinia(subscription);
+          return subscription;
+        })
+        .catch(() => {
+          set({ subscriptionRequest: undefined });
+          return undefined;
+        });
+      set({ subscriptionRequest: request });
+      return request;
+    },
+
+    uploadLicense: async (license) => {
+      const subscription = await subscriptionServiceClientConnect.uploadLicense(
+        createProto(UploadLicenseRequestSchema, { license })
+      );
+      set({ subscription });
+      syncSubscriptionToPinia(subscription);
+      return subscription;
+    },
+
+    currentPlan: () => {
+      return get().subscription?.plan ?? PlanType.FREE;
+    },
+
+    isFreePlan: () => get().currentPlan() === PlanType.FREE,
+
+    isTrialing: () => Boolean(get().subscription?.trialing),
+
+    isExpired: () => {
+      const subscription = get().subscription;
+      if (!subscription?.expiresTime || get().isFreePlan()) {
+        return false;
+      }
+      return dayjs(
+        getDateForPbTimestampProtoEs(subscription.expiresTime)
+      ).isBefore(new Date());
+    },
+
+    daysBeforeExpire: () => {
+      const subscription = get().subscription;
+      if (!subscription?.expiresTime || get().isFreePlan()) {
+        return -1;
+      }
+      return Math.max(
+        dayjs(getDateForPbTimestampProtoEs(subscription.expiresTime)).diff(
+          new Date(),
+          "day"
+        ),
+        0
+      );
+    },
+
+    trialingDays: () => trialingDays,
+
+    showTrial: () => {
+      if (!isSelfHostLicense()) {
+        return false;
+      }
+      return !get().subscription || get().isFreePlan();
+    },
+
+    expireAt: () => {
+      const subscription = get().subscription;
+      if (!subscription?.expiresTime || get().isFreePlan()) {
+        return "";
+      }
+      return formatAbsoluteDateTime(
+        getTimeForPbTimestampProtoEs(subscription.expiresTime)
+      );
+    },
+
+    instanceCountLimit: () => {
+      const subscription = get().subscription;
+      const licenseLimit = subscription?.instances ?? 0;
+      if (licenseLimit > 0) {
+        return licenseLimit;
+      }
+      const planLimit =
+        PLANS.find((plan) => plan.type === get().currentPlan())
+          ?.maximumInstanceCount ?? 0;
+      if (planLimit < 0) {
+        return licenseLimit > 0 ? licenseLimit : Number.MAX_VALUE;
+      }
+      return planLimit;
+    },
+
+    userCountLimit: () => {
+      let limit =
+        PLANS.find((plan) => plan.type === get().currentPlan())
+          ?.maximumSeatCount ?? 0;
+      if (limit < 0) {
+        limit = Number.MAX_VALUE;
+      }
+      const seats = get().subscription?.seats ?? 0;
+      if (seats < 0) {
+        return Number.MAX_VALUE;
+      }
+      if (seats === 0) {
+        return limit;
+      }
+      return seats;
+    },
+
+    instanceLicenseCount: () => {
+      const count = get().subscription?.activeInstances ?? 0;
+      return count < 0 ? Number.MAX_VALUE : count;
+    },
+
+    hasUnifiedInstanceLicense: () => {
+      return get().instanceCountLimit() <= get().instanceLicenseCount();
+    },
+
+    hasFeature: (feature) => {
+      if (get().isExpired()) {
+        return false;
+      }
+      return checkFeature(get().currentPlan(), feature);
+    },
+
+    hasInstanceFeature: (feature, instance) => {
+      const plan = get().currentPlan();
+      if (plan === PlanType.FREE) {
+        return get().hasFeature(feature);
+      }
+      if (!instance || !instanceLimitFeature.has(feature)) {
+        return get().hasFeature(feature);
+      }
+      return checkInstanceFeature(
+        plan,
+        feature,
+        get().hasUnifiedInstanceLicense() || instance.activation
+      );
+    },
+
+    instanceMissingLicense: (feature, instance) => {
+      if (!instanceLimitFeature.has(feature) || !instance) {
+        return false;
+      }
+      if (get().hasUnifiedInstanceLicense()) {
+        return false;
+      }
+      return get().hasFeature(feature) && !instance.activation;
+    },
+
+    getMinimumRequiredPlan,
+
+    isSaaSMode: () => get().serverInfo?.saas ?? false,
+
+    workspaceResourceName: () => get().serverInfo?.workspace ?? "",
+
+    externalUrl: () => get().serverInfo?.externalUrl ?? "",
+
+    needConfigureExternalUrl: () => {
+      const serverInfo = get().serverInfo;
+      if (!serverInfo) return false;
+      const url = serverInfo.externalUrl ?? "";
+      return url === "" || url === externalUrlPlaceholder;
+    },
+
+    version: () => get().serverInfo?.version ?? "",
+
+    changelogURL: () => {
+      const version = semver.valid(get().serverInfo?.version);
+      if (!version) return "";
+      return `https://docs.bytebase.com/changelog/bytebase-${version
+        .split(".")
+        .join("-")}/`;
+    },
+
+    activatedInstanceCount: () => get().serverInfo?.activatedInstanceCount ?? 0,
+
+    totalInstanceCount: () => get().serverInfo?.totalInstanceCount ?? 0,
+
+    userCountInIam: () => get().serverInfo?.userCountInIam ?? 0,
+
+    activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
+
+    activeUserCount: () => get().serverInfo?.activatedUserCount ?? 0,
+
+    enableOnboarding: () =>
+      get().activeUserCount() === 1 && !get().isSaaSMode(),
+
+    quickStartEnabled: () => {
+      if (get().appFeatures["bb.feature.hide-quick-start"]) {
+        return false;
+      }
+      if (!get().serverInfo?.enableSample) {
+        return false;
+      }
+      return get().activeUserCount() <= 1;
+    },
+
+    setupSample: async () => {
+      await actuatorServiceClientConnect.setupSample({});
+    },
+
+    // Alias for the legacy Pinia `actuatorStore.fetchServerInfo(workspace?)`.
+    fetchServerInfo: async (workspaceResourceName) => {
+      const info = await actuatorServiceClientConnect.getActuatorInfo({
+        name: workspaceResourceName ?? get().serverInfo?.workspace ?? "",
       });
-    set((state) => ({
-      settingRequests: {
-        ...state.settingRequests,
-        [resourceName]: request,
-      },
-    }));
-    return request;
-  },
+      set({ serverInfo: info, serverInfoTs: Date.now() });
+      return info;
+    },
 
-  loadSubscription: async () => {
-    const existing = get().subscription;
-    if (existing) return existing;
-    const pending = get().subscriptionRequest;
-    if (pending) return pending;
-    const request = subscriptionServiceClientConnect
-      .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
-      .then((subscription) => {
-        set({ subscription, subscriptionRequest: undefined });
-        syncSubscriptionToPinia(subscription);
-        return subscription;
-      })
-      .catch(() => {
-        set({ subscriptionRequest: undefined });
-        return undefined;
+    classification: () => {
+      const setting =
+        get().settingsByName[
+          `${settingNamePrefix}${
+            Setting_SettingName[Setting_SettingName.DATA_CLASSIFICATION]
+          }`
+        ];
+      const value = setting?.value?.value;
+      if (value?.case === "dataClassification") {
+        return value.value.configs;
+      }
+      return [] as DataClassificationSetting_DataClassificationConfig[];
+    },
+
+    getProjectClassification: (classificationId) =>
+      get()
+        .classification()
+        .find((config) => config.id === classificationId),
+
+    updateWorkspaceProfile: async ({ payload, updateMask }) => {
+      const base =
+        get().workspaceProfile ??
+        createProto(WorkspaceProfileSettingSchema, {});
+      const profile = { ...base, ...payload };
+      await get().upsertSetting({
+        name: Setting_SettingName.WORKSPACE_PROFILE,
+        value: createProto(SettingValueSchema, {
+          value: { case: "workspaceProfile", value: profile },
+        }),
+        updateMask,
       });
-    set({ subscriptionRequest: request });
-    return request;
-  },
-
-  refreshSubscription: async () => {
-    const request = subscriptionServiceClientConnect
-      .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
-      .then((subscription) => {
-        set({ subscription, subscriptionRequest: undefined });
-        syncSubscriptionToPinia(subscription);
-        return subscription;
-      })
-      .catch(() => {
-        set({ subscriptionRequest: undefined });
-        return undefined;
+      set({
+        workspaceProfile: profile,
+        appFeatures: appFeaturesFromDatabaseChangeMode(
+          profile.databaseChangeMode
+        ),
       });
-    set({ subscriptionRequest: request });
-    return request;
-  },
+      // Refresh the latest server info (mirrors the Pinia store).
+      await get().fetchServerInfo(get().workspaceResourceName());
+    },
 
-  uploadLicense: async (license) => {
-    const subscription = await subscriptionServiceClientConnect.uploadLicense(
-      createProto(UploadLicenseRequestSchema, { license })
-    );
-    set({ subscription });
-    syncSubscriptionToPinia(subscription);
-    return subscription;
-  },
+    fetchEnvironments: async (force = false) => {
+      await get().loadEnvironmentList(force);
+    },
 
-  currentPlan: () => {
-    return get().subscription?.plan ?? PlanType.FREE;
-  },
+    createEnvironment: async (environment) => {
+      const next = await writeEnvironmentSetting([
+        ...convertEnvironmentsToSetting(get().environmentList),
+        createProto(EnvironmentSetting_EnvironmentSchema, {
+          name: "",
+          id: environment.id ?? "",
+          title: environment.title ?? "",
+          color: environment.color ?? "",
+          tags: environment.tags ?? {},
+        }),
+      ]);
+      const created = next.find((e) => e.id === (environment.id ?? ""));
+      if (!created) {
+        throw new Error(`environment with id ${environment.id} not found`);
+      }
+      return created;
+    },
 
-  isFreePlan: () => get().currentPlan() === PlanType.FREE,
+    updateEnvironment: async (update) => {
+      const next = await writeEnvironmentSetting(
+        convertEnvironmentsToSetting(
+          get().environmentList.map((environment) =>
+            environment.id === update.id
+              ? {
+                  ...environment,
+                  title: update.title ?? environment.title,
+                  color: update.color ?? environment.color,
+                  tags: update.tags ?? environment.tags,
+                  order: update.order ?? environment.order,
+                }
+              : environment
+          )
+        )
+      );
+      const updated = next.find((e) => e.id === update.id);
+      if (!updated) {
+        throw new Error(`environment with id ${update.id} not found`);
+      }
+      return updated;
+    },
 
-  isTrialing: () => Boolean(get().subscription?.trialing),
+    deleteEnvironment: async (name) => {
+      const id = getEnvironmentId(name);
+      await writeEnvironmentSetting(
+        convertEnvironmentsToSetting(
+          get().environmentList.filter((environment) => environment.id !== id)
+        )
+      );
+    },
 
-  isExpired: () => {
-    const subscription = get().subscription;
-    if (!subscription?.expiresTime || get().isFreePlan()) {
-      return false;
-    }
-    return dayjs(
-      getDateForPbTimestampProtoEs(subscription.expiresTime)
-    ).isBefore(new Date());
-  },
-
-  daysBeforeExpire: () => {
-    const subscription = get().subscription;
-    if (!subscription?.expiresTime || get().isFreePlan()) {
-      return -1;
-    }
-    return Math.max(
-      dayjs(getDateForPbTimestampProtoEs(subscription.expiresTime)).diff(
-        new Date(),
-        "day"
+    reorderEnvironmentList: async (orderedEnvironmentList) =>
+      writeEnvironmentSetting(
+        convertEnvironmentsToSetting(orderedEnvironmentList)
       ),
-      0
-    );
-  },
 
-  trialingDays: () => trialingDays,
+    setSubscription: (subscription) => {
+      set({ subscription });
+      syncSubscriptionToPinia(subscription);
+    },
 
-  showTrial: () => {
-    if (!isSelfHostLicense()) {
-      return false;
-    }
-    return !get().subscription || get().isFreePlan();
-  },
+    hasSplitInstanceLicense: () =>
+      !get().isFreePlan() && !get().hasUnifiedInstanceLicense(),
 
-  expireAt: () => {
-    const subscription = get().subscription;
-    if (!subscription?.expiresTime || get().isFreePlan()) {
-      return "";
-    }
-    return formatAbsoluteDateTime(
-      getTimeForPbTimestampProtoEs(subscription.expiresTime)
-    );
-  },
+    pollSubscriptionUntil: async (predicate, options = {}) => {
+      const { timeoutMs = 60_000, intervalMs = 2_000, signal } = options;
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        if (signal?.aborted) return undefined;
+        const sub = await subscriptionServiceClientConnect
+          .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
+          .catch(() => undefined);
+        if (signal?.aborted) return undefined;
+        if (sub && predicate(sub)) {
+          get().setSubscription(sub);
+          return sub;
+        }
+        await new Promise((r) => setTimeout(r, intervalMs));
+      }
+      return undefined;
+    },
 
-  instanceCountLimit: () => {
-    const subscription = get().subscription;
-    const licenseLimit = subscription?.instances ?? 0;
-    if (licenseLimit > 0) {
-      return licenseLimit;
-    }
-    const planLimit =
-      PLANS.find((plan) => plan.type === get().currentPlan())
-        ?.maximumInstanceCount ?? 0;
-    if (planLimit < 0) {
-      return licenseLimit > 0 ? licenseLimit : Number.MAX_VALUE;
-    }
-    return planLimit;
-  },
+    createPurchase: async (plan, interval, seats) => {
+      const response = await subscriptionServiceClientConnect.createPurchase(
+        createProto(CreatePurchaseRequestSchema, { plan, interval, seats })
+      );
+      return response.paymentUrl;
+    },
 
-  userCountLimit: () => {
-    let limit =
-      PLANS.find((plan) => plan.type === get().currentPlan())
-        ?.maximumSeatCount ?? 0;
-    if (limit < 0) {
-      limit = Number.MAX_VALUE;
-    }
-    const seats = get().subscription?.seats ?? 0;
-    if (seats < 0) {
-      return Number.MAX_VALUE;
-    }
-    if (seats === 0) {
-      return limit;
-    }
-    return seats;
-  },
+    updatePurchase: async (plan, interval, seats, etag) => {
+      const response = await subscriptionServiceClientConnect.updatePurchase(
+        createProto(UpdatePurchaseRequestSchema, {
+          plan,
+          interval,
+          seats,
+          etag,
+        })
+      );
+      return response.paymentUrl;
+    },
 
-  instanceLicenseCount: () => {
-    const count = get().subscription?.activeInstances ?? 0;
-    return count < 0 ? Number.MAX_VALUE : count;
-  },
+    cancelPurchase: async (feedback, comment) => {
+      await subscriptionServiceClientConnect.cancelPurchase(
+        createProto(CancelPurchaseRequestSchema, { feedback, comment })
+      );
+      await get().refreshSubscription();
+    },
 
-  hasUnifiedInstanceLicense: () => {
-    return get().instanceCountLimit() <= get().instanceLicenseCount();
-  },
+    fetchPaymentInfo: async () => {
+      try {
+        const info = await subscriptionServiceClientConnect.getPaymentInfo(
+          createProto(GetPaymentInfoRequestSchema, {})
+        );
+        set({ paymentInfo: info });
+        return info;
+      } catch (e) {
+        console.error(e);
+        return undefined;
+      }
+    },
 
-  hasFeature: (feature) => {
-    if (get().isExpired()) {
-      return false;
-    }
-    return checkFeature(get().currentPlan(), feature);
-  },
+    verifyCheckoutSession: async (sessionId) => {
+      const response =
+        await subscriptionServiceClientConnect.verifyCheckoutSession(
+          createProto(VerifyCheckoutSessionRequestSchema, { sessionId })
+        );
+      return response.status;
+    },
 
-  hasInstanceFeature: (feature, instance) => {
-    const plan = get().currentPlan();
-    if (plan === PlanType.FREE) {
-      return get().hasFeature(feature);
-    }
-    if (!instance || !instanceLimitFeature.has(feature)) {
-      return get().hasFeature(feature);
-    }
-    return checkInstanceFeature(
-      plan,
-      feature,
-      get().hasUnifiedInstanceLicense() || instance.activation
-    );
-  },
-
-  instanceMissingLicense: (feature, instance) => {
-    if (!instanceLimitFeature.has(feature) || !instance) {
-      return false;
-    }
-    if (get().hasUnifiedInstanceLicense()) {
-      return false;
-    }
-    return get().hasFeature(feature) && !instance.activation;
-  },
-
-  getMinimumRequiredPlan,
-
-  isSaaSMode: () => get().serverInfo?.saas ?? false,
-
-  workspaceResourceName: () => get().serverInfo?.workspace ?? "",
-
-  externalUrl: () => get().serverInfo?.externalUrl ?? "",
-
-  needConfigureExternalUrl: () => {
-    const serverInfo = get().serverInfo;
-    if (!serverInfo) return false;
-    const url = serverInfo.externalUrl ?? "";
-    return url === "" || url === externalUrlPlaceholder;
-  },
-
-  version: () => get().serverInfo?.version ?? "",
-
-  changelogURL: () => {
-    const version = semver.valid(get().serverInfo?.version);
-    if (!version) return "";
-    return `https://docs.bytebase.com/changelog/bytebase-${version
-      .split(".")
-      .join("-")}/`;
-  },
-
-  activatedInstanceCount: () => get().serverInfo?.activatedInstanceCount ?? 0,
-
-  totalInstanceCount: () => get().serverInfo?.totalInstanceCount ?? 0,
-
-  userCountInIam: () => get().serverInfo?.userCountInIam ?? 0,
-
-  activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
-});
+    fetchPurchasePlans: async () => {
+      try {
+        const response =
+          await subscriptionServiceClientConnect.listPurchasePlans(
+            createProto(ListPurchasePlansRequestSchema, {})
+          );
+        set({ purchasePlans: response.plans });
+        return response.plans;
+      } catch (e) {
+        console.error(e);
+        return undefined;
+      }
+    },
+  };
+};
