@@ -157,10 +157,15 @@ func SetLineForMySQLCreateTableStmt(node *ast.CreateTableStmt) error {
 	if len(node.Cols) == 0 {
 		return nil
 	}
-	// OriginTextPosition() now stores the first line of the statement (1-based),
-	// so we can use it directly as firstLine.
-	firstLine := node.OriginTextPosition()
-	return tokenizer.NewTokenizer(node.Text()).SetLineForMySQLCreateTableStmt(node, firstLine)
+	// node.OriginTextPosition() is the statement's first line (the CREATE
+	// keyword). The tokenizer counts newlines from the START of node.Text(),
+	// which may retain leading newlines the native parser didn't strip, so its
+	// base must be the line of node.Text()'s first character — the statement
+	// line minus those leading newlines. Otherwise blank lines before the
+	// statement are double-counted into every column/constraint line (BYT-9381).
+	text := node.Text()
+	leadingNewlines := strings.Count(text[:len(text)-len(strings.TrimLeft(text, " \t\r\n"))], "\n")
+	return tokenizer.NewTokenizer(text).SetLineForMySQLCreateTableStmt(node, node.OriginTextPosition()-leadingNewlines)
 }
 
 // TypeString returns the string representation of the type for MySQL.

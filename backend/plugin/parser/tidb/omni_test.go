@@ -3,6 +3,7 @@ package tidb
 import (
 	"testing"
 
+	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -352,4 +353,27 @@ func TestApplyTiDBLineTracking(t *testing.T) {
 			require.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestCreateTableColumnLineTrackingBlankLines pins per-column line tracking for
+// a CREATE TABLE preceded by blank lines (BYT-9381). The native parser may
+// retain leading newlines in node.Text(); the column tokenizer counts from the
+// start of that text, so its base line must exclude those leading newlines —
+// otherwise the blank lines are double-counted into every column's line (the
+// statement line is correct but columns land several lines too low).
+func TestCreateTableColumnLineTrackingBlankLines(t *testing.T) {
+	a := require.New(t)
+
+	// CREATE TABLE on line 4 (after two blank lines); id on line 5, name on 6.
+	multi := "SELECT 1;\n\n\nCREATE TABLE foo (\n  id INT,\n  name VARCHAR(50)\n);"
+	asts, err := ParseTiDBForSyntaxCheck(multi)
+	a.NoError(err)
+	a.Len(asts, 2)
+	ct, ok := asts[1].(*AST).Node.(*ast.CreateTableStmt)
+	a.True(ok)
+
+	a.Equal(4, ct.OriginTextPosition(), "CREATE TABLE statement line")
+	a.Len(ct.Cols, 2)
+	a.Equal(5, ct.Cols[0].OriginTextPosition(), "column id should be on line 5")
+	a.Equal(6, ct.Cols[1].OriginTextPosition(), "column name should be on line 6")
 }

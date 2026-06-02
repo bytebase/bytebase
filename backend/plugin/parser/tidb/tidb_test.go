@@ -71,7 +71,11 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				"\r\n" +
 				"FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)" + "\r\n" +
 				")",
-			firstLine:          1,
+			// Leading \r\n puts the first token (CREATE) on line 2; firstLine is
+			// the first-non-whitespace line per the post-BYT-9381 contract for
+			// node.OriginTextPosition() (SetLineForMySQLCreateTableStmt converts it
+			// back to node.Text()'s char-0 line for the tokenizer).
+			firstLine:          2,
 			columnLineList:     []int{3, 3, 4, 5},
 			constraintLineList: []int{6, 7, 8, 8, 10},
 		},
