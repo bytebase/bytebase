@@ -191,9 +191,19 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 	}
 
 	// Resolve unqualified SET columns to their owning table(s) via metadata.
+	// Exclude CTE refs from the candidates: a CTE can't be a mutation target,
+	// and resolveUnqualifiedColumns' metadata-unavailable/unresolved fallback
+	// would otherwise mark every candidate (CTEs included).
 	if updatedTables[""] {
 		delete(updatedTables, "")
-		for t := range resolveUnqualifiedColumns(unqualifiedColumns, singleTables, dbMetadata) {
+		candidates := make(map[string]*TableReference, len(singleTables))
+		for key, ref := range singleTables {
+			if cteNames[key] || cteNames[ref.Table] {
+				continue
+			}
+			candidates[key] = ref
+		}
+		for t := range resolveUnqualifiedColumns(unqualifiedColumns, candidates, dbMetadata) {
 			updatedTables[t] = true
 		}
 	}

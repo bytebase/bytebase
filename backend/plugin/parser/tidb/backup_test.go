@@ -309,4 +309,12 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		"WITH x AS (SELECT id FROM test2) DELETE FROM test WHERE id > 0;"
 	_, err = run(manyWithCTE)
 	a.Error(err, "CTE in a >maxMixedDMLCount same-table batch must be rejected")
+
+	// An unqualified SET column whose owner can't be resolved must fall back to
+	// real tables only, never the CTE join source (a CTE can't be a mutation
+	// target). "nonexistent_col" forces the metadata fallback path.
+	result, err = run("WITH x AS (SELECT id FROM test2) UPDATE test JOIN x ON test.id = x.id SET nonexistent_col = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName, "backup target must be the real table, not the CTE")
 }
