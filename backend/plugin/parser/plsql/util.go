@@ -25,6 +25,7 @@ func plsqlNormalizeColumnName(currentSchema string, ctx plsql.IColumn_nameContex
 	}
 }
 
+//nolint:unused
 func normalizeColumnAlias(ctx plsql.IColumn_aliasContext) string {
 	if ctx == nil {
 		return ""
