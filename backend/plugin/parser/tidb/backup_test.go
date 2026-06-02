@@ -244,14 +244,17 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 		}
 }
 
-// TestBackupRejectsAndPreserves pins three behaviors the omni port must keep
+// TestBackupRejectsAndPreserves pins behaviors the omni port must keep
 // (regressions caught in PR #20480 review):
 //   - TiDB BATCH is rejected, not silently skipped (else the executor would run
 //     the mutation with no backup).
-//   - Cross-database DELETE is rejected (a BackupStatement carries no source
-//     database, so the executor would restore into the wrong database).
+//   - Cross-database mutations (DELETE and UPDATE) are rejected (a
+//     BackupStatement carries no source database, so the executor would restore
+//     into the wrong database).
 //   - A derived table in the UPDATE FROM list is preserved (not dropped, which
 //     would emit a malformed "FROM  WHERE ..." clause).
+//   - A WITH (CTE) prefix is carried into the backup SELECT (else a FROM that
+//     references the CTE would be invalid SQL).
 func TestBackupRejectsAndPreserves(t *testing.T) {
 	a := require.New(t)
 	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
@@ -280,4 +283,18 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 			"INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
 		result[0].Statement,
 	)
+
+	// A WITH (CTE) prefix must be carried into the backup SELECT, else the FROM
+	// (which joins the CTE) references an undefined name.
+	result, err = run("WITH x AS (SELECT id FROM test2) UPDATE test JOIN x ON test.id = x.id SET test.c1 = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal(
+		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
+			"INSERT INTO `backupDB`.`_rollback_0_test` WITH x AS (SELECT id FROM test2) SELECT `test`.* FROM test JOIN x ON test.id = x.id;",
+		result[0].Statement,
+	)
+	// The generated backup must be valid SQL (the CTE is defined before use).
+	_, perr := ParseTiDBOmni(result[0].Statement)
+	a.NoError(perr, "generated CTE backup must re-parse as valid SQL")
 }

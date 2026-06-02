@@ -318,6 +318,38 @@ func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	return result
 }
 
+// writeCTEPrefix writes the statement's WITH (CTE) clause before the backup
+// SELECT, so a SELECT whose FROM references a CTE stays valid. omni does not
+// attach UPDATE/DELETE CTEs to the statement node, so the prefix is recovered
+// from the text before the statement Loc.
+func writeCTEPrefix(buf *strings.Builder, node ast.Node, fullSQL string) error {
+	cte := extractCTE(fullSQL, nodeStmtLoc(node))
+	if cte == "" {
+		return nil
+	}
+	_, err := fmt.Fprintf(buf, "%s ", cte)
+	return err
+}
+
+// extractCTE returns the WITH-clause text preceding the statement, or "".
+func extractCTE(fullSQL string, stmtLoc ast.Loc) string {
+	if stmtLoc.Start <= 0 || len(parseCTEPrefix(fullSQL, stmtLoc)) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(fullSQL[:stmtLoc.Start])
+}
+
+// nodeStmtLoc returns the source Loc of a DML statement node.
+func nodeStmtLoc(node ast.Node) ast.Loc {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return n.Loc
+	case *ast.DeleteStmt:
+		return n.Loc
+	}
+	return ast.Loc{}
+}
+
 func parseCTEPrefix(fullSQL string, stmtLoc ast.Loc) []*ast.CommonTableExpr {
 	if stmtLoc.Start <= 0 || stmtLoc.Start > len(fullSQL) {
 		return nil
@@ -406,12 +438,18 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 		if len(item.table.Alias) > 0 {
 			tableNameOrAlias = item.table.Alias
 		}
+		if _, err := buf.WriteString("  "); err != nil {
+			return nil, errors.Wrap(err, "failed to write indent")
+		}
+		if err := writeCTEPrefix(&buf, item.node, item.fullSQL); err != nil {
+			return nil, errors.Wrap(err, "failed to write cte")
+		}
 		if len(generatedColumns) == 0 {
-			if _, err := fmt.Fprintf(&buf, "  SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
+			if _, err := fmt.Fprintf(&buf, "SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 		} else {
-			if _, err := buf.WriteString("  SELECT "); err != nil {
+			if _, err := buf.WriteString("SELECT "); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 			for j, column := range normalColumns {
@@ -484,8 +522,14 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 			tableNameOrAlias = table.Alias
 		}
 		if len(generatedColumns) == 0 {
-			if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias); err != nil {
+			if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` ", databaseName, targetTable); err != nil {
 				return nil, errors.Wrap(err, "failed to write insert into statement")
+			}
+			if err := writeCTEPrefix(&buf, statementInfo.node, statementInfo.fullSQL); err != nil {
+				return nil, errors.Wrap(err, "failed to write cte")
+			}
+			if _, err := fmt.Fprintf(&buf, "SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
+				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 		} else {
 			if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (", databaseName, targetTable); err != nil {
@@ -501,7 +545,13 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 					return nil, errors.Wrap(err, "failed to write column")
 				}
 			}
-			if _, err := buf.WriteString(") SELECT "); err != nil {
+			if _, err := buf.WriteString(") "); err != nil {
+				return nil, errors.Wrap(err, "failed to write select")
+			}
+			if err := writeCTEPrefix(&buf, statementInfo.node, statementInfo.fullSQL); err != nil {
+				return nil, errors.Wrap(err, "failed to write cte")
+			}
+			if _, err := buf.WriteString("SELECT "); err != nil {
 				return nil, errors.Wrap(err, "failed to write select")
 			}
 			for i, column := range normalColumns {
