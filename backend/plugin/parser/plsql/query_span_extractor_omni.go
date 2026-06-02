@@ -751,7 +751,10 @@ func (q *omniQuerySpanExtractor) extractOmniModelSelect(stmt *oracleast.SelectSt
 	var results []base.QuerySpanResult
 	if stmt.ModelClause != nil && stmt.ModelClause.MainModel != nil && stmt.ModelClause.MainModel.ColumnClauses != nil {
 		columns := stmt.ModelClause.MainModel.ColumnClauses
-		for _, list := range []*oracleast.List{columns.DimensionBy, columns.Measures} {
+		for _, list := range []*oracleast.List{columns.PartitionBy, columns.DimensionBy, columns.Measures} {
+			if list == nil {
+				continue
+			}
 			extracted, err := q.extractOmniTargetList(list)
 			if err != nil {
 				return nil, err

@@ -533,6 +533,22 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			name:      "model partition dimension and measures",
+			statement: "SELECT * FROM T MODEL PARTITION BY (C) DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "C"}})},
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "model partition explicit projection",
+			statement: "SELECT C FROM T MODEL PARTITION BY (C) DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "C"}})},
+			},
+		},
+		{
 			name: "match recognize measures",
 			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
   PARTITION BY ACCOUNT_ID
