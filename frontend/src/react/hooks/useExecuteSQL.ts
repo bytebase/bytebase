@@ -34,8 +34,8 @@ import {
   getInstanceResource,
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssueInProject,
-  isConnectedSQLEditorTab,
 } from "@/utils";
+import { isConnectedSQLEditorTab } from "@/react/lib/sqlEditorConnection";
 import { flattenNoSQLResult } from "@/utils/sqlResult";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 

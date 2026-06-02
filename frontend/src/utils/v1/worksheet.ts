@@ -1,15 +1,9 @@
-import { useAppStore } from "@/react/stores/app";
 import { getCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import { isValidDatabaseName, UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  emptySQLEditorConnection,
-  extractDatabaseResourceName,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 export const extractWorksheetID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -80,34 +74,7 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   return false;
 };
 
-export const extractWorksheetConnection = async (worksheet: {
-  database: string;
-}) => {
-  const connection = emptySQLEditorConnection();
-  if (worksheet.database) {
-    try {
-      // Hydrate the React app store (not Pinia) so `getConnectionForSQLEditorTab`
-      // — which reads from the app store after the Phase E migration — sees
-      // worksheet-opened tabs as connected. Without this, the Run button
-      // stays disabled on freshly restored worksheet tabs.
-      const database = await useAppStore
-        .getState()
-        .getOrFetchDatabaseByName(worksheet.database);
-      // The app-store getter returns the `unknownDatabase` fallback (rather
-      // than throwing) when the database can't be resolved — e.g. a draft
-      // tab whose database was deleted or no longer readable. Bail so we
-      // don't write `instances/-1/databases/-1` into the connection;
-      // downstream `migrateDraftsFromCache` would attempt to create a
-      // worksheet against that bogus target and drop the local draft on
-      // failure.
-      if (isValidDatabaseName(database.name)) {
-        const { instance } = extractDatabaseResourceName(database.name);
-        connection.instance = instance;
-        connection.database = database.name;
-      }
-    } catch {
-      // Skip.
-    }
-  }
-  return connection;
-};
+// `extractWorksheetConnection` moved to `@/react/lib/sqlEditorConnection`
+// so the database lookup can go through the React app store without
+// dragging `@/react/stores/app` into the `@/utils` import graph (which
+// would create a static ESM cycle).

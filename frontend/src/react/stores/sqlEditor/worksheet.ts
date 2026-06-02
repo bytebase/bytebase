@@ -7,7 +7,7 @@ import {
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractWorksheetConnection } from "@/utils";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 import { getSQLEditorEditorState } from "./editor";

@@ -59,12 +59,12 @@ import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
-  getConnectionForSQLEditorTab,
   getInstanceResource,
   getValueFromSearchParams,
   getValuesFromSearchParams,
   instanceV1Name,
 } from "@/utils";
+import { getConnectionForSQLEditorTab } from "@/react/lib/sqlEditorConnection";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { setConnection } from "./actions";
 import {

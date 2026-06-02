@@ -40,13 +40,13 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  extractWorksheetConnection,
   extractWorksheetID,
   getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
   STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
 } from "@/utils";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
