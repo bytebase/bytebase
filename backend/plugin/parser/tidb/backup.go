@@ -178,12 +178,14 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 		if target.Alias != "" {
 			name = target.Alias
 		}
-		if cteNames[name] {
-			continue
-		}
 		ref, ok := refTables[name]
 		if !ok {
 			return nil, errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", name)
+		}
+		// Skip only if the target resolves to a CTE reference (you can't delete a
+		// CTE). A real table aliased with a CTE's name is still a delete target.
+		if cteNames[ref.Table] {
+			continue
 		}
 		result = append(result, statementInfo{
 			statement: stmtText,
@@ -209,13 +211,18 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 			continue
 		}
 		table := assign.Column.Table
-		if cteNames[table] {
+		if table == "" {
+			updatedTables[""] = true
+			unqualifiedColumns = append(unqualifiedColumns, assign.Column.Column)
+			continue
+		}
+		// Skip only if the qualifier resolves to a CTE reference in the FROM — a
+		// CTE can't be a mutation target. A real table aliased with a CTE's name
+		// (its resolved table is real) is still an update target.
+		if ref, ok := singleTables[table]; ok && cteNames[ref.Table] {
 			continue
 		}
 		updatedTables[table] = true
-		if table == "" {
-			unqualifiedColumns = append(unqualifiedColumns, assign.Column.Column)
-		}
 	}
 
 	// Resolve unqualified SET columns to their owning table(s) via metadata.
@@ -226,7 +233,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 		delete(updatedTables, "")
 		candidates := make(map[string]*TableReference, len(singleTables))
 		for key, ref := range singleTables {
-			if cteNames[key] || cteNames[ref.Table] {
+			if cteNames[ref.Table] {
 				continue
 			}
 			candidates[key] = ref

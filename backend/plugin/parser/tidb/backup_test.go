@@ -318,10 +318,30 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal("test", result[0].SourceTableName, "backup target must be the real table, not the CTE")
 
-	// A table alias that collides with a CTE name must not let the only real
-	// target get filtered out and silently produce no backup.
-	_, err = run("WITH x AS (SELECT id FROM test2) UPDATE test AS x JOIN test2 AS y ON x.a = y.a SET x.c = 1")
-	a.Error(err, "alias/CTE-name collision must error, not silently skip the backup")
+	// A table alias colliding with a CTE name must resolve to the real table
+	// (a CTE can't be a mutation target), not be filtered out.
+	result, err = run("WITH x AS (SELECT id FROM test2) UPDATE test AS x JOIN test2 AS y ON x.a = y.a SET x.c = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName)
+
+	// Multi-target mutation: EVERY mutated table must be backed up, even when an
+	// alias collides with a CTE name. A partial backup (only test2) would leave
+	// test unprotected.
+	result, err = run("WITH x AS (SELECT id FROM test2) UPDATE test AS x JOIN test2 AS y ON x.a = y.a SET x.c = 1, y.c = 2")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+
+	// Multi-target DELETE: both deleted tables backed up despite the collision.
+	result, err = run("WITH x AS (SELECT id FROM test2) DELETE x, y FROM test AS x JOIN test2 AS y WHERE x.a = y.a")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+
+	// Updating only a CTE has no real target -> must error (never silently skip).
+	_, err = run("WITH x AS (SELECT id FROM test2) UPDATE test JOIN x ON test.id = x.id SET x.c = 1")
+	a.Error(err, "updating only a CTE must error")
 
 	// The cross-database guard is case-insensitive (TiDB default): a different-
 	// case reference to the task database is the same database, not cross-db.
