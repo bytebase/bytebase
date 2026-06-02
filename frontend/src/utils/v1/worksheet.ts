@@ -1,18 +1,9 @@
-import {
-  getCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { getCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  emptySQLEditorConnection,
-  extractDatabaseResourceName,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 export const extractWorksheetID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -83,21 +74,7 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   return false;
 };
 
-export const extractWorksheetConnection = async (worksheet: {
-  database: string;
-}) => {
-  const connection = emptySQLEditorConnection();
-  if (worksheet.database) {
-    try {
-      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        worksheet.database
-      );
-      const { instance } = extractDatabaseResourceName(database.name);
-      connection.instance = instance;
-      connection.database = database.name;
-    } catch {
-      // Skip.
-    }
-  }
-  return connection;
-};
+// `extractWorksheetConnection` moved to `@/react/lib/sqlEditorConnection`
+// so the database lookup can go through the React app store without
+// dragging `@/react/stores/app` into the `@/utils` import graph (which
+// would create a static ESM cycle).

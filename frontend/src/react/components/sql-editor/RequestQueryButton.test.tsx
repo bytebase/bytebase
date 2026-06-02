@@ -44,15 +44,24 @@ vi.mock("@/react/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      roleList: mocks.roleList,
-      loadSubscription: mocks.loadSubscription,
-      hasInstanceFeature: mocks.hasInstanceFeature,
-      hasFeature: mocks.appHasFeature,
-    }),
-}));
+vi.mock("@/react/stores/app", () => {
+  // Build the state object lazily on every read so per-test reassignments
+  // like `mocks.roleList = [...]` are reflected. Capturing at module init
+  // would freeze the empty default and break the role-selection cases.
+  const buildState = () => ({
+    roleList: mocks.roleList,
+    loadSubscription: mocks.loadSubscription,
+    hasInstanceFeature: mocks.hasInstanceFeature,
+    hasFeature: mocks.appHasFeature,
+  });
+  type State = ReturnType<typeof buildState>;
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: State) => unknown) => selector(buildState()),
+      { getState: buildState }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
   useSQLEditorVueState: mocks.useSQLEditorVueState,

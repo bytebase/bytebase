@@ -30,6 +30,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { instanceNamePrefix } from "@/react/lib/resourceName";
+import { getConnectionForSQLEditorTab } from "@/react/lib/sqlEditorConnection";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -59,7 +60,6 @@ import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
-  getConnectionForSQLEditorTab,
   getInstanceResource,
   getValueFromSearchParams,
   getValuesFromSearchParams,

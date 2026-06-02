@@ -21,11 +21,15 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (
-    selector: (s: { hasFeature: typeof mocks.hasFeature }) => unknown
-  ) => selector({ hasFeature: mocks.hasFeature }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = { hasFeature: mocks.hasFeature };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
