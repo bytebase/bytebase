@@ -259,7 +259,7 @@ vi.mock("@/utils/issue/cel", () => ({
   stringifyConditionExpression: () => "",
 }));
 
-vi.mock("@/utils/v1/member", () => ({
+vi.mock("@/react/lib/memberBindings", () => ({
   getMemberBindings: () => [],
   groupProjectRoleBindings: () => [],
 }));

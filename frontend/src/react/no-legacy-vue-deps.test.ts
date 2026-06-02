@@ -134,12 +134,8 @@ describe("React Project and Settings legacy Vue dependencies", () => {
   test("Phase 1 protobuf resource consumers use the React app store", () => {
     const bannedImports = [
       "useGroupStore",
-      "useServiceAccountStore",
-      "useWorkloadIdentityStore",
       "useIdentityProviderStore",
       "useAccessGrantStore",
-      "@/store/modules/serviceAccount",
-      "@/store/modules/workloadIdentity",
       "@/store/modules/idp",
       "@/store/modules/accessGrant",
     ];

@@ -71,6 +71,10 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
+  getMemberBindings,
+  groupProjectRoleBindings,
+} from "@/react/lib/memberBindings";
+import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/react/lib/project-member/utils";
@@ -124,7 +128,6 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { getMemberBindings, groupProjectRoleBindings } from "@/utils/v1/member";
 import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
 import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
