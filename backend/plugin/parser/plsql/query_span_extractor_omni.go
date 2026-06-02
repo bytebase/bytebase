@@ -793,11 +793,52 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 		q.tableSourcesFrom = oldFrom
 	}()
 
-	results, err := q.extractOmniTargetList(ref.Measures)
+	partitionResults, err := q.extractOmniResultList(ref.PartitionBy)
 	if err != nil {
 		return nil, err
 	}
+	measureResults, err := q.extractOmniResultList(ref.Measures)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]base.QuerySpanResult, 0, len(partitionResults)+len(measureResults))
+	results = append(results, partitionResults...)
+	results = append(results, measureResults...)
 	return aliasOmniTableSource(&base.PseudoTable{Columns: results}, ref.Alias), nil
+}
+
+func (q *omniQuerySpanExtractor) extractOmniResultList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+	var results []base.QuerySpanResult
+	for _, node := range listItems(list) {
+		var expr oracleast.ExprNode
+		name := ""
+		switch node := node.(type) {
+		case *oracleast.ResTarget:
+			expr = node.Expr
+			name = node.Name
+		case oracleast.ExprNode:
+			expr = node
+		default:
+			continue
+		}
+		if expr == nil {
+			continue
+		}
+
+		extractedName, sourceColumns, err := q.extractOmniExpr(expr)
+		if err != nil {
+			return nil, err
+		}
+		if name == "" {
+			name = extractedName
+		}
+		results = append(results, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: sourceColumns,
+			IsPlainField:  false,
+		})
+	}
+	return results, nil
 }
 
 func omniSetLeftSelect(stmt *oracleast.SelectStmt) *oracleast.SelectStmt {

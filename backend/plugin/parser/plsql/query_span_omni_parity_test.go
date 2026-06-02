@@ -532,8 +532,23 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
   DEFINE B AS B.PRICE > A.PRICE
 ) MR`,
 			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
 				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
 				{Name: "LAST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize partition projection",
+			statement: `SELECT ACCOUNT_ID FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
 			},
 		},
 	}
