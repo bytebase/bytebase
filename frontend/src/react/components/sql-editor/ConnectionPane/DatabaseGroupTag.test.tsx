@@ -16,18 +16,23 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      fetchDBGroup: mocks.fetchDBGroup,
-      // Proxy so `dbGroupsByName[name]` resolves through the per-test
-      // `getDBGroupByName` mock (preserves the existing test bodies).
-      dbGroupsByName: new Proxy(
-        {},
-        { get: (_t, prop: string) => mocks.getDBGroupByName(prop) }
-      ),
-    }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    fetchDBGroup: mocks.fetchDBGroup,
+    // Proxy so `dbGroupsByName[name]` resolves through the per-test
+    // `getDBGroupByName` mock (preserves the existing test bodies).
+    dbGroupsByName: new Proxy(
+      {},
+      { get: (_t, prop: string) => mocks.getDBGroupByName(prop) }
+    ),
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/types/proto-es/v1/database_group_service_pb", () => ({
   DatabaseGroupView: { FULL: 2 },

@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import { isValidProjectName } from "@/types";
 import {
@@ -7,7 +8,6 @@ import {
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractWorksheetConnection } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 import { getSQLEditorEditorState } from "./editor";

@@ -36,14 +36,19 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
   usePiniaBridge: mocks.usePiniaBridge,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      getWorksheetByName: mocks.getWorksheetByName,
-      getUserByIdentifier: mocks.getUserByIdentifier,
-      getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
-    }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    getWorksheetByName: mocks.getWorksheetByName,
+    getUserByIdentifier: mocks.getUserByIdentifier,
+    getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
   getSQLEditorTabsState: mocks.getSQLEditorTabsState,

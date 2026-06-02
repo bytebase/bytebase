@@ -8,6 +8,7 @@ import {
 } from "@/react/components/ComponentPermissionGuard";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useCurrentRoute, useNavigate } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
@@ -40,7 +41,6 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  extractWorksheetConnection,
   extractWorksheetID,
   getDefaultPagination,
   getSheetStatement,
