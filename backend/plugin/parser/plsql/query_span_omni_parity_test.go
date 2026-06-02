@@ -443,36 +443,72 @@ func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
 	}
 }
 
-func TestOracleOmniUnsupportedLongTailTableSources(t *testing.T) {
-	// UNPIVOT and MODEL used to return approximate ANTLR spans that ignored
-	// their transformation semantics. Keep them explicit unsupported until the
-	// omni extractor models their output columns accurately.
+func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
+		want      []base.QuerySpanResult
 	}{
 		{
-			name:      "table collection",
-			statement: "SELECT * FROM TABLE(pkg.values()) X",
+			name:      "table collection column aliases",
+			statement: "SELECT * FROM TABLE(pkg.values()) X(A, B)",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList(nil)},
+				{Name: "B", SourceColumns: sourceColumnSetFromList(nil)},
+			},
 		},
 		{
-			name:      "pivot",
-			statement: "SELECT * FROM (SELECT A, B FROM T) PIVOT (COUNT(*) FOR B IN (1 AS ONE))",
+			name:      "pivot typed output",
+			statement: "SELECT * FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+				{Name: "TWO_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
 		},
 		{
-			name:      "unpivot",
-			statement: "SELECT * FROM (SELECT A, B FROM T) UNPIVOT (VAL FOR COL IN (A AS 'A', B AS 'B'))",
+			name:      "unpivot typed mappings",
+			statement: "SELECT * FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "VAL", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+				{Name: "COL", SourceColumns: sourceColumnSetFromList(nil)},
+			},
 		},
 		{
-			name:      "model",
+			name:      "model dimension and measures",
 			statement: "SELECT * FROM T MODEL DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name: "match recognize measures",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE, LAST(PRICE) AS LAST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+				{Name: "LAST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
-			require.ErrorContains(t, err, "unsupported oracle table source")
+			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			require.NoError(t, err)
+			require.NotNil(t, span)
+			require.Equal(t, test.want, span.Results)
 		})
 	}
 }
@@ -498,6 +534,13 @@ func oracleOmniLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
 			"columns": [
 				{"name": "C"},
 				{"name": "D"}
+			]
+		}, {
+			"name": "TRADES",
+			"columns": [
+				{"name": "ACCOUNT_ID"},
+				{"name": "TRADE_TIME"},
+				{"name": "PRICE"}
 			]
 		}]
 	}]
