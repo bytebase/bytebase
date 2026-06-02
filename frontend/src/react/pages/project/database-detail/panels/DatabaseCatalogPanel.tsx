@@ -30,7 +30,7 @@ import {
   isCurrentColumnException,
 } from "@/react/lib/sensitive-data/utils";
 import { useAppStore } from "@/react/stores/app";
-import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import type { Permission } from "@/types";
 import type {
   ColumnCatalog,
@@ -185,7 +185,6 @@ const itemKey = (item: MaskData) => {
 
 export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
 
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
@@ -199,19 +198,17 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     (permission) => hasProjectPermissionV2(project, permission)
   );
 
-  const semanticTypeList = useVueState(() => {
-    const setting = settingStore.getSettingByName(
-      Setting_SettingName.SEMANTIC_TYPES
-    );
-    return setting?.value?.value.case === "semanticType"
-      ? ((setting.value.value.value.types ??
+  const semanticTypeSetting = useAppStore((s) =>
+    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
+  );
+  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
+    return semanticTypeSetting?.value?.value.case === "semanticType"
+      ? ((semanticTypeSetting.value.value.value.types ??
           []) as SemanticTypeSetting_SemanticType[])
       : [];
-  });
-  const classificationConfig = useVueState(() =>
-    settingStore.getProjectClassification(
-      project.dataClassificationConfigId ?? ""
-    )
+  }, [semanticTypeSetting]);
+  const classificationConfig = useAppStore((s) =>
+    s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
   const hasSensitiveDataFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_DATA_MASKING, instance).value
@@ -226,15 +223,16 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   );
 
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(
+    const store = useAppStore.getState();
+    void store.getOrFetchSettingByName(
       Setting_SettingName.SEMANTIC_TYPES,
       true
     );
-    void settingStore.getOrFetchSettingByName(
+    void store.getOrFetchSettingByName(
       Setting_SettingName.DATA_CLASSIFICATION,
       true
     );
-  }, [settingStore]);
+  }, []);
 
   useEffect(() => {
     setSearchText("");

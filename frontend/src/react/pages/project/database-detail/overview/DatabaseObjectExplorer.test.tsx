@@ -27,7 +27,8 @@ const mocks = vi.hoisted(() => {
     getTableCatalog: vi.fn(),
     featureToRef: vi.fn(() => ({ value: true })),
     dbSchemaStore: vi.fn(),
-    useSettingV1Store: vi.fn(),
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => undefined),
     getDatabaseProject: vi.fn((database: { project: string }) => ({
       name: database.project,
       dataClassificationConfigId: "classification-config",
@@ -68,14 +69,25 @@ vi.mock("@/router", () => ({
   },
 }));
 
-// The component now reads dbSchema getters via the app store. Route the
-// existing `mocks.dbSchemaStore` shape through `useAppStore` so the
-// test bodies' per-scenario `.mockReturnValue({ getSchemaList, ... })`
-// calls keep working without further changes.
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (s: unknown) => unknown) =>
-    selector(mocks.dbSchemaStore()),
-}));
+// The component now reads dbSchema getters plus the former setting-store
+// methods (getProjectClassification / getOrFetchSettingByName) via the app
+// store. Merge the setting mocks into the `mocks.dbSchemaStore` shape so the
+// test bodies' per-scenario `.mockReturnValue({ getSchemaList, ... })` calls
+// keep working without further changes.
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getProjectClassification: mocks.getProjectClassification,
+    ...((mocks.dbSchemaStore() ?? {}) as Record<string, unknown>),
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (s: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
   useAppDatabaseMetadata: (name: string) =>
@@ -84,7 +96,6 @@ vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
 
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
-  useSettingV1Store: mocks.useSettingV1Store,
 }));
 
 vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
@@ -249,11 +260,9 @@ beforeEach(async () => {
   });
   mocks.featureToRef.mockReset();
   mocks.featureToRef.mockReturnValue({ value: true });
-  mocks.useSettingV1Store.mockReset();
-  mocks.useSettingV1Store.mockReturnValue({
-    getOrFetchSettingByName: vi.fn(),
-    getProjectClassification: vi.fn(() => undefined),
-  });
+  mocks.getOrFetchSettingByName.mockReset();
+  mocks.getProjectClassification.mockReset();
+  mocks.getProjectClassification.mockReturnValue(undefined);
   mocks.getDatabaseProject.mockReset();
   mocks.getDatabaseProject.mockImplementation(
     (database: { project: string }) => ({

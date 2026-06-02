@@ -12,11 +12,10 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
-import { useVueState } from "@/react/hooks/useVueState";
 import { getRuleKey } from "@/react/lib/sql-review/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
@@ -156,10 +155,9 @@ export function AttachResourcesPanel({
 }: AttachResourcesPanelProps) {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
-  const envStore = useEnvironmentV1Store();
   const projectsByName = useAppStore((s) => s.projectsByName);
 
-  const environments = useVueState(() => envStore.environmentList ?? []);
+  const environments = useAppStore((s) => s.environmentList) ?? [];
   const projects = useMemo(
     () =>
       Object.values(projectsByName).filter(

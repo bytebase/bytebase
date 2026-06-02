@@ -13,11 +13,10 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
-import { pushNotification, useActuatorV1Store, useAuthStore } from "@/store";
+import { pushNotification, useAuthStore } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
@@ -44,11 +43,9 @@ export function SigninPage(props: SigninPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  const serverInfo = useVueState(() => useActuatorV1Store().serverInfo);
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-  const activeUserCount = useVueState(
-    () => useActuatorV1Store().activeUserCount
-  );
+  const serverInfo = useAppStore((s) => s.serverInfo);
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const activeUserCount = useAppStore((s) => s.activeUserCount());
   const identityProviders = useIdentityProviderList();
 
   const query = router.currentRoute.value.query;
@@ -122,11 +119,10 @@ export function SigninPage(props: SigninPageProps) {
       const workspaceName = resolveWorkspaceName();
       const listIdentityProviders =
         useAppStore.getState().listIdentityProviders;
-      const actuatorStore = useActuatorV1Store();
       try {
         const [idpList] = await Promise.all([
           listIdentityProviders(workspaceName),
-          actuatorStore.fetchServerInfo(workspaceName),
+          useAppStore.getState().fetchServerInfo(workspaceName),
         ]);
         if (idpList.length === 0 && workspaceName) {
           await listIdentityProviders();

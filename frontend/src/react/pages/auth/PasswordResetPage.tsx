@@ -14,7 +14,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { pushNotification, useActuatorV1Store, useAuthStore } from "@/store";
+import { pushNotification, useAuthStore } from "@/store";
 import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
@@ -34,14 +34,10 @@ export function PasswordResetPage() {
   const query = router.currentRoute.value.query;
   const codeMode = !!query.email;
 
-  const passwordRestriction = useVueState(
-    () => useActuatorV1Store().serverInfo?.restriction?.passwordRestriction
-  );
-  const disallowPasswordSignin = useVueState(
-    () =>
-      useActuatorV1Store().serverInfo?.restriction?.disallowPasswordSignin ??
-      false
-  );
+  const serverInfo = useAppStore((state) => state.serverInfo);
+  const passwordRestriction = serverInfo?.restriction?.passwordRestriction;
+  const disallowPasswordSignin =
+    serverInfo?.restriction?.disallowPasswordSignin ?? false;
   const requireResetPassword = useVueState(
     () => useAuthStore().requireResetPassword
   );

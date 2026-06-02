@@ -24,8 +24,6 @@ const mocks = vi.hoisted(() => ({
     t: (key: string) => key,
   })),
   useVueState: vi.fn(),
-  useSettingV1Store: vi.fn(),
-  useSubscriptionV1Store: vi.fn(),
   useDatabaseCatalog: vi.fn(),
   updateDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
@@ -33,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(),
   getSettingByName: vi.fn(),
   getProjectClassification: vi.fn(),
+  hasFeature: vi.fn(() => true),
+  instanceMissingLicense: vi.fn(() => false),
   updateColumnCatalog: vi.fn(),
   updateTableCatalog: vi.fn(),
   getDatabaseProject: vi.fn(),
@@ -126,8 +126,6 @@ vi.mock("@/react/components/FeatureAttention", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useSettingV1Store: mocks.useSettingV1Store,
-  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
 }));
 
 vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
@@ -138,13 +136,23 @@ vi.mock("@/react/stores/app/databaseCatalog", () => ({
   getTableCatalog: mocks.getTableCatalog,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      updateDatabaseCatalog: mocks.updateDatabaseCatalog,
-    }),
-  },
-}));
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getSettingByName: mocks.getSettingByName,
+    getProjectClassification: mocks.getProjectClassification,
+    hasFeature: mocks.hasFeature,
+    instanceMissingLicense: mocks.instanceMissingLicense,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (s: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
 
 vi.mock("@/utils", () => ({
   getDatabaseProject: mocks.getDatabaseProject,
@@ -275,17 +283,10 @@ beforeEach(async () => {
       },
     };
   });
-  mocks.useSettingV1Store.mockReset();
-  mocks.useSettingV1Store.mockReturnValue({
-    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
-    getSettingByName: mocks.getSettingByName,
-    getProjectClassification: mocks.getProjectClassification,
-  });
-  mocks.useSubscriptionV1Store.mockReset();
-  mocks.useSubscriptionV1Store.mockReturnValue({
-    hasFeature: vi.fn(() => true),
-    instanceMissingLicense: vi.fn(() => false),
-  });
+  mocks.hasFeature.mockReset();
+  mocks.hasFeature.mockReturnValue(true);
+  mocks.instanceMissingLicense.mockReset();
+  mocks.instanceMissingLicense.mockReturnValue(false);
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({
     name: "instances/inst1/databases/db/catalog",

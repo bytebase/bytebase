@@ -11,8 +11,9 @@ import {
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
 import { useVueState } from "@/react/hooks/useVueState";
 import { updateTableCatalog } from "@/react/lib/column-data-table/utils";
+import { useAppStore } from "@/react/stores/app";
 import { getTableCatalog } from "@/react/stores/app/databaseCatalog";
-import { featureToRef, useSettingV1Store } from "@/store";
+import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -43,7 +44,6 @@ export function TableMetadataTable({
   onRowClick?: (table: TableMetadata) => void;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
   const databaseEngine = getDatabaseEngine(database);
   const showSchemaColumn = hasSchemaProperty(databaseEngine);
   const showClassificationColumn = useVueState(
@@ -51,10 +51,8 @@ export function TableMetadataTable({
   );
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
-  const classificationConfig = useVueState(() =>
-    settingStore.getProjectClassification(
-      project.dataClassificationConfigId ?? ""
-    )
+  const classificationConfig = useAppStore((s) =>
+    s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
   const editable = hasProjectPermissionV2(
     project,
@@ -65,11 +63,10 @@ export function TableMetadataTable({
   const showPartitionedColumn = databaseEngine === Engine.POSTGRES;
 
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(
-      Setting_SettingName.DATA_CLASSIFICATION,
-      true
-    );
-  }, [settingStore]);
+    void useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
+  }, []);
 
   const columns = useMemo(
     () =>

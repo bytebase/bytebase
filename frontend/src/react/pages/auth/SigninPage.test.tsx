@@ -39,25 +39,23 @@ vi.mock("@/router/auth", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useActuatorV1Store: () => mocks.actuatorStore,
   useAuthStore: () => mocks.authStore,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({
-        identityProviderList: () => mocks.identityProviderList,
-        listIdentityProviders: mocks.listIdentityProviders,
-      }),
-    {
-      getState: () => ({
-        identityProviderList: () => mocks.identityProviderList,
-        listIdentityProviders: mocks.listIdentityProviders,
-      }),
-    }
-  ),
-}));
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    ...(mocks.actuatorStore as Record<string, unknown>),
+    identityProviderList: () => mocks.identityProviderList,
+    listIdentityProviders: mocks.listIdentityProviders,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (state: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
 
 vi.mock("@/utils", () => ({
   openWindowForSSO: mocks.openWindowForSSO,
@@ -115,8 +113,8 @@ beforeEach(async () => {
         disallowSignup: false,
       },
     },
-    isSaaSMode: false,
-    activeUserCount: 1,
+    isSaaSMode: () => false,
+    activeUserCount: () => 1,
     fetchServerInfo: vi.fn(async () => ({})),
   };
   mocks.identityProviderList = [

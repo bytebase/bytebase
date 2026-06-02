@@ -27,11 +27,7 @@ import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  DEFAULT_MAX_RESULT_SIZE_IN_MB,
-  pushNotification,
-  useSettingV1Store,
-} from "@/store";
+import { DEFAULT_MAX_RESULT_SIZE_IN_MB, pushNotification } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
@@ -92,7 +88,6 @@ export function DataExportPrepSheet({
 }: DataExportPrepSheetProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const settingStore = useSettingV1Store();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
 
@@ -213,13 +208,16 @@ export function DataExportPrepSheet({
   }, [projectName]);
 
   // Limits
-  const maximumResultSize = useVueState(() => {
-    let size = settingStore.workspaceProfile.sqlResultSize;
+  const sqlResultSize = useAppStore(
+    (s) => s.getWorkspaceProfile().sqlResultSize
+  );
+  const maximumResultSize = (() => {
+    let size = sqlResultSize;
     if (size <= 0) {
       size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
     }
     return Number(size) / 1024 / 1024;
-  });
+  })();
 
   const handleCancel = () => {
     if (step === 2 && !seed?.step) {
