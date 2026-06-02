@@ -31,7 +31,6 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
@@ -40,7 +39,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useSettingV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import type { Permission } from "@/types";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -159,7 +158,6 @@ function RequestRoleForm({
   const [environments, setEnvironments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const settingStore = useSettingV1Store();
   const roleList = useAppStore((state) => state.roleList);
   const selectedRole = useAppStore((state) =>
     role ? state.getRoleByName(role) : undefined
@@ -186,13 +184,13 @@ function RequestRoleForm({
   // Vue ExpirationSelector: PROJECT_OWNER grants are exempted (project
   // owners can request unbounded expirations), otherwise the workspace cap
   // applies. Returns undefined when no cap is set.
-  const maximumRoleExpirationDays = useVueState(() => {
+  const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
+  const maximumRoleExpirationDays = useMemo(() => {
     if (role === PresetRoleType.PROJECT_OWNER) return undefined;
-    const seconds =
-      settingStore.workspaceProfile.maximumRoleExpiration?.seconds;
+    const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
     return Math.floor(Number(seconds) / (60 * 60 * 24));
-  });
+  }, [workspaceProfile, role]);
 
   // ExprEditor factor/option config — mirrors the old Vue
   // DatabaseResourceForm config for role-grant requests.

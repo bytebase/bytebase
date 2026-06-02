@@ -51,12 +51,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { extractUserEmail, groupNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_USER_NAME } from "@/types";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
@@ -482,10 +477,8 @@ function GroupForm({
   onRemoved,
 }: Omit<CreateGroupSheetProps, "open">) {
   const { t } = useTranslation();
-  const settingV1Store = useSettingV1Store();
-  const actuatorStore = useActuatorV1Store();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
@@ -494,8 +487,8 @@ function GroupForm({
   const deleteGroup = useAppStore((state) => state.deleteGroup);
 
   const isEditMode = !!group;
-  const workspaceDomains = useVueState(
-    () => settingV1Store.workspaceProfile.domains
+  const workspaceDomains = useAppStore(
+    (s) => s.getWorkspaceProfile().domains
   );
   const domainOptions = workspaceDomains.filter((d) => d.trim());
 
@@ -932,19 +925,15 @@ function GroupForm({
 
 export function GroupsPage() {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const settingV1Store = useSettingV1Store();
   const listGroups = useAppStore((state) => state.listGroups);
   const fetchGroup = useAppStore((state) => state.fetchGroup);
 
   const hasUserGroupFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
+    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
   );
-  const workspaceDomains = useVueState(
-    () => settingV1Store.workspaceProfile.domains
-  );
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
   const hasDirectorySyncFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
   const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
 

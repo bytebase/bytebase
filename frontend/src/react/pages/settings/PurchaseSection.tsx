@@ -5,9 +5,8 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useSubscriptionState } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import type { PurchasePlanAdditional } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   BillingInterval,
@@ -85,13 +84,12 @@ const planPrefix: Record<number, string> = {
 
 export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
   const refreshSubscription = useAppStore((state) => state.refreshSubscription);
 
   const { currentPlan, isFreePlan, isExpired, subscription } =
     useSubscriptionState();
-  const paymentInfo = useVueState(() => subscriptionStore.paymentInfo);
-  const purchasePlans = useVueState(() => subscriptionStore.purchasePlans);
+  const paymentInfo = useAppStore((s) => s.paymentInfo);
+  const purchasePlans = useAppStore((s) => s.purchasePlans);
 
   const allowManage = hasWorkspacePermissionV2("bb.subscription.manage");
 
@@ -112,7 +110,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
 
   // Fetch plans on mount.
   useEffect(() => {
-    subscriptionStore.fetchPurchasePlans();
+    useAppStore.getState().fetchPurchasePlans();
   }, []);
 
   // Handle session_id polling on mount (covers both new purchase and plan update fallback).
@@ -124,14 +122,17 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     const controller = new AbortController();
     (async () => {
       try {
-        const status = await subscriptionStore.verifyCheckoutSession(sessionId);
+        const status = await useAppStore
+          .getState()
+          .verifyCheckoutSession(sessionId);
         if (status !== "complete" || controller.signal.aborted) return;
 
         setPendingPayment(true);
-        await subscriptionStore.pollSubscriptionUntil(
-          (sub) => sub.plan !== PlanType.FREE,
-          { signal: controller.signal }
-        );
+        await useAppStore
+          .getState()
+          .pollSubscriptionUntil((sub) => sub.plan !== PlanType.FREE, {
+            signal: controller.signal,
+          });
         if (!controller.signal.aborted) {
           await refreshSubscription();
           setPendingPayment(false);
@@ -146,14 +147,14 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     return () => {
       controller.abort();
     };
-  }, [allowManage, refreshSubscription, subscriptionStore]);
+  }, [allowManage, refreshSubscription]);
 
   // Fetch payment info for active subscriptions.
   useEffect(() => {
     if (!isFreePlan && !isExpired) {
-      subscriptionStore.fetchPaymentInfo();
+      useAppStore.getState().fetchPaymentInfo();
     }
-  }, [isFreePlan, isExpired, subscriptionStore]);
+  }, [isFreePlan, isExpired]);
 
   const isCurrentPlan = useCallback(
     (plan: PlanType) => currentPlan === plan && !isExpired,
@@ -289,27 +290,29 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     try {
       let paymentUrl: string;
       if (isPlanConfigChanged(card)) {
-        paymentUrl = await subscriptionStore.updatePurchase(
-          card.type,
-          interval,
-          seats,
-          subscription?.etag ?? ""
-        );
+        paymentUrl = await useAppStore
+          .getState()
+          .updatePurchase(
+            card.type,
+            interval,
+            seats,
+            subscription?.etag ?? ""
+          );
       } else {
-        paymentUrl = await subscriptionStore.createPurchase(
-          card.type,
-          interval,
-          seats
-        );
+        paymentUrl = await useAppStore
+          .getState()
+          .createPurchase(card.type, interval, seats);
       }
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
         // Direct update — wait for the webhook-driven reconciliation.
         setPendingPayment(true);
-        await subscriptionStore.pollSubscriptionUntil(
-          (sub) => sub.plan !== PlanType.FREE && sub.seats === seats
-        );
+        await useAppStore
+          .getState()
+          .pollSubscriptionUntil(
+            (sub) => sub.plan !== PlanType.FREE && sub.seats === seats
+          );
         await refreshSubscription();
         setPendingPayment(false);
       }
@@ -323,12 +326,12 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const handleCancel = async (feedback: string, comment: string) => {
     setCanceling(true);
     try {
-      await subscriptionStore.cancelPurchase(feedback, comment);
+      await useAppStore.getState().cancelPurchase(feedback, comment);
       // Wait for the Stripe webhook to reconcile before releasing the UI,
       // so the cached subscription/license reflects the new state.
-      await subscriptionStore.pollSubscriptionUntil(
-        (sub) => sub.plan === PlanType.FREE
-      );
+      await useAppStore
+        .getState()
+        .pollSubscriptionUntil((sub) => sub.plan === PlanType.FREE);
       await refreshSubscription();
       pushNotification({
         module: "bytebase",

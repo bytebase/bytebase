@@ -36,12 +36,7 @@ import {
   getClassificationLevelOptions,
 } from "@/react/lib/sensitive-data/components-utils";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   MaskingRulePolicy_MaskingRule,
@@ -112,7 +107,6 @@ function MaskingRuleConfig({
   onConfirm: (rule: MaskingRulePolicy_MaskingRule) => void;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
 
   const readonly = mode === "NORMAL";
 
@@ -126,15 +120,17 @@ function MaskingRuleConfig({
   const [dirty, setDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const semanticTypeOptions = useVueState(() => {
-    const setting = settingStore.getSettingByName(
-      Setting_SettingName.SEMANTIC_TYPES
-    );
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const semanticTypeOptions = useMemo(() => {
+    const setting = useAppStore
+      .getState()
+      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
     if (setting?.value?.value?.case === "semanticType") {
       return setting.value.value.value.types ?? [];
     }
     return [];
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsByName]);
 
   const resetIdRef = useRef(0);
   const resetToRule = useCallback(
@@ -358,12 +354,9 @@ function MaskingRuleConfig({
 
 export function GlobalMaskingPage() {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const settingStore = useSettingV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
 
   const hasSensitiveDataFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   const hasPermission = hasWorkspacePermissionV2(
@@ -394,7 +387,7 @@ export function GlobalMaskingPage() {
   );
 
   const factorOptionsMap = useMemo((): Map<Factor, OptionConfig> => {
-    const workspaceName = actuatorStore.workspaceResourceName;
+    const workspaceName = useAppStore.getState().workspaceResourceName();
     return factorList.reduce((map, factor) => {
       switch (factor) {
         case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
@@ -424,7 +417,7 @@ export function GlobalMaskingPage() {
       const policy = await useAppStore
         .getState()
         .getOrFetchPolicyByParentAndType({
-          parentPath: actuatorStore.workspaceResourceName,
+          parentPath: useAppStore.getState().workspaceResourceName(),
           policyType: PolicyType.MASKING_RULE,
         });
       if (policy) {
@@ -435,14 +428,12 @@ export function GlobalMaskingPage() {
         setItems(rules.map((rule) => ({ mode: "NORMAL", rule })));
       }
       await Promise.all([
-        settingStore.getOrFetchSettingByName(
-          Setting_SettingName.SEMANTIC_TYPES,
-          true
-        ),
-        settingStore.getOrFetchSettingByName(
-          Setting_SettingName.DATA_CLASSIFICATION,
-          true
-        ),
+        useAppStore
+          .getState()
+          .getOrFetchSettingByName(Setting_SettingName.SEMANTIC_TYPES, true),
+        useAppStore
+          .getState()
+          .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true),
       ]);
     };
     load();
@@ -462,7 +453,7 @@ export function GlobalMaskingPage() {
       },
     };
     await useAppStore.getState().upsertPolicy({
-      parentPath: actuatorStore.workspaceResourceName,
+      parentPath: useAppStore.getState().workspaceResourceName(),
       policy: patch,
     });
   }, []);
@@ -576,7 +567,7 @@ export function GlobalMaskingPage() {
                 useAppStore
                   .getState()
                   .getOrFetchPolicyByParentAndType({
-                    parentPath: actuatorStore.workspaceResourceName,
+                    parentPath: useAppStore.getState().workspaceResourceName(),
                     policyType: PolicyType.MASKING_RULE,
                   })
                   .then((policy) => {

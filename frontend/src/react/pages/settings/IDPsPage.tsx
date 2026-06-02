@@ -52,11 +52,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   getIdentityProviderResourceId,
   idpNamePrefix,
@@ -140,9 +136,8 @@ interface FieldMappingState {
 
 function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
   const externalUrl = useVueState(
-    () => actuatorStore.serverInfo?.externalUrl ?? ""
+    () => useAppStore.getState().serverInfo?.externalUrl ?? ""
   );
 
   const redirectUrl = useMemo(() => {
@@ -1304,11 +1299,10 @@ function CreateWizardDrawer({
     (state) => state.createIdentityProvider
   );
   const identityProviderList = useIdentityProviderList();
-  const subscriptionStore = useSubscriptionV1Store();
   useEscapeKey(onClose);
 
   const hasEnterpriseSSOFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO)
+    useAppStore.getState().hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO)
   );
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -1713,9 +1707,9 @@ function CreateWizardDrawer({
                   <div className="max-w-2xl mx-auto w-full">
                     {PROVIDER_TYPE_LIST.map((item) => {
                       const Icon = getProviderIcon(item.type);
-                      const hasFeature = subscriptionStore.hasFeature(
-                        item.feature
-                      );
+                      const hasFeature = useAppStore
+                        .getState()
+                        .hasFeature(item.feature);
                       return (
                         <label
                           key={item.type}
@@ -1770,9 +1764,9 @@ function CreateWizardDrawer({
                   <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {templateList.map((tmpl) => {
                       const Icon = getTemplateIcon(tmpl.title);
-                      const hasFeature = subscriptionStore.hasFeature(
-                        tmpl.feature
-                      );
+                      const hasFeature = useAppStore
+                        .getState()
+                        .hasFeature(tmpl.feature);
                       return (
                         <label
                           key={tmpl.title}
@@ -1976,20 +1970,20 @@ export function IDPsPage() {
     (state) => state.listIdentityProviders
   );
 
-  const subscriptionStore = useSubscriptionV1Store();
-
   const [ready, setReady] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const hasSSOFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
+    useAppStore
+      .getState()
+      .hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
   );
   const canCreate = hasWorkspacePermissionV2("bb.identityProviders.create");
 
   useEffect(() => {
-    listIdentityProviders(useActuatorV1Store().workspaceResourceName).finally(
-      () => setReady(true)
-    );
+    listIdentityProviders(
+      useAppStore.getState().workspaceResourceName()
+    ).finally(() => setReady(true));
   }, [listIdentityProviders]);
 
   const handleCreateSSO = () => {

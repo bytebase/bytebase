@@ -8,8 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 
 // WHATWG HTML spec email validation (lowercase only).
 const emailRegex =
@@ -35,14 +34,11 @@ export function EmailInput({
   showDomain = false,
 }: EmailInputProps) {
   const { t } = useTranslation();
-  const settingV1Store = useSettingV1Store();
 
-  const enforceIdentityDomain = useVueState(
-    () => settingV1Store.workspaceProfile.enforceIdentityDomain
+  const enforceIdentityDomain = useAppStore(
+    (s) => s.getWorkspaceProfile().enforceIdentityDomain
   );
-  const workspaceDomains = useVueState(
-    () => settingV1Store.workspaceProfile.domains
-  );
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
 
   const enforceDomain = enforceIdentityDomain || showDomain;
 
