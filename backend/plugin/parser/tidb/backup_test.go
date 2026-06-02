@@ -390,6 +390,17 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err, "plain EXPLAIN does not execute and needs no backup")
 	a.Empty(result)
 
+	// REPLACE and INSERT ... ON DUPLICATE KEY UPDATE overwrite existing rows but
+	// have no backup support, so they must be rejected (not silently skipped). A
+	// plain INSERT only adds rows and needs no backup.
+	_, err = run("REPLACE INTO test VALUES (1, 2, 3)")
+	a.Error(err, "REPLACE must be rejected")
+	_, err = run("INSERT INTO test VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE c = 5")
+	a.Error(err, "INSERT ... ON DUPLICATE KEY UPDATE must be rejected")
+	result, err = run("INSERT INTO test VALUES (1, 2, 3)")
+	a.NoError(err, "plain INSERT only adds rows and needs no backup")
+	a.Empty(result)
+
 	// In the >maxMixedDMLCount same-table UNION path, case-only database
 	// differences (db.test vs DB.test) must be treated as the same table, not
 	// rejected as "different tables" — consistent with the cross-database guard.

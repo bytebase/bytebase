@@ -133,6 +133,16 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 			}
 		}
 		return nil, nil
+	case *ast.InsertStmt:
+		// REPLACE and INSERT ... ON DUPLICATE KEY UPDATE can overwrite or delete
+		// existing rows, but prior backup cannot back them up. Reject them rather
+		// than returning an empty list, which the task executor would treat as a
+		// successful no-op and then run the mutation unprotected. A plain INSERT
+		// only adds rows (nothing to restore), so it needs no backup.
+		if n.IsReplace || len(n.OnDuplicateKey) > 0 {
+			return nil, errors.New("prior backup does not support REPLACE or INSERT ... ON DUPLICATE KEY UPDATE statements")
+		}
+		return nil, nil
 	default:
 		return nil, nil
 	}
