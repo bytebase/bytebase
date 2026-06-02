@@ -71,11 +71,15 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 // Returns the 1-based actualStartLine (`baseLine + leadingNewlinesStripped +
 // 1`) so callers can use it for *AST.StartPosition.
 func applyTiDBLineTracking(node ast.StmtNode, baseLine int, originalText string) (int, error) {
-	// The native TiDB parser may strip leading newlines from its internal
-	// Text(); count how many to recover the absolute line.
-	nativeText := node.Text()
-	leadingNewlinesStripped := strings.Count(originalText, "\n") - strings.Count(nativeText, "\n")
-	actualStartLine := baseLine + leadingNewlinesStripped + 1
+	// The statement's absolute start line is baseLine plus the number of
+	// newlines in its leading whitespace (the blank lines before the first
+	// token). Counting the leading newlines of originalText directly is robust;
+	// the native parser's node.Text() does not reliably strip ALL leading
+	// newlines, so diffing original-vs-native newline counts under-counts when
+	// more than one blank line precedes the statement (BYT-9381). This keeps the
+	// pingcap-bridge line in step with the omni path's FirstTokenLine.
+	leadingWhitespace := originalText[:len(originalText)-len(strings.TrimLeft(originalText, " \t\r\n"))]
+	actualStartLine := baseLine + strings.Count(leadingWhitespace, "\n") + 1
 
 	node.SetOriginTextPosition(actualStartLine)
 	if n, ok := node.(*ast.CreateTableStmt); ok {
