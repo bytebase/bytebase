@@ -184,7 +184,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 		}
 		// Skip only if the target resolves to a CTE reference (you can't delete a
 		// CTE). A real table aliased with a CTE's name is still a delete target.
-		if cteNames[ref.Table] {
+		if isCTE(cteNames, ref.Table) {
 			continue
 		}
 		result = append(result, statementInfo{
@@ -219,7 +219,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 		// Skip only if the qualifier resolves to a CTE reference in the FROM — a
 		// CTE can't be a mutation target. A real table aliased with a CTE's name
 		// (its resolved table is real) is still an update target.
-		if ref, ok := singleTables[table]; ok && cteNames[ref.Table] {
+		if ref, ok := singleTables[table]; ok && isCTE(cteNames, ref.Table) {
 			continue
 		}
 		updatedTables[table] = true
@@ -233,7 +233,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 		delete(updatedTables, "")
 		candidates := make(map[string]*TableReference, len(singleTables))
 		for key, ref := range singleTables {
-			if cteNames[ref.Table] {
+			if isCTE(cteNames, ref.Table) {
 				continue
 			}
 			candidates[key] = ref
@@ -353,14 +353,23 @@ func firstKey(m map[string]*TableReference) string {
 }
 
 // collectCTENames returns the set of CTE (WITH clause) names that precede the
-// statement. omni does not attach UPDATE/DELETE CTEs to the statement node, so
-// we parse the text before the statement Loc as a WITH clause.
+// statement, lower-cased for case-insensitive matching. omni does not attach
+// UPDATE/DELETE CTEs to the statement node, so we parse the text before the
+// statement Loc as a WITH clause.
 func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	result := make(map[string]bool)
 	for _, cte := range parseCTEPrefix(fullSQL, stmtLoc) {
-		result[cte.Name] = true
+		result[strings.ToLower(cte.Name)] = true
 	}
 	return result
+}
+
+// isCTE reports whether name resolves to a CTE. TiDB matches CTE names
+// case-insensitively (a CTE shadows a same-named real table, and a
+// case-mismatched reference resolves to the CTE), so the lookup must be too —
+// consistent with the file's other identifier comparisons.
+func isCTE(cteNames map[string]bool, name string) bool {
+	return cteNames[strings.ToLower(name)]
 }
 
 // writeCTEPrefix writes the statement's WITH (CTE) clause before the backup

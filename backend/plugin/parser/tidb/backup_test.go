@@ -343,6 +343,15 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	_, err = run("WITH x AS (SELECT id FROM test2) UPDATE test JOIN x ON test.id = x.id SET x.c = 1")
 	a.Error(err, "updating only a CTE must error")
 
+	// CTE names are matched case-insensitively (TiDB resolves a case-mismatched
+	// reference to the CTE, which shadows any same-named real table). The CTE
+	// "X" referenced as "x" must be excluded from the unqualified-column fallback
+	// candidates, so the backup targets only the real table test (not db.x).
+	result, err = run("WITH X AS (SELECT id FROM test2) UPDATE test JOIN x ON test.id = x.id SET missing_col = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName)
+
 	// The cross-database guard is case-insensitive (TiDB default): a different-
 	// case reference to the task database is the same database, not cross-db.
 	result, err = run("UPDATE DB.test SET c1 = 1 WHERE c1 = 2")
