@@ -177,6 +177,10 @@ function IssueDetailDatabaseResourceTable({
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
+  // Subscribe to the instance cache so rows reactively pick up titles once
+  // instances hydrate; a bare getState() read would not re-render here because
+  // useVueState only tracks Vue dependencies.
+  const instancesByName = useAppStore((s) => s.instancesByName);
   const rows = useVueState(() =>
     databaseResourceList.map((resource) => {
       const database = databaseStore.getDatabaseByName(
@@ -186,7 +190,7 @@ function IssueDetailDatabaseResourceTable({
         resource.databaseFullName
       );
       const instance = instanceName
-        ? useAppStore.getState().getInstanceByName(`instances/${instanceName}`)
+        ? instancesByName[`instances/${instanceName}`]
         : database.instanceResource;
       const environmentName =
         database.effectiveEnvironment ??
