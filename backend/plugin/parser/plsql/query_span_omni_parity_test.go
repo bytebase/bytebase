@@ -485,6 +485,17 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			name:      "pivot aggregate projected alias input is consumed",
+			statement: "SELECT * FROM (SELECT A, B, C AS D FROM T) PIVOT (SUM(D) AS S FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_S", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
 			name:      "unpivot typed mappings",
 			statement: "SELECT * FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
 			want: []base.QuerySpanResult{

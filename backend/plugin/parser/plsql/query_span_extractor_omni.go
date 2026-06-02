@@ -630,6 +630,7 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 			return nil, err
 		}
 		aggregateSources[i] = sourceColumns
+		excludeOmniColumnRefNames(excluded, aggregate.Expr)
 		excludeSourceColumnNames(excluded, sourceColumns)
 	}
 
@@ -1285,6 +1286,17 @@ func excludeSourceColumnNames(excluded map[string]bool, source base.SourceColumn
 		excluded[column.Column] = true
 		excluded[strings.ToUpper(column.Column)] = true
 	}
+}
+
+func excludeOmniColumnRefNames(excluded map[string]bool, expr oracleast.ExprNode) {
+	oracleast.Inspect(expr, func(node oracleast.Node) bool {
+		columnRef, ok := node.(*oracleast.ColumnRef)
+		if ok && columnRef.Schema == "" && columnRef.Table == "" && columnRef.Column != "*" {
+			excluded[columnRef.Column] = true
+			excluded[strings.ToUpper(columnRef.Column)] = true
+		}
+		return true
+	})
 }
 
 func mergeSourceColumnsFromResults(results []base.QuerySpanResult) base.SourceColumnSet {
