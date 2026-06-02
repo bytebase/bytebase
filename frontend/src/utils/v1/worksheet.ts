@@ -1,7 +1,7 @@
 import { useAppStore } from "@/react/stores/app";
 import { getCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
+import { isValidDatabaseName, UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
@@ -93,9 +93,18 @@ export const extractWorksheetConnection = async (worksheet: {
       const database = await useAppStore
         .getState()
         .getOrFetchDatabaseByName(worksheet.database);
-      const { instance } = extractDatabaseResourceName(database.name);
-      connection.instance = instance;
-      connection.database = database.name;
+      // The app-store getter returns the `unknownDatabase` fallback (rather
+      // than throwing) when the database can't be resolved — e.g. a draft
+      // tab whose database was deleted or no longer readable. Bail so we
+      // don't write `instances/-1/databases/-1` into the connection;
+      // downstream `migrateDraftsFromCache` would attempt to create a
+      // worksheet against that bogus target and drop the local draft on
+      // failure.
+      if (isValidDatabaseName(database.name)) {
+        const { instance } = extractDatabaseResourceName(database.name);
+        connection.instance = instance;
+        connection.database = database.name;
+      }
     } catch {
       // Skip.
     }
