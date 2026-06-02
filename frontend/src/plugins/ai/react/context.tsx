@@ -12,11 +12,11 @@ import {
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
   getCurrentSQLEditorTab,
   useCurrentSQLEditorTab,
 } from "@/react/stores/sqlEditor/tab";
-import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { AISetting } from "@/types/proto-es/v1/setting_service_pb";
@@ -95,24 +95,27 @@ const EMPTY_AI_SETTING: AISetting = createProto(AISettingSchema, {});
 export function AIContextProvider({ children }: { children: ReactNode }) {
   // ---- Vue-side state bridged via useVueState ----------------------------
 
-  const settingV1Store = useSettingV1Store();
   // The original Vue ProvideAIContext fetched the AI setting on mount.
   // Mirror that here. `getOrFetchSettingByName` is idempotent; firing it
   // again on remount is cheap.
   useEffect(() => {
-    void settingV1Store.getOrFetchSettingByName(
-      Setting_SettingName.AI,
-      /* silent */ true
-    );
-  }, [settingV1Store]);
+    void useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.AI, /* silent */ true);
+  }, []);
 
-  const aiSetting = useVueState<AISetting>(() => {
-    const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  // Subscribe to the setting cache so this re-resolves once the AI setting
+  // loads (selector returns the AI value or the stable empty fallback).
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const aiSetting = useMemo<AISetting>(() => {
+    const setting = useAppStore
+      .getState()
+      .getSettingByName(Setting_SettingName.AI);
     if (setting?.value?.value?.case === "ai") {
       return setting.value.value.value;
     }
     return EMPTY_AI_SETTING;
-  });
+  }, [settingsByName]);
 
   const currentTab = useCurrentSQLEditorTab();
 
