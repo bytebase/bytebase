@@ -149,37 +149,15 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       ) {
         return unknownInstance();
       }
-      const pending = get().instanceRequests[name];
-      if (pending) return (await pending) ?? unknownInstance();
-
-      const request = instanceServiceClientConnect
-        .getInstance(createProto(GetInstanceRequestSchema, { name }), {
-          contextValues: createContextValues().set(silentContextKey, silent),
-        })
-        .then((instance: Instance) => {
-          set((state) => {
-            const { [name]: _, ...instanceRequests } = state.instanceRequests;
-            return {
-              instancesByName: {
-                ...state.instancesByName,
-                [instance.name]: instance,
-              },
-              instanceRequests,
-            };
-          });
-          return instance;
-        })
-        .catch(() => {
-          set((state) => {
-            const { [name]: _, ...instanceRequests } = state.instanceRequests;
-            return { instanceRequests };
-          });
-          return undefined;
-        });
-      set((state) => ({
-        instanceRequests: { ...state.instanceRequests, [name]: request },
-      }));
-      return (await request) ?? unknownInstance();
+      // Propagate fetch failures (e.g. NotFound) to the caller — callers such
+      // as `validateInstanceId` rely on a rejection to mean "id is available".
+      // Do NOT swallow into `unknownInstance()` here; that variant is
+      // `fetchInstance`.
+      const response = await instanceServiceClientConnect.getInstance(
+        createProto(GetInstanceRequestSchema, { name }),
+        { contextValues: createContextValues().set(silentContextKey, silent) }
+      );
+      return upsertInstances([response])[0];
     },
 
     createInstance: async (instance, validateOnly = false) => {
