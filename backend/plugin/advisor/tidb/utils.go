@@ -57,7 +57,9 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-// getTiDBNodes extracts pingcap-AST nodes for un-migrated advisors.
+// getTiDBNodes extracts pingcap-AST nodes. Post-dml_dry_run migration (PR
+// #20467) its only consumer is advisor_builtin_prior_backup_check, which uses
+// pingcap AST for authoritative DDL detection on its dual-path (cumulative #30).
 //
 // On a PingCapASTProvider whose AsPingCapAST returns (nil, false) — i.e.
 // the bridge tried and pingcap rejected the statement — the statement is

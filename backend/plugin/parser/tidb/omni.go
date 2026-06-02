@@ -20,10 +20,14 @@ import (
 // *OmniAST from ParseStatements, those un-migrated advisors keep working
 // because GetTiDBAST routes through AsPingCapAST() automatically.
 //
-// Bridge cleanup is deferred until Phase 2 §Tier 4g (NonTransactionalDMLStmt
-// + production-grade restore equivalent) ships and `dml_dry_run` (the one
-// Class III advisor) can migrate. See plans/2026-04-23-omni-tidb-completion-
-// plan.md §1.5.0 invariant #4 + Bridge persistence rule.
+// The PingCapASTProvider bridge is retained after the dml_dry_run migration
+// (PR #20467): its sole remaining consumer is advisor_builtin_prior_backup_check,
+// which reads pingcap AST for authoritative DDL detection on its dual-path
+// (cumulative #30). Removal is gated on that consumer moving its DDL detection
+// off pingcap (deemed brittle, deferred) — NOT on any advisor migration. (This
+// is distinct from the dispatcher's Option B pingcap-fallback for omni-rejected
+// SQL, which persists until Option A retirement; see dispatcher.go + invariant
+// #8 in plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0.)
 //
 // Mirrors backend/plugin/parser/mysql/omni.go's AsANTLRAST pattern:
 //   - Lazy parse + cache via pingcapParsed flag (matches mysql's antlrParsed).
@@ -39,8 +43,8 @@ type OmniAST struct {
 
 	// pingcapAST is lazily populated when AsPingCapAST() is called for the
 	// first time. Cached for the lifetime of this OmniAST instance.
-	// Will be removed once dml_dry_run migrates and the bridge is no longer
-	// needed (post-Phase-2 §Tier 4g).
+	// Retained for the prior_backup_check dual-path (cumulative #30); see the
+	// type doc above.
 	pingcapAST *AST
 	// pingcapParsed tracks whether we've attempted the native parse, to
 	// distinguish "not yet parsed" from "parsed and got nil".
