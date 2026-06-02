@@ -102,6 +102,12 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 		return extractTablesFromDelete(databaseName, n, fullSQL)
 	case *ast.UpdateStmt:
 		return extractTablesFromUpdate(databaseName, n, fullSQL, dbMetadata)
+	case *ast.BatchStmt:
+		// TiDB BATCH (non-transactional DML) is not supported by prior backup.
+		// Reject it explicitly rather than returning an empty list, which the
+		// task executor would treat as a successful no-op and then run the
+		// mutation with no backup.
+		return nil, errors.New("prior backup does not support TiDB BATCH (non-transactional DML) statements")
 	default:
 		return nil, nil
 	}
@@ -112,6 +118,15 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
 	singleTables := collectSingleTables(databaseName, n.Tables)
+
+	// A BackupStatement carries only SourceTableName, and the executor restores
+	// into the task database. Reject cross-database DELETE targets so a rollback
+	// can't be written to the wrong database.
+	for _, ref := range singleTables {
+		if ref.Database != databaseName {
+			return nil, errors.Errorf("prior backup does not support cross-database DELETE: %s.%s (task database %q)", ref.Database, ref.Table, databaseName)
+		}
+	}
 
 	if len(n.Using) == 0 {
 		// Single-table DELETE: DELETE FROM t WHERE ...
@@ -596,6 +611,10 @@ func nodeLocStart(expr ast.TableExpr) int {
 		return e.Loc.Start
 	case *ast.JoinClause:
 		return e.Loc.Start
+	case *ast.SubqueryExpr:
+		return e.Loc.Start
+	case *ast.JsonTableExpr:
+		return e.Loc.Start
 	}
 	return -1
 }
@@ -605,6 +624,10 @@ func nodeLocEnd(expr ast.TableExpr) int {
 	case *ast.TableRef:
 		return e.Loc.End
 	case *ast.JoinClause:
+		return e.Loc.End
+	case *ast.SubqueryExpr:
+		return e.Loc.End
+	case *ast.JsonTableExpr:
 		return e.Loc.End
 	}
 	return -1

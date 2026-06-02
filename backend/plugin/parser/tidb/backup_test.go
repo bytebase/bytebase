@@ -243,3 +243,35 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 			return []string{"db", "db1", "db2"}, nil
 		}
 }
+
+// TestBackupRejectsAndPreserves pins three behaviors the omni port must keep
+// (regressions caught in PR #20480 review):
+//   - TiDB BATCH is rejected, not silently skipped (else the executor would run
+//     the mutation with no backup).
+//   - Cross-database DELETE is rejected (a BackupStatement carries no source
+//     database, so the executor would restore into the wrong database).
+//   - A derived table in the UPDATE FROM list is preserved (not dropped, which
+//     would emit a malformed "FROM  WHERE ..." clause).
+func TestBackupRejectsAndPreserves(t *testing.T) {
+	a := require.New(t)
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	run := func(sql string) ([]base.BackupStatement, error) {
+		return TransformDMLToSelect(context.Background(), base.TransformContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IsCaseSensitive:         false,
+		}, sql, "db", "backupDB", "_rollback")
+	}
+
+	_, err := run("BATCH LIMIT 2 DELETE FROM test WHERE id > 0")
+	a.Error(err, "BATCH (non-transactional DML) must be rejected")
+
+	_, err = run("DELETE FROM db1.t1 WHERE a = 1")
+	a.Error(err, "cross-database DELETE must be rejected")
+
+	result, err := run("UPDATE test, (SELECT id FROM test2) AS x SET test.c1 = 1 WHERE test.id = x.id")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.NotContains(result[0].Statement, "FROM  ", "derived table dropped -> empty FROM")
+	a.Contains(result[0].Statement, "SELECT id FROM test2", "derived table should be preserved in FROM")
+}
