@@ -529,10 +529,12 @@ func equalTable(a, b *TableReference) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	if a.Database != "" && b.Database != "" && a.Database != b.Database {
+	// Case-insensitive, consistent with the cross-database guard and TiDB's
+	// default identifier case sensitivity.
+	if a.Database != "" && b.Database != "" && !strings.EqualFold(a.Database, b.Database) {
 		return false
 	}
-	return a.Table == b.Table
+	return strings.EqualFold(a.Table, b.Table)
 }
 
 func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {

@@ -337,4 +337,17 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	result, err = run("EXPLAIN UPDATE test SET c1 = 1 WHERE c1 = 2")
 	a.NoError(err, "plain EXPLAIN does not execute and needs no backup")
 	a.Empty(result)
+
+	// In the >maxMixedDMLCount same-table UNION path, case-only database
+	// differences (db.test vs DB.test) must be treated as the same table, not
+	// rejected as "different tables" — consistent with the cross-database guard.
+	mixedCaseDB := "UPDATE db.test SET c1 = 1 WHERE id = 1;\n" +
+		"UPDATE DB.test SET c1 = 1 WHERE id = 2;\n" +
+		"UPDATE db.test SET c1 = 1 WHERE id = 3;\n" +
+		"UPDATE DB.test SET c1 = 1 WHERE id = 4;\n" +
+		"UPDATE db.test SET c1 = 1 WHERE id = 5;\n" +
+		"UPDATE DB.test SET c1 = 1 WHERE id = 6;"
+	result, err = run(mixedCaseDB)
+	a.NoError(err, "case-only db differences must not be treated as different tables")
+	a.Len(result, 1)
 }
