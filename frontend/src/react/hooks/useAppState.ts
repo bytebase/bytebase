@@ -17,7 +17,10 @@ import {
   unknownEnvironment,
 } from "@/types/v1/environment";
 import { unknownUser } from "@/types/v1/user";
-import { storageKeyRecentProjects } from "@/utils/storage-keys";
+import {
+  storageKeyRecentProjects,
+  workspaceCacheScope,
+} from "@/utils/storage-keys";
 
 export { isConnectAlreadyExists };
 
@@ -412,10 +415,10 @@ export function useProjectList(query: string) {
   };
 }
 
-function readRecentProjectNames(email: string) {
+function readRecentProjectNames(scope: string, email: string) {
   if (!email) return [];
   try {
-    const raw = localStorage.getItem(storageKeyRecentProjects(email));
+    const raw = localStorage.getItem(storageKeyRecentProjects(scope, email));
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed)
       ? parsed.filter((name): name is string => typeof name === "string")
@@ -427,13 +430,15 @@ function readRecentProjectNames(email: string) {
 
 export function useRecentProjects() {
   const currentUser = useOptionalCurrentUser();
+  const isSaaS = useIsSaaSMode();
   const batchFetchProjects = useAppStore((state) => state.batchFetchProjects);
   const projectsByName = useAppStore((state) => state.projectsByName);
   const [projectNames, setProjectNames] = useState<string[]>([]);
 
+  const scope = workspaceCacheScope(isSaaS, currentUser?.workspace ?? "");
   const refreshNames = useCallback(() => {
-    setProjectNames(readRecentProjectNames(currentUser?.email ?? ""));
-  }, [currentUser?.email]);
+    setProjectNames(readRecentProjectNames(scope, currentUser?.email ?? ""));
+  }, [scope, currentUser?.email]);
 
   useEffect(() => {
     refreshNames();

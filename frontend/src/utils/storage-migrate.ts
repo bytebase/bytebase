@@ -8,9 +8,9 @@ import {
   STORAGE_KEY_ONBOARDING,
   STORAGE_KEY_SCHEMA_EDITOR_PREVIEW,
   STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
-  STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
+  storageKeySqlEditorLastProject,
 } from "./storage-keys";
 
 const MIGRATION_MARKER = "bb.storage-migration-v1";
@@ -24,7 +24,9 @@ const STATIC_KEY_RENAMES: [string, string][] = [
   ["bb.schema-editor.preview.expanded", STORAGE_KEY_SCHEMA_EDITOR_PREVIEW],
   ["bb.plugin.open-ai.dismiss-placeholder", STORAGE_KEY_AI_DISMISS],
   ["bb.plugin.editor.ai-panel-size", STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE],
-  ["bb.sql-editor.last-viewed-project", STORAGE_KEY_SQL_EDITOR_LAST_PROJECT],
+  // Pre-auth migration → unscoped key. Self-host reads it directly; SaaS
+  // re-resolves the last project per-workspace on first use.
+  ["bb.sql-editor.last-viewed-project", storageKeySqlEditorLastProject("")],
 ];
 
 // Prefix renames: [oldPrefix, newPrefix]

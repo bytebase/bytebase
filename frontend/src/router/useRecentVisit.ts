@@ -1,15 +1,29 @@
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
+import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { storageKeyRecentVisit, useDynamicLocalStorage } from "@/utils";
+import {
+  storageKeyRecentVisit,
+  useDynamicLocalStorage,
+  workspaceCacheScope,
+} from "@/utils";
 
 const MAX_HISTORY = 10;
 
 export function useRecentVisit() {
   const currentUser = useCurrentUserV1();
+  const actuatorStore = useActuatorV1Store();
 
   const recentVisit = useDynamicLocalStorage<string[]>(
-    computed(() => storageKeyRecentVisit(currentUser.value.email)),
+    computed(() =>
+      storageKeyRecentVisit(
+        workspaceCacheScope(
+          actuatorStore.isSaaSMode,
+          currentUser.value.workspace
+        ),
+        currentUser.value.email
+      )
+    ),
     []
   );
 

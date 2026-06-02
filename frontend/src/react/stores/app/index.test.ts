@@ -1814,11 +1814,14 @@ describe("useAppStore", () => {
     store.getState().removeRecentVisit("/missing");
     store.getState().resetQuickstartProgress();
 
+    // Not SaaS in this test, so keys are workspace-agnostic (scope "").
     expect(
-      JSON.parse(localStorage.getItem(storageKeyRecentProjects(user.email))!)
+      JSON.parse(
+        localStorage.getItem(storageKeyRecentProjects("", user.email))!
+      )
     ).toEqual([projectB.name, projectA.name]);
     expect(
-      JSON.parse(localStorage.getItem(storageKeyRecentVisit(user.email))!)
+      JSON.parse(localStorage.getItem(storageKeyRecentVisit("", user.email))!)
     ).toEqual(["/projects/a?tab=2"]);
     expect(
       JSON.parse(localStorage.getItem(storageKeyIntroState(user.email))!)
@@ -1835,6 +1838,48 @@ describe("useAppStore", () => {
       })
     );
     window.removeEventListener(ReactShellBridgeEvent.quickstartReset, listener);
+  });
+
+  test("scopes recent projects by workspace in SaaS mode", () => {
+    const store = createAppStore();
+    // SaaS mode scopes cache keys by workspace.
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+    });
+    store.setState({ currentUser: { ...user, workspace: "workspaces/a" } });
+    store.getState().setRecentProject(projectA.name);
+    store.getState().recordRecentVisit("/projects/a");
+
+    // Same user, different workspace (e.g. after a SaaS workspace switch).
+    store.setState({ currentUser: { ...user, workspace: "workspaces/b" } });
+    store.getState().setRecentProject(projectB.name);
+    store.getState().recordRecentVisit("/projects/b");
+
+    expect(
+      JSON.parse(
+        localStorage.getItem(
+          storageKeyRecentProjects("workspaces/a", user.email)
+        )!
+      )
+    ).toEqual([projectA.name]);
+    expect(
+      JSON.parse(
+        localStorage.getItem(
+          storageKeyRecentProjects("workspaces/b", user.email)
+        )!
+      )
+    ).toEqual([projectB.name]);
+    // Recent-visit is isolated per workspace too.
+    expect(
+      JSON.parse(
+        localStorage.getItem(storageKeyRecentVisit("workspaces/a", user.email))!
+      )
+    ).toEqual(["/projects/a"]);
+    expect(
+      JSON.parse(
+        localStorage.getItem(storageKeyRecentVisit("workspaces/b", user.email))!
+      )
+    ).toEqual(["/projects/b"]);
   });
 
   test("caches database metadata and reuses inflight request", async () => {
