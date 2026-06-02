@@ -1,7 +1,10 @@
 import { Unlink } from "lucide-react";
 import { EngineIcon, getEngineIconSrc } from "@/react/components/EngineIcon";
+import {
+  getConnectionForSQLEditorTab,
+  isConnectedSQLEditorTab,
+} from "@/react/lib/sqlEditorConnection";
 import type { SQLEditorTab } from "@/types";
-import { getConnectionForSQLEditorTab, isConnectedSQLEditorTab } from "@/utils";
 
 type Props = {
   readonly tab: SQLEditorTab;

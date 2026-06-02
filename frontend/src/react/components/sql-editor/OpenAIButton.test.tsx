@@ -49,13 +49,18 @@ vi.mock("@/store", () => ({
   useSettingV1Store: mocks.useSettingV1Store,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (s: unknown) => unknown) =>
-    selector({
-      getOrFetchSettingByName: mocks.getOrFetchSettingByName,
-      getSettingByName: () => mocks.aiSetting,
-    }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getSettingByName: () => mocks.aiSetting,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 // `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook.
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({

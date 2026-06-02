@@ -6,6 +6,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import { t } from "@/plugins/i18n";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import {
   getSQLEditorEditorState,
@@ -24,7 +25,6 @@ import {
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
-  extractWorksheetConnection,
   getSheetStatement,
   isWorksheetReadableV1,
   storageKeySqlEditorWorksheetFilter,

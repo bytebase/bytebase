@@ -1,6 +1,6 @@
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useQueryDataPolicy } from "@/store";
+import { useQueryDataPolicy } from "@/store";
 import type {
   QueryDataSourceType,
   SQLEditorConnection,
@@ -9,18 +9,12 @@ import type {
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   defaultViewState,
-  isValidDatabaseName,
-  isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import {
-  DataSourceType,
-  type InstanceResource,
-} from "@/types/proto-es/v1/instance_service_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { wrapRefAsPromise } from "@/utils";
 import { getInstanceResource } from "./v1/database";
-import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
@@ -56,28 +50,6 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
   };
 };
 
-export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
-  const target: {
-    instance: InstanceResource | undefined;
-    database: Database | undefined;
-  } = {
-    instance: undefined,
-    database: undefined,
-  };
-  if (!tab) {
-    return target;
-  }
-  const { connection } = tab;
-  if (connection.database) {
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
-    target.database = database;
-    target.instance = getInstanceResource(database);
-  }
-  return target;
-};
-
 export const isSameSQLEditorConnection = (
   a: SQLEditorConnection,
   b: SQLEditorConnection
@@ -85,21 +57,10 @@ export const isSameSQLEditorConnection = (
   return a.instance === b.instance && a.database === b.database;
 };
 
-export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
-  const { instance, database } = getConnectionForSQLEditorTab(tab);
-  if (!instance) {
-    return false;
-  }
-  if (!isValidInstanceName(instance.name)) {
-    return false;
-  }
-
-  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
-    // Connecting to instance directly.
-    return true;
-  }
-  return database && isValidDatabaseName(database.name);
-};
+// `getConnectionForSQLEditorTab` and `isConnectedSQLEditorTab` moved to
+// `@/react/lib/sqlEditorConnection` so the database lookup can go through
+// the React app store without dragging `@/react/stores/app` into the
+// `@/utils` import graph (which would create a static ESM cycle).
 
 export const getValidDataSourceByPolicy = async (
   database: Database,
