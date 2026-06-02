@@ -90,6 +90,14 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     instanceRequests: {},
     instanceErrorsByName: {},
 
+    resetInstances: () => {
+      set({
+        instancesByName: {},
+        instanceRequests: {},
+        instanceErrorsByName: {},
+      });
+    },
+
     fetchInstance: async (name) => {
       if (!isValidInstanceName(name) || name === UNKNOWN_INSTANCE_NAME) {
         return undefined;

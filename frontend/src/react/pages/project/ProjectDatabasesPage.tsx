@@ -26,21 +26,19 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type { Permission } from "@/types";
 import {
   isDefaultProject,
@@ -55,6 +53,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   engineNameV1,
   extractInstanceResourceName,
@@ -68,16 +67,20 @@ import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const projectStore = useProjectV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const isDefault = isDefaultProject(projectName);
 
   const hasProjectPermission = useCallback(
@@ -224,8 +227,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     if (selectedNames.size === 0) return [];
     return Array.from(selectedNames)
       .filter((name) => isValidDatabaseName(name))
-      .map((name) => databaseStore.getDatabaseByName(name));
-  }, [selectedNames, databaseStore]);
+      .map((name) => databasesByName[name] ?? unknownDatabase());
+  }, [selectedNames, databasesByName]);
 
   // Stable references for downstream sheets. Without these the JSX would
   // rebuild a fresh array + fresh object literal on every parent re-render
@@ -264,7 +267,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       title: t("db.start-to-sync-schema"),
     });
     try {
-      await databaseStore.batchSyncDatabases(Array.from(selectedNames));
+      await useAppStore
+        .getState()
+        .batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
         removeDatabaseMetadataCache(name);
       }
@@ -283,12 +288,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
+  }, [syncing, selectedNames, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database, i) =>
@@ -316,13 +321,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
     async (environment: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database) =>
@@ -350,13 +355,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleUnassign = useCallback(async () => {
     const defaultProject = actuatorStore.serverInfo?.defaultProject ?? "";
     try {
-      await databaseStore.batchUpdateDatabases(
+      await useAppStore.getState().batchUpdateDatabases(
         create(BatchUpdateDatabasesRequestSchema, {
           parent: "-",
           requests: selectedDatabasesRef.current.map((database) =>
@@ -383,7 +388,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         title: t("common.failed"),
       });
     }
-  }, [databaseStore, actuatorStore, refresh, t]);
+  }, [actuatorStore, refresh, t]);
 
   const handleChangeDatabase = useCallback(() => {
     preCreateIssue(projectName, selectedDatabaseNames);

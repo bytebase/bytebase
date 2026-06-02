@@ -443,36 +443,213 @@ func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
 	}
 }
 
-func TestOracleOmniUnsupportedLongTailTableSources(t *testing.T) {
-	// UNPIVOT and MODEL used to return approximate ANTLR spans that ignored
-	// their transformation semantics. Keep them explicit unsupported until the
-	// omni extractor models their output columns accurately.
+func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
+		want      []base.QuerySpanResult
 	}{
 		{
-			name:      "table collection",
-			statement: "SELECT * FROM TABLE(pkg.values()) X",
+			name:      "table collection column aliases",
+			statement: "SELECT * FROM TABLE(pkg.values()) X(A, B)",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList(nil)},
+				{Name: "B", SourceColumns: sourceColumnSetFromList(nil)},
+			},
 		},
 		{
-			name:      "pivot",
-			statement: "SELECT * FROM (SELECT A, B FROM T) PIVOT (COUNT(*) FOR B IN (1 AS ONE))",
+			name:      "pivot typed output",
+			statement: "SELECT * FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+				{Name: "TWO_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
 		},
 		{
-			name:      "unpivot",
-			statement: "SELECT * FROM (SELECT A, B FROM T) UNPIVOT (VAL FOR COL IN (A AS 'A', B AS 'B'))",
+			name:      "pivot explicit projection",
+			statement: "SELECT A FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+			},
 		},
 		{
-			name:      "model",
+			name:      "pivot aggregate input is consumed",
+			statement: "SELECT * FROM (SELECT A, B, C FROM T) PIVOT (SUM(C) AS S FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_S", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
+			name:      "pivot aggregate projected alias input is consumed",
+			statement: "SELECT * FROM (SELECT A, B, C AS D FROM T) PIVOT (SUM(D) AS S FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_S", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
+			name:      "unpivot typed mappings",
+			statement: "SELECT * FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "VAL", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+				{Name: "COL", SourceColumns: sourceColumnSetFromList(nil)},
+			},
+		},
+		{
+			name:      "unpivot explicit projection",
+			statement: "SELECT VAL FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
+			want: []base.QuerySpanResult{
+				{Name: "VAL", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
+			name:      "model dimension and measures",
 			statement: "SELECT * FROM T MODEL DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "model explicit projection",
+			statement: "SELECT B FROM T MODEL DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "model partition dimension and measures",
+			statement: "SELECT * FROM T MODEL PARTITION BY (C) DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "C"}})},
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "model partition explicit projection",
+			statement: "SELECT C FROM T MODEL PARTITION BY (C) DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "C"}})},
+			},
+		},
+		{
+			name: "match recognize measures",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE, LAST(PRICE) AS LAST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+				{Name: "LAST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize partition projection",
+			statement: `SELECT ACCOUNT_ID FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
+			},
+		},
+		{
+			name: "match recognize pattern variable measures",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(A.PRICE) AS FIRST_PRICE, LAST(B.PRICE) AS LAST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+				{Name: "LAST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize all rows keeps input columns",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}}), IsPlainField: true},
+				{Name: "TRADE_TIME", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "TRADE_TIME"}}), IsPlainField: true},
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}}), IsPlainField: true},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize all rows pattern variable measure",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(A.PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}}), IsPlainField: true},
+				{Name: "TRADE_TIME", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "TRADE_TIME"}}), IsPlainField: true},
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}}), IsPlainField: true},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize all rows input projection",
+			statement: `SELECT PRICE FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
-			require.ErrorContains(t, err, "unsupported oracle table source")
+			span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(context.Background(), test.statement)
+			require.NoError(t, err)
+			require.NotNil(t, span)
+			require.Equal(t, test.want, span.Results)
 		})
 	}
 }
@@ -498,6 +675,13 @@ func oracleOmniLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
 			"columns": [
 				{"name": "C"},
 				{"name": "D"}
+			]
+		}, {
+			"name": "TRADES",
+			"columns": [
+				{"name": "ACCOUNT_ID"},
+				{"name": "TRADE_TIME"},
+				{"name": "PRICE"}
 			]
 		}]
 	}]

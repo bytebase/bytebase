@@ -265,20 +265,23 @@ vi.mock("@/store", () => ({
   getProjectNameAndDatabaseGroupName: (name: string) =>
     name.split("/databaseGroups/"),
   pushNotification: vi.fn(),
-  useDatabaseV1Store: () => mocks.databaseStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
-  useProjectV1Store: () => mocks.projectStore,
 }));
 
-// The migrated component reads dbGroup state via imperative
-// `useAppStore.getState().<method>()` and reactive selectors over
-// `dbGroupsByName` / `dbGroupViewByName`. Delegate the map lookups to the
-// existing `dbGroupStore` mock (treating every cached entry as FULL) so the
-// per-test `getDBGroupByName` / `getOrFetchDBGroupByName` setup keeps working.
+// The migrated component reads resource state via imperative
+// `useAppStore.getState().<method>()` and reactive selectors over app-store
+// maps. Delegate map lookups to the existing store mocks so per-test setup
+// keeps working.
 vi.mock("@/react/stores/app", async () => {
   const { DatabaseGroupView } = await vi.importActual<
     typeof import("@/types/proto-es/v1/database_group_service_pb")
   >("@/types/proto-es/v1/database_group_service_pb");
+  const databasesByName = new Proxy({} as Record<string, unknown>, {
+    get: (_t, key) =>
+      typeof key === "string"
+        ? mocks.databaseStore.getDatabaseByName(key)
+        : undefined,
+  });
   const dbGroupsByName = new Proxy({} as Record<string, unknown>, {
     get: (_t, key) =>
       typeof key === "string"
@@ -289,14 +292,34 @@ vi.mock("@/react/stores/app", async () => {
     get: (_t, key) =>
       typeof key === "string" ? DatabaseGroupView.FULL : undefined,
   });
+  const projectsByName = new Proxy({} as Record<string, unknown>, {
+    get: (_t, key) =>
+      typeof key === "string"
+        ? mocks.projectStore.getProjectByName(key)
+        : undefined,
+  });
   const useAppStore = Object.assign(
     (
       selector: (s: {
+        databasesByName: Record<string, unknown>;
         dbGroupsByName: Record<string, unknown>;
         dbGroupViewByName: Record<string, unknown>;
+        projectsByName: Record<string, unknown>;
       }) => unknown
-    ) => selector({ dbGroupsByName, dbGroupViewByName }),
-    { getState: () => mocks.dbGroupStore }
+    ) =>
+      selector({
+        databasesByName,
+        dbGroupsByName,
+        dbGroupViewByName,
+        projectsByName,
+      }),
+    {
+      getState: () => ({
+        ...mocks.databaseStore,
+        ...mocks.dbGroupStore,
+        getProjectByName: mocks.projectStore.getProjectByName,
+      }),
+    }
   );
   return { useAppStore };
 });

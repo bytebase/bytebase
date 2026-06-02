@@ -30,8 +30,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
@@ -46,6 +44,7 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
@@ -93,11 +92,14 @@ export function DataExportPrepSheet({
 }: DataExportPrepSheetProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const dbStore = useDatabaseV1Store();
-  const projectStore = useProjectV1Store();
   const settingStore = useSettingV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
 
   const [step, setStep] = useState<Step>(1);
   const [creating, setCreating] = useState(false);
@@ -173,14 +175,14 @@ export function DataExportPrepSheet({
   useEffect(() => {
     for (const target of targets) {
       if (isValidDatabaseName(target)) {
-        dbStore.getOrFetchDatabaseByName(target);
+        useAppStore.getState().getOrFetchDatabaseByName(target);
       } else if (isValidDatabaseGroupName(target)) {
         useAppStore.getState().getOrFetchDBGroupByName(target, {
           view: DatabaseGroupView.FULL,
         });
       }
     }
-  }, [targets, dbStore]);
+  }, [targets]);
 
   // Reset on open or when seed changes while open
   const seedKey = seed?.selectedDatabaseNames?.join(",") ?? "";
@@ -555,13 +557,15 @@ function StepIndicator({
 // ---------------------------------------------------------------------------
 
 function TargetBadge({ target }: { target: string }) {
-  const dbStore = useDatabaseV1Store();
   const isDatabaseTarget = isValidDatabaseName(target);
   const isGroupTarget = isValidDatabaseGroupName(target);
+  const databasesByName = useAppStore((s) => s.databasesByName);
 
   // Always call useVueState unconditionally (rules of hooks)
   const db = useVueState(() =>
-    isDatabaseTarget ? dbStore.getDatabaseByName(target) : undefined
+    isDatabaseTarget
+      ? (databasesByName[target] ?? unknownDatabase())
+      : undefined
   );
 
   if (isDatabaseTarget && db) {
@@ -684,7 +688,6 @@ function DatabaseSelector({
   onSelectedNamesChange: (names: Set<string>) => void;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
 
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
@@ -706,7 +709,7 @@ function DatabaseSelector({
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
         const filter = { query };
-        const result = await databaseStore.fetchDatabases({
+        const result = await useAppStore.getState().fetchDatabases({
           parent: projectName,
           pageSize,
           pageToken: token || undefined,
@@ -725,7 +728,7 @@ function DatabaseSelector({
         }
       }
     },
-    [databaseStore, projectName, pageSize, query]
+    [projectName, pageSize, query]
   );
 
   const isFirstLoad = useRef(true);

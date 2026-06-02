@@ -3,45 +3,36 @@ import { createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { databaseServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { UNKNOWN_ID } from "@/types/const";
-import { State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchGetDatabasesRequestSchema,
+  BatchSyncDatabasesRequestSchema,
+  type BatchUpdateDatabasesRequest,
+  BatchUpdateDatabasesRequestSchema,
   type Database,
-  DatabaseSchema$,
+  type DiffSchemaRequest,
+  DiffSchemaRequestSchema,
   GetDatabaseRequestSchema,
+  GetDatabaseSchemaRequestSchema,
   ListDatabasesRequestSchema,
   SyncDatabaseRequestSchema,
+  type UpdateDatabaseRequest,
+  UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { isValidDatabaseName } from "@/types/v1/database";
 import {
-  formatEnvironmentName,
-  unknownEnvironment,
-} from "@/types/v1/environment";
+  type Instance,
+  InstanceResourceSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { isValidDatabaseName } from "@/types/v1/database";
 import { unknownInstanceResource } from "@/types/v1/instance";
+import { createUnknownDatabase, setDatabaseAccess } from "./databaseAccess";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
 import { buildDatabaseFilter, toError } from "./utils";
-
-const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 
 // Inlined to keep the app store's load graph free of the Pinia `@/store`
 // barrel that `@/utils/v1/database` pulls in.
 function instanceResourceNameFromDatabase(databaseName: string): string {
   const match = databaseName.match(/(?:^|\/)instances\/([^/]+)\/databases\//);
   return match ? `instances/${match[1]}` : "";
-}
-
-// Mirrors the legacy Pinia `unknownDatabase`, inlined so this module does not
-// import `@/types/v1/project` (which pulls the Pinia actuator store).
-function createUnknownDatabase(): Database {
-  const instanceResource = unknownInstanceResource();
-  return createProto(DatabaseSchema$, {
-    name: `${instanceResource.name}/databases/${UNKNOWN_ID}`,
-    state: State.ACTIVE,
-    project: UNKNOWN_PROJECT_NAME,
-    effectiveEnvironment: formatEnvironmentName(unknownEnvironment().id),
-    instanceResource,
-  });
 }
 
 export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
@@ -64,6 +55,22 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
       }
     }
     return databases;
+  };
+
+  // Compose then immutably merge into the by-name cache; returns the composed
+  // list so callers can hand it straight back to their consumers.
+  const upsertDatabases = async (
+    databases: Database[]
+  ): Promise<Database[]> => {
+    const composed = await composeDatabases(databases);
+    set((state) => {
+      const next = { ...state.databasesByName };
+      for (const db of composed) {
+        next[db.name] = db;
+      }
+      return { databasesByName: next };
+    });
+    return composed;
   };
 
   const fetchByName = async (
@@ -120,10 +127,20 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     return request;
   };
 
-  return {
+  const slice: DatabaseSlice = {
     databasesByName: {},
     databaseRequests: {},
     databaseErrorsByName: {},
+
+    resetDatabases: () => {
+      set({
+        databasesByName: {},
+        databaseRequests: {},
+        databaseErrorsByName: {},
+      });
+    },
+
+    getDatabaseList: () => Object.values(get().databasesByName),
 
     getDatabaseByName: (name) =>
       get().databasesByName[name] ?? createUnknownDatabase(),
@@ -170,6 +187,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
       filter,
       orderBy,
       silent,
+      skipCacheRemoval,
     }) => {
       const filterString =
         typeof filter === "string"
@@ -195,14 +213,10 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
           ),
         }
       );
-      const composed = await composeDatabases(response.databases);
-      set((state) => {
-        const next = { ...state.databasesByName };
-        for (const db of composed) {
-          next[db.name] = db;
-        }
-        return { databasesByName: next };
-      });
+      if (parent.startsWith("instances/") && !skipCacheRemoval) {
+        get().removeCacheByInstance(parent);
+      }
+      const composed = await upsertDatabases(response.databases);
       return {
         databases: composed,
         nextPageToken: response.nextPageToken,
@@ -217,14 +231,107 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
         const database = await databaseServiceClientConnect.getDatabase(
           createProto(GetDatabaseRequestSchema, { name })
         );
-        const [composed] = await composeDatabases([database]);
-        set((state) => ({
-          databasesByName: {
-            ...state.databasesByName,
-            [composed.name]: composed,
-          },
-        }));
+        await upsertDatabases([database]);
       }
     },
+
+    batchSyncDatabases: async (databases) => {
+      await databaseServiceClientConnect.batchSyncDatabases(
+        createProto(BatchSyncDatabasesRequestSchema, {
+          parent: "instances/-",
+          names: databases,
+        })
+      );
+    },
+
+    batchUpdateDatabases: async (params: BatchUpdateDatabasesRequest) => {
+      const response = await databaseServiceClientConnect.batchUpdateDatabases(
+        createProto(BatchUpdateDatabasesRequestSchema, {
+          parent: params.parent,
+          requests: params.requests.map((req) => ({
+            database: req.database,
+            updateMask: req.updateMask,
+          })),
+        })
+      );
+      return upsertDatabases(response.databases);
+    },
+
+    updateDatabase: async (params: UpdateDatabaseRequest) => {
+      if (!params.database) {
+        throw new Error("Database is required for update");
+      }
+      const updated = await databaseServiceClientConnect.updateDatabase(
+        createProto(UpdateDatabaseRequestSchema, {
+          database: params.database,
+          updateMask: params.updateMask,
+        })
+      );
+      const [composed] = await upsertDatabases([updated]);
+      return composed;
+    },
+
+    removeCacheByInstance: (instance) => {
+      const names = Object.keys(get().databasesByName).filter(
+        (name) => instanceResourceNameFromDatabase(name) === instance
+      );
+      if (!names.length) return;
+      set((state) => {
+        const next = { ...state.databasesByName };
+        for (const name of names) {
+          delete next[name];
+        }
+        return { databasesByName: next };
+      });
+      for (const name of names) {
+        get().removeDatabaseMetadataCache(name);
+      }
+    },
+
+    updateDatabaseInstance: (instance: Instance) => {
+      set((state) => {
+        const next = { ...state.databasesByName };
+        for (const [name, database] of Object.entries(next)) {
+          if (instanceResourceNameFromDatabase(name) !== instance.name) {
+            continue;
+          }
+          next[name] = {
+            ...database,
+            instanceResource: createProto(InstanceResourceSchema, {
+              name: instance.name,
+              title: instance.title,
+              engine: instance.engine,
+              environment: instance.environment,
+              activation: instance.activation,
+              dataSources: [],
+            }),
+          };
+        }
+        return { databasesByName: next };
+      });
+    },
+
+    fetchDatabaseSchema: (database) =>
+      databaseServiceClientConnect.getDatabaseSchema(
+        createProto(GetDatabaseSchemaRequestSchema, {
+          name: `${database}/schema`,
+        })
+      ),
+
+    diffSchema: (params: DiffSchemaRequest) =>
+      databaseServiceClientConnect.diffSchema(
+        createProto(DiffSchemaRequestSchema, params)
+      ),
   };
+
+  setDatabaseAccess({
+    resetDatabases: slice.resetDatabases,
+    getDatabaseList: slice.getDatabaseList,
+    getDatabaseByName: slice.getDatabaseByName,
+    getOrFetchDatabaseByName: slice.getOrFetchDatabaseByName,
+    batchGetOrFetchDatabases: slice.batchGetOrFetchDatabases,
+    fetchDatabases: slice.fetchDatabases,
+  });
+
+  return slice;
 };

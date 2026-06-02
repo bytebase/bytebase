@@ -38,9 +38,9 @@ export async function extractRouteContext(
   // Project context
   if (projectId) {
     try {
-      const { useProjectV1Store } = await import("@/store");
-      const store = useProjectV1Store();
-      const project = store.getProjectByName(`projects/${projectId}`);
+      const project = useAppStore
+        .getState()
+        .getProjectByName(`projects/${projectId}`);
       if (project?.name) {
         ctx.project = {
           name: project.name,
@@ -56,11 +56,9 @@ export async function extractRouteContext(
   // Database context
   if (instanceId && databaseName) {
     try {
-      const { useDatabaseV1Store } = await import("@/store");
-      const store = useDatabaseV1Store();
-      const db = store.getDatabaseByName(
-        `instances/${instanceId}/databases/${databaseName}`
-      );
+      const db = useAppStore
+        .getState()
+        .getDatabaseByName(`instances/${instanceId}/databases/${databaseName}`);
       if (db?.name) {
         ctx.database = {
           name: db.name,

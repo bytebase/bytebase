@@ -25,7 +25,8 @@ const mocks = vi.hoisted(() => ({
   })),
   useVueState: vi.fn((getter: () => unknown) => getter()),
   rulesToTemplate: vi.fn(() => reviewTemplate),
-  useProjectV1Store: vi.fn(),
+  getOrFetchProjectByName: vi.fn(),
+  getProjectByName: vi.fn(() => undefined),
   useSQLReviewStore: vi.fn(),
 }));
 
@@ -58,8 +59,25 @@ vi.mock("@/types", () => ({
   ],
 }));
 
-vi.mock("@/store", () => ({
-  useProjectV1Store: mocks.useProjectV1Store,
+// The project getters that previously lived on the Pinia `useProjectV1Store`
+// now live on the Zustand app store, accessed via both the callable selector
+// form (`useAppStore((s) => s.projectsByName)`) and `useAppStore.getState()`.
+const appStoreState = {
+  get getOrFetchProjectByName() {
+    return mocks.getOrFetchProjectByName;
+  },
+  get getProjectByName() {
+    return mocks.getProjectByName;
+  },
+  projectsByName: {},
+};
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) => selector(appStoreState),
+    {
+      getState: () => appStoreState,
+    }
+  ),
 }));
 
 vi.mock("@/react/stores/sqlReview", () => ({
@@ -93,11 +111,9 @@ beforeEach(async () => {
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.rulesToTemplate.mockReset();
   mocks.rulesToTemplate.mockReturnValue(reviewTemplate);
-  mocks.useProjectV1Store.mockReset();
-  mocks.useProjectV1Store.mockReturnValue({
-    getOrFetchProjectByName: vi.fn(),
-    getProjectByName: vi.fn(() => undefined),
-  });
+  mocks.getOrFetchProjectByName.mockReset();
+  mocks.getProjectByName.mockReset();
+  mocks.getProjectByName.mockReturnValue(undefined);
   mocks.useSQLReviewStore.mockReset();
   mocks.useSQLReviewStore.mockReturnValue({
     reviewPolicyList: [{ id: "policy-1" }],

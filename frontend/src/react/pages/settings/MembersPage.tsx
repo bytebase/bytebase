@@ -89,7 +89,6 @@ import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useProjectV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -2052,10 +2051,12 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
+  // subscribe to re-render on project cache change
+  void projectsByName;
 
   const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
   const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
@@ -2068,7 +2069,9 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     ? `${projectNamePrefix}${projectId}`
     : undefined;
   const project = useVueState(() =>
-    projectName ? projectStore.getProjectByName(projectName) : undefined
+    projectName
+      ? useAppStore.getState().getProjectByName(projectName)
+      : undefined
   );
 
   const [memberSearchText, setMemberSearchText] = useState("");

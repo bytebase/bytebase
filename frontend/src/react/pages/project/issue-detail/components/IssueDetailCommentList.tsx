@@ -38,7 +38,7 @@ import {
 } from "@/react/stores/app/issueComment";
 import { router } from "@/router";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
-import { extractUserEmail, pushNotification, useProjectV1Store } from "@/store";
+import { extractUserEmail, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -102,14 +102,18 @@ export function IssueDetailCommentList() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const { setEditing } = page;
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
   const currentUser = useCurrentUser();
   const routeHash = useVueState(() => router.currentRoute.value.hash);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const issueName = page.issue?.name || page.plan?.issue || "";
   // `getIssueComments` returns a stable empty array on miss, so reading it
   // inside the selector won't loop.
@@ -361,9 +365,13 @@ function IssueDescriptionCommentRow({
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const { setEditing } = page;
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(page.issue?.creator || "")
   );

@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => {
     })),
     getTableCatalog: vi.fn(),
     featureToRef: vi.fn(() => ({ value: true })),
-    useDBSchemaV1Store: vi.fn(),
+    dbSchemaStore: vi.fn(),
     useSettingV1Store: vi.fn(),
     getDatabaseProject: vi.fn((database: { project: string }) => ({
       name: database.project,
@@ -69,17 +69,17 @@ vi.mock("@/router", () => ({
 }));
 
 // The component now reads dbSchema getters via the app store. Route the
-// existing `mocks.useDBSchemaV1Store` shape through `useAppStore` so the
+// existing `mocks.dbSchemaStore` shape through `useAppStore` so the
 // test bodies' per-scenario `.mockReturnValue({ getSchemaList, ... })`
 // calls keep working without further changes.
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (s: unknown) => unknown) =>
-    selector(mocks.useDBSchemaV1Store()),
+    selector(mocks.dbSchemaStore()),
 }));
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
   useAppDatabaseMetadata: (name: string) =>
-    mocks.useDBSchemaV1Store().getDatabaseMetadata?.(name) ?? { schemas: [] },
+    mocks.dbSchemaStore().getDatabaseMetadata?.(name) ?? { schemas: [] },
 }));
 
 vi.mock("@/store", () => ({
@@ -222,8 +222,8 @@ beforeEach(async () => {
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
   mocks.hasProjectPermissionV2.mockReset();
   mocks.hasProjectPermissionV2.mockReturnValue(true);
-  mocks.useDBSchemaV1Store.mockReset();
-  mocks.useDBSchemaV1Store.mockReturnValue({
+  mocks.dbSchemaStore.mockReset();
+  mocks.dbSchemaStore.mockReturnValue({
     getSchemaList: vi.fn(() => [{ name: "public" }]),
     getTableList: vi.fn(() => [makeTable("orders")]),
     getViewList: vi.fn(() => []),
@@ -281,7 +281,7 @@ beforeEach(async () => {
 
 describe("DatabaseObjectExplorer", () => {
   test("renders the default schema label when the schema name is empty", async () => {
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => [{ name: "" }]),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),

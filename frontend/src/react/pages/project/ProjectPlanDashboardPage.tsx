@@ -59,12 +59,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -117,13 +112,17 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const me = useCurrentUser();
 
   const [showAddSpecDrawer, setShowAddSpecDrawer] = useState(false);
@@ -719,7 +718,6 @@ function AddSpecDrawer({
   title: string;
 }) {
   const { t } = useTranslation();
-  const dbStore = useDatabaseV1Store();
 
   const [creating, setCreating] = useState(false);
   const [changeSource, setChangeSource] = useState<"DATABASE" | "GROUP">(
@@ -759,7 +757,9 @@ function AddSpecDrawer({
     try {
       // Preload database information
       if (changeSource === "DATABASE" && selectedDatabaseNames.size > 0) {
-        await dbStore.batchGetOrFetchDatabases([...selectedDatabaseNames]);
+        await useAppStore
+          .getState()
+          .batchGetOrFetchDatabases([...selectedDatabaseNames]);
       }
 
       const spec = createProto(Plan_SpecSchema, {
@@ -913,7 +913,6 @@ function DatabaseSelector({
   onSelectedNamesChange: (names: Set<string>) => void;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
 
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
@@ -934,7 +933,7 @@ function DatabaseSelector({
       }
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
-        const result = await databaseStore.fetchDatabases({
+        const result = await useAppStore.getState().fetchDatabases({
           parent: projectName,
           pageSize,
           pageToken: token || undefined,
@@ -953,7 +952,7 @@ function DatabaseSelector({
         }
       }
     },
-    [databaseStore, projectName, pageSize, query]
+    [projectName, pageSize, query]
   );
 
   const isFirstLoad = useRef(true);

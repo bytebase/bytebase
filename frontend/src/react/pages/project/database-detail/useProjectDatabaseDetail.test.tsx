@@ -60,25 +60,33 @@ vi.mock("@/router/dashboard/projectV1", () => ({
     mocks.routeNames.databaseRevisionDetail,
 }));
 
-vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => mocks.databaseStore,
-}));
+vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (s: unknown) => unknown) =>
-      selector({
-        getOrFetchDatabaseMetadata:
-          mocks.dbSchemaStore.getOrFetchDatabaseMetadata,
-      }),
-    {
-      getState: () => ({
-        getOrFetchDatabaseMetadata:
-          mocks.dbSchemaStore.getOrFetchDatabaseMetadata,
-      }),
-    }
-  ),
-}));
+// Build the `databasesByName` cache the hook subscribes to from the mocked
+// `getDatabaseByName` return value, keyed by its `name`.
+const buildDatabasesByName = (): Record<string, unknown> => {
+  const db = mocks.getDatabaseByName() as { name?: string } | undefined;
+  if (db?.name) {
+    return { [db.name]: db };
+  }
+  return {};
+};
+
+vi.mock("@/react/stores/app", () => {
+  const appState = () => ({
+    getOrFetchDatabaseMetadata: mocks.dbSchemaStore.getOrFetchDatabaseMetadata,
+    getOrFetchDatabaseByName: mocks.databaseStore.getOrFetchDatabaseByName,
+    databasesByName: buildDatabasesByName(),
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: unknown) => unknown) => selector(appState()),
+      {
+        getState: appState,
+      }
+    ),
+  };
+});
 
 vi.mock("@/utils", () => ({
   getInstanceResource: mocks.getInstanceResource,

@@ -9,9 +9,6 @@ import {
   hasFeature,
   useAuthStore,
   useCurrentUserV1,
-  useProjectV1Store,
-  useDatabaseV1Store,
-  useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -171,9 +168,11 @@ router.beforeEach((to, from, next) => {
 
   // Auth pages: Reset stores and allow access
   if (isAuthRelatedRoute(to.name as string)) {
-    useDatabaseV1Store().reset();
-    useProjectV1Store().reset();
-    useInstanceV1Store().reset();
+    void import("@/react/stores/app").then(({ useAppStore }) => {
+      useAppStore.getState().resetDatabases();
+      useAppStore.getState().resetInstances();
+      useAppStore.getState().resetProjects();
+    });
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
       useConversationStore().reset();
     });

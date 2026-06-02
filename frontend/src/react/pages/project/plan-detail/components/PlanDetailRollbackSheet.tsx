@@ -26,7 +26,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   CreatePlanRequestSchema,
   Plan_ChangeDatabaseConfigSchema,
@@ -64,12 +64,14 @@ export function PlanDetailRollbackSheet({
   }>;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const normalizedProjectName = projectName.startsWith("projects/")
     ? projectName
     : `projects/${projectName}`;
   const project = useVueState(() =>
-    projectStore.getProjectByName(normalizedProjectName)
+    useAppStore.getState().getProjectByName(normalizedProjectName)
   );
   const [loading, setLoading] = useState(false);
   const [selectedTaskRunNames, setSelectedTaskRunNames] = useState<string[]>(

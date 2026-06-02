@@ -1,8 +1,5 @@
-import {
-  checkQuerierPermission,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { getProjectByName } from "@/react/stores/app/projectAccess";
+import { checkQuerierPermission, useEnvironmentV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -101,7 +98,7 @@ export const getDatabaseEngine = (database: Database): Engine => {
 
 // Get project entity (sync - assumes cached)
 export const getDatabaseProject = (database: Database): Project => {
-  return useProjectV1Store().getProjectByName(database.project);
+  return getProjectByName(database.project);
 };
 
 // Get effective environment entity

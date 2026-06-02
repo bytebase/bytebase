@@ -52,8 +52,6 @@ import {
   extractUserEmail,
   hasFeature,
   pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -95,13 +93,16 @@ export function ProjectMaskingExemptionPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const currentUser = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const showDatabaseLink = useMemo(
     () =>
       project ? hasProjectPermissionV2(project, "bb.databases.get") : false,
@@ -277,7 +278,7 @@ export function ProjectMaskingExemptionPage({
       if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
         return [];
       }
-      const result = await databaseStore.fetchDatabases({
+      const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
@@ -296,7 +297,7 @@ export function ProjectMaskingExemptionPage({
         };
       });
     },
-    [databaseStore, projectName, project]
+    [projectName, project]
   );
 
   const searchUsers = useCallback(

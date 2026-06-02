@@ -26,7 +26,6 @@ import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useDatabaseV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import {
@@ -969,7 +968,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         const updated = await useAppStore
           .getState()
           .updateInstance(instancePatch, ["activation"]);
-        useDatabaseV1Store().updateDatabaseInstance(updated);
+        useAppStore.getState().updateDatabaseInstance(updated);
         await actuatorStore.fetchServerInfo(
           actuatorStore.workspaceResourceName
         );

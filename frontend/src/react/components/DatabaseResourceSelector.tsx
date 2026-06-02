@@ -20,7 +20,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -95,7 +95,6 @@ export function DatabaseResourceSelector({
   includeColumns?: boolean;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
@@ -233,7 +232,7 @@ export function DatabaseResourceSelector({
       let allDatabases: Database[] = [];
       let pageToken = "";
       do {
-        const result = await databaseStore.fetchDatabases({
+        const result = await useAppStore.getState().fetchDatabases({
           parent: projectName,
           pageSize: 1000,
           pageToken,
@@ -248,7 +247,7 @@ export function DatabaseResourceSelector({
     return () => {
       cancelled = true;
     };
-  }, [projectName, databaseStore, databaseFilter]);
+  }, [projectName, databaseFilter]);
 
   const selectedResourceMap = useMemo(() => {
     const map = new Map<string, DatabaseSelection>();

@@ -14,7 +14,7 @@ import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   isValidDatabaseName,
   isValidReleaseName,
@@ -32,6 +32,7 @@ import {
   type Release,
 } from "@/types/proto-es/v1/release_service_pb";
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
@@ -65,7 +66,7 @@ export function PlanDetailStatementSection({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, setEditing } = page;
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const currentUser = page.currentUser;
   const project = page.project;
   const releaseName =
@@ -103,9 +104,9 @@ export function PlanDetailStatementSection({
   // the unknownDatabase() stub returned for cache misses.
   useEffect(() => {
     if (targetDatabaseNames.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(targetDatabaseNames);
+      void useAppStore.getState().batchGetOrFetchDatabases(targetDatabaseNames);
     }
-  }, [targetDatabaseNames, databaseStore]);
+  }, [targetDatabaseNames]);
   // Show Schema Editor only when at least one target's engine supports it.
   // Wrapped in useVueState so the eligibility flips back on once the Pinia
   // store hydrates the targets — otherwise a Plan opened before its targets
@@ -113,16 +114,16 @@ export function PlanDetailStatementSection({
   const schemaEditorEligible = useVueState(() => {
     if (targetDatabaseNames.length === 0) return false;
     return targetDatabaseNames.some((name) => {
-      const db = databaseStore.getDatabaseByName(name);
+      const db = databasesByName[name];
       if (!db || !isValidDatabaseName(db.name)) return false;
       return engineSupportsSchemaEditor(getInstanceResource(db).engine);
     });
   });
   const language = useMemo(() => {
     if (!targetDatabaseName) return "sql";
-    const database = databaseStore.getDatabaseByName(targetDatabaseName);
+    const database = databasesByName[targetDatabaseName] ?? unknownDatabase();
     return languageOfEngineV1(getInstanceResource(database).engine);
-  }, [databaseStore, targetDatabaseName]);
+  }, [databasesByName, targetDatabaseName]);
   const autoCompleteContext = useMemo(() => {
     if (!targetDatabaseName) return undefined;
     return {

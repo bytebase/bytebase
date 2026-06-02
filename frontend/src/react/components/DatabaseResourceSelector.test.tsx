@@ -11,9 +11,6 @@ const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
   fetchInstanceList: vi.fn(),
   getOrFetchDatabaseMetadata: vi.fn(),
-  databaseStore: undefined as
-    | { fetchDatabases: ReturnType<typeof vi.fn> }
-    | undefined,
   instanceStore: undefined as
     | { fetchInstanceList: ReturnType<typeof vi.fn> }
     | undefined,
@@ -35,10 +32,6 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
-mocks.databaseStore = {
-  fetchDatabases: mocks.fetchDatabases,
-};
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: { count?: number }) =>
@@ -56,7 +49,6 @@ vi.mock("@/plugins/i18n", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => mocks.databaseStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
 }));
 
@@ -93,21 +85,19 @@ vi.mock("@/react/components/AdvancedSearch", () => ({
   ),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({
-        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-        fetchInstanceList: mocks.fetchInstanceList,
-      }),
-    {
-      getState: () => ({
-        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-        fetchInstanceList: mocks.fetchInstanceList,
-      }),
-    }
-  ),
-}));
+vi.mock("@/react/stores/app", () => {
+  const appState = () => ({
+    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+    fetchInstanceList: mocks.fetchInstanceList,
+    fetchDatabases: mocks.fetchDatabases,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (state: unknown) => unknown) => selector(appState()),
+      { getState: appState }
+    ),
+  };
+});
 
 vi.mock("@/react/components/EnvironmentLabel", () => ({
   EnvironmentLabel: ({ environmentName }: { environmentName: string }) => (

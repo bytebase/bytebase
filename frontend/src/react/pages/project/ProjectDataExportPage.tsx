@@ -17,7 +17,6 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -42,13 +41,17 @@ import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [showDrawer, setShowDrawer] = useState(false);
 
@@ -84,7 +87,6 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     setSearchParams(defaultSearchParams());
   }, [projectId]);
 
-  const databaseStore = useDatabaseV1Store();
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
@@ -104,7 +106,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
       if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
         return [];
       }
-      const { databases } = await databaseStore.fetchDatabases({
+      const { databases } = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
@@ -114,7 +116,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
         return { value: db.name, keywords: [databaseName, db.name] };
       });
     },
-    [databaseStore, projectName, project]
+    [projectName, project]
   );
 
   // Scope options for the search bar
@@ -450,7 +452,9 @@ function IssueListItem({
   highlightText?: string;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
 
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(issue.creator)
@@ -458,9 +462,11 @@ function IssueListItem({
   const creator = creatorUser || unknownUser(issue.creator);
 
   const issueProject = useVueState(() =>
-    projectStore.getProjectByName(
-      `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
-    )
+    useAppStore
+      .getState()
+      .getProjectByName(
+        `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
+      )
   );
 
   const createTimeTs = Math.floor(

@@ -127,12 +127,7 @@ func TestParsePLSQLStatementsOmniFirst(t *testing.T) {
 	require.IsType(t, &ast.SelectStmt{}, omniAST.Node)
 }
 
-func TestParsePLSQLStatementsFallsBackToANTLR(t *testing.T) {
-	// The second statement exercises a CREATE TRIGGER with a REFERENCING
-	// OLD/NEW clause — currently rejected by omni-oracle's parser but
-	// accepted by ANTLR, so dispatch must fall back. If omni-oracle later
-	// adds REFERENCING support, swap this for another omni-rejected
-	// statement to preserve the fallback path's coverage.
+func TestParsePLSQLStatementsParsesTriggerReferencingWithOmni(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT * FROM T;
 CREATE OR REPLACE TRIGGER trg
 BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
@@ -148,8 +143,13 @@ END;`)
 	_, ok := stmts[0].AST.(*OmniAST)
 	require.True(t, ok)
 
-	_, ok = stmts[1].AST.(*base.ANTLRAST)
+	omniAST, ok := stmts[1].AST.(*OmniAST)
 	require.True(t, ok)
+	trigger, ok := omniAST.Node.(*ast.CreateTriggerStmt)
+	require.True(t, ok)
+	require.NotNil(t, trigger.Referencing)
+	require.Equal(t, "O", trigger.Referencing.OldAlias)
+	require.Equal(t, "N", trigger.Referencing.NewAlias)
 }
 
 func TestParsePLSQLStatementsFallbackErrorUsesOriginalLine(t *testing.T) {

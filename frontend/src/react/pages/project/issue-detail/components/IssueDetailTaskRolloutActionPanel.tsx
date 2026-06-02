@@ -21,12 +21,8 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -40,6 +36,7 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
@@ -86,10 +83,14 @@ export function IssueDetailTaskRolloutActionPanel({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
   const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const [loading, setLoading] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(false);
   const [canRun, setCanRun] = useState(true);
@@ -596,9 +597,11 @@ function IssueDetailTaskDatabaseName({ task }: { task: Task }) {
 
 function IssueDetailDatabaseTarget({ target }: { target: string }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentStore = useEnvironmentV1Store();
-  const database = useVueState(() => databaseStore.getDatabaseByName(target));
+  const database = useVueState(
+    () => databasesByName[target] ?? unknownDatabase()
+  );
   const environment = useVueState(() =>
     environmentStore.getEnvironmentByName(
       database.effectiveEnvironment ??

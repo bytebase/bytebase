@@ -280,14 +280,6 @@ vi.mock("@/store", () => ({
     isSaaSMode: false,
     userCountInIam: 1,
   }),
-  useProjectV1Store: () => ({
-    getProjectByName: (name: string) => ({
-      allowRequestRole: true,
-      name,
-      permissions: ["bb.projects.setIamPolicy"],
-      state: 1,
-    }),
-  }),
   useSettingV1Store: () => ({
     getOrFetchSettingByName: vi.fn(),
     getSettingByName: () => undefined,
@@ -306,24 +298,35 @@ vi.mock("@/react/hooks/useAppState", () => ({
   }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      batchGetOrFetchUsers: vi.fn(async () => []),
-      roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
-      workspacePolicy: { bindings: [] },
-      patchWorkspaceIamPolicy: vi.fn(),
-      findWorkspaceRolesByMember: () => [],
-      fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
-      // MembersPage now subscribes to projectPoliciesByName directly so it
-      // re-renders when loadProjectIamPolicy() resolves. The getter form is
-      // still used inside async handlers.
-      projectPoliciesByName: { "projects/sample-project": projectIamPolicy },
-      getProjectIamPolicy: () => projectIamPolicy,
-      updateProjectIamPolicy: mockUpdateProjectIamPolicy,
-      loadProjectIamPolicy: vi.fn(async () => undefined),
+vi.mock("@/react/stores/app", () => {
+  const buildState = () => ({
+    batchGetOrFetchUsers: vi.fn(async () => []),
+    roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+    workspacePolicy: { bindings: [] },
+    patchWorkspaceIamPolicy: vi.fn(),
+    findWorkspaceRolesByMember: () => [],
+    fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
+    // MembersPage now subscribes to projectPoliciesByName directly so it
+    // re-renders when loadProjectIamPolicy() resolves. The getter form is
+    // still used inside async handlers.
+    projectPoliciesByName: { "projects/sample-project": projectIamPolicy },
+    getProjectIamPolicy: () => projectIamPolicy,
+    updateProjectIamPolicy: mockUpdateProjectIamPolicy,
+    loadProjectIamPolicy: vi.fn(async () => undefined),
+    // Project store methods, migrated off the Pinia useProjectV1Store mock.
+    projectsByName: {},
+    getProjectByName: (name: string) => ({
+      allowRequestRole: true,
+      name,
+      permissions: ["bb.projects.setIamPolicy"],
+      state: 1,
     }),
-}));
+  });
+  const useAppStore = (selector?: (state: unknown) => unknown) =>
+    selector ? selector(buildState()) : buildState();
+  useAppStore.getState = () => buildState();
+  return { useAppStore };
+});
 
 vi.mock("./MemberBindingEnvironmentBanner", () => ({
   MemberBindingEnvironmentBanner: () => null,

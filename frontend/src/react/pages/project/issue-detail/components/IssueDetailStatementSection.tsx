@@ -11,12 +11,7 @@ import { useCurrentUser, useReleaseByName } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import {
-  projectNamePrefix,
-  pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { projectNamePrefix, pushNotification } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import {
   isValidDatabaseName,
@@ -60,11 +55,14 @@ export function IssueDetailStatementSection({
   const page = useIssueDetailContext();
   const { setEditing } = page;
   const fetchRelease = useAppStore((state) => state.fetchRelease);
-  const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const currentUser = useCurrentUser();
   const project = useVueState(() =>
-    projectStore.getProjectByName(`${projectNamePrefix}${page.projectId}`)
+    useAppStore
+      .getState()
+      .getProjectByName(`${projectNamePrefix}${page.projectId}`)
   );
   const releaseName =
     spec.config?.case === "changeDatabaseConfig"
@@ -97,9 +95,11 @@ export function IssueDetailStatementSection({
     if (!targetDatabaseName) {
       return "sql";
     }
-    const database = databaseStore.getDatabaseByName(targetDatabaseName);
+    const database = useAppStore
+      .getState()
+      .getDatabaseByName(targetDatabaseName);
     return languageOfEngineV1(getInstanceResource(database).engine);
-  }, [databaseStore, targetDatabaseName]);
+  }, [targetDatabaseName]);
   const autoCompleteContext = useMemo(() => {
     if (!targetDatabaseName) {
       return undefined;

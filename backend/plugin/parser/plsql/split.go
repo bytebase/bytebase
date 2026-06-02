@@ -1,6 +1,8 @@
 package plsql
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 	oracleparser "github.com/bytebase/omni/oracle/parser"
 	parser "github.com/bytebase/parser/plsql"
@@ -41,24 +43,54 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 	result := make([]base.Statement, 0, len(segments))
 	positionMapper := base.NewByteOffsetPositionMapper(statement)
-	for _, seg := range segments {
+	for i := 0; i < len(segments); i++ {
+		seg := segments[i]
 		if seg.Kind == oracleparser.SegmentSQLPlusCommand {
 			continue
 		}
-		byteEnd := seg.ByteStart + trimOracleSegmentTrailingHidden(seg.Text)
-		text := statement[seg.ByteStart:byteEnd]
+		byteStart := seg.ByteStart
+		byteEnd := seg.ByteEnd
+		if end, ok := matchRecognizeDefineMergeEnd(statement, segments, i); ok {
+			byteEnd = end
+			i += 2
+		}
+		byteEnd = byteStart + trimOracleSegmentTrailingHidden(statement[byteStart:byteEnd])
+		text := statement[byteStart:byteEnd]
 		result = append(result, base.Statement{
 			Text:  text,
-			Start: positionMapper.Position(seg.ByteStart),
+			Start: positionMapper.Position(byteStart),
 			End:   positionMapper.Position(byteEnd),
 			Empty: seg.Empty(),
 			Range: &storepb.Range{
-				Start: int32(seg.ByteStart),
+				Start: int32(byteStart),
 				End:   int32(byteEnd),
 			},
 		})
 	}
 	return result, nil
+}
+
+func matchRecognizeDefineMergeEnd(statement string, segments []oracleparser.Segment, index int) (int, bool) {
+	if index+2 >= len(segments) {
+		return 0, false
+	}
+	current := segments[index]
+	define := segments[index+1]
+	suffix := segments[index+2]
+	if current.Kind != oracleparser.SegmentSQL || define.Kind != oracleparser.SegmentSQLPlusCommand || suffix.Kind != oracleparser.SegmentSQL {
+		return 0, false
+	}
+	if !strings.Contains(strings.ToUpper(current.Text), "MATCH_RECOGNIZE") {
+		return 0, false
+	}
+	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(define.Text)), "DEFINE ") {
+		return 0, false
+	}
+	merged := statement[current.ByteStart:suffix.ByteEnd]
+	if _, err := oracleparser.Parse(merged); err != nil {
+		return 0, false
+	}
+	return suffix.ByteEnd, true
 }
 
 func trimOracleSegmentTrailingHidden(text string) int {

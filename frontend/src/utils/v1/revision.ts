@@ -1,5 +1,5 @@
 import { t } from "@/plugins/i18n";
-import { useDatabaseV1Store } from "@/store";
+import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { Revision_Type } from "@/types/proto-es/v1/revision_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
@@ -16,7 +16,7 @@ export const revisionLink = (revision: Revision): string => {
     return "";
   }
   const { database } = extractDatabaseResourceName(revision.name);
-  const composedDatabase = useDatabaseV1Store().getDatabaseByName(database);
+  const composedDatabase = getDatabaseByName(database);
   return `${databaseV1Url(composedDatabase)}/revisions/${parts[1]}`;
 };
 

@@ -57,9 +57,9 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-// getTiDBNodes extracts pingcap-AST nodes. Post-dml_dry_run migration (PR
-// #20467) its only consumer is advisor_builtin_prior_backup_check, which uses
-// pingcap AST for authoritative DDL detection on its dual-path (cumulative #30).
+// getTiDBNodes extracts pingcap-AST nodes. Its only consumer is
+// advisor_builtin_prior_backup_check, which uses pingcap AST for authoritative
+// DDL detection on its dual-path.
 //
 // On a PingCapASTProvider whose AsPingCapAST returns (nil, false) — i.e.
 // the bridge tried and pingcap rejected the statement — the statement is
@@ -708,29 +708,16 @@ func omniNeedDefault(col *omniast.ColumnDef) bool {
 // this cache.
 const omniStmtsCacheKey = "tidb.omniStmts"
 
-// getTiDBOmniNodes returns omni-parsed statements for migrated advisors.
+// getTiDBOmniNodes returns omni-parsed statements for migrated advisors. The
+// dispatcher has already parsed and populated stmt.AST; this helper unwraps the
+// nodes and memoizes the result on checkCtx.Memo (one parse per review).
 //
-// Post-flip (Phase 1.5 §1.5.N+1): the dispatcher in
-// backend/plugin/parser/tidb/dispatcher.go has already done the omni parse
-// and populated stmt.AST. This helper just unwraps OmniAST nodes and
-// preserves the cache contract.
-//
-// Three-arm type switch (per plan §1.5.0 invariant #8):
+// Type switch over stmt.AST:
 //   - *tidbparser.OmniAST: omni accepted — collect the node.
-//   - *tidbparser.AST: dispatcher fell back to pingcap (omni rejected this
-//     statement). Skip — migrated advisors emit no advice for omni-rejected
-//     SQL. Soft-fail invariant preserved end-to-end (responsibility moved
-//     from this helper to the dispatcher).
-//   - default: unknown AST type. Warn (mandatory per invariant #8 — a
-//     future engine introducing a third AST type for tidb shouldn't
+//   - *tidbparser.AST: dispatcher fell back to pingcap (omni rejected the
+//     statement). Skip — migrated advisors emit no advice for omni-rejected SQL.
+//   - default: unknown AST type — warn (a future third tidb AST type shouldn't
 //     silently drop statements).
-//
-// Cache contract (single-parse-per-review): the result slice is memoized
-// on checkCtx.Memo so subsequent calls within the same review return the
-// identical slice without re-walking the type switch. The dispatcher's
-// parse already happened once at split time, so this cache amortizes only
-// the type-switch + slice construction now — but the contract (one
-// observable parse per review) is preserved.
 func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 	if cached, ok := checkCtx.Memo(omniStmtsCacheKey); ok {
 		if stmts, typeOK := cached.([]OmniStmt); typeOK {
@@ -755,10 +742,9 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 				BaseLine: stmt.BaseLine(),
 			})
 		case *tidbparser.AST:
-			// Dispatcher fell back to pingcap for this statement (omni
-			// rejected). Migrated advisors skip it; un-migrated advisors
-			// using getTiDBNodes still see the pingcap AST. Soft-fail
-			// per invariant #2 preserved.
+			// Dispatcher fell back to pingcap (omni rejected this statement).
+			// Migrated advisors emit no advice for omni-rejected SQL, so skip;
+			// getTiDBNodes consumers still see the pingcap AST.
 			continue
 		default:
 			slog.Warn("unexpected stmt.AST type for tidb dispatcher",

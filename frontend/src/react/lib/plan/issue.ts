@@ -1,7 +1,6 @@
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import {
   extractDatabaseGroupName,
@@ -13,8 +12,6 @@ import { applyPlanTitleToQuery } from "./title";
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
   const type = "bb.plan.change-database";
-  const databaseStore = useDatabaseV1Store();
-  const projectStore = useProjectV1Store();
 
   const databaseNames: string[] = [];
   for (const target of targets) {
@@ -22,7 +19,7 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
       const dbGroup = useAppStore.getState().getDBGroupByName(target);
       databaseNames.push(dbGroup.title);
     } else if (isValidDatabaseName(target)) {
-      const db = databaseStore.getDatabaseByName(target);
+      const db = useAppStore.getState().getDatabaseByName(target);
       databaseNames.push(extractDatabaseResourceName(db.name).databaseName);
     }
   }
@@ -32,7 +29,9 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
   );
 
   // Fetch project to check enforce_issue_title setting
-  const projectEntity = await projectStore.getOrFetchProjectByName(project);
+  const projectEntity = await useAppStore
+    .getState()
+    .getOrFetchProjectByName(project);
 
   // Navigate to plan detail page
   const query: Record<string, string> = {

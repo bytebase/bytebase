@@ -15,8 +15,9 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   type ConditionExpression,
   convertFromCELString,
@@ -27,7 +28,6 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 export function IssueDetailRoleGrantDetails() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const databaseStore = useDatabaseV1Store();
   const issue = page.issue;
   const requestRoleName = issue?.roleGrant?.role ?? "";
   const roleList = useAppStore((state) => state.roleList);
@@ -61,11 +61,13 @@ export function IssueDetailRoleGrantDetails() {
   useEffect(() => {
     const resources = condition?.databaseResources ?? [];
     if (resources.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(
-        resources.map((resource) => resource.databaseFullName)
-      );
+      void useAppStore
+        .getState()
+        .batchGetOrFetchDatabases(
+          resources.map((resource) => resource.databaseFullName)
+        );
     }
-  }, [condition?.databaseResources, databaseStore]);
+  }, [condition?.databaseResources]);
 
   const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
   const envNames = condition?.environments ?? [];
@@ -175,17 +177,16 @@ function IssueDetailDatabaseResourceTable({
   databaseResourceList: DatabaseResource[];
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
   // Subscribe to the instance cache so rows reactively pick up titles once
   // instances hydrate; a bare getState() read would not re-render here because
   // useVueState only tracks Vue dependencies.
   const instancesByName = useAppStore((s) => s.instancesByName);
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const rows = useVueState(() =>
     databaseResourceList.map((resource) => {
-      const database = databaseStore.getDatabaseByName(
-        resource.databaseFullName
-      );
+      const database =
+        databasesByName[resource.databaseFullName] ?? unknownDatabase();
       const { databaseName, instanceName } = extractDatabaseResourceName(
         resource.databaseFullName
       );

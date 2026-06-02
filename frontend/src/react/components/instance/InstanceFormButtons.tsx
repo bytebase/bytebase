@@ -5,11 +5,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -57,7 +53,6 @@ export function InstanceFormButtons({
   className,
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const subscriptionStore = useSubscriptionV1Store();
 
   const context = useInstanceFormContext();
@@ -353,7 +348,7 @@ export function InstanceFormButtons({
 
     const refreshInstanceDatabases = async (instanceName: string) => {
       await useAppStore.getState().syncInstance(instanceName, true);
-      databaseStore.removeCacheByInstance(instanceName);
+      useAppStore.getState().removeCacheByInstance(instanceName);
     };
 
     const maybeQueueUpdateDataSource = async (

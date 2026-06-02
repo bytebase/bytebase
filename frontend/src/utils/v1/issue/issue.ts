@@ -1,13 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { t } from "@/plugins/i18n";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  projectNamePrefix,
-  useDatabaseV1Store,
-  useInstanceResourceByName,
-  useProjectV1Store,
-} from "@/store";
+  getDatabaseByName,
+  getDatabaseList,
+} from "@/react/stores/app/databaseAccess";
+import { getProjectByName } from "@/react/stores/app/projectAccess";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { projectNamePrefix } from "@/store";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -21,7 +21,11 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractDatabaseResourceName, extractProjectResourceName } from "..";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+  getInstanceResource,
+} from "..";
 
 export const extractIssueUID = (name: string) => {
   const pattern = /(?:^|\/)issues\/(\d+)(?:$|\/)/;
@@ -123,7 +127,7 @@ export const getIssueRoute = (issue: {
 };
 
 export const projectOfIssue = (issue: Issue): Project => {
-  return useProjectV1Store().getProjectByName(
+  return getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
 };
@@ -157,9 +161,7 @@ export const mockDatabase = (
   db.name = database;
 
   const { instance } = extractDatabaseResourceName(db.name);
-  const { instance: instanceFromStore } = useInstanceResourceByName(instance);
-  // Create InstanceResource from the instance data
-  const instanceData = instanceFromStore.value;
+  const instanceData = getCachedInstanceResourceByName(instance);
   db.instanceResource = create(InstanceResourceSchema, {
     name: instanceData.name,
     engine: instanceData.engine,
@@ -182,15 +184,12 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
 ): Database => {
   const coreDatabaseInfo = (instanceName: string, dbName: string): Database => {
     const name = `${instanceName}/databases/${dbName}`;
-    const maybeExistedDatabase = useDatabaseV1Store().getDatabaseByName(name);
+    const maybeExistedDatabase = getDatabaseByName(name);
     if (isValidDatabaseName(maybeExistedDatabase.name)) {
       return maybeExistedDatabase;
     }
 
-    const { instance: instanceFromStore } =
-      useInstanceResourceByName(instanceName);
-    // Create InstanceResource from the instance data
-    const instanceData = instanceFromStore.value;
+    const instanceData = getCachedInstanceResourceByName(instanceName);
     const instanceResource = create(InstanceResourceSchema, {
       name: instanceData.name,
       engine: instanceData.engine,
@@ -221,4 +220,17 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   }
 
   return unknownDatabase();
+};
+
+const getCachedInstanceResourceByName = (
+  instanceName: string
+): ReturnType<typeof getInstanceResource> => {
+  const cachedDatabase = getDatabaseList().find(
+    (database) => getInstanceResource(database).name === instanceName
+  );
+  if (cachedDatabase) {
+    return getInstanceResource(cachedDatabase);
+  }
+
+  return create(InstanceResourceSchema, { name: instanceName });
 };

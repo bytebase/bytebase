@@ -31,7 +31,6 @@ import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSet
 import {
   pushNotification,
   useActuatorV1Store,
-  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import {
@@ -62,7 +61,6 @@ export function ProjectWebhookForm({
 }: Props) {
   const { t } = useTranslation();
   const settingStore = useSettingV1Store();
-  const projectStore = useProjectV1Store();
   const actuatorStore = useActuatorV1Store();
   const createProjectWebhook = useAppStore(
     (state) => state.createProjectWebhook
@@ -218,7 +216,9 @@ export function ProjectWebhookForm({
   const createWebhook = useCallback(() => {
     withLoading(async () => {
       const updatedProject = await createProjectWebhook(project.name, state);
-      projectStore.updateProjectCache({ ...project, ...updatedProject });
+      useAppStore
+        .getState()
+        .updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -241,7 +241,7 @@ export function ProjectWebhookForm({
         });
       }
     });
-  }, [project, state, projectStore, createProjectWebhook, t, withLoading]);
+  }, [project, state, createProjectWebhook, t, withLoading]);
 
   const updateWebhook = useCallback(() => {
     withLoading(async () => {
@@ -254,7 +254,9 @@ export function ProjectWebhookForm({
         updateMask.push("notification_type");
 
       const updatedProject = await updateProjectWebhook(state, updateMask);
-      projectStore.updateProjectCache({ ...project, ...updatedProject });
+      useAppStore
+        .getState()
+        .updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -263,21 +265,15 @@ export function ProjectWebhookForm({
         }),
       });
     });
-  }, [
-    project,
-    state,
-    webhook,
-    projectStore,
-    updateProjectWebhook,
-    t,
-    withLoading,
-  ]);
+  }, [project, state, webhook, updateProjectWebhook, t, withLoading]);
 
   const deleteWebhook = useCallback(() => {
     withLoading(async () => {
       const name = state.title;
       const updatedProject = await deleteProjectWebhook(state);
-      projectStore.updateProjectCache({ ...project, ...updatedProject });
+      useAppStore
+        .getState()
+        .updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -285,15 +281,7 @@ export function ProjectWebhookForm({
       });
       cancel();
     });
-  }, [
-    project,
-    state,
-    projectStore,
-    deleteProjectWebhook,
-    t,
-    withLoading,
-    cancel,
-  ]);
+  }, [project, state, deleteProjectWebhook, t, withLoading, cancel]);
 
   const testWebhook = useCallback(() => {
     withLoading(async () => {

@@ -30,7 +30,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -40,13 +40,17 @@ import { extractProjectWebhookID, hasProjectPermissionV2 } from "@/utils";
 
 export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const deleteProjectWebhook = useAppStore(
     (state) => state.deleteProjectWebhook
   );
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [deleteTarget, setDeleteTarget] = useState<Webhook | null>(null);
 
@@ -84,7 +88,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
     try {
       const name = deleteTarget.title;
       const updatedProject = await deleteProjectWebhook(deleteTarget);
-      projectStore.updateProjectCache({
+      useAppStore.getState().updateProjectCache({
         ...project,
         ...updatedProject,
       });
@@ -101,7 +105,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
       });
     }
     setDeleteTarget(null);
-  }, [deleteTarget, project, deleteProjectWebhook, projectStore, t]);
+  }, [deleteTarget, project, deleteProjectWebhook, t]);
 
   return (
     <div className="py-4 flex flex-col">

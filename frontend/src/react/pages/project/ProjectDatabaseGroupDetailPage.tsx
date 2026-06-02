@@ -21,7 +21,7 @@ import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
-import { hasFeature, useProjectV1Store } from "@/store";
+import { hasFeature } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
@@ -42,10 +42,14 @@ export function ProjectDatabaseGroupDetailPage({
   databaseGroupName: string;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const resourceName = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
 

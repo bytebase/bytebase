@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => {
     currentRoute,
     routerReplace: vi.fn(() => Promise.resolve()),
     useVueState: vi.fn(),
-    useDBSchemaV1Store: vi.fn(),
+    dbSchemaStore: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
     useSubscriptionV1Store: vi.fn(),
@@ -90,12 +90,12 @@ vi.mock("@/router", () => ({
 }));
 
 // The component (and its child `DatabaseObjectExplorer`) now read dbSchema
-// getters via the app store. Route the existing `mocks.useDBSchemaV1Store`
+// getters via the app store. Route the existing `mocks.dbSchemaStore`
 // shape through `useAppStore` so the per-scenario `.mockReturnValue({...})`
 // calls in test bodies keep working without further changes.
 vi.mock("@/react/stores/app", () => {
   const useAppStore = (selector: (s: unknown) => unknown) =>
-    selector(mocks.useDBSchemaV1Store());
+    selector(mocks.dbSchemaStore());
   useAppStore.getState = () => ({
     updateDatabaseCatalog: mocks.updateDatabaseCatalog,
   });
@@ -104,7 +104,7 @@ vi.mock("@/react/stores/app", () => {
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
   useAppDatabaseMetadata: (name: string) =>
-    mocks.useDBSchemaV1Store().getDatabaseMetadata?.(name) ?? { schemas: [] },
+    mocks.dbSchemaStore().getDatabaseMetadata?.(name) ?? { schemas: [] },
 }));
 
 vi.mock("@/store", () => ({
@@ -334,8 +334,8 @@ beforeEach(async () => {
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
   mocks.humanizeDate.mockReset();
   mocks.humanizeDate.mockReturnValue("5 minutes ago");
-  mocks.useDBSchemaV1Store.mockReset();
-  mocks.useDBSchemaV1Store.mockReturnValue({
+  mocks.dbSchemaStore.mockReset();
+  mocks.dbSchemaStore.mockReturnValue({
     getSchemaList: vi.fn(() => mocks.schemaList),
     getTableList: vi.fn(() => [makeTable("orders")]),
     getViewList: vi.fn(() => []),
@@ -453,7 +453,7 @@ describe("DatabaseOverviewPanel", () => {
 
   test("restores the table engine column for MySQL overview rows", async () => {
     mocks.getDatabaseEngine.mockReturnValue(Engine.MYSQL);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(
         () =>
@@ -653,7 +653,7 @@ describe("DatabaseOverviewPanel", () => {
 
   test("treats the empty-string schema as a valid resolved selection", async () => {
     mocks.schemaList = [{ name: "" }];
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -747,7 +747,7 @@ describe("DatabaseOverviewPanel", () => {
     mocks.hasSchemaProperty.mockReturnValue(false);
     mocks.instanceV1HasCollationAndCharacterSet.mockReturnValue(true);
     mocks.instanceV1SupportsPackage.mockReturnValue(true);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => []),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -796,7 +796,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("uses function signatures for overloaded function identity and display", async () => {
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(() => [makeTable("orders")]),
       getViewList: vi.fn(() => []),
@@ -835,7 +835,7 @@ describe("DatabaseOverviewPanel", () => {
   test("flattens sequences across schemas when schema properties are unsupported", async () => {
     mocks.hasSchemaProperty.mockReturnValue(false);
     mocks.instanceV1SupportsSequence.mockReturnValue(true);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => []),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -876,7 +876,7 @@ describe("DatabaseOverviewPanel", () => {
     router.currentRoute.value.query = { schema: "sales" };
 
     mocks.instanceV1SupportsSequence.mockReturnValue(true);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -914,7 +914,7 @@ describe("DatabaseOverviewPanel", () => {
   test("flattens streams and tasks across schemas when schema properties are unsupported", async () => {
     mocks.getDatabaseEngine.mockReturnValue(Engine.SNOWFLAKE);
     mocks.hasSchemaProperty.mockReturnValue(false);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => []),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -965,7 +965,7 @@ describe("DatabaseOverviewPanel", () => {
     router.currentRoute.value.query = { schema: "sales" };
 
     mocks.getDatabaseEngine.mockReturnValue(Engine.SNOWFLAKE);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),
@@ -1012,7 +1012,7 @@ describe("DatabaseOverviewPanel", () => {
     mocks.getDatabaseEngine.mockReturnValue(Engine.ORACLE);
     mocks.hasSchemaProperty.mockReturnValue(true);
     mocks.instanceV1SupportsPackage.mockReturnValue(true);
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
       getTableList: vi.fn(() => []),
       getViewList: vi.fn(() => []),

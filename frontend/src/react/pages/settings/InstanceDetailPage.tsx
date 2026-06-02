@@ -36,20 +36,18 @@ import {
 } from "@/react/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
+import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import type { DatabaseFilter } from "@/store/modules/v1/database";
 import {
   isValidDatabaseName,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -77,7 +75,8 @@ const isInstanceHash = (x: unknown): x is InstanceHash =>
 
 export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
@@ -107,8 +106,8 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     if (selectedNames.size === 0) return [];
     return Array.from(selectedNames)
       .filter((name) => isValidDatabaseName(name))
-      .map((name) => databaseStore.getDatabaseByName(name));
-  }, [selectedNames, databaseStore]);
+      .map((name) => getDatabaseByName(name));
+  }, [selectedNames, getDatabaseByName, databasesByName]);
 
   // Mirror `selectedDatabases` into a ref so the batch-operation handlers
   // below can read the latest value without listing it as a dep. Otherwise
@@ -132,7 +131,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
       title: t("db.start-to-sync-schema"),
     });
     try {
-      await databaseStore.batchSyncDatabases(Array.from(selectedNames));
+      await useAppStore
+        .getState()
+        .batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
         removeDatabaseMetadataCache(name);
       }
@@ -151,12 +152,12 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
+  }, [syncing, selectedNames, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database, i) =>
@@ -184,13 +185,13 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
     async (environment: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database) =>
@@ -218,13 +219,13 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleTransferProject = useCallback(
     async (projectName: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database) =>
@@ -252,7 +253,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
   // Trigger a fetch on mount so the instance is hydrated into the
   // `useAppStore` cache. Without this, hard-refreshing the page shows
@@ -286,9 +287,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const syncSchema = useCallback(
     async (enableFullSync: boolean) => {
       await useAppStore.getState().syncInstance(instance.name, enableFullSync);
-      databaseStore.removeCacheByInstance(instance.name);
+      useAppStore.getState().removeCacheByInstance(instance.name);
     },
-    [instance.name, databaseStore]
+    [instance.name]
   );
 
   // Database filter
@@ -319,7 +320,6 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     () => environmentStore.environmentList ?? []
   );
 
-  const projectStore = useProjectV1Store();
   const actuatorStore = useActuatorV1Store();
   // Reactive: the actuator's `defaultProject` is fetched asynchronously, so
   // we must subscribe through `useVueState` — otherwise the value is
@@ -342,7 +342,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { projects } = await projectStore.fetchProjectList({
+      const { projects } = await useAppStore.getState().fetchProjectList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -355,7 +355,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         };
       });
     },
-    [projectStore, defaultProjectId, unassignedProjectOption]
+    [defaultProjectId, unassignedProjectOption]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(

@@ -6,14 +6,11 @@ import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { getAccessGrantExpirationText } from "@/utils/accessGrant";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
@@ -22,14 +19,17 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 export function IssueDetailAccessGrantDetails() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const fetchAccessGrant = useAppStore((state) => state.fetchAccessGrant);
   const searchMyAccessGrants = useAppStore(
     (state) => state.searchMyAccessGrants
   );
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const [isLoading, setIsLoading] = useState(true);
   const [accessGrant, setAccessGrant] = useState<AccessGrant | undefined>();
 
@@ -66,7 +66,7 @@ export function IssueDetailAccessGrantDetails() {
         if (grant) {
           for (const target of grant.targets) {
             if (isValidDatabaseName(target)) {
-              void databaseStore.getOrFetchDatabaseByName(target);
+              void useAppStore.getState().getOrFetchDatabaseByName(target);
             }
           }
         }
@@ -81,13 +81,7 @@ export function IssueDetailAccessGrantDetails() {
     return () => {
       canceled = true;
     };
-  }, [
-    fetchAccessGrant,
-    searchMyAccessGrants,
-    databaseStore,
-    page.issue,
-    project,
-  ]);
+  }, [fetchAccessGrant, searchMyAccessGrants, page.issue, project]);
 
   const expirationInfo = accessGrant
     ? getAccessGrantExpirationText(accessGrant)
@@ -163,9 +157,11 @@ export function IssueDetailAccessGrantDetails() {
 }
 
 function IssueDetailAccessGrantTarget({ target }: { target: string }) {
-  const databaseStore = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const database = useVueState(() => databaseStore.getDatabaseByName(target));
+  const databasesByName = useAppStore((s) => s.databasesByName);
+  const database = useVueState(
+    () => databasesByName[target] ?? unknownDatabase()
+  );
   const environment = useVueState(() =>
     environmentStore.getEnvironmentByName(
       database.effectiveEnvironment ?? database.environment ?? ""

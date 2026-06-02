@@ -1,8 +1,7 @@
 import { ChevronRight } from "lucide-react";
+import { useMemo } from "react";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useDatabaseV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -14,25 +13,28 @@ export function MemberDatabaseResourceName({
 }: {
   resource?: DatabaseResource;
 }) {
-  const databaseStore = useDatabaseV1Store();
-
-  const display = useVueState(() => {
+  const { instanceName } = resource
+    ? extractDatabaseResourceName(resource.databaseFullName)
+    : { instanceName: "" };
+  const expectedInstanceName = instanceName ? `instances/${instanceName}` : "";
+  const database = useAppStore((s) =>
+    resource ? s.databasesByName[resource.databaseFullName] : undefined
+  );
+  const instance = useAppStore((s) =>
+    expectedInstanceName ? s.instancesByName[expectedInstanceName] : undefined
+  );
+  const display = useMemo(() => {
     if (!resource) {
       return undefined;
     }
 
-    const { databaseName, instanceName } = extractDatabaseResourceName(
+    const { databaseName } = extractDatabaseResourceName(
       resource.databaseFullName
     );
-    const database = databaseStore.getDatabaseByName(resource.databaseFullName);
-    const expectedInstanceName = `instances/${instanceName}`;
-    const instance = instanceName
-      ? useAppStore.getState().getInstanceByName(expectedInstanceName)
-      : undefined;
     const validInstance =
       instance?.name === expectedInstanceName ? instance : undefined;
     const instanceResource =
-      database.instanceResource?.name === expectedInstanceName
+      database?.instanceResource?.name === expectedInstanceName
         ? database.instanceResource
         : undefined;
     const instanceTitle =
@@ -45,7 +47,7 @@ export function MemberDatabaseResourceName({
       engine: instanceResource?.engine || validInstance?.engine,
       instanceTitle,
     };
-  });
+  }, [database, expectedInstanceName, instance, resource]);
 
   if (!display) {
     return <span>*</span>;

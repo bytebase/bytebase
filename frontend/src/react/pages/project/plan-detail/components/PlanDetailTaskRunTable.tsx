@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useDatabaseV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import {
   getDateForPbTimestampProtoEs,
   getTimeForPbTimestampProtoEs,
@@ -47,7 +47,7 @@ export function PlanDetailTaskRunTable({
   onSelectTaskRun?: (taskRunName: string) => void;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const [detailTaskRun, setDetailTaskRun] = useState<TaskRun | undefined>();
   const sortedTaskRuns = useMemo(() => {
     return [...taskRuns].sort((left, right) => {
@@ -56,9 +56,7 @@ export function PlanDetailTaskRunTable({
       return rightTime - leftTime;
     });
   }, [taskRuns]);
-  const database = databaseName
-    ? databaseStore.getDatabaseByName(databaseName)
-    : undefined;
+  const database = databaseName ? databasesByName[databaseName] : undefined;
 
   return (
     <>

@@ -22,7 +22,7 @@ import {
 } from "@/react/hooks/useAppState";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type {
   Instance,
@@ -48,7 +48,6 @@ export function InstanceAssignmentSheet({
   onUpdated,
 }: InstanceAssignmentSheetProps) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
 
   const { instanceLicenseCount, currentPlan } = useSubscriptionState();
@@ -193,7 +192,7 @@ export function InstanceAssignmentSheet({
         .getState()
         .batchUpdateInstances(requests);
       for (const instance of updated) {
-        databaseStore.updateDatabaseInstance(instance);
+        useAppStore.getState().updateDatabaseInstance(instance);
       }
       await refreshServerInfo();
       pushNotification({
@@ -208,7 +207,6 @@ export function InstanceAssignmentSheet({
     }
   }, [
     canManageSubscription,
-    databaseStore,
     instances,
     onOpenChange,
     onUpdated,
