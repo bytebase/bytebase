@@ -55,7 +55,7 @@ export function buildProjectFilter(query: string | undefined) {
 // Converts label selectors like "{key}:{v1},{v2}" into API filter clauses
 // (`labels.{key} == "v"` or `labels.{key} in [...]`). Ported verbatim from
 // the legacy Pinia database store.
-function getLabelFilter(labels: string[]): string[] {
+export function getLabelFilter(labels: string[]): string[] {
   const labelMap = new Map<string, string[]>();
   for (const label of labels) {
     const sections = label.split(":");

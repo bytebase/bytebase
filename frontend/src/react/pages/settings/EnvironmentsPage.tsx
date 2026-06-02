@@ -73,7 +73,6 @@ import {
   useActuatorV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
@@ -711,7 +710,6 @@ function EnvironmentDetail({
   }, [environment.id]);
 
   // Check for related resources (instances/databases)
-  const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
   const actuatorStore = useActuatorV1Store();
 
@@ -723,7 +721,7 @@ function EnvironmentDetail({
       }
       try {
         const [instResp, dbResp] = await Promise.all([
-          instanceStore.fetchInstanceList({
+          useAppStore.getState().fetchInstanceList({
             pageSize: 1,
             filter: { environment: environment.name },
             silent: true,
@@ -748,7 +746,6 @@ function EnvironmentDetail({
     environment.name,
     canEdit,
     environmentList.length,
-    instanceStore,
     databaseStore,
     actuatorStore,
   ]);

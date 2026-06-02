@@ -33,7 +33,6 @@ import {
   useActuatorV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -110,11 +109,10 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     () => environmentStore.environmentList ?? []
   );
 
-  const instanceStore = useInstanceV1Store();
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
-      const { instances } = await instanceStore.fetchInstanceList({
+      const { instances } = await useAppStore.getState().fetchInstanceList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -123,7 +121,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         return { value: id, keywords: [id, i.title] };
       });
     },
-    [instanceStore]
+    []
   );
 
   const scopeOptions: ScopeOption[] = useMemo(() => {

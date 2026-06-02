@@ -22,11 +22,11 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
-  useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import {
@@ -408,7 +408,6 @@ function SyncDatabases({
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
-  const instanceStore = useInstanceV1Store();
 
   const [syncAll, setSyncAll] = useState(syncDatabases.length === 0);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(
@@ -439,10 +438,9 @@ function SyncDatabases({
       if (!inst) return;
       setLoading(true);
       try {
-        const resp = await instanceStore.listInstanceDatabases(
-          inst.name,
-          isCreatingProp ? inst : undefined
-        );
+        const resp = await useAppStore
+          .getState()
+          .listInstanceDatabases(inst.name, isCreatingProp ? inst : undefined);
         if (!cancelled) {
           setDatabaseList(new Set([...resp.databases, ...selectedSet]));
         }
@@ -598,7 +596,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   } = ctx;
   const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
-  const instanceV1Store = useInstanceV1Store();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const hasUnifiedInstanceLicense = useVueState(
@@ -710,10 +707,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     async (id: string): Promise<ValidatedMessage[]> => {
       if (!isCreating || !id) return [];
       try {
-        const existing = await instanceV1Store.getOrFetchInstanceByName(
-          `${instanceNamePrefix}${id}`,
-          true /* silent */
-        );
+        const existing = await useAppStore
+          .getState()
+          .getOrFetchInstanceByName(
+            `${instanceNamePrefix}${id}`,
+            true /* silent */
+          );
         if (existing) {
           return [
             {
@@ -729,7 +728,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       }
       return [];
     },
-    [instanceV1Store, isCreating, t]
+    [isCreating, t]
   );
 
   const currentMongoDBConnectionSchema = useMemo(() => {
@@ -967,9 +966,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       updateBasicInfo({ activation: on });
       if (instance) {
         const instancePatch = { ...instance, activation: on };
-        const updated = await instanceV1Store.updateInstance(instancePatch, [
-          "activation",
-        ]);
+        const updated = await useAppStore
+          .getState()
+          .updateInstance(instancePatch, ["activation"]);
         useDatabaseV1Store().updateDatabaseInstance(updated);
         await actuatorStore.fetchServerInfo(
           actuatorStore.workspaceResourceName
@@ -981,7 +980,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         });
       }
     },
-    [instance, instanceV1Store, actuatorStore, updateBasicInfo, t]
+    [instance, actuatorStore, updateBasicInfo, t]
   );
 
   const testConnectionForCurrentEditingDS = useCallback(async () => {

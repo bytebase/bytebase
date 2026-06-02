@@ -6,7 +6,7 @@ import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
-import type { State } from "@/types/proto-es/v1/common_pb";
+import type { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseGroup,
@@ -31,8 +31,12 @@ import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import type {
+  DataSource,
   Instance,
   InstanceResource,
+  ListInstanceDatabaseResponse,
+  SyncInstanceResponse,
+  UpdateInstanceRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type {
   Issue,
@@ -272,11 +276,75 @@ export type ProjectSlice = {
   createProject: (title: string, resourceId: string) => Promise<Project>;
 };
 
+export interface InstanceFilter {
+  environment?: string;
+  project?: string;
+  host?: string;
+  port?: string;
+  query?: string;
+  engines?: Engine[];
+  state?: State;
+  labels?: string[];
+}
+
 export type InstanceSlice = {
   instancesByName: Record<string, Instance>;
   instanceRequests: Record<string, Promise<Instance | undefined>>;
   instanceErrorsByName: Record<string, Error | undefined>;
   fetchInstance: (name: string) => Promise<Instance | undefined>;
+  getInstanceByName: (name: string) => Instance;
+  getOrFetchInstanceByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Instance>;
+  createInstance: (
+    instance: Instance,
+    validateOnly?: boolean
+  ) => Promise<Instance>;
+  updateInstance: (
+    instance: Instance,
+    updateMask: string[]
+  ) => Promise<Instance>;
+  archiveInstance: (instance: Instance, force?: boolean) => Promise<Instance>;
+  restoreInstance: (instance: Instance) => Promise<Instance>;
+  deleteInstance: (instance: string) => Promise<void>;
+  syncInstance: (
+    instance: string,
+    enableFullSync: boolean
+  ) => Promise<SyncInstanceResponse>;
+  batchSyncInstances: (
+    instanceNameList: string[],
+    enableFullSync: boolean
+  ) => Promise<void>;
+  batchUpdateInstances: (
+    requests: UpdateInstanceRequest[]
+  ) => Promise<Instance[]>;
+  createDataSource: (params: {
+    instance: string;
+    dataSource: DataSource;
+    validateOnly?: boolean;
+  }) => Promise<Instance>;
+  updateDataSource: (params: {
+    instance: string;
+    dataSource: DataSource;
+    updateMask: string[];
+    validateOnly?: boolean;
+  }) => Promise<Instance>;
+  deleteDataSource: (
+    instance: Instance,
+    dataSource: DataSource
+  ) => Promise<Instance>;
+  listInstanceDatabases: (
+    name: string,
+    instance?: Instance
+  ) => Promise<ListInstanceDatabaseResponse>;
+  fetchInstanceList: (params: {
+    pageSize?: number;
+    pageToken?: string;
+    orderBy?: string;
+    filter?: InstanceFilter;
+    silent?: boolean;
+  }) => Promise<{ instances: Instance[]; nextPageToken: string }>;
 };
 
 export type DatabaseListParams = {

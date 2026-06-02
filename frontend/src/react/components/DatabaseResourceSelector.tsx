@@ -20,11 +20,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -104,7 +100,6 @@ export function DatabaseResourceSelector({
     (s) => s.getOrFetchDatabaseMetadata
   );
   const environmentStore = useEnvironmentV1Store();
-  const instanceStore = useInstanceV1Store();
 
   const [databases, setDatabases] = useState<Database[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -130,7 +125,7 @@ export function DatabaseResourceSelector({
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const result = await instanceStore.fetchInstanceList({
+      const result = await useAppStore.getState().fetchInstanceList({
         pageSize: 1000,
         filter: keyword.trim() ? { query: keyword } : undefined,
         silent: true,
@@ -143,7 +138,7 @@ export function DatabaseResourceSelector({
         };
       });
     },
-    [instanceStore]
+    []
   );
 
   const scopeOptions: ScopeOption[] = useMemo(

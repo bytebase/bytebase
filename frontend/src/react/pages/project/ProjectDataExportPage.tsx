@@ -17,11 +17,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import {
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -88,12 +84,11 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     setSearchParams(defaultSearchParams());
   }, [projectId]);
 
-  const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
-      const { instances } = await instanceStore.fetchInstanceList({
+      const { instances } = await useAppStore.getState().fetchInstanceList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -102,7 +97,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
         return { value: id, keywords: [id, i.title] };
       });
     },
-    [instanceStore]
+    []
   );
   const searchDatabases = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {

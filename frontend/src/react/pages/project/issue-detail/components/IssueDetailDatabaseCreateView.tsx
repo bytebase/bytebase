@@ -8,11 +8,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import {
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -21,6 +17,7 @@ import {
 } from "@/types";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { unknownInstance } from "@/types/v1/instance";
 import {
   databaseV1Url,
   extractCoreDatabaseInfoFromDatabaseCreateTask,
@@ -38,7 +35,6 @@ export function IssueDetailDatabaseCreateView() {
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const instanceStore = useInstanceV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
@@ -58,8 +54,12 @@ export function IssueDetailDatabaseCreateView() {
   const environment = useVueState(() =>
     environmentStore.getEnvironmentByName(environmentName)
   );
-  const instance = useVueState(() =>
-    instanceStore.getInstanceByName(targetInstanceName)
+  const cachedInstance = useAppStore(
+    (s) => s.instancesByName[targetInstanceName]
+  );
+  const instance = useMemo(
+    () => cachedInstance ?? unknownInstance(),
+    [cachedInstance, targetInstanceName]
   );
 
   const createDatabaseTask = useMemo(() => {
@@ -99,9 +99,9 @@ export function IssueDetailDatabaseCreateView() {
 
   useEffect(() => {
     if (targetInstanceName) {
-      void instanceStore.getOrFetchInstanceByName(targetInstanceName);
+      void useAppStore.getState().getOrFetchInstanceByName(targetInstanceName);
     }
-  }, [instanceStore, targetInstanceName]);
+  }, [targetInstanceName]);
 
   const isTaskDone = createDatabaseTask?.status === Task_Status.DONE;
   const createdDatabase =
@@ -232,9 +232,10 @@ function IssueDetailDatabaseCreateInstance({
         params: { instanceId },
       }).href
     : "";
-  const instanceStore = useInstanceV1Store();
-  const instance = useVueState(() =>
-    instanceStore.getInstanceByName(instanceName)
+  const cachedInstance = useAppStore((s) => s.instancesByName[instanceName]);
+  const instance = useMemo(
+    () => cachedInstance ?? unknownInstance(),
+    [cachedInstance, instanceName]
   );
 
   if (!instanceHref) {

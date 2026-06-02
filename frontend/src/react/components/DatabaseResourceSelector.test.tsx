@@ -38,9 +38,6 @@ const mocks = vi.hoisted(() => ({
 mocks.databaseStore = {
   fetchDatabases: mocks.fetchDatabases,
 };
-mocks.instanceStore = {
-  fetchInstanceList: mocks.fetchInstanceList,
-};
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -61,7 +58,6 @@ vi.mock("@/plugins/i18n", () => ({
 vi.mock("@/store", () => ({
   useDatabaseV1Store: () => mocks.databaseStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
-  useInstanceV1Store: () => mocks.instanceStore,
 }));
 
 vi.mock("@/react/hooks/useVueState", () => ({
@@ -102,10 +98,12 @@ vi.mock("@/react/stores/app", () => ({
     (selector: (state: unknown) => unknown) =>
       selector({
         getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+        fetchInstanceList: mocks.fetchInstanceList,
       }),
     {
       getState: () => ({
         getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+        fetchInstanceList: mocks.fetchInstanceList,
       }),
     }
   ),

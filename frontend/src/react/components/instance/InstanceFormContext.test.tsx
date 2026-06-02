@@ -57,15 +57,20 @@ vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => ({
     getEnvironmentByName: (name: string) => ({ name }),
   }),
-  useInstanceV1Store: () => ({
-    createDataSource: vi.fn(),
-    createInstance: vi.fn(),
-    updateDataSource: vi.fn(),
-  }),
   useSubscriptionV1Store: () => ({
     currentPlan: 1,
     instanceLicenseCount: 1,
     hasInstanceFeature: () => false,
+  }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => undefined, {
+    getState: () => ({
+      createDataSource: vi.fn(),
+      createInstance: vi.fn(),
+      updateDataSource: vi.fn(),
+    }),
   }),
 }));
 

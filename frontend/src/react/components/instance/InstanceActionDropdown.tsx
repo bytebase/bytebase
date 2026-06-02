@@ -7,9 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useInstanceV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -24,7 +25,6 @@ export function InstanceActionDropdown({
   onDeleted,
 }: InstanceActionDropdownProps) {
   const { t } = useTranslation();
-  const instanceStore = useInstanceV1Store();
 
   const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
   const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
@@ -38,7 +38,7 @@ export function InstanceActionDropdown({
     );
     if (!forceArchive) return;
 
-    await instanceStore.archiveInstance(instance, true);
+    await useAppStore.getState().archiveInstance(instance, true);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -47,7 +47,7 @@ export function InstanceActionDropdown({
       }),
     });
     router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
-  }, [instance, instanceStore, t]);
+  }, [instance, t]);
 
   const handleRestore = useCallback(async () => {
     if (
@@ -59,7 +59,7 @@ export function InstanceActionDropdown({
     )
       return;
 
-    await instanceStore.restoreInstance(instance);
+    await useAppStore.getState().restoreInstance(instance);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -67,7 +67,7 @@ export function InstanceActionDropdown({
         0: instance.title,
       }),
     });
-  }, [instance, instanceStore, t]);
+  }, [instance, t]);
 
   const handleDelete = useCallback(async () => {
     if (
@@ -77,7 +77,7 @@ export function InstanceActionDropdown({
     )
       return;
 
-    await instanceStore.deleteInstance(instance.name);
+    await useAppStore.getState().deleteInstance(instance.name);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -88,7 +88,7 @@ export function InstanceActionDropdown({
       name: INSTANCE_ROUTE_DASHBOARD,
       query: { q: "state:DELETED" },
     });
-  }, [instance, instanceStore, t, onDeleted]);
+  }, [instance, t, onDeleted]);
 
   const showArchive = instance.state === State.ACTIVE && canArchive;
   const showRestore = instance.state === State.DELETED && canRestore;

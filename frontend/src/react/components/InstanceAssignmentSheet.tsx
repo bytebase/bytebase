@@ -22,11 +22,7 @@ import {
 } from "@/react/hooks/useAppState";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useInstanceV1Store,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type {
   Instance,
@@ -52,7 +48,6 @@ export function InstanceAssignmentSheet({
   onUpdated,
 }: InstanceAssignmentSheetProps) {
   const { t } = useTranslation();
-  const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
 
@@ -101,7 +96,7 @@ export function InstanceAssignmentSheet({
         setFetchingMore(true);
       }
       try {
-        const result = await instanceStore.fetchInstanceList({
+        const result = await useAppStore.getState().fetchInstanceList({
           pageSize: PAGE_SIZE,
           pageToken: refresh ? "" : pageToken,
         });
@@ -120,7 +115,7 @@ export function InstanceAssignmentSheet({
         }
       }
     },
-    [applyActivatedSelection, instanceStore]
+    [applyActivatedSelection]
   );
 
   useEffect(() => {
@@ -159,8 +154,10 @@ export function InstanceAssignmentSheet({
       const requests: UpdateInstanceRequest[] = [];
       for (const instanceName of selectedNames) {
         const instance =
-          (await instanceStore.getOrFetchInstanceByName(instanceName)) ??
-          instanceStore.getInstanceByName(instanceName);
+          (await useAppStore
+            .getState()
+            .getOrFetchInstanceByName(instanceName)) ??
+          useAppStore.getState().getInstanceByName(instanceName);
         if (!isValidInstanceName(instance.name)) {
           continue;
         }
@@ -192,7 +189,9 @@ export function InstanceAssignmentSheet({
         }
       }
 
-      const updated = await instanceStore.batchUpdateInstances(requests);
+      const updated = await useAppStore
+        .getState()
+        .batchUpdateInstances(requests);
       for (const instance of updated) {
         databaseStore.updateDatabaseInstance(instance);
       }
@@ -210,7 +209,6 @@ export function InstanceAssignmentSheet({
   }, [
     canManageSubscription,
     databaseStore,
-    instanceStore,
     instances,
     onOpenChange,
     onUpdated,
