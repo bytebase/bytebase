@@ -394,6 +394,13 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 		if !equalTable(table, item.table) {
 			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
 		}
+		// This path UNION ALLs the statements into one backup SELECT. A WITH
+		// (CTE) prefix can't be emitted per union arm (TiDB rejects WITH after
+		// UNION ALL), so reject CTE statements here. CTEs are still supported on
+		// the per-statement mixed-DML path (<= maxMixedDMLCount).
+		if extractCTE(item.fullSQL, nodeStmtLoc(item.node)) != "" {
+			return nil, errors.Errorf("prior backup does not support WITH (CTE) statements when more than %d DML statements target the same table", maxMixedDMLCount)
+		}
 	}
 	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
@@ -438,18 +445,12 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 		if len(item.table.Alias) > 0 {
 			tableNameOrAlias = item.table.Alias
 		}
-		if _, err := buf.WriteString("  "); err != nil {
-			return nil, errors.Wrap(err, "failed to write indent")
-		}
-		if err := writeCTEPrefix(&buf, item.node, item.fullSQL); err != nil {
-			return nil, errors.Wrap(err, "failed to write cte")
-		}
 		if len(generatedColumns) == 0 {
-			if _, err := fmt.Fprintf(&buf, "SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
+			if _, err := fmt.Fprintf(&buf, "  SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 		} else {
-			if _, err := buf.WriteString("SELECT "); err != nil {
+			if _, err := buf.WriteString("  SELECT "); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 			for j, column := range normalColumns {

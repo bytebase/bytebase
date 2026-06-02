@@ -297,4 +297,16 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	// The generated backup must be valid SQL (the CTE is defined before use).
 	_, perr := ParseTiDBOmni(result[0].Statement)
 	a.NoError(perr, "generated CTE backup must re-parse as valid SQL")
+
+	// More than maxMixedDMLCount same-table statements use the UNION ALL path,
+	// which cannot emit a per-arm WITH (TiDB rejects WITH after UNION ALL). A CTE
+	// in that batch must be rejected rather than produce invalid SQL.
+	manyWithCTE := "DELETE FROM test WHERE id = 1;\n" +
+		"DELETE FROM test WHERE id = 2;\n" +
+		"DELETE FROM test WHERE id = 3;\n" +
+		"DELETE FROM test WHERE id = 4;\n" +
+		"DELETE FROM test WHERE id = 5;\n" +
+		"WITH x AS (SELECT id FROM test2) DELETE FROM test WHERE id > 0;"
+	_, err = run(manyWithCTE)
+	a.Error(err, "CTE in a >maxMixedDMLCount same-table batch must be rejected")
 }
