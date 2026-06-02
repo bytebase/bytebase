@@ -1,8 +1,5 @@
-import {
-  getCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { getCurrentUserV1, useProjectV1Store } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -89,9 +86,13 @@ export const extractWorksheetConnection = async (worksheet: {
   const connection = emptySQLEditorConnection();
   if (worksheet.database) {
     try {
-      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        worksheet.database
-      );
+      // Hydrate the React app store (not Pinia) so `getConnectionForSQLEditorTab`
+      // — which reads from the app store after the Phase E migration — sees
+      // worksheet-opened tabs as connected. Without this, the Run button
+      // stays disabled on freshly restored worksheet tabs.
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(worksheet.database);
       const { instance } = extractDatabaseResourceName(database.name);
       connection.instance = instance;
       connection.database = database.name;
