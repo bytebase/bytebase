@@ -552,11 +552,44 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			name: "match recognize pattern variable measures",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(A.PRICE) AS FIRST_PRICE, LAST(B.PRICE) AS LAST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+				{Name: "LAST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
 			name: "match recognize all rows keeps input columns",
 			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
   PARTITION BY ACCOUNT_ID
   ORDER BY TRADE_TIME
   MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}}), IsPlainField: true},
+				{Name: "TRADE_TIME", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "TRADE_TIME"}}), IsPlainField: true},
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}}), IsPlainField: true},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize all rows pattern variable measure",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(A.PRICE) AS FIRST_PRICE
   ALL ROWS PER MATCH
   PATTERN (A B+)
   DEFINE B AS B.PRICE > A.PRICE

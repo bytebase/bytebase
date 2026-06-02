@@ -797,7 +797,7 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 	if err != nil {
 		return nil, err
 	}
-	measureResults, err := q.extractOmniResultList(ref.Measures)
+	measureResults, err := q.extractOmniMatchRecognizeMeasureList(ref.Measures)
 	if err != nil {
 		return nil, err
 	}
@@ -812,6 +812,14 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 }
 
 func (q *omniQuerySpanExtractor) extractOmniResultList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+	return q.extractOmniResultListWithSourceColumns(list, nil)
+}
+
+func (q *omniQuerySpanExtractor) extractOmniMatchRecognizeMeasureList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+	return q.extractOmniResultListWithSourceColumns(list, q.extractOmniMatchRecognizeMeasureSourceColumns)
+}
+
+func (q *omniQuerySpanExtractor) extractOmniResultListWithSourceColumns(list *oracleast.List, sourceColumnsExtractor func(oracleast.ExprNode) (base.SourceColumnSet, error)) ([]base.QuerySpanResult, error) {
 	var results []base.QuerySpanResult
 	for _, node := range listItems(list) {
 		var expr oracleast.ExprNode
@@ -833,6 +841,12 @@ func (q *omniQuerySpanExtractor) extractOmniResultList(list *oracleast.List) ([]
 		if err != nil {
 			return nil, err
 		}
+		if sourceColumnsExtractor != nil {
+			sourceColumns, err = sourceColumnsExtractor(expr)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if name == "" {
 			name = extractedName
 		}
@@ -843,6 +857,16 @@ func (q *omniQuerySpanExtractor) extractOmniResultList(list *oracleast.List) ([]
 		})
 	}
 	return results, nil
+}
+
+func (q *omniQuerySpanExtractor) extractOmniMatchRecognizeMeasureSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
+	return q.extractOmniExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
+		sourceColumns := q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column)
+		if len(sourceColumns) == 0 && node.Schema == "" && node.Table != "" {
+			sourceColumns = q.getOmniFieldColumnSource("", "", node.Column)
+		}
+		return sourceColumns
+	})
 }
 
 func omniSetLeftSelect(stmt *oracleast.SelectStmt) *oracleast.SelectStmt {
@@ -989,6 +1013,12 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (strin
 }
 
 func (q *omniQuerySpanExtractor) extractOmniExprSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
+	return q.extractOmniExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
+		return q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column)
+	})
+}
+
+func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr oracleast.ExprNode, resolveColumn func(*oracleast.ColumnRef) base.SourceColumnSet) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 	var walkErr error
 	oracleast.Inspect(expr, func(node oracleast.Node) bool {
@@ -998,7 +1028,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumns(expr oracleast.Exp
 		switch node := node.(type) {
 		case *oracleast.ColumnRef:
 			if node.Column != "*" {
-				result, _ = base.MergeSourceColumnSet(result, q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column))
+				result, _ = base.MergeSourceColumnSet(result, resolveColumn(node))
 			}
 			return false
 		case *oracleast.FuncCallExpr:
