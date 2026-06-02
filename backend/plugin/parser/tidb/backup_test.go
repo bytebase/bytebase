@@ -329,4 +329,12 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	a.Equal("test", result[0].SourceTableName, "case-only db difference must be treated as same database")
+
+	// EXPLAIN ANALYZE executes the DML (modifying data) but can't be backed up,
+	// so it must be rejected. Plain EXPLAIN does not execute -> no backup needed.
+	_, err = run("EXPLAIN ANALYZE UPDATE test SET c1 = 1 WHERE c1 = 2")
+	a.Error(err, "EXPLAIN ANALYZE of a DML must be rejected")
+	result, err = run("EXPLAIN UPDATE test SET c1 = 1 WHERE c1 = 2")
+	a.NoError(err, "plain EXPLAIN does not execute and needs no backup")
+	a.Empty(result)
 }

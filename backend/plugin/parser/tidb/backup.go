@@ -117,6 +117,18 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 		// task executor would treat as a successful no-op and then run the
 		// mutation with no backup.
 		return nil, errors.New("prior backup does not support TiDB BATCH (non-transactional DML) statements")
+	case *ast.ExplainStmt:
+		// EXPLAIN ANALYZE executes the wrapped statement (TiDB modifies data for
+		// a DML), but prior backup can't unwrap/restore it — reject the ANALYZE
+		// form of an UPDATE/DELETE/BATCH. Plain EXPLAIN does not execute, so it
+		// needs no backup and is skipped.
+		if n.Analyze {
+			switch n.Stmt.(type) {
+			case *ast.UpdateStmt, *ast.DeleteStmt, *ast.BatchStmt:
+				return nil, errors.New("prior backup does not support EXPLAIN ANALYZE of an UPDATE/DELETE/BATCH statement")
+			}
+		}
+		return nil, nil
 	default:
 		return nil, nil
 	}
