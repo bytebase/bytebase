@@ -14,12 +14,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 // ============================================================
@@ -34,17 +30,11 @@ export function AADSyncSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const settingV1Store = useSettingV1Store();
 
-  const externalUrl = useVueState(
-    () => actuatorStore.serverInfo?.externalUrl ?? ""
-  );
-  const workspaceResourceName = useVueState(
-    () => actuatorStore.workspaceResourceName
-  );
-  const directorySyncToken = useVueState(
-    () => settingV1Store.workspaceProfile.directorySyncToken
+  const externalUrl = useAppStore((s) => s.serverInfo?.externalUrl ?? "");
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
+  const directorySyncToken = useAppStore(
+    (s) => s.getWorkspaceProfile().directorySyncToken
   );
 
   const scimUrl =
@@ -88,7 +78,7 @@ export function AADSyncSheet({
     if (!confirmed) return;
 
     try {
-      await settingV1Store.updateWorkspaceProfile({
+      await useAppStore.getState().updateWorkspaceProfile({
         payload: { directorySyncToken: "" },
         updateMask: create(FieldMaskSchema, {
           paths: ["value.workspace_profile.directory_sync_token"],

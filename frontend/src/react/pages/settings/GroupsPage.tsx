@@ -487,9 +487,7 @@ function GroupForm({
   const deleteGroup = useAppStore((state) => state.deleteGroup);
 
   const isEditMode = !!group;
-  const workspaceDomains = useAppStore(
-    (s) => s.getWorkspaceProfile().domains
-  );
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
   const domainOptions = workspaceDomains.filter((d) => d.trim());
 
   // Initial values derived from the group prop. The parent keys this
@@ -933,7 +931,9 @@ export function GroupsPage() {
   );
   const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
   const hasDirectorySyncFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+    useAppStore
+      .getState()
+      .hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
   const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
 

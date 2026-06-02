@@ -236,11 +236,7 @@ export function IMPage() {
 
   // Subscribe to store changes
   const settingsByName = useAppStore((s) => s.settingsByName);
-  const storedSetting = useMemo(
-    () => getStoredIMSetting(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [settingsByName]
-  );
+  const storedSetting = useMemo(() => getStoredIMSetting(), [settingsByName]);
 
   // Local state
   const [localSettings, setLocalSettings] = useState<AppIMSetting_IMSetting[]>(

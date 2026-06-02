@@ -292,12 +292,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       if (isPlanConfigChanged(card)) {
         paymentUrl = await useAppStore
           .getState()
-          .updatePurchase(
-            card.type,
-            interval,
-            seats,
-            subscription?.etag ?? ""
-          );
+          .updatePurchase(card.type, interval, seats, subscription?.etag ?? "");
       } else {
         paymentUrl = await useAppStore
           .getState()

@@ -129,7 +129,6 @@ function MaskingRuleConfig({
       return setting.value.value.value.types ?? [];
     }
     return [];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsByName]);
 
   const resetIdRef = useRef(0);
@@ -433,7 +432,10 @@ export function GlobalMaskingPage() {
           .getOrFetchSettingByName(Setting_SettingName.SEMANTIC_TYPES, true),
         useAppStore
           .getState()
-          .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true),
+          .getOrFetchSettingByName(
+            Setting_SettingName.DATA_CLASSIFICATION,
+            true
+          ),
       ]);
     };
     load();

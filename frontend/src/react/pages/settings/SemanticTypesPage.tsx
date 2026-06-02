@@ -119,7 +119,6 @@ export function SemanticTypesPage() {
     return setting?.value?.value?.case === "semanticType"
       ? (setting.value.value.value.types ?? [])
       : [];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsByName]);
 
   useEffect(() => {

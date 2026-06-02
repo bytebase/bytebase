@@ -1974,9 +1974,7 @@ export function IDPsPage() {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const hasSSOFeature = useVueState(() =>
-    useAppStore
-      .getState()
-      .hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
+    useAppStore.getState().hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
   );
   const canCreate = hasWorkspacePermissionV2("bb.identityProviders.create");
 

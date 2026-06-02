@@ -1386,7 +1386,6 @@ function EditMemberRoleDrawer({
   const settingsByName = useAppStore((s) => s.settingsByName);
   const hasEmailSetting = useMemo(
     () => !!useAppStore.getState().getSettingByName(Setting_SettingName.EMAIL),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [settingsByName]
   );
   useEffect(() => {

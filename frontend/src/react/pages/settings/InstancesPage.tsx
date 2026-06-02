@@ -939,9 +939,7 @@ export function InstancesPage() {
     });
   }, []);
 
-  const activatedInstanceCount = useAppStore((s) =>
-    s.activatedInstanceCount()
-  );
+  const activatedInstanceCount = useAppStore((s) => s.activatedInstanceCount());
   const navigateToCreate = useCallback(() => {
     if (instanceCountLimit <= activatedInstanceCount) {
       // Limit reached — the warning banner is already visible
