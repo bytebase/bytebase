@@ -1,14 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import {
-  extractGroupEmail,
-  serviceAccountToUser,
-  useGroupStore,
-  useServiceAccountStore,
-  useUserStore,
-  useWorkloadIdentityStore,
-  workloadIdentityToUser,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { serviceAccountToUser } from "@/react/stores/app/serviceAccount";
+import { workloadIdentityToUser } from "@/react/stores/app/workloadIdentity";
+import { extractGroupEmail } from "@/store";
 import {
   extractUserEmail,
   groupNamePrefix,
@@ -27,18 +22,20 @@ import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { GroupBinding, MemberBinding } from "@/types/v1/member";
 import { convertMemberToFullname, hasWorkspacePermissionV2 } from "@/utils";
 
+// Lives under `@/react/lib/` (not `@/utils/`) so the app-store reads don't
+// drag `@/react/stores/app` into the `@/utils` import graph — that would
+// recreate the static ESM cycle the SQL editor connection move fixed.
+// Members surfaces are React-only, so a React-side location is natural.
+
 const getMemberBinding = (
   member: string,
   searchText: string
 ): MemberBinding | undefined => {
-  const groupStore = useGroupStore();
-  const userStore = useUserStore();
-  const serviceAccountStore = useServiceAccountStore();
-  const workloadIdentityStore = useWorkloadIdentityStore();
+  const appStore = useAppStore.getState();
 
   let memberBinding: MemberBinding | undefined = undefined;
   if (member.startsWith(groupBindingPrefix)) {
-    const g = groupStore.getGroupByIdentifier(member);
+    const g = appStore.getGroupByIdentifier(member);
     let group: GroupBinding | undefined;
     if (g) {
       group = {
@@ -69,13 +66,13 @@ const getMemberBinding = (
     let isPending = false;
     const fullname = convertMemberToFullname(member);
     if (fullname.startsWith(serviceAccountNamePrefix)) {
-      const sa = serviceAccountStore.getServiceAccount(fullname);
+      const sa = appStore.getServiceAccount(fullname);
       user = serviceAccountToUser(sa);
     } else if (fullname.startsWith(workloadIdentityNamePrefix)) {
-      const wi = workloadIdentityStore.getWorkloadIdentity(fullname);
+      const wi = appStore.getWorkloadIdentity(fullname);
       user = workloadIdentityToUser(wi);
     } else {
-      const realUser = userStore.getUserByIdentifier(member);
+      const realUser = appStore.getUserByIdentifier(member);
       if (realUser) {
         user = realUser;
       } else {
