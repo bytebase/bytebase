@@ -467,6 +467,24 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			name:      "pivot explicit projection",
+			statement: "SELECT A FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+			},
+		},
+		{
+			name:      "pivot aggregate input is consumed",
+			statement: "SELECT * FROM (SELECT A, B, C FROM T) PIVOT (SUM(C) AS S FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_S", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
 			name:      "unpivot typed mappings",
 			statement: "SELECT * FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
 			want: []base.QuerySpanResult{
@@ -479,10 +497,27 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			name:      "unpivot explicit projection",
+			statement: "SELECT VAL FROM (SELECT A, B, C FROM T) UNPIVOT (VAL FOR COL IN (B AS 'B', C AS 'C'))",
+			want: []base.QuerySpanResult{
+				{Name: "VAL", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+				})},
+			},
+		},
+		{
 			name:      "model dimension and measures",
 			statement: "SELECT * FROM T MODEL DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
 			want: []base.QuerySpanResult{
 				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "model explicit projection",
+			statement: "SELECT B FROM T MODEL DIMENSION BY (A) MEASURES (B) RULES (B[1] = 1)",
+			want: []base.QuerySpanResult{
 				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
 			},
 		},

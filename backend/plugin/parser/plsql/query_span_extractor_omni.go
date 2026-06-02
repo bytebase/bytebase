@@ -278,13 +278,25 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 		return q.extractOmniSetSelect(stmt)
 	}
 	if stmt.Pivot != nil {
-		return q.extractOmniPivot(stmt.Pivot)
+		source, err := q.extractOmniPivot(stmt.Pivot)
+		if err != nil {
+			return nil, err
+		}
+		return q.projectOmniTransformedSelect(stmt, source)
 	}
 	if stmt.Unpivot != nil {
-		return q.extractOmniUnpivot(stmt.Unpivot)
+		source, err := q.extractOmniUnpivot(stmt.Unpivot)
+		if err != nil {
+			return nil, err
+		}
+		return q.projectOmniTransformedSelect(stmt, source)
 	}
 	if stmt.ModelClause != nil {
-		return q.extractOmniModelSelect(stmt)
+		source, err := q.extractOmniModelSelect(stmt)
+		if err != nil {
+			return nil, err
+		}
+		return q.projectOmniTransformedSelect(stmt, source)
 	}
 
 	oldFrom := q.tableSourcesFrom
@@ -318,6 +330,27 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 	return &base.PseudoTable{
 		Columns: results,
 	}, nil
+}
+
+func (q *omniQuerySpanExtractor) projectOmniTransformedSelect(stmt *oracleast.SelectStmt, source base.TableSource) (base.TableSource, error) {
+	oldFrom := q.tableSourcesFrom
+	oldTopLevelFrom := q.topLevelTableSourcesFrom
+	q.tableSourcesFrom = nil
+	q.topLevelTableSourcesFrom = nil
+	if source != nil {
+		q.tableSourcesFrom = append(q.tableSourcesFrom, source)
+		q.topLevelTableSourcesFrom = append(q.topLevelTableSourcesFrom, source)
+	}
+	defer func() {
+		q.tableSourcesFrom = oldFrom
+		q.topLevelTableSourcesFrom = oldTopLevelFrom
+	}()
+
+	results, err := q.extractOmniTargetList(stmt.TargetList)
+	if err != nil {
+		return nil, err
+	}
+	return &base.PseudoTable{Columns: results}, nil
 }
 
 func (q *omniQuerySpanExtractor) extractOmniSetSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
@@ -590,6 +623,16 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 		}
 	}
 
+	aggregateSources := make([]base.SourceColumnSet, len(aggregates))
+	for i, aggregate := range aggregates {
+		_, sourceColumns, err := q.extractOmniExpr(aggregate.Expr)
+		if err != nil {
+			return nil, err
+		}
+		aggregateSources[i] = sourceColumns
+		excludeSourceColumnNames(excluded, sourceColumns)
+	}
+
 	var results []base.QuerySpanResult
 	if source != nil {
 		for _, result := range source.GetQuerySpanResult() {
@@ -600,12 +643,8 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 	}
 	for _, inItem := range inItems {
 		inName := pivotInItemName(q, inItem)
-		for _, aggregate := range aggregates {
-			_, aggregateSources, err := q.extractOmniExpr(aggregate.Expr)
-			if err != nil {
-				return nil, err
-			}
-			sourceColumns, _ := base.MergeSourceColumnSet(pivotSources, aggregateSources)
+		for i, aggregate := range aggregates {
+			sourceColumns, _ := base.MergeSourceColumnSet(pivotSources, aggregateSources[i])
 			results = append(results, base.QuerySpanResult{
 				Name:          pivotColumnName(inName, aggregate.Alias, len(aggregates)),
 				SourceColumns: sourceColumns,
@@ -1161,6 +1200,16 @@ func cloneSourceColumnSet(source base.SourceColumnSet) base.SourceColumnSet {
 		cloned[column] = true
 	}
 	return cloned
+}
+
+func excludeSourceColumnNames(excluded map[string]bool, source base.SourceColumnSet) {
+	for column := range source {
+		if column.Column == "" {
+			continue
+		}
+		excluded[column.Column] = true
+		excluded[strings.ToUpper(column.Column)] = true
+	}
 }
 
 func mergeSourceColumnsFromResults(results []base.QuerySpanResult) base.SourceColumnSet {
