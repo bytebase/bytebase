@@ -11,3 +11,17 @@
         line: 1
         column: 0
       endposition: null
+- statement: |
+    BEGIN
+      INSERT INTO tech_book VALUES (1, '1');
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 1107
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+      content: INSERT statement should specify column name.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

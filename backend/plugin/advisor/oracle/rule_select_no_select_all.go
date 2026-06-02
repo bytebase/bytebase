@@ -4,9 +4,7 @@ package oracle
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -78,25 +76,5 @@ func (r *SelectNoSelectAllRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *SelectNoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Selected_list" {
-		r.handleSelectedList(ctx.(*parser.Selected_listContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *SelectNoSelectAllRule) handleSelectedList(ctx *parser.Selected_listContext) {
-	if ctx.ASTERISK() != nil {
-		r.AddAdvice(
-			r.level,
-			code.StatementSelectAll.Int32(),
-			"Avoid using SELECT *.",
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

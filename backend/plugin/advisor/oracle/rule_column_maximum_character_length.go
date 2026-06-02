@@ -4,13 +4,9 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"strconv"
 
-	"github.com/pkg/errors"
-
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -95,43 +91,5 @@ func (r *ColumnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *ColumnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Datatype" {
-		r.handleDatatype(ctx.(*parser.DatatypeContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*ColumnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnMaximumCharacterLengthRule) handleDatatype(ctx *parser.DatatypeContext) {
-	if ctx.Native_datatype_element() == nil {
-		return
-	}
-
-	if ctx.Native_datatype_element().CHAR() == nil && ctx.Native_datatype_element().CHARACTER() == nil {
-		return
-	}
-
-	if ctx.Precision_part() == nil {
-		return
-	}
-
-	if ctx.Precision_part().Numeric(0) != nil {
-		lengthText := ctx.Precision_part().Numeric(0).GetText()
-		length, err := strconv.Atoi(lengthText)
-		if err != nil || length <= r.maximum {
-			return
-		}
-	}
-
-	r.AddAdvice(
-		r.level,
-		code.CharLengthExceedsLimit.Int32(),
-		fmt.Sprintf("The maximum character length is %d.", r.maximum),
-		common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-	)
-}

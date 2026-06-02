@@ -165,12 +165,15 @@ END;`
 	_, ok := asts[0].(*OmniAST)
 	require.True(t, ok)
 
-	antlrASTs, err := ParsePLSQL(triggerStatement)
-	require.NoError(t, err)
-	require.Len(t, antlrASTs, 1)
-	asts = append(asts, antlrASTs[0])
+	asts = append(asts, testAST{})
 
 	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
+}
+
+type testAST struct{}
+
+func (testAST) ASTStartPosition() *storepb.Position {
+	return nil
 }

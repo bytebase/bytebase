@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -88,66 +85,7 @@ func (r *ColumnTypeDisallowListRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Column_definition":
-		r.handleColumnDefinition(ctx.(*parser.Column_definitionContext))
-	case "Modify_col_properties":
-		r.handleModifyColProperties(ctx.(*parser.Modify_col_propertiesContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
+
+// Ignore other node types
 
 // OnExit is called when the parser exits a rule context.
-func (*ColumnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnTypeDisallowListRule) isDisallowType(tp parser.IDatatypeContext) bool {
-	if tp == nil {
-		return false
-	}
-	for _, disallowType := range r.disallowList {
-		if equivalent, err := plsqlparser.EquivalentType(tp, disallowType); err == nil && equivalent {
-			return true
-		}
-	}
-	return false
-}
-
-func (r *ColumnTypeDisallowListRule) handleColumnDefinition(ctx *parser.Column_definitionContext) {
-	if r.isDisallowType(ctx.Datatype()) {
-		r.AddAdvice(
-			r.level,
-			code.DisabledColumnType.Int32(),
-			fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.Datatype().GetStart().GetLine()),
-		)
-	}
-	if ctx.Regular_id() != nil {
-		for _, tp := range r.disallowList {
-			if ctx.Regular_id().GetText() == tp {
-				r.AddAdvice(
-					r.level,
-					code.DisabledColumnType.Int32(),
-					fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
-					common.ConvertANTLRLineToPosition(r.baseLine+ctx.Regular_id().GetStart().GetLine()),
-				)
-				break
-			}
-		}
-	}
-}
-
-func (r *ColumnTypeDisallowListRule) handleModifyColProperties(ctx *parser.Modify_col_propertiesContext) {
-	if r.isDisallowType(ctx.Datatype()) {
-		r.AddAdvice(
-			r.level,
-			code.DisabledColumnType.Int32(),
-			fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.Datatype().GetStart().GetLine()),
-		)
-	}
-}

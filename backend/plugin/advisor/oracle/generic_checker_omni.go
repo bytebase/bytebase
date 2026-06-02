@@ -1,7 +1,6 @@
 package oracle
 
 import (
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -24,27 +23,6 @@ func RunOmniRules(stmts []base.ParsedStatement, rules []OmniRule) ([]*storepb.Ad
 		}
 		node, ok := plsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
-			rulesForANTLR := make([]Rule, 0, len(rules))
-			for _, rule := range rules {
-				if legacyRule, ok := rule.(Rule); ok {
-					rulesForANTLR = append(rulesForANTLR, legacyRule)
-				}
-			}
-			if len(rulesForANTLR) == 0 {
-				continue
-			}
-			antlrAST, ok := base.GetANTLRAST(stmt.AST)
-			if !ok {
-				continue
-			}
-			checker := NewGenericChecker(rulesForANTLR)
-			for _, rule := range rulesForANTLR {
-				if br, ok := rule.(interface{ SetStatement(int, string) }); ok {
-					br.SetStatement(stmt.BaseLine(), stmt.Text)
-				}
-			}
-			checker.SetBaseLine(stmt.BaseLine())
-			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 			continue
 		}
 		for _, rule := range rules {

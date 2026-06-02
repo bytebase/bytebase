@@ -195,3 +195,27 @@ func omniWalk(node ast.Node, visit func(ast.Node)) {
 		return true
 	})
 }
+
+func omniWalkPLSQLBlockStatements(block *ast.PLSQLBlock, visit func(ast.StmtNode) bool) {
+	if block == nil {
+		return
+	}
+	visited := make(map[ast.Node]bool)
+	ast.Inspect(block, func(node ast.Node) bool {
+		if node == nil {
+			return false
+		}
+		if visited[node] {
+			return false
+		}
+		visited[node] = true
+		if node == block {
+			return true
+		}
+		stmt, ok := node.(ast.StmtNode)
+		if !ok {
+			return true
+		}
+		return visit(stmt)
+	})
+}

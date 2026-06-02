@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -65,7 +64,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				requireIndex(t, employees, "UK_EMPLOYEES_EMAIL", []string{"EMAIL"}, false, true)
 				requireIndex(t, employees, "IDX_EMP_DEPT", []string{"DEPT_ID"}, false, false)
 				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY>=0")
-				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
+				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "SET NULL")
 
 				require.Len(t, schemaMetadata.Views, 1)
 				require.Equal(t, "ACTIVE_EMPLOYEES", schemaMetadata.Views[0].Name)
@@ -224,7 +223,7 @@ ALTER TABLE DEPARTMENTS ADD CONSTRAINT fk_dept_manager
 			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				departments := requireTable(t, schemaMetadata, "DEPARTMENTS")
-				requireForeignKey(t, departments, "FK_DEPT_MANAGER", []string{"MANAGER_ID"}, "EMPLOYEES", []string{"EMP_ID"})
+				requireForeignKey(t, departments, "FK_DEPT_MANAGER", []string{"MANAGER_ID"}, "EMPLOYEES", []string{"EMP_ID"}, "SET NULL")
 			},
 		},
 		{
@@ -269,8 +268,8 @@ CREATE TABLE EMPLOYEES (
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
 				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
 				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY<1000000")
-				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
-				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
+				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
+				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
 			},
 		},
 		{
@@ -356,23 +355,6 @@ END financial_utils;
 			metadata, err := GetDatabaseMetadataOmni(tc.ddl)
 			require.NoError(t, err)
 			tc.verify(t, metadata)
-		})
-	}
-}
-
-func TestGetDatabaseMetadataOmniParityWithANTLR(t *testing.T) {
-	for _, tc := range oracleMetadataTestCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			expected, err := getDatabaseMetadataANTLR(tc.ddl)
-			require.NoError(t, err)
-
-			actual, err := GetDatabaseMetadataOmni(tc.ddl)
-			require.NoError(t, err)
-
-			actualForANTLR, ok := proto.Clone(actual).(*storepb.DatabaseSchemaMetadata)
-			require.True(t, ok)
-			trimOmniOnlyConstraintMetadata(expected, actualForANTLR)
-			compareMetadata(t, expected, actualForANTLR, tc.name)
 		})
 	}
 }
@@ -489,7 +471,7 @@ func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name str
 	t.Fatalf("check constraint %q not found in table %q", name, table.Name)
 }
 
-func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string) {
+func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string, onDelete string) {
 	t.Helper()
 	for _, fk := range table.ForeignKeys {
 		if fk.Name != name {
@@ -498,58 +480,8 @@ func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, 
 		require.Equal(t, columns, fk.Columns)
 		require.Equal(t, referencedTable, fk.ReferencedTable)
 		require.Equal(t, referencedColumns, fk.ReferencedColumns)
-		require.Empty(t, fk.OnDelete)
+		require.Equal(t, onDelete, fk.OnDelete)
 		return
 	}
 	t.Fatalf("foreign key %q not found in table %q", name, table.Name)
-}
-
-func trimOmniOnlyConstraintMetadata(expected *storepb.DatabaseSchemaMetadata, actual *storepb.DatabaseSchemaMetadata) {
-	if len(expected.Schemas) != 1 || len(actual.Schemas) != 1 {
-		return
-	}
-
-	expectedTableByName := make(map[string]*storepb.TableMetadata)
-	for _, table := range expected.Schemas[0].Tables {
-		expectedTableByName[table.Name] = table
-	}
-
-	for _, actualTable := range actual.Schemas[0].Tables {
-		expectedTable, ok := expectedTableByName[actualTable.Name]
-		if !ok {
-			continue
-		}
-		actualTable.ForeignKeys = filterForeignKeysByExpected(actualTable.ForeignKeys, expectedTable.ForeignKeys)
-		actualTable.CheckConstraints = filterCheckConstraintsByExpected(actualTable.CheckConstraints, expectedTable.CheckConstraints)
-	}
-}
-
-func filterForeignKeysByExpected(actual []*storepb.ForeignKeyMetadata, expected []*storepb.ForeignKeyMetadata) []*storepb.ForeignKeyMetadata {
-	expectedName := make(map[string]bool)
-	for _, foreignKey := range expected {
-		expectedName[foreignKey.Name] = true
-	}
-
-	var filtered []*storepb.ForeignKeyMetadata
-	for _, foreignKey := range actual {
-		if expectedName[foreignKey.Name] {
-			filtered = append(filtered, foreignKey)
-		}
-	}
-	return filtered
-}
-
-func filterCheckConstraintsByExpected(actual []*storepb.CheckConstraintMetadata, expected []*storepb.CheckConstraintMetadata) []*storepb.CheckConstraintMetadata {
-	expectedName := make(map[string]bool)
-	for _, checkConstraint := range expected {
-		expectedName[checkConstraint.Name] = true
-	}
-
-	var filtered []*storepb.CheckConstraintMetadata
-	for _, checkConstraint := range actual {
-		if expectedName[checkConstraint.Name] {
-			filtered = append(filtered, checkConstraint)
-		}
-	}
-	return filtered
 }

@@ -5,9 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -86,32 +84,7 @@ func (r *WhereRequireForSelectRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *WhereRequireForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Query_block" {
-		r.handleQueryBlock(ctx.(*parser.Query_blockContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
 
-func (r *WhereRequireForSelectRule) handleQueryBlock(ctx *parser.Query_blockContext) {
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-	if ctx.From_clause() == nil || ctx.From_clause().Table_ref_list() == nil {
-		return
-	}
-	if strings.ToLower(ctx.From_clause().Table_ref_list().GetText()) == "dual" {
-		return
-	}
-	if ctx.Where_clause() == nil {
-		r.AddAdvice(
-			r.level,
-			code.StatementNoWhere.Int32(),
-			"WHERE clause is required for SELECT statement.",
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStop().GetLine()),
-		)
-	}
-}
+// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.

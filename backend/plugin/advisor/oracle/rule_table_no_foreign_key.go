@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -44,7 +42,6 @@ type TableNoForeignKeyRule struct {
 	BaseRule
 
 	currentDatabase string
-	tableName       string
 	tableWithFK     map[string]bool
 	tableLine       map[string]int
 }
@@ -100,30 +97,8 @@ func (*TableNoForeignKeyRule) createTableHasFK(stmt *ast.CreateTableStmt) bool {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.handleCreateTable(ctx.(*parser.Create_tableContext))
-	case "References_clause":
-		r.handleReferencesClause(ctx.(*parser.References_clauseContext))
-	case "Alter_table":
-		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (r *TableNoForeignKeyRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.tableName = ""
-	case "Alter_table":
-		r.tableName = ""
-	default:
-	}
-	return nil
-}
 
 // GetAdviceList returns the advice list.
 func (r *TableNoForeignKeyRule) GetAdviceList() ([]*storepb.Advice, error) {
@@ -138,22 +113,4 @@ func (r *TableNoForeignKeyRule) GetAdviceList() ([]*storepb.Advice, error) {
 		}
 	}
 	return r.BaseRule.GetAdviceList()
-}
-
-func (r *TableNoForeignKeyRule) handleCreateTable(ctx *parser.Create_tableContext) {
-	schemaName := r.currentDatabase
-	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), r.currentDatabase)
-	}
-
-	r.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), r.currentDatabase))
-}
-
-func (r *TableNoForeignKeyRule) handleReferencesClause(ctx *parser.References_clauseContext) {
-	r.tableWithFK[r.tableName] = true
-	r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
-}
-
-func (r *TableNoForeignKeyRule) handleAlterTable(ctx *parser.Alter_tableContext) {
-	r.tableName = normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase)
 }

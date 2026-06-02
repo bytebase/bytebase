@@ -5,9 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -80,34 +78,5 @@ func (r *WhereNoLeadingWildcardLikeRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *WhereNoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Compound_expression" {
-		r.handleCompoundExpression(ctx.(*parser.Compound_expressionContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*WhereNoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *WhereNoLeadingWildcardLikeRule) handleCompoundExpression(ctx *parser.Compound_expressionContext) {
-	if ctx.LIKE() == nil && ctx.LIKE2() == nil && ctx.LIKE4() == nil && ctx.LIKEC() == nil {
-		return
-	}
-
-	if ctx.Concatenation(1) == nil {
-		return
-	}
-
-	text := ctx.Concatenation(1).GetText()
-	if strings.HasPrefix(text, "'%") && strings.HasSuffix(text, "'") {
-		r.AddAdvice(
-			r.level,
-			code.StatementLeadingWildcardLike.Int32(),
-			"Avoid using leading wildcard LIKE.",
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

@@ -11,7 +11,7 @@
       endposition: null
 - statement: SELECT a FROM t WHERE a > 0
   changeType: 1
-- statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
+- statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM account)
   changeType: 1
   want:
     - status: 2
