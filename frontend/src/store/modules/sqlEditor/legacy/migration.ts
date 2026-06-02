@@ -8,9 +8,9 @@ import {
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import {
   defaultSQLEditorTab,
-  extractWorksheetConnection,
   useDynamicLocalStorage,
   WebStorageHelper,
 } from "@/utils";

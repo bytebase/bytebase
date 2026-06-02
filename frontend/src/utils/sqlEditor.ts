@@ -11,6 +11,7 @@ import {
   defaultViewState,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { wrapRefAsPromise } from "@/utils";
 import { getInstanceResource } from "./v1/database";
