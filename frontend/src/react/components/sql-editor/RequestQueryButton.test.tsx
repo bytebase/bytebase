@@ -44,15 +44,20 @@ vi.mock("@/react/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      roleList: mocks.roleList,
-      loadSubscription: mocks.loadSubscription,
-      hasInstanceFeature: mocks.hasInstanceFeature,
-      hasFeature: mocks.appHasFeature,
-    }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    roleList: mocks.roleList,
+    loadSubscription: mocks.loadSubscription,
+    hasInstanceFeature: mocks.hasInstanceFeature,
+    hasFeature: mocks.appHasFeature,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
   useSQLEditorVueState: mocks.useSQLEditorVueState,

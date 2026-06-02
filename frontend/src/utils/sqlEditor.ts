@@ -1,6 +1,7 @@
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useQueryDataPolicy } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useQueryDataPolicy } from "@/store";
 import type {
   QueryDataSourceType,
   SQLEditorConnection,
@@ -69,9 +70,15 @@ export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
   }
   const { connection } = tab;
   if (connection.database) {
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
+    // Read from the React app store — the SQL editor route bootstrap
+    // (`prepareConnectionParams` in `SQLEditorRouteShell`) populates the
+    // database via `useAppStore.getOrFetchDatabaseByName`, which does not
+    // fan out to the Pinia `useDatabaseV1Store`. Reading from Pinia here
+    // would return `unknownDatabase` for tabs opened by deep-linked URLs,
+    // making them render as disconnected and disabling Run.
+    const database = useAppStore
+      .getState()
+      .getDatabaseByName(connection.database);
     target.database = database;
     target.instance = getInstanceResource(database);
   }
