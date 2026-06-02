@@ -84,6 +84,13 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
 			for _, table := range tables {
+				// A BackupStatement carries no source database, and the executor
+				// records the task database for the backed-up table. Reject
+				// cross-database mutations (DELETE or UPDATE) so a rollback can't
+				// be written to the wrong database.
+				if table.table.Database != databaseName {
+					return nil, errors.Errorf("prior backup does not support cross-database mutations: %s.%s (task database %q)", table.table.Database, table.table.Table, databaseName)
+				}
 				table.offset = i
 				table.startPosition = item.Start
 				table.endPosition = item.End
@@ -118,15 +125,6 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
 	singleTables := collectSingleTables(databaseName, n.Tables)
-
-	// A BackupStatement carries only SourceTableName, and the executor restores
-	// into the task database. Reject cross-database DELETE targets so a rollback
-	// can't be written to the wrong database.
-	for _, ref := range singleTables {
-		if ref.Database != databaseName {
-			return nil, errors.Errorf("prior backup does not support cross-database DELETE: %s.%s (task database %q)", ref.Database, ref.Table, databaseName)
-		}
-	}
 
 	if len(n.Using) == 0 {
 		// Single-table DELETE: DELETE FROM t WHERE ...

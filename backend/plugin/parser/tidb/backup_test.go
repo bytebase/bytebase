@@ -269,9 +269,15 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	_, err = run("DELETE FROM db1.t1 WHERE a = 1")
 	a.Error(err, "cross-database DELETE must be rejected")
 
+	_, err = run("UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2")
+	a.Error(err, "cross-database UPDATE must be rejected")
+
 	result, err := run("UPDATE test, (SELECT id FROM test2) AS x SET test.c1 = 1 WHERE test.id = x.id")
 	a.NoError(err)
 	a.Len(result, 1)
-	a.NotContains(result[0].Statement, "FROM  ", "derived table dropped -> empty FROM")
-	a.Contains(result[0].Statement, "SELECT id FROM test2", "derived table should be preserved in FROM")
+	a.Equal(
+		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
+			"INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
+		result[0].Statement,
+	)
 }
