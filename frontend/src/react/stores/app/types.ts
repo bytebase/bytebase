@@ -7,6 +7,7 @@ import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { State } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseGroup,
   DatabaseGroupView,
@@ -366,6 +367,8 @@ export type SheetSlice = {
   sheetErrorsByName: Record<string, Error | undefined>;
   fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
   createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+  getSheetByName: (name: string) => Sheet | undefined;
+  getOrFetchSheetByName: (name: string) => Promise<Sheet | undefined>;
 };
 
 export type WorksheetView = "FULL" | "BASIC";
@@ -636,10 +639,14 @@ export type NotificationSlice = {
 };
 
 export type PreferencesSlice = {
+  // Bumped on every intro-state write so selectors reading `getIntroStateByKey`
+  // re-run (the flags live in localStorage, not Zustand state).
+  introStateVersion: number;
   setRecentProject: (name: string) => void;
   recordRecentVisit: (path: string) => void;
   removeRecentVisit: (path: string) => void;
   resetQuickstartProgress: () => void;
+  getIntroStateByKey: (key: string) => boolean;
   saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
 };
 
@@ -665,6 +672,11 @@ export type PolicySlice = {
     refresh?: boolean;
   }) => Promise<Policy | undefined>;
   getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
+  upsertPolicy: (params: {
+    parentPath: string;
+    policy: Partial<Policy>;
+  }) => Promise<Policy>;
+  deletePolicy: (name: string) => Promise<void>;
 };
 
 // Stateless issue service slice (mirrors the legacy Pinia `useIssueV1Store`):
@@ -766,6 +778,18 @@ export type DBSchemaSlice = {
   ) => Promise<DatabaseMetadata>;
 };
 
+export type DatabaseCatalogSlice = {
+  catalogsByName: Record<string, DatabaseCatalog>;
+  catalogRequests: Record<string, Promise<DatabaseCatalog>>;
+  getDatabaseCatalog: (database: string) => DatabaseCatalog;
+  getOrFetchDatabaseCatalog: (params: {
+    database: string;
+    skipCache?: boolean;
+    silent?: boolean;
+  }) => Promise<DatabaseCatalog>;
+  updateDatabaseCatalog: (catalog: DatabaseCatalog) => Promise<DatabaseCatalog>;
+};
+
 export type IssueCommentSlice = {
   // Cache keyed by issue resource name → its comment list.
   issueCommentsByIssue: Record<string, IssueComment[]>;
@@ -844,6 +868,7 @@ export type AppStoreState = AuthSlice &
   DBSchemaSlice &
   RolloutSlice &
   PlanSlice &
-  IssueCommentSlice;
+  IssueCommentSlice &
+  DatabaseCatalogSlice;
 
 export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

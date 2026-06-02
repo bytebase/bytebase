@@ -7,7 +7,8 @@ import { Separator } from "@/react/components/ui/separator";
 import { useVueState } from "@/react/hooks/useVueState";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { cn } from "@/react/lib/utils";
-import { useProjectV1Store, useSQLReviewStore } from "@/store";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
+import { useProjectV1Store } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,

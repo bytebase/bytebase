@@ -8,14 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
 import { useVueState } from "@/react/hooks/useVueState";
 import { updateTableCatalog } from "@/react/lib/column-data-table/utils";
-import {
-  featureToRef,
-  getTableCatalog,
-  useDatabaseCatalog,
-  useSettingV1Store,
-} from "@/store";
+import { getTableCatalog } from "@/react/stores/app/databaseCatalog";
+import { featureToRef, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -52,8 +49,7 @@ export function TableMetadataTable({
   const showClassificationColumn = useVueState(
     () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
   );
-  const databaseCatalog = useDatabaseCatalog(database.name, false);
-  const catalog = useVueState(() => databaseCatalog.value);
+  const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
   const classificationConfig = useVueState(() =>
     settingStore.getProjectClassification(

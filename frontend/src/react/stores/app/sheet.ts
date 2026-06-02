@@ -82,4 +82,12 @@ export const createSheetSlice: AppSliceCreator<SheetSlice> = (set, get) => ({
     }));
     return response;
   },
+
+  // Synchronous cache read (undefined on miss) — mirrors the Pinia
+  // `getSheetByName`.
+  getSheetByName: (name) => get().sheetsByName[name],
+
+  // Cache-first fetch by name — `fetchSheet` already checks the cache and
+  // guards invalid names, so this is a thin alias matching the Pinia API.
+  getOrFetchSheetByName: (name) => get().fetchSheet(name),
 });

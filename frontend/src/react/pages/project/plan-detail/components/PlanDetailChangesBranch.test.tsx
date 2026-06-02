@@ -51,16 +51,14 @@ const mocks = vi.hoisted(() => ({
       name: "projects/foo/databaseGroups/group-a",
       matchedDatabases: [] as Array<{ name: string }>,
     })),
+    createSheet: vi.fn(async (_projectName, sheet) => sheet),
+    getOrFetchSheetByName: vi.fn(async () => undefined),
   },
   environmentStore: {
     getEnvironmentByName: vi.fn(),
   },
   projectStore: {
     getProjectByName: vi.fn(),
-  },
-  sheetStore: {
-    createSheet: vi.fn(async (_projectName, sheet) => sheet),
-    getOrFetchSheetByName: vi.fn(async () => undefined),
   },
 }));
 
@@ -270,7 +268,6 @@ vi.mock("@/store", () => ({
   useDatabaseV1Store: () => mocks.databaseStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
   useProjectV1Store: () => mocks.projectStore,
-  useSheetV1Store: () => mocks.sheetStore,
 }));
 
 // The migrated component reads dbGroup state via imperative

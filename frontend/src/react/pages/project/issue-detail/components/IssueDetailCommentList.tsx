@@ -38,12 +38,7 @@ import {
 } from "@/react/stores/app/issueComment";
 import { router } from "@/router";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
-import {
-  extractUserEmail,
-  pushNotification,
-  useProjectV1Store,
-  useSheetV1Store,
-} from "@/store";
+import { extractUserEmail, pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -1143,7 +1138,6 @@ function IssueDetailStatementUpdateButton({
   oldSheet: string;
 }) {
   const { t } = useTranslation();
-  const sheetStore = useSheetV1Store();
   const [open, setOpen] = useState(false);
   const [oldStatement, setOldStatement] = useState("");
   const [newStatement, setNewStatement] = useState("");
@@ -1162,7 +1156,9 @@ function IssueDetailStatementUpdateButton({
         // rather than fetching by an empty resource name.
         const fetchStatement = async (sheetName: string) => {
           if (!sheetName) return "";
-          const sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+          const sheet = await useAppStore
+            .getState()
+            .getOrFetchSheetByName(sheetName);
           return sheet ? getSheetStatement(sheet) : "";
         };
         const [oldValue, newValue] = await Promise.all([
@@ -1183,7 +1179,7 @@ function IssueDetailStatementUpdateButton({
     return () => {
       canceled = true;
     };
-  }, [newSheet, oldSheet, open, sheetStore]);
+  }, [newSheet, oldSheet, open]);
 
   return (
     <>

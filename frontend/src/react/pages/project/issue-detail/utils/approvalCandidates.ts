@@ -1,5 +1,6 @@
 import { uniq } from "lodash-es";
-import { useProjectIamPolicyStore, useProjectV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -9,15 +10,14 @@ import {
 
 // candidatesOfApprovalStepV1 returns a user name list in users/{email} format.
 // The list could include users/ALL_USERS_USER_EMAIL.
-// Relocated from the legacy Pinia `issue` module; still reads the project and
-// project-IAM Pinia stores, which remain until those stores are migrated.
+// Reads the project-IAM policy from the app store's iam slice; still reads the
+// project Pinia store, which remains until that store is migrated.
 export const candidatesOfApprovalStepV1 = (issue: Issue, role: string) => {
   const project = useProjectV1Store().getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
   const candidatesForRoles = (role: string) => {
-    const projectIamPolicyStore = useProjectIamPolicyStore();
-    const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+    const iamPolicy = useAppStore.getState().getProjectIamPolicy(project.name);
     const memberMap = memberMapToRolesInProjectIAM(iamPolicy, role);
     return [...memberMap.keys()].filter((name) =>
       name.startsWith(userNamePrefix)

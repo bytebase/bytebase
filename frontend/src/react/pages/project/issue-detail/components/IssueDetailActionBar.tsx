@@ -54,7 +54,7 @@ import {
   buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
 } from "@/router/dashboard/projectV1RouteHelpers";
-import { pushNotification, useProjectV1Store, useSQLStore } from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ApproveIssueRequestSchema,
@@ -96,7 +96,6 @@ export function IssueDetailActionBar() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const sqlStore = useSQLStore();
   const currentUser = useCurrentUser();
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<ActionDefinition>();
@@ -254,7 +253,7 @@ export function IssueDetailActionBar() {
     }
     try {
       setIsSubmitting(true);
-      const content = await sqlStore.exportData(
+      const content = await useAppStore.getState().exportData(
         create(ExportRequestSchema, {
           name: `${page.rollout.name}/stages/-`,
         })
@@ -285,7 +284,7 @@ export function IssueDetailActionBar() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [handleRefreshIssueDetailState, page.rollout, sqlStore, t]);
+  }, [handleRefreshIssueDetailState, page.rollout, t]);
 
   const handleCreateRollout = useCallback(
     async (options?: { runAllTasks?: boolean }) => {

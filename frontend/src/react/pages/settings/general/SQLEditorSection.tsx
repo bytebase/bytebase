@@ -19,7 +19,8 @@ import {
   useWorkspaceResourceName,
 } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { DEFAULT_MAX_RESULT_SIZE_IN_MB, usePolicyV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { DEFAULT_MAX_RESULT_SIZE_IN_MB } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   PolicyResourceType,
@@ -51,7 +52,6 @@ export const SQLEditorSection = forwardRef<
   SQLEditorSectionProps
 >(function SQLEditorSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const policyV1Store = usePolicyV1Store();
   const settingV1Store = useSettingV1Store();
 
   const resource = useWorkspaceResourceName();
@@ -75,14 +75,14 @@ export const SQLEditorSection = forwardRef<
   useEffect(() => {
     if (!resource || fetchedRef.current) return;
     fetchedRef.current = true;
-    policyV1Store.getOrFetchPolicyByParentAndType({
+    useAppStore.getState().getOrFetchPolicyByParentAndType({
       parentPath: resource,
       policyType: PolicyType.DATA_QUERY,
     });
-  }, [resource, policyV1Store]);
+  }, [resource]);
 
-  const policyPayload = useVueState(() =>
-    policyV1Store.getQueryDataPolicyByParent(resource)
+  const policyPayload = useAppStore((s) =>
+    s.getQueryDataPolicyByParent(resource)
   );
 
   const workspaceProfile = useVueState(() => settingV1Store.workspaceProfile);
@@ -177,7 +177,7 @@ export const SQLEditorSection = forwardRef<
     }
 
     // Update policy (toggles + rows)
-    await policyV1Store.upsertPolicy({
+    await useAppStore.getState().upsertPolicy({
       parentPath: resource,
       policy: {
         type: PolicyType.DATA_QUERY,
@@ -194,14 +194,7 @@ export const SQLEditorSection = forwardRef<
         },
       },
     });
-  }, [
-    state,
-    resource,
-    policyPayload,
-    settingV1Store,
-    policyV1Store,
-    getInitialState,
-  ]);
+  }, [state, resource, policyPayload, settingV1Store, getInitialState]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));
 

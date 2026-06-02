@@ -33,14 +33,10 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useAuthStore,
-  useProjectV1Store,
-  useUIStateStore,
-} from "@/store";
+import { pushNotification, useAuthStore, useProjectV1Store } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -307,9 +303,9 @@ export function ProjectsPage() {
 
   // Mark project visit on mount
   useEffect(() => {
-    const uiStateStore = useUIStateStore();
-    if (!uiStateStore.getIntroStateByKey("project.visit")) {
-      uiStateStore.saveIntroStateByKey({
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("project.visit")) {
+      store.saveIntroStateByKey({
         key: "project.visit",
         newState: true,
       });

@@ -60,6 +60,9 @@ vi.mock("@/types", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
+}));
+
+vi.mock("@/react/stores/sqlReview", () => ({
   useSQLReviewStore: mocks.useSQLReviewStore,
 }));
 

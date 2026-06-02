@@ -33,7 +33,6 @@ import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-  useUIStateStore,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -69,7 +68,6 @@ export function DatabasesPage() {
   );
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const uiStateStore = useUIStateStore();
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -307,13 +305,14 @@ export function DatabasesPage() {
 
   // Mark database visit on mount
   useEffect(() => {
-    if (!uiStateStore.getIntroStateByKey("database.visit")) {
-      uiStateStore.saveIntroStateByKey({
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("database.visit")) {
+      store.saveIntroStateByKey({
         key: "database.visit",
         newState: true,
       });
     }
-  }, [uiStateStore]);
+  }, []);
 
   // Backfill the project scope once the actuator's default project ID
   // arrives. The initial `useState` initializer reads the actuator

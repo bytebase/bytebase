@@ -61,6 +61,8 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { getEmptyRolloutPolicy } from "@/react/stores/app/policy";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -72,15 +74,9 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useSQLReviewStore,
   useSubscriptionV1Store,
-  useUIStateStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import {
-  getEmptyRolloutPolicy,
-  usePolicyV1Store,
-} from "@/store/modules/v1/policy";
 import {
   formatEnvironmentName,
   isValidEnvironmentName,
@@ -475,9 +471,10 @@ function SQLReviewSectionInner(
 
   // Fetch the full review policy list and the current resource's policy on mount
   useEffect(() => {
-    reviewStore.fetchReviewPolicyList();
-    reviewStore.getOrFetchReviewPolicyByResource(resourcePath, true);
-  }, [resourcePath, reviewStore]);
+    const store = useSQLReviewStore.getState();
+    store.fetchReviewPolicyList();
+    store.getOrFetchReviewPolicyByResource(resourcePath, true);
+  }, [resourcePath]);
 
   const isDirty =
     enforce !== (currentPolicy?.enforce ?? false) ||
@@ -488,9 +485,10 @@ function SQLReviewSectionInner(
   }, [isDirty, onDirtyChange]);
 
   const saveSQLReview = useCallback(async () => {
+    const store = useSQLReviewStore.getState();
     if (!isEqual(currentPolicy, pendingPolicy)) {
       if (currentPolicy) {
-        await reviewStore.upsertReviewConfigTag({
+        await store.upsertReviewConfigTag({
           oldResources: [...currentPolicy.resources],
           newResources: currentPolicy.resources.filter(
             (r) => r !== resourcePath
@@ -499,7 +497,7 @@ function SQLReviewSectionInner(
         });
       }
       if (pendingPolicy) {
-        await reviewStore.upsertReviewConfigTag({
+        await store.upsertReviewConfigTag({
           oldResources: [...pendingPolicy.resources],
           newResources: [...pendingPolicy.resources, resourcePath],
           review: pendingPolicy.id,
@@ -507,12 +505,12 @@ function SQLReviewSectionInner(
       }
     }
     if (pendingPolicy && pendingPolicy.enforce !== enforce) {
-      await reviewStore.upsertReviewPolicy({
+      await store.upsertReviewPolicy({
         id: pendingPolicy.id,
         enforce,
       });
     }
-  }, [currentPolicy, pendingPolicy, enforce, resourcePath, reviewStore]);
+  }, [currentPolicy, pendingPolicy, enforce, resourcePath]);
 
   const revertSQLReview = useCallback(() => {
     setPendingPolicy(currentPolicy);
@@ -650,7 +648,6 @@ function EnvironmentDetail({
 }) {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
-  const policyStore = usePolicyV1Store();
   const subscriptionStore = useSubscriptionV1Store();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
@@ -693,10 +690,12 @@ function EnvironmentDetail({
   useEffect(() => {
     const fetchPolicy = async () => {
       const envName = formatEnvironmentName(environment.id);
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: envName,
-        policyType: PolicyType.ROLLOUT_POLICY,
-      });
+      const policy = await useAppStore
+        .getState()
+        .getOrFetchPolicyByParentAndType({
+          parentPath: envName,
+          policyType: PolicyType.ROLLOUT_POLICY,
+        });
       const result =
         policy ??
         create(PolicySchema, {
@@ -709,7 +708,7 @@ function EnvironmentDetail({
       setOriginalRolloutPolicy(cloneDeep(result));
     };
     fetchPolicy();
-  }, [environment.id, policyStore]);
+  }, [environment.id]);
 
   // Check for related resources (instances/databases)
   const instanceStore = useInstanceV1Store();
@@ -808,7 +807,7 @@ function EnvironmentDetail({
 
     // Update rollout policy if changed
     if (policyChanged && rolloutPolicy) {
-      await policyStore.upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: formatEnvironmentName(environment.id),
         policy: rolloutPolicy,
       });
@@ -1443,8 +1442,6 @@ function ReorderSheetInner({
 export function EnvironmentsPage() {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
-  const policyStore = usePolicyV1Store();
-  const uiStateStore = useUIStateStore();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
   );
@@ -1468,13 +1465,14 @@ export function EnvironmentsPage() {
 
   // Initialize selected tab and intro state
   useEffect(() => {
-    if (!uiStateStore.getIntroStateByKey("environment.visit")) {
-      uiStateStore.saveIntroStateByKey({
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("environment.visit")) {
+      store.saveIntroStateByKey({
         key: "environment.visit",
         newState: true,
       });
     }
-  }, [uiStateStore]);
+  }, []);
 
   // Select from hash or default to first
   useEffect(() => {
@@ -1544,7 +1542,7 @@ export function EnvironmentsPage() {
 
     const isCustomized = !isEqual(rolloutPolicy, DEFAULT_POLICY);
     if (isCustomized) {
-      await policyStore.upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: `${environmentNamePrefix}${createdEnvironment.id}`,
         policy: rolloutPolicy,
       });

@@ -232,9 +232,6 @@ vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => ({
     getEnvironmentByName: mocks.getEnvironmentByName,
   }),
-  useSheetV1Store: () => ({
-    getOrFetchSheetByName: mocks.getOrFetchSheetByName,
-  }),
 }));
 
 vi.mock("@/types", () => ({
@@ -259,6 +256,7 @@ vi.mock("@/react/stores/app", () => {
       getState: () => ({
         getDBGroupByName: mocks.getDBGroupByName,
         getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
+        getOrFetchSheetByName: mocks.getOrFetchSheetByName,
       }),
     }
   );

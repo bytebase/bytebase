@@ -19,9 +19,10 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useSQLReviewStore } from "@/store";
+import { pushNotification } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
   convertRuleMapToPolicyRuleList,
@@ -57,8 +58,10 @@ export function SQLReviewDetailPage({
 
   // Fetch policy
   useEffect(() => {
-    store.getOrFetchReviewPolicyByName(sqlReviewName, false);
-  }, [store, sqlReviewName]);
+    useSQLReviewStore
+      .getState()
+      .getOrFetchReviewPolicyByName(sqlReviewName, false);
+  }, [sqlReviewName]);
 
   const reviewPolicy = useVueState(
     () =>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSheetV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { getStatementSize } from "@/utils/sheet";
 import { sheetNameOfTaskV1 } from "@/utils/v1/issue/rollout";
@@ -12,7 +12,6 @@ export const useDeployTaskStatement = ({
   enabled: boolean;
   task: Task;
 }) => {
-  const sheetStore = useSheetV1Store();
   const sheetName = useMemo(() => sheetNameOfTaskV1(task), [task]);
   const [statement, setStatement] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,9 +29,9 @@ export const useDeployTaskStatement = ({
     const load = async () => {
       setIsLoading(true);
       try {
-        let sheet = sheetStore.getSheetByName(sheetName);
+        let sheet = useAppStore.getState().getSheetByName(sheetName);
         if (!sheet) {
-          sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+          sheet = await useAppStore.getState().getOrFetchSheetByName(sheetName);
         }
         if (!sheet) {
           return;
@@ -51,7 +50,7 @@ export const useDeployTaskStatement = ({
     return () => {
       canceled = true;
     };
-  }, [enabled, sheetName, sheetStore]);
+  }, [enabled, sheetName]);
 
   return { isLoading, isTruncated, statement };
 };

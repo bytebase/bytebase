@@ -13,7 +13,8 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { pushNotification, useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import {
   isValidDatabaseName,
   isValidReleaseName,
@@ -64,7 +65,6 @@ export function PlanDetailStatementSection({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, setEditing } = page;
-  const sheetStore = useSheetV1Store();
   const databaseStore = useDatabaseV1Store();
   const currentUser = page.currentUser;
   const project = page.project;
@@ -200,7 +200,7 @@ export function PlanDetailStatementSection({
         const uid = extractSheetUID(sheetName);
         const sheet = uid.startsWith("-")
           ? getLocalSheetByName(sheetName)
-          : await sheetStore.getOrFetchSheetByName(sheetName);
+          : await useAppStore.getState().getOrFetchSheetByName(sheetName);
         if (!sheet || canceled) return;
         const nextStatement = getSheetStatement(sheet);
         setStatement(nextStatement);
@@ -215,7 +215,7 @@ export function PlanDetailStatementSection({
     return () => {
       canceled = true;
     };
-  }, [releaseName, sheetName, sheetStore, statementVersion]);
+  }, [releaseName, sheetName, statementVersion]);
 
   if (isValidReleaseName(releaseName)) {
     return (
@@ -347,7 +347,9 @@ export function PlanDetailStatementSection({
       const sheet = createEmptyLocalSheet();
       setSheetStatement(sheet, draftStatement);
       const previousSheetName = sheetName;
-      const createdSheet = await sheetStore.createSheet(project.name, sheet);
+      const createdSheet = await useAppStore
+        .getState()
+        .createSheet(project.name, sheet);
       const nextPlan = patchPlanStatement(createdSheet.name);
       if (!nextPlan) return;
       const request = create(UpdatePlanRequestSchema, {

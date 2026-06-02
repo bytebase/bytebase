@@ -14,11 +14,11 @@ import {
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { getRuleKey } from "@/react/lib/sql-review/utils";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import {
   pushNotification,
   useEnvironmentV1Store,
   useProjectV1Store,
-  useSQLReviewStore,
 } from "@/store";
 import {
   environmentNamePrefix,

@@ -7,12 +7,13 @@ import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { getTemplateId } from "@/react/lib/sql-review/utils";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useSQLReviewStore } from "@/store";
+import { pushNotification } from "@/store";
 import {
   getReviewConfigId,
   reviewConfigNamePrefix,

@@ -24,11 +24,11 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
 import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
 import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   hasFeature,
   pushNotification,
-  usePolicyV1Store,
   useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -65,7 +65,6 @@ export function ProjectMaskingExemptionCreatePage({
 }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const policyStore = usePolicyV1Store();
   const settingStore = useSettingV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
@@ -234,17 +233,19 @@ export function ProjectMaskingExemptionCreatePage({
         );
       }
 
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: projectName,
-        policyType: PolicyType.MASKING_EXEMPTION,
-        refresh: true,
-      });
+      const policy = await useAppStore
+        .getState()
+        .getOrFetchPolicyByParentAndType({
+          parentPath: projectName,
+          policyType: PolicyType.MASKING_EXEMPTION,
+          refresh: true,
+        });
       const existed =
         policy?.policy?.case === "maskingExemptionPolicy"
           ? policy.policy.value.exemptions
           : [];
 
-      await policyStore.upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: projectName,
         policy: {
           name: policy?.name,
@@ -283,7 +284,6 @@ export function ProjectMaskingExemptionCreatePage({
     memberList,
     description,
     projectName,
-    policyStore,
     t,
     onDismiss,
   ]);

@@ -16,7 +16,6 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSheetV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import {
@@ -60,7 +59,6 @@ export function IssueDetailStatementSection({
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const { setEditing } = page;
-  const sheetStore = useSheetV1Store();
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
@@ -166,7 +164,7 @@ export function IssueDetailStatementSection({
         const uid = extractSheetUID(sheetName);
         const sheet = uid.startsWith("-")
           ? getLocalSheetByName(sheetName)
-          : await sheetStore.getOrFetchSheetByName(sheetName);
+          : await useAppStore.getState().getOrFetchSheetByName(sheetName);
         if (!sheet || canceled) {
           return;
         }
@@ -185,7 +183,7 @@ export function IssueDetailStatementSection({
     return () => {
       canceled = true;
     };
-  }, [fetchRelease, releaseName, sheetName, sheetStore]);
+  }, [fetchRelease, releaseName, sheetName]);
 
   if (isValidReleaseName(releaseName)) {
     return (
@@ -333,7 +331,9 @@ export function IssueDetailStatementSection({
       const sheet = createEmptyLocalSheet();
       setSheetStatement(sheet, draftStatement);
       const previousSheetName = sheetName;
-      const createdSheet = await sheetStore.createSheet(project.name, sheet);
+      const createdSheet = await useAppStore
+        .getState()
+        .createSheet(project.name, sheet);
       const nextPlan = patchPlanStatement(page.plan, spec, createdSheet.name);
       if (!nextPlan) {
         return;

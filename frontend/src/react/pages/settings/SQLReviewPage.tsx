@@ -18,12 +18,13 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useSQLReviewStore } from "@/store";
+import { pushNotification } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 
@@ -246,8 +247,8 @@ export function SQLReviewPage() {
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    sqlReviewStore.fetchReviewPolicyList();
-  }, [sqlReviewStore]);
+    useSQLReviewStore.getState().fetchReviewPolicyList();
+  }, []);
 
   const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
 

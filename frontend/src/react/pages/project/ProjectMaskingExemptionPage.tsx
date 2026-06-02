@@ -53,7 +53,6 @@ import {
   hasFeature,
   pushNotification,
   useDatabaseV1Store,
-  usePolicyV1Store,
   useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -594,7 +593,6 @@ function rebuildExemptions(accessList: AccessUser[]) {
 
 function useExemptionDataReact(projectName: string) {
   const { t } = useTranslation();
-  const policyStore = usePolicyV1Store();
   const settingStore = useSettingV1Store();
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups
@@ -622,7 +620,7 @@ function useExemptionDataReact(projectName: string) {
     const generation = ++fetchGenRef.current;
 
     try {
-      const pol = await policyStore.getOrFetchPolicyByParentAndType({
+      const pol = await useAppStore.getState().getOrFetchPolicyByParentAndType({
         parentPath: projectName,
         policyType: PolicyType.MASKING_EXEMPTION,
         refresh: true,
@@ -670,7 +668,7 @@ function useExemptionDataReact(projectName: string) {
         setLoading(false);
       }
     }
-  }, [projectName, policyStore, batchGetOrFetchGroups]);
+  }, [projectName, batchGetOrFetchGroups]);
 
   useEffect(() => {
     fetchData();
@@ -679,8 +677,8 @@ function useExemptionDataReact(projectName: string) {
   // Subscribe to policy changes in the store to re-fetch.
   // Track the number of exemptions so we detect content changes,
   // not just the policy case discriminator which is always the same.
-  const policyExemptionCount = useVueState(() => {
-    const pol = policyStore.getPolicyByParentAndType({
+  const policyExemptionCount = useAppStore((s) => {
+    const pol = s.getPolicyByParentAndType({
       parentPath: projectName,
       policyType: PolicyType.MASKING_EXEMPTION,
     });
@@ -729,10 +727,12 @@ function useExemptionDataReact(projectName: string) {
 
       try {
         // Rebuild and save policy first; only update UI state on success.
-        const pol = await policyStore.getOrFetchPolicyByParentAndType({
-          parentPath: projectName,
-          policyType: PolicyType.MASKING_EXEMPTION,
-        });
+        const pol = await useAppStore
+          .getState()
+          .getOrFetchPolicyByParentAndType({
+            parentPath: projectName,
+            policyType: PolicyType.MASKING_EXEMPTION,
+          });
         if (pol) {
           pol.policy = {
             case: "maskingExemptionPolicy",
@@ -740,7 +740,7 @@ function useExemptionDataReact(projectName: string) {
               exemptions: rebuildExemptions(currentList),
             }),
           };
-          await policyStore.upsertPolicy({
+          await useAppStore.getState().upsertPolicy({
             parentPath: projectName,
             policy: pol,
           });
@@ -761,7 +761,7 @@ function useExemptionDataReact(projectName: string) {
         processingRef.current = false;
       }
     },
-    [projectName, policyStore, t]
+    [projectName, t]
   );
 
   return { members, loading, revokeGrant };

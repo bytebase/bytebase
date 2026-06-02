@@ -7,9 +7,10 @@ import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Alert } from "@/react/components/ui/alert";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
-  useSubscriptionV1Store,
   useWorkspaceApprovalSettingStore,
-} from "@/store";
+  type WorkspaceApprovalSettingState,
+} from "@/react/stores/workspaceApprovalSetting";
+import { useSubscriptionV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -89,7 +90,7 @@ function SourceSection({
   onShowFeatureModal,
 }: {
   source: (typeof APPROVAL_SOURCES)[number];
-  store: ReturnType<typeof useWorkspaceApprovalSettingStore>;
+  store: WorkspaceApprovalSettingState;
   allowAdmin: boolean;
   hasFeature: boolean;
   onShowFeatureModal: () => void;

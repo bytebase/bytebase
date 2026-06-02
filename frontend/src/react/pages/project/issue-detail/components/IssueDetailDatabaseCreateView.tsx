@@ -5,13 +5,13 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-  useSheetV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -39,7 +39,6 @@ export function IssueDetailDatabaseCreateView() {
   const projectStore = useProjectV1Store();
   const environmentStore = useEnvironmentV1Store();
   const instanceStore = useInstanceV1Store();
-  const sheetStore = useSheetV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
@@ -94,9 +93,9 @@ export function IssueDetailDatabaseCreateView() {
 
   useEffect(() => {
     if (sheetName) {
-      void sheetStore.getOrFetchSheetByName(sheetName);
+      void useAppStore.getState().getOrFetchSheetByName(sheetName);
     }
-  }, [sheetName, sheetStore]);
+  }, [sheetName]);
 
   useEffect(() => {
     if (targetInstanceName) {

@@ -32,10 +32,8 @@ const mocks = vi.hoisted(() => {
     stringifyConditionExpression: vi.fn(() => "serialized-selection"),
     featureToRef: vi.fn(() => ({ value: true })),
     useVueState: vi.fn((getter: () => unknown) => getter()),
-    usePolicyV1Store: vi.fn(() => ({
-      getOrFetchPolicyByParentAndType: vi.fn(),
-      upsertPolicy: vi.fn(),
-    })),
+    getOrFetchPolicyByParentAndType: vi.fn(),
+    upsertPolicy: vi.fn(),
   };
 });
 
@@ -196,7 +194,15 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
   pushNotification: vi.fn(),
-  usePolicyV1Store: mocks.usePolicyV1Store,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
+      upsertPolicy: mocks.upsertPolicy,
+    }),
+  },
 }));
 
 vi.mock("@/utils", () => ({

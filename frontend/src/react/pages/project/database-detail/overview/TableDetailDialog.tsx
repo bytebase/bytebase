@@ -23,16 +23,16 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Textarea } from "@/react/components/ui/textarea";
+import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   updateColumnCatalog,
   updateTableCatalog,
 } from "@/react/lib/column-data-table/utils";
+import { useAppStore } from "@/react/stores/app";
+import { getTableCatalog } from "@/react/stores/app/databaseCatalog";
 import {
-  getTableCatalog,
   pushNotification,
-  useDatabaseCatalog,
-  useDatabaseCatalogV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -385,9 +385,7 @@ function NoSQLCatalogEditor({
   tableName: string;
 }) {
   const { t } = useTranslation();
-  const databaseCatalogStore = useDatabaseCatalogV1Store();
-  const databaseCatalog = useDatabaseCatalog(database.name, false);
-  const catalog = useVueState(() => databaseCatalog.value);
+  const catalog = useDatabaseCatalog(database.name, false);
   const [catalogText, setCatalogText] = useState("{}");
   const [isUploading, setIsUploading] = useState(false);
 
@@ -446,7 +444,7 @@ function NoSQLCatalogEditor({
         );
       }
 
-      await databaseCatalogStore.updateDatabaseCatalog(pendingCatalog);
+      await useAppStore.getState().updateDatabaseCatalog(pendingCatalog);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
