@@ -88,7 +88,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 				// records the task database for the backed-up table. Reject
 				// cross-database mutations (DELETE or UPDATE) so a rollback can't
 				// be written to the wrong database.
-				if table.table.Database != databaseName {
+				if !strings.EqualFold(table.table.Database, databaseName) {
 					return nil, errors.Errorf("prior backup does not support cross-database mutations: %s.%s (task database %q)", table.table.Database, table.table.Table, databaseName)
 				}
 				table.offset = i
@@ -106,9 +106,11 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
-		return extractTablesFromDelete(databaseName, n, fullSQL)
+		infos, err := extractTablesFromDelete(databaseName, n, fullSQL)
+		return requireTargets(infos, err, "DELETE")
 	case *ast.UpdateStmt:
-		return extractTablesFromUpdate(databaseName, n, fullSQL, dbMetadata)
+		infos, err := extractTablesFromUpdate(databaseName, n, fullSQL, dbMetadata)
+		return requireTargets(infos, err, "UPDATE")
 	case *ast.BatchStmt:
 		// TiDB BATCH (non-transactional DML) is not supported by prior backup.
 		// Reject it explicitly rather than returning an empty list, which the
@@ -118,6 +120,20 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 	default:
 		return nil, nil
 	}
+}
+
+// requireTargets fails when a recognized DML statement yields no backup target.
+// Returning an empty list with no error would let the task executor treat the
+// backup as a successful no-op and run the mutation unprotected (e.g. when a
+// table alias collides with a CTE name, so the only target gets filtered out).
+func requireTargets(infos []statementInfo, err error, kind string) ([]statementInfo, error) {
+	if err != nil {
+		return nil, err
+	}
+	if len(infos) == 0 {
+		return nil, errors.Errorf("prior backup could not determine a backup target for the %s statement", kind)
+	}
+	return infos, nil
 }
 
 func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL string) ([]statementInfo, error) {

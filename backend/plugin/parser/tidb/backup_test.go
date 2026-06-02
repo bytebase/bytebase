@@ -317,4 +317,16 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	a.Equal("test", result[0].SourceTableName, "backup target must be the real table, not the CTE")
+
+	// A table alias that collides with a CTE name must not let the only real
+	// target get filtered out and silently produce no backup.
+	_, err = run("WITH x AS (SELECT id FROM test2) UPDATE test AS x JOIN test2 AS y ON x.a = y.a SET x.c = 1")
+	a.Error(err, "alias/CTE-name collision must error, not silently skip the backup")
+
+	// The cross-database guard is case-insensitive (TiDB default): a different-
+	// case reference to the task database is the same database, not cross-db.
+	result, err = run("UPDATE DB.test SET c1 = 1 WHERE c1 = 2")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName, "case-only db difference must be treated as same database")
 }
