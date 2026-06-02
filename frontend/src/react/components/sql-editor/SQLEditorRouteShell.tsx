@@ -8,6 +8,7 @@ import {
 } from "@/react/components/ComponentPermissionGuard";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useCurrentRoute, useNavigate } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
@@ -46,7 +47,6 @@ import {
   isWorksheetReadableV1,
   STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
 } from "@/utils";
-import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 

@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     >(),
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/react/lib/sqlEditorConnection", () => ({
   isConnectedSQLEditorTab: mocks.isConnectedSQLEditorTab,
   getConnectionForSQLEditorTab: mocks.getConnectionForSQLEditorTab,
 }));

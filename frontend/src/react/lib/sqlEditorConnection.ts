@@ -1,15 +1,9 @@
 import { useAppStore } from "@/react/stores/app";
 import type { SQLEditorConnection, SQLEditorTab } from "@/types";
-import {
-  isValidDatabaseName,
-  isValidInstanceName,
-} from "@/types";
+import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  emptySQLEditorConnection,
-  extractDatabaseResourceName,
-} from "@/utils";
+import { emptySQLEditorConnection, extractDatabaseResourceName } from "@/utils";
 import { getInstanceResource } from "@/utils/v1/database";
 import { instanceV1AllowsCrossDatabaseQuery } from "@/utils/v1/instance";
 

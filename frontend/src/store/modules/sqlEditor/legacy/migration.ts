@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined, omit, omitBy } from "lodash-es";
 import { computed, reactive } from "vue";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
@@ -8,7 +9,6 @@ import {
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import {
   defaultSQLEditorTab,
   useDynamicLocalStorage,

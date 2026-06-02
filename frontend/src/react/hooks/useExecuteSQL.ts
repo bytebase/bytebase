@@ -4,6 +4,7 @@ import { cloneDeep, isEmpty } from "lodash-es";
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
+import { isConnectedSQLEditorTab } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { getSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -35,7 +36,6 @@ import {
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
-import { isConnectedSQLEditorTab } from "@/react/lib/sqlEditorConnection";
 import { flattenNoSQLResult } from "@/utils/sqlResult";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 
