@@ -138,8 +138,8 @@ func TestExtractChangedResourcesDropIndexUsesMetadata(t *testing.T) {
 }
 
 func TestExtractChangedResourcesSkipsANTLRFallbackAST(t *testing.T) {
-	statement := `UPDATE t1 SET c1 = 5;
-CREATE OR REPLACE TRIGGER trg
+	updateStatement := "UPDATE t1 SET c1 = 5"
+	triggerStatement := `CREATE OR REPLACE TRIGGER trg
 BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
 REFERENCING OLD AS o NEW AS n
 FOR EACH ROW
@@ -147,6 +147,7 @@ WHEN (n.col1 > 0)
 BEGIN
   :n.col2 := :o.col2 + 1;
 END;`
+	statement := updateStatement + ";\n" + triggerStatement
 	changedResources := model.NewChangedResources(nil /* dbMetadata */)
 	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
 	want := &base.ChangeSummary{
@@ -157,12 +158,17 @@ END;`
 		DMLCount: 1,
 	}
 
-	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, updateStatement)
 	require.NoError(t, err)
 	asts := base.ExtractASTs(stmts)
-	require.Len(t, asts, 2)
-	_, ok := asts[1].(*base.ANTLRAST)
+	require.Len(t, asts, 1)
+	_, ok := asts[0].(*OmniAST)
 	require.True(t, ok)
+
+	antlrASTs, err := ParsePLSQL(triggerStatement)
+	require.NoError(t, err)
+	require.Len(t, antlrASTs, 1)
+	asts = append(asts, antlrASTs[0])
 
 	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)

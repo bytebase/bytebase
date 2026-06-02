@@ -87,6 +87,28 @@ SPOOL OFF
 	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
 }
 
+func TestParsePLSQLOmniMatchRecognize(t *testing.T) {
+	statement := `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE, LAST(PRICE) AS LAST_PRICE
+  ONE ROW PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`
+	stmts, err := SplitSQL(statement)
+	require.NoError(t, err)
+	require.Len(t, stmts, 1)
+	require.Equal(t, statement, stmts[0].Text)
+
+	list, err := ParsePLSQLOmni(statement)
+	require.NoError(t, err)
+	require.Len(t, list.Items, 1)
+	raw, ok := list.Items[0].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.SelectStmt{}, raw.Stmt)
+}
+
 func TestParsePLSQLOmniPreservesScriptOffsets(t *testing.T) {
 	sql := `PROMPT setup
 SELECT 1 FROM DUAL;
