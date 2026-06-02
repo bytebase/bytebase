@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -55,4 +56,23 @@ END;`
 	diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, statement)
 	require.NoError(t, err)
 	require.Empty(t, diagnostics)
+}
+
+func TestDiagnoseAcceptsAlterSystem(t *testing.T) {
+	tests := []string{
+		"alter system set dg_broker_start=true;",
+		"alter system switch logfile;",
+	}
+
+	for _, statement := range tests {
+		t.Run(statement, func(t *testing.T) {
+			diagnostics, err := Diagnose(context.Background(), base.DiagnoseContext{}, statement)
+			require.NoError(t, err)
+			require.Empty(t, diagnostics)
+
+			stmts, err := base.ParseStatements(store.Engine_ORACLE, statement)
+			require.NoError(t, err)
+			require.Len(t, stmts, 1)
+		})
+	}
 }
