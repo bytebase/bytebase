@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { useAppStore } from "@/react/stores/app";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
@@ -50,10 +50,9 @@ export async function generateRolloutPreview(
 ): Promise<Rollout> {
   // Step 1: Extract all database targets from specs and expand database groups
   const allDatabaseNames = await extractAndExpandDatabaseTargets(plan.specs);
-  const dbStore = useDatabaseV1Store();
 
   // Step 2: Fetch databases that are not cached
-  await dbStore.batchGetOrFetchDatabases(allDatabaseNames);
+  await useAppStore.getState().batchGetOrFetchDatabases(allDatabaseNames);
 
   // Step 3: Generate tasks from specs
   const tasks = await generateTasksFromSpecs(plan.specs);
@@ -164,13 +163,11 @@ function groupTasksIntoStages(
   environmentOrder: string[],
   projectName: string
 ): Stage[] {
-  const databaseStore = useDatabaseV1Store();
-
   // Group tasks by effectiveEnvironment
   const tasksByEnv = new Map<string, TaskCreate[]>();
 
   for (const task of tasks) {
-    const db = databaseStore.getDatabaseByName(task.databaseName);
+    const db = useAppStore.getState().getDatabaseByName(task.databaseName);
     const env = db.effectiveEnvironment ?? "";
     if (env === "") {
       continue;

@@ -18,9 +18,8 @@ interface UseAppDatabaseMetadataOptions {
 
 /**
  * Reactively reads a database's metadata from the Zustand app store,
- * self-fetching when the route hasn't preloaded it. Mirrors the legacy
- * Pinia `useDBSchemaV1Store.getDatabaseMetadata(...)` + `getOrFetchDatabaseMetadata(...)`
- * pair, but exposed as a single React hook with stable refs.
+ * self-fetching when the route hasn't preloaded it. Exposes the React
+ * DB schema slice as a single hook with stable refs.
  */
 export const useAppDatabaseMetadata = (
   database: string,

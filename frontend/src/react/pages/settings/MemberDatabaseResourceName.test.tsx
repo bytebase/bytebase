@@ -4,21 +4,21 @@ import type { DatabaseResource } from "@/types";
 import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 
 const mocks = vi.hoisted(() => ({
-  getDatabaseByName: vi.fn(),
-  getInstanceByName: vi.fn(),
+  databasesByName: {} as Record<string, unknown>,
+  instancesByName: {} as Record<string, unknown>,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
-}));
-
-vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => ({
-    getDatabaseByName: mocks.getDatabaseByName,
-  }),
-  useInstanceV1Store: () => ({
-    getInstanceByName: mocks.getInstanceByName,
-  }),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: <T,>(
+    selector: (state: {
+      databasesByName: Record<string, unknown>;
+      instancesByName: Record<string, unknown>;
+    }) => T
+  ) =>
+    selector({
+      databasesByName: mocks.databasesByName,
+      instancesByName: mocks.instancesByName,
+    }),
 }));
 
 vi.mock("@/react/components/EngineIcon", () => ({
@@ -47,19 +47,23 @@ const resource: DatabaseResource = {
 describe("MemberDatabaseResourceName", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getDatabaseByName.mockReturnValue({
-      name: "instances/prod/databases/hr",
-      instanceResource: {
+    mocks.databasesByName = {
+      "instances/prod/databases/hr": {
+        name: "instances/prod/databases/hr",
+        instanceResource: {
+          name: "instances/prod",
+          title: "Production",
+          engine: "POSTGRES",
+        },
+      },
+    };
+    mocks.instancesByName = {
+      "instances/prod": {
         name: "instances/prod",
         title: "Production",
         engine: "POSTGRES",
       },
-    });
-    mocks.getInstanceByName.mockReturnValue({
-      name: "instances/prod",
-      title: "Production",
-      engine: "POSTGRES",
-    });
+    };
   });
 
   test("renders instance title and database name instead of raw resource path", () => {
@@ -74,14 +78,18 @@ describe("MemberDatabaseResourceName", () => {
   });
 
   test("falls back to instance id without showing unknown instance engine", () => {
-    mocks.getDatabaseByName.mockReturnValue({
-      name: "instances/prod/databases/hr",
-    });
-    mocks.getInstanceByName.mockReturnValue({
-      name: "instances/-",
-      title: "",
-      engine: "MYSQL",
-    });
+    mocks.databasesByName = {
+      "instances/prod/databases/hr": {
+        name: "instances/prod/databases/hr",
+      },
+    };
+    mocks.instancesByName = {
+      "instances/prod": {
+        name: "instances/-",
+        title: "",
+        engine: "MYSQL",
+      },
+    };
 
     render(<MemberDatabaseResourceName resource={resource} />);
 

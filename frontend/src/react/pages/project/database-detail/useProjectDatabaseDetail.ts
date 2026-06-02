@@ -8,7 +8,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store } from "@/store";
+import { unknownDatabase } from "@/types/v1/database";
 import { isDefaultProject } from "@/types/v1/project";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
@@ -34,13 +34,13 @@ export function useProjectDatabaseDetail({
   changelogId,
   revisionId,
 }: UseProjectDatabaseDetailOptions) {
-  const databaseStore = useDatabaseV1Store();
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const fullDatabaseName = `instances/${instanceId}/databases/${databaseName}`;
-  const database = useVueState(() =>
-    databaseStore.getDatabaseByName(fullDatabaseName)
+  const database = useVueState(
+    () => databasesByName[fullDatabaseName] ?? unknownDatabase()
   );
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +48,8 @@ export function useProjectDatabaseDetail({
     let cancelled = false;
 
     setLoading(true);
-    void databaseStore
+    void useAppStore
+      .getState()
       .getOrFetchDatabaseByName(fullDatabaseName)
       .then(async (db) => {
         try {
@@ -94,7 +95,6 @@ export function useProjectDatabaseDetail({
   }, [
     changelogId,
     databaseName,
-    databaseStore,
     getOrFetchDatabaseMetadata,
     fullDatabaseName,
     instanceId,

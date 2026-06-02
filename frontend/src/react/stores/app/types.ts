@@ -13,10 +13,14 @@ import type {
   DatabaseGroupView,
 } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
+  BatchUpdateDatabasesRequest,
   Changelog,
   ChangelogView,
   Database,
   DatabaseMetadata,
+  DatabaseSchema,
+  DiffSchemaRequest,
+  DiffSchemaResponse,
   ExtensionMetadata,
   ExternalTableMetadata,
   FunctionMetadata,
@@ -24,6 +28,7 @@ import type {
   ListChangelogsRequest,
   SchemaMetadata,
   TableMetadata,
+  UpdateDatabaseRequest,
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
@@ -291,6 +296,7 @@ export type InstanceSlice = {
   instancesByName: Record<string, Instance>;
   instanceRequests: Record<string, Promise<Instance | undefined>>;
   instanceErrorsByName: Record<string, Error | undefined>;
+  resetInstances: () => void;
   fetchInstance: (name: string) => Promise<Instance | undefined>;
   getInstanceByName: (name: string) => Instance;
   getOrFetchInstanceByName: (
@@ -356,12 +362,17 @@ export type DatabaseListParams = {
   filter?: string | DatabaseFilter;
   orderBy?: string;
   silent?: boolean;
+  // When listing by instance parent, stale cached databases for that instance
+  // are evicted first unless this is set (e.g. paginated "load more").
+  skipCacheRemoval?: boolean;
 };
 
 export type DatabaseSlice = {
   databasesByName: Record<string, Database>;
   databaseRequests: Record<string, Promise<Database | undefined>>;
   databaseErrorsByName: Record<string, Error | undefined>;
+  resetDatabases: () => void;
+  getDatabaseList: () => Database[];
   // Synchronous read with the `unknownDatabase` fallback (never null), so
   // callers can read `.project` / `.instanceResource` without null checks.
   getDatabaseByName: (name: string) => Database;
@@ -379,6 +390,17 @@ export type DatabaseSlice = {
     nextPageToken: string;
   }>;
   syncDatabase: (name: string, refresh?: boolean) => Promise<void>;
+  batchSyncDatabases: (databases: string[]) => Promise<void>;
+  batchUpdateDatabases: (
+    params: BatchUpdateDatabasesRequest
+  ) => Promise<Database[]>;
+  updateDatabase: (params: UpdateDatabaseRequest) => Promise<Database>;
+  // Drops cached databases (and their schema metadata) for the given instance.
+  removeCacheByInstance: (instance: string) => void;
+  // Patches the cached `instanceResource` of every database under `instance`.
+  updateDatabaseInstance: (instance: Instance) => void;
+  fetchDatabaseSchema: (database: string) => Promise<DatabaseSchema>;
+  diffSchema: (params: DiffSchemaRequest) => Promise<DiffSchemaResponse>;
 };
 
 export type DBGroupSlice = {

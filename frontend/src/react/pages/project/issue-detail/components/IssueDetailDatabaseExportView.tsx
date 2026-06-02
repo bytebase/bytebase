@@ -33,7 +33,6 @@ import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   getProjectNameAndDatabaseGroupName,
   pushNotification,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -50,6 +49,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { type Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
@@ -382,7 +382,6 @@ function IssueDetailDatabaseExportTasks({
   tasksExpanded: boolean;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const visibleTasks = tasksExpanded
     ? tasks
     : tasks.slice(0, DEFAULT_DISPLAY_COUNT);
@@ -392,9 +391,9 @@ function IssueDetailDatabaseExportTasks({
   useEffect(() => {
     const targets = tasks.map((task) => task.target);
     if (targets.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(targets);
+      void useAppStore.getState().batchGetOrFetchDatabases(targets);
     }
-  }, [databaseStore, tasks]);
+  }, [tasks]);
 
   if (tasks.length === 0) {
     return (
@@ -591,19 +590,18 @@ function IssueDetailDatabaseExportExecutionHistory({
 
 function IssueDetailDatabaseExportTargets({ targets }: { targets: string[] }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
 
   useEffect(() => {
     for (const target of targets) {
       if (isValidDatabaseName(target)) {
-        void databaseStore.getOrFetchDatabaseByName(target);
+        void useAppStore.getState().getOrFetchDatabaseByName(target);
       } else if (isValidDatabaseGroupName(target)) {
         void useAppStore.getState().getOrFetchDBGroupByName(target, {
           view: DatabaseGroupView.FULL,
         });
       }
     }
-  }, [databaseStore, targets]);
+  }, [targets]);
 
   if (targets.length === 0) {
     return (
@@ -642,9 +640,11 @@ function IssueDetailDatabaseExportDatabaseTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const database = useVueState(() => databaseStore.getDatabaseByName(target));
+  const databasesByName = useAppStore((s) => s.databasesByName);
+  const database = useVueState(
+    () => databasesByName[target] ?? unknownDatabase()
+  );
   const environment = useVueState(() =>
     environmentStore.getEnvironmentByName(
       database.effectiveEnvironment ??
@@ -681,7 +681,6 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const cachedGroup = useAppStore((s) => s.dbGroupsByName[target]);
   const databaseGroup = useMemo(
     () => cachedGroup ?? unknownDatabaseGroup(),
@@ -705,9 +704,9 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
 
   useEffect(() => {
     if (databases.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(databases);
+      void useAppStore.getState().batchGetOrFetchDatabases(databases);
     }
-  }, [databaseStore, databases]);
+  }, [databases]);
 
   const gotoDatabaseGroupDetailPage = () => {
     const [projectId, databaseGroupName] =

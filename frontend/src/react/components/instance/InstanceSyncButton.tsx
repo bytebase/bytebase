@@ -8,7 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -60,8 +61,7 @@ export function InstanceSyncButton({
           let notificationShown = false;
 
           const checkSyncStatus = async () => {
-            const databaseStore = useDatabaseV1Store();
-            const { databases } = await databaseStore.fetchDatabases({
+            const { databases } = await useAppStore.getState().fetchDatabases({
               parent: instanceName,
               pageSize: 1000,
               silent: true,

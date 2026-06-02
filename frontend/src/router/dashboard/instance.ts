@@ -1,62 +1,10 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
-import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
-import {
-  databaseNamePrefix,
-  instanceNamePrefix,
-  pushNotification,
-  useDatabaseV1Store,
-} from "@/store";
-import { isValidProjectName } from "@/types";
-import { extractProjectResourceName } from "@/utils/v1";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "./projectV1";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const INSTANCE_ROUTE_CREATE = `${INSTANCE_ROUTE_DASHBOARD}.create`;
 export const INSTANCE_ROUTE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.detail`;
 export const INSTANCE_ROUTE_DATABASE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.database.detail`;
-
-const redirectToProjectDatabaseDetail = async (
-  route: RouteLocationNormalized
-) => {
-  const instanceId = route.params.instanceId as string;
-  const databaseName = route.params.databaseName as string;
-  try {
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      `${instanceNamePrefix}${instanceId}/${databaseNamePrefix}${databaseName}`
-    );
-    if (database && isValidProjectName(database.project)) {
-      return {
-        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(database.project),
-          instanceId,
-          databaseName,
-        },
-      };
-    }
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: "Database not found",
-      description: `Database: ${databaseName}`,
-    });
-  } catch (error) {
-    console.error("Failed to fetch database:", error);
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Error",
-      description: `Failed to load database: ${databaseName}`,
-    });
-  }
-  return {
-    name: INSTANCE_ROUTE_DETAIL,
-    params: {
-      instanceId,
-    },
-  };
-};
 
 const instanceRoutes: RouteRecordRaw[] = [
   {
@@ -111,8 +59,12 @@ const instanceRoutes: RouteRecordRaw[] = [
         meta: {
           requiredPermissionList: () => ["bb.projects.get", "bb.databases.get"],
         },
-        component: DummyRootView,
-        beforeEnter: redirectToProjectDatabaseDetail,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "InstanceDatabaseRedirectPage",
+          instanceId: route.params.instanceId,
+          databaseName: route.params.databaseName,
+        }),
       },
     ],
   },

@@ -14,9 +14,10 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
@@ -86,7 +87,6 @@ export function ProjectDatabaseDetailPage({
   query,
 }: ProjectDatabaseDetailPageProps) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const detail = useProjectDatabaseDetail({
     projectId,
     instanceId,
@@ -138,7 +138,7 @@ export function ProjectDatabaseDetailPage({
   const handleTransferProject = useCallback(
     async (projectName: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: [
@@ -154,9 +154,9 @@ export function ProjectDatabaseDetailPage({
             ],
           })
         );
-        const updatedDatabase = await databaseStore.getOrFetchDatabaseByName(
-          detail.database.name
-        );
+        const updatedDatabase = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(detail.database.name);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -177,7 +177,7 @@ export function ProjectDatabaseDetailPage({
         });
       }
     },
-    [databaseStore, detail.database, query, selectedTab, t]
+    [detail.database, query, selectedTab, t]
   );
 
   if (!detail.ready) {

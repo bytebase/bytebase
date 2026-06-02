@@ -40,14 +40,6 @@ vi.mock("@/react/i18n", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-    // SchemaPane reads cached metadata reactively via this getter; return
-    // null so the tree stays empty unless a test seeds the cache.
-    getDatabaseMetadataWithoutDefault: () => null,
-    syncDatabase: vi.fn(),
-    getTableMetadata: vi.fn(),
-  }),
   pushNotification: vi.fn(),
 }));
 

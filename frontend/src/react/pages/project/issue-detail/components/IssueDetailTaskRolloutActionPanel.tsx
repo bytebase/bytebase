@@ -21,9 +21,9 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -40,6 +40,7 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
@@ -596,9 +597,11 @@ function IssueDetailTaskDatabaseName({ task }: { task: Task }) {
 
 function IssueDetailDatabaseTarget({ target }: { target: string }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentStore = useEnvironmentV1Store();
-  const database = useVueState(() => databaseStore.getDatabaseByName(target));
+  const database = useVueState(
+    () => databasesByName[target] ?? unknownDatabase()
+  );
   const environment = useVueState(() =>
     environmentStore.getEnvironmentByName(
       database.effectiveEnvironment ??

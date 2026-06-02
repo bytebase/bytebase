@@ -1,9 +1,11 @@
 import {
+  batchGetOrFetchDatabases,
+  fetchDatabases,
+} from "@/react/stores/app/databaseAccess";
+import {
   instanceNamePrefix,
   projectNamePrefix,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 import { isValidInstanceName } from "@/types";
@@ -101,14 +103,16 @@ export const getProjectIdOptionConfig = (): OptionConfig => {
 };
 
 export const getInstanceIdOptionConfig = (): OptionConfig => {
-  const store = useInstanceV1Store();
   return {
     options: [],
     fetch: async (instanceIds: string[]) => {
+      const { useAppStore } = await import("@/react/stores/app");
       // TODO(ed): batch fetch instances
       const instances = await Promise.all(
         instanceIds.map((instanceId) =>
-          store.getOrFetchInstanceByName(`${instanceNamePrefix}${instanceId}`)
+          useAppStore
+            .getState()
+            .getOrFetchInstanceByName(`${instanceNamePrefix}${instanceId}`)
         )
       );
       const options: LabeledOption[] = [];
@@ -121,7 +125,9 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
       return options;
     },
     search: async (params) => {
-      return store
+      const { useAppStore } = await import("@/react/stores/app");
+      return useAppStore
+        .getState()
         .fetchInstanceList({
           pageSize: params.pageSize,
           pageToken: params.pageToken,
@@ -139,7 +145,6 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
 };
 
 export const getDatabaseIdOptionConfig = (parent: string): OptionConfig => {
-  const dbStore = useDatabaseV1Store();
   return {
     options: [],
     // Since we use the database name (not the fullname) as the value, we cannot
@@ -149,47 +154,42 @@ export const getDatabaseIdOptionConfig = (parent: string): OptionConfig => {
     // database name instead of the entire database entity.
     fallback: (value: string) => ({ label: value, value }),
     search: async (params) => {
-      return dbStore
-        .fetchDatabases({
-          pageSize: params.pageSize,
-          pageToken: params.pageToken,
-          parent: parent,
-          filter: {
-            query: params.search,
-          },
-          silent: true,
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: getDatabaseIdOptions(resp.databases),
-        }));
+      return fetchDatabases({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        parent: parent,
+        filter: {
+          query: params.search,
+        },
+        silent: true,
+      }).then((resp) => ({
+        nextPageToken: resp.nextPageToken,
+        options: getDatabaseIdOptions(resp.databases),
+      }));
     },
   };
 };
 
 export const getDatabaseNameOptionConfig = (parent: string): OptionConfig => {
-  const dbStore = useDatabaseV1Store();
   return {
     options: [],
     fetch: async (names: string[]) => {
-      const databases = await dbStore.batchGetOrFetchDatabases(names);
+      const databases = await batchGetOrFetchDatabases(names);
       return databases.map(getDatabaseFullNameOption);
     },
     search: async (params) => {
-      return dbStore
-        .fetchDatabases({
-          pageSize: params.pageSize,
-          pageToken: params.pageToken,
-          parent,
-          filter: {
-            query: params.search,
-          },
-          silent: true,
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.databases.map(getDatabaseFullNameOption),
-        }));
+      return fetchDatabases({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        parent,
+        filter: {
+          query: params.search,
+        },
+        silent: true,
+      }).then((resp) => ({
+        nextPageToken: resp.nextPageToken,
+        options: resp.databases.map(getDatabaseFullNameOption),
+      }));
     },
   };
 };

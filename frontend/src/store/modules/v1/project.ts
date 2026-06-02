@@ -29,7 +29,6 @@ import {
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
-import { getLabelFilter } from "./database";
 
 export interface ProjectFilter {
   query?: string;
@@ -38,6 +37,37 @@ export interface ProjectFilter {
   // label should be "{label key}:{label value}" format
   labels?: string[];
 }
+
+const getLabelFilter = (labels: string[]): string[] => {
+  const labelMap = new Map<string, string[]>();
+  for (const label of labels) {
+    const sections = label.split(":");
+    if (sections.length !== 2) {
+      continue;
+    }
+    const [key, rawValue] = sections;
+    const values = rawValue.split(",");
+    if (!labelMap.has(key)) {
+      labelMap.set(key, []);
+    }
+    labelMap.get(key)?.push(...values);
+  }
+
+  return [...labelMap.entries()].reduce((result, [key, values]) => {
+    switch (values.length) {
+      case 0:
+        return result;
+      case 1:
+        result.push(`labels.${key} == "${values[0]}"`);
+        return result;
+      default:
+        result.push(
+          `labels.${key} in [${values.map((v) => `"${v}"`).join(", ")}]`
+        );
+        return result;
+    }
+  }, [] as string[]);
+};
 
 const getListProjectFilter = (params: ProjectFilter) => {
   const list = [];

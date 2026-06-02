@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useAppStore } from "@/react/stores/app";
-import { useDatabaseV1Store } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -52,7 +51,6 @@ export function MatchedDatabaseView({
   matchedNamesRef.current = matchedNames;
 
   const pageSize = getDefaultPagination();
-  const databaseStore = useDatabaseV1Store();
 
   const toggleSection = useCallback((name: string) => {
     setExpandedSections((prev) => {
@@ -75,9 +73,9 @@ export function MatchedDatabaseView({
 
       setMatchedDbs((prev) => ({ ...prev, loading: true }));
       try {
-        await databaseStore.batchGetOrFetchDatabases(slice);
+        await useAppStore.getState().batchGetOrFetchDatabases(slice);
         const newDbs = slice
-          .map((n) => databaseStore.getDatabaseByName(n))
+          .map((n) => useAppStore.getState().getDatabaseByName(n))
           .filter((db) => isValidDatabaseName(db.name));
         setMatchedDbs({
           databases: [...currentDbs, ...newDbs],
@@ -88,7 +86,7 @@ export function MatchedDatabaseView({
         setMatchedDbs((prev) => ({ ...prev, loading: false }));
       }
     },
-    [databaseStore, pageSize]
+    [pageSize]
   );
 
   const loadMoreUnmatched = useCallback(
@@ -99,8 +97,9 @@ export function MatchedDatabaseView({
         let unmatched: Database[] = [];
         let pageToken = token;
         while (true) {
-          const { databases, nextPageToken } =
-            await databaseStore.fetchDatabases({
+          const { databases, nextPageToken } = await useAppStore
+            .getState()
+            .fetchDatabases({
               pageToken,
               pageSize,
               parent: project,
@@ -122,7 +121,7 @@ export function MatchedDatabaseView({
         setUnmatchedDbs((prev) => ({ ...prev, loading: false }));
       }
     },
-    [databaseStore, pageSize, project]
+    [pageSize, project]
   );
 
   // Debounced expression validation and data loading
@@ -160,9 +159,9 @@ export function MatchedDatabaseView({
 
         let newMatchedDbs: Database[] = [];
         if (matchedSlice.length > 0) {
-          await databaseStore.batchGetOrFetchDatabases(matchedSlice);
+          await useAppStore.getState().batchGetOrFetchDatabases(matchedSlice);
           newMatchedDbs = matchedSlice
-            .map((n) => databaseStore.getDatabaseByName(n))
+            .map((n) => useAppStore.getState().getDatabaseByName(n))
             .filter((db) => isValidDatabaseName(db.name));
         }
         setMatchedDbs({ databases: newMatchedDbs, loading: false });
@@ -172,8 +171,9 @@ export function MatchedDatabaseView({
         let unmatchedList: Database[] = [];
         let pageToken = "";
         while (true) {
-          const { databases, nextPageToken } =
-            await databaseStore.fetchDatabases({
+          const { databases, nextPageToken } = await useAppStore
+            .getState()
+            .fetchDatabases({
               pageToken,
               pageSize,
               parent: project,
@@ -205,7 +205,7 @@ export function MatchedDatabaseView({
       }
     }, DEBOUNCE_SEARCH_DELAY);
     return () => clearTimeout(timerRef.current);
-  }, [expr, project, presetNames, databaseStore, pageSize]);
+  }, [expr, project, presetNames, pageSize]);
 
   const hasMoreMatched = matchedToken < matchedNames.length;
   const hasMoreUnmatched = !!unmatchedToken;

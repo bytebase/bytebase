@@ -20,11 +20,7 @@ import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  useActuatorV1Store,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useActuatorV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -41,7 +37,6 @@ import {
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
-  const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const listWorkloadIdentities = useAppStore(
     (state) => state.listWorkloadIdentities
@@ -132,7 +127,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       const all: ComboboxOption[] = [];
       let pageToken: string | undefined;
       do {
-        const resp = await databaseStore.fetchDatabases({
+        const resp = await useAppStore.getState().fetchDatabases({
           parent: projectName,
           filter: dbSearch ? { query: dbSearch } : {},
           pageSize: getDefaultPagination(),
@@ -150,7 +145,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       setDbOptions(all);
     };
     fetchAllDatabases().catch(() => {});
-  }, [projectName, dbSearch, databaseStore]);
+  }, [projectName, dbSearch]);
 
   // Fetch the selected identity into the store cache so getWorkloadIdentity
   // returns the real object (with workloadIdentityConfig) instead of a stub.

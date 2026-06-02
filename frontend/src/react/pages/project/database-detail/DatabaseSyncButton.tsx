@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 const extractDatabaseName = (resource: string) => {
@@ -22,7 +22,6 @@ export function DatabaseSyncButton({
   disabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
@@ -32,7 +31,7 @@ export function DatabaseSyncButton({
     setSyncing(true);
 
     try {
-      await databaseStore.syncDatabase(database.name);
+      await useAppStore.getState().syncDatabase(database.name);
       await getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,
@@ -60,7 +59,7 @@ export function DatabaseSyncButton({
     } finally {
       setSyncing(false);
     }
-  }, [database, databaseStore, getOrFetchDatabaseMetadata, t]);
+  }, [database, getOrFetchDatabaseMetadata, t]);
 
   return (
     <Button

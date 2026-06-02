@@ -1,8 +1,10 @@
 import { ChevronRight } from "lucide-react";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { cn } from "@/react/lib/utils";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useEnvironmentV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
+import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 
 type PlanTargetDisplaySize = "sm" | "md";
@@ -51,7 +53,7 @@ export function PlanTargetDisplay({
   size?: PlanTargetDisplaySize;
   target: string;
 }) {
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentStore = useEnvironmentV1Store();
   const classes = sizeClasses[size];
 
@@ -69,7 +71,7 @@ export function PlanTargetDisplay({
     );
   }
 
-  const database = databaseStore.getDatabaseByName(target);
+  const database = databasesByName[target] ?? unknownDatabase();
   const environmentName =
     database.effectiveEnvironment ??
     database.instanceResource?.environment ??

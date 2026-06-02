@@ -17,9 +17,10 @@ import {
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 
@@ -90,7 +91,7 @@ function SchemaEditorSheetBody({
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const schemaEditorRef = useRef<SchemaEditorHandle>(null);
 
   const [selectedDatabaseName, setSelectedDatabaseName] = useState(
@@ -110,16 +111,16 @@ function SchemaEditorSheetBody({
   // entries fall back to the raw resource name and stay disabled).
   useEffect(() => {
     if (databaseNames.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(databaseNames);
+      void useAppStore.getState().batchGetOrFetchDatabases(databaseNames);
     }
-  }, [databaseNames, databaseStore]);
+  }, [databaseNames]);
 
   // Subscribed to the Pinia store via useVueState — re-derives once the
   // hydration above completes so newly-fetched targets switch from the
   // bare-name placeholder to a real "<db> (<instance>)" label.
   const databaseOptions = useVueState(() =>
     databaseNames.map((name) => {
-      const db = databaseStore.getDatabaseByName(name);
+      const db = databasesByName[name] ?? unknownDatabase();
       const hydrated = db && isValidDatabaseName(db.name);
       const instance = hydrated ? getInstanceResource(db) : undefined;
       const databaseLabel = extractDatabaseResourceName(name).databaseName;
@@ -150,7 +151,7 @@ function SchemaEditorSheetBody({
             skipCache: true,
             limit: 200,
           }),
-          databaseStore.getOrFetchDatabaseByName(databaseName),
+          useAppStore.getState().getOrFetchDatabaseByName(databaseName),
         ]);
         // A newer prepareMetadata call superseded us — drop this result so
         // the user can't end up editing one database while seeing another
@@ -169,7 +170,7 @@ function SchemaEditorSheetBody({
         }
       }
     },
-    [getOrFetchDatabaseMetadata, databaseStore]
+    [getOrFetchDatabaseMetadata]
   );
 
   useEffect(() => {

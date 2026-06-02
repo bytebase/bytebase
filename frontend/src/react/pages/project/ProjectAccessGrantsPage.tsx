@@ -36,12 +36,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { router } from "@/router";
-import {
-  featureToRef,
-  pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { featureToRef, pushNotification, useProjectV1Store } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -112,7 +107,6 @@ function mapDatabase(db: Database) {
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
   const listAccessGrants = useAppStore((state) => state.listAccessGrants);
   const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
@@ -164,7 +158,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
         return [];
       }
-      const result = await databaseStore.fetchDatabases({
+      const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
@@ -195,7 +189,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         };
       });
     },
-    [databaseStore, projectName, project]
+    [projectName, project]
   );
 
   // Server-side search for creator filter options

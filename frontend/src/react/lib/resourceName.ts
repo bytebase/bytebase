@@ -2,6 +2,7 @@ export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";
 export const projectNamePrefix = "projects/";
 export const instanceNamePrefix = "instances/";
+export const databaseNamePrefix = "databases/";
 export const settingNamePrefix = "settings/";
 
 export function getResourceId(name: string, prefix: string): string {

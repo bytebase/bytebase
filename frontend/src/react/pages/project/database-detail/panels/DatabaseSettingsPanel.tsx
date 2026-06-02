@@ -7,7 +7,8 @@ import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -22,7 +23,6 @@ const EMPTY_LABELS: Record<string, string> = {};
 
 export function DatabaseSettingsPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const labels = database.labels ?? EMPTY_LABELS;
   const instanceEnvironment = getInstanceResource(database).environment ?? "";
   const allowClearEnvironment = !instanceEnvironment;
@@ -65,7 +65,7 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
     const databasePatch = cloneDeep(database);
     databasePatch.environment = nextEnvironment;
 
-    await databaseStore.updateDatabase(
+    await useAppStore.getState().updateDatabase(
       create(UpdateDatabaseRequestSchema, {
         database: databasePatch,
         updateMask: create(FieldMaskSchema, {
@@ -92,7 +92,7 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
     setIsUpdatingLabels(true);
     try {
       const labels = convertKVListToLabels(kvList, false);
-      await databaseStore.updateDatabase(
+      await useAppStore.getState().updateDatabase(
         create(UpdateDatabaseRequestSchema, {
           database: {
             ...database,

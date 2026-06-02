@@ -17,7 +17,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { useDatabaseV1Store, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -84,7 +84,6 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     setSearchParams(defaultSearchParams());
   }, [projectId]);
 
-  const databaseStore = useDatabaseV1Store();
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
@@ -104,7 +103,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
       if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
         return [];
       }
-      const { databases } = await databaseStore.fetchDatabases({
+      const { databases } = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
@@ -114,7 +113,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
         return { value: db.name, keywords: [databaseName, db.name] };
       });
     },
-    [databaseStore, projectName, project]
+    [projectName, project]
   );
 
   // Scope options for the search bar

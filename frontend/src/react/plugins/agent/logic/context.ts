@@ -56,11 +56,9 @@ export async function extractRouteContext(
   // Database context
   if (instanceId && databaseName) {
     try {
-      const { useDatabaseV1Store } = await import("@/store");
-      const store = useDatabaseV1Store();
-      const db = store.getDatabaseByName(
-        `instances/${instanceId}/databases/${databaseName}`
-      );
+      const db = useAppStore
+        .getState()
+        .getDatabaseByName(`instances/${instanceId}/databases/${databaseName}`);
       if (db?.name) {
         ctx.database = {
           name: db.name,
