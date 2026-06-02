@@ -88,7 +88,7 @@ Get these wrong and changes silently bypass ServiceNow:
 ## Flow
 
 1. **Create (Bytebase UI).** User authors plan + issue; the catch-all rule parks it `PENDING` on the SN role.
-2. **Discover (orchestrator).** Poll `ListIssues` with a server-side filter — `create_time >= <cursor> && approval_status == "PENDING"` (optionally `&& labels == "needs-cab"`), `order_by create_time desc`. **Idempotency keyed on the issue resource name** so overlapping polls / restarts don't create duplicate CHGs.
+2. **Discover (orchestrator).** Recommended is a **hybrid**: a webhook push for low latency *plus* a poll for reliability (see "Discovery: webhook + poll" below). The poll uses `ListIssues` with a server-side filter — `create_time >= <cursor> && approval_status == "PENDING"` (optionally `&& labels == "needs-cab"`), `order_by create_time desc`. **Idempotency keyed on the issue resource name** is what makes running both sources safe — neither overlapping polls, restarts, nor a webhook+poll double-delivery create a duplicate CHG.
 3. **Approve (ServiceNow).** Create CHG; run CAB.
    - **Rejected →** `RejectIssue`. **Rework →** `RequestIssue`. Store the CHG ↔ issue mapping; link back via `CreateIssueComment` (include the **SN approver identity + CHG number** — see Security/Audit).
 4. **Approve back (API).** On CHG approval, call `ApproveIssue` as the service account.
@@ -118,14 +118,27 @@ There are two polls, and both exist for one reason: **Bytebase cannot push to Se
 
 **Scalability:** cost ∝ (in-flight changes × poll frequency). Trivial for typical change volumes (dozens/day) in either pattern. The real fix is the **generic outbound webhook**: fire `ISSUE_CREATED` and `PIPELINE_COMPLETED|FAILED` and **both polls disappear** — the integration becomes fully event-driven.
 
-## Optional: reduce discovery latency with a push (design tradeoff)
+## Discovery: webhook + poll (recommended hybrid)
 
-The discovery poll (step 2) adds latency between "issue created in Bytebase" and "CHG created in ServiceNow." How much depends on the orchestrator:
+Polling and webhooks are **complementary, not either/or** — run both:
+
+| Source | Role | Strength | Weakness |
+|--------|------|----------|----------|
+| **Webhook push** | primary | near-instant; no scan cost | fire-and-forget, 3s timeout, **no retry** → a dropped event is lost |
+| **Reconciliation poll** | backstop | self-heals; also catches the catch-all-rule bypass and issues created while the endpoint was down | minute-level latency (ServiceNow) |
+
+The webhook gives you speed; the poll guarantees nothing is silently missed. Because both can deliver the same issue, the **issue-name idempotency** from step 2 is the glue that makes the combination safe. Run the poll at a relaxed interval (every few minutes) since it's only a safety net once the webhook is in place. The same hybrid applies to status (step 7): a `PIPELINE_COMPLETED|FAILED` webhook closes the CHG fast, while the follow/poll remains the backstop.
+
+### Discovery latency without the webhook
+
+Poll-only latency depends on the orchestrator:
 
 - **ServiceNow-native** scheduled flows have a ~1-minute floor → minute-level gap.
 - **Middleware** can poll tighter (e.g. every 10–30s) → seconds-level gap, at higher request volume.
 
-You can collapse the gap **today, with no Bytebase code changes**, by reusing an existing webhook type as a push channel:
+### The webhook leg — today, with no Bytebase code changes
+
+Reuse an existing webhook type as the push channel:
 
 **Bytebase `TEAMS` webhook → Microsoft Power Automate → ServiceNow.** The `TEAMS` webhook validator allows `*.powerplatform.com` (Power Automate Workflows, current) and `*.logic.azure.com` via suffix match — so tenant URLs like `prod-NN.westus.logic.azure.com` pass (`backend/plugin/webhook/validator.go`). Wiring:
 
@@ -133,9 +146,9 @@ You can collapse the gap **today, with no Bytebase code changes**, by reusing an
 2. On issue creation Bytebase POSTs a MessageCard immediately (async, ~instant). The card carries the issue **link** (`.../projects/{project}/issues/{uid}`), title, status, and actor.
 3. The Power Automate flow parses the card, extracts the issue ref (optionally calls `GetIssue` for detail), and creates the CHG via its native **ServiceNow connector**, storing the issue ↔ CHG mapping.
 
-**Tradeoffs (why this is optional, not the default):**
+**Tradeoffs of the webhook leg:**
 
-- **Reliability.** Bytebase webhooks are fire-and-forget (3s timeout, **no retry**). A slow/down endpoint means the event is **lost** — unlike polling, which self-heals on the next scan. Recommended pattern: **push for latency + keep a low-frequency reconciliation poll (every few minutes) as a backstop** to catch dropped events.
+- **Reliability.** Bytebase webhooks are fire-and-forget (3s timeout, **no retry**), so the webhook alone can drop events — which is exactly why it's paired with the reconciliation poll above rather than used standalone.
 - **Dependency.** Requires Microsoft Power Platform (license + a maintained flow). Only the `TEAMS` type has both an allowed domain *and* a first-class ServiceNow connector at the far end; the other chat types (Slack, Google Chat, etc.) don't bridge cleanly.
 - **Payload shape.** You're parsing a Teams **MessageCard** — a chat-notification shape, not an eventing contract. The issue link is the durable field; treat the rest as best-effort. The legacy Office 365 connector domains (`.office.com` / `.office365.com`) are being retired (2025–2026) — use **Power Automate Workflows** (`.powerplatform.com`).
 
