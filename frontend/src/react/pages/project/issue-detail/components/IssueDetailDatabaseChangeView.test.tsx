@@ -225,9 +225,6 @@ vi.mock("@/router/dashboard/projectV1RouteHelpers", () => ({
 
 vi.mock("@/store", () => ({
   getProjectNameAndDatabaseGroupName: mocks.getProjectNameAndDatabaseGroupName,
-  useEnvironmentV1Store: () => ({
-    getEnvironmentByName: mocks.getEnvironmentByName,
-  }),
 }));
 
 vi.mock("@/types", () => ({
@@ -259,14 +256,16 @@ vi.mock("@/react/stores/app", () => {
       selector: (s: {
         dbGroupsByName: Record<string, unknown>;
         databasesByName: Record<string, unknown>;
+        environmentList: unknown[];
       }) => unknown
-    ) => selector({ dbGroupsByName, databasesByName }),
+    ) => selector({ dbGroupsByName, databasesByName, environmentList: [] }),
     {
       getState: () => ({
         getDBGroupByName: mocks.getDBGroupByName,
         getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
         getOrFetchSheetByName: mocks.getOrFetchSheetByName,
         batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases,
+        getEnvironmentByName: mocks.getEnvironmentByName,
       }),
     }
   );

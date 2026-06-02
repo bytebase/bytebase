@@ -20,7 +20,6 @@ import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -36,7 +35,7 @@ import {
 
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
+  const serverInfo = useAppStore((s) => s.serverInfo);
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listWorkloadIdentities = useAppStore(
     (state) => state.listWorkloadIdentities
@@ -198,8 +197,9 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
 
   const branch = parsedSubject?.branch || "main";
 
-  const bytebaseUrl = useVueState(() =>
-    (actuatorStore.serverInfo?.externalUrl ?? "").replace(/\/$/, "")
+  const bytebaseUrl = useMemo(
+    () => (serverInfo?.externalUrl ?? "").replace(/\/$/, ""),
+    [serverInfo]
   );
 
   const workloadIdentityEmail = selectedIdentityName

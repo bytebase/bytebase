@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEnvironmentV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -39,7 +39,7 @@ import { useDeployTaskStatement } from "./useDeployTaskStatement";
 export function DeployTaskDetailPanel({ task }: { task: Task }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const environmentStore = useEnvironmentV1Store();
+  const environmentList = useAppStore((s) => s.environmentList);
   const project = page.project;
   const taskRuns = useMemo(
     () =>
@@ -73,9 +73,13 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
       ),
     [page.rollout?.stages, task.name]
   );
-  const stageTitle = stage?.environment
-    ? environmentStore.getEnvironmentByName(stage.environment).title
-    : "";
+  const stageTitle = useMemo(
+    () =>
+      stage?.environment
+        ? useAppStore.getState().getEnvironmentByName(stage.environment).title
+        : "",
+    [environmentList, stage?.environment]
+  );
   const scheduledTimeDisplay = useMemo(() => {
     const ts = getTimeForPbTimestampProtoEs(task.runTime, 0);
     if (!ts) return "";

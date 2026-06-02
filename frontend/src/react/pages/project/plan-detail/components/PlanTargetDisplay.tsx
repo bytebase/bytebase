@@ -1,8 +1,8 @@
 import { ChevronRight } from "lucide-react";
+import { useMemo } from "react";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
@@ -54,8 +54,21 @@ export function PlanTargetDisplay({
   target: string;
 }) {
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const environmentStore = useEnvironmentV1Store();
+  const environmentList = useAppStore((s) => s.environmentList);
   const classes = sizeClasses[size];
+
+  const database = databasesByName[target] ?? unknownDatabase();
+  const environmentName =
+    database.effectiveEnvironment ??
+    database.instanceResource?.environment ??
+    "";
+  const environment = useMemo(
+    () =>
+      environmentName
+        ? useAppStore.getState().getEnvironmentByName(environmentName)
+        : undefined,
+    [environmentList, environmentName]
+  );
 
   if (!isValidDatabaseName(target)) {
     return (
@@ -71,14 +84,6 @@ export function PlanTargetDisplay({
     );
   }
 
-  const database = databasesByName[target] ?? unknownDatabase();
-  const environmentName =
-    database.effectiveEnvironment ??
-    database.instanceResource?.environment ??
-    "";
-  const environment = environmentName
-    ? environmentStore.getEnvironmentByName(environmentName)
-    : undefined;
   const instance = getInstanceResource(database);
   const { databaseName } = extractDatabaseResourceName(target);
   const shouldShowSeparator = showInstance && Boolean(instance.title);

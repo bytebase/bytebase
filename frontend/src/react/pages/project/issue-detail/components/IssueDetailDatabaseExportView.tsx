@@ -33,8 +33,6 @@ import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   getProjectNameAndDatabaseGroupName,
   pushNotification,
-  useEnvironmentV1Store,
-  useSettingV1Store,
 } from "@/store";
 import {
   isValidDatabaseGroupName,
@@ -640,17 +638,18 @@ function IssueDetailDatabaseExportDatabaseTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
   const databasesByName = useAppStore((s) => s.databasesByName);
+  const environmentList = useAppStore((s) => s.environmentList);
   const database = useVueState(
     () => databasesByName[target] ?? unknownDatabase()
   );
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ??
-        database.instanceResource?.environment ??
-        ""
-    )
+  const environmentName =
+    database.effectiveEnvironment ??
+    database.instanceResource?.environment ??
+    "";
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(target);
@@ -778,14 +777,14 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
 
 function IssueDetailDatabaseExportLimits() {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
-  const maximumResultSize = useVueState(() => {
-    let size = settingStore.workspaceProfile.sqlResultSize;
+  const workspaceProfile = useAppStore((s) => s.getWorkspaceProfile());
+  const maximumResultSize = useMemo(() => {
+    let size = workspaceProfile.sqlResultSize;
     if (size <= 0) {
       size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
     }
     return Number(size) / 1024 / 1024;
-  });
+  }, [workspaceProfile]);
 
   return (
     <div className="flex w-full flex-col gap-y-2">

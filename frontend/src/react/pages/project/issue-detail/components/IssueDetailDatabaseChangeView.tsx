@@ -30,10 +30,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
-import {
-  getProjectNameAndDatabaseGroupName,
-  useEnvironmentV1Store,
-} from "@/store";
+import { getProjectNameAndDatabaseGroupName } from "@/store";
 import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
@@ -763,17 +760,18 @@ function IssueDetailDatabaseTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
   const databasesByName = useAppStore((s) => s.databasesByName);
+  const environmentList = useAppStore((s) => s.environmentList);
   const database = useVueState(
     () => databasesByName[target] ?? unknownDatabase()
   );
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ??
-        database.instanceResource?.environment ??
-        ""
-    )
+  const environmentName =
+    database.effectiveEnvironment ??
+    database.instanceResource?.environment ??
+    "";
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(target);

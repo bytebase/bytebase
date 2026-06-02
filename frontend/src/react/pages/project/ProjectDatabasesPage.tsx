@@ -29,11 +29,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
@@ -71,8 +67,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     (s) => s.removeDatabaseMetadataCache
   );
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const actuatorStore = useActuatorV1Store();
-  const environmentStore = useEnvironmentV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
@@ -108,9 +102,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     setRefreshToken((prev) => prev + 1);
   }, [projectId]);
 
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList);
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
@@ -359,7 +351,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   );
 
   const handleUnassign = useCallback(async () => {
-    const defaultProject = actuatorStore.serverInfo?.defaultProject ?? "";
+    const defaultProject =
+      useAppStore.getState().serverInfo?.defaultProject ?? "";
     try {
       await useAppStore.getState().batchUpdateDatabases(
         create(BatchUpdateDatabasesRequestSchema, {
@@ -388,7 +381,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         title: t("common.failed"),
       });
     }
-  }, [actuatorStore, refresh, t]);
+  }, [refresh, t]);
 
   const handleChangeDatabase = useCallback(() => {
     preCreateIssue(projectName, selectedDatabaseNames);

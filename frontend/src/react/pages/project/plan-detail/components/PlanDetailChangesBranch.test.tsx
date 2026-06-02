@@ -265,7 +265,6 @@ vi.mock("@/store", () => ({
   getProjectNameAndDatabaseGroupName: (name: string) =>
     name.split("/databaseGroups/"),
   pushNotification: vi.fn(),
-  useEnvironmentV1Store: () => mocks.environmentStore,
 }));
 
 // The migrated component reads resource state via imperative
@@ -305,6 +304,7 @@ vi.mock("@/react/stores/app", async () => {
         dbGroupsByName: Record<string, unknown>;
         dbGroupViewByName: Record<string, unknown>;
         projectsByName: Record<string, unknown>;
+        environmentList: unknown[];
       }) => unknown
     ) =>
       selector({
@@ -312,12 +312,14 @@ vi.mock("@/react/stores/app", async () => {
         dbGroupsByName,
         dbGroupViewByName,
         projectsByName,
+        environmentList: [],
       }),
     {
       getState: () => ({
         ...mocks.databaseStore,
         ...mocks.dbGroupStore,
         getProjectByName: mocks.projectStore.getProjectByName,
+        getEnvironmentByName: mocks.environmentStore.getEnvironmentByName,
       }),
     }
   );

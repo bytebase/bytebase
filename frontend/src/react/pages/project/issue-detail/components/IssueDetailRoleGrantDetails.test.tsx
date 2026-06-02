@@ -56,12 +56,6 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: <T,>(getter: () => T) => getter(),
 }));
 
-vi.mock("@/store", () => ({
-  useEnvironmentV1Store: () => ({
-    getEnvironmentByName: () => ({ title: "" }),
-  }),
-}));
-
 vi.mock("@/types/v1/database", () => ({
   unknownDatabase: () => ({
     name: "instances/-/databases/-",
@@ -87,6 +81,8 @@ vi.mock("@/react/stores/app", () => {
           : undefined,
     instancesByName: {} as Record<string, unknown>,
     databasesByName: {} as Record<string, unknown>,
+    environmentList: [] as unknown[],
+    getEnvironmentByName: () => ({ title: "" }),
     batchGetOrFetchDatabases: vi.fn(),
   });
   return {

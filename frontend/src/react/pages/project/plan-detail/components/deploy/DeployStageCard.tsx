@@ -1,16 +1,20 @@
 import { ArrowRight, Eye } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
-import { useEnvironmentV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getStageStatus } from "@/utils";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "../PlanDetailTabStrip";
 
 function StageProgressCard({ stage }: { stage: Stage }) {
-  const environmentStore = useEnvironmentV1Store();
-  const env = environmentStore.getEnvironmentByName(stage.environment);
+  const environmentList = useAppStore((s) => s.environmentList);
+  const env = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(stage.environment),
+    [environmentList, stage.environment]
+  );
   const completed = stage.tasks.filter(
     (task) =>
       task.status === Task_Status.DONE || task.status === Task_Status.SKIPPED

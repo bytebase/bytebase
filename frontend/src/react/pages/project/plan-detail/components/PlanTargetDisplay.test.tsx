@@ -10,9 +10,8 @@ import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 const mocks = vi.hoisted(() => ({
   databasesByName: {} as Record<string, unknown>,
-  environmentStore: {
-    getEnvironmentByName: vi.fn(),
-  },
+  environmentList: [] as unknown[],
+  getEnvironmentByName: vi.fn(),
 }));
 
 vi.mock("@/react/components/EngineIcon", () => ({
@@ -34,15 +33,18 @@ vi.mock("@/react/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: <T,>(
-    selector: (state: { databasesByName: Record<string, unknown> }) => T
-  ) => selector({ databasesByName: mocks.databasesByName }),
-}));
-
-vi.mock("@/store", () => ({
-  useEnvironmentV1Store: () => mocks.environmentStore,
-}));
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    databasesByName: mocks.databasesByName,
+    environmentList: mocks.environmentList,
+    getEnvironmentByName: mocks.getEnvironmentByName,
+  });
+  const useAppStore = <T,>(
+    selector: (state: ReturnType<typeof getState>) => T
+  ) => selector(getState());
+  useAppStore.getState = getState;
+  return { useAppStore };
+});
 
 vi.mock("@/types", () => ({
   isValidDatabaseName: (name: string) => name.includes("/databases/"),
@@ -75,7 +77,7 @@ describe("PlanTargetDisplay", () => {
         },
       },
     };
-    mocks.environmentStore.getEnvironmentByName.mockReturnValue({
+    mocks.getEnvironmentByName.mockReturnValue({
       name: "environments/prod",
       title: "Production",
     });
