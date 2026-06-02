@@ -73,6 +73,8 @@ Let a user author a database change in **Bytebase's UI**, mirror it as a **Servi
 
   Note: steps 2 and 7 (the polls) exist ONLY because Bytebase can't push.
         A generic outbound webhook (ISSUE_CREATED / PIPELINE_*) removes both.
+        Interim push (no code change): Bytebase TEAMS webhook -> Power Automate
+        -> ServiceNow connector; keep a slow reconciliation poll as a backstop.
 ```
 
 ## Enforcement prerequisites
@@ -115,6 +117,29 @@ There are two polls, and both exist for one reason: **Bytebase cannot push to Se
 - **Long rollouts** (large DDL, hours): exceed a Flow/MID-Server execution window, so an **in-flight-only** poller is needed (scoped to active rollouts with a cursor — not a full scan).
 
 **Scalability:** cost ∝ (in-flight changes × poll frequency). Trivial for typical change volumes (dozens/day) in either pattern. The real fix is the **generic outbound webhook**: fire `ISSUE_CREATED` and `PIPELINE_COMPLETED|FAILED` and **both polls disappear** — the integration becomes fully event-driven.
+
+## Optional: reduce discovery latency with a push (design tradeoff)
+
+The discovery poll (step 2) adds latency between "issue created in Bytebase" and "CHG created in ServiceNow." How much depends on the orchestrator:
+
+- **ServiceNow-native** scheduled flows have a ~1-minute floor → minute-level gap.
+- **Middleware** can poll tighter (e.g. every 10–30s) → seconds-level gap, at higher request volume.
+
+You can collapse the gap **today, with no Bytebase code changes**, by reusing an existing webhook type as a push channel:
+
+**Bytebase `TEAMS` webhook → Microsoft Power Automate → ServiceNow.** The `TEAMS` webhook validator allows `*.powerplatform.com` (Power Automate Workflows, current) and `*.logic.azure.com` via suffix match — so tenant URLs like `prod-NN.westus.logic.azure.com` pass (`backend/plugin/webhook/validator.go`). Wiring:
+
+1. Subscribe a project webhook of type `TEAMS` to `ISSUE_CREATED`, pointing at a Power Automate Workflow HTTP-trigger URL.
+2. On issue creation Bytebase POSTs a MessageCard immediately (async, ~instant). The card carries the issue **link** (`.../projects/{project}/issues/{uid}`), title, status, and actor.
+3. The Power Automate flow parses the card, extracts the issue ref (optionally calls `GetIssue` for detail), and creates the CHG via its native **ServiceNow connector**, storing the issue ↔ CHG mapping.
+
+**Tradeoffs (why this is optional, not the default):**
+
+- **Reliability.** Bytebase webhooks are fire-and-forget (3s timeout, **no retry**). A slow/down endpoint means the event is **lost** — unlike polling, which self-heals on the next scan. Recommended pattern: **push for latency + keep a low-frequency reconciliation poll (every few minutes) as a backstop** to catch dropped events.
+- **Dependency.** Requires Microsoft Power Platform (license + a maintained flow). Only the `TEAMS` type has both an allowed domain *and* a first-class ServiceNow connector at the far end; the other chat types (Slack, Google Chat, etc.) don't bridge cleanly.
+- **Payload shape.** You're parsing a Teams **MessageCard** — a chat-notification shape, not an eventing contract. The issue link is the durable field; treat the rest as best-effort. The legacy Office 365 connector domains (`.office.com` / `.office365.com`) are being retired (2025–2026) — use **Power Automate Workflows** (`.powerplatform.com`).
+
+This is a pragmatic interim until the **generic outbound webhook** (see Gaps) enables a clean, direct push to ServiceNow.
 
 ## Auth & operations
 
