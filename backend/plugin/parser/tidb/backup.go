@@ -703,6 +703,9 @@ func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) erro
 		start := nodeLocStart(n.Tables[0])
 		end := nodeLocEnd(n.Tables[len(n.Tables)-1])
 		if start >= 0 && end > start && end <= len(sql) {
+			// omni excludes parentheses wrapping the table-ref list, so a
+			// parenthesized join operand can leave the slice unbalanced.
+			start, end = balanceParens(sql, start, end)
 			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
 				return err
 			}
@@ -741,15 +744,14 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	default:
 		return nil
 	}
-	// omni's table-ref Loc starts after a wrapping "(", but the matching ")"
-	// falls inside the slice below (which runs to the statement end), leaving it
-	// unbalanced. Extend the start to cover any parentheses wrapping the list.
-	start = expandToLeadingParens(sql, start)
 	end := n.Loc.End
 	if end <= 0 || end > len(sql) {
 		end = len(sql)
 	}
 	if start >= 0 && end > start {
+		// omni excludes parentheses wrapping the table-ref list, so the slice can
+		// carry an unmatched ")"; rebalance it before emitting.
+		start, end = balanceParens(sql, start, end)
 		if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
 			return err
 		}
@@ -757,22 +759,73 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	return nil
 }
 
-// expandToLeadingParens moves start left past whitespace to include any "("
-// characters wrapping the table-ref list. omni's JoinClause/TableRef Loc starts
-// after a wrapping "(", which would otherwise leave the matching ")" unbalanced
-// in a sliced DELETE suffix.
-func expandToLeadingParens(sql string, start int) int {
-	for start > 0 {
+// balanceParens widens [start,end) so the sliced SQL has balanced parentheses.
+// omni's JoinClause/TableRef Loc excludes a wrapping "(" or ")", so slicing a
+// table-ref list can carry an unmatched ")" (a parenthesized left join operand)
+// or an unmatched "(" (a right operand). Move start left over leading "(" for
+// each unmatched ")", and end right over trailing ")" for each unmatched "(",
+// skipping whitespace and ignoring parentheses inside quoted strings.
+func balanceParens(sql string, start, end int) (int, int) {
+	bal := parenBalance(sql[start:end])
+	for bal < 0 && start > 0 {
 		j := start - 1
-		for j >= 0 && (sql[j] == ' ' || sql[j] == '\t' || sql[j] == '\n' || sql[j] == '\r') {
+		for j >= 0 && isASCIISpace(sql[j]) {
 			j--
 		}
 		if j < 0 || sql[j] != '(' {
 			break
 		}
 		start = j
+		bal++
 	}
-	return start
+	for bal > 0 && end < len(sql) {
+		j := end
+		for j < len(sql) && isASCIISpace(sql[j]) {
+			j++
+		}
+		if j >= len(sql) || sql[j] != ')' {
+			break
+		}
+		end = j + 1
+		bal--
+	}
+	return start, end
+}
+
+// parenBalance returns (count of "(") - (count of ")") in s, ignoring
+// parentheses inside quoted strings or identifiers ('...', "...", `...`).
+func parenBalance(s string) int {
+	bal := 0
+	var quote byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if quote != 0 {
+			switch {
+			case c == '\\' && quote != '`':
+				i++ // skip the escaped character
+			case c == quote && i+1 < len(s) && s[i+1] == quote:
+				i++ // doubled-quote escape ('' "" ``)
+			case c == quote:
+				quote = 0
+			default:
+			}
+			continue
+		}
+		switch c {
+		case '\'', '"', '`':
+			quote = c
+		case '(':
+			bal++
+		case ')':
+			bal--
+		default:
+		}
+	}
+	return bal
+}
+
+func isASCIISpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
 func nodeLocStart(expr ast.TableExpr) int {

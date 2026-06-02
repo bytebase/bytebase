@@ -440,6 +440,26 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		a.NoError(perr, "parenthesized-join DELETE backup must re-parse as valid SQL")
 	}
 
+	// A parenthesized leading join FOLLOWED BY another join: the inner ")" falls
+	// inside the table-refs slice, so the wrapping "(" must be included too.
+	result, err = run("UPDATE (test AS t JOIN test2 AS y ON t.a = y.a) JOIN t1 AS z ON z.a = t.a SET t.c = 1 WHERE z.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "parenthesized-join-then-join UPDATE backup must re-parse as valid SQL")
+	}
+
+	// A right-operand parenthesized join: the slice carries an unmatched "(",
+	// so the wrapping ")" must be appended.
+	result, err = run("UPDATE t1 AS z JOIN (test AS t JOIN test2 AS y ON t.a = y.a) ON z.a = t.a SET z.c = 1 WHERE t.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "right-operand parenthesized-join UPDATE backup must re-parse as valid SQL")
+	}
+
 	// In the >maxMixedDMLCount same-table UNION path, case-only database
 	// differences (db.test vs DB.test) must be treated as the same table, not
 	// rejected as "different tables" — consistent with the cross-database guard.
