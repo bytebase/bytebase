@@ -112,6 +112,11 @@ const externalUrlPlaceholder =
   "https://docs.bytebase.com/get-started/self-host/external-url";
 const trialingDays = 14;
 
+// Stable empty profile so `getWorkspaceProfile()` can return a non-null value
+// without allocating a fresh object each call (which would break Zustand's
+// selector identity check). Mirrors the Pinia getter's default.
+const EMPTY_WORKSPACE_PROFILE = createProto(WorkspaceProfileSettingSchema, {});
+
 function appFeaturesFromDatabaseChangeMode(mode: DatabaseChangeMode) {
   const appFeatures = defaultAppProfile().features;
   appFeatures["bb.feature.database-change-mode"] =
@@ -704,6 +709,11 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       set({ serverInfo: info, serverInfoTs: Date.now() });
       return info;
     },
+
+    // Always returns a profile (never undefined), mirroring the Pinia
+    // `useSettingV1Store().workspaceProfile` getter, so consumers can read
+    // fields without null checks. Reactive via Zustand's selector re-run.
+    getWorkspaceProfile: () => get().workspaceProfile ?? EMPTY_WORKSPACE_PROFILE,
 
     classification: () => {
       const setting =

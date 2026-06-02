@@ -266,6 +266,9 @@ export type WorkspaceSlice = {
   enableOnboarding: () => boolean;
   quickStartEnabled: () => boolean;
   setupSample: () => Promise<void>;
+  // Always returns a profile (never undefined), mirroring the Pinia
+  // `workspaceProfile` getter so consumers read fields without null checks.
+  getWorkspaceProfile: () => WorkspaceProfileSetting;
   // Data-classification config from the DATA_CLASSIFICATION setting cache.
   classification: () => DataClassificationSetting_DataClassificationConfig[];
   getProjectClassification: (
