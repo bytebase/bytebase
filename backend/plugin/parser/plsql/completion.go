@@ -1101,7 +1101,7 @@ func (c *Completer) querySceneDisallowsCompletion() bool {
 	if c.scene != base.SceneTypeQuery {
 		return false
 	}
-	idx := c.currentStatementFirstTokenIndex()
+	idx := c.currentStatementMainTokenIndex()
 	if idx < 0 {
 		return false
 	}
@@ -1132,7 +1132,7 @@ func (c *Completer) isAtStatementStartCompletion() bool {
 	return token.Type == ';' || token.Loc >= collectOffset
 }
 
-func (c *Completer) currentStatementFirstTokenIndex() int {
+func (c *Completer) currentStatementMainTokenIndex() int {
 	start := c.currentStatementStartTokenIndex(c.cursorByteOffset)
 	if start >= len(c.tokens) {
 		return -1
@@ -1141,7 +1141,42 @@ func (c *Completer) currentStatementFirstTokenIndex() int {
 	if token.Loc >= c.cursorByteOffset || token.Type == ';' {
 		return -1
 	}
+	if token.Type == oracleparser.WITH {
+		return c.withMainStatementTokenIndex(start)
+	}
 	return start
+}
+
+func (c *Completer) withMainStatementTokenIndex(withIdx int) int {
+	depth := 0
+	for i := withIdx + 1; i < len(c.tokens); i++ {
+		token := c.tokens[i]
+		if token.Loc >= c.cursorByteOffset || token.Type == ';' {
+			break
+		}
+		switch token.Type {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if depth == 0 && isOracleStatementStartToken(token.Type) {
+				return i
+			}
+		}
+	}
+	return withIdx
+}
+
+func isOracleStatementStartToken(tokenType int) bool {
+	switch tokenType {
+	case oracleparser.SELECT, oracleparser.INSERT, oracleparser.UPDATE, oracleparser.DELETE, oracleparser.MERGE:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Completer) currentStatementStartTokenIndex(offset int) int {

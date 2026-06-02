@@ -1175,6 +1175,11 @@ func TestCompletionQuerySceneRestrictsTopLevelWrites(t *testing.T) {
 			notWant: tables("T1", "T2"),
 		},
 		{
+			name:    "with prefixed write statement does not offer object candidates",
+			input:   "WITH x AS (SELECT c1 FROM t1) INSERT INTO t1 SELECT * FROM |",
+			notWant: tables("T1", "T2", "X"),
+		},
+		{
 			name:  "select table reference still offers tables",
 			input: "SELECT * FROM |",
 			want:  tables("T1", "T2"),

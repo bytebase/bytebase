@@ -367,11 +367,6 @@
       definition: ""
       comment: ""
       priority: 0
-    - text: C1
-      type: COLUMN
-      definition: SCHEMA1.T1 | int, NOT NULL
-      comment: ""
-      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
