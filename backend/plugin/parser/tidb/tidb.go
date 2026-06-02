@@ -71,11 +71,15 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 // Returns the 1-based actualStartLine (`baseLine + leadingNewlinesStripped +
 // 1`) so callers can use it for *AST.StartPosition.
 func applyTiDBLineTracking(node ast.StmtNode, baseLine int, originalText string) (int, error) {
-	// The native TiDB parser may strip leading newlines from its internal
-	// Text(); count how many to recover the absolute line.
-	nativeText := node.Text()
-	leadingNewlinesStripped := strings.Count(originalText, "\n") - strings.Count(nativeText, "\n")
-	actualStartLine := baseLine + leadingNewlinesStripped + 1
+	// The statement's absolute start line is baseLine plus the number of
+	// newlines in its leading whitespace (the blank lines before the first
+	// token). Counting the leading newlines of originalText directly is robust;
+	// the native parser's node.Text() does not reliably strip ALL leading
+	// newlines, so diffing original-vs-native newline counts under-counts when
+	// more than one blank line precedes the statement (BYT-9381). This keeps the
+	// pingcap-bridge line in step with the omni path's FirstTokenLine.
+	leadingWhitespace := originalText[:len(originalText)-len(strings.TrimLeft(originalText, " \t\r\n"))]
+	actualStartLine := baseLine + strings.Count(leadingWhitespace, "\n") + 1
 
 	node.SetOriginTextPosition(actualStartLine)
 	if n, ok := node.(*ast.CreateTableStmt); ok {
@@ -153,10 +157,15 @@ func SetLineForMySQLCreateTableStmt(node *ast.CreateTableStmt) error {
 	if len(node.Cols) == 0 {
 		return nil
 	}
-	// OriginTextPosition() now stores the first line of the statement (1-based),
-	// so we can use it directly as firstLine.
-	firstLine := node.OriginTextPosition()
-	return tokenizer.NewTokenizer(node.Text()).SetLineForMySQLCreateTableStmt(node, firstLine)
+	// node.OriginTextPosition() is the statement's first line (the CREATE
+	// keyword). The tokenizer counts newlines from the START of node.Text(),
+	// which may retain leading newlines the native parser didn't strip, so its
+	// base must be the line of node.Text()'s first character — the statement
+	// line minus those leading newlines. Otherwise blank lines before the
+	// statement are double-counted into every column/constraint line (BYT-9381).
+	text := node.Text()
+	leadingNewlines := strings.Count(text[:len(text)-len(strings.TrimLeft(text, " \t\r\n"))], "\n")
+	return tokenizer.NewTokenizer(text).SetLineForMySQLCreateTableStmt(node, node.OriginTextPosition()-leadingNewlines)
 }
 
 // TypeString returns the string representation of the type for MySQL.
