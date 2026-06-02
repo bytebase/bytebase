@@ -3,6 +3,10 @@ import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
+import {
+  extractWorksheetConnection,
+  isConnectedSQLEditorTab,
+} from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import {
   migrateDraftsFromCache,
@@ -15,10 +19,6 @@ import type {
 } from "@/types";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  extractWorksheetConnection,
-  isConnectedSQLEditorTab,
-} from "@/react/lib/sqlEditorConnection";
 import {
   defaultSQLEditorTab,
   getSheetStatement,
