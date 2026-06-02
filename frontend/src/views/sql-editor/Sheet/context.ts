@@ -23,8 +23,8 @@ import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
+import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import {
-  extractWorksheetConnection,
   getSheetStatement,
   isWorksheetReadableV1,
   storageKeySqlEditorWorksheetFilter,

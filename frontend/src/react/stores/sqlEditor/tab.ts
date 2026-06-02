@@ -16,10 +16,12 @@ import type {
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  defaultSQLEditorTab,
   extractWorksheetConnection,
-  getSheetStatement,
   isConnectedSQLEditorTab,
+} from "@/react/lib/sqlEditorConnection";
+import {
+  defaultSQLEditorTab,
+  getSheetStatement,
   storageKeySqlEditorCurrentTab,
   storageKeySqlEditorTabs,
 } from "@/utils";
