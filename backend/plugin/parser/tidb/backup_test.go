@@ -352,6 +352,29 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal("test", result[0].SourceTableName)
 
+	// A schema-qualified physical table is never a CTE, even when its name
+	// matches a CTE in scope (a CTE reference is always unqualified). Both
+	// physical tables (db.test via alias p, test2 via alias y) are mutated, so
+	// both must be backed up; skipping db.test would leave it unprotected
+	// (verified on TiDB v8.5.0: both physical tables are updated/deleted).
+	result, err = run("WITH test AS (SELECT a FROM test2) UPDATE db.test AS p JOIN test2 AS y ON p.a = y.a SET p.c = 1, y.c = 2")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
+	}
+
+	result, err = run("WITH test AS (SELECT a FROM test2) DELETE p, y FROM db.test AS p JOIN test2 AS y WHERE p.a = y.a")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
+	}
+
 	// The cross-database guard is case-insensitive (TiDB default): a different-
 	// case reference to the task database is the same database, not cross-db.
 	result, err = run("UPDATE DB.test SET c1 = 1 WHERE c1 = 2")

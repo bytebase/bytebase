@@ -29,6 +29,10 @@ type TableReference struct {
 	Database string
 	Table    string
 	Alias    string
+	// ExplicitSchema is true when the reference carried an explicit schema
+	// qualifier (e.g. db.test). A CTE reference is always unqualified, so a
+	// schema-qualified table is never a CTE even if its name matches one.
+	ExplicitSchema bool
 }
 
 type statementInfo struct {
@@ -184,7 +188,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 		}
 		// Skip only if the target resolves to a CTE reference (you can't delete a
 		// CTE). A real table aliased with a CTE's name is still a delete target.
-		if isCTE(cteNames, ref.Table) {
+		if isCTERef(cteNames, ref) {
 			continue
 		}
 		result = append(result, statementInfo{
@@ -219,7 +223,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 		// Skip only if the qualifier resolves to a CTE reference in the FROM — a
 		// CTE can't be a mutation target. A real table aliased with a CTE's name
 		// (its resolved table is real) is still an update target.
-		if ref, ok := singleTables[table]; ok && isCTE(cteNames, ref.Table) {
+		if ref, ok := singleTables[table]; ok && isCTERef(cteNames, ref) {
 			continue
 		}
 		updatedTables[table] = true
@@ -233,7 +237,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 		delete(updatedTables, "")
 		candidates := make(map[string]*TableReference, len(singleTables))
 		for key, ref := range singleTables {
-			if isCTE(cteNames, ref.Table) {
+			if isCTERef(cteNames, ref) {
 				continue
 			}
 			candidates[key] = ref
@@ -289,7 +293,7 @@ func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out ma
 		if db == "" {
 			db = databaseName
 		}
-		ref := &TableReference{Database: db, Table: e.Name, Alias: e.Alias}
+		ref := &TableReference{Database: db, Table: e.Name, Alias: e.Alias, ExplicitSchema: e.Schema != ""}
 		key := e.Name
 		if e.Alias != "" {
 			key = e.Alias
@@ -364,12 +368,13 @@ func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	return result
 }
 
-// isCTE reports whether name resolves to a CTE. TiDB matches CTE names
-// case-insensitively (a CTE shadows a same-named real table, and a
-// case-mismatched reference resolves to the CTE), so the lookup must be too —
-// consistent with the file's other identifier comparisons.
-func isCTE(cteNames map[string]bool, name string) bool {
-	return cteNames[strings.ToLower(name)]
+// isCTERef reports whether ref resolves to a CTE. A CTE reference is always
+// unqualified, so a schema-qualified physical table (db.test) is never a CTE
+// even if its name matches one. CTE names match case-insensitively (TiDB
+// resolves a case-mismatched reference to the CTE, which shadows a same-named
+// real table), consistent with the file's other identifier comparisons.
+func isCTERef(cteNames map[string]bool, ref *TableReference) bool {
+	return !ref.ExplicitSchema && cteNames[strings.ToLower(ref.Table)]
 }
 
 // writeCTEPrefix writes the statement's WITH (CTE) clause before the backup
