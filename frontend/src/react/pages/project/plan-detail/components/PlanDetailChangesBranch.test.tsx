@@ -266,7 +266,6 @@ vi.mock("@/store", () => ({
     name.split("/databaseGroups/"),
   pushNotification: vi.fn(),
   useEnvironmentV1Store: () => mocks.environmentStore,
-  useProjectV1Store: () => mocks.projectStore,
 }));
 
 // The migrated component reads resource state via imperative
@@ -293,15 +292,34 @@ vi.mock("@/react/stores/app", async () => {
     get: (_t, key) =>
       typeof key === "string" ? DatabaseGroupView.FULL : undefined,
   });
+  const projectsByName = new Proxy({} as Record<string, unknown>, {
+    get: (_t, key) =>
+      typeof key === "string"
+        ? mocks.projectStore.getProjectByName(key)
+        : undefined,
+  });
   const useAppStore = Object.assign(
     (
       selector: (s: {
         databasesByName: Record<string, unknown>;
         dbGroupsByName: Record<string, unknown>;
         dbGroupViewByName: Record<string, unknown>;
+        projectsByName: Record<string, unknown>;
       }) => unknown
-    ) => selector({ databasesByName, dbGroupsByName, dbGroupViewByName }),
-    { getState: () => ({ ...mocks.databaseStore, ...mocks.dbGroupStore }) }
+    ) =>
+      selector({
+        databasesByName,
+        dbGroupsByName,
+        dbGroupViewByName,
+        projectsByName,
+      }),
+    {
+      getState: () => ({
+        ...mocks.databaseStore,
+        ...mocks.dbGroupStore,
+        getProjectByName: mocks.projectStore.getProjectByName,
+      }),
+    }
   );
   return { useAppStore };
 });

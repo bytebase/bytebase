@@ -20,7 +20,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   ApprovalStatus,
@@ -52,7 +52,6 @@ type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
 export function IssueDetailApprovalFlow() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -60,11 +59,12 @@ export function IssueDetailApprovalFlow() {
   const issue = page.issue;
 
   useEffect(() => {
-    void projectStore
+    void useAppStore
+      .getState()
       .getOrFetchProjectByName(projectName)
       .catch(() => undefined);
     void loadProjectIamPolicy(projectName).catch(() => undefined);
-  }, [loadProjectIamPolicy, projectName, projectStore]);
+  }, [loadProjectIamPolicy, projectName]);
 
   if (!issue) {
     return null;
@@ -500,7 +500,8 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const roleList = useAppStore((state) => state.roleList);
   const page = useIssueDetailContext();
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -521,7 +522,10 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const stepApprover = issue.approvers[stepIndex];
 
   const status = useMemo<ApprovalStepStatus>(() => {

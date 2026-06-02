@@ -6,7 +6,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -19,13 +19,17 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 export function IssueDetailAccessGrantDetails() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const fetchAccessGrant = useAppStore((state) => state.fetchAccessGrant);
   const searchMyAccessGrants = useAppStore(
     (state) => state.searchMyAccessGrants
   );
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const [isLoading, setIsLoading] = useState(true);
   const [accessGrant, setAccessGrant] = useState<AccessGrant | undefined>();
 

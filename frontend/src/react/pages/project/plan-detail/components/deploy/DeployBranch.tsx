@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -49,11 +49,13 @@ export function DeployBranch({
 }: DeployBranchProps) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const project = useMemo(
     () =>
-      projectStore.getProjectByName(`${projectNamePrefix}${page.projectId}`),
-    [page.projectId, projectStore]
+      useAppStore
+        .getState()
+        .getProjectByName(`${projectNamePrefix}${page.projectId}`),
+    [page.projectId, projectsByName]
   );
   const projectName = `projects/${page.projectId}`;
   const [pendingOpen, setPendingOpen] = useState(false);

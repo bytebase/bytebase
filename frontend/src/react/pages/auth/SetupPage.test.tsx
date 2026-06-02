@@ -39,10 +39,6 @@ vi.mock("@/store", () => ({
     setupSample: mocks.setupSample,
   }),
   useAppFeature: () => ({ value: 0 }),
-  useProjectV1Store: () => ({
-    getOrFetchProjectByName: mocks.getOrFetchProjectByName,
-    createProject: mocks.createProject,
-  }),
   useSettingV1Store: () => ({
     updateWorkspaceProfile: mocks.updateWorkspaceProfile,
   }),
@@ -58,6 +54,8 @@ vi.mock("@/react/stores/app", () => ({
       getState: () => ({
         listRoles: mocks.listRoles,
         fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
+        getOrFetchProjectByName: mocks.getOrFetchProjectByName,
+        createProject: mocks.createProject,
       }),
     }
   ),

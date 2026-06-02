@@ -59,11 +59,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -116,13 +112,17 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const me = useCurrentUser();
 
   const [showAddSpecDrawer, setShowAddSpecDrawer] = useState(false);

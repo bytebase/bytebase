@@ -5,8 +5,9 @@ import {
   getDatabaseByName,
   getDatabaseList,
 } from "@/react/stores/app/databaseAccess";
+import { getProjectByName } from "@/react/stores/app/projectAccess";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { projectNamePrefix, useProjectV1Store } from "@/store";
+import { projectNamePrefix } from "@/store";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -126,7 +127,7 @@ export const getIssueRoute = (issue: {
 };
 
 export const projectOfIssue = (issue: Issue): Project => {
-  return useProjectV1Store().getProjectByName(
+  return getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
 };

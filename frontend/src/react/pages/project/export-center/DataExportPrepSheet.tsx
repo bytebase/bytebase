@@ -30,7 +30,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   pushNotification,
-  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
@@ -93,10 +92,14 @@ export function DataExportPrepSheet({
 }: DataExportPrepSheetProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
   const settingStore = useSettingV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
 
   const [step, setStep] = useState<Step>(1);
   const [creating, setCreating] = useState(false);

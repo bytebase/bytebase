@@ -1,4 +1,5 @@
-import { getCurrentUserV1, useProjectV1Store } from "@/store";
+import { getProjectByName } from "@/react/stores/app/projectAccess";
+import { getCurrentUserV1 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
@@ -32,7 +33,7 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
       return false;
     case Worksheet_Visibility.PROJECT_READ:
     case Worksheet_Visibility.PROJECT_WRITE: {
-      const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
+      const projectV1 = getProjectByName(sheet.project);
       if (projectV1.name === UNKNOWN_PROJECT_NAME) {
         return false;
       }
@@ -58,7 +59,7 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
     return true;
   }
 
-  const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
+  const projectV1 = getProjectByName(sheet.project);
   if (projectV1.name === UNKNOWN_PROJECT_NAME) {
     return false;
   }

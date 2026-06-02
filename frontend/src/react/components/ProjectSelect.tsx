@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/react/components/ui/combobox";
-import { useProjectV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { isValidProjectName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, getDefaultPagination } from "@/utils";
@@ -37,7 +37,6 @@ export function ProjectSelect({
   portal,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
   const [projects, setProjects] = useState<Project[]>([]);
   // Projects referenced by `value` that aren't in the paged fetch.
   // Mirrors Vue's `additionalOptions` so deep-linked URLs (e.g.
@@ -57,17 +56,15 @@ export function ProjectSelect({
   const excludeDefaultRef = useRef(excludeDefault);
   excludeDefaultRef.current = excludeDefault;
 
-  const fetchProjects = useCallback(
-    (query: string) => {
-      projectStore
-        .fetchProjectList({
-          filter: { query, excludeDefault: excludeDefaultRef.current },
-          pageSize: getDefaultPagination(),
-        })
-        .then(({ projects: result }) => setProjects(result));
-    },
-    [projectStore]
-  );
+  const fetchProjects = useCallback((query: string) => {
+    useAppStore
+      .getState()
+      .fetchProjectList({
+        filter: { query, excludeDefault: excludeDefaultRef.current },
+        pageSize: getDefaultPagination(),
+      })
+      .then(({ projects: result }) => setProjects(result));
+  }, []);
 
   // Fetch the first page on mount, and re-fetch only when
   // `excludeDefault` actually flips (rare — typically once after
@@ -83,17 +80,22 @@ export function ProjectSelect({
   useEffect(() => {
     if (!isValidProjectName(value)) return;
     let cancelled = false;
-    void projectStore.getOrFetchProjectByName(value).then((p) => {
-      if (cancelled) return;
-      if (!isValidProjectName(p.name)) return;
-      setAdditionalProjects((prev) =>
-        prev.some((existing) => existing.name === p.name) ? prev : [...prev, p]
-      );
-    });
+    void useAppStore
+      .getState()
+      .getOrFetchProjectByName(value)
+      .then((p) => {
+        if (cancelled) return;
+        if (!isValidProjectName(p.name)) return;
+        setAdditionalProjects((prev) =>
+          prev.some((existing) => existing.name === p.name)
+            ? prev
+            : [...prev, p]
+        );
+      });
     return () => {
       cancelled = true;
     };
-  }, [value, projectStore]);
+  }, [value]);
 
   const allProjects = useMemo(() => {
     const seen = new Set<string>();

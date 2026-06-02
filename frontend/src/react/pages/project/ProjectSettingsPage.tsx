@@ -27,11 +27,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useProjectV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission, SQLReviewPolicy } from "@/types";
 import { isDefaultProject } from "@/types";
@@ -130,7 +126,7 @@ function ApprovalFlowIndicator({
 // ---------------------------------------------------------------------------
 export function ProjectSettingsPage() {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const reviewStore = useSQLReviewStore();
   const subscriptionStore = useSubscriptionV1Store();
 
@@ -138,7 +134,11 @@ export function ProjectSettingsPage() {
     () => router.currentRoute.value.params.projectId as string
   );
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const isDefault = isDefaultProject(projectName);
 
   const hasPermission = useCallback(
@@ -523,7 +523,7 @@ export function ProjectSettingsPage() {
         updateMask.push("parallel_tasks_per_rollout");
       }
       if (updateMask.length > 0) {
-        await projectStore.updateProject(projectPatch, updateMask);
+        await useAppStore.getState().updateProject(projectPatch, updateMask);
       }
 
       pushNotification({
@@ -542,7 +542,6 @@ export function ProjectSettingsPage() {
     }
   }, [
     project,
-    projectStore,
     reviewStore,
     projectName,
     title,
@@ -577,21 +576,21 @@ export function ProjectSettingsPage() {
     setExecuting(true);
     try {
       if (dangerAction === "archive") {
-        await projectStore.archiveProject(project);
+        await useAppStore.getState().archiveProject(project);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: `${project.title || project.name} ${t("common.archived")}`,
         });
       } else if (dangerAction === "restore") {
-        await projectStore.restoreProject(project);
+        await useAppStore.getState().restoreProject(project);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: `${project.title || project.name} ${t("common.restored")}`,
         });
       } else if (dangerAction === "delete") {
-        await projectStore.deleteProject(project.name);
+        await useAppStore.getState().deleteProject(project.name);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -603,7 +602,7 @@ export function ProjectSettingsPage() {
       setExecuting(false);
       setDangerAction(null);
     }
-  }, [project, dangerAction, projectStore, t]);
+  }, [project, dangerAction, t]);
 
   // Label validation errors (set by LabelListEditor via onErrorsChange)
   const [labelErrors, setLabelErrors] = useState<string[]>([]);

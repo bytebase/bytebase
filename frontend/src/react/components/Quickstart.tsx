@@ -15,11 +15,7 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
 import { isValidProjectName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -66,7 +62,6 @@ interface IntroItem {
 export function Quickstart() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const projectStore = useProjectV1Store();
   const actuatorStore = useActuatorV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
@@ -108,10 +103,12 @@ export function Quickstart() {
     }
     let cancelled = false;
     void (async () => {
-      const project = await projectStore.getOrFetchProjectByName(
-        `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`,
-        true /* silent */
-      );
+      const project = await useAppStore
+        .getState()
+        .getOrFetchProjectByName(
+          `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`,
+          true /* silent */
+        );
       if (cancelled) return;
       if (!isValidProjectName(project.name)) {
         setSampleProject(undefined);
@@ -124,7 +121,7 @@ export function Quickstart() {
     return () => {
       cancelled = true;
     };
-  }, [quickStartEnabled, projectStore, loadProjectIamPolicy]);
+  }, [quickStartEnabled, loadProjectIamPolicy]);
 
   useEffect(() => {
     if (!sampleProject) {

@@ -22,11 +22,7 @@ import {
   ensureWorkloadIdentityFullName,
   workloadIdentityToUser,
 } from "@/react/stores/app/workloadIdentity";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -238,7 +234,7 @@ function WorkloadIdentityTable({
 export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listWorkloadIdentities = useAppStore(
     (state) => state.listWorkloadIdentities
   );
@@ -249,8 +245,12 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
     : undefined;
+  // subscribe to re-render on project cache change
+  void projectsByName;
   const project = useVueState(() =>
-    projectName ? projectStore.getProjectByName(projectName) : undefined
+    projectName
+      ? useAppStore.getState().getProjectByName(projectName)
+      : undefined
   );
 
   const parent = useVueState(

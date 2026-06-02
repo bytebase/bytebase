@@ -23,11 +23,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
@@ -64,7 +60,8 @@ export function CreateDatabaseSheet({
   projectName: fixedProjectName,
 }: CreateDatabaseSheetProps) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const environmentStore = useEnvironmentV1Store();
   const currentUser = useCurrentUser();
 
@@ -110,9 +107,10 @@ export function CreateDatabaseSheet({
   // for BYT-9310. Do not collapse these back together without a separate spec.
   const projectReactive = useVueState(() =>
     effectiveProjectName
-      ? projectStore.getProjectByName(effectiveProjectName)
+      ? useAppStore.getState().getProjectByName(effectiveProjectName)
       : undefined
   );
+  void projectsByName;
 
   // Note on hydration: projectStore.getProjectByName returns an
   // unknownProject() sentinel when the project is not yet cached. The sentinel
@@ -130,7 +128,8 @@ export function CreateDatabaseSheet({
     setSelectedProject(undefined);
     if (!effectiveProjectName) return;
     const fetchId = ++projectFetchRef.current;
-    projectStore
+    useAppStore
+      .getState()
       .getOrFetchProjectByName(effectiveProjectName)
       .then((project) => {
         if (fetchId !== projectFetchRef.current) return;
@@ -165,7 +164,7 @@ export function CreateDatabaseSheet({
     // effect to re-fire spuriously in test harnesses where `useTranslation`
     // is mocked to return a fresh closure per render. Same convention as
     // the auto-fill effect below.
-  }, [effectiveProjectName, projectStore]);
+  }, [effectiveProjectName]);
 
   // Auto-fill when the project doesn't enforce manual titles.
   // Intentional omissions from the dep array: `title` and `titleEdited` are
@@ -256,8 +255,9 @@ export function CreateDatabaseSheet({
     if (!allowCreate || creating) return;
     setCreating(true);
     try {
-      const project =
-        await projectStore.getOrFetchProjectByName(effectiveProjectName);
+      const project = await useAppStore
+        .getState()
+        .getOrFetchProjectByName(effectiveProjectName);
       const engine = selectedInstance?.engine ?? 0;
       const createDatabaseConfig = create(Plan_CreateDatabaseConfigSchema, {
         target: instanceName,

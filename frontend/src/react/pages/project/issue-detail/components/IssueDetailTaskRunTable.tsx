@@ -17,7 +17,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -51,9 +51,13 @@ export function IssueDetailTaskRunTable({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const taskByUID = useMemo(() => {
     const map = new Map<string, Task>();

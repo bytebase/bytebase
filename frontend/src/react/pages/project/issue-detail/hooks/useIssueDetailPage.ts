@@ -8,12 +8,13 @@ import {
   rolloutServiceClientConnect,
 } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
 } from "@/router/dashboard/workspaceRoutes";
-import { projectNamePrefix, useProjectV1Store } from "@/store";
+import { projectNamePrefix } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
@@ -281,9 +282,11 @@ export const useIssueDetailPage = ({
   pageHost: HTMLDivElement | null;
 }): IssueDetailPageState => {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const project = useVueState(() =>
-    projectStore.getProjectByName(`${projectNamePrefix}${projectId}`)
+    useAppStore.getState().getProjectByName(`${projectNamePrefix}${projectId}`)
   );
   const [snapshot, setSnapshot] = useState<IssueDetailPageSnapshot>(() =>
     buildDefaultSnapshot(projectId, issueId)

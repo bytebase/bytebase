@@ -20,7 +20,7 @@ import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { useActuatorV1Store, useProjectV1Store } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -37,7 +37,7 @@ import {
 export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listWorkloadIdentities = useAppStore(
     (state) => state.listWorkloadIdentities
   );
@@ -46,7 +46,11 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   );
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [selectedIdentityName, setSelectedIdentityName] = useState("");

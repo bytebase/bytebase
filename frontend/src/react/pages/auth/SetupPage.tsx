@@ -17,15 +17,9 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import {
-  useActuatorV1Store,
-  useAppFeature,
-  useProjectV1Store,
-  useSettingV1Store,
-} from "@/store";
+import { useActuatorV1Store, useAppFeature, useSettingV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import { unknownProject } from "@/types/v1/project";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
 
 type Purpose = "edit-schema" | "query-data";
@@ -137,8 +131,6 @@ function SetupWizard() {
     setCurrentStep(next);
   };
 
-  const projectV1Store = useProjectV1Store();
-
   const skip = () => router.push("/");
 
   const finish = async () => {
@@ -146,8 +138,7 @@ function SetupWizard() {
     setLoading(true);
     try {
       if (data === "self-setup") {
-        const project = { ...unknownProject(), title: projectTitle };
-        await projectV1Store.createProject(project, resourceId);
+        await useAppStore.getState().createProject(projectTitle, resourceId);
       } else {
         await useActuatorV1Store().setupSample();
       }
@@ -166,10 +157,12 @@ function SetupWizard() {
   const validateProjectResourceID = useCallback(
     async (id: string) => {
       try {
-        await projectV1Store.getOrFetchProjectByName(
-          `${projectNamePrefix}${id}`,
-          true /* silent */
-        );
+        await useAppStore
+          .getState()
+          .getOrFetchProjectByName(
+            `${projectNamePrefix}${id}`,
+            true /* silent */
+          );
         return [
           {
             type: "error" as const,
@@ -190,7 +183,7 @@ function SetupWizard() {
         ];
       }
     },
-    [projectV1Store, t]
+    [t]
   );
 
   return (

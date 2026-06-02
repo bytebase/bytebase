@@ -3,10 +3,13 @@ import {
   fetchDatabases,
 } from "@/react/stores/app/databaseAccess";
 import {
+  batchGetOrFetchProjects,
+  fetchProjectList,
+} from "@/react/stores/app/projectAccess";
+import {
   instanceNamePrefix,
   projectNamePrefix,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -75,29 +78,26 @@ const getDatabaseIdOptions = (databases: Database[]): LabeledOption[] => {
 };
 
 export const getProjectIdOptionConfig = (): OptionConfig => {
-  const projectStore = useProjectV1Store();
   return {
     options: [],
     fetch: async (projectIds: string[]) => {
-      const projects = await projectStore.batchGetOrFetchProjects(
+      const projects = await batchGetOrFetchProjects(
         projectIds.map((projectId) => `${projectNamePrefix}${projectId}`)
       );
       return projects.map(getProjectIdOption);
     },
     search: async (params) => {
-      return projectStore
-        .fetchProjectList({
-          pageSize: params.pageSize,
-          pageToken: params.pageToken,
-          filter: {
-            query: params.search,
-            excludeDefault: true,
-          },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken ?? "",
-          options: resp.projects.map(getProjectIdOption),
-        }));
+      return fetchProjectList({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        filter: {
+          query: params.search,
+          excludeDefault: true,
+        },
+      }).then((resp) => ({
+        nextPageToken: resp.nextPageToken ?? "",
+        options: resp.projects.map(getProjectIdOption),
+      }));
     },
   };
 };

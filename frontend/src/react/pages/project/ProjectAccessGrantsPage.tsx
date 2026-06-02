@@ -36,7 +36,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { router } from "@/router";
-import { featureToRef, pushNotification, useProjectV1Store } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -106,7 +106,9 @@ function mapDatabase(db: Database) {
 
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const listUsers = useAppStore((state) => state.listUsers);
   const listAccessGrants = useAppStore((state) => state.listAccessGrants);
   const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
@@ -114,7 +116,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const currentUser = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const hasJITFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_JIT).value

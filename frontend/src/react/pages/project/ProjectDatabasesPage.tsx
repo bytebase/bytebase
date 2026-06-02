@@ -33,7 +33,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -74,10 +73,14 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const databasesByName = useAppStore((s) => s.databasesByName);
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const projectStore = useProjectV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const isDefault = isDefaultProject(projectName);
 
   const hasProjectPermission = useCallback(

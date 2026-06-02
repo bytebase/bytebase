@@ -15,6 +15,7 @@ import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
@@ -36,7 +37,7 @@ import {
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useActuatorV1Store, useProjectV1Store } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
@@ -250,8 +251,6 @@ export function ProjectSidebar() {
 
   const customLogo = useWorkspace()?.logo ?? "";
 
-  const projectStore = useProjectV1Store();
-
   // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
   const recordVisitRef = useRef<((path: string) => void) | null>(null);
   useEffect(() => {
@@ -269,12 +268,11 @@ export function ProjectSidebar() {
   // ProjectRouteShell also fetches it, but this guards against race conditions.
   useEffect(() => {
     if (projectId) {
-      projectStore.getOrFetchProjectByName(
-        `${projectNamePrefix}${projectId}`,
-        true
-      );
+      useAppStore
+        .getState()
+        .getOrFetchProjectByName(`${projectNamePrefix}${projectId}`, true);
     }
-  }, [projectId, projectStore]);
+  }, [projectId]);
 
   // -- Expand / collapse state -----------------------------------------------
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());

@@ -14,9 +14,10 @@ import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
 import {
   IssueSchema,
@@ -34,12 +35,16 @@ type IssueLabelOption = {
 export function IssueDetailLabels() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   useClickOutside(containerRef, open, () => setOpen(false));
 

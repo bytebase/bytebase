@@ -2,7 +2,6 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { useMemo } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { WebhookSchema } from "@/types/proto-es/v1/project_service_pb";
@@ -16,12 +15,16 @@ export function ProjectWebhookDetailPage({
   projectId: string;
   webhookResourceId: string;
 }) {
-  const projectStore = useProjectV1Store();
   const getProjectWebhookFromProjectById = useAppStore(
     (state) => state.getProjectWebhookFromProjectById
   );
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const webhook = useMemo(() => {
     if (!project) return undefined;
