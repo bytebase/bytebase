@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useProjectV1Store } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
@@ -41,15 +41,19 @@ function EnvironmentResourceLink({ resource }: { resource: string }) {
 
 function ProjectResourceLink({ resource }: { resource: string }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
   useEffect(() => {
     if (hasWorkspacePermissionV2("bb.projects.get")) {
-      projectStore.getOrFetchProjectByName(resource, true);
+      useAppStore.getState().getOrFetchProjectByName(resource, true);
     }
-  }, [projectStore, resource]);
+  }, [resource]);
 
-  const project = useVueState(() => projectStore.getProjectByName(resource));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(resource)
+  );
+  void projectsByName;
 
   return (
     <a

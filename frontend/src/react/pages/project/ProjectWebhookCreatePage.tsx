@@ -1,7 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { useMemo } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useProjectV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { State, WebhookType } from "@/types/proto-es/v1/common_pb";
 import {
@@ -12,9 +12,13 @@ import { hasProjectPermissionV2 } from "@/utils";
 import { ProjectWebhookForm } from "./ProjectWebhookForm";
 
 export function ProjectWebhookCreatePage({ projectId }: { projectId: string }) {
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const allowEdit = useMemo(() => {
     if (!project) return false;

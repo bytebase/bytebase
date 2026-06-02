@@ -4,11 +4,8 @@ import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  projectNamePrefix,
-  pushNotification,
-  useProjectV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { projectNamePrefix, pushNotification } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import {
   GetPlanCheckRunRequestSchema,
@@ -25,10 +22,14 @@ export function usePlanCheckActions() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, isRunningChecks, setIsRunningChecks } = page;
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const allowRunChecks = useMemo(() => {
     if (page.plan.hasRollout) return false;

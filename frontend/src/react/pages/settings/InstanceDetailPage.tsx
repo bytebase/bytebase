@@ -42,7 +42,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -321,7 +320,6 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     () => environmentStore.environmentList ?? []
   );
 
-  const projectStore = useProjectV1Store();
   const actuatorStore = useActuatorV1Store();
   // Reactive: the actuator's `defaultProject` is fetched asynchronously, so
   // we must subscribe through `useVueState` — otherwise the value is
@@ -344,7 +342,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { projects } = await projectStore.fetchProjectList({
+      const { projects } = await useAppStore.getState().fetchProjectList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -357,7 +355,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         };
       });
     },
-    [projectStore, defaultProjectId, unassignedProjectOption]
+    [defaultProjectId, unassignedProjectOption]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(

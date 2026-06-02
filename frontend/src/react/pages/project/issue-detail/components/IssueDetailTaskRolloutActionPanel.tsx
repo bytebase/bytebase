@@ -22,11 +22,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -87,10 +83,14 @@ export function IssueDetailTaskRolloutActionPanel({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
   const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   const [loading, setLoading] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(false);
   const [canRun, setCanRun] = useState(true);

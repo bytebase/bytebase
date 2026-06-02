@@ -35,11 +35,7 @@ import {
   ensureServiceAccountFullName,
   serviceAccountToUser,
 } from "@/react/stores/app/serviceAccount";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getServiceAccountNameInBinding,
@@ -434,14 +430,16 @@ function ServiceAccountForm({
     (state) => state.patchWorkspaceIamPolicy
   );
   const actuatorStore = useActuatorV1Store();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
 
+  // subscribe to re-render on project cache change
+  void projectsByName;
   const projectEntity = useVueState(() =>
-    project ? projectStore.getProjectByName(project) : undefined
+    project ? useAppStore.getState().getProjectByName(project) : undefined
   );
 
   const parent = useVueState(
@@ -676,15 +674,19 @@ function ServiceAccountForm({
 export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
   const getServiceAccount = useAppStore((state) => state.getServiceAccount);
 
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
     : undefined;
+  // subscribe to re-render on project cache change
+  void projectsByName;
   const project = useVueState(() =>
-    projectName ? projectStore.getProjectByName(projectName) : undefined
+    projectName
+      ? useAppStore.getState().getProjectByName(projectName)
+      : undefined
   );
 
   const parent = useVueState(

@@ -20,11 +20,8 @@ import { Textarea } from "@/react/components/ui/textarea";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -78,10 +75,13 @@ export function PlanDetailTaskRolloutActionPanel({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const projectStore = useProjectV1Store();
   const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = projectStore.getProjectByName(projectName);
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const project = useMemo(
+    () => useAppStore.getState().getProjectByName(projectName),
+    [projectsByName, projectName]
+  );
   const [loading, setLoading] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(false);
   const [canRun, setCanRun] = useState(true);

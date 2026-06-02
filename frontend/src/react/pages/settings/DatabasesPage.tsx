@@ -30,7 +30,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useEnvironmentV1Store,
-  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -122,7 +121,6 @@ export function DatabasesPage() {
     () => environmentStore.environmentList ?? []
   );
 
-  const projectStore = useProjectV1Store();
   // `serverInfo.defaultProject` is fetched asynchronously by the actuator
   // store; wrap with `useVueState` so the filter value updates the moment
   // it arrives instead of being captured as an empty string on first
@@ -149,7 +147,7 @@ export function DatabasesPage() {
   );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { projects } = await projectStore.fetchProjectList({
+      const { projects } = await useAppStore.getState().fetchProjectList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -163,7 +161,7 @@ export function DatabasesPage() {
         });
       return matchesUnassigned ? [unassignedProjectOption, ...remote] : remote;
     },
-    [projectStore, defaultProjectId, unassignedProjectOption]
+    [defaultProjectId, unassignedProjectOption]
   );
 
   const searchInstances = useCallback(

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   IssueSchema,
@@ -17,9 +18,13 @@ export function IssueDetailTitleInput() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const { setEditing } = page;
-  const projectStore = useProjectV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [title, setTitle] = useState(page.issue?.title || "");
   const [isEditing, setIsEditing] = useState(false);

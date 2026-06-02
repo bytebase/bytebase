@@ -67,11 +67,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  getProjectNameAndDatabaseGroupName,
-  pushNotification,
-  useProjectV1Store,
-} from "@/store";
+import { getProjectNameAndDatabaseGroupName, pushNotification } from "@/store";
 import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
@@ -193,9 +189,11 @@ export function PlanDetailChangesBranch({
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const project = useVueState(() =>
-    projectStore.getProjectByName(`projects/${page.projectId}`)
+    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
   );
   const [showAddSpecSheet, setShowAddSpecSheet] = useState(false);
   const [showTargetSelectorSheet, setShowTargetSelectorSheet] = useState(false);
@@ -713,9 +711,11 @@ function OptionsSection({
   const page = usePlanDetailContext();
   const { patchState, refreshState } = page;
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const project = useVueState(() =>
-    projectStore.getProjectByName(`projects/${page.projectId}`)
+    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
   );
   const databasesByName = useAppStore((s) => s.databasesByName);
   const [sheetStatement, setSheetStatementValue] = useState("");

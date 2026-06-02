@@ -51,11 +51,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -142,10 +138,14 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
   const fetchPreviousChangelog = useAppStore(
     (state) => state.fetchPreviousChangelog
   );
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>(

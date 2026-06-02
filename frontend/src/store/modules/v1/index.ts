@@ -5,7 +5,6 @@ export * from "./environment";
 export * from "./group";
 export * from "./permission";
 export * from "./policy";
-export * from "./project";
 export * from "./projectIamPolicy";
 export * from "./setting";
 export * from "./subscription";

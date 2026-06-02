@@ -77,7 +77,6 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useProjectV1Store: () => mocks.projectStore,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -97,11 +96,16 @@ vi.mock("@/react/stores/app", () => ({
         // The approval flow now subscribes to projectPoliciesByName directly
         // so the candidate list re-renders when the policy resolves.
         projectPoliciesByName: { "projects/p1": { bindings: [] } },
+        // The approval flow subscribes to projectsByName so the project
+        // useVueState getter re-renders when the cache changes.
+        projectsByName: { "projects/p1": { allowSelfApproval: false } },
         getIssueComments: mocks.issueCommentStore.getIssueComments,
       }),
     {
       getState: () => ({
         listIssueComments: mocks.issueCommentStore.listIssueComments,
+        getOrFetchProjectByName: mocks.projectStore.getOrFetchProjectByName,
+        getProjectByName: mocks.projectStore.getProjectByName,
       }),
     }
   ),

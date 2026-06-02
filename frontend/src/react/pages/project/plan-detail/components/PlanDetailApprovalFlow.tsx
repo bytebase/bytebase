@@ -26,7 +26,7 @@ import {
 } from "@/react/stores/app/issueComment";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
   ApprovalStatus,
@@ -80,7 +80,6 @@ function PlanDetailApprovalFlowContent({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const projectStore = useProjectV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -88,11 +87,12 @@ function PlanDetailApprovalFlowContent({
   const issue = page.issue;
 
   useEffect(() => {
-    void projectStore
+    void useAppStore
+      .getState()
       .getOrFetchProjectByName(projectName)
       .catch(() => undefined);
     void loadProjectIamPolicy(projectName).catch(() => undefined);
-  }, [loadProjectIamPolicy, projectName, projectStore]);
+  }, [loadProjectIamPolicy, projectName]);
 
   useEffect(() => {
     if (mode !== "review") {
@@ -659,7 +659,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUser();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -680,7 +682,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
   // Subscribe directly to the Zustand project IAM cache so this step
   // re-renders the moment loadProjectIamPolicy() resolves. Wrapping the
   // Zustand getter in useVueState would only react to Vue dependencies

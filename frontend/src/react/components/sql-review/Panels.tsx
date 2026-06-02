@@ -14,18 +14,16 @@ import {
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { getRuleKey } from "@/react/lib/sql-review/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import {
-  pushNotification,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useEnvironmentV1Store } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import { isBuiltinRule, ruleTemplateMapV2 } from "@/types/sqlReview";
@@ -159,17 +157,23 @@ export function AttachResourcesPanel({
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const envStore = useEnvironmentV1Store();
-  const projStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
   const environments = useVueState(() => envStore.environmentList ?? []);
-  const projects = useVueState(() => [...(projStore.getProjectList() ?? [])]);
+  const projects = useMemo(
+    () =>
+      Object.values(projectsByName).filter(
+        (project) => project.state === State.ACTIVE
+      ),
+    [projectsByName]
+  );
 
   const [resources, setResources] = useState<string[]>([]);
 
   // Fetch projects on mount so the checkbox list is populated
   useEffect(() => {
-    projStore.fetchProjectList({});
-  }, [projStore]);
+    useAppStore.getState().fetchProjectList({});
+  }, []);
 
   useEffect(() => {
     setResources([...review.resources]);

@@ -26,12 +26,7 @@ import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDat
 import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import {
-  hasFeature,
-  pushNotification,
-  useProjectV1Store,
-  useSettingV1Store,
-} from "@/store";
+import { hasFeature, pushNotification, useSettingV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -64,11 +59,15 @@ export function ProjectMaskingExemptionCreatePage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const settingStore = useSettingV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   // Ensure classification config is loaded
   useEffect(() => {

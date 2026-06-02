@@ -17,7 +17,6 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
 } from "@/router/dashboard/projectV1";
-import { useProjectV1Store } from "@/store";
 import {
   getProjectNameAndDatabaseGroupName,
   projectNamePrefix,
@@ -33,10 +32,14 @@ export function ProjectDatabaseGroupsPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
 
   const [dbGroupList, setDbGroupList] = useState<DatabaseGroup[]>([]);
   const [loading, setLoading] = useState(true);

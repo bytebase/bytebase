@@ -6,7 +6,6 @@ import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
-import { useProjectV1Store } from "@/store";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseExportSchemaButton } from "./DatabaseExportSchemaButton";
@@ -27,7 +26,8 @@ export function DatabaseDetailActions({
   onOpenTransferProject: () => void;
 }) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const hasProjectPermissionFn = useAppStore(
     (state) => state.hasProjectPermission
   );
@@ -35,8 +35,9 @@ export function DatabaseDetailActions({
     (state) => state.hasWorkspacePermission
   );
   const project = useVueState(() =>
-    projectStore.getProjectByName(database.project)
+    useAppStore.getState().getProjectByName(database.project)
   );
+  void projectsByName;
   const hasProjectPermission = useMemo(
     () => (permission: Permission) => {
       if (hasWorkspacePermissionFn(permission)) {

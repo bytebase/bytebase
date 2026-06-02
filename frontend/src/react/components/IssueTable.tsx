@@ -35,7 +35,7 @@ import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,
   isValidProjectName,
@@ -322,21 +322,23 @@ export function useIssueSearchScopeOptions(
 ): ScopeOption[] {
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
-  const projectStore = useProjectV1Store();
   const me = useCurrentUser();
 
   const [projectLabels, setProjectLabels] = useState<Label[]>([]);
 
   useEffect(() => {
     if (!projectName || !isValidProjectName(projectName)) return;
-    projectStore.getOrFetchProjectByName(projectName).then((project) => {
-      const labels = new Map<string, Label>();
-      for (const label of project.issueLabels) {
-        labels.set(`${label.value}-${label.color}`, label);
-      }
-      setProjectLabels([...labels.values()]);
-    });
-  }, [projectName, projectStore]);
+    useAppStore
+      .getState()
+      .getOrFetchProjectByName(projectName)
+      .then((project) => {
+        const labels = new Map<string, Label>();
+        for (const label of project.issueLabels) {
+          labels.set(`${label.value}-${label.color}`, label);
+        }
+        setProjectLabels([...labels.values()]);
+      });
+  }, [projectName]);
 
   const searchPrincipal = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {

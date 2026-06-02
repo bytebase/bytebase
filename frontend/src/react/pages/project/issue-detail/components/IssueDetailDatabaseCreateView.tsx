@@ -8,7 +8,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -33,10 +33,14 @@ import { IssueDetailTaskRunTable } from "./IssueDetailTaskRunTable";
 export function IssueDetailDatabaseCreateView() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const environmentStore = useEnvironmentV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
 
   const createDatabaseSpec = useMemo(() => {
     return page.plan?.specs.find(

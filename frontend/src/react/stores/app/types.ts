@@ -267,18 +267,50 @@ export type IamSlice = {
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
 };
 
+export interface ProjectFilter {
+  query?: string;
+  excludeDefault?: boolean;
+  state?: State;
+  // label should be "{label key}:{label value}" format
+  labels?: string[];
+}
+
 export type ProjectSlice = {
   projectsByName: Record<string, Project>;
   projectRequests: Record<string, Promise<Project | undefined>>;
   projectErrorsByName: Record<string, Error | undefined>;
   getProjectByName: (name: string) => Project;
-  fetchProject: (name: string) => Promise<Project | undefined>;
+  fetchProject: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Project | undefined>;
+  getOrFetchProjectByName: (name: string, silent?: boolean) => Promise<Project>;
   batchFetchProjects: (names: string[]) => Promise<Project[]>;
+  // Returns ALL requested projects (fetching the missing ones first),
+  // resolved through `getProjectByName` so the placeholder is filled in.
+  batchGetOrFetchProjects: (names: string[]) => Promise<Project[]>;
   searchProjects: (params: ProjectListParams) => Promise<{
     projects: Project[];
     nextPageToken?: string;
   }>;
+  fetchProjectList: (params: {
+    pageSize?: number;
+    pageToken?: string;
+    silent?: boolean;
+    filter?: ProjectFilter;
+    orderBy?: string;
+    cache?: boolean;
+  }) => Promise<{ projects: Project[]; nextPageToken?: string }>;
   createProject: (title: string, resourceId: string) => Promise<Project>;
+  updateProject: (project: Project, updateMask: string[]) => Promise<Project>;
+  archiveProject: (project: Project) => Promise<void>;
+  restoreProject: (project: Project) => Promise<void>;
+  deleteProject: (project: string) => Promise<void>;
+  batchDeleteProjects: (projectNames: string[]) => Promise<void>;
+  batchPurgeProjects: (projectNames: string[]) => Promise<void>;
+  // Immutably upsert a single project into the by-name cache.
+  updateProjectCache: (project: Project) => void;
+  resetProjects: () => void;
 };
 
 export interface InstanceFilter {

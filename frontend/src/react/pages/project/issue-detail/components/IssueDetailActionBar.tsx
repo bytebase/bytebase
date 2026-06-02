@@ -54,7 +54,7 @@ import {
   buildPlanDeployRouteFromPlanName,
   buildPlanDeployRouteFromRolloutName,
 } from "@/router/dashboard/projectV1RouteHelpers";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ApproveIssueRequestSchema,
@@ -95,7 +95,8 @@ import { IssueDetailTaskRolloutActionPanel } from "./IssueDetailTaskRolloutActio
 export function IssueDetailActionBar() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const projectStore = useProjectV1Store();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
   const currentUser = useCurrentUser();
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<ActionDefinition>();
@@ -107,7 +108,10 @@ export function IssueDetailActionBar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const project = useVueState(() =>
+    useAppStore.getState().getProjectByName(projectName)
+  );
+  void projectsByName;
   const { isSpecEmpty } = useIssueDetailSpecValidation(page.plan?.specs ?? []);
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));

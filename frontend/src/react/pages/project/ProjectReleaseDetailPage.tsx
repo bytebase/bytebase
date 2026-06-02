@@ -27,7 +27,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useProjectV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
@@ -45,23 +45,28 @@ export function ProjectReleaseDetailPage({
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   const deleteRelease = useAppStore((state) => state.deleteRelease);
   const undeleteRelease = useAppStore((state) => state.undeleteRelease);
-  const projectV1Store = useProjectV1Store();
+  const projectsByName = useAppStore((s) => s.projectsByName);
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const releaseName = `${projectName}/releases/${releaseId}`;
 
   const release = useAppStore((state) => state.getReleaseByName(releaseName));
+  // subscribe to re-render on project cache change
+  void projectsByName;
   const project = useVueState(() =>
-    projectV1Store.getProjectByName(projectName)
+    useAppStore.getState().getProjectByName(projectName)
   );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
-    void projectV1Store.getOrFetchProjectByName(projectName).catch((error) => {
-      if (!cancelled) console.error("Failed to fetch project", error);
-    });
+    void useAppStore
+      .getState()
+      .getOrFetchProjectByName(projectName)
+      .catch((error) => {
+        if (!cancelled) console.error("Failed to fetch project", error);
+      });
     void fetchRelease(releaseName)
       .catch((error) => {
         if (!cancelled) console.error("Failed to fetch release", error);
@@ -72,7 +77,7 @@ export function ProjectReleaseDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [projectV1Store, fetchRelease, projectName, releaseName]);
+  }, [fetchRelease, projectName, releaseName]);
 
   useEffect(() => {
     if (project?.title) {
