@@ -551,6 +551,37 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}})},
 			},
 		},
+		{
+			name: "match recognize all rows keeps input columns",
+			statement: `SELECT * FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "ACCOUNT_ID", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "ACCOUNT_ID"}}), IsPlainField: true},
+				{Name: "TRADE_TIME", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "TRADE_TIME"}}), IsPlainField: true},
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}}), IsPlainField: true},
+				{Name: "FIRST_PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
+		{
+			name: "match recognize all rows input projection",
+			statement: `SELECT PRICE FROM TRADES MATCH_RECOGNIZE (
+  PARTITION BY ACCOUNT_ID
+  ORDER BY TRADE_TIME
+  MEASURES FIRST(PRICE) AS FIRST_PRICE
+  ALL ROWS PER MATCH
+  PATTERN (A B+)
+  DEFINE B AS B.PRICE > A.PRICE
+) MR`,
+			want: []base.QuerySpanResult{
+				{Name: "PRICE", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "TRADES", Column: "PRICE"}})},
+			},
+		},
 	}
 
 	for _, test := range tests {

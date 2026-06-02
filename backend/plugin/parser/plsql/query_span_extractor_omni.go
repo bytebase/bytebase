@@ -801,8 +801,12 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 	if err != nil {
 		return nil, err
 	}
-	results := make([]base.QuerySpanResult, 0, len(partitionResults)+len(measureResults))
-	results = append(results, partitionResults...)
+	var results []base.QuerySpanResult
+	if strings.HasPrefix(strings.ToUpper(ref.RowsPerMatch), "ALL ROWS PER MATCH") && source != nil {
+		results = cloneQuerySpanResults(source.GetQuerySpanResult())
+	} else {
+		results = append(results, partitionResults...)
+	}
 	results = append(results, measureResults...)
 	return aliasOmniTableSource(&base.PseudoTable{Columns: results}, ref.Alias), nil
 }
