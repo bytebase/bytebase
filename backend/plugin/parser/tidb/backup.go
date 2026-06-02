@@ -127,9 +127,14 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 		// form of an UPDATE/DELETE/BATCH. Plain EXPLAIN does not execute, so it
 		// needs no backup and is skipped.
 		if n.Analyze {
-			switch n.Stmt.(type) {
+			switch s := n.Stmt.(type) {
 			case *ast.UpdateStmt, *ast.DeleteStmt, *ast.BatchStmt:
 				return nil, errors.New("prior backup does not support EXPLAIN ANALYZE of an UPDATE/DELETE/BATCH statement")
+			case *ast.InsertStmt:
+				if isOverwritingInsert(s) {
+					return nil, errors.New("prior backup does not support EXPLAIN ANALYZE of a REPLACE or INSERT ... ON DUPLICATE KEY UPDATE statement")
+				}
+			default:
 			}
 		}
 		return nil, nil
@@ -139,7 +144,7 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 		// than returning an empty list, which the task executor would treat as a
 		// successful no-op and then run the mutation unprotected. A plain INSERT
 		// only adds rows (nothing to restore), so it needs no backup.
-		if n.IsReplace || len(n.OnDuplicateKey) > 0 {
+		if isOverwritingInsert(n) {
 			return nil, errors.New("prior backup does not support REPLACE or INSERT ... ON DUPLICATE KEY UPDATE statements")
 		}
 		return nil, nil
@@ -152,6 +157,13 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 // Returning an empty list with no error would let the task executor treat the
 // backup as a successful no-op and run the mutation unprotected (e.g. when a
 // table alias collides with a CTE name, so the only target gets filtered out).
+// isOverwritingInsert reports whether an INSERT can overwrite or delete
+// existing rows (REPLACE, or INSERT ... ON DUPLICATE KEY UPDATE), which prior
+// backup cannot back up. A plain INSERT only adds rows.
+func isOverwritingInsert(n *ast.InsertStmt) bool {
+	return n.IsReplace || len(n.OnDuplicateKey) > 0
+}
+
 func requireTargets(infos []statementInfo, err error, kind string) ([]statementInfo, error) {
 	if err != nil {
 		return nil, err
@@ -166,7 +178,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 	cteNames := collectCTENames(fullSQL, n.Loc)
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
-	singleTables := collectSingleTables(databaseName, n.Tables)
+	singleTables := collectSingleTables(databaseName, cteNames, n.Tables)
 
 	if len(n.Using) == 0 {
 		// Single-table DELETE: DELETE FROM t WHERE ...
@@ -184,7 +196,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 
 	// Multi-table DELETE: DELETE t1, t2 FROM t1 JOIN t2 ... WHERE ...
 	// Tables = targets to delete from; Using = the referenced table list.
-	refTables := collectSingleTables(databaseName, n.Using)
+	refTables := collectSingleTables(databaseName, cteNames, n.Using)
 
 	var result []statementInfo
 	for _, target := range singleTables {
@@ -215,7 +227,7 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 	cteNames := collectCTENames(fullSQL, n.Loc)
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
-	singleTables := collectSingleTables(databaseName, n.Tables)
+	singleTables := collectSingleTables(databaseName, cteNames, n.Tables)
 
 	// Determine which tables the SET clause writes, via column table prefixes.
 	updatedTables := make(map[string]bool)
@@ -288,15 +300,15 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 // collectSingleTables walks TableExpr slices and collects TableReference entries
 // keyed by alias or table name. A table's database is its explicit schema, or
 // the statement's database when unqualified.
-func collectSingleTables(databaseName string, exprs []ast.TableExpr) map[string]*TableReference {
+func collectSingleTables(databaseName string, cteNames map[string]bool, exprs []ast.TableExpr) map[string]*TableReference {
 	result := make(map[string]*TableReference)
 	for _, expr := range exprs {
-		collectSingleTablesFromExpr(databaseName, expr, result)
+		collectSingleTablesFromExpr(databaseName, cteNames, expr, result)
 	}
 	return result
 }
 
-func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out map[string]*TableReference) {
+func collectSingleTablesFromExpr(databaseName string, cteNames map[string]bool, expr ast.TableExpr, out map[string]*TableReference) {
 	switch e := expr.(type) {
 	case *ast.TableRef:
 		db := e.Schema
@@ -308,13 +320,20 @@ func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out ma
 		if e.Alias != "" {
 			key = e.Alias
 		}
+		// A schema-qualified physical table and an unqualified same-named CTE can
+		// coexist in one FROM (TiDB keeps them distinct) but collapse to the same
+		// map key. Keep the real table: a CTE is never a backup target, and
+		// letting it shadow a physical target would drop that target's backup.
+		if existing, ok := out[key]; ok && !isCTERef(cteNames, existing) && isCTERef(cteNames, ref) {
+			return
+		}
 		out[key] = ref
 	case *ast.JoinClause:
 		if e.Left != nil {
-			collectSingleTablesFromExpr(databaseName, e.Left, out)
+			collectSingleTablesFromExpr(databaseName, cteNames, e.Left, out)
 		}
 		if e.Right != nil {
-			collectSingleTablesFromExpr(databaseName, e.Right, out)
+			collectSingleTablesFromExpr(databaseName, cteNames, e.Right, out)
 		}
 	default:
 	}
@@ -722,6 +741,10 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	default:
 		return nil
 	}
+	// omni's table-ref Loc starts after a wrapping "(", but the matching ")"
+	// falls inside the slice below (which runs to the statement end), leaving it
+	// unbalanced. Extend the start to cover any parentheses wrapping the list.
+	start = expandToLeadingParens(sql, start)
 	end := n.Loc.End
 	if end <= 0 || end > len(sql) {
 		end = len(sql)
@@ -732,6 +755,24 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 		}
 	}
 	return nil
+}
+
+// expandToLeadingParens moves start left past whitespace to include any "("
+// characters wrapping the table-ref list. omni's JoinClause/TableRef Loc starts
+// after a wrapping "(", which would otherwise leave the matching ")" unbalanced
+// in a sliced DELETE suffix.
+func expandToLeadingParens(sql string, start int) int {
+	for start > 0 {
+		j := start - 1
+		for j >= 0 && (sql[j] == ' ' || sql[j] == '\t' || sql[j] == '\n' || sql[j] == '\r') {
+			j--
+		}
+		if j < 0 || sql[j] != '(' {
+			break
+		}
+		start = j
+	}
+	return start
 }
 
 func nodeLocStart(expr ast.TableExpr) int {

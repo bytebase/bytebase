@@ -375,6 +375,16 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
 	}
 
+	// A schema-qualified physical table (db.test) and an unqualified same-named
+	// CTE can coexist in one FROM; they collapse to the same map key, but the
+	// real table must win. Backing up only test2 would leave db.test unprotected
+	// (verified on TiDB v8.5.0: the DELETE removes rows from both physical
+	// targets).
+	result, err = run("WITH test AS (SELECT a FROM test2) DELETE db.test, test2 FROM db.test JOIN test2 ON db.test.a = test2.a CROSS JOIN test")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+
 	// The cross-database guard is case-insensitive (TiDB default): a different-
 	// case reference to the task database is the same database, not cross-db.
 	result, err = run("UPDATE DB.test SET c1 = 1 WHERE c1 = 2")
@@ -400,6 +410,35 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	result, err = run("INSERT INTO test VALUES (1, 2, 3)")
 	a.NoError(err, "plain INSERT only adds rows and needs no backup")
 	a.Empty(result)
+
+	// EXPLAIN ANALYZE executes the wrapped statement, so the overwriting INSERT
+	// forms must be rejected there too -- not only as a direct statement. A plain
+	// INSERT under EXPLAIN ANALYZE only adds rows and needs no backup.
+	_, err = run("EXPLAIN ANALYZE REPLACE INTO test VALUES (1, 2, 3)")
+	a.Error(err, "EXPLAIN ANALYZE REPLACE must be rejected")
+	_, err = run("EXPLAIN ANALYZE INSERT INTO test VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE c = 5")
+	a.Error(err, "EXPLAIN ANALYZE INSERT ... ON DUPLICATE KEY UPDATE must be rejected")
+	result, err = run("EXPLAIN ANALYZE INSERT INTO test VALUES (1, 2, 3)")
+	a.NoError(err, "EXPLAIN ANALYZE of a plain INSERT needs no backup")
+	a.Empty(result)
+
+	// A parenthesized leading join must produce valid backup SQL. omni's table-
+	// ref Loc starts after the wrapping "(", so a DELETE suffix sliced to the
+	// statement end would keep the ")" without its "(" -> malformed SQL.
+	result, err = run("UPDATE (test AS a JOIN test2 AS b ON a.a = b.a) SET a.c = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "parenthesized-join UPDATE backup must re-parse as valid SQL")
+	}
+	result, err = run("DELETE a FROM (test AS a JOIN test2 AS b ON a.a = b.a) WHERE a.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "parenthesized-join DELETE backup must re-parse as valid SQL")
+	}
 
 	// In the >maxMixedDMLCount same-table UNION path, case-only database
 	// differences (db.test vs DB.test) must be treated as the same table, not
