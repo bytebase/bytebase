@@ -58,6 +58,33 @@ const EMPTY_EXTERNAL_TABLE_LIST: ExternalTableMetadata[] = [];
 const EMPTY_FUNCTION_LIST: FunctionMetadata[] = [];
 const EMPTY_EXTENSION_LIST: ExtensionMetadata[] = [];
 
+// When no schema is selected the list getters flatten across all schemas.
+// `flatMap` allocates a fresh array on every call, which would trip Zustand's
+// `Object.is` snapshot check and loop `useSyncExternalStore` forever (the bug
+// only reproduces on non-schema engines like MySQL, whose single schema is
+// named "" so the flatten branch runs; Postgres selects "public" and hits the
+// stable `.tables` ref). Cache the flattened result keyed by the `schemas`
+// array reference — that reference is stable while the database metadata stays
+// cached, so repeated calls return the same array. The cache entry is dropped
+// automatically once the metadata (and its `schemas` array) is replaced or GC'd.
+const flattenCache = <T>(
+  selector: (schema: SchemaMetadata) => T[]
+): ((schemas: SchemaMetadata[]) => T[]) => {
+  const cache = new WeakMap<SchemaMetadata[], T[]>();
+  return (schemas) => {
+    const cached = cache.get(schemas);
+    if (cached) return cached;
+    const flattened = schemas.flatMap(selector);
+    cache.set(schemas, flattened);
+    return flattened;
+  };
+};
+
+const flattenTables = flattenCache((s) => s.tables);
+const flattenViews = flattenCache((s) => s.views);
+const flattenExternalTables = flattenCache((s) => s.externalTables);
+const flattenFunctions = flattenCache((s) => s.functions);
+
 const isUnknownDatabase = (database: string): boolean => {
   const { databaseName, instanceName } = extractDatabaseResourceName(database);
   return (
@@ -102,7 +129,7 @@ export const createDBSchemaSlice: AppSliceCreator<DBSchemaSlice> = (
     if (schema) {
       return schemas.find((s) => s.name === schema)?.tables ?? EMPTY_TABLE_LIST;
     }
-    return schemas.flatMap((s) => s.tables);
+    return flattenTables(schemas);
   },
 
   getViewList: ({ database, schema }) => {
@@ -111,7 +138,7 @@ export const createDBSchemaSlice: AppSliceCreator<DBSchemaSlice> = (
     if (schema) {
       return schemas.find((s) => s.name === schema)?.views ?? EMPTY_VIEW_LIST;
     }
-    return schemas.flatMap((s) => s.views);
+    return flattenViews(schemas);
   },
 
   getExternalTableList: ({ database, schema }) => {
@@ -123,7 +150,7 @@ export const createDBSchemaSlice: AppSliceCreator<DBSchemaSlice> = (
         EMPTY_EXTERNAL_TABLE_LIST
       );
     }
-    return schemas.flatMap((s) => s.externalTables);
+    return flattenExternalTables(schemas);
   },
 
   getFunctionList: ({ database, schema }) => {
@@ -134,7 +161,7 @@ export const createDBSchemaSlice: AppSliceCreator<DBSchemaSlice> = (
         schemas.find((s) => s.name === schema)?.functions ?? EMPTY_FUNCTION_LIST
       );
     }
-    return schemas.flatMap((s) => s.functions);
+    return flattenFunctions(schemas);
   },
 
   getExtensionList: (database) => {
