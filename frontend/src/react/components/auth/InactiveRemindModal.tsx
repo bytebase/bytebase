@@ -8,8 +8,8 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useAuthStore, useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useAuthStore } from "@/store";
 import { storageKeyLastActivity } from "@/utils/storage-keys";
 
 const SHOW_THRESHOLD_MIN = 3;
@@ -17,10 +17,8 @@ const SHOW_THRESHOLD_MIN = 3;
 export function InactiveRemindModal() {
   const { t } = useTranslation();
   const currentUserEmail = useCurrentUser().email;
-  const inactiveTimeoutInSeconds = useVueState(() =>
-    Number(
-      useSettingV1Store().workspaceProfile.inactiveSessionTimeout?.seconds ?? 0
-    )
+  const inactiveTimeoutInSeconds = useAppStore((s) =>
+    Number(s.getWorkspaceProfile().inactiveSessionTimeout?.seconds ?? 0)
   );
 
   const storageKey = storageKeyLastActivity(currentUserEmail);

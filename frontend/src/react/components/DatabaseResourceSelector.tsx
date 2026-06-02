@@ -18,9 +18,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -98,7 +96,6 @@ export function DatabaseResourceSelector({
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
-  const environmentStore = useEnvironmentV1Store();
 
   const [databases, setDatabases] = useState<Database[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -118,9 +115,7 @@ export function DatabaseResourceSelector({
   const [loadingMetadata, setLoadingMetadata] = useState<Set<string>>(
     new Set()
   );
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList);
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {

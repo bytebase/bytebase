@@ -4,11 +4,9 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useActuatorV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 import {
@@ -54,8 +52,6 @@ export function DatabaseTable({
   onDatabasesChange,
   refreshToken,
 }: DatabaseTableProps) {
-  const actuatorStore = useActuatorV1Store();
-
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
   const nextPageTokenRef = useRef("");
@@ -67,9 +63,7 @@ export function DatabaseTable({
   const [sort, setSort] = useState<DatabaseTableSort | null>(null);
   const orderBy = sort ? `${sort.key} ${sort.order}` : "";
 
-  const workspaceResourceName = useVueState(
-    () => actuatorStore.workspaceResourceName
-  );
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
 
   const fetchDatabases = useCallback(
     async (isRefresh: boolean) => {

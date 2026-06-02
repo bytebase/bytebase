@@ -2,7 +2,7 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DashboardFrameShellProps } from "@/react/dashboard-shell";
 import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";
-import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { BannersWrapper } from "./BannersWrapper";
 
@@ -10,11 +10,10 @@ import { BannersWrapper } from "./BannersWrapper";
 // remaining Vue surfaces still read from these Pinia stores. Once those Vue
 // readers are migrated this block can go away.
 const loadLegacyDashboardState = () => {
+  const store = useAppStore.getState();
   return Promise.all([
-    useEnvironmentV1Store().fetchEnvironments(),
-    useSettingV1Store().getOrFetchSettingByName(
-      Setting_SettingName.WORKSPACE_PROFILE
-    ),
+    store.fetchEnvironments(),
+    store.getOrFetchSettingByName(Setting_SettingName.WORKSPACE_PROFILE),
   ]);
 };
 

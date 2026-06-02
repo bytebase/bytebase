@@ -120,7 +120,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/store", () => ({
-  useEnvironmentV1Store: () => ({ environmentList: [] }),
   pushNotification: vi.fn(),
 }));
 
@@ -138,6 +137,7 @@ const appStoreState = {
   getOrFetchInstanceByName: mocks.getOrFetchInstanceByName,
   fetchProjectList: vi.fn().mockResolvedValue({ projects: [] }),
   projectsByName: {},
+  environmentList: [],
 };
 vi.mock("@/react/stores/app", () => ({
   useAppStore: Object.assign(

@@ -20,14 +20,9 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
@@ -595,11 +590,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   } = ctx;
   const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
-  const actuatorStore = useActuatorV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasUnifiedInstanceLicense = useVueState(
-    () => subscriptionStore.hasUnifiedInstanceLicense
+  const hasUnifiedInstanceLicense = useAppStore((s) =>
+    s.hasUnifiedInstanceLicense()
   );
+  const instanceLicenseCount = useAppStore((s) => s.instanceLicenseCount());
+  const activatedInstanceCount = useAppStore((s) => s.activatedInstanceCount());
+  const currentPlan = useAppStore((s) => s.currentPlan());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
@@ -667,24 +664,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   // --- Computed values ---
 
   const availableLicenseCount = useMemo(
-    () =>
-      Math.max(
-        0,
-        subscriptionStore.instanceLicenseCount -
-          actuatorStore.activatedInstanceCount
-      ),
-    [
-      subscriptionStore.instanceLicenseCount,
-      actuatorStore.activatedInstanceCount,
-    ]
+    () => Math.max(0, instanceLicenseCount - activatedInstanceCount),
+    [instanceLicenseCount, activatedInstanceCount]
   );
 
   const availableLicenseCountText = useMemo((): string => {
-    if (subscriptionStore.instanceLicenseCount === Number.MAX_VALUE) {
+    if (instanceLicenseCount === Number.MAX_VALUE) {
       return t("common.unlimited");
     }
     return `${availableLicenseCount}`;
-  }, [subscriptionStore.instanceLicenseCount, availableLicenseCount, t]);
+  }, [instanceLicenseCount, availableLicenseCount, t]);
 
   const resourceId = useMemo(() => {
     const id = extractInstanceResourceName(basicInfo.name);
@@ -969,9 +958,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           .getState()
           .updateInstance(instancePatch, ["activation"]);
         useAppStore.getState().updateDatabaseInstance(updated);
-        await actuatorStore.fetchServerInfo(
-          actuatorStore.workspaceResourceName
-        );
+        await useAppStore
+          .getState()
+          .fetchServerInfo(useAppStore.getState().workspaceResourceName());
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -979,7 +968,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         });
       }
     },
-    [instance, actuatorStore, updateBasicInfo, t]
+    [instance, updateBasicInfo, t]
   );
 
   const testConnectionForCurrentEditingDS = useCallback(async () => {
@@ -1151,7 +1140,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             </div>
 
             {/* Activation toggle */}
-            {subscriptionStore.currentPlan !== PlanType.FREE &&
+            {currentPlan !== PlanType.FREE &&
               !hasUnifiedInstanceLicense &&
               allowEdit && (
                 <div className="sm:col-span-2 ml-0 sm:ml-3">
@@ -1614,7 +1603,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 onOpenInfoPanel={onOpenInfoPanel}
               />
 
-              {actuatorStore.isSaaSMode && (
+              {isSaaSMode && (
                 <Alert variant="info" className="mt-4">
                   <a
                     href="https://docs.bytebase.com/get-started/cloud#prerequisites"

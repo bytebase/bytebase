@@ -37,7 +37,6 @@ import {
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useActuatorV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
@@ -74,13 +73,12 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
 
 function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
+  const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
 
   const isDefault = useVueState(() => {
     const projectId =
       (router.currentRoute.value.params.projectId as string | undefined) ?? "";
     const projectName = projectId ? `${projectNamePrefix}${projectId}` : "";
-    const defaultProject =
-      useActuatorV1Store().serverInfo?.defaultProject ?? "";
     return !!defaultProject && projectName === defaultProject;
   });
 

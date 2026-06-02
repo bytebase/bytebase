@@ -713,7 +713,8 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     // Always returns a profile (never undefined), mirroring the Pinia
     // `useSettingV1Store().workspaceProfile` getter, so consumers can read
     // fields without null checks. Reactive via Zustand's selector re-run.
-    getWorkspaceProfile: () => get().workspaceProfile ?? EMPTY_WORKSPACE_PROFILE,
+    getWorkspaceProfile: () =>
+      get().workspaceProfile ?? EMPTY_WORKSPACE_PROFILE,
 
     classification: () => {
       const setting =
