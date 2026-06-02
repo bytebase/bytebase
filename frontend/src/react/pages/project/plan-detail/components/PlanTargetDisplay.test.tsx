@@ -9,9 +9,7 @@ import { PlanTargetDisplay } from "./PlanTargetDisplay";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  databaseStore: {
-    getDatabaseByName: vi.fn(),
-  },
+  databasesByName: {} as Record<string, unknown>,
   environmentStore: {
     getEnvironmentByName: vi.fn(),
   },
@@ -36,8 +34,13 @@ vi.mock("@/react/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: <T,>(
+    selector: (state: { databasesByName: Record<string, unknown> }) => T
+  ) => selector({ databasesByName: mocks.databasesByName }),
+}));
+
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => mocks.databaseStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
 }));
 
@@ -62,14 +65,16 @@ describe("PlanTargetDisplay", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    mocks.databaseStore.getDatabaseByName.mockReturnValue({
-      name: "projects/p/instances/prod/databases/app",
-      effectiveEnvironment: "environments/prod",
-      instanceResource: {
-        engine: Engine.POSTGRES,
-        title: "prod-instance",
+    mocks.databasesByName = {
+      "projects/p/instances/prod/databases/app": {
+        name: "projects/p/instances/prod/databases/app",
+        effectiveEnvironment: "environments/prod",
+        instanceResource: {
+          engine: Engine.POSTGRES,
+          title: "prod-instance",
+        },
       },
-    });
+    };
     mocks.environmentStore.getEnvironmentByName.mockReturnValue({
       name: "environments/prod",
       title: "Production",

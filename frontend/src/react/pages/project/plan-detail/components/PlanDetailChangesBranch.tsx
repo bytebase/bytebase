@@ -70,7 +70,6 @@ import {
 import {
   getProjectNameAndDatabaseGroupName,
   pushNotification,
-  useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -93,6 +92,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -717,7 +717,7 @@ function OptionsSection({
   const project = useVueState(() =>
     projectStore.getProjectByName(`projects/${page.projectId}`)
   );
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const [sheetStatement, setSheetStatementValue] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
@@ -732,14 +732,14 @@ function OptionsSection({
     targets
       .flatMap((target) => {
         if (isValidDatabaseName(target)) {
-          return [databaseStore.getDatabaseByName(target)];
+          return [databasesByName[target] ?? unknownDatabase()];
         }
         if (isValidDatabaseGroupName(target)) {
           const dbGroup = useAppStore
             .getState()
             .getDBGroupByName(target, DatabaseGroupView.FULL);
-          return (dbGroup.matchedDatabases ?? []).map((database) =>
-            databaseStore.getDatabaseByName(database.name)
+          return (dbGroup.matchedDatabases ?? []).map(
+            (database) => databasesByName[database.name] ?? unknownDatabase()
           );
         }
         return [];
@@ -819,8 +819,8 @@ function OptionsSection({
     if (targets.length === 0) {
       return;
     }
-    void fetchTargets(targets, databaseStore);
-  }, [databaseStore, targets]);
+    void fetchTargets(targets);
+  }, [targets]);
 
   useEffect(() => {
     let canceled = false;
@@ -1205,7 +1205,7 @@ function TargetsSection({
   selectedSpec: Plan_Spec;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
   const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
@@ -1234,21 +1234,22 @@ function TargetsSection({
         );
       })
       .filter(
-        (name) => !databaseStore.getDatabaseByName(name).effectiveEnvironment
+        (name) =>
+          !(databasesByName[name] ?? unknownDatabase()).effectiveEnvironment
       );
-  }, [databaseStore, isLoadingTargets, targets]);
+  }, [databasesByName, isLoadingTargets, targets]);
   const filteredTargets = useMemo(
     () =>
       filterPlanTargets({
         getDatabaseDisplayName: (target) => {
           if (!isValidDatabaseName(target)) return target;
-          const database = databaseStore.getDatabaseByName(target);
+          const database = databasesByName[target] ?? unknownDatabase();
           return extractDatabaseResourceName(database.name).databaseName;
         },
         query: searchText,
         targets,
       }),
-    [databaseStore, searchText, targets]
+    [databasesByName, searchText, targets]
   );
   const nonEnvWarning =
     nonEnvDatabaseNames.length === 1
@@ -1268,7 +1269,7 @@ function TargetsSection({
       }
       setIsLoadingTargets(true);
       try {
-        await fetchTargets(visibleTargets, databaseStore);
+        await fetchTargets(visibleTargets);
       } finally {
         if (!canceled) setIsLoadingTargets(false);
       }
@@ -1277,7 +1278,7 @@ function TargetsSection({
     return () => {
       canceled = true;
     };
-  }, [databaseStore, targets, visibleTargets]);
+  }, [targets, visibleTargets]);
 
   useEffect(() => {
     if (!showAllTargetsDialog) return;
@@ -1286,7 +1287,7 @@ function TargetsSection({
     const load = async () => {
       setIsLoadingAllTargets(true);
       try {
-        await fetchTargets(targets, databaseStore);
+        await fetchTargets(targets);
       } finally {
         if (!canceled) setIsLoadingAllTargets(false);
       }
@@ -1295,7 +1296,7 @@ function TargetsSection({
     return () => {
       canceled = true;
     };
-  }, [databaseStore, showAllTargetsDialog, targets]);
+  }, [showAllTargetsDialog, targets]);
 
   return (
     <>
@@ -1603,7 +1604,6 @@ function DatabaseSelector({
   onSelectedNamesChange: (names: Set<string>) => void;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -1623,7 +1623,7 @@ function DatabaseSelector({
       }
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
-        const result = await databaseStore.fetchDatabases({
+        const result = await useAppStore.getState().fetchDatabases({
           parent: projectName,
           pageSize,
           pageToken: token || undefined,
@@ -1642,7 +1642,7 @@ function DatabaseSelector({
         }
       }
     },
-    [databaseStore, pageSize, projectName, query]
+    [pageSize, projectName, query]
   );
 
   useEffect(() => {
@@ -1861,7 +1861,6 @@ export function DatabaseGroupTarget({
   target: string;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
   const [searchText, setSearchText] = useState("");
   // Subscribe to the cached FULL entry directly (stable ref); deriving the
   // unknown fallback inside the selector would loop on a fresh object each call.
@@ -1907,11 +1906,11 @@ export function DatabaseGroupTarget({
       const databaseNames =
         group.matchedDatabases?.map((database) => database.name) ?? [];
       if (databaseNames.length > 0) {
-        await databaseStore.batchGetOrFetchDatabases(databaseNames);
+        await useAppStore.getState().batchGetOrFetchDatabases(databaseNames);
       }
     };
     void load();
-  }, [databaseStore, target]);
+  }, [target]);
 
   const route = {
     name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
@@ -2044,14 +2043,11 @@ function parseStatement(statement: string): {
   };
 }
 
-async function fetchTargets(
-  targets: string[],
-  databaseStore: ReturnType<typeof useDatabaseV1Store>
-) {
+async function fetchTargets(targets: string[]) {
   await Promise.all(
     targets.map(async (target) => {
       if (isValidDatabaseName(target)) {
-        await databaseStore.getOrFetchDatabaseByName(target, true);
+        await useAppStore.getState().getOrFetchDatabaseByName(target, true);
         return;
       }
       if (isValidDatabaseGroupName(target)) {
@@ -2064,7 +2060,7 @@ async function fetchTargets(
         const databaseNames =
           dbGroup.matchedDatabases?.map((database) => database.name) ?? [];
         if (databaseNames.length > 0) {
-          await databaseStore.batchGetOrFetchDatabases(databaseNames);
+          await useAppStore.getState().batchGetOrFetchDatabases(databaseNames);
         }
       }
     })

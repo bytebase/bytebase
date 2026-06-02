@@ -52,7 +52,6 @@ import {
   extractUserEmail,
   hasFeature,
   pushNotification,
-  useDatabaseV1Store,
   useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -96,7 +95,6 @@ export function ProjectMaskingExemptionPage({
 }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
   const currentUser = useCurrentUser();
 
@@ -277,7 +275,7 @@ export function ProjectMaskingExemptionPage({
       if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
         return [];
       }
-      const result = await databaseStore.fetchDatabases({
+      const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
@@ -296,7 +294,7 @@ export function ProjectMaskingExemptionPage({
         };
       });
     },
-    [databaseStore, projectName, project]
+    [projectName, project]
   );
 
   const searchUsers = useCallback(

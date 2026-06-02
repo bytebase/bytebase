@@ -124,7 +124,7 @@ const mocks = vi.hoisted(() => {
         title: "Project 1",
       })),
     })),
-    useDatabaseV1Store: vi.fn(() => ({
+    databaseStore: vi.fn(() => ({
       syncDatabase: vi.fn(),
       batchUpdateDatabases: vi.fn(),
       getOrFetchDatabaseByName: vi.fn(async (name: string) => ({
@@ -132,7 +132,7 @@ const mocks = vi.hoisted(() => {
         project: "projects/proj1",
       })),
     })),
-    useDBSchemaV1Store: vi.fn(() => ({
+    dbSchemaStore: vi.fn(() => ({
       getOrFetchDatabaseMetadata: vi.fn(),
       getDatabaseMetadata: vi.fn((_name: string) => undefined as unknown),
       getSchemaList: vi.fn(() => [] as unknown[]),
@@ -272,22 +272,28 @@ vi.mock("@/store", () => ({
   pinia: mocks.pinia,
   pushNotification: mocks.pushNotification,
   useProjectV1Store: mocks.useProjectV1Store,
-  useDatabaseV1Store: mocks.useDatabaseV1Store,
   usePermissionStore: mocks.usePermissionStore,
 }));
 
 // Page composes child panels that now read dbSchema getters via the app
-// store. Route the existing `mocks.useDBSchemaV1Store` shape through
+// store. Route the existing `mocks.dbSchemaStore` shape through
 // `useAppStore` so the per-scenario `.mockReturnValue({...})` calls keep
 // working unchanged.
 vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (s: unknown) => unknown) =>
-    selector(mocks.useDBSchemaV1Store()),
+  useAppStore: Object.assign(
+    (selector: (s: unknown) => unknown) => selector(mocks.dbSchemaStore()),
+    {
+      getState: () => ({
+        ...mocks.dbSchemaStore(),
+        ...mocks.databaseStore(),
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
   useAppDatabaseMetadata: (name: string) =>
-    mocks.useDBSchemaV1Store().getDatabaseMetadata?.(name) ?? { schemas: [] },
+    mocks.dbSchemaStore().getDatabaseMetadata?.(name) ?? { schemas: [] },
 }));
 
 vi.mock("@/react/components/database", () => ({
@@ -484,8 +490,8 @@ beforeEach(() => {
       title: "Project 1",
     })),
   });
-  mocks.useDatabaseV1Store.mockReset();
-  mocks.useDatabaseV1Store.mockReturnValue({
+  mocks.databaseStore.mockReset();
+  mocks.databaseStore.mockReturnValue({
     syncDatabase: vi.fn(),
     batchUpdateDatabases: vi.fn(),
     getOrFetchDatabaseByName: vi.fn(async (name: string) => ({
@@ -493,8 +499,8 @@ beforeEach(() => {
       project: "projects/proj1",
     })),
   });
-  mocks.useDBSchemaV1Store.mockReset();
-  mocks.useDBSchemaV1Store.mockReturnValue({
+  mocks.dbSchemaStore.mockReset();
+  mocks.dbSchemaStore.mockReturnValue({
     getOrFetchDatabaseMetadata: vi.fn(),
     getDatabaseMetadata: vi.fn(() => undefined as unknown),
     getSchemaList: vi.fn(() => [] as unknown[]),
@@ -795,7 +801,7 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("renders the header metadata and top-level action cluster", async () => {
-    mocks.useDBSchemaV1Store.mockReturnValue({
+    mocks.dbSchemaStore.mockReturnValue({
       getOrFetchDatabaseMetadata: vi.fn(),
       getDatabaseMetadata: vi.fn(() => ({
         schemas: [
@@ -1118,7 +1124,7 @@ describe("ProjectDatabaseDetailPage", () => {
       name: "instances/inst1/databases/db1",
       project: "projects/proj2",
     }));
-    mocks.useDatabaseV1Store.mockReturnValue({
+    mocks.databaseStore.mockReturnValue({
       syncDatabase: vi.fn(),
       batchUpdateDatabases,
       getOrFetchDatabaseByName,

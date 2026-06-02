@@ -58,9 +58,6 @@ const mocks = vi.hoisted(() => {
     state: "READY" as "LOADING" | "READY" | "UNSET",
     nodeKeysByTarget: vi.fn(() => []),
   };
-  const instanceStore = {
-    getInstanceByName: vi.fn(),
-  };
   const appStore = {
     fetchInstance: vi.fn(async () => undefined),
     fetchDBGroup: vi.fn(async () => undefined),
@@ -100,7 +97,6 @@ const mocks = vi.hoisted(() => {
     databaseStore,
     project,
     treeStore,
-    instanceStore,
     appStore,
     currentUser,
     usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
@@ -129,8 +125,6 @@ vi.mock("@/react/hooks/useAppState", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useDatabaseV1Store: () => mocks.databaseStore,
-  useInstanceV1Store: () => mocks.instanceStore,
 }));
 
 vi.mock("@/react/hooks/useAppProject", () => ({

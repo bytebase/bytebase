@@ -14,7 +14,6 @@ import { useAppStore } from "@/react/stores/app";
 import {
   projectNamePrefix,
   pushNotification,
-  useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
@@ -61,7 +60,6 @@ export function IssueDetailStatementSection({
   const { setEditing } = page;
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
   const currentUser = useCurrentUser();
   const project = useVueState(() =>
     projectStore.getProjectByName(`${projectNamePrefix}${page.projectId}`)
@@ -97,9 +95,11 @@ export function IssueDetailStatementSection({
     if (!targetDatabaseName) {
       return "sql";
     }
-    const database = databaseStore.getDatabaseByName(targetDatabaseName);
+    const database = useAppStore
+      .getState()
+      .getDatabaseByName(targetDatabaseName);
     return languageOfEngineV1(getInstanceResource(database).engine);
-  }, [databaseStore, targetDatabaseName]);
+  }, [targetDatabaseName]);
   const autoCompleteContext = useMemo(() => {
     if (!targetDatabaseName) {
       return undefined;

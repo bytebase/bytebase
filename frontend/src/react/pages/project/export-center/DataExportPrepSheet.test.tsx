@@ -147,6 +147,10 @@ vi.mock("@/types", () => ({
     typeof name === "string" && name.includes("/databaseGroups/"),
 }));
 
+vi.mock("@/types/v1/database", () => ({
+  unknownDatabase: () => ({ name: "instances/-/databases/-" }),
+}));
+
 vi.mock("@/utils", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
   extractDatabaseGroupName: (name: string) =>
@@ -191,30 +195,6 @@ const stableProjectStore = {
   },
 };
 
-const stableDatabaseStore = {
-  get fetchDatabases() {
-    return mocks.fetchDatabases;
-  },
-  get getOrFetchDatabaseByName() {
-    return mocks.getOrFetchDatabaseByName;
-  },
-  get getDatabaseByName() {
-    return mocks.getDatabaseByName;
-  },
-};
-
-const stableDBGroupStore = {
-  get getOrFetchDBGroupByName() {
-    return mocks.getOrFetchDBGroupByName;
-  },
-  get fetchDBGroupListByProjectName() {
-    return mocks.fetchDBGroupListByProjectName;
-  },
-  get createSheet() {
-    return mocks.createSheet;
-  },
-};
-
 const stableSettingStore = {
   workspaceProfile: { sqlResultSize: BigInt(100 * 1024 * 1024) },
 };
@@ -222,14 +202,29 @@ const stableSettingStore = {
 vi.mock("@/store", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
   useProjectV1Store: () => stableProjectStore,
-  useDatabaseV1Store: () => stableDatabaseStore,
   useSettingV1Store: () => stableSettingStore,
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: { getState: () => stableDBGroupStore },
-}));
+vi.mock("@/react/stores/app", () => {
+  const appState = () => ({
+    fetchDatabases: mocks.fetchDatabases,
+    getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+    getDatabaseByName: mocks.getDatabaseByName,
+    getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
+    fetchDBGroupListByProjectName: mocks.fetchDBGroupListByProjectName,
+    createSheet: mocks.createSheet,
+    // TargetBadge subscribes to this map; default mock has no entries so it
+    // falls back to unknownDatabase() (matching the production cache miss).
+    databasesByName: {} as Record<string, unknown>,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (s: unknown) => unknown) => selector(appState()),
+      { getState: appState }
+    ),
+  };
+});
 
 vi.mock("@/react/stores/app/issue", () => ({
   experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,

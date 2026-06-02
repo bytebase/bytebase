@@ -66,6 +66,7 @@ import {
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import type { InstanceFilter } from "@/react/stores/app/types";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
 import {
@@ -76,7 +77,6 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import type { InstanceFilter } from "@/store/modules/v1/instance";
 import {
   isValidInstanceName,
   NULL_ENVIRONMENT_NAME,

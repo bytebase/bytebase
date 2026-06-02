@@ -225,10 +225,6 @@ vi.mock("@/router/dashboard/projectV1RouteHelpers", () => ({
 
 vi.mock("@/store", () => ({
   getProjectNameAndDatabaseGroupName: mocks.getProjectNameAndDatabaseGroupName,
-  useDatabaseV1Store: () => ({
-    getDatabaseByName: mocks.getDatabaseByName,
-    batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases,
-  }),
   useEnvironmentV1Store: () => ({
     getEnvironmentByName: mocks.getEnvironmentByName,
   }),
@@ -240,23 +236,37 @@ vi.mock("@/types", () => ({
   unknownDatabaseGroup: () => ({ name: "", matchedDatabases: [] }),
 }));
 
+vi.mock("@/types/v1/database", () => ({
+  unknownDatabase: () => ({ name: "instances/-/databases/-" }),
+}));
+
 vi.mock("@/react/stores/app", () => {
-  // The migrated component reads dbGroup state two ways: imperative
-  // `useAppStore.getState().<method>()` and the reactive selector
-  // `useAppStore((s) => s.dbGroupsByName[name])`. Delegate the map lookup to
-  // the existing `getDBGroupByName` mock so per-test setup keeps working.
+  // The migrated component reads cache state two ways: imperative
+  // `useAppStore.getState().<method>()` and reactive selectors
+  // `useAppStore((s) => s.dbGroupsByName[name])` / `s.databasesByName[name]`.
+  // Delegate the map lookups to the existing mocks so per-test setup keeps
+  // working.
   const dbGroupsByName = new Proxy({} as Record<string, unknown>, {
     get: (_t, key) =>
       typeof key === "string" ? mocks.getDBGroupByName(key) : undefined,
   });
+  const databasesByName = new Proxy({} as Record<string, unknown>, {
+    get: (_t, key) =>
+      typeof key === "string" ? mocks.getDatabaseByName(key) : undefined,
+  });
   const useAppStore = Object.assign(
-    (selector: (s: { dbGroupsByName: Record<string, unknown> }) => unknown) =>
-      selector({ dbGroupsByName }),
+    (
+      selector: (s: {
+        dbGroupsByName: Record<string, unknown>;
+        databasesByName: Record<string, unknown>;
+      }) => unknown
+    ) => selector({ dbGroupsByName, databasesByName }),
     {
       getState: () => ({
         getDBGroupByName: mocks.getDBGroupByName,
         getOrFetchDBGroupByName: mocks.getOrFetchDBGroupByName,
         getOrFetchSheetByName: mocks.getOrFetchSheetByName,
+        batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases,
       }),
     }
   );

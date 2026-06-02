@@ -16,11 +16,8 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -55,7 +52,6 @@ export function IssueDetailTaskRunTable({
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
-  const databaseStore = useDatabaseV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
@@ -90,9 +86,9 @@ export function IssueDetailTaskRunTable({
       ),
     ];
     if (targets.length > 0) {
-      void databaseStore.batchGetOrFetchDatabases(targets);
+      void useAppStore.getState().batchGetOrFetchDatabases(targets);
     }
-  }, [databaseStore, showDatabaseColumn, taskByUID, taskRuns]);
+  }, [showDatabaseColumn, taskByUID, taskRuns]);
 
   const getTaskForTaskRun = (taskRun: TaskRun) => {
     return taskByUID.get(extractTaskUID(taskRun.name));

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useDatabaseV1Store } from "@/store";
+import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import { UNKNOWN_ID } from "@/types";
 import type {
   Changelog,
@@ -36,7 +36,7 @@ export const isValidChangelogName = (name: string | undefined) => {
 export const changelogLink = (changelog: Changelog): string => {
   const { changelogUID } = extractDatabaseNameAndChangelogUID(changelog.name);
   const { database } = extractDatabaseResourceName(changelog.name);
-  const composedDatabase = useDatabaseV1Store().getDatabaseByName(database);
+  const composedDatabase = getDatabaseByName(database);
   return [databaseV1Url(composedDatabase), "changelogs", changelogUID].join(
     "/"
   );

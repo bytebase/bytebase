@@ -29,7 +29,6 @@ import { router } from "@/router";
 import {
   pushNotification,
   useActuatorV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -61,7 +60,8 @@ import {
 
 export function DatabasesPage() {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
+  const databasesByName = useAppStore((s) => s.databasesByName);
+  const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
@@ -354,8 +354,8 @@ export function DatabasesPage() {
     if (selectedNames.size === 0) return [];
     return Array.from(selectedNames)
       .filter((name) => isValidDatabaseName(name))
-      .map((name) => databaseStore.getDatabaseByName(name));
-  }, [selectedNames, databaseStore]);
+      .map((name) => getDatabaseByName(name));
+  }, [selectedNames, getDatabaseByName, databasesByName]);
 
   // Mirror `selectedDatabases` into a ref so the batch-operation handlers
   // below can read the latest value without listing it as a dep. Otherwise
@@ -380,7 +380,9 @@ export function DatabasesPage() {
       title: t("db.start-to-sync-schema"),
     });
     try {
-      await databaseStore.batchSyncDatabases(Array.from(selectedNames));
+      await useAppStore
+        .getState()
+        .batchSyncDatabases(Array.from(selectedNames));
       for (const name of selectedNames) {
         removeDatabaseMetadataCache(name);
       }
@@ -399,12 +401,12 @@ export function DatabasesPage() {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, selectedNames, databaseStore, removeDatabaseMetadataCache, t]);
+  }, [syncing, selectedNames, removeDatabaseMetadataCache, t]);
 
   const handleLabelsApply = useCallback(
     async (labelsList: { [key: string]: string }[]) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database, i) =>
@@ -432,13 +434,13 @@ export function DatabasesPage() {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
     async (environment: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database) =>
@@ -466,13 +468,13 @@ export function DatabasesPage() {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   const handleTransferProject = useCallback(
     async (projectName: string) => {
       try {
-        await databaseStore.batchUpdateDatabases(
+        await useAppStore.getState().batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
             requests: selectedDatabasesRef.current.map((database) =>
@@ -500,7 +502,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [databaseStore, refresh, t]
+    [refresh, t]
   );
 
   return (

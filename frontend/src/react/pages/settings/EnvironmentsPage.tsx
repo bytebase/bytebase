@@ -71,7 +71,6 @@ import {
 import {
   pushNotification,
   useActuatorV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -710,7 +709,6 @@ function EnvironmentDetail({
   }, [environment.id]);
 
   // Check for related resources (instances/databases)
-  const databaseStore = useDatabaseV1Store();
   const actuatorStore = useActuatorV1Store();
 
   useEffect(() => {
@@ -726,7 +724,7 @@ function EnvironmentDetail({
             filter: { environment: environment.name },
             silent: true,
           }),
-          databaseStore.fetchDatabases({
+          useAppStore.getState().fetchDatabases({
             pageSize: 1,
             parent: actuatorStore.workspaceResourceName,
             filter: { environment: environment.name },
@@ -746,7 +744,6 @@ function EnvironmentDetail({
     environment.name,
     canEdit,
     environmentList.length,
-    databaseStore,
     actuatorStore,
   ]);
 

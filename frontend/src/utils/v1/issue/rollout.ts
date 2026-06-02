@@ -1,5 +1,5 @@
 import { t as translate } from "@/plugins/i18n";
-import { useDatabaseV1Store } from "@/store";
+import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -180,7 +180,7 @@ export const databaseForTask = (project: Project, task: Task, plan?: Plan) => {
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task, plan);
     case Task_Type.DATABASE_MIGRATE:
     case Task_Type.DATABASE_EXPORT:
-      const db = useDatabaseV1Store().getDatabaseByName(task.target);
+      const db = getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
         return mockDatabase(project, task.target);
       }

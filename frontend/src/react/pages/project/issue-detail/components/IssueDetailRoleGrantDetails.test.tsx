@@ -57,37 +57,45 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => ({
-    batchGetOrFetchDatabases: vi.fn(),
-    getDatabaseByName: () => ({
-      effectiveEnvironment: "",
-      instanceResource: undefined,
-    }),
-  }),
   useEnvironmentV1Store: () => ({
     getEnvironmentByName: () => ({ title: "" }),
   }),
-  useInstanceV1Store: () => ({ getInstanceByName: () => ({ title: "" }) }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      roleList: [
-        {
-          name: "roles/sqlEditorUser",
-          permissions: ["bb.sql.ddl", "bb.sql.dml"],
-        },
-        { name: "roles/queryOnly", permissions: ["bb.sql.select"] },
-      ],
-      getRoleByName: (role: string) =>
-        role === "roles/sqlEditorUser"
-          ? { name: role, permissions: ["bb.sql.ddl", "bb.sql.dml"] }
-          : role === "roles/queryOnly"
-            ? { name: role, permissions: ["bb.sql.select"] }
-            : undefined,
-    }),
+vi.mock("@/types/v1/database", () => ({
+  unknownDatabase: () => ({
+    name: "instances/-/databases/-",
+    effectiveEnvironment: "",
+    instanceResource: undefined,
+  }),
 }));
+
+vi.mock("@/react/stores/app", () => {
+  const appState = () => ({
+    roleList: [
+      {
+        name: "roles/sqlEditorUser",
+        permissions: ["bb.sql.ddl", "bb.sql.dml"],
+      },
+      { name: "roles/queryOnly", permissions: ["bb.sql.select"] },
+    ],
+    getRoleByName: (role: string) =>
+      role === "roles/sqlEditorUser"
+        ? { name: role, permissions: ["bb.sql.ddl", "bb.sql.dml"] }
+        : role === "roles/queryOnly"
+          ? { name: role, permissions: ["bb.sql.select"] }
+          : undefined,
+    instancesByName: {} as Record<string, unknown>,
+    databasesByName: {} as Record<string, unknown>,
+    batchGetOrFetchDatabases: vi.fn(),
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (state: unknown) => unknown) => selector(appState()),
+      { getState: appState }
+    ),
+  };
+});
 
 vi.mock("@/utils", () => ({
   displayRoleTitle: (r: string) => r,
