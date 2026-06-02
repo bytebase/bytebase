@@ -13,26 +13,10 @@ import (
 
 // OmniAST wraps an omni/tidb AST node and implements the base.AST interface.
 //
-// During the Phase 1.5 advisor migration, OmniAST also implements
-// PingCapASTProvider so that callers still using GetTiDBAST() (~50 of 51
-// un-migrated advisors at any given point in the migration) can fall back to
-// a native pingcap-parsed AST. After the dispatcher flip (§1.5.N+1) returns
-// *OmniAST from ParseStatements, those un-migrated advisors keep working
-// because GetTiDBAST routes through AsPingCapAST() automatically.
-//
-// The PingCapASTProvider bridge is retained after the dml_dry_run migration
-// (PR #20467): its sole remaining consumer is advisor_builtin_prior_backup_check,
-// which reads pingcap AST for authoritative DDL detection on its dual-path
-// (cumulative #30). Removal is gated on that consumer moving its DDL detection
-// off pingcap (deemed brittle, deferred) — NOT on any advisor migration. (This
-// is distinct from the dispatcher's Option B pingcap-fallback for omni-rejected
-// SQL, which persists until Option A retirement; see dispatcher.go + invariant
-// #8 in plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0.)
-//
-// Mirrors backend/plugin/parser/mysql/omni.go's AsANTLRAST pattern:
-//   - Lazy parse + cache via pingcapParsed flag (matches mysql's antlrParsed).
-//   - Single bridge call per OmniAST instance regardless of how many advisors
-//     consume it (50+ per review under flip-last + cache).
+// It also implements PingCapASTProvider: AsPingCapAST() lazily produces a
+// native pingcap-parsed AST for the one remaining consumer that needs it,
+// advisor_builtin_prior_backup_check, which uses pingcap AST for authoritative
+// DDL detection. The pingcap parse is cached per OmniAST instance.
 type OmniAST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
 	Node ast.Node
@@ -41,10 +25,7 @@ type OmniAST struct {
 	// StartPosition is the 1-based position where this statement starts.
 	StartPosition *storepb.Position
 
-	// pingcapAST is lazily populated when AsPingCapAST() is called for the
-	// first time. Cached for the lifetime of this OmniAST instance.
-	// Retained for the prior_backup_check dual-path (cumulative #30); see the
-	// type doc above.
+	// pingcapAST is lazily populated and cached on the first AsPingCapAST() call.
 	pingcapAST *AST
 	// pingcapParsed tracks whether we've attempted the native parse, to
 	// distinguish "not yet parsed" from "parsed and got nil".
@@ -56,29 +37,16 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// AsPingCapAST implements PingCapASTProvider for backward compatibility with
-// un-migrated advisors during the Phase 1.5 migration window. Lazily parses
-// the SQL text with the native pingcap parser and caches the result.
+// AsPingCapAST lazily parses the statement text with the native pingcap parser,
+// caches the result, and returns it.
 //
-// Implementation notes:
-//   - Calls ParseTiDB strictly (no error-recovery mode). Unlike mysql's
-//     parseSingleStatementLenient, pingcap has no equivalent error-recovery
-//     mode — it either parses fully or errors. For the bridge case (omni
-//     already validated the SQL syntax) strict parsing is correct.
-//   - Sets OriginTextPosition + per-column lines (CREATE TABLE) via the
-//     shared applyTiDBLineTracking helper, so post-flip un-migrated advisors
-//     that read node.OriginTextPosition() see the same line numbers as the
-//     pre-flip canonical path (ParseTiDBForSyntaxCheck).
+//   - Uses strict parsing (no error recovery); for the bridge case the syntax
+//     is already omni-validated.
+//   - Applies applyTiDBLineTracking so node.OriginTextPosition() and CREATE
+//     TABLE per-column lines match the canonical ParseTiDBForSyntaxCheck path.
 //
-// Returns (nil, false) if the native parser fails to parse the text. In that
-// case un-migrated advisors get no AST for this statement and emit no advice
-// — symmetric with the omni-side soft-fail in
-// advisor/tidb/utils.go.getTiDBOmniNodes. This bridge protects review
-// continuity when omni successfully wraps a statement but pingcap
-// subsequently rejects it. The orthogonal failure mode — omni rejects at the
-// dispatcher level so no *OmniAST exists for the bridge to operate on — is
-// handled by the dispatcher-fallback contract (plan §1.5.0 invariant #8,
-// shipping with the dispatcher flip in §1.5.N+1).
+// Returns (nil, false) if pingcap fails to parse the text; the caller then sees
+// no AST for the statement and emits no advice.
 func (a *OmniAST) AsPingCapAST() (*AST, bool) {
 	if a.pingcapParsed {
 		return a.pingcapAST, a.pingcapAST != nil
