@@ -403,3 +403,40 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err, "case-only db differences must not be treated as different tables")
 	a.Len(result, 1)
 }
+
+// TestBackupHonorsCaseSensitivity pins that the cross-database guard and
+// equalTable respect the instance's IsCaseSensitive flag (consistent with
+// classifyColumns), so the same comparisons fold case or not as configured.
+func TestBackupHonorsCaseSensitivity(t *testing.T) {
+	a := require.New(t)
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	run := func(caseSensitive bool, sql string) ([]base.BackupStatement, error) {
+		return TransformDMLToSelect(context.Background(), base.TransformContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IsCaseSensitive:         caseSensitive,
+		}, sql, "db", "backupDB", "_rollback")
+	}
+
+	// Cross-database guard: DB.test under task db is the same database when
+	// case-insensitive (allowed) but a different database when case-sensitive
+	// (rejected).
+	_, err := run(false, "UPDATE DB.test SET c = 1 WHERE c = 2")
+	a.NoError(err, "case-insensitive: DB.test is db.test")
+	_, err = run(true, "UPDATE DB.test SET c = 1 WHERE c = 2")
+	a.Error(err, "case-sensitive: DB.test is a different database than db")
+
+	// equalTable (the >maxMixedDMLCount UNION path): test and Test merge into one
+	// backup when case-insensitive, but are distinct tables (rejected) when
+	// case-sensitive.
+	sixMixedCase := "DELETE FROM test WHERE a = 1;\n" +
+		"DELETE FROM test WHERE a = 2;\n" +
+		"DELETE FROM test WHERE a = 3;\n" +
+		"DELETE FROM test WHERE a = 4;\n" +
+		"DELETE FROM test WHERE a = 5;\n" +
+		"DELETE FROM Test WHERE a = 6;"
+	_, err = run(false, sixMixedCase)
+	a.NoError(err, "case-insensitive: test and Test are the same table")
+	_, err = run(true, sixMixedCase)
+	a.Error(err, "case-sensitive: test and Test are different tables")
+}

@@ -54,7 +54,7 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 		}
 	}
 
-	statementInfoList, err := prepareTransformation(sourceDatabase, statement, dbMetadata)
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement, dbMetadata, tCtx.IsCaseSensitive)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
@@ -62,7 +62,7 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 	return generateSQL(ctx, tCtx, statementInfoList, targetDatabase, tablePrefix)
 }
 
-func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
+func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata, isCaseSensitive bool) ([]statementInfo, error) {
 	list, err := SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split sql")
@@ -92,7 +92,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 				// records the task database for the backed-up table. Reject
 				// cross-database mutations (DELETE or UPDATE) so a rollback can't
 				// be written to the wrong database.
-				if !strings.EqualFold(table.table.Database, databaseName) {
+				if !equalIdentifier(table.table.Database, databaseName, isCaseSensitive) {
 					return nil, errors.Errorf("prior backup does not support cross-database mutations: %s.%s (task database %q)", table.table.Database, table.table.Table, databaseName)
 				}
 				table.offset = i
@@ -450,7 +450,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 	table := statementInfoList[0].table
 
 	for _, item := range statementInfoList {
-		if !equalTable(table, item.table) {
+		if !equalTable(table, item.table, tCtx.IsCaseSensitive) {
 			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
 		}
 		// This path UNION ALLs the statements into one backup SELECT. A WITH
@@ -546,16 +546,25 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 	}, nil
 }
 
-func equalTable(a, b *TableReference) bool {
+// equalIdentifier compares two SQL identifiers honoring the instance's case
+// sensitivity. TiDB instances are case-insensitive today
+// (store.IsObjectCaseSensitive returns false for TiDB), but honoring the flag
+// keeps this consistent with classifyColumns and correct if that ever changes.
+func equalIdentifier(a, b string, caseSensitive bool) bool {
+	if caseSensitive {
+		return a == b
+	}
+	return strings.EqualFold(a, b)
+}
+
+func equalTable(a, b *TableReference, caseSensitive bool) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	// Case-insensitive, consistent with the cross-database guard and TiDB's
-	// default identifier case sensitivity.
-	if a.Database != "" && b.Database != "" && !strings.EqualFold(a.Database, b.Database) {
+	if a.Database != "" && b.Database != "" && !equalIdentifier(a.Database, b.Database, caseSensitive) {
 		return false
 	}
-	return strings.EqualFold(a.Table, b.Table)
+	return equalIdentifier(a.Table, b.Table, caseSensitive)
 }
 
 func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
