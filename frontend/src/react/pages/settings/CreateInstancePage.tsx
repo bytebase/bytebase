@@ -9,13 +9,10 @@ import {
   useInstanceFormContext,
 } from "@/react/components/instance";
 import type { InfoSection } from "@/react/components/instance/info-content";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 
 const MIN_DOCKED_MAIN_WIDTH = 700;
 const DOCKED_INFO_RAIL_WIDTH = 500;
@@ -25,26 +22,22 @@ const MIN_DOCKED_LAYOUT_WIDTH =
 
 export function CreateInstancePage() {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
 
   // Check instance limit on mount
   useEffect(() => {
-    if (
-      subscriptionStore.instanceCountLimit <=
-      actuatorStore.activatedInstanceCount
-    ) {
+    const store = useAppStore.getState();
+    if (store.instanceCountLimit() <= store.activatedInstanceCount()) {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("subscription.usage.instance-count.title"),
         description: t("subscription.usage.instance-count.runoutof", {
-          total: subscriptionStore.instanceCountLimit,
+          total: store.instanceCountLimit(),
         }),
       });
       router.push({ name: INSTANCE_ROUTE_DASHBOARD });
     }
-  }, [subscriptionStore, actuatorStore, t]);
+  }, [t]);
 
   const goBack = useCallback(() => {
     router.push({ name: INSTANCE_ROUTE_DASHBOARD });

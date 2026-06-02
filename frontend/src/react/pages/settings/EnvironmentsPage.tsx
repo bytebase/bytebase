@@ -68,12 +68,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useEnvironmentV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -114,9 +109,8 @@ function EnvironmentName({
   environment: Environment;
   link?: boolean;
 }) {
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasEnvTierFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
+  const hasEnvTierFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
   const color = environment.color || "#4f46e5";
   const rgbValues = hexToRgb(color);
@@ -201,10 +195,9 @@ function RolloutPolicyConfig({
   onChange: (policy: Policy) => void;
 }) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
   const roleList = useAppStore((state) => state.roleList);
-  const hasCustomRoleFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  const hasCustomRoleFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
 
@@ -645,8 +638,6 @@ function EnvironmentDetail({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
   );
@@ -670,8 +661,8 @@ function EnvironmentDetail({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [sqlReviewDirty, setSqlReviewDirty] = useState(false);
 
-  const hasEnvironmentTiers = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
+  const hasEnvironmentTiers = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
 
   const environmentList = useEnvironmentList();
@@ -709,8 +700,6 @@ function EnvironmentDetail({
   }, [environment.id]);
 
   // Check for related resources (instances/databases)
-  const actuatorStore = useActuatorV1Store();
-
   useEffect(() => {
     const checkRelatedResources = async () => {
       if (!canEdit || environmentList.length <= 1) {
@@ -726,7 +715,7 @@ function EnvironmentDetail({
           }),
           useAppStore.getState().fetchDatabases({
             pageSize: 1,
-            parent: actuatorStore.workspaceResourceName,
+            parent: useAppStore.getState().workspaceResourceName(),
             filter: { environment: environment.name },
             silent: true,
           }),
@@ -739,13 +728,7 @@ function EnvironmentDetail({
       }
     };
     checkRelatedResources();
-  }, [
-    environment.id,
-    environment.name,
-    canEdit,
-    environmentList.length,
-    actuatorStore,
-  ]);
+  }, [environment.id, environment.name, canEdit, environmentList.length]);
 
   const envChanged = useMemo(() => {
     return (
@@ -786,7 +769,7 @@ function EnvironmentDetail({
     if (envChanged) {
       const newTags = { ...environment.tags };
       newTags.protected = editProtected ? "protected" : "unprotected";
-      const updated = await environmentStore.updateEnvironment({
+      const updated = await useAppStore.getState().updateEnvironment({
         ...environment,
         title: editTitle,
         color: editColor,
@@ -1054,11 +1037,9 @@ function CreateSheet({
   }) => void;
 }) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const environmentStore = useEnvironmentV1Store();
 
-  const hasEnvironmentTiers = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
+  const hasEnvironmentTiers = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
 
   const [title, setTitle] = useState("");
@@ -1107,10 +1088,9 @@ function CreateSheet({
 
   const validateResourceId = useCallback(
     async (id: string) => {
-      const env = environmentStore.getEnvironmentByName(
-        `${environmentNamePrefix}${id}`,
-        false
-      );
+      const env = useAppStore
+        .getState()
+        .getEnvironmentByName(`${environmentNamePrefix}${id}`, false);
       if (isValidEnvironmentName(env.name)) {
         return [
           {
@@ -1123,7 +1103,7 @@ function CreateSheet({
       }
       return [];
     },
-    [environmentStore, t]
+    [t]
   );
 
   const onColorChange = (newColor: string) => {
@@ -1435,7 +1415,6 @@ function ReorderSheetInner({
 // ============================================================
 export function EnvironmentsPage() {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
   const refreshEnvironmentList = useAppStore(
     (state) => state.refreshEnvironmentList
   );
@@ -1454,8 +1433,8 @@ export function EnvironmentsPage() {
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
 
   useEffect(() => {
-    void environmentStore.fetchEnvironments();
-  }, [environmentStore]);
+    void useAppStore.getState().fetchEnvironments();
+  }, []);
 
   // Initialize selected tab and intro state
   useEffect(() => {
@@ -1526,7 +1505,7 @@ export function EnvironmentsPage() {
       "",
       PolicyResourceType.ENVIRONMENT
     );
-    const createdEnvironment = await environmentStore.createEnvironment({
+    const createdEnvironment = await useAppStore.getState().createEnvironment({
       id: environment.id,
       title: environment.title,
       order: environmentList.length,
@@ -1548,9 +1527,9 @@ export function EnvironmentsPage() {
   };
 
   const handleDelete = async (environment: Environment) => {
-    await environmentStore.deleteEnvironment(
-      formatEnvironmentName(environment.id)
-    );
+    await useAppStore
+      .getState()
+      .deleteEnvironment(formatEnvironmentName(environment.id));
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -1564,7 +1543,7 @@ export function EnvironmentsPage() {
   };
 
   const handleReorder = async (reordered: Environment[]) => {
-    await environmentStore.reorderEnvironmentList(reordered);
+    await useAppStore.getState().reorderEnvironmentList(reordered);
     await refreshEnvironmentList();
     setShowReorder(false);
     pushNotification({

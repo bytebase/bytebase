@@ -19,7 +19,6 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
@@ -28,11 +27,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_IM } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
@@ -60,8 +55,6 @@ export function ProjectWebhookForm({
   webhook,
 }: Props) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
-  const actuatorStore = useActuatorV1Store();
   const createProjectWebhook = useAppStore(
     (state) => state.createProjectWebhook
   );
@@ -86,12 +79,10 @@ export function ProjectWebhookForm({
 
   // Fetch IM setting on mount
   useEffect(() => {
-    settingStore.getOrFetchSettingByName(Setting_SettingName.APP_IM);
-  }, [settingStore]);
+    useAppStore.getState().getOrFetchSettingByName(Setting_SettingName.APP_IM);
+  }, []);
 
-  const externalUrl = useVueState(
-    () => actuatorStore.serverInfo?.externalUrl ?? ""
-  );
+  const externalUrl = useAppStore((s) => s.externalUrl());
 
   const webhookTypeItemList = useMemo(() => projectWebhookV1TypeItemList(), []);
   const webhookActivityItemList = useMemo(
@@ -104,13 +95,16 @@ export function ProjectWebhookForm({
     [webhookTypeItemList, state.type]
   );
 
-  const imSetting = useVueState(() => {
-    const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const imSetting = useMemo(() => {
+    const setting = useAppStore
+      .getState()
+      .getSettingByName(Setting_SettingName.APP_IM);
     if (!setting?.value?.value) return undefined;
     const value = setting.value.value;
     if (value.case === "appIm") return value.value;
     return undefined;
-  });
+  }, [settingsByName]);
 
   const imApp = useMemo(() => {
     if (!selectedWebhook?.supportDirectMessage) return undefined;

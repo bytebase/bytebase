@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -16,8 +17,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useServerState } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSettingV1Store } from "@/store/modules";
+import { useAppStore } from "@/react/stores/app";
 import {
   AISetting_Provider,
   AISettingSchema,
@@ -84,19 +84,21 @@ export const AIAugmentationSection = forwardRef<
   AIAugmentationSectionProps
 >(function AIAugmentationSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const settingV1Store = useSettingV1Store();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { isSaaSMode } = useServerState();
   const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
 
-  const aiSetting = useVueState(() => {
-    const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const aiSetting = useMemo(() => {
+    const setting = useAppStore
+      .getState()
+      .getSettingByName(Setting_SettingName.AI);
     if (setting?.value?.value?.case === "ai") {
       return setting.value.value.value;
     }
     return undefined;
-  });
+  }, [settingsByName]);
 
   const getInitialState = useCallback((): AIState => {
     return {
@@ -121,8 +123,10 @@ export const AIAugmentationSection = forwardRef<
 
   // Fetch setting on mount.
   useEffect(() => {
-    settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, true);
-  }, [settingV1Store]);
+    useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.AI, true);
+  }, []);
 
   // Scroll into view on mount.
   useEffect(() => {
@@ -160,7 +164,7 @@ export const AIAugmentationSection = forwardRef<
     if (state.apiKey || state.provider !== init.provider)
       paths.push("value.ai.api_key");
 
-    await settingV1Store.upsertSetting({
+    await useAppStore.getState().upsertSetting({
       name: Setting_SettingName.AI,
       value: create(SettingValueSchema, {
         value: {
@@ -177,7 +181,7 @@ export const AIAugmentationSection = forwardRef<
       }),
       updateMask: create(FieldMaskSchema, { paths }),
     });
-  }, [state, getInitialState, aiSetting, settingV1Store]);
+  }, [state, getInitialState, aiSetting]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));
 

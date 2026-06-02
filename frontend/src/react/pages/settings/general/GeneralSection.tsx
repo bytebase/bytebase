@@ -26,7 +26,6 @@ import { useServerState } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -43,7 +42,6 @@ interface LocalState {
 export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
   function GeneralSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
-    const settingV1Store = useSettingV1Store();
     const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
 
     const { isSaaSMode, externalUrl, serverInfo } = useServerState();
@@ -52,7 +50,9 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
     const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const getInitialState = useCallback((): LocalState => {
-      const mode = settingV1Store.workspaceProfile.databaseChangeMode;
+      const mode = useAppStore
+        .getState()
+        .getWorkspaceProfile().databaseChangeMode;
       return {
         databaseChangeMode:
           mode === DatabaseChangeMode.PIPELINE ||
@@ -61,7 +61,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             : DatabaseChangeMode.PIPELINE,
         externalUrl,
       };
-    }, [settingV1Store, externalUrl]);
+    }, [externalUrl]);
 
     const [state, setState] = useState<LocalState>(getInitialState);
     const [showModal, setShowModal] = useState(false);
@@ -78,7 +78,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
     const update = useCallback(async () => {
       const initState = getInitialState();
       if (state.externalUrl !== initState.externalUrl) {
-        await settingV1Store.updateWorkspaceProfile({
+        await useAppStore.getState().updateWorkspaceProfile({
           payload: {
             externalUrl: state.externalUrl,
           },
@@ -89,7 +89,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
         await refreshServerInfo();
       }
       if (state.databaseChangeMode !== initState.databaseChangeMode) {
-        await settingV1Store.updateWorkspaceProfile({
+        await useAppStore.getState().updateWorkspaceProfile({
           payload: {
             databaseChangeMode: state.databaseChangeMode,
           },
@@ -101,7 +101,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
           setShowModal(true);
         }
       }
-    }, [state, getInitialState, settingV1Store, refreshServerInfo]);
+    }, [state, getInitialState, refreshServerInfo]);
 
     useImperativeHandle(
       ref,

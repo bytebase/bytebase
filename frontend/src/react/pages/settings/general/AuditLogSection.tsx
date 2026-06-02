@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { usePlanFeature } from "@/react/hooks/useAppState";
-import { useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -29,18 +29,16 @@ interface State {
 export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
   function AuditLogSection({ allowEdit, onDirtyChange }, ref) {
     const { t } = useTranslation();
-    const settingV1Store = useSettingV1Store();
 
     const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
 
-    const getInitialState = useCallback(
-      (): State => ({
-        enableAuditLogStdout:
-          settingV1Store.workspaceProfile.enableAuditLogStdout,
-        enableDebug: settingV1Store.workspaceProfile.enableDebug,
-      }),
-      [settingV1Store]
-    );
+    const getInitialState = useCallback((): State => {
+      const profile = useAppStore.getState().getWorkspaceProfile();
+      return {
+        enableAuditLogStdout: profile.enableAuditLogStdout,
+        enableDebug: profile.enableDebug,
+      };
+    }, []);
 
     const [state, setState] = useState<State>(getInitialState);
 
@@ -54,7 +52,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
     }, [getInitialState]);
 
     const update = useCallback(async () => {
-      await settingV1Store.updateWorkspaceProfile({
+      await useAppStore.getState().updateWorkspaceProfile({
         payload: {
           enableAuditLogStdout: state.enableAuditLogStdout,
           enableDebug: state.enableDebug,
@@ -66,7 +64,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
           ],
         }),
       });
-    }, [state, settingV1Store]);
+    }, [state]);
 
     const title = t("settings.general.workspace.log");
 

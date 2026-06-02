@@ -59,7 +59,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -392,7 +392,6 @@ interface PlanRowContext {
   approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
   isDeleted: boolean;
   showDraftTag: boolean;
-  environmentStore: ReturnType<typeof useEnvironmentV1Store>;
 }
 
 function getRolloutStageStatus(summary: Plan_RolloutStageSummary): Task_Status {
@@ -406,6 +405,8 @@ function getRolloutStageStatus(summary: Plan_RolloutStageSummary): Task_Status {
 
 function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
   const { t } = useTranslation();
+  // Subscribe so stage cells re-render when the environment cache loads.
+  void useAppStore((s) => s.environmentList);
 
   const columns = useMemo<PlanColumn[]>(
     () => [
@@ -472,7 +473,7 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
         defaultWidth: 260,
         minWidth: 140,
         resizable: true,
-        render: (plan, ctx) =>
+        render: (plan, _ctx) =>
           plan.rolloutStageSummaries.length === 0 ? (
             <span className="text-control-light">-</span>
           ) : (
@@ -481,8 +482,9 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
                 const envName = formatEnvironmentName(
                   extractStageUID(summary.stage)
                 );
-                const environment =
-                  ctx.environmentStore.getEnvironmentByName(envName);
+                const environment = useAppStore
+                  .getState()
+                  .getEnvironmentByName(envName);
                 const stageStatus = getRolloutStageStatus(summary);
                 return (
                   <div key={summary.stage} className="flex items-center gap-1">
@@ -572,7 +574,6 @@ function PlanRow({
   projectId: string;
   columns: PlanColumn[];
 }>) {
-  const environmentStore = useEnvironmentV1Store();
   const { t } = useTranslation();
 
   const isDeleted = plan.state === State.DELETED;
@@ -635,7 +636,6 @@ function PlanRow({
     approvalTag,
     isDeleted,
     showDraftTag,
-    environmentStore,
   };
 
   return (
