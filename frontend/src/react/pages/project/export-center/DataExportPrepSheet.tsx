@@ -22,7 +22,6 @@ import { Switch } from "@/react/components/ui/switch";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
@@ -558,11 +557,12 @@ function TargetBadge({ target }: { target: string }) {
   const isGroupTarget = isValidDatabaseGroupName(target);
   const databasesByName = useAppStore((s) => s.databasesByName);
 
-  // Always call useVueState unconditionally (rules of hooks)
-  const db = useVueState(() =>
-    isDatabaseTarget
-      ? (databasesByName[target] ?? unknownDatabase())
-      : undefined
+  const db = useMemo(
+    () =>
+      isDatabaseTarget
+        ? (databasesByName[target] ?? unknownDatabase())
+        : undefined,
+    [isDatabaseTarget, databasesByName, target]
   );
 
   if (isDatabaseTarget && db) {

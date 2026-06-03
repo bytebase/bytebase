@@ -25,7 +25,6 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
-import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
 import { router } from "@/react/router";
@@ -99,7 +98,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
   const requireMfa = useAppStore((s) => s.getWorkspaceProfile().requireMfa);
 
-  const tempRecoveryCodes = useVueState(() => currentUser.tempRecoveryCodes);
+  const tempRecoveryCodes = currentUser.tempRecoveryCodes;
 
   // --- Derived values ---
   const isSelf = currentUser.name === user.name;
