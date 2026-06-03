@@ -113,6 +113,10 @@
       "stay-signed-in": "保持登录状态",
       "title": "您的会话即将结束"
     },
+    "login-as-another": {
+      "content": "我们将把您重定向到主页。",
+      "title": "您已以其他用户身份登录"
+    },
     "oauth-callback": {
       "invalid-state": "认证失败：无效的回调状态。请重试。",
       "opener-failed": "认证已完成,但与父窗口通信失败。请关闭此窗口并重试。",

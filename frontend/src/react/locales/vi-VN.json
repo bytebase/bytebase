@@ -113,6 +113,10 @@
       "stay-signed-in": "Tiếp tục duy trì đăng nhập",
       "title": "Phiên của bạn sắp kết thúc"
     },
+    "login-as-another": {
+      "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ.",
+      "title": "Bạn đã đăng nhập với tư cách người dùng khác"
+    },
     "oauth-callback": {
       "invalid-state": "Xác thực thất bại: Trạng thái gọi lại không hợp lệ. Vui lòng thử lại.",
       "opener-failed": "Xác thực đã hoàn tất, nhưng không thể giao tiếp với cửa sổ cha. Vui lòng đóng cửa sổ này và thử lại.",

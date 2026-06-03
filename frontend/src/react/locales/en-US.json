@@ -113,6 +113,10 @@
       "stay-signed-in": "Stay signed in",
       "title": "Your session is about to end"
     },
+    "login-as-another": {
+      "content": "We will redirect you to the home page.",
+      "title": "You have logged in as another user"
+    },
     "oauth-callback": {
       "invalid-state": "Authentication failed: Invalid callback state. Please try again.",
       "opener-failed": "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.",

@@ -113,6 +113,10 @@
       "stay-signed-in": "Permanecer conectado",
       "title": "Tu sesión está a punto de terminar"
     },
+    "login-as-another": {
+      "content": "Lo redirigiremos a la página de inicio.",
+      "title": "Has iniciado sesión como otro usuario"
+    },
     "oauth-callback": {
       "invalid-state": "La autenticación falló: estado de devolución de llamada no válido. Inténtalo de nuevo.",
       "opener-failed": "La autenticación se completó, pero no se pudo comunicar con la ventana principal. Cierra esta ventana e inténtalo de nuevo.",
