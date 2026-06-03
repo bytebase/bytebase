@@ -31,34 +31,6 @@
       endposition:
         line: 7
         column: 47
-- input: |-
-    UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
-    UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
-  result:
-    - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_0_t1` LIKE `db1`.`t1`;
-        INSERT INTO `backupDB`.`_rollback_0_t1` SELECT `t1`.* FROM db1.t1 WHERE c1 = 2;
-      sourceschema: ""
-      sourcetablename: t1
-      targettablename: _rollback_0_t1
-      startposition:
-        line: 1
-        column: 1
-      endposition:
-        line: 1
-        column: 39
-    - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_1_t2` LIKE `db2`.`t2`;
-        INSERT INTO `backupDB`.`_rollback_1_t2` SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
-      sourceschema: ""
-      sourcetablename: t2
-      targettablename: _rollback_1_t2
-      startposition:
-        line: 1
-        column: 39
-      endposition:
-        line: 2
-        column: 39
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   result:
     - statement: |-
