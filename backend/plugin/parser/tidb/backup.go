@@ -705,8 +705,7 @@ func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) erro
 		if start >= 0 && end > start && end <= len(sql) {
 			// omni excludes parentheses wrapping the table-ref list, so a
 			// parenthesized join operand can leave the slice unbalanced.
-			start, end = balanceParens(sql, start, end)
-			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
+			if _, err := buf.WriteString(balancedTableRefs(sql[start:end])); err != nil {
 				return err
 			}
 		}
@@ -751,77 +750,98 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	if start >= 0 && end > start {
 		// omni excludes parentheses wrapping the table-ref list, so the slice can
 		// carry an unmatched ")"; rebalance it before emitting.
-		start, end = balanceParens(sql, start, end)
-		if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
+		if _, err := buf.WriteString(balancedTableRefs(sql[start:end])); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// balanceParens widens [start,end) so the sliced SQL has balanced parentheses.
-// omni's JoinClause/TableRef Loc excludes a wrapping "(" or ")", so slicing a
-// table-ref list can carry an unmatched ")" (a parenthesized left join operand)
-// or an unmatched "(" (a right operand). Move start left over leading "(" for
-// each unmatched ")", and end right over trailing ")" for each unmatched "(",
-// skipping whitespace and ignoring parentheses inside quoted strings.
-func balanceParens(sql string, start, end int) (int, int) {
-	bal := parenBalance(sql[start:end])
-	for bal < 0 && start > 0 {
-		j := start - 1
-		for j >= 0 && isASCIISpace(sql[j]) {
-			j--
-		}
-		if j < 0 || sql[j] != '(' {
-			break
-		}
-		start = j
-		bal++
+// balancedTableRefs returns s (trimmed) with parentheses balanced. omni's
+// JoinClause/TableRef Loc excludes a wrapping "(" or ")", so a sliced table-ref
+// list can carry an unmatched ")" (a parenthesized left join operand) and/or an
+// unmatched "(" (a right operand). The missing parentheses only group, so their
+// source position is irrelevant — prepend "(" and append ")" to balance.
+func balancedTableRefs(s string) string {
+	leading, trailing := parenDeficit(s)
+	s = strings.TrimSpace(s)
+	if leading > 0 {
+		s = strings.Repeat("(", leading) + s
 	}
-	for bal > 0 && end < len(sql) {
-		j := end
-		for j < len(sql) && isASCIISpace(sql[j]) {
-			j++
-		}
-		if j >= len(sql) || sql[j] != ')' {
-			break
-		}
-		end = j + 1
-		bal--
+	if trailing > 0 {
+		s += strings.Repeat(")", trailing)
 	}
-	return start, end
+	return s
 }
 
-// parenBalance returns (count of "(") - (count of ")") in s, ignoring
-// parentheses inside quoted strings or identifiers ('...', "...", `...`).
-func parenBalance(s string) int {
-	bal := 0
-	var quote byte
+// parenDeficit returns how many "(" must be prepended and ")" appended to
+// balance s, ignoring parentheses inside string/identifier literals ('...',
+// "...", `...`) and comments (/* */, -- , #).
+func parenDeficit(s string) (leading int, trailing int) {
+	open := 0
 	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if quote != 0 {
-			switch {
-			case c == '\\' && quote != '`':
-				i++ // skip the escaped character
-			case c == quote && i+1 < len(s) && s[i+1] == quote:
-				i++ // doubled-quote escape ('' "" ``)
-			case c == quote:
-				quote = 0
-			default:
+		switch c := s[i]; {
+		case c == '\'' || c == '"' || c == '`':
+			i = skipQuoted(s, i)
+		case c == '/' && i+1 < len(s) && s[i+1] == '*':
+			i = skipBlockComment(s, i)
+		case c == '-' && i+1 < len(s) && s[i+1] == '-' && (i+2 >= len(s) || isASCIISpace(s[i+2])):
+			i = skipLineComment(s, i)
+		case c == '#':
+			i = skipLineComment(s, i)
+		case c == '(':
+			open++
+		case c == ')':
+			if open > 0 {
+				open--
+			} else {
+				leading++
 			}
-			continue
-		}
-		switch c {
-		case '\'', '"', '`':
-			quote = c
-		case '(':
-			bal++
-		case ')':
-			bal--
 		default:
 		}
 	}
-	return bal
+	return leading, open
+}
+
+// skipQuoted returns the index of the closing quote of the string/identifier
+// literal opened at i (s[i] is the opening quote), or len(s)-1 if unterminated.
+func skipQuoted(s string, i int) int {
+	quote := s[i]
+	for j := i + 1; j < len(s); {
+		switch {
+		case s[j] == '\\' && quote != '`':
+			j += 2 // backslash escape ('...'/"..." only)
+		case s[j] == quote && j+1 < len(s) && s[j+1] == quote:
+			j += 2 // doubled-quote escape ('' "" ``)
+		case s[j] == quote:
+			return j
+		default:
+			j++
+		}
+	}
+	return len(s) - 1
+}
+
+// skipBlockComment returns the index of the closing "/" of the /* */ comment
+// opened at i, or len(s)-1 if unterminated.
+func skipBlockComment(s string, i int) int {
+	for j := i + 2; j+1 < len(s); j++ {
+		if s[j] == '*' && s[j+1] == '/' {
+			return j + 1
+		}
+	}
+	return len(s) - 1
+}
+
+// skipLineComment returns the index of the newline ending the -- or # comment
+// opened at i, or len(s)-1 if it runs to the end.
+func skipLineComment(s string, i int) int {
+	for j := i; j < len(s); j++ {
+		if s[j] == '\n' {
+			return j
+		}
+	}
+	return len(s) - 1
 }
 
 func isASCIISpace(c byte) bool {

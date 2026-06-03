@@ -460,6 +460,16 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		a.NoError(perr, "right-operand parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 
+	// A block comment containing ")" between the wrapping "(" and the join must
+	// not defeat paren balancing (the comment is dropped, parens stay balanced).
+	result, err = run("UPDATE ( /* c ) */ test AS a LEFT JOIN test2 AS b ON a.a = b.a) JOIN t1 AS z ON z.a = a.a SET a.c = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	for _, r := range result {
+		_, perr := ParseTiDBOmni(r.Statement)
+		a.NoError(perr, "commented parenthesized-join UPDATE backup must re-parse as valid SQL")
+	}
+
 	// In the >maxMixedDMLCount same-table UNION path, case-only database
 	// differences (db.test vs DB.test) must be treated as the same table, not
 	// rejected as "different tables" — consistent with the cross-database guard.
