@@ -91,6 +91,16 @@ vi.mock("@/react/router", async (importOriginal) => ({
     replace: mocks.routerReplace,
     currentRoute: mocks.currentRoute,
   },
+  useCurrentRoute: () => ({
+    name: undefined,
+    fullPath: "",
+    hash: "",
+    params: {},
+    query: mocks.currentRoute.value.query,
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 // The component (and its children `DatabaseObjectExplorer`, `TableDetailDialog`,

@@ -14,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
@@ -75,12 +74,13 @@ function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
   const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
 
-  const isDefault = useVueState(() => {
-    const projectId =
-      (router.currentRoute.value.params.projectId as string | undefined) ?? "";
-    const projectName = projectId ? `${projectNamePrefix}${projectId}` : "";
-    return !!defaultProject && projectName === defaultProject;
-  });
+  const sidebarRoute = useCurrentRoute();
+  const sidebarProjectId =
+    (sidebarRoute.params.projectId as string | undefined) ?? "";
+  const sidebarProjectName = sidebarProjectId
+    ? `${projectNamePrefix}${sidebarProjectId}`
+    : "";
+  const isDefault = !!defaultProject && sidebarProjectName === defaultProject;
 
   return useMemo(
     (): SidebarItem[] => [

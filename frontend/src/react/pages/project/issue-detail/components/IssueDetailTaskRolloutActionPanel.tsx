@@ -20,7 +20,6 @@ import { Textarea } from "@/react/components/ui/textarea";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -598,8 +597,9 @@ function IssueDetailDatabaseTarget({ target }: { target: string }) {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentList = useAppStore((s) => s.environmentList);
-  const database = useVueState(
-    () => databasesByName[target] ?? unknownDatabase()
+  const database = useMemo(
+    () => databasesByName[target] ?? unknownDatabase(),
+    [databasesByName, target]
   );
   const environmentName =
     database.effectiveEnvironment ??

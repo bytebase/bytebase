@@ -38,6 +38,16 @@ vi.mock("@/react/router", async (importOriginal) => ({
     currentRoute: { value: { query: {} } },
     replace: vi.fn(),
   },
+  useCurrentRoute: () => ({
+    name: undefined,
+    fullPath: "",
+    hash: "",
+    params: {},
+    query: {},
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 vi.mock("./issue-detail/hooks/useIssueDetailPage", () => ({

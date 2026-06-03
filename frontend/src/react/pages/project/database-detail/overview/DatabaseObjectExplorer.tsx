@@ -11,8 +11,7 @@ import {
 } from "@/react/components/ui/select";
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
   getColumnCatalog,
@@ -106,10 +105,8 @@ export function DatabaseObjectExplorer({
       schema: selectedSchemaName,
     })
   );
-  const routeTable = useVueState(() => {
-    const table = router.currentRoute.value.query.table;
-    return typeof table === "string" ? table : "";
-  });
+  const tableQuery = useCurrentRoute().query.table;
+  const routeTable = typeof tableQuery === "string" ? tableQuery : "";
   const databaseMetadata = useAppDatabaseMetadata(database.name);
   const hasSensitiveDataFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)

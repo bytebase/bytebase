@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
@@ -38,8 +37,9 @@ export function useProjectDatabaseDetail({
   );
   const databasesByName = useAppStore((s) => s.databasesByName);
   const fullDatabaseName = `instances/${instanceId}/databases/${databaseName}`;
-  const database = useVueState(
-    () => databasesByName[fullDatabaseName] ?? unknownDatabase()
+  const database = useMemo(
+    () => databasesByName[fullDatabaseName] ?? unknownDatabase(),
+    [databasesByName, fullDatabaseName]
   );
   const [loading, setLoading] = useState(true);
 
