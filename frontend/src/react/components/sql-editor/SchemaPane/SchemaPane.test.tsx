@@ -163,7 +163,10 @@ vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: { MYSQL: "/mysql.svg" } as Record<string, string>,
 }));
 
-vi.mock("@/router", () => ({ router: { resolve: () => ({ href: "/" }) } }));
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
+  router: { resolve: () => ({ href: "/" }) },
+}));
 vi.mock("@/router/sqlEditor", () => ({
   SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));

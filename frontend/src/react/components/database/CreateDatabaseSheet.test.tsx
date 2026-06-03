@@ -164,7 +164,10 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/router", () => ({ router: { push: vi.fn() } }));
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
+  router: { push: vi.fn() },
+}));
 
 vi.mock("@/types", () => ({
   isValidProjectName: (name: string) =>

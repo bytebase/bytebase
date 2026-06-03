@@ -116,16 +116,13 @@ vi.mock("@/react/components/ui/select", () => ({
   ),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     back: mocks.routerBack,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNIN_MODULE: "auth.signin",
 }));
 
 vi.mock("@/react/components/BytebaseLogo", () => ({

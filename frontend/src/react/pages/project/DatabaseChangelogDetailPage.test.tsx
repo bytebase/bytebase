@@ -128,18 +128,11 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASES: mocks.projectRouteNames.databases,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL: mocks.projectRouteNames.databaseDetail,
-  PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL:
-    mocks.projectRouteNames.databaseChangelogDetail,
-  PROJECT_V1_ROUTE_SYNC_SCHEMA: mocks.projectRouteNames.syncSchema,
 }));
 
 vi.mock("@/react/components/ui/button", () => ({

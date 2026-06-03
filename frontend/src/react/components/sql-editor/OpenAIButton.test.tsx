@@ -109,12 +109,9 @@ vi.mock("@/plugins/ai/logic/prompt", () => ({
   findProblems: mocks.findProblems,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { push: mocks.routerPush },
-}));
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  SETTING_ROUTE_WORKSPACE_GENERAL: "settings.workspace.general",
 }));
 
 // Minimal primitive stubs.

@@ -73,7 +73,8 @@ vi.mock("@/utils", () => ({
   extractWorksheetID: mocks.extractWorksheetID,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },

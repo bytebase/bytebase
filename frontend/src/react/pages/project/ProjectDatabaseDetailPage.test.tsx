@@ -196,17 +196,14 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     push: mocks.routerPush,
     resolve: mocks.routerResolve,
     currentRoute: { value: { name: mocks.routeNames.databaseDetail } },
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASE_DETAIL: mocks.routeNames.databaseDetail,
 }));
 
 vi.mock("@/react/components/ui/tabs", () => ({

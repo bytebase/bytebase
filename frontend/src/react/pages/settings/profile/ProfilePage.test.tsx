@@ -86,26 +86,12 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/router/dashboard/workspaceRoutes")>();
-  return {
-    ...actual,
-    WORKSPACE_ROUTE_404: "404",
-    WORKSPACE_ROUTE_USER_PROFILE: "user-profile",
-  };
-});
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  SETTING_ROUTE_PROFILE_TWO_FACTOR: "profile.two-factor",
-  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION: "workspace.subscription",
 }));
 
 vi.mock("@/utils", () => ({

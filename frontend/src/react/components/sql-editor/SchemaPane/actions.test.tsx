@@ -130,14 +130,11 @@ vi.mock("@/types/proto-es/v1/database_service_pb", () => ({
   GetSchemaStringRequest_ObjectType: { TABLE: 1, VIEW: 2 },
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: () => ({ href: "/sql-editor/db" }),
   },
-}));
-
-vi.mock("@/router/sqlEditor", () => ({
-  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));
 
 vi.mock("@/react/lib/keyWithPosition", () => ({

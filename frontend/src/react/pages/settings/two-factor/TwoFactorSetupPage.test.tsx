@@ -56,19 +56,12 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_2FA_SETUP_MODULE: "auth.2fa-setup",
-}));
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  SETTING_ROUTE_PROFILE: "workspace.setting.profile",
 }));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {

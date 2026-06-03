@@ -11,11 +11,10 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   emitStorageChangedEvent: vi.fn(),
   setDocumentTitle: vi.fn(),
-  routeTitle: vi.fn((_route: unknown) => "Signin"),
   locale: { value: "en-US" },
   currentRoute: {
     value: {
-      meta: {} as { title?: (route: unknown) => string },
+      title: undefined as string | undefined,
     },
   },
 }));
@@ -51,7 +50,8 @@ vi.mock("@/plugins/i18n", () => ({
   },
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: mocks.currentRoute,
   },
@@ -88,7 +88,7 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.locale.value = "en-US";
-  mocks.currentRoute.value.meta = {};
+  mocks.currentRoute.value.title = undefined;
   storage.clear();
   Object.defineProperty(globalThis, "localStorage", {
     value: localStorageMock,
@@ -134,7 +134,7 @@ describe("AuthFooter", () => {
 
   test("invokes Vue i18n + storage + title setter on click", () => {
     mocks.useVueState.mockReturnValue("en-US");
-    mocks.currentRoute.value.meta = { title: mocks.routeTitle };
+    mocks.currentRoute.value.title = "Signin";
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
     render();
     const esAnchor = Array.from(container.querySelectorAll("a")).find(
@@ -147,7 +147,6 @@ describe("AuthFooter", () => {
     expect(mocks.locale.value).toBe("es-ES");
     expect(localStorage.getItem("bb.language")).toBe('"es-ES"');
     expect(mocks.emitStorageChangedEvent).toHaveBeenCalledTimes(1);
-    expect(mocks.routeTitle).toHaveBeenCalledTimes(1);
     expect(mocks.setDocumentTitle).toHaveBeenCalledWith("Signin");
     unmount();
   });

@@ -234,16 +234,12 @@ vi.mock("@/react/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
     resolve: () => ({ href: "/database-group-detail" }),
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL: "database-group-detail",
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL: "plan-detail-spec-detail",
 }));
 
 vi.mock("@/types", () => ({

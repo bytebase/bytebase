@@ -39,7 +39,7 @@ const mocks = vi.hoisted(() => {
       <div data-testid="revision-detail-panel">{revisionName}</div>
     )),
     routeNames: {
-      databases: "workspace.project.databases",
+      databases: "workspace.project.database",
       databaseDetail: "workspace.project.database.detail",
       databaseRevisionDetail: "workspace.project.database.revision.detail",
     },
@@ -62,17 +62,11 @@ vi.mock("@/react/components/revision", () => ({
   RevisionDetailPanel: mocks.RevisionDetailPanel,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASES: mocks.routeNames.databases,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL: mocks.routeNames.databaseDetail,
-  PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL:
-    mocks.routeNames.databaseRevisionDetail,
 }));
 
 vi.mock("./database-detail/useProjectDatabaseDetail", () => ({

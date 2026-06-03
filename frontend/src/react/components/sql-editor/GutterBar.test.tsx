@@ -55,20 +55,13 @@ vi.mock("@/react/stores/sqlEditor", () => ({
     }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
     currentRoute: { value: { params: {} } },
     afterEach: () => () => {},
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DETAIL: "project.detail",
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
-  WORKSPACE_ROUTE_LANDING: "workspace.landing",
 }));
 
 vi.mock("@/assets/logo-icon.svg", () => ({

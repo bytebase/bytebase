@@ -55,7 +55,8 @@ vi.mock("@/utils", () => ({
   instanceAllowsSchemaScopedQuery: mocks.instanceAllowsSchemaScopedQuery,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: mocks.router,
 }));
 

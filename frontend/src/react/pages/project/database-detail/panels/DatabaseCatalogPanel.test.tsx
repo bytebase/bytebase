@@ -400,7 +400,8 @@ vi.mock("@/utils", () => ({
   instanceV1MaskingForNoSQL: mocks.instanceV1MaskingForNoSQL,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },

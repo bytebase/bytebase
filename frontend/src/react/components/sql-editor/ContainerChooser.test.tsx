@@ -52,7 +52,8 @@ vi.mock("@/react/stores/sqlEditor/tab", () => ({
   getSQLEditorTabsState: mocks.getSQLEditorTabsState,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: mocks.router,
 }));
 

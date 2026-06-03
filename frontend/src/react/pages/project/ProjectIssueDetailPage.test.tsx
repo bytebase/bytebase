@@ -32,7 +32,8 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: (getter: () => unknown) => getter(),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: { value: { query: {} } },
     replace: vi.fn(),

@@ -130,10 +130,9 @@ vi.mock("@/types/proto-es/v1/sheet_service_pb", () => ({
   SheetSchema: {},
 }));
 
-vi.mock("@/router", () => ({ router: { push: vi.fn() } }));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_ISSUE_DETAIL: "issue-detail",
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
+  router: { push: vi.fn() },
 }));
 
 vi.mock("@/react/components/instance/constants", () => ({

@@ -22,15 +22,12 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     isReady: mocks.routerIsReady,
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/sqlEditor", () => ({
-  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
 }));
 
 vi.mock("@/store", () => ({

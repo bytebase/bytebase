@@ -92,14 +92,11 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_ISSUE_DETAIL: "project.issue-detail",
 }));
 
 vi.mock("@/utils", () => ({

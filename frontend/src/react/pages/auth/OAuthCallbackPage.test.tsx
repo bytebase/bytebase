@@ -30,15 +30,12 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNIN_MODULE: "auth.signin",
 }));
 
 vi.mock("@/utils/sso", () => ({

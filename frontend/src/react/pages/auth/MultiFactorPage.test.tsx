@@ -26,10 +26,21 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: mocks.currentRoute,
   },
+  useCurrentRoute: () => ({
+    name: "",
+    fullPath: "/",
+    hash: "",
+    params: {},
+    query: mocks.currentRoute.value.query,
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 vi.mock("@/utils", () => {

@@ -28,12 +28,9 @@ vi.mock("@/react/stores/app", () => ({
   useAppStore: mocks.useAppStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { push: vi.fn() },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
-  INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
 }));
 
 vi.mock("@/types", () => ({
