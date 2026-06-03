@@ -26,6 +26,14 @@ const handleUnauthenticatedFailure = ({
 }) => {
   const authStore = useAuthStore();
   authStore.unauthenticatedOccurred = true;
+  // Bridge: also flag the app store (the post-migration session source of
+  // truth) so React's SessionExpiredSurface fires once the Vue shell is gone.
+  // Dynamic-imported to avoid a load-time cycle (the app store imports the
+  // connect clients this interceptor wraps). The Pinia set above is removed in
+  // the teardown phase.
+  void import("@/react/stores/app").then(({ useAppStore }) => {
+    useAppStore.getState().setUnauthenticatedOccurred(true);
+  });
   if (!silent && isLoggedIn) {
     pushNotification({
       module: "bytebase",
