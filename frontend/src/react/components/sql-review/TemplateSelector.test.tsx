@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
 let TemplateSelector: typeof import("./TemplateSelector").TemplateSelector;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 

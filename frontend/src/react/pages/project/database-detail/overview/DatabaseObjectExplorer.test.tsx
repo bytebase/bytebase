@@ -54,6 +54,7 @@ const mocks = vi.hoisted(() => {
 let DatabaseObjectExplorer: typeof import("./DatabaseObjectExplorer").DatabaseObjectExplorer;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 

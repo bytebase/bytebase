@@ -104,6 +104,7 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
@@ -213,7 +214,10 @@ vi.mock("@/types", () => ({
   }),
 }));
 
-vi.mock("@/types/proto-es/v1/instance_service_pb", () => ({
+vi.mock("@/types/proto-es/v1/instance_service_pb", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/types/proto-es/v1/instance_service_pb")
+  >()),
   DataSourceType: { ADMIN: 1, READ_ONLY: 2 },
 }));
 
