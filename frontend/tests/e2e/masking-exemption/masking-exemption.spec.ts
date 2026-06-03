@@ -1,7 +1,7 @@
-import { execFileSync } from "child_process";
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { getInstancePgPort, execSql } from "../framework/psql";
 import { MaskingExemptionPage, GrantExemptionPage, SqlEditorPage } from "./masking-exemption.page";
 
 // Give all tests generous timeouts (Mode B's disposable server can be slow)
@@ -49,6 +49,14 @@ const ROW_PK = 1;
 const CLASSIFICATION_VALUE = "ClassValueABCDE";
 const SEMANTIC_TYPE_VALUE = "SemValueABCDE";
 const CLASSIFICATION_LEVEL = "1-2"; // matches demo classification rules
+// Built-in semantic-type ID used in the previous demo dump. The new
+// bootstrap doesn't seed it, so we register it ourselves via the
+// SEMANTIC_TYPES workspace setting before applying it via catalog.
+const SEMANTIC_TYPE_ID = "bb.default-partial";
+// Classification-masking fixtures (the new bootstrap doesn't pre-seed them).
+const CLASSIFICATION_CONFIG_ID = "e2e-classification-config";
+const CLASSIFICATION_LEVEL_NUM = 2; // numeric level CLASSIFICATION_LEVEL ("1-2") maps to
+const CLASSIFICATION_RULE_ID = "e2e00000-0000-4000-8000-000000000001"; // UUID for the workspace masking rule
 
 // Validate SQL identifiers/literal values. Only permits characters safe to
 // inline into a SQL string without escaping: letters, digits, underscores.
@@ -66,34 +74,120 @@ for (const [name, value] of Object.entries({
   assertSafeSqlIdentifier(value, name);
 }
 
-// Get the Postgres port for the database's instance by reading the data source
-// from the API. Avoids hardcoding offsets (PORT+3 vs PORT+4) which would break
-// if discovery picks the "test" sample instance instead of "prod".
-async function getInstancePgPort(env: TestEnv & { api: BytebaseApiClient }): Promise<string> {
-  const instance = await env.api.getInstance(env.instance);
-  const port = instance.dataSources?.[0]?.port;
-  if (!port) {
-    throw new Error(`Instance ${env.instance} has no data source port`);
-  }
-  return port;
+// Register a semantic type via the SEMANTIC_TYPES workspace setting so
+// the catalog update below can reference it. Without this, applying a
+// column with semanticType="bb.default-partial" fails with "semantic
+// type id not found" — the previous demo dump pre-seeded the type but
+// the new bootstrap doesn't.
+async function ensureSemanticType(env: TestEnv & { api: BytebaseApiClient }): Promise<void> {
+  await env.api.upsertSetting(
+    "SEMANTIC_TYPES",
+    {
+      semanticType: {
+        types: [
+          {
+            id: SEMANTIC_TYPE_ID,
+            title: "E2E Partial Mask",
+            description: "Used by masking-exemption e2e tests",
+            algorithm: {
+              rangeMask: {
+                slices: [{ start: 0, end: 3, substitution: "***" }],
+              },
+            },
+          },
+        ],
+      },
+    },
+    "value.semantic_type",
+  );
 }
 
-// Execute SQL via psql over Unix socket on the sample Postgres instance.
-// Used for DDL/DML setup and teardown — Bytebase's query API is read-only.
-function execSql(dbName: string, port: string, sql: string): void {
-  execFileSync("psql", [
-    "-h", "/tmp",
-    "-p", port,
-    "-U", "bbsample",
-    "-d", dbName,
-    "-v", "ON_ERROR_STOP=1",
-    "-c", sql,
-  ], { stdio: "pipe" });
+// Seed the workspace fixtures the classification -> masking path needs (the
+// post-#20393 bootstrap no longer pre-seeds them, unlike the old demo dump):
+//   1. a DATA_CLASSIFICATION config mapping classification id CLASSIFICATION_LEVEL
+//      ("1-2") to a numeric level,
+//   2. the test project pointing at that config (projects carry a
+//      dataClassificationConfigId; the masking evaluator resolves the config
+//      from it, with no fallback), and
+//   3. a workspace MASKING_RULE whose CEL `classification_level == N` applies
+//      the semantic type to columns at that level.
+async function ensureClassificationFixtures(
+  env: TestEnv & { api: BytebaseApiClient },
+): Promise<void> {
+  await env.api.upsertSetting(
+    "DATA_CLASSIFICATION",
+    {
+      dataClassification: {
+        configs: [
+          {
+            id: CLASSIFICATION_CONFIG_ID,
+            title: "E2E Classification",
+            levels: [
+              { title: "Level 1", level: 1 },
+              { title: "Level 2", level: 2 },
+            ],
+            classification: {
+              [CLASSIFICATION_LEVEL]: {
+                id: CLASSIFICATION_LEVEL,
+                title: "E2E Internal",
+                level: CLASSIFICATION_LEVEL_NUM,
+              },
+            },
+          },
+        ],
+      },
+    },
+    "value.data_classification",
+  );
+  // Link the project to the config (it must exist first — UpdateProject validates it).
+  await env.api.updateProjectSettings(env.project, {
+    dataClassificationConfigId: CLASSIFICATION_CONFIG_ID,
+  });
+  // Workspace masking rule: any column at the level gets the semantic type.
+  const { workspace } = await env.api.getActuatorInfo();
+  await env.api.upsertPolicy(workspace, "masking_rule", {
+    type: "MASKING_RULE",
+    maskingRulePolicy: {
+      rules: [
+        {
+          id: CLASSIFICATION_RULE_ID,
+          condition: {
+            expression: `resource.classification_level == ${CLASSIFICATION_LEVEL_NUM}`,
+            title: "e2e classification masking",
+          },
+          semanticType: SEMANTIC_TYPE_ID,
+        },
+      ],
+    },
+  });
+}
+
+// Remove the workspace masking rule so it can't affect later specs. (The
+// project's config link and the DATA_CLASSIFICATION setting are harmless once
+// the rule is gone — no column outside this spec carries the classification —
+// and the disposable server is torn down anyway.)
+async function clearClassificationFixtures(
+  env: TestEnv & { api: BytebaseApiClient },
+): Promise<void> {
+  try {
+    const { workspace } = await env.api.getActuatorInfo();
+    await env.api.upsertPolicy(workspace, "masking_rule", {
+      type: "MASKING_RULE",
+      maskingRulePolicy: { rules: [] },
+    });
+  } catch (err) {
+    console.warn(
+      `clearClassificationFixtures: ${err instanceof Error ? err.message : err}`,
+    );
+  }
 }
 
 async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
   const dbName = env.databaseId;
   const port = await getInstancePgPort(env);
+
+  await ensureSemanticType(env);
+  await ensureClassificationFixtures(env);
 
   // Drop anything leftover from a previous run, then create fresh schema/table/row.
   // All interpolated identifiers are validated constants (see assertSafeSqlIdentifier above).
@@ -122,7 +216,7 @@ async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }):
         columns: {
           columns: [
             { name: CLASSIFICATION_COLUMN, classification: CLASSIFICATION_LEVEL },
-            { name: SEMANTIC_TYPE_COLUMN, semanticType: "bb.default-partial" },
+            { name: SEMANTIC_TYPE_COLUMN, semanticType: SEMANTIC_TYPE_ID },
           ],
         },
       }],
@@ -186,12 +280,7 @@ async function revokeAllExemptions(): Promise<void> {
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
-  // Masking and classification are enterprise-gated; without a license the
-  // policies cannot be created, so skip the entire suite rather than failing.
-  test.skip(
-    !env.hasLicense,
-    "BYTEBASE_E2E_LICENSE not set — masking specs require an enterprise license"
-  );
+  // Masking and classification are enterprise-gated; the license is installed at bootstrap (required to run this suite).
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
@@ -209,6 +298,7 @@ test.afterAll(async () => {
   await revokeAllExemptions().catch((err) => {
     console.warn(`afterAll revokeAllExemptions: ${err instanceof Error ? err.message : err}`);
   });
+  await clearClassificationFixtures(env);
   await dropMaskingTestData(env);
 });
 
@@ -437,6 +527,13 @@ test.describe("E2E Masking Verification", () => {
     expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(false);
   };
 
+  // Classification-based masking: col_classification carries classification id
+  // "1-2" (set in the catalog above); ensureClassificationFixtures seeds the
+  // DATA_CLASSIFICATION config that maps "1-2" -> level 2, links the project to
+  // that config, and installs a workspace MASKING_RULE
+  // (`classification_level == 2` -> the semantic type). So this column masks
+  // via the classification -> rule path, distinct from col_semantic's direct
+  // semantic_type.
   test("classification-based masking: cycle via UI", async () => {
     await runMaskingCycle(maskingData.classificationColumn, "e2e classification masking test");
   });

@@ -8,10 +8,6 @@ export interface TestEnv {
   baseURL: string;
   adminEmail: string;
   adminPassword: string;
-  // True iff an enterprise license was installed via BYTEBASE_E2E_LICENSE
-  // during globalSetup. Specs that depend on gated features (masking,
-  // classification) should `test.skip(!env.hasLicense, ...)` when false.
-  hasLicense: boolean;
   project: string;
   instance: string;
   instanceId: string;
