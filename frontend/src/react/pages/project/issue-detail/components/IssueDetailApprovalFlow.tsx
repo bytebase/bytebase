@@ -564,9 +564,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
 
   // Subscribe directly to the Zustand project IAM cache so groupNames /
   // candidateEmails recompute the moment loadProjectIamPolicy() resolves.
-  // Wrapping the Zustand getter in useVueState would only react to Vue
-  // dependencies and miss the Zustand write, leaving the approval step
-  // empty on a cold issue page.
   const projectIamPolicy = useAppStore(
     (state) => state.projectPoliciesByName[projectName]
   );

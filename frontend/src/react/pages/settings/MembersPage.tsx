@@ -2094,26 +2094,10 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // (+ referenced groups) on /settings/members. This page just reads them.
   // Subscribe directly to the Zustand projectPoliciesByName slice so the
   // member table re-renders when loadProjectIamPolicy / updateProjectIamPolicy
-  // writes to the app store. Wrapping `getProjectIamPolicy()` in
-  // `useVueState` would only re-render on Vue reactivity changes and miss
-  // these Zustand writes.
+  // writes to the app store.
   const projectIamPolicy = useAppStore((state) =>
     projectName ? state.projectPoliciesByName[projectName] : undefined
   );
-
-  // `useVueState` ensures we re-render whenever any reactive dep
-  // `getMemberBindings(...)` reads from changes — IAM policies, but
-  // also the group / user / service-account / workload-identity stores
-  // it pulls metadata from. The result array reference changes on every
-  // render; the table component handles that with content-based change
-  // detection (a group-bindings signature) so its expand-cache only
-  // resets on real membership changes.
-  // Keep this in useVueState so it re-runs when the Pinia user/group/
-  // service-account/workload-identity stores that getMemberBindings reads
-  // for member metadata change. The workspace IAM policy itself now comes
-  // from the app store: subscribing to `workspacePolicy` above re-renders
-  // this component on policy changes, and useVueState reads the latest getter
-  // each render, so both reactivity sources are covered.
   // getMemberBindings reads member metadata from the group / user /
   // service-account / workload-identity app-store maps via getState(); subscribe
   // to them (plus the IAM policies) so the list refreshes when any of those

@@ -1270,8 +1270,7 @@ function SortableEnvironmentRow({
 // `ReorderSheetInner` is keyed by an open counter so it remounts fresh
 // every time the Sheet opens (re-initializing its `list` state from the
 // snapshot), but does NOT reset mid-session when the parent's
-// `environments` prop gets a new reference on every render (which
-// `useVueState` does — it spreads the store's array). A naive
+// `environments` prop gets a new reference on every render. A naive
 // `useEffect([open, environments])` reset would clobber the user's drag
 // reorder the instant the parent re-renders, which was the previous bug.
 function ReorderSheet({
@@ -1351,7 +1350,7 @@ function ReorderSheetInner({
 
   // Compare against the initial order captured at mount, not against the
   // live `environments` prop (which may change reference on every parent
-  // render thanks to useVueState spreading the store array).
+  // render).
   const initialOrderRef = useRef(environments.map((e) => e.id));
   const orderChanged = useMemo(() => {
     if (list.length !== initialOrderRef.current.length) return true;

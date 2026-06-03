@@ -369,8 +369,8 @@ export const useExecuteSQL = () => {
       // they had already loaded ("Load more"d), and the new entry just
       // gets prepended. After the cache update lands, emit the event so
       // the HistoryPane re-renders from it (store reactivity alone
-      // doesn't reliably propagate into the React `useVueState`
-      // subscriber, so we trigger the re-render explicitly).
+      // doesn't reliably propagate into the React subscriber, so we
+      // trigger the re-render explicitly).
       useSQLEditorReactStore
         .getState()
         .mergeLatest({

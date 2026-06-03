@@ -96,8 +96,8 @@ export function CreateDatabaseSheet({
 
   const effectiveProjectName = fixedProjectName || projectName;
 
-  // Intentional split: enforceIssueTitle is read reactively via useVueState
-  // because it's a governance gate that MUST reflect the live project state
+  // Intentional split: enforceIssueTitle is read reactively (via the app-store
+  // project cache) because it's a governance gate that MUST reflect live state
   // (workspace-picker swaps change projects mid-form). `issueLabels` /
   // `forceIssueLabels` stay on the pre-existing `selectedProject` snapshot
   // pattern below — they have a known staleness seam that is out of scope

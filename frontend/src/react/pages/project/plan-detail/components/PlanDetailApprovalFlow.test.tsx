@@ -98,7 +98,7 @@ vi.mock("@/react/stores/app", () => ({
         // so the candidate list re-renders when the policy resolves.
         projectPoliciesByName: { "projects/p1": { bindings: [] } },
         // The approval flow subscribes to projectsByName so the project
-        // useVueState getter re-renders when the cache changes.
+        // selector re-renders when the cache changes.
         projectsByName: { "projects/p1": { allowSelfApproval: false } },
         getIssueComments: mocks.issueCommentStore.getIssueComments,
       }),

@@ -176,8 +176,7 @@ function IssueDetailDatabaseResourceTable({
 }) {
   const { t } = useTranslation();
   // Subscribe to the instance cache so rows reactively pick up titles once
-  // instances hydrate; a bare getState() read would not re-render here because
-  // useVueState only tracks Vue dependencies.
+  // instances hydrate; a bare getState() read would not re-render here.
   const instancesByName = useAppStore((s) => s.instancesByName);
   const databasesByName = useAppStore((s) => s.databasesByName);
   // Subscribe so titles refresh if the environment list changes.

@@ -20,9 +20,8 @@ console.debug("dev:", isDev());
 console.debug("release:", isRelease());
 
 // Transition shim: activate Pinia outside a Vue app so the Pinia stores still
-// referenced by un-migrated `useVueState` bridges + shared `.ts` utils keep
-// working while the bridge sweep is in progress. Removed in teardown once no
-// Pinia store remains.
+// referenced by shared `.ts` utils keep working during the Vue→React
+// migration. Removed in teardown once no Pinia store remains.
 setActivePinia(pinia);
 
 // Migrate renamed localStorage keys before any store reads from storage.

@@ -56,9 +56,9 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
 
-// Stable empty array for the comments selector — useVueState's getter must
-// return a cached reference when we want React to skip re-renders, otherwise
-// useSyncExternalStore will treat every render as a snapshot change.
+// Stable empty array for the comments selector — the selector must return a
+// cached reference when we want React to skip re-renders, otherwise the store
+// subscription will treat every render as a snapshot change.
 const EMPTY_COMMENTS: IssueComment[] = [];
 
 export function PlanDetailSidebarApprovalFlow() {
@@ -684,10 +684,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const currentUserEmail = currentUser?.email ?? "";
   const project = useProjectByName(projectName);
   // Subscribe directly to the Zustand project IAM cache so this step
-  // re-renders the moment loadProjectIamPolicy() resolves. Wrapping the
-  // Zustand getter in useVueState would only react to Vue dependencies
-  // and miss the Zustand write, leaving the candidates list empty on a
-  // cold plan page.
+  // re-renders the moment loadProjectIamPolicy() resolves.
   const projectIamPolicy = useAppStore(
     (state) => state.projectPoliciesByName[projectName]
   );
