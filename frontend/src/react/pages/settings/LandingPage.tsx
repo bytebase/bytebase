@@ -34,7 +34,7 @@ import {
   useOptionalCurrentUser,
   useServerState,
 } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useRecentVisit } from "@/react/hooks/useRecentVisit";
 import { router } from "@/react/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -61,7 +61,6 @@ import {
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { useRecentVisit } from "@/router/useRecentVisit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -286,9 +285,7 @@ function useQuickAccessConfig(email: string) {
 // ---------------------------------------------------------------------------
 
 function useLastVisitedProject() {
-  const lastVisitProjectPath = useVueState(
-    () => useRecentVisit().lastVisitProjectPath.value
-  );
+  const { lastVisitProjectPath } = useRecentVisit();
   const [project, setProject] = useState<Project | undefined>();
 
   useEffect(() => {

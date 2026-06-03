@@ -11,9 +11,9 @@ import {
 import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
+import { useRecentVisit } from "@/react/hooks/useRecentVisit";
 import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
@@ -35,7 +35,6 @@ import {
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { useRecentVisit } from "@/router/useRecentVisit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
@@ -244,18 +243,9 @@ export function ProjectSidebar() {
 
   const customLogo = useWorkspace()?.logo ?? "";
 
-  // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
-  const recordVisitRef = useRef<((path: string) => void) | null>(null);
-  useEffect(() => {
-    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
-    // recent-visit helper so React components don't need a Vue effect scope.
-    const scope = effectScope();
-    scope.run(() => {
-      const { record } = useRecentVisit();
-      recordVisitRef.current = record;
-    });
-    return () => scope.stop();
-  }, []);
+  const { record } = useRecentVisit();
+  const recordVisitRef = useRef(record);
+  recordVisitRef.current = record;
 
   // Ensure the project is fetched into the store cache.
   // ProjectRouteShell also fetches it, but this guards against race conditions.
