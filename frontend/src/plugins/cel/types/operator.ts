@@ -1,6 +1,7 @@
 import { uniq } from "lodash-es";
 import {
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_TIME,
   CEL_ATTRIBUTE_REQUEST_UNMASK,
@@ -178,6 +179,7 @@ const OperatorList: Record<Factor, Operator[]> = {
 
   // Boolean factors
   [CEL_ATTRIBUTE_REQUEST_UNMASK]: uniq([...EqualityOperatorList]),
+  [CEL_ATTRIBUTE_REQUEST_EXPORT]: uniq([...EqualityOperatorList]),
 
   // These factors don't have operator candidates for user selection.
   [CEL_ATTRIBUTE_RESOURCE_DATABASE]: [],

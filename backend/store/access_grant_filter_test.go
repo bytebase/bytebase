@@ -106,6 +106,49 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 			wantArgs: []any{"SELECT 1 FROM t"},
 			wantErr:  false,
 		},
+		// unmask / export boolean filters — COALESCE so missing-key rows
+		// (legacy payloads predating the field) compare as false instead
+		// of NULL, which would silently drop them from `== false` results.
+		{
+			name:     "unmask equals true",
+			filter:   `unmask == true`,
+			wantSQL:  "(COALESCE((access_grant.payload->>'unmask')::boolean, false) = $1)",
+			wantArgs: []any{true},
+			wantErr:  false,
+		},
+		{
+			name:     "unmask equals false",
+			filter:   `unmask == false`,
+			wantSQL:  "(COALESCE((access_grant.payload->>'unmask')::boolean, false) = $1)",
+			wantArgs: []any{false},
+			wantErr:  false,
+		},
+		{
+			name:     "export equals true",
+			filter:   `export == true`,
+			wantSQL:  "(COALESCE((access_grant.payload->>'export')::boolean, false) = $1)",
+			wantArgs: []any{true},
+			wantErr:  false,
+		},
+		{
+			name:     "export equals false",
+			filter:   `export == false`,
+			wantSQL:  "(COALESCE((access_grant.payload->>'export')::boolean, false) = $1)",
+			wantArgs: []any{false},
+			wantErr:  false,
+		},
+		{
+			name:        "unmask rejects non-boolean",
+			filter:      `unmask == "true"`,
+			wantErr:     true,
+			errContains: "unmask value must be a boolean",
+		},
+		{
+			name:        "export rejects non-boolean",
+			filter:      `export == 1`,
+			wantErr:     true,
+			errContains: "export value must be a boolean",
+		},
 	}
 
 	for _, tt := range tests {

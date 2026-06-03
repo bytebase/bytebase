@@ -3,12 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "src/**/*",
-      "!!src/bbkit/BBUtil.ts",
-      "!!src/types/proto-es/**",
-      "!!src/utils/sql-download/__tests__/goldens/**"
-    ]
+    "includes": ["src/**/*", "!!src/bbkit/BBUtil.ts", "!!src/types/proto-es/**"]
   },
   "formatter": {
     "enabled": true,

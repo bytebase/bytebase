@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { ChevronDown, Download } from "lucide-react";
+import { ChevronDown, Copy, Download, Wand2 } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -65,7 +65,7 @@ interface DataExportButtonProps {
   supportFormats: ExportFormat[];
   supportPassword?: boolean;
   viewMode: ViewMode;
-  tooltip?: string;
+  tooltip?: ReactNode;
   text?: string;
   validate?: (option: ExportOption) => boolean;
   maximumExportCount?: number;
@@ -83,6 +83,21 @@ const SIZE_TO_BUTTON: Record<Size, ButtonProps["size"]> = {
 };
 
 const ROW_COUNT_PRESET = [1, 100, 500, 1000, 5000, 10000, 100000];
+
+const GENERATED_PASSWORD_LENGTH = 8;
+const GENERATED_PASSWORD_CHARSET =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+const generateRandomPassword = (length = GENERATED_PASSWORD_LENGTH) => {
+  const values = new Uint32Array(length);
+  crypto.getRandomValues(values);
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out +=
+      GENERATED_PASSWORD_CHARSET[values[i] % GENERATED_PASSWORD_CHARSET.length];
+  }
+  return out;
+};
 
 const computeMaximumPreset = (maximum: number) => {
   const list = ROW_COUNT_PRESET.filter((n) => n <= maximum);
@@ -264,6 +279,46 @@ export function DataExportButton({
       });
   }, [currentOption, isRequesting, onExport, t]);
 
+  // Returns true when the clipboard write succeeded — Generate callers
+  // gate the password commit on that so the masked input doesn't end up
+  // holding a value the user can never read back. PR #20491 bot review
+  // #3349557577.
+  const copyPasswordToClipboard = useCallback(
+    async (value: string): Promise<boolean> => {
+      if (!value) return false;
+      try {
+        await navigator.clipboard.writeText(value);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.copied"),
+        });
+        return true;
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+        return false;
+      }
+    },
+    [t]
+  );
+
+  const handleGeneratePassword = useCallback(async () => {
+    const next = generateRandomPassword();
+    // Only commit the generated password to state after the user has it
+    // on their clipboard. If the copy fails (insecure context, denied
+    // permission) the input stays empty so the user isn't left signing
+    // an export ZIP with a password they can't read back from the masked
+    // input.
+    const copied = await copyPasswordToClipboard(next);
+    if (copied) {
+      setPassword(next);
+    }
+  }, [copyPasswordToClipboard]);
+
   const handleSelectDropdownFormat = (selected: ExportFormat) => {
     setFormat(selected);
     if (supportPassword) {
@@ -386,6 +441,27 @@ export function DataExportButton({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    <div className="flex items-center gap-x-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGeneratePassword}
+                      >
+                        <Wand2 className="size-4 mr-1" />
+                        {t("export-data.generate-password")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!password}
+                        onClick={() => void copyPasswordToClipboard(password)}
+                      >
+                        <Copy className="size-4 mr-1" />
+                        {t("common.copy")}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -345,6 +345,7 @@
     "n-selected": "{{n}} seleccionados",
     "name": "Nombre",
     "next": "Siguiente",
+    "no": "No",
     "no-data": "Sin datos",
     "not-started": "No iniciado",
     "ok": "OK",
@@ -465,6 +466,7 @@
     "warning": "Advertencia",
     "webhooks": "Webhooks",
     "write-only": "solo escritura",
+    "yes": "Sí",
     "you": "tu"
   },
   "create-db": {
@@ -819,11 +821,17 @@
     "not-found": "No encontrado"
   },
   "export-center": {
-    "data-export": "Exportación de datos"
+    "data-export": "Exportación de datos",
+    "deprecated": {
+      "description": "El Centro de Exportación será deprecado en una versión futura. Para nuevas exportaciones de datos, considere usar la acción de exportación del Editor SQL.",
+      "open-sql-editor": "Ir al Editor SQL",
+      "title": "El Centro de Exportación será deprecado"
+    }
   },
   "export-data": {
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
+    "generate-password": "Generar contraseña",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
     "password-optional": "Cifrar con contraseña (opcional)"
   },
@@ -1140,8 +1148,14 @@
     "access-grant": {
       "advanced-search": {
         "scope": {
+          "export": {
+            "description": "Filtrar por si la concesión permite exportar el resultado de la consulta"
+          },
           "status": {
             "description": "Filtrar por estado de la concesión de acceso"
+          },
+          "unmask": {
+            "description": "Filtrar por si la concesión permite ver datos sensibles sin enmascarar"
           }
         }
       },
@@ -2515,11 +2529,18 @@
         "database": {
           "description": "Filtrar por base de datos"
         },
+        "export": {
+          "description": "Filtrar por si la concesión permite exportar el resultado de la consulta"
+        },
         "status": {
           "description": "Buscar por el estado de la concesión de acceso"
+        },
+        "unmask": {
+          "description": "Filtrar por si la concesión permite ver datos sensibles sin enmascarar"
         }
       }
     },
+    "access-type-export": "Exportar el resultado de la consulta",
     "access-type-unmask": "Ver datos sensibles sin enmascarar",
     "activate-access": "Activar",
     "activate-confirm": "¿Está seguro de que desea activar esta concesión de acceso?",
@@ -2531,10 +2552,7 @@
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
     "and-n-more-databases": "y {{n}} bases de datos más",
     "batch-export": {
-      "database-no-longer-available": "La base de datos ya no está disponible en la pestaña actual.",
-      "export-limit-exceeds-executed": "El límite de exportación {{exportLimit}} supera el límite de filas de la consulta ejecutada ({{executedLimit}}); se exportarán solo las filas en caché.",
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
-      "no-results": "No hay resultados para descargar.",
       "self": "Exportación por lotes",
       "tooltip": "Seleccione como máximo {{max}} bases de datos para exportar por lotes los resultados de las últimas consultas"
     },
@@ -2568,13 +2586,6 @@
     "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
-    "download-encryption-failed": "No se pudo cifrar la descarga.",
-    "download-failed": "Error en la descarga.",
-    "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
-    "download-too-large-bytes": "La descarga es de ~{{megabytes}} MB en {{statements}} sentencia(s); el límite es {{capMb}} MB. Reduzca el tamaño del resultado o use Exportar.",
-    "download-too-large-cells": "La descarga tiene {{cells}} celdas en {{statements}} sentencia(s); el límite es {{limit}}. Reduzca el número de filas o use Exportar.",
-    "download-too-large-xlsx-columns": "XLSX no puede superar {{limit}} columnas; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
-    "download-too-large-xlsx-rows": "XLSX no puede superar {{limit}} filas de datos; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
     "duration-day": "{{days}} día",
     "duration-days": "{{days}} días",
     "duration-hour": "{{hours}} hora",
@@ -2584,10 +2595,12 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
     "format": "Formato",
     "format-default": "Predeterminado",
     "format-sql": "Formatear SQL",
     "generate-sql": "Generar SQL",
+    "grant-type-export": "Exportar",
     "grant-type-unmask": "Desenmascarar",
     "hex-format": "Formato hexadecimal",
     "hint-tips": {
@@ -2640,6 +2653,7 @@
     "request-aborted": "El usuario abortó la solicitud",
     "request-access": "Solicitar acceso",
     "request-data-access": "Solicitar acceso a datos",
+    "request-export": "Solicitar exportación",
     "request-jit": "Solicitar acceso just-in-time",
     "request-query": "Solicitar consulta",
     "result-limit": {
@@ -2666,8 +2680,6 @@
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "show-in-editor": "Mostrar en editor",
-    "sql-download-engine-unsupported": "La descarga SQL no es compatible con el motor {{engine}}.",
-    "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión.",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {

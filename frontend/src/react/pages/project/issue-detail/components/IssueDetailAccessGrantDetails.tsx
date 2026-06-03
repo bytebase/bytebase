@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
-import { Checkbox } from "@/react/components/ui/checkbox";
+import { Badge } from "@/react/components/ui/badge";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -128,12 +128,26 @@ export function IssueDetailAccessGrantDetails() {
                   {accessGrant.query}
                 </pre>
               </div>
-              <label className="flex items-center gap-2">
-                <Checkbox checked={accessGrant.unmask} disabled />
-                <span className="text-base">
-                  {t("sql-editor.access-type-unmask")}
-                </span>
-              </label>
+            </div>
+          )}
+
+          {(accessGrant.unmask || accessGrant.export) && (
+            <div className="flex flex-col gap-y-2">
+              <span className="text-sm text-control-light">
+                {t("common.permissions")}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {accessGrant.unmask && (
+                  <Badge variant="secondary">
+                    {t("sql-editor.access-type-unmask")}
+                  </Badge>
+                )}
+                {accessGrant.export && (
+                  <Badge variant="secondary">
+                    {t("sql-editor.access-type-export")}
+                  </Badge>
+                )}
+              </div>
             </div>
           )}
 

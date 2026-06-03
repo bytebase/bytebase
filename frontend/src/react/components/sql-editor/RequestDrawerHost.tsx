@@ -21,6 +21,7 @@ type AccessGrantArgs = {
   query?: string;
   targets: string[];
   unmask?: boolean;
+  export?: boolean;
 };
 
 type ContextValue = {
@@ -74,6 +75,7 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
           query={grantArgs.query}
           targets={grantArgs.targets}
           unmask={grantArgs.unmask}
+          export={grantArgs.export}
           onClose={() => setGrantArgs(null)}
         />
       )}

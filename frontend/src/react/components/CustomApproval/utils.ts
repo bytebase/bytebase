@@ -20,6 +20,7 @@ import {
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_UNMASK,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
@@ -150,6 +151,7 @@ export const ApprovalSourceFactorMap: Map<
       CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
       CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
       CEL_ATTRIBUTE_REQUEST_UNMASK,
+      CEL_ATTRIBUTE_REQUEST_EXPORT,
     ],
   ],
 ]);
@@ -252,6 +254,7 @@ export const getApprovalOptionConfigMap = (
         options = getRiskLevelOptions();
         break;
       case CEL_ATTRIBUTE_REQUEST_UNMASK:
+      case CEL_ATTRIBUTE_REQUEST_EXPORT:
         options = [
           { label: "true", value: "true" },
           { label: "false", value: "false" },

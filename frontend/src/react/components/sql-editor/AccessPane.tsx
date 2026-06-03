@@ -135,6 +135,40 @@ export function AccessPane() {
           }));
         },
       },
+      {
+        id: "unmask",
+        title: t("sql-editor.grant-type-unmask"),
+        description: t("sql-editor.access-search.scope.unmask.description"),
+        options: [
+          {
+            value: "true",
+            keywords: ["yes", "true"],
+            render: () => t("common.yes"),
+          },
+          {
+            value: "false",
+            keywords: ["no", "false"],
+            render: () => t("common.no"),
+          },
+        ],
+      },
+      {
+        id: "export",
+        title: t("sql-editor.grant-type-export"),
+        description: t("sql-editor.access-search.scope.export.description"),
+        options: [
+          {
+            value: "true",
+            keywords: ["yes", "true"],
+            render: () => t("common.yes"),
+          },
+          {
+            value: "false",
+            keywords: ["no", "false"],
+            render: () => t("common.no"),
+          },
+        ],
+      },
     ];
   }, [t, projectName, fetchDatabases]);
 
@@ -145,12 +179,20 @@ export function AccessPane() {
       .map((s) => s.value) as AccessGrantFilterStatus[];
 
     const databaseScope = searchParams.scopes.find((s) => s.id === "database");
+    const unmaskScope = searchParams.scopes.find((s) => s.id === "unmask");
+    const exportScope = searchParams.scopes.find((s) => s.id === "export");
 
     const f: AccessFilter = {
       status: selectedStatuses,
     };
     if (databaseScope?.value) {
       f.target = databaseScope.value;
+    }
+    if (unmaskScope?.value === "true" || unmaskScope?.value === "false") {
+      f.unmask = unmaskScope.value === "true";
+    }
+    if (exportScope?.value === "true" || exportScope?.value === "false") {
+      f.export = exportScope.value === "true";
     }
     const queryText = searchParams.query.trim();
     if (queryText) {

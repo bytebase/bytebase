@@ -275,6 +275,44 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         description: t("issue.advanced-search.scope.creator.description"),
         onSearch: searchUsers,
       },
+      {
+        id: "unmask",
+        title: t("sql-editor.grant-type-unmask"),
+        description: t(
+          "issue.access-grant.advanced-search.scope.unmask.description"
+        ),
+        options: [
+          {
+            value: "true",
+            keywords: ["yes", "true"],
+            render: () => <span>{t("common.yes")}</span>,
+          },
+          {
+            value: "false",
+            keywords: ["no", "false"],
+            render: () => <span>{t("common.no")}</span>,
+          },
+        ],
+      },
+      {
+        id: "export",
+        title: t("sql-editor.grant-type-export"),
+        description: t(
+          "issue.access-grant.advanced-search.scope.export.description"
+        ),
+        options: [
+          {
+            value: "true",
+            keywords: ["yes", "true"],
+            render: () => <span>{t("common.yes")}</span>,
+          },
+          {
+            value: "false",
+            keywords: ["no", "false"],
+            render: () => <span>{t("common.no")}</span>,
+          },
+        ],
+      },
     ],
     [t, searchDatabases, searchUsers]
   );
@@ -318,6 +356,14 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       const database = getValueFromScopes(searchParams, "database");
       if (database) {
         filter.target = database;
+      }
+      const unmask = getValueFromScopes(searchParams, "unmask");
+      if (unmask === "true" || unmask === "false") {
+        filter.unmask = unmask === "true";
+      }
+      const exportScope = getValueFromScopes(searchParams, "export");
+      if (exportScope === "true" || exportScope === "false") {
+        filter.export = exportScope === "true";
       }
       const query = searchParams.query.trim();
       if (query) {
@@ -577,6 +623,11 @@ function AccessGrantRow({
           {grant.unmask && (
             <Badge variant="warning" className="shrink-0">
               {t("sql-editor.grant-type-unmask")}
+            </Badge>
+          )}
+          {grant.export && (
+            <Badge variant="default" className="shrink-0">
+              {t("sql-editor.grant-type-export")}
             </Badge>
           )}
         </div>

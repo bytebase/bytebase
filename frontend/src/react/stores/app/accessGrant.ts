@@ -49,6 +49,11 @@ export const buildAccessGrantFilter = (
   if (filter.statement) {
     parts.push(`query.contains("${filter.statement.trim()}")`);
   }
+  if (filter.statementExact !== undefined) {
+    // Use JSON.stringify so internal quotes / backslashes / newlines in
+    // the SQL are escaped safely into the CEL string literal.
+    parts.push(`query == ${JSON.stringify(filter.statementExact.trim())}`);
+  }
   if (filter.creator) {
     parts.push(`creator == "${filter.creator}"`);
   }
@@ -67,6 +72,12 @@ export const buildAccessGrantFilter = (
     parts.push(
       `create_time <= "${new Date(filter.createdTsBefore).toISOString()}"`
     );
+  }
+  if (filter.unmask !== undefined) {
+    parts.push(`unmask == ${filter.unmask}`);
+  }
+  if (filter.export !== undefined) {
+    parts.push(`export == ${filter.export}`);
   }
   return parts.join(" && ");
 };

@@ -11,6 +11,7 @@ import {
 } from "@/react/components/DataExportButton";
 import { DatabaseTableView } from "@/react/components/database";
 import { EngineIconPath } from "@/react/components/instance/constants";
+import { RequestExportButton } from "@/react/components/sql-editor/RequestExportButton";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
@@ -22,7 +23,6 @@ import {
   useCurrentSQLEditorTab,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
@@ -33,10 +33,6 @@ import {
   getInstanceResource,
   hexToRgb,
 } from "@/utils";
-import { buildDownloadBlob, type DownloadGroup } from "@/utils/sql-download";
-import { SQL_ENGINE_QUOTES } from "@/utils/sql-download/engines";
-import { downloadErrorMessage } from "@/utils/sql-download/error-messages";
-import { isDev } from "@/utils/util";
 import { TabContextMenu } from "./ContextMenu";
 import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
@@ -93,11 +89,6 @@ export function BatchQuerySelect({
     Set<string>
   >(new Set());
 
-  // Editor's per-execution row limit. Used by the dev-path export to
-  // infer probable truncation: `r.rows.length === resultRowsLimit` →
-  // query capped, likely more rows available.
-  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
-
   // Subscribe to the current tab's `databaseQueryContexts` Map. Immer
   // produces a fresh Map (and inner arrays) on every mutation, so the
   // selector re-runs whenever `preExecute` adds a context or `runQuery`
@@ -153,30 +144,34 @@ export function BatchQuerySelect({
     [queriedDatabaseNames, getDatabaseByName]
   );
 
-  // Drop SQL from the export drawer when isDev() is active and any
-  // user-SELECTED database's engine can't be rendered as INSERTs. Gating
-  // on the full queried-database set was too conservative (a tab with one
-  // MongoDB + one MySQL would hide SQL even when the user selected only
-  // MySQL). Empty selection shows all formats so the user sees the SQL
-  // option before picking incompatible databases.
-  const supportFormats = useMemo(() => {
-    const all = [
+  const supportFormats = useMemo(
+    () => [
       ExportFormat.CSV,
       ExportFormat.JSON,
       ExportFormat.SQL,
       ExportFormat.XLSX,
-    ];
-    if (!isDev()) return all;
-    if (selectedDatabaseNames.size === 0) return all;
-    const allSupportSql = Array.from(selectedDatabaseNames).every((name) => {
-      const db = getDatabaseByName(name);
-      if (!isValidDatabaseName(db.name)) return true; // skipped at export time
-      return SQL_ENGINE_QUOTES.has(getInstanceResource(db).engine);
-    });
-    return allSupportSql
-      ? all
-      : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
-  }, [selectedDatabaseNames, getDatabaseByName]);
+    ],
+    []
+  );
+
+  // The batch was run from a single user-typed statement against many
+  // databases — pull it from any one context (they all carry the same
+  // params.statement). Used as the request-export drawer seed when the
+  // policy disables direct export.
+  const batchStatement = useMemo(() => {
+    for (const context of contextsByDatabase.values()) {
+      if (context?.params.statement) return context.params.statement;
+    }
+    return "";
+  }, [contextsByDatabase]);
+
+  // Mirror SingleResultView / ResultView: when policy disables export,
+  // swap the Export button for a "Request export" affordance that opens
+  // the access-grant drawer pre-filled with the queried databases and
+  // the batch statement. The grant-allows-export path is naturally
+  // handled per-database inside each tab's SingleResultView since the
+  // applied grant is per-result.
+  const showExport = !queryDataPolicy?.disableExport;
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);
@@ -228,118 +223,8 @@ export function BatchQuerySelect({
   const validateExport = () =>
     selectedDatabaseNames.size > 0 && selectedDatabaseNames.size <= MAX_EXPORT;
 
-  const handleExport = ({ options, resolve, reject }: DataExportRequest) => {
+  const handleExport = ({ options, resolve }: DataExportRequest) => {
     void (async () => {
-      // === Dev path: client-side ZIP via buildDownloadBlob ===
-      if (isDev()) {
-        try {
-          // Stale format guard: drop the export if the user-selected format
-          // is no longer in the (selection-aware) supportFormats list.
-          if (!supportFormats.includes(options.format)) {
-            reject(
-              "The selected format is not supported for the current database selection. Pick a different format."
-            );
-            return;
-          }
-          const tab = currentTab;
-          const groups: DownloadGroup[] = [];
-          const limit = options.limit > 0 ? options.limit : Infinity;
-          for (const databaseName of Array.from(selectedDatabaseNames)) {
-            const database = getDatabaseByName(databaseName);
-            // Skip stub-database returns with a WARN toast so the user
-            // knows their selection became stale (tab torn down mid-export).
-            if (!isValidDatabaseName(database.name)) {
-              useAppStore.getState().notify({
-                module: "bytebase",
-                style: "WARN",
-                title: t("sql-editor.batch-export.failed-for-db", {
-                  db: databaseName,
-                }),
-                description: t(
-                  "sql-editor.batch-export.database-no-longer-available"
-                ),
-              });
-              continue;
-            }
-            const context = head(tab?.databaseQueryContexts?.get(databaseName));
-            const resultSet = context?.resultSet;
-            const resultError =
-              resultSet?.error ||
-              resultSet?.results.find((r) => r.error)?.error;
-            if (resultError) {
-              useAppStore.getState().notify({
-                module: "bytebase",
-                style: "CRITICAL",
-                title: t("sql-editor.batch-export.failed-for-db", {
-                  db: databaseName,
-                }),
-                description: resultError,
-              });
-              continue;
-            }
-            const results = resultSet?.results ?? [];
-            if (results.length === 0) continue;
-            // Truncation inference using execution-time limit.
-            const executedLimit = context?.params.limit ?? resultRowsLimit;
-            if (
-              options.limit > 0 &&
-              results.some(
-                (r) =>
-                  r.rows.length === executedLimit &&
-                  options.limit > r.rows.length
-              )
-            ) {
-              useAppStore.getState().notify({
-                module: "bytebase",
-                style: "WARN",
-                title: t("sql-editor.batch-export.failed-for-db", {
-                  db: databaseName,
-                }),
-                description: t(
-                  "sql-editor.batch-export.export-limit-exceeds-executed",
-                  {
-                    exportLimit: options.limit,
-                    executedLimit,
-                  }
-                ),
-              });
-            }
-            const { databaseName: dbSeg, instanceName } =
-              extractDatabaseResourceName(database.name);
-            groups.push({
-              instanceId: instanceName,
-              databaseName: dbSeg,
-              engine: getInstanceResource(database).engine,
-              statements: results.map((r) => ({
-                result:
-                  r.rows.length > limit
-                    ? { ...r, rows: r.rows.slice(0, limit) }
-                    : r,
-                statement: r.statement || context?.params.statement || "",
-              })),
-            });
-          }
-          if (groups.length === 0) {
-            reject(t("sql-editor.batch-export.no-results"));
-            return;
-          }
-          const out = await buildDownloadBlob({
-            groups,
-            format: options.format,
-            baseFilename: `batch-export.${dayjs().format(
-              "YYYY-MM-DDTHH-mm-ss"
-            )}`,
-            password: options.password,
-          });
-          const content = new Uint8Array(await out.blob.arrayBuffer());
-          resolve([{ content, filename: out.filename }]);
-          setSelectedDatabaseNames(new Set());
-        } catch (e) {
-          reject(downloadErrorMessage(e, t));
-        }
-        return;
-      }
-
       // === Prod path: per-database backend Export RPC ===
       const contents: DownloadContent[] = [];
       const tabsState = getSQLEditorTabsState();
@@ -415,36 +300,43 @@ export function BatchQuerySelect({
       )}
 
       <div className="mb-2">
-        <DataExportButton
-          size="sm"
-          viewMode="DRAWER"
-          supportFormats={supportFormats}
-          supportPassword
-          text={t("sql-editor.batch-export.self")}
-          tooltip={t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
-          validate={validateExport}
-          maximumExportCount={queryDataPolicy.maximumResultRows}
-          onExport={handleExport}
-          formContent={
-            <div className="w-full flex flex-col gap-y-2">
-              <div>
-                <p className="text-sm font-medium text-control">
-                  {t("database.select")}
-                  <span className="text-error ml-0.5">*</span>
-                </p>
-                <span className="text-xs text-control-light">
-                  {t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
-                </span>
+        {showExport ? (
+          <DataExportButton
+            size="sm"
+            viewMode="DRAWER"
+            supportFormats={supportFormats}
+            supportPassword
+            text={t("sql-editor.batch-export.self")}
+            tooltip={t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
+            validate={validateExport}
+            maximumExportCount={queryDataPolicy.maximumResultRows}
+            onExport={handleExport}
+            formContent={
+              <div className="w-full flex flex-col gap-y-2">
+                <div>
+                  <p className="text-sm font-medium text-control">
+                    {t("database.select")}
+                    <span className="text-error ml-0.5">*</span>
+                  </p>
+                  <span className="text-xs text-control-light">
+                    {t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
+                  </span>
+                </div>
+                <DatabaseTableView
+                  databases={databaseList}
+                  mode="PROJECT"
+                  selectedNames={selectedDatabaseNames}
+                  onSelectedNamesChange={setSelectedDatabaseNames}
+                />
               </div>
-              <DatabaseTableView
-                databases={databaseList}
-                mode="PROJECT"
-                selectedNames={selectedDatabaseNames}
-                onSelectedNamesChange={setSelectedDatabaseNames}
-              />
-            </div>
-          }
-        />
+            }
+          />
+        ) : (
+          <RequestExportButton
+            statement={batchStatement}
+            targets={queriedDatabaseNames}
+          />
+        )}
       </div>
 
       <div className="overflow-x-auto pb-2 flex-1">

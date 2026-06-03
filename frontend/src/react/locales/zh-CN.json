@@ -345,6 +345,7 @@
     "n-selected": "已选择 {{n}} 项",
     "name": "名称",
     "next": "下一步",
+    "no": "否",
     "no-data": "无数据",
     "not-started": "未开始",
     "ok": "确定",
@@ -465,6 +466,7 @@
     "warning": "警告",
     "webhooks": "Webhook",
     "write-only": "仅写入",
+    "yes": "是",
     "you": "您"
   },
   "create-db": {
@@ -819,11 +821,17 @@
     "not-found": "页面未找到"
   },
   "export-center": {
-    "data-export": "数据导出"
+    "data-export": "数据导出",
+    "deprecated": {
+      "description": "导出中心将在未来版本中弃用。对于新的数据导出，建议使用 SQL 编辑器的导出功能。",
+      "open-sql-editor": "前往 SQL 编辑器",
+      "title": "导出中心即将弃用"
+    }
   },
   "export-data": {
     "export-format": "导出格式",
     "export-rows": "导出行数",
+    "generate-password": "生成密码",
     "password-info": "提供密码来对导出的文件进行加密",
     "password-optional": "设置密码加密（可选）"
   },
@@ -1140,8 +1148,14 @@
     "access-grant": {
       "advanced-search": {
         "scope": {
+          "export": {
+            "description": "按授权是否允许导出查询结果筛选"
+          },
           "status": {
             "description": "按访问授权状态筛选"
+          },
+          "unmask": {
+            "description": "按授权是否允许查看脱敏数据筛选"
           }
         }
       },
@@ -2515,11 +2529,18 @@
         "database": {
           "description": "按数据库筛选"
         },
+        "export": {
+          "description": "按授权是否允许导出查询结果筛选"
+        },
         "status": {
           "description": "按访问授权状态搜索"
+        },
+        "unmask": {
+          "description": "按授权是否允许查看脱敏数据筛选"
         }
       }
     },
+    "access-type-export": "导出查询结果",
     "access-type-unmask": "查看未脱敏的敏感数据",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
@@ -2531,10 +2552,7 @@
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
-      "database-no-longer-available": "该数据库在当前标签页中已不可用。",
-      "export-limit-exceeds-executed": "导出上限 {{exportLimit}} 超过了已执行查询的行数上限 ({{executedLimit}})；仅导出已缓存的行。",
       "failed-for-db": "无法导出 {{db}} 的数据",
-      "no-results": "没有可下载的结果。",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
@@ -2568,13 +2586,6 @@
     "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
-    "download-encryption-failed": "加密下载失败。",
-    "download-failed": "下载失败。",
-    "download-too-large": "结果过大，无法下载。请减少行数或使用导出。",
-    "download-too-large-bytes": "下载在 {{statements}} 条语句中约 {{megabytes}} MB；上限为 {{capMb}} MB。请减小结果体积或使用导出。",
-    "download-too-large-cells": "下载在 {{statements}} 条语句中包含 {{cells}} 个单元格；上限为 {{limit}}。请减少行数或使用导出。",
-    "download-too-large-xlsx-columns": "XLSX 列数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
-    "download-too-large-xlsx-rows": "XLSX 数据行数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -2584,10 +2595,12 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "export-enabled-by-grant": "由访问授权启用导出",
     "format": "格式化",
     "format-default": "默认",
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
+    "grant-type-export": "导出",
     "grant-type-unmask": "脱敏豁免",
     "hex-format": "十六进制格式",
     "hint-tips": {
@@ -2640,6 +2653,7 @@
     "request-aborted": "用户中止了请求",
     "request-access": "申请访问",
     "request-data-access": "申请数据访问",
+    "request-export": "申请导出",
     "request-jit": "申请即时访问",
     "request-query": "请求查询",
     "result-limit": {
@@ -2666,8 +2680,6 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
-    "sql-download-engine-unsupported": "数据库引擎 {{engine}} 不支持 SQL 下载。",
-    "sql-download-unavailable": "当前连接不支持 SQL 下载。",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {

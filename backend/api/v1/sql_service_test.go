@@ -10,6 +10,70 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// TestSelectBestAccessGrantPrefersUnmask covers the Unmask-only ranking:
+// Export plays no role (Export callers already filtered the pool via the
+// `requireExport` CEL filter, and Query never reads `Payload.Export`).
+// Preferring Unmask=true is what addresses PR #20491 bot review
+// (#3349086819) — a user with an active unmask grant should never be
+// masked by Query when an export-only grant shares the slice.
+func TestSelectBestAccessGrantPrefersUnmask(t *testing.T) {
+	grantOf := func(unmask, export bool) *store.AccessGrantMessage {
+		return &store.AccessGrantMessage{
+			Payload: &storepb.AccessGrantPayload{Unmask: unmask, Export: export},
+		}
+	}
+
+	t.Run("returns nil for empty input", func(t *testing.T) {
+		require.Nil(t, selectBestAccessGrant(nil))
+		require.Nil(t, selectBestAccessGrant([]*store.AccessGrantMessage{}))
+	})
+
+	t.Run("skips nil-payload grants and returns nil when none remain", func(t *testing.T) {
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{
+			{Payload: nil},
+			{Payload: nil},
+		})
+		require.Nil(t, got)
+	})
+
+	t.Run("returns the only valid grant when others have nil payloads", func(t *testing.T) {
+		valid := grantOf(true, false)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{
+			{Payload: nil},
+			valid,
+			{Payload: nil},
+		})
+		require.Same(t, valid, got)
+	})
+
+	t.Run("unmask grant wins over export-only grant regardless of slice order", func(t *testing.T) {
+		unmaskGrant := grantOf(true, false)
+		exportOnly := grantOf(false, true)
+		// Put exportOnly first to prove the win isn't due to position —
+		// Unmask scoring is what selects unmaskGrant.
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{exportOnly, unmaskGrant})
+		require.Same(t, unmaskGrant, got)
+	})
+
+	t.Run("among multiple unmask grants the first in slice order wins", func(t *testing.T) {
+		first := grantOf(true, false)
+		second := grantOf(true, true)
+		// Both have Unmask=true → tied score (Export plays no role). First
+		// in slice wins via strict ">". Equivalent for Query callers
+		// since both grants yield the same SkipMasking=true.
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{first, second})
+		require.Same(t, first, got)
+	})
+
+	t.Run("returns a no-unmask grant when none have unmask", func(t *testing.T) {
+		// All-zero-score case: a no-unmask grant is still returned (it
+		// confers ACL bypass for Query, even if it can't unmask).
+		exportOnly := grantOf(false, true)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{exportOnly})
+		require.Same(t, exportOnly, got)
+	})
+}
+
 // TestBuildExportQueryContextPropagatesSkipMasking pins the bug fix from PR
 // #20487: when an export is authorized by a JIT grant with unmask=true,
 // SkipMasking must reach db.QueryContext so the driver doesn't mask rows at

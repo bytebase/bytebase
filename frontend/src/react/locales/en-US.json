@@ -345,6 +345,7 @@
     "n-selected": "{{n}} selected",
     "name": "Name",
     "next": "Next",
+    "no": "No",
     "no-data": "No data",
     "not-started": "Not started",
     "ok": "OK",
@@ -465,6 +466,7 @@
     "warning": "Warning",
     "webhooks": "Webhooks",
     "write-only": "write only",
+    "yes": "Yes",
     "you": "you"
   },
   "create-db": {
@@ -819,11 +821,17 @@
     "not-found": "Not Found"
   },
   "export-center": {
-    "data-export": "Data Export"
+    "data-export": "Data Export",
+    "deprecated": {
+      "description": "Export Center will be deprecated in a future release. For new data exports, consider using the SQL Editor's export action.",
+      "open-sql-editor": "Go to SQL Editor",
+      "title": "Export Center will be deprecated"
+    }
   },
   "export-data": {
     "export-format": "Export format",
     "export-rows": "Export rows",
+    "generate-password": "Generate password",
     "password-info": "Provide a password to encrypt the export file.",
     "password-optional": "Encrypt with password (Optional)"
   },
@@ -1140,8 +1148,14 @@
     "access-grant": {
       "advanced-search": {
         "scope": {
+          "export": {
+            "description": "Filter by whether the grant allows exporting the query result"
+          },
           "status": {
             "description": "Filter by access grant status"
+          },
+          "unmask": {
+            "description": "Filter by whether the grant allows unmasking sensitive data"
           }
         }
       },
@@ -2515,11 +2529,18 @@
         "database": {
           "description": "Filter by database"
         },
+        "export": {
+          "description": "Filter by whether the grant allows exporting the query result"
+        },
         "status": {
           "description": "Search by the access grant status"
+        },
+        "unmask": {
+          "description": "Filter by whether the grant allows unmasking sensitive data"
         }
       }
     },
+    "access-type-export": "Export the query result",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -2531,10 +2552,7 @@
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
-      "database-no-longer-available": "Database is no longer available in the current tab.",
-      "export-limit-exceeds-executed": "Export limit {{exportLimit}} exceeds the executed query's row limit ({{executedLimit}}); exporting cached rows only.",
       "failed-for-db": "Failed to export data for {{db}}",
-      "no-results": "No results to download.",
       "self": "Batch export",
       "tooltip": "Select at most {{max}} databases to batch export latest query results"
     },
@@ -2568,13 +2586,6 @@
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
-    "download-encryption-failed": "Failed to encrypt download.",
-    "download-failed": "Download failed.",
-    "download-too-large": "Result is too large for download. Reduce the row count or use Export.",
-    "download-too-large-bytes": "Download is ~{{megabytes}} MB across {{statements}} statement(s); limit is {{capMb}} MB. Reduce the result size or use Export.",
-    "download-too-large-cells": "Download has {{cells}} cells across {{statements}} statement(s); limit is {{limit}}. Reduce the row count or use Export.",
-    "download-too-large-xlsx-columns": "XLSX cannot exceed {{limit}} columns; got {{count}}. Use Export or a different format.",
-    "download-too-large-xlsx-rows": "XLSX cannot exceed {{limit}} data rows; got {{count}}. Use Export or a different format.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -2584,10 +2595,12 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "export-enabled-by-grant": "Export enabled by access grant",
     "format": "Format",
     "format-default": "Default",
     "format-sql": "Format SQL",
     "generate-sql": "Generate SQL",
+    "grant-type-export": "Export",
     "grant-type-unmask": "Unmask",
     "hex-format": "Hexadecimal format",
     "hint-tips": {
@@ -2640,6 +2653,7 @@
     "request-aborted": "User aborted the request",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
+    "request-export": "Request export",
     "request-jit": "Request just-in-time access",
     "request-query": "Request query",
     "result-limit": {
@@ -2666,8 +2680,6 @@
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "show-in-editor": "Show in Editor",
-    "sql-download-engine-unsupported": "SQL download is not supported for engine {{engine}}.",
-    "sql-download-unavailable": "SQL download is unavailable for this connection.",
     "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {
