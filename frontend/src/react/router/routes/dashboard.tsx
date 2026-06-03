@@ -1,4 +1,6 @@
 import type { RouteObject } from "react-router-dom";
+import { BodyLayout } from "@/react/app/layouts/BodyLayout";
+import { DashboardLayout } from "@/react/app/layouts/DashboardLayout";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -71,11 +73,7 @@ import {
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
-import {
-  BodyLayoutPlaceholder,
-  DashboardLayoutPlaceholder,
-  RouteShellOutletPlaceholder,
-} from "@/react/router/layoutPlaceholders";
+import { RouteShellOutletPlaceholder } from "@/react/router/layoutPlaceholders";
 import { lazyPage } from "@/react/router/lazyPage";
 
 // Translated from `@/router/dashboard/**`. Vue named views (`content`,
@@ -723,11 +721,11 @@ const projectV1Routes: RouteObject[] = [
 export const dashboardRoutes: RouteObject[] = [
   {
     path: "/",
-    element: <DashboardLayoutPlaceholder />,
+    element: <DashboardLayout />,
     children: [
       {
         path: "",
-        element: <BodyLayoutPlaceholder />,
+        element: <BodyLayout />,
         children: [
           ...workspaceLevelRoutes,
           ...workspaceSettingRoutes,

@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router-dom";
+import { SplashLayout } from "@/react/app/layouts/SplashLayout";
 import {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -13,16 +14,15 @@ import {
   OAUTH2_CONSENT_MODULE,
   SETUP_MODULE,
 } from "@/react/router/handles";
-import { SplashLayoutPlaceholder } from "@/react/router/layoutPlaceholders";
 import { lazyPage } from "@/react/router/lazyPage";
 
 // Translated from `@/router/auth.ts` and `@/router/setup.ts`. Every auth /
-// consent / setup leaf renders a self-contained React page; the parent
-// SplashLayout routes are placeholders for now (see layoutPlaceholders.tsx).
+// consent / setup leaf renders a self-contained React page under the
+// SplashLayout chrome.
 export const authRoutes: RouteObject[] = [
   {
     path: "/oauth2/consent",
-    element: <SplashLayoutPlaceholder />,
+    element: <SplashLayout />,
     children: [
       {
         index: true,
@@ -37,7 +37,7 @@ export const authRoutes: RouteObject[] = [
   {
     path: "/auth",
     handle: { name: "auth" },
-    element: <SplashLayoutPlaceholder />,
+    element: <SplashLayout />,
     children: [
       {
         index: true,
@@ -134,7 +134,7 @@ export const authRoutes: RouteObject[] = [
   },
   {
     path: "/setup",
-    element: <SplashLayoutPlaceholder />,
+    element: <SplashLayout />,
     children: [
       {
         index: true,
