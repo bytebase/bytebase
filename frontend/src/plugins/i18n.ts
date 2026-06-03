@@ -10,16 +10,20 @@ import { mergedLocalMessage } from "./i18n-messages";
 // legacy message set into the same react-i18next instance AT RUNTIME so those
 // keys resolve, without duplicating them into the React locale files (keeps
 // the React-i18n guard + locale set clean). React-owned keys win on conflict.
-for (const [lng, messages] of Object.entries(
-  mergedLocalMessage as Record<string, Record<string, unknown>>
-)) {
-  i18n.addResourceBundle(
-    lng,
-    "translation",
-    messages,
-    /* deep */ true,
-    /* overwrite */ false
-  );
+// Guarded so tests that mock `@/react/i18n` with a partial instance don't
+// break at import time (addResourceBundle is always present on the real one).
+if (typeof i18n.addResourceBundle === "function") {
+  for (const [lng, messages] of Object.entries(
+    mergedLocalMessage as Record<string, Record<string, unknown>>
+  )) {
+    i18n.addResourceBundle(
+      lng,
+      "translation",
+      messages,
+      /* deep */ true,
+      /* overwrite */ false
+    );
+  }
 }
 
 export const t = i18n.t.bind(i18n);
