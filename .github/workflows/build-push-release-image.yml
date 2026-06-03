@@ -12,22 +12,48 @@ concurrency:
 jobs:
   build-release-image:
     runs-on: ubuntu-latest
+    outputs:
+      should_tag_latest: ${{ steps.check_latest.outputs.should_tag_latest }}
+      version: ${{ steps.extract.outputs.version }}
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v6
       - name: Extract build args
+        id: extract
         # Extract version from branch name
         # Example: branch name `release/1.0.0` sets up env.IMAGE_VERSION=1.0.0
         run: |
-          echo "VERSION=${GITHUB_REF_NAME#release/}" >> "$GITHUB_ENV"
-          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          VERSION="${GITHUB_REF_NAME#release/}"
+          GIT_COMMIT="$(git rev-parse HEAD)"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> "$GITHUB_ENV"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - name: Login to DockerHub
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Check if latest points to this release
+        id: check_latest
+        run: |
+          set +e
+          RELEASE_DIGEST=$(docker buildx imagetools inspect "bytebase/bytebase:${VERSION}" 2>/dev/null | awk '/^Digest:/ {print $2; exit}')
+          LATEST_DIGEST=$(docker buildx imagetools inspect "bytebase/bytebase:latest" 2>/dev/null | awk '/^Digest:/ {print $2; exit}')
+          set -e
+
+          echo "Release version: ${VERSION}"
+          echo "Release digest: ${RELEASE_DIGEST:-<missing>}"
+          echo "Latest digest: ${LATEST_DIGEST:-<missing>}"
+
+          if [ -n "${RELEASE_DIGEST}" ] && [ "${RELEASE_DIGEST}" = "${LATEST_DIGEST}" ]; then
+            echo "should_tag_latest=true" >> "$GITHUB_OUTPUT"
+            echo "latest already points to this release"
+          else
+            echo "should_tag_latest=false" >> "$GITHUB_OUTPUT"
+            echo "latest does not point to this release"
+          fi
       - uses: depot/setup-action@v1
       - name: Build and push
         id: bytebase_build
@@ -44,3 +70,10 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
+  tag-latest:
+    needs: build-release-image
+    if: needs.build-release-image.outputs.should_tag_latest == 'true'
+    uses: ./.github/workflows/docker-tag-latest.yml
+    with:
+      version: ${{ needs.build-release-image.outputs.version }}
+    secrets: inherit
