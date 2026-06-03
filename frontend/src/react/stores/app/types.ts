@@ -196,6 +196,7 @@ export type AuthSlice = {
   logout: () => Promise<void>;
   sendEmailLoginCode: (email: string, workspace?: string) => Promise<void>;
   updateCurrentUserNameForEmailChange: (newName: string) => void;
+  setIsSelfEmailUpdate: (value: boolean) => void;
 };
 
 export type WorkspaceSlice = {

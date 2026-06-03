@@ -256,4 +256,6 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   updateCurrentUserNameForEmailChange: (newName) => {
     set({ isSelfEmailUpdate: true, currentUserName: newName });
   },
+
+  setIsSelfEmailUpdate: (value) => set({ isSelfEmailUpdate: value }),
 });

@@ -34,7 +34,7 @@ const SIGNIN_QUERY_PARAMS = [
 
 // Auth/landing route names that don't require an authenticated session.
 // Inlined (rather than importing `@/utils/auth`, which pulls the Vue router).
-function isAuthRelatedRoute(routeName: string): boolean {
+export function isAuthRelatedRoute(routeName: string): boolean {
   return [
     AUTH_SIGNIN_MODULE,
     AUTH_SIGNIN_ADMIN_MODULE,
