@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 import {
   lazyExecuteDomAction,
   lazyExtractDomRefSuggestions,
@@ -142,7 +142,7 @@ describe("lazyExecuteDomAction", () => {
 
     const router = {
       push: vi.fn().mockResolvedValue(undefined),
-    } as unknown as Router;
+    } as unknown as AppRouterInstance;
 
     const result = await lazyExecuteDomAction(
       { type: "click", ref: "e1" },

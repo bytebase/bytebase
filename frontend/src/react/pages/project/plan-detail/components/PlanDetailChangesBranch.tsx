@@ -61,12 +61,12 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { getProjectNameAndDatabaseGroupName, pushNotification } from "@/store";
 import {
   isValidDatabaseGroupName,

@@ -1,6 +1,6 @@
 import i18n from "@/plugins/i18n";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { emitStorageChangedEvent, setDocumentTitle } from "@/utils";
 import { STORAGE_KEY_LANGUAGE } from "@/utils/storage-keys";
 
@@ -30,8 +30,8 @@ function setAppLocale(lang: string) {
   localStorage.setItem(STORAGE_KEY_LANGUAGE, JSON.stringify(lang));
   emitStorageChangedEvent();
   const route = router.currentRoute.value;
-  if (route.meta.title) {
-    setDocumentTitle(route.meta.title(route));
+  if (route.title) {
+    setDocumentTitle(route.title);
   }
 }
 

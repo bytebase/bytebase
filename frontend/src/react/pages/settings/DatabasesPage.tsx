@@ -23,8 +23,8 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,

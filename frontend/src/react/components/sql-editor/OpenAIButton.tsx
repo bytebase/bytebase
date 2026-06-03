@@ -17,6 +17,7 @@ import {
 } from "@/react/components/ui/popover";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -24,7 +25,6 @@ import {
   useIsDisconnected,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 

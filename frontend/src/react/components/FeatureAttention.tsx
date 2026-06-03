@@ -6,8 +6,8 @@ import {
   useServerState,
   useSubscriptionState,
 } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
   Instance,

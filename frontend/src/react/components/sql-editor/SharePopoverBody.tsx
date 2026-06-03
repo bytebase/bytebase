@@ -15,10 +15,10 @@ import {
 } from "@/react/components/ui/popover";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetID } from "@/utils";

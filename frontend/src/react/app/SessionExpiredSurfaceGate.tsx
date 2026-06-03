@@ -1,6 +1,6 @@
 import { SessionExpiredSurface } from "@/react/components/auth/SessionExpiredSurface";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { useAuthStore } from "@/store";
 import { isAuthRelatedRoute } from "@/utils/auth";
 

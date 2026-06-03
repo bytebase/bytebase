@@ -15,6 +15,7 @@ import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
@@ -35,7 +36,6 @@ import {
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 

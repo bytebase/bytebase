@@ -7,9 +7,9 @@ import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
+import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { useAuthStore } from "@/store";
 import { isValidEmail } from "@/utils";
 

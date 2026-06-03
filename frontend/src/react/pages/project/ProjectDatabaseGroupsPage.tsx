@@ -11,12 +11,12 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   getProjectNameAndDatabaseGroupName,
   projectNamePrefix,

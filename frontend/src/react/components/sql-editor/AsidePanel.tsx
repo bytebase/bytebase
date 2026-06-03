@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -9,7 +10,6 @@ import {
   useSQLEditorEditorState,
 } from "@/react/stores/sqlEditor/editor";
 import { useIsDisconnected } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
 import { defaultProject, isValidProjectName } from "@/types";
 import { AccessPane } from "./AccessPane";
 import { ActionBar } from "./AsidePanel/ActionBar";

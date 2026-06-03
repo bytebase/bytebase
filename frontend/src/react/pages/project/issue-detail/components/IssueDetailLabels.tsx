@@ -14,9 +14,9 @@ import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
 import {

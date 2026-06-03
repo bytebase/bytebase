@@ -13,9 +13,9 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
 import { AUTH_SIGNUP_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification, useAuthStore } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
@@ -77,7 +77,7 @@ export function SigninPage(props: SigninPageProps) {
   useEffect(() => {
     if (!initialized) return;
     if (activeUserCount === 0 && !disallowSignup && !isSaaSMode) {
-      router.push({ name: AUTH_SIGNUP_MODULE, replace: true });
+      router.replace({ name: AUTH_SIGNUP_MODULE });
     }
   }, [initialized, activeUserCount, disallowSignup, isSaaSMode]);
 

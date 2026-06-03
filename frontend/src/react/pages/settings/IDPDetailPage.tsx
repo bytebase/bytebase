@@ -23,9 +23,9 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import {
   getIdentityProviderResourceId,

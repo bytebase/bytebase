@@ -2,6 +2,7 @@ import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useVueRoute } from "@/react/hooks/useVueRoute";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DETAIL,
   WORKSPACE_ROUTE_LANDING,
@@ -9,7 +10,6 @@ import {
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { router } from "@/router";
 import { TabItem } from "./TabItem";
 
 /**

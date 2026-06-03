@@ -26,9 +26,9 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   getProjectNameAndDatabaseGroupName,

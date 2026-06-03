@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/react/components/ui/button";
+import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
-import { router } from "@/router";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { AgentMessage, ToolCall } from "../logic/types";
 import {

@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   environmentNamePrefix,
   projectNamePrefix,

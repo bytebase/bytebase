@@ -1,7 +1,24 @@
 // Structural type for the createBrowserRouter instance (avoids depending on
 // @remix-run/router's exported name across react-router versions).
+export type RouterMatch = {
+  handle?: unknown;
+  params: Record<string, string | undefined>;
+};
+export type RouterLocation = { pathname: string; search: string; hash: string };
+export type RouterState = {
+  location: RouterLocation;
+  matches: RouterMatch[];
+  initialized: boolean;
+};
 type AppRouterLike = {
-  navigate: (to: string, opts?: { replace?: boolean }) => unknown;
+  // Overloaded to match the data router (`navigate(delta)` /
+  // `navigate(to, opts)`), so the concrete instance is assignable.
+  navigate: {
+    (delta: number): Promise<void>;
+    (to: string, opts?: { replace?: boolean }): Promise<void>;
+  };
+  subscribe?: (fn: (state: RouterState) => void) => () => void;
+  state?: RouterState;
 };
 
 // vue-router navigated by route *name*; react-router navigates by *path*. To
@@ -12,7 +29,9 @@ type AppRouterLike = {
 // app store (also `.ts`, checked by vue-tsc) can import it without pulling the
 // `.tsx` route/page graph across the type-check project boundary.
 
-type NavQuery = Record<string, string | undefined>;
+// vue-router accepted strings, numbers and arrays as query/param values.
+type NavParams = Record<string, string | string[] | undefined>;
+type NavQuery = Record<string, unknown>;
 
 let nameIndex = new Map<string, string>();
 
@@ -20,10 +39,34 @@ export function setRouteNameIndex(index: Map<string, string>): void {
   nameIndex = index;
 }
 
+// All registered named routes as `{ name, path }` pairs (backs the agent's
+// `router.getRoutes()` route-map listing).
+export function getRegisteredRoutes(): { name: string; path: string }[] {
+  return [...nameIndex.entries()].map(([name, path]) => ({ name, path }));
+}
+
+// Coerce a vue-router-style query (values may be strings, numbers, arrays,
+// null/undefined) into a URL search string.
+export function buildSearchString(query: NavQuery): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null)
+          search.append(key, String(item));
+      }
+    } else {
+      search.set(key, String(value));
+    }
+  }
+  return search.toString();
+}
+
 // Fill `:param` placeholders and append a query string.
 export function resolvePath(
   name: string,
-  options: { params?: Record<string, string>; query?: NavQuery } = {}
+  options: { params?: NavParams; query?: NavQuery } = {}
 ): string {
   const pattern = nameIndex.get(name);
   if (!pattern) {
@@ -34,16 +77,13 @@ export function resolvePath(
   let path = pattern;
   if (options.params) {
     for (const [key, value] of Object.entries(options.params)) {
-      path = path.replace(`:${key}`, encodeURIComponent(value));
+      if (value === undefined) continue;
+      const single = Array.isArray(value) ? (value[0] ?? "") : value;
+      path = path.replace(`:${key}`, encodeURIComponent(single));
     }
   }
-  const query = options.query;
-  if (query) {
-    const search = new URLSearchParams();
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined) search.set(key, value);
-    }
-    const qs = search.toString();
+  if (options.query) {
+    const qs = buildSearchString(options.query);
     if (qs) path = `${path}?${qs}`;
   }
   return path;
@@ -62,19 +102,58 @@ export function setAppRouter(router: AppRouterLike): void {
 export function navigateByName(
   name: string,
   options: {
-    params?: Record<string, string>;
+    params?: NavParams;
     query?: NavQuery;
     replace?: boolean;
   } = {}
-): void {
+): Promise<void> {
   const path = resolvePath(name, options);
-  appRouter?.navigate(path, { replace: options.replace });
+  return Promise.resolve(
+    appRouter?.navigate(path, { replace: options.replace })
+  );
 }
 
 // Navigate to a raw path (mirrors `router.push(path)` / `router.replace(path)`).
 export function navigateToPath(
   path: string,
   options: { replace?: boolean } = {}
-): void {
-  appRouter?.navigate(path, { replace: options.replace });
+): Promise<void> {
+  return Promise.resolve(
+    appRouter?.navigate(path, { replace: options.replace })
+  );
+}
+
+// Current data-router state (location + matches), for non-hook snapshots used
+// by the `router.currentRoute.value` drop-in.
+export function getAppRouterState(): RouterState | undefined {
+  return appRouter?.state;
+}
+
+// Subscribe to route changes (mirrors vue-router `router.afterEach`); returns
+// an unregister fn.
+export function subscribeRoute(onChange: () => void): () => void {
+  if (!appRouter?.subscribe) return () => {};
+  return appRouter.subscribe(() => onChange());
+}
+
+// History delta navigation (mirrors `router.back()` / `router.go(n)`).
+export function routerGo(delta: number): void {
+  appRouter?.navigate(delta);
+}
+
+// Resolves once the data router has completed its initial load (mirrors
+// vue-router `router.isReady()`).
+export function isAppRouterReady(): Promise<void> {
+  if (!appRouter || appRouter.state?.initialized !== false) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const unsubscribe = appRouter?.subscribe?.((state) => {
+      if (state.initialized) {
+        unsubscribe?.();
+        resolve();
+      }
+    });
+    if (!unsubscribe) resolve();
+  });
 }

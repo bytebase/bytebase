@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 
 vi.mock("../../dom", () => ({
   lazyExecuteDomAction: vi.fn(async () => ({ success: true, message: "done" })),
@@ -10,7 +10,7 @@ import { createDomActionTool } from "./domAction";
 
 describe("createDomActionTool", () => {
   test("forwards read actions with ref-based args", async () => {
-    const router = { push: vi.fn() } as unknown as Router;
+    const router = { push: vi.fn() } as unknown as AppRouterInstance;
     const tool = createDomActionTool(router);
 
     const result = await tool({ type: "read", ref: "e3" });

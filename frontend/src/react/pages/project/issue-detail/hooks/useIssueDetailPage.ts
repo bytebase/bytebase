@@ -8,12 +8,12 @@ import {
   rolloutServiceClientConnect,
 } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { projectNamePrefix } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {

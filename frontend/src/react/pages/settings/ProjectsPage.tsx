@@ -33,9 +33,9 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification, useAuthStore } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";

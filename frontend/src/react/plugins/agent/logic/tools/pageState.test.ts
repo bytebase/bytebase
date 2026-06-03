@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 
 vi.mock("../../dom", () => ({
   lazyExtractDomTree: vi.fn(async () => ({
@@ -29,7 +29,7 @@ describe("createPageStateTool", () => {
           query: { view: "overview" },
         },
       },
-    } as unknown as Router;
+    } as unknown as AppRouterInstance;
 
     document.title = "Project Demo";
 
@@ -62,7 +62,7 @@ describe("createPageStateTool", () => {
           query: {},
         },
       },
-    } as unknown as Router;
+    } as unknown as AppRouterInstance;
 
     document.title = "Issue 123";
 

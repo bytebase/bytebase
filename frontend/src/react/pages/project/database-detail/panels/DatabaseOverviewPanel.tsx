@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseProject, hasProjectPermissionV2 } from "@/utils";
 import { DatabaseObjectExplorer } from "../overview/DatabaseObjectExplorer";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   usePlanDetailStore,
   usePlanDetailStoreApi,

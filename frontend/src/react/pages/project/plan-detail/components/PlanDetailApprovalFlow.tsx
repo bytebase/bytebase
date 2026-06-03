@@ -18,6 +18,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
@@ -25,7 +26,6 @@ import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {

@@ -5,7 +5,18 @@ import {
   useParams,
 } from "react-router-dom";
 import type { Permission } from "@/types";
-import { navigateByName, navigateToPath, resolvePath } from "./navigation";
+import type { RouterLocation, RouterMatch } from "./navigation";
+import {
+  buildSearchString,
+  getAppRouterState,
+  getRegisteredRoutes,
+  isAppRouterReady,
+  navigateByName,
+  navigateToPath,
+  resolvePath,
+  routerGo,
+  subscribeRoute,
+} from "./navigation";
 
 // Re-export the route-name constants from the vue-free handles module so React
 // consumers keep importing them from `@/react/router`.
@@ -48,11 +59,15 @@ export {
 export type ReactRoute = {
   name?: string;
   fullPath: string;
+  hash: string;
   params: Record<string, string | string[] | undefined>;
   query: Record<string, unknown>;
   requiredPermissions: Permission[];
   title?: string;
   overrideDocumentTitle: boolean;
+  // Mirrors vue-router `route.meta` — carries the per-route handle so legacy
+  // `currentRoute.value.meta.*` reads keep working.
+  meta: Record<string, unknown>;
 };
 
 // vue-router-style navigation target (kept for source compatibility with the
@@ -62,8 +77,12 @@ export type RouteTarget =
   | {
       name?: string;
       path?: string;
-      params?: Record<string, string>;
-      query?: Record<string, string | undefined>;
+      // Pre-resolved full path (e.g. the result of `router.resolve(...)` or a
+      // spread `currentRoute.value`); used when no `name`/`path` is given.
+      fullPath?: string;
+      params?: Record<string, string | string[] | undefined>;
+      query?: Record<string, unknown>;
+      hash?: string;
     };
 
 export type ReactResolvedRoute = { href: string; fullPath: string };
@@ -83,30 +102,46 @@ function dedupePermissions(permissions: Permission[]): Permission[] {
 
 function resolveTarget(to: RouteTarget): string {
   if (typeof to === "string") return to;
-  if (to.path) {
-    const search =
-      to.query &&
-      new URLSearchParams(
-        Object.entries(to.query).filter(
-          (e): e is [string, string] => e[1] !== undefined
-        )
-      ).toString();
-    return search ? `${to.path}?${search}` : to.path;
+  const hash = to.hash
+    ? to.hash.startsWith("#")
+      ? to.hash
+      : `#${to.hash}`
+    : "";
+  if (to.name) {
+    return `${resolvePath(to.name, { params: to.params, query: to.query })}${hash}`;
   }
-  return resolvePath(to.name ?? "", { params: to.params, query: to.query });
+  if (to.path) {
+    const search = to.query ? buildSearchString(to.query) : "";
+    return `${search ? `${to.path}?${search}` : to.path}${hash}`;
+  }
+  // Pre-resolved full path (already carries its own query/hash).
+  return to.fullPath ?? "/";
 }
 
-/** React-router-backed current route, shaped like the legacy bridge. */
-export function useCurrentRoute(): ReactRoute {
-  const location = useLocation();
-  const params = useParams();
-  const matches = useMatches();
-  const leaf = matches.at(-1);
-  const leafHandle = leaf?.handle as RouteHandle | undefined;
+// Shared builder for both the `useCurrentRoute` hook and the non-hook
+// `router.currentRoute.value` snapshot, so the two stay shape-identical.
+// Exported as `buildReactRoute` for the app root's leave-guard blocker, which
+// matches `nextLocation` against the route table (matchRoutes lives in the
+// `.tsx` layer — this module must not import the route table).
+export function buildReactRoute(
+  location: Pick<RouterLocation, "pathname" | "search" | "hash">,
+  matches: ReadonlyArray<{ handle?: unknown }>,
+  params: Record<string, string | string[] | undefined>
+): ReactRoute {
+  return assembleRoute(location, matches, params);
+}
+
+function assembleRoute(
+  location: Pick<RouterLocation, "pathname" | "search" | "hash">,
+  matches: ReadonlyArray<{ handle?: unknown }>,
+  params: Record<string, string | string[] | undefined>
+): ReactRoute {
+  const leafHandle = matches.at(-1)?.handle as RouteHandle | undefined;
   const route: ReactRoute = {
     name: leafHandle?.name,
     fullPath: `${location.pathname}${location.search}${location.hash}`,
-    params: params as Record<string, string | string[] | undefined>,
+    hash: location.hash,
+    params,
     query: Object.fromEntries(new URLSearchParams(location.search)),
     requiredPermissions: dedupePermissions(
       matches.flatMap(
@@ -116,9 +151,35 @@ export function useCurrentRoute(): ReactRoute {
       )
     ),
     overrideDocumentTitle: leafHandle?.overrideDocumentTitle ?? false,
+    meta: (leafHandle as Record<string, unknown> | undefined) ?? {},
   };
   route.title = leafHandle?.title?.(route);
   return route;
+}
+
+/** React-router-backed current route, shaped like the legacy bridge. */
+export function useCurrentRoute(): ReactRoute {
+  const location = useLocation();
+  const params = useParams();
+  const matches = useMatches();
+  return assembleRoute(
+    location,
+    matches,
+    params as Record<string, string | string[] | undefined>
+  );
+}
+
+// Non-hook snapshot of the current route, read from the registered data router
+// (backs `router.currentRoute.value`).
+function currentRouteSnapshot(): ReactRoute {
+  const state = getAppRouterState();
+  const location = state?.location ?? { pathname: "/", search: "", hash: "" };
+  const matches: RouterMatch[] = state?.matches ?? [];
+  const leafParams = (matches.at(-1)?.params ?? {}) as Record<
+    string,
+    string | string[] | undefined
+  >;
+  return assembleRoute(location, matches, leafParams);
 }
 
 export function resolveRoute(to: RouteTarget): ReactResolvedRoute {
@@ -141,6 +202,80 @@ export function useNavigate() {
 export function isSqlEditorRouteName(name: string | undefined): boolean {
   return name?.startsWith("sql-editor") ?? false;
 }
+
+// --- vue-router-instance drop-in --------------------------------------------
+// A module-level object mirroring the imperative surface of the legacy
+// vue-router instance (`import { router } from "@/router"`), backed by the
+// react-router data router. Lets the ~110 imperative call sites keep their
+// usage unchanged through teardown — only the import path moves to
+// `@/react/router`.
+
+// vue-router `next()` callback: no-arg / `RouteTarget` proceeds, `false`
+// cancels.
+type GuardNext = (target?: boolean | RouteTarget) => void;
+type BeforeEachGuard = (
+  to: ReactRoute,
+  from: ReactRoute,
+  next: GuardNext
+) => void;
+
+const beforeEachGuards = new Set<BeforeEachGuard>();
+
+// Runs every registered `beforeEach` guard against a pending navigation and
+// reports whether it should be BLOCKED (a guard called `next(false)`). The app
+// root consults this from a single `useBlocker`, reproducing vue-router's
+// global guard semantics. Guards that redirect (`next(target)`) are treated as
+// "proceed" here — the existing leave guards only ever proceed or cancel.
+export function runBeforeEachGuards(to: ReactRoute, from: ReactRoute): boolean {
+  for (const guard of beforeEachGuards) {
+    let blocked = false;
+    guard(to, from, (target) => {
+      if (target === false) blocked = true;
+    });
+    if (blocked) return true;
+  }
+  return false;
+}
+
+export const router = {
+  push: (to: RouteTarget) => navigateToPath(resolveTarget(to)),
+  replace: (to: RouteTarget) =>
+    navigateToPath(resolveTarget(to), { replace: true }),
+  resolve: (to: RouteTarget): ReactResolvedRoute => resolveRoute(to),
+  back: () => routerGo(-1),
+  go: (delta: number) => routerGo(delta),
+  isReady: () => isAppRouterReady(),
+  // vue-router exposed `currentRoute` as a Ref; consumers read `.value`.
+  get currentRoute(): { value: ReactRoute } {
+    return {
+      get value() {
+        return currentRouteSnapshot();
+      },
+    };
+  },
+  beforeEach(guard: BeforeEachGuard): () => void {
+    beforeEachGuards.add(guard);
+    return () => {
+      beforeEachGuards.delete(guard);
+    };
+  },
+  afterEach(hook: () => void): () => void {
+    return subscribeRoute(hook);
+  },
+  // Named routes for the agent's route-map listing; shaped like the vue-router
+  // records the agent reads (`path` / `name` / `children`).
+  getRoutes(): { path: string; name?: string; children: unknown[] }[] {
+    return getRegisteredRoutes().map((r) => ({
+      path: r.path,
+      name: r.name,
+      children: [],
+    }));
+  },
+};
+
+// The drop-in router's type, for code that takes the router as a parameter
+// (e.g. the agent tool factories) instead of importing it directly.
+export type AppRouterInstance = typeof router;
 
 // Re-exported so non-hook callers can navigate by name.
 export { navigateByName };

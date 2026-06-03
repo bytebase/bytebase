@@ -5,9 +5,9 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,

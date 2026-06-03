@@ -10,7 +10,7 @@ import {
 } from "@/react/components/ui/layer";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { IssueDetailActivity } from "./issue-detail/components/IssueDetailActivity";
 import { IssueDetailBranchContent } from "./issue-detail/components/IssueDetailBranchContent";
 import { IssueDetailHeader } from "./issue-detail/components/IssueDetailHeader";

@@ -1,4 +1,4 @@
-import type { RouteLocationNormalizedLoaded } from "vue-router";
+import type { ReactRoute } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
@@ -12,7 +12,7 @@ interface PageContext {
 }
 
 export async function extractRouteContext(
-  route: RouteLocationNormalizedLoaded
+  route: ReactRoute
 ): Promise<PageContext> {
   const ctx: PageContext = {};
 

@@ -9,7 +9,7 @@ import {
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
-import { useCurrentRoute, useNavigate } from "@/react/router";
+import { router, useCurrentRoute, useNavigate } from "@/react/router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
@@ -28,7 +28,6 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,

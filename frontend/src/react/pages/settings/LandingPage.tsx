@@ -35,6 +35,7 @@ import {
   useServerState,
 } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -60,7 +61,6 @@ import {
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";

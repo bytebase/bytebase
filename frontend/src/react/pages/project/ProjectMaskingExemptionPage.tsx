@@ -45,9 +45,9 @@ import type {
   ExemptionMember,
 } from "@/react/lib/sensitive-data/types";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { extractUserEmail, hasFeature, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";

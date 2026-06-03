@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { getIssueRoute } from "@/utils";

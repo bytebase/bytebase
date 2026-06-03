@@ -7,7 +7,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import { resolveWorkspaceName } from "@/utils";

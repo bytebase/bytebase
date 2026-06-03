@@ -12,12 +12,12 @@ import {
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
   getColumnCatalog,
   getTableCatalog,
 } from "@/react/stores/app/databaseCatalog";
-import { router } from "@/router";
 import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { LocationQueryRaw } from "vue-router";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { unknownDatabase } from "@/types/v1/database";
 import { isDefaultProject } from "@/types/v1/project";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
@@ -19,7 +18,7 @@ export interface UseProjectDatabaseDetailOptions {
   databaseName: string;
   routeName?: string;
   hash?: string;
-  query?: LocationQueryRaw;
+  query?: Record<string, string | undefined>;
   changelogId?: string;
   revisionId?: string;
 }

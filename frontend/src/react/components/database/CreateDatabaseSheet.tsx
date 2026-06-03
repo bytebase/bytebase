@@ -20,9 +20,9 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import {
   defaultCharsetOfEngineV1,

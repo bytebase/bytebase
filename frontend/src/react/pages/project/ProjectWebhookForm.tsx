@@ -19,6 +19,7 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -26,7 +27,6 @@ import {
   WORKSPACE_ROUTE_IM,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import {
   projectWebhookV1ActivityItemList,
