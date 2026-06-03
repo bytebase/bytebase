@@ -6,10 +6,10 @@ import logoFull from "@/assets/logo-full.svg";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { useCurrentRoute } from "@/react/router";
 import { useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 

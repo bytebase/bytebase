@@ -5,6 +5,7 @@ import { authServiceClientConnect } from "@/connect";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import {
   AUTH_PASSWORD_RESET_MODULE,
@@ -12,7 +13,7 @@ import {
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
-import { isValidEmail, resolveWorkspaceName } from "@/utils";
+import { isValidEmail } from "@/utils";
 
 export function PasswordForgotPage() {
   const { t } = useTranslation();

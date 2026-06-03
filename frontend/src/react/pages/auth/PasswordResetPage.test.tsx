@@ -73,11 +73,9 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/utils", () => {
-  return {
-    resolveWorkspaceName: mocks.resolveWorkspaceName,
-  };
-});
+vi.mock("@/react/lib/workspace", () => ({
+  resolveWorkspaceName: mocks.resolveWorkspaceName,
+}));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bufbuild/protobuf")>();

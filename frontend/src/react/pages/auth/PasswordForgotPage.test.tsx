@@ -63,9 +63,12 @@ vi.mock("@/connect", () => ({
 vi.mock("@/utils", () => {
   return {
     isValidEmail: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-    resolveWorkspaceName: mocks.resolveWorkspaceName,
   };
 });
+
+vi.mock("@/react/lib/workspace", () => ({
+  resolveWorkspaceName: mocks.resolveWorkspaceName,
+}));
 
 vi.mock("@/assets/logo-full.svg", () => ({
   default: "/assets/logo-full.svg",

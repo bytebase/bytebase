@@ -10,6 +10,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -19,7 +20,6 @@ import {
   ResetPasswordRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 
 export function PasswordResetPage() {
   const { t } = useTranslation();

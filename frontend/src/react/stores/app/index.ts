@@ -38,6 +38,7 @@ export {
   projectResourceNameFromId,
 } from "./utils";
 export type { ProjectListParams } from "./types";
+import { registerPermissionCheckers } from "@/utils/iam/permission";
 import type { AppStoreState } from "./types";
 
 export const createAppStore = () =>
@@ -76,6 +77,16 @@ export const createAppStore = () =>
   }));
 
 export const useAppStore = createAppStore();
+
+// Back the legacy `hasWorkspacePermissionV2` / `hasProjectPermissionV2` shared
+// utils with the app store, so all callers resolve permissions from this store
+// without importing it (which would create an init cycle through `@/utils`).
+registerPermissionCheckers({
+  hasWorkspacePermission: (permission) =>
+    useAppStore.getState().hasWorkspacePermission(permission),
+  hasProjectPermission: (project, permission) =>
+    useAppStore.getState().hasProjectPermission(project, permission),
+});
 
 export function isDefaultProjectName(name: string) {
   return name === useAppStore.getState().serverInfo?.defaultProject;

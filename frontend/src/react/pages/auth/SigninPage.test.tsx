@@ -51,6 +51,9 @@ vi.mock("@/react/stores/app", () => {
 
 vi.mock("@/utils", () => ({
   openWindowForSSO: mocks.openWindowForSSO,
+}));
+
+vi.mock("@/react/lib/workspace", () => ({
   resolveWorkspaceName: () => undefined,
 }));
 

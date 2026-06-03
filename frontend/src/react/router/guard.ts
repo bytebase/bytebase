@@ -1,6 +1,11 @@
 import { redirect } from "react-router-dom";
 import { useAppStore } from "@/react/stores/app";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  storageKeyRecentVisit,
+  workspaceCacheScope,
+} from "@/utils/storage-keys";
 import {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -19,8 +24,11 @@ import {
   PROJECT_V1_ROUTE_DASHBOARD,
   SETTING_ROUTE,
   SETUP_MODULE,
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROOT_MODULE,
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_LANDING,
 } from "./handles";
 import { resolvePath } from "./navigation";
 
@@ -66,6 +74,66 @@ const ALLOWED_ROUTE_PATTERNS = [
   "workspace",
   "sql-editor",
 ];
+
+// Resolve the redirect target for the bare workspace root ("/"), mirroring the
+// legacy `DummyRootView`. The root path has no page of its own:
+//   - EDITOR change-mode workspaces go to the SQL Editor home
+//   - otherwise the user's last meaningful visit, if any
+//   - falling back to the landing page
+// `loadWorkspaceProfile()` is awaited before the router mounts (see main.ts),
+// so `appFeatures` is populated by the time this runs.
+function resolveRootRedirect(
+  store: ReturnType<typeof useAppStore.getState>
+): string {
+  if (
+    store.appFeatures["bb.feature.database-change-mode"] ===
+    DatabaseChangeMode.EDITOR
+  ) {
+    return resolvePath(SQL_EDITOR_HOME_MODULE);
+  }
+  const lastVisit = readLastVisit(store);
+  if (lastVisit && isMeaningfulVisit(lastVisit)) {
+    return lastVisit;
+  }
+  return resolvePath(WORKSPACE_ROUTE_LANDING);
+}
+
+// Read the most-recent visited path from the per-user recent-visit list in
+// localStorage (same scoped key + JSON format as `useRecentVisit`).
+function readLastVisit(
+  store: ReturnType<typeof useAppStore.getState>
+): string | undefined {
+  try {
+    const key = storageKeyRecentVisit(
+      workspaceCacheScope(
+        store.isSaaSMode(),
+        store.currentUser?.workspace ?? ""
+      ),
+      store.currentUser?.email ?? ""
+    );
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) && list.length > 0 ? list[0] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// Ignore root-ish / transient paths so we don't redirect "/" back to itself or
+// to a route that itself redirects (mirrors `DummyRootView`'s ignore list).
+function isMeaningfulVisit(path: string): boolean {
+  return !(
+    path === "" ||
+    path === "/" ||
+    path.startsWith("?") ||
+    path.startsWith("#") ||
+    path.startsWith("/?") ||
+    path.startsWith("/#") ||
+    path.startsWith("/403") ||
+    path.startsWith("/404") ||
+    path.startsWith("/sql-editor")
+  );
+}
 
 /**
  * Faithful port of the legacy vue-router `beforeEach` guard
@@ -178,6 +246,11 @@ export function rootGuard({
   // Enforce password reset if required.
   if (store.requireResetPassword() && toName !== AUTH_PASSWORD_RESET_MODULE) {
     return redirect(resolvePath(AUTH_PASSWORD_RESET_MODULE));
+  }
+
+  // The bare workspace root ("/") has no page — redirect like DummyRootView.
+  if (toName === WORKSPACE_ROOT_MODULE) {
+    return redirect(resolveRootRedirect(store));
   }
 
   // Allow access to main application routes.

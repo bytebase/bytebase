@@ -13,6 +13,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import { AUTH_SIGNUP_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -21,7 +22,7 @@ import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO, resolveWorkspaceName } from "@/utils";
+import { openWindowForSSO } from "@/utils";
 
 export type SigninPageProps = {
   readonly redirect?: boolean;

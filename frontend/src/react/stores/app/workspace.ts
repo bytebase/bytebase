@@ -8,7 +8,6 @@ import {
   authServiceClientConnect,
   settingServiceClientConnect,
   subscriptionServiceClientConnect,
-  userServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -236,14 +235,13 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     },
 
     loadWorkspace: async () => {
-      // Always re-fetch currentUser to get the latest auth context.
-      // The cached currentUser may be from before login (undefined or stale).
-      const user = await userServiceClientConnect
-        .getCurrentUser({})
-        .catch(() => undefined);
-      if (user) {
-        set({ currentUser: user });
-      }
+      // Resolve the authenticated user via the cached loader. It returns the
+      // existing currentUser when present (login / fetchCurrentUser refresh it
+      // on the auth transition), so we must NOT mint a fresh currentUser object
+      // here: a raw getCurrentUser() response is a new reference every call,
+      // which thrashes effects keyed on `currentUser` (e.g. AuthGate's mount
+      // gate) into an unmount/remount fetch loop.
+      const user = await get().loadCurrentUser();
       const name =
         user?.workspace ||
         get().currentUser?.workspace ||

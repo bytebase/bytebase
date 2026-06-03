@@ -31,7 +31,8 @@ vi.mock("@/react/stores/app", () => ({
 }));
 
 vi.mock("@/plugins/ai/store", () => ({
-  useConversationStore: () => ({ reset: vi.fn() }),
+  // Zustand store: the guard calls `useConversationStore.getState().reset()`.
+  useConversationStore: { getState: () => ({ reset: vi.fn() }) },
 }));
 
 import { rootGuard } from "./guard";

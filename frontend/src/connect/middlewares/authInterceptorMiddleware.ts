@@ -1,7 +1,7 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_403 } from "@/router/dashboard/workspaceRoutes";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_403 } from "@/react/router/handles";
 import { pushNotification, useAuthStore } from "@/store";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";

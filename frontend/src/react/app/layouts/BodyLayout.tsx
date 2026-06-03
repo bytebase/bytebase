@@ -3,9 +3,13 @@ import { createPortal } from "react-dom";
 import { Outlet, useLocation, useMatches } from "react-router-dom";
 import { DashboardBodyShell } from "@/react/components/DashboardBodyShell";
 import { DashboardSidebar } from "@/react/components/DashboardSidebar";
+import { ProjectSidebar } from "@/react/components/ProjectSidebar";
 import { Quickstart } from "@/react/components/Quickstart";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
-import { WORKSPACE_ROOT_MODULE } from "@/react/router/handles";
+import {
+  PROJECT_V1_ROUTE_DASHBOARD,
+  WORKSPACE_ROOT_MODULE,
+} from "@/react/router/handles";
 
 // Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
 // `DashboardBodyShell` (header + sidebar slot + body slot) and portals the
@@ -26,6 +30,12 @@ export function BodyLayout() {
     matches.at(-1)?.handle as { name?: string } | undefined
   )?.name;
   const isRootPath = currentRouteName === WORKSPACE_ROOT_MODULE;
+  // Project-scoped routes (`workspace.project.*`) get the project sidebar; the
+  // bare projects list (`workspace.project`) keeps the workspace sidebar.
+  const isProjectRoute = Boolean(
+    currentRouteName?.startsWith(`${PROJECT_V1_ROUTE_DASHBOARD}.`)
+  );
+  const Sidebar = isProjectRoute ? ProjectSidebar : DashboardSidebar;
   const routeKey = `${location.pathname}${location.search}`;
 
   const [targets, setTargets] = useState<DashboardShellTargets>({
@@ -65,9 +75,7 @@ export function BodyLayout() {
 
       {showSidebar
         ? sidebarTargets.map((target, i) =>
-            target
-              ? createPortal(<DashboardSidebar />, target, `sidebar-${i}`)
-              : null
+            target ? createPortal(<Sidebar />, target, `sidebar-${i}`) : null
           )
         : null}
 

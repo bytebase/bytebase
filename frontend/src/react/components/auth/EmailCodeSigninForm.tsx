@@ -4,12 +4,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { pushNotification, useAuthStore } from "@/store";
 import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { isValidEmail, resolveWorkspaceName } from "@/utils";
+import { isValidEmail } from "@/utils";
 
 type Props = {
   readonly loading: boolean;
