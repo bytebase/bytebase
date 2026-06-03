@@ -1,5 +1,13 @@
 This file provides guidance to AI coding assistants when working with code in this repository.
 
+## Design Principles
+
+Bytebase is the standard for database development. Every product and engineering decision serves that goal, built on three principles:
+
+1. **Bring every database under unified control.** Every person and AI agent accesses and changes data through one governed path.
+2. **Govern change and access as code.** Reviewed, enforced, and recorded by policy, not by discipline.
+3. **Make the safe path the easy path.** Safe by default, simple by design — so no one routes around it.
+
 ## Project Architecture
 
 - Database schema is defined in `./backend/migrator/migration/LATEST.sql`
