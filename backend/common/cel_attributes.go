@@ -48,7 +48,7 @@ const (
 	// CELAttributeRequestUnmask indicates whether the request includes unmask permission.
 	CELAttributeRequestUnmask = "request.unmask"
 	// CELAttributeRequestExport indicates whether the request includes export permission.
-	CELAttributeRequestExport = "request.export"
+	CELAttributeRequestExport = "request.data_export"
 	// CELAttributeRequestTime is the timestamp of the request.
 	CELAttributeRequestTime = "request.time"
 )
