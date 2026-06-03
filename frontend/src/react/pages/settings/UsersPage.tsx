@@ -41,7 +41,6 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
@@ -49,12 +48,7 @@ import {
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { getUserFullNameByType } from "@/store/modules/v1/common";
 import {
   AccountType,
@@ -510,17 +504,13 @@ function UserForm({
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
-  const settingV1Store = useSettingV1Store();
-
-  const passwordRestriction = useVueState(
-    () => settingV1Store.workspaceProfile.passwordRestriction
+  const passwordRestriction = useAppStore(
+    (s) => s.getWorkspaceProfile().passwordRestriction
   );
-  const enforceIdentityDomain = useVueState(
-    () => settingV1Store.workspaceProfile.enforceIdentityDomain
+  const enforceIdentityDomain = useAppStore(
+    (s) => s.getWorkspaceProfile().enforceIdentityDomain
   );
-  const workspaceDomains = useVueState(
-    () => settingV1Store.workspaceProfile.domains
-  );
+  const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
 
   const isEditMode =
     !!user && user.name !== "" && !user.name.endsWith("/unknown");
@@ -923,14 +913,12 @@ function UserForm({
 
 export function UsersPage() {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
 
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
-  const hasDirectorySyncFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+  const hasDirectorySyncFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
   const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
 

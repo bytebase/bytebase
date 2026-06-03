@@ -69,13 +69,7 @@ import { useAppStore } from "@/react/stores/app";
 import type { InstanceFilter } from "@/react/stores/app/types";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
-import {
-  featureToRef,
-  pushNotification,
-  useActuatorV1Store,
-  useEnvironmentV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   isValidInstanceName,
@@ -179,11 +173,13 @@ function ConfirmDialog({
 
 function EnvironmentName({ environmentName }: { environmentName: string }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      environmentName || NULL_ENVIRONMENT_NAME
-    )
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environment = useMemo(
+    () =>
+      useAppStore
+        .getState()
+        .getEnvironmentByName(environmentName || NULL_ENVIRONMENT_NAME),
+    [environmentList, environmentName]
   );
 
   const isUnset =
@@ -448,10 +444,7 @@ function EditEnvironmentSheet({
   onUpdate: (environment: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList ?? []);
   const [selected, setSelected] = useState("");
   useEffect(() => {
     if (open) setSelected("");
@@ -520,8 +513,6 @@ function EditEnvironmentSheet({
 
 export function InstancesPage() {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
 
   // Search state
   const [searchParams, setSearchParams] = useState<SearchParams>(() => {
@@ -564,10 +555,7 @@ export function InstancesPage() {
 
   // Scope options
   const canUndelete = hasWorkspacePermissionV2("bb.instances.undelete");
-  const environmentStore = useEnvironmentV1Store();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList ?? []);
   const scopeOptions: ScopeOption[] = useMemo(() => {
     const options: ScopeOption[] = [
       {
@@ -699,14 +687,10 @@ export function InstancesPage() {
   }, [searchParams]);
 
   // Instance count warning
-  const instanceCountLimit = useVueState(
-    () => subscriptionStore.instanceCountLimit
-  );
-  const totalInstanceCount = useVueState(
-    () => actuatorStore.totalInstanceCount
-  );
-  const hasSplitInstanceLicense = useVueState(
-    () => subscriptionStore.hasSplitInstanceLicense
+  const instanceCountLimit = useAppStore((s) => s.instanceCountLimit());
+  const totalInstanceCount = useAppStore((s) => s.totalInstanceCount());
+  const hasSplitInstanceLicense = useAppStore((s) =>
+    s.hasSplitInstanceLicense()
   );
   const quotaExhausted = totalInstanceCount >= instanceCountLimit;
 
@@ -955,9 +939,7 @@ export function InstancesPage() {
     });
   }, []);
 
-  const activatedInstanceCount = useVueState(
-    () => actuatorStore.activatedInstanceCount
-  );
+  const activatedInstanceCount = useAppStore((s) => s.activatedInstanceCount());
   const navigateToCreate = useCallback(() => {
     if (instanceCountLimit <= activatedInstanceCount) {
       // Limit reached — the warning banner is already visible

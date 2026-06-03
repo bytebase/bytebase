@@ -24,18 +24,13 @@ import {
 } from "@/react/components/ui/table";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   updateColumnCatalog,
   updateTableCatalog,
 } from "@/react/lib/column-data-table/utils";
 import { useAppStore } from "@/react/stores/app";
 import { getTableCatalog } from "@/react/stores/app/databaseCatalog";
-import {
-  pushNotification,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   SchemaCatalogSchema,
   TableCatalogSchema,
@@ -769,36 +764,33 @@ function EditableSemanticTypeCell({
   testIdPrefix: string;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
   const [showFeatureDialog, setShowFeatureDialog] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
-  const semanticTypeList = useVueState(() => {
-    const setting = settingStore.getSettingByName(
-      Setting_SettingName.SEMANTIC_TYPES
-    );
-    return setting?.value?.value.case === "semanticType"
-      ? ((setting.value.value.value.types ??
+  const semanticTypeSetting = useAppStore((s) =>
+    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
+  );
+  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
+    return semanticTypeSetting?.value?.value.case === "semanticType"
+      ? ((semanticTypeSetting.value.value.value.types ??
           []) as SemanticTypeSetting_SemanticType[])
       : [];
-  });
-  const hasSensitiveDataFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
+  }, [semanticTypeSetting]);
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
-  const instanceMissingLicense = useVueState(() =>
-    subscriptionStore.instanceMissingLicense(
+  const instanceMissingLicense = useAppStore((s) =>
+    s.instanceMissingLicense(
       PlanFeature.FEATURE_DATA_MASKING,
       getInstanceResource(database)
     )
   );
 
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(
-      Setting_SettingName.SEMANTIC_TYPES,
-      true
-    );
-  }, [settingStore]);
+    void useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.SEMANTIC_TYPES, true);
+  }, []);
 
   const semanticTypeTitle = getSemanticTypeTitle(
     semanticTypeId,
@@ -883,7 +875,6 @@ export function TableDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
   const [columnSearchKeyword, setColumnSearchKeyword] = useState("");
 
   const filteredColumns = useMemo(() => {
@@ -905,24 +896,21 @@ export function TableDetailDialog({
     setColumnSearchKeyword("");
   }, [table?.name]);
 
-  const classificationConfig = useVueState(() => {
-    if (table?.classificationConfig) {
-      return table.classificationConfig;
-    }
-    if (!table?.database) {
-      return undefined;
-    }
-    return settingStore.getProjectClassification(
-      getDatabaseProject(table.database).dataClassificationConfigId ?? ""
-    );
-  });
+  const projectClassificationConfig = useAppStore((s) =>
+    table?.database
+      ? s.getProjectClassification(
+          getDatabaseProject(table.database).dataClassificationConfigId ?? ""
+        )
+      : undefined
+  );
+  const classificationConfig =
+    table?.classificationConfig ?? projectClassificationConfig;
 
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(
-      Setting_SettingName.DATA_CLASSIFICATION,
-      true
-    );
-  }, [settingStore]);
+    void useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
+  }, []);
 
   if (!table) {
     return null;

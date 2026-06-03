@@ -38,13 +38,7 @@ import {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
-import {
-  hasFeature,
-  pushNotification,
-  useActuatorV1Store,
-  useAuthStore,
-  useSettingV1Store,
-} from "@/store";
+import { hasFeature, pushNotification, useAuthStore } from "@/store";
 import {
   AccountType,
   ALL_USERS_USER_EMAIL,
@@ -69,7 +63,6 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const { t } = useTranslation();
 
   const authStore = useAuthStore();
-  const settingV1Store = useSettingV1Store();
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
@@ -80,7 +73,6 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const getWorkspaceRolesByName = useAppStore(
     (state) => state.getWorkspaceRolesByName
   );
-  const actuatorStore = useActuatorV1Store();
 
   // --- Reactive Vue state ---
   const legacyCurrentUser = useCurrentUser();
@@ -97,19 +89,17 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     [getWorkspaceRolesByName, user.name, workspacePolicy]
   );
 
-  const passwordRestriction = useVueState(
-    () => settingV1Store.workspaceProfile.passwordRestriction
+  const passwordRestriction = useAppStore(
+    (s) => s.getWorkspaceProfile().passwordRestriction
   );
 
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
 
   const has2FAFeature = useVueState(() =>
     hasFeature(PlanFeature.FEATURE_TWO_FA)
   );
 
-  const requireMfa = useVueState(
-    () => settingV1Store.workspaceProfile.requireMfa
-  );
+  const requireMfa = useAppStore((s) => s.getWorkspaceProfile().requireMfa);
 
   const tempRecoveryCodes = useVueState(() => currentUser.tempRecoveryCodes);
 

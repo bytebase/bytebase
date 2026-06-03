@@ -51,7 +51,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -1171,7 +1171,7 @@ function SelectTargetDatabasesView({
   const getOrFetchChangelogByName = useAppStore(
     (state) => state.getOrFetchChangelogByName
   );
-  const environmentStore = useEnvironmentV1Store();
+  const environmentList = useAppStore((s) => s.environmentList);
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
 
   // Refs for values read inside the diff-fetching effect without triggering re-runs
@@ -1237,13 +1237,13 @@ function SelectTargetDatabasesView({
       (db) => db.name === selectedDatabaseName
     );
     if (!database) return "";
-    const environment = environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ?? ""
-    );
+    const environment = useAppStore
+      .getState()
+      .getEnvironmentByName(database.effectiveEnvironment ?? "");
     return t("database.sync-schema.schema-change-preview", {
       database: `${extractDatabaseResourceName(database.name).databaseName} (${environment?.title} - ${getInstanceResource(database).title})`,
     });
-  }, [selectedDatabaseName, targetDatabaseList, t]);
+  }, [selectedDatabaseName, targetDatabaseList, environmentList, t]);
 
   const databaseListWithDiff = useMemo(
     () =>

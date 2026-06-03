@@ -15,7 +15,6 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { unknownDatabase } from "@/types/v1/database";
 import {
@@ -177,12 +176,13 @@ function IssueDetailDatabaseResourceTable({
   databaseResourceList: DatabaseResource[];
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
   // Subscribe to the instance cache so rows reactively pick up titles once
   // instances hydrate; a bare getState() read would not re-render here because
   // useVueState only tracks Vue dependencies.
   const instancesByName = useAppStore((s) => s.instancesByName);
   const databasesByName = useAppStore((s) => s.databasesByName);
+  // Subscribe so titles refresh if the environment list changes.
+  void useAppStore((s) => s.environmentList);
   const rows = useVueState(() =>
     databaseResourceList.map((resource) => {
       const database =
@@ -197,8 +197,9 @@ function IssueDetailDatabaseResourceTable({
         database.effectiveEnvironment ??
         database.instanceResource?.environment ??
         "";
-      const environment =
-        environmentStore.getEnvironmentByName(environmentName);
+      const environment = useAppStore
+        .getState()
+        .getEnvironmentByName(environmentName);
       return {
         databaseName,
         environmentTitle: environment.title,

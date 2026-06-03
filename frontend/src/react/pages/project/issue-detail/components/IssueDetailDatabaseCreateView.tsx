@@ -8,7 +8,6 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -35,7 +34,7 @@ export function IssueDetailDatabaseCreateView() {
   const page = useIssueDetailContext();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
-  const environmentStore = useEnvironmentV1Store();
+  const environmentList = useAppStore((s) => s.environmentList);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() =>
     useAppStore.getState().getProjectByName(projectName)
@@ -55,8 +54,9 @@ export function IssueDetailDatabaseCreateView() {
 
   const environmentName = createDatabaseConfig?.environment ?? "";
   const targetInstanceName = createDatabaseConfig?.target ?? "";
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(environmentName)
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
   const cachedInstance = useAppStore(
     (s) => s.instancesByName[targetInstanceName]

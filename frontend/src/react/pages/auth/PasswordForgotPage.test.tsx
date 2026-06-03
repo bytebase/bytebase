@@ -15,14 +15,22 @@ const mocks = vi.hoisted(() => {
     passwordResetEnabled: true,
     disallowPasswordSignin: false,
   };
+  const appStoreState = {
+    serverInfo: { restriction } as { restriction: typeof restriction },
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+  };
   return {
     restriction,
+    appStoreState,
     useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) =>
       getter()
     ),
-    useActuatorV1Store: vi.fn(() => ({
-      serverInfo: { restriction },
-    })),
+    useAppStore: Object.assign(
+      vi.fn((selector?: (s: typeof appStoreState) => unknown) =>
+        selector ? selector(appStoreState) : appStoreState
+      ),
+      { getState: () => appStoreState }
+    ),
     pushNotification: vi.fn(),
     routerPush: vi.fn(),
     routerReplace: vi.fn(),
@@ -36,8 +44,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: mocks.useAppStore,
+}));
+
 vi.mock("@/store", () => ({
-  useActuatorV1Store: mocks.useActuatorV1Store,
   pushNotification: mocks.pushNotification,
 }));
 

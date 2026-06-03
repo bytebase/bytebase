@@ -276,19 +276,6 @@ const projectIamPolicy = { bindings: [] };
 
 vi.mock("@/store", () => ({
   pushNotification: mockPushNotification,
-  useActuatorV1Store: () => ({
-    isSaaSMode: false,
-    userCountInIam: 1,
-  }),
-  useSettingV1Store: () => ({
-    getOrFetchSettingByName: vi.fn(),
-    getSettingByName: () => undefined,
-    workspaceProfile: {},
-  }),
-  useSubscriptionV1Store: () => ({
-    hasFeature: () => true,
-    userCountLimit: 10,
-  }),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -321,6 +308,15 @@ vi.mock("@/react/stores/app", () => {
       permissions: ["bb.projects.setIamPolicy"],
       state: 1,
     }),
+    // Migrated off the Pinia actuator/setting/subscription store mocks.
+    isSaaSMode: () => false,
+    userCountInIam: () => 1,
+    userCountLimit: () => 10,
+    hasFeature: () => true,
+    settingsByName: {},
+    getOrFetchSettingByName: vi.fn(),
+    getSettingByName: () => undefined,
+    getWorkspaceProfile: () => ({}),
   });
   const useAppStore = (selector?: (state: unknown) => unknown) =>
     selector ? selector(buildState()) : buildState();

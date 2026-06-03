@@ -23,7 +23,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { router } from "@/router";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
@@ -62,7 +62,6 @@ export function CreateDatabaseSheet({
   const { t } = useTranslation();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
-  const environmentStore = useEnvironmentV1Store();
   const currentUser = useCurrentUser();
 
   const [projectName, setProjectName] = useState("");
@@ -85,9 +84,7 @@ export function CreateDatabaseSheet({
   const [selectedInstance, setSelectedInstance] = useState<
     Instance | undefined
   >();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList);
 
   const [selectedProject, setSelectedProject] = useState<
     | {

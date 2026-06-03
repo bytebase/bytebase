@@ -6,8 +6,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
@@ -88,10 +87,8 @@ export function DataSourceForm({
   onOpenInfoPanel,
 }: DataSourceFormProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const currentPlan = useAppStore((s) => s.currentPlan());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const ctx = useInstanceFormContext();
   const {
     instance,

@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { SectionHandle } from "./useSettingSection";
 
 interface ProductImprovementSectionProps {
@@ -26,14 +26,13 @@ export const ProductImprovementSection = forwardRef<
   ProductImprovementSectionProps
 >(function ProductImprovementSection({ allowEdit, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const settingV1Store = useSettingV1Store();
 
   const getInitialState = useCallback(
     (): State => ({
-      enableMetricCollection:
-        settingV1Store.workspaceProfile.enableMetricCollection,
+      enableMetricCollection: useAppStore.getState().getWorkspaceProfile()
+        .enableMetricCollection,
     }),
-    [settingV1Store]
+    []
   );
 
   const [state, setState] = useState<State>(getInitialState);
@@ -49,7 +48,7 @@ export const ProductImprovementSection = forwardRef<
   }, [getInitialState]);
 
   const update = useCallback(async () => {
-    await settingV1Store.updateWorkspaceProfile({
+    await useAppStore.getState().updateWorkspaceProfile({
       payload: {
         enableMetricCollection: state.enableMetricCollection,
       },
@@ -57,7 +56,7 @@ export const ProductImprovementSection = forwardRef<
         paths: ["value.workspace_profile.enable_metric_collection"],
       }),
     });
-  }, [state, settingV1Store]);
+  }, [state]);
 
   const title = t("settings.general.workspace.product-improvement.self");
 

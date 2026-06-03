@@ -27,7 +27,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission, SQLReviewPolicy } from "@/types";
 import { isDefaultProject } from "@/types";
@@ -128,7 +128,6 @@ export function ProjectSettingsPage() {
   const { t } = useTranslation();
   const projectsByName = useAppStore((s) => s.projectsByName);
   const reviewStore = useSQLReviewStore();
-  const subscriptionStore = useSubscriptionV1Store();
 
   const projectId = useVueState(
     () => router.currentRoute.value.params.projectId as string
@@ -202,8 +201,8 @@ export function ProjectSettingsPage() {
     project?.allowJustInTimeAccess ?? false
   );
 
-  const hasQueryPolicyFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_QUERY_POLICY)
+  const hasQueryPolicyFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_QUERY_POLICY)
   );
 
   // -----------------------------------------------------------------------

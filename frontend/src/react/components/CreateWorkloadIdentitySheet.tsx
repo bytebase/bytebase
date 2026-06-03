@@ -17,7 +17,7 @@ import {
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { ensureWorkloadIdentityFullName } from "@/react/stores/app/workloadIdentity";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
@@ -128,7 +128,6 @@ function WorkloadIdentityForm({
   onUpdated,
 }: Omit<CreateWorkloadIdentitySheetProps, "open">) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
@@ -194,8 +193,8 @@ function WorkloadIdentityForm({
   }, [project]);
 
   const parent = useMemo(
-    () => project ?? actuatorStore.workspaceResourceName,
-    [project, actuatorStore]
+    () => project ?? useAppStore.getState().workspaceResourceName(),
+    [project]
   );
 
   const [providerType, setProviderType] =

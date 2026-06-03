@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -53,7 +53,6 @@ export function InstanceFormButtons({
   className,
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
 
   const context = useInstanceFormContext();
   const {
@@ -81,10 +80,8 @@ export function InstanceFormButtons({
     emitShowConnectionOptions,
   } = context;
 
-  const hasExternalSecretFeature = useMemo(
-    () =>
-      subscriptionStore.hasFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER),
-    [subscriptionStore]
+  const hasExternalSecretFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER)
   );
   const [connectionFailureDialogState, setConnectionFailureDialogState] =
     useState<ConnectionFailureDialogState>({

@@ -1,12 +1,11 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -157,15 +156,22 @@ export function IssueDetailAccessGrantDetails() {
 }
 
 function IssueDetailAccessGrantTarget({ target }: { target: string }) {
-  const environmentStore = useEnvironmentV1Store();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const database = useVueState(
     () => databasesByName[target] ?? unknownDatabase()
   );
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ?? database.environment ?? ""
-    )
+  // Subscribe to the env cache so the row re-resolves once it loads; compute
+  // via getState() in a memo because getEnvironmentByName returns a fresh
+  // fallback object on a miss (unsafe as a raw selector — would loop).
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environment = useMemo(
+    () =>
+      useAppStore
+        .getState()
+        .getEnvironmentByName(
+          database.effectiveEnvironment ?? database.environment ?? ""
+        ),
+    [environmentList, database]
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(target);

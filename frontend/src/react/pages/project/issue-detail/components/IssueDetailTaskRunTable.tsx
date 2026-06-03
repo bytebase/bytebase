@@ -17,7 +17,6 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -312,13 +311,14 @@ function IssueDetailTaskRunDateCell({
 
 function IssueDetailTaskRunDatabaseCell({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ??
-        database.instanceResource?.environment ??
-        ""
-    )
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environmentName =
+    database.effectiveEnvironment ??
+    database.instanceResource?.environment ??
+    "";
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(database.name);

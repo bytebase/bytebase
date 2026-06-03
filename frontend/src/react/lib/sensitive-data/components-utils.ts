@@ -2,18 +2,18 @@ import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
 import type { Factor, Operator } from "@/plugins/cel";
 import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";
-import { useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import { AlgorithmSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { ResourceSelectOption } from "@/types/v2-shared";
 import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
-  const settingStore = useSettingV1Store();
-  if (settingStore.classification.length === 0) {
+  const classification = useAppStore.getState().classification();
+  if (classification.length === 0) {
     return [];
   }
-  const config = settingStore.classification[0];
+  const config = classification[0];
   if (!config?.levels) {
     return [];
   }

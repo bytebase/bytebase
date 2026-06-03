@@ -7,10 +7,10 @@ import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useActuatorV1Store, useAuthStore } from "@/store";
+import { useAuthStore } from "@/store";
 import { isValidEmail } from "@/utils";
 
 export function SignupPage() {
@@ -22,11 +22,16 @@ export function SignupPage() {
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const activeUserCount = useVueState(
-    () => useActuatorV1Store().activeUserCount
-  );
-  const serverInfo = useVueState(() => useActuatorV1Store().serverInfo);
+  const activeUserCount = useAppStore((s) => s.activeUserCount());
+  const serverInfo = useAppStore((s) => s.serverInfo);
   const needAdminSetup = activeUserCount === 0;
+
+  // This page renders outside any shell, so the workspace bootstrap hasn't
+  // populated the app store yet — load server info so the active-user count
+  // and signup restriction flags resolve.
+  useEffect(() => {
+    void useAppStore.getState().loadServerInfo();
+  }, []);
 
   const [acceptTermsAndPolicy, setAcceptTermsAndPolicy] = useState(
     !needAdminSetup

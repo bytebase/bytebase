@@ -51,28 +51,27 @@ vi.mock("@/types", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
-  useActuatorV1Store: () => ({
-    activatedInstanceCount: 0,
-  }),
-  useEnvironmentV1Store: () => ({
-    getEnvironmentByName: (name: string) => ({ name }),
-  }),
-  useSubscriptionV1Store: () => ({
-    currentPlan: 1,
-    instanceLicenseCount: 1,
-    hasInstanceFeature: () => false,
-  }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(() => undefined, {
-    getState: () => ({
-      createDataSource: vi.fn(),
-      createInstance: vi.fn(),
-      updateDataSource: vi.fn(),
-    }),
-  }),
-}));
+vi.mock("@/react/stores/app", () => {
+  const appState = () => ({
+    createDataSource: vi.fn(),
+    createInstance: vi.fn(),
+    updateDataSource: vi.fn(),
+    getEnvironmentByName: (name: string) => ({ name }),
+    hasInstanceFeature: () => false,
+    instanceLicenseCount: () => 1,
+    activatedInstanceCount: () => 0,
+    currentPlan: () => 1,
+    environmentList: [],
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector: (state: unknown) => unknown) => selector(appState()),
+      { getState: appState }
+    ),
+  };
+});
 
 vi.mock("@/utils", () => ({
   calcUpdateMask: () => [],

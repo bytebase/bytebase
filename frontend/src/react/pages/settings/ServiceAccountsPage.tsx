@@ -35,7 +35,7 @@ import {
   ensureServiceAccountFullName,
   serviceAccountToUser,
 } from "@/react/stores/app/serviceAccount";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getServiceAccountNameInBinding,
@@ -429,7 +429,7 @@ function ServiceAccountForm({
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
-  const actuatorStore = useActuatorV1Store();
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const projectsByName = useAppStore((s) => s.projectsByName);
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const updateProjectIamPolicy = useAppStore(
@@ -442,9 +442,7 @@ function ServiceAccountForm({
     project ? useAppStore.getState().getProjectByName(project) : undefined
   );
 
-  const parent = useVueState(
-    () => project ?? actuatorStore.workspaceResourceName
-  );
+  const parent = useVueState(() => project ?? workspaceResourceName);
 
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
   const emailSuffix = useMemo(() => {
@@ -673,7 +671,7 @@ function ServiceAccountForm({
 
 export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
   const getServiceAccount = useAppStore((state) => state.getServiceAccount);
@@ -689,9 +687,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
       : undefined
   );
 
-  const parent = useVueState(
-    () => projectName ?? actuatorStore.workspaceResourceName
-  );
+  const parent = useVueState(() => projectName ?? workspaceResourceName);
 
   const [showInactive, setShowInactive] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);

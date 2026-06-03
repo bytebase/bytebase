@@ -2,13 +2,11 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Combobox, type ComboboxGroup } from "@/react/components/ui/combobox";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   displayRoleDescriptionFromList,
   displayRoleTitleFromList,
 } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import { useSubscriptionV1Store } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,
@@ -38,10 +36,9 @@ export function RoleSelect({
   filterRole,
 }: RoleSelectProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
   const roleList = useAppStore((state) => state.roleList);
-  const hasCustomRoleFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  const hasCustomRoleFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
 
   const groups: ComboboxGroup[] = useMemo(() => {

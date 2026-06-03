@@ -1,7 +1,13 @@
 import { clone, create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus, Trash2 } from "lucide-react";
-import { type ChangeEvent, useCallback, useEffect, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 // Static image imports — Vite cannot resolve dynamic src in <img>
 import dingtalkIcon from "@/assets/im/dingtalk.png";
@@ -12,8 +18,8 @@ import wecomIcon from "@/assets/im/wecom.png";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
-import { pushNotification, useSettingV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { WebhookType } from "@/types/proto-es/v1/common_pb";
 import {
   AppIMSetting_DingTalkSchema,
@@ -180,10 +186,10 @@ function maskValues(payload: Record<string, unknown>): Record<string, string> {
   return result;
 }
 
-function getStoredIMSetting(
-  settingStore: ReturnType<typeof useSettingV1Store>
-) {
-  const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
+function getStoredIMSetting() {
+  const setting = useAppStore
+    .getState()
+    .getSettingByName(Setting_SettingName.APP_IM);
   if (setting?.value?.value?.case !== "appIm") {
     return create(AppIMSettingSchema, { settings: [] });
   }
@@ -226,11 +232,11 @@ function buildSettingsView(
 
 export function IMPage() {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
   const allowEdit = hasWorkspacePermissionV2("bb.settings.set");
 
   // Subscribe to store changes
-  const storedSetting = useVueState(() => getStoredIMSetting(settingStore));
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const storedSetting = useMemo(() => getStoredIMSetting(), [settingsByName]);
 
   // Local state
   const [localSettings, setLocalSettings] = useState<AppIMSetting_IMSetting[]>(
@@ -242,19 +248,20 @@ export function IMPage() {
 
   // Fetch on mount
   useEffect(() => {
-    settingStore
+    useAppStore
+      .getState()
       .getOrFetchSettingByName(Setting_SettingName.APP_IM)
       .then(() => setInitialized(true));
-  }, [settingStore]);
+  }, []);
 
   // Sync local state from store
   const syncFromStore = useCallback(() => {
-    const stored = getStoredIMSetting(settingStore);
+    const stored = getStoredIMSetting();
     const cloned = stored.settings.map((s) =>
       clone(AppIMSetting_IMSettingSchema, s)
     );
     setLocalSettings(cloned);
-  }, [settingStore]);
+  }, []);
 
   useEffect(() => {
     if (initialized) syncFromStore();
@@ -326,17 +333,14 @@ export function IMPage() {
     setPendingSaveType(typeKey);
     try {
       const reconstructed = createIMSetting(wt, values);
-      const current = clone(
-        AppIMSettingSchema,
-        getStoredIMSetting(settingStore)
-      );
+      const current = clone(AppIMSettingSchema, getStoredIMSetting());
       const existingIdx = current.settings.findIndex((s) => s.type === wt);
       if (existingIdx >= 0) {
         current.settings[existingIdx] = reconstructed;
       } else {
         current.settings.push(reconstructed);
       }
-      await settingStore.upsertSetting({
+      await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.APP_IM,
         value: create(SettingValueSchema, {
           value: { case: "appIm", value: current },
@@ -357,10 +361,10 @@ export function IMPage() {
   const handleDelete = async (index: number, typeKey: string) => {
     if (!window.confirm(t("bbkit.confirm-button.sure-to-delete"))) return;
     const wt = webhookTypeFromKey(typeKey);
-    const stored = getStoredIMSetting(settingStore);
+    const stored = getStoredIMSetting();
     const wasConfigured = stored.settings.some((s) => s.type === wt);
     if (wasConfigured) {
-      await settingStore.upsertSetting({
+      await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.APP_IM,
         value: create(SettingValueSchema, {
           value: {

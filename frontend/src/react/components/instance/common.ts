@@ -1,6 +1,6 @@
 import { cloneDeep, first } from "lodash-es";
 import i18n from "@/react/i18n";
-import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { UNKNOWN_INSTANCE_NAME, unknownDataSource } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -76,13 +76,11 @@ export const extractDataSourceEditState = (
 };
 
 export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
+  const store = useAppStore.getState();
 
   const availableLicenseCount = Math.max(
     0,
-    subscriptionStore.instanceLicenseCount -
-      actuatorStore.activatedInstanceCount
+    store.instanceLicenseCount() - store.activatedInstanceCount()
   );
 
   return {
@@ -94,8 +92,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     environment: instance?.environment,
     activation: instance
       ? instance.activation
-      : subscriptionStore.currentPlan !== PlanType.FREE &&
-        availableLicenseCount > 0,
+      : store.currentPlan() !== PlanType.FREE && availableLicenseCount > 0,
 
     syncInterval: instance?.syncInterval,
     syncDatabases: instance?.syncDatabases ?? [],

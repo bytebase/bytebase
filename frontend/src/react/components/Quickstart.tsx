@@ -2,7 +2,6 @@ import { CheckCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RouteLocationRaw } from "vue-router";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -15,7 +14,7 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
 import { isValidProjectName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -62,12 +61,11 @@ interface IntroItem {
 export function Quickstart() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const actuatorStore = useActuatorV1Store();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
 
-  const quickStartEnabled = useVueState(() => actuatorStore.quickStartEnabled);
+  const quickStartEnabled = useAppStore((s) => s.quickStartEnabled());
   const hidden = useAppStore((s) => s.getIntroStateByKey("hidden"));
 
   // Subscribe to each task's done flag so the line-through + progress

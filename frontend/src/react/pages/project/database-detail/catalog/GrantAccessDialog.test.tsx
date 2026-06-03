@@ -197,12 +197,18 @@ vi.mock("@/store", () => ({
 }));
 
 vi.mock("@/react/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
-      upsertPolicy: mocks.upsertPolicy,
-    }),
-  },
+  useAppStore: Object.assign(
+    (
+      selector: (state: { settingsByName: Record<string, unknown> }) => unknown
+    ) => selector({ settingsByName: {} }),
+    {
+      getState: () => ({
+        getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
+        upsertPolicy: mocks.upsertPolicy,
+        classification: () => [],
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/utils", () => ({

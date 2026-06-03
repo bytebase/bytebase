@@ -35,14 +35,9 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
-import { useVueState } from "@/react/hooks/useVueState";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
@@ -315,17 +310,13 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     [selectedEnvironment, selectedProject, searchParams.query, selectedLabels]
   );
 
-  const environmentStore = useEnvironmentV1Store();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList ?? []);
 
-  const actuatorStore = useActuatorV1Store();
   // Reactive: the actuator's `defaultProject` is fetched asynchronously, so
-  // we must subscribe through `useVueState` — otherwise the value is
+  // we subscribe through the store selector — otherwise the value is
   // captured as `""` on first render and the API filter becomes broken.
-  const defaultProjectId = useVueState(() =>
-    extractProjectResourceName(actuatorStore.serverInfo?.defaultProject ?? "")
+  const defaultProjectId = useAppStore((s) =>
+    extractProjectResourceName(s.serverInfo?.defaultProject ?? "")
   );
   const unassignedProjectOption = useMemo<ValueOption>(
     () => ({

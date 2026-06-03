@@ -17,7 +17,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useActuatorV1Store, useAppFeature, useSettingV1Store } from "@/store";
+import { useAppFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
@@ -49,6 +49,10 @@ export function SetupPage() {
       await router.isReady();
       try {
         await Promise.all([
+          // Force-refresh server info so `enableOnboarding()` reflects the
+          // post-signup active-user count. This page renders outside any
+          // shell, so useEnsureWorkspaceCommonData hasn't run.
+          useAppStore.getState().fetchServerInfo(),
           useAppStore.getState().listRoles(),
           useAppStore.getState().fetchWorkspaceIamPolicy(),
         ]);
@@ -94,9 +98,7 @@ function SetupWizard() {
   const resourceFieldRef = useRef<ResourceIdFieldRef>(null);
   const [resourceValid, setResourceValid] = useState(false);
 
-  const enableOnboarding = useVueState(
-    () => useActuatorV1Store().enableOnboarding
-  );
+  const enableOnboarding = useAppStore((s) => s.enableOnboarding());
   const databaseChangeMode = useVueState(
     () => useAppFeature("bb.feature.database-change-mode").value
   );
@@ -140,9 +142,9 @@ function SetupWizard() {
       if (data === "self-setup") {
         await useAppStore.getState().createProject(projectTitle, resourceId);
       } else {
-        await useActuatorV1Store().setupSample();
+        await useAppStore.getState().setupSample();
       }
-      await useSettingV1Store().updateWorkspaceProfile({
+      await useAppStore.getState().updateWorkspaceProfile({
         payload: { databaseChangeMode: mode },
         updateMask: create(FieldMaskSchema, {
           paths: ["value.workspace_profile.database_change_mode"],

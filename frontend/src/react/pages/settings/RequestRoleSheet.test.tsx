@@ -210,10 +210,6 @@ const mocks = vi.hoisted(() => ({
   currentUser: { name: "users/me@example.com", email: "me@example.com" },
 }));
 
-const stableSettingStore = {
-  workspaceProfile: { maximumRoleExpiration: undefined },
-};
-
 vi.mock("@/connect", () => ({
   issueServiceClientConnect: {
     createIssue: (req: unknown) => mocks.createIssue(req),
@@ -221,7 +217,6 @@ vi.mock("@/connect", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSettingV1Store: () => stableSettingStore,
   pushNotification: (...args: unknown[]) => mocks.pushNotification(...args),
 }));
 
@@ -232,6 +227,7 @@ vi.mock("@/react/hooks/useAppState", () => ({
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
+      roleList: [],
       getRoleByName: (name: string) => ({
         name,
         permissions:
@@ -239,6 +235,8 @@ vi.mock("@/react/stores/app", () => ({
             ? ["bb.projects.get", "bb.databases.get"]
             : [],
       }),
+      // Migrated off the Pinia useSettingV1Store mock.
+      getWorkspaceProfile: () => ({ maximumRoleExpiration: undefined }),
     }),
 }));
 
