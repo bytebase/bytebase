@@ -29,7 +29,6 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -442,7 +441,7 @@ function ServiceAccountForm({
   const projectEntityFromName = useProjectByName(project ?? "");
   const projectEntity = project ? projectEntityFromName : undefined;
 
-  const parent = useVueState(() => project ?? workspaceResourceName);
+  const parent = project ?? workspaceResourceName;
 
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
   const emailSuffix = useMemo(() => {
@@ -684,7 +683,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
   const projectFromName = useProjectByName(projectName ?? "");
   const project = projectName ? projectFromName : undefined;
 
-  const parent = useVueState(() => projectName ?? workspaceResourceName);
+  const parent = projectName ?? workspaceResourceName;
 
   const [showInactive, setShowInactive] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);

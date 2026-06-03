@@ -17,7 +17,6 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import {
   ensureWorkloadIdentityFullName,
@@ -251,7 +250,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   const projectFromName = useProjectByName(projectName ?? "");
   const project = projectName ? projectFromName : undefined;
 
-  const parent = useVueState(() => projectName ?? workspaceResourceName);
+  const parent = projectName ?? workspaceResourceName;
 
   const [showInactive, setShowInactive] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);

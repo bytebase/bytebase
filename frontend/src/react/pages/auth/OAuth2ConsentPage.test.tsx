@@ -52,6 +52,7 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
       return mocks.workspaceList.value;
     },
     isSaaSMode: () => mocks.isSaaSMode.value,
+    isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
     switchWorkspace: mocks.switchWorkspace,

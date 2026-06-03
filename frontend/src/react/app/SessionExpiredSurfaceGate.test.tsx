@@ -15,15 +15,12 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: <T,>(getter: () => T) => getter(),
 }));
 
-vi.mock("@/store", () => ({
-  useAuthStore: () => ({
-    get unauthenticatedOccurred() {
-      return unauthenticatedOccurredRef.value;
-    },
-    get isLoggedIn() {
-      return isLoggedInRef.value;
-    },
-  }),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: <T,>(selector: (s: unknown) => T) =>
+    selector({
+      isLoggedIn: () => isLoggedInRef.value,
+      unauthenticatedOccurred: unauthenticatedOccurredRef.value,
+    }),
 }));
 
 vi.mock("@/react/router", () => ({

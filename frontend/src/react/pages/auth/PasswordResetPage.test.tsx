@@ -16,9 +16,9 @@ const mocks = vi.hoisted(() => ({
         disallowPasswordSignin: false,
       },
     },
+    requireResetPassword: (() => true) as () => boolean,
   },
   useAuthStore: vi.fn(() => ({
-    requireResetPassword: false,
     setRequireResetPassword: vi.fn(),
     login: vi.fn(async () => {}),
   })),
@@ -171,8 +171,8 @@ beforeEach(async () => {
       disallowPasswordSignin: false,
     },
   };
+  mocks.appStoreState.requireResetPassword = () => true;
   mocks.useAuthStore.mockReturnValue({
-    requireResetPassword: true,
     setRequireResetPassword: vi.fn(),
     login: vi.fn(async () => {}),
   });
@@ -181,11 +181,7 @@ beforeEach(async () => {
 
 describe("PasswordResetPage", () => {
   test("forced-reset mode: redirects when requireResetPassword is false", () => {
-    mocks.useAuthStore.mockReturnValue({
-      requireResetPassword: false,
-      setRequireResetPassword: vi.fn(),
-      login: vi.fn(),
-    });
+    mocks.appStoreState.requireResetPassword = () => false;
     const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
     render();
     expect(mocks.routerReplace).toHaveBeenCalled();
@@ -253,7 +249,6 @@ describe("PasswordResetPage", () => {
     mocks.resetPassword.mockResolvedValue({});
     const login = vi.fn(async () => {});
     mocks.useAuthStore.mockReturnValue({
-      requireResetPassword: true,
       setRequireResetPassword: vi.fn(),
       login,
     });

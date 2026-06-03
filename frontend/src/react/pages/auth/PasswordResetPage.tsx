@@ -10,7 +10,6 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -38,9 +37,7 @@ export function PasswordResetPage() {
   const passwordRestriction = serverInfo?.restriction?.passwordRestriction;
   const disallowPasswordSignin =
     serverInfo?.restriction?.disallowPasswordSignin ?? false;
-  const requireResetPassword = useVueState(
-    () => useAuthStore().requireResetPassword
-  );
+  const requireResetPassword = useAppStore((s) => s.requireResetPassword());
   const currentUser = useCurrentUser();
 
   // This page renders outside any shell, so the workspace bootstrap hasn't
