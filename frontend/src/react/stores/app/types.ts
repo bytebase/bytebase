@@ -143,7 +143,16 @@ export type ListWorkloadIdentitiesParams = {
 
 export type AccessGrantFilter = {
   name?: string;
+  // Substring search via `query.contains(...)`. Use for free-text search
+  // UIs. Backend ILIKE-matches the stored grant query (whitespace
+  // normalized), so callers can pass any substring.
   statement?: string;
+  // Exact-match via `query == ...`. Use for authorization-eligibility
+  // checks where the frontend needs to mirror the backend JIT match
+  // (e.g. "can the user export this exact statement?"). Backend trims
+  // boundary whitespace on both sides — internal whitespace preserved
+  // byte-for-byte. PR #20491 bot review #3349385091.
+  statementExact?: string;
   creator?: string;
   status?: AccessGrantFilterStatus[];
   issue?: string;

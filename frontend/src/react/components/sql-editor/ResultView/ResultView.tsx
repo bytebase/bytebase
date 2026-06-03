@@ -154,7 +154,12 @@ export function ResultView({
         parent: databaseProjectName,
         filter: {
           target: database.name,
-          statement: executeParams.statement,
+          // Exact match — the backend's JIT authorization path uses
+          // `query == ...` (preCheckAccess in sql_service.go). A
+          // substring match (`statement: ...`) would expose Export for
+          // queries that don't actually match any grant. PR #20491 bot
+          // review #3349385091.
+          statementExact: executeParams.statement,
           status: ["ACTIVE"],
           export: true,
         },

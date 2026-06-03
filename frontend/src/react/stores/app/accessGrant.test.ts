@@ -59,4 +59,51 @@ describe("buildAccessGrantFilter", () => {
       buildAccessGrantFilter({ target: "instances/i/databases/d" }, FIXED_NOW)
     ).toBe('target == "instances/i/databases/d"');
   });
+
+  // statementExact pins the distinction from `statement` (substring search)
+  // and mirrors the backend JIT authorization predicate `query == "..."`.
+  // PR #20491 bot review #3349385091: a substring match like running
+  // `SELECT * FROM t` against a grant for `SELECT * FROM t WHERE id = 1`
+  // must NOT enable the Export button because the backend exact-match
+  // would still deny.
+  test("statementExact emits exact CEL equality", () => {
+    expect(
+      buildAccessGrantFilter({ statementExact: "SELECT * FROM t" })
+    ).toBe(`query == "SELECT * FROM t"`);
+  });
+
+  test("statementExact trims boundary whitespace", () => {
+    expect(
+      buildAccessGrantFilter({ statementExact: "\n  SELECT 1\n" })
+    ).toBe(`query == "SELECT 1"`);
+  });
+
+  test("statementExact escapes embedded quotes and newlines safely", () => {
+    expect(
+      buildAccessGrantFilter({
+        statementExact: `SELECT 'foo "bar"' FROM t\nWHERE x = 1`,
+      })
+    ).toBe(`query == "SELECT 'foo \\"bar\\"' FROM t\\nWHERE x = 1"`);
+  });
+
+  test("statement and statementExact emit different predicates", () => {
+    // Same input: `statement` → substring; `statementExact` → exact.
+    // Both must coexist for different UX cases (search box vs.
+    // authorization-eligibility check).
+    expect(buildAccessGrantFilter({ statement: "SELECT 1" })).toBe(
+      `query.contains("SELECT 1")`
+    );
+    expect(buildAccessGrantFilter({ statementExact: "SELECT 1" })).toBe(
+      `query == "SELECT 1"`
+    );
+  });
+
+  test("empty-string statementExact still emits exact predicate", () => {
+    // `statementExact === ""` is a meaningful filter (match grants whose
+    // stored query is empty), distinct from `statementExact === undefined`
+    // which means "no constraint". Don't conflate them.
+    expect(buildAccessGrantFilter({ statementExact: "" })).toBe(
+      `query == ""`
+    );
+  });
 });

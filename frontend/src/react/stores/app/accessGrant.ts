@@ -49,6 +49,11 @@ export const buildAccessGrantFilter = (
   if (filter.statement) {
     parts.push(`query.contains("${filter.statement.trim()}")`);
   }
+  if (filter.statementExact !== undefined) {
+    // Use JSON.stringify so internal quotes / backslashes / newlines in
+    // the SQL are escaped safely into the CEL string literal.
+    parts.push(`query == ${JSON.stringify(filter.statementExact.trim())}`);
+  }
   if (filter.creator) {
     parts.push(`creator == "${filter.creator}"`);
   }
