@@ -13,7 +13,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { router } from "@/react/router";
 import {
@@ -53,9 +53,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   );
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [showDrawer, setShowDrawer] = useState(false);
 
@@ -478,12 +476,8 @@ function IssueListItem({
   );
   const creator = creatorUser || unknownUser(issue.creator);
 
-  const issueProject = useVueState(() =>
-    useAppStore
-      .getState()
-      .getProjectByName(
-        `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
-      )
+  const issueProject = useProjectByName(
+    `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
 
   const createTimeTs = Math.floor(

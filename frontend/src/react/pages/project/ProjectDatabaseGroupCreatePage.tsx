@@ -1,5 +1,5 @@
 import { DatabaseGroupForm } from "@/react/components/DatabaseGroupForm";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -14,9 +14,7 @@ export function ProjectDatabaseGroupCreatePage({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   if (!project) return null;
 

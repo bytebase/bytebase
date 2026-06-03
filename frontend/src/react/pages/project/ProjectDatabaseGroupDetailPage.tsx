@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { router } from "@/react/router";
@@ -47,9 +48,7 @@ export function ProjectDatabaseGroupDetailPage({
   void projectsByName;
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const resourceName = `${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`;
 

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -50,9 +50,7 @@ function ProjectResourceLink({ resource }: { resource: string }) {
     }
   }, [resource]);
 
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(resource)
-  );
+  const project = useProjectByName(resource);
   void projectsByName;
 
   return (

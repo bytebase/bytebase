@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
 import type { Permission } from "@/types";
@@ -34,9 +34,7 @@ export function DatabaseDetailActions({
   const hasWorkspacePermissionFn = useAppStore(
     (state) => state.hasWorkspacePermission
   );
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(database.project)
-  );
+  const project = useProjectByName(database.project);
   void projectsByName;
   const hasProjectPermission = useMemo(
     () => (permission: Permission) => {

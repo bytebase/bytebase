@@ -22,7 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -70,9 +70,7 @@ export function PlanDetailRollbackSheet({
   const normalizedProjectName = projectName.startsWith("projects/")
     ? projectName
     : `projects/${projectName}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(normalizedProjectName)
-  );
+  const project = useProjectByName(normalizedProjectName);
   const [loading, setLoading] = useState(false);
   const [selectedTaskRunNames, setSelectedTaskRunNames] = useState<string[]>(
     []

@@ -7,7 +7,7 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/connect";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_403,
@@ -285,9 +285,7 @@ export const useIssueDetailPage = ({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(`${projectNamePrefix}${projectId}`)
-  );
+  const project = useProjectByName(`${projectNamePrefix}${projectId}`);
   const [snapshot, setSnapshot] = useState<IssueDetailPageSnapshot>(() =>
     buildDefaultSnapshot(projectId, issueId)
   );

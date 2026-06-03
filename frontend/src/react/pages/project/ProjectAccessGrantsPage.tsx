@@ -32,6 +32,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -116,9 +117,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const currentUser = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const hasJITFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_JIT).value

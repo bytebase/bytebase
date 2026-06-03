@@ -30,6 +30,7 @@ import {
 } from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   buildMemberSummary,
@@ -95,9 +96,7 @@ export function ProjectMaskingExemptionPage({
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   const showDatabaseLink = useMemo(
     () =>
       project ? hasProjectPermissionV2(project, "bb.databases.get") : false,

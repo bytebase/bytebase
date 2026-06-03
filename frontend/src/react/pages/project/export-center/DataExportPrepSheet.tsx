@@ -20,6 +20,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -91,9 +92,7 @@ export function DataExportPrepSheet({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
 
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
 
   const [step, setStep] = useState<Step>(1);

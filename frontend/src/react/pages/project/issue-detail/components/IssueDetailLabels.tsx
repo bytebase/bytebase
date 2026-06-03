@@ -12,7 +12,7 @@ import { issueServiceClientConnect } from "@/connect";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/react/router/handles";
@@ -42,9 +42,7 @@ export function IssueDetailLabels() {
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   useClickOutside(containerRef, open, () => setOpen(false));
 

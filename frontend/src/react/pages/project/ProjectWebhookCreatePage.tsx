@@ -1,6 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { useMemo } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { State, WebhookType } from "@/types/proto-es/v1/common_pb";
@@ -16,9 +16,7 @@ export function ProjectWebhookCreatePage({ projectId }: { projectId: string }) {
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const allowEdit = useMemo(() => {
     if (!project) return false;

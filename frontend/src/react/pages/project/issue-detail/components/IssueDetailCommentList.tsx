@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
@@ -110,9 +110,7 @@ export function IssueDetailCommentList() {
   const currentUser = useCurrentUser();
   const routeHash = useCurrentRoute().hash;
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const issueName = page.issue?.name || page.plan?.issue || "";
   // `getIssueComments` returns a stable empty array on miss, so reading it
@@ -368,9 +366,7 @@ function IssueDescriptionCommentRow({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(page.issue?.creator || "")

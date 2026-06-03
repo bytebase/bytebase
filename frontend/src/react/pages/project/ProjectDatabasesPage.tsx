@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { useAppStore } from "@/react/stores/app";
@@ -72,9 +72,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   const isDefault = isDefaultProject(projectName);
 
   const hasProjectPermission = useCallback(

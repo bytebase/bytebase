@@ -58,6 +58,7 @@ import {
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -192,9 +193,7 @@ export function PlanDetailChangesBranch({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
-  );
+  const project = useProjectByName(`projects/${page.projectId}`);
   const [showAddSpecSheet, setShowAddSpecSheet] = useState(false);
   const [showTargetSelectorSheet, setShowTargetSelectorSheet] = useState(false);
   const [specPendingDelete, setSpecPendingDelete] = useState<Plan_Spec | null>(
@@ -714,9 +713,7 @@ function OptionsSection({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
-  );
+  const project = useProjectByName(`projects/${page.projectId}`);
   const databasesByName = useAppStore((s) => s.databasesByName);
   const [sheetStatement, setSheetStatementValue] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
