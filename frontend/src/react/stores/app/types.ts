@@ -7,6 +7,7 @@ import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
+import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 import type { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
@@ -174,8 +175,27 @@ export type ListAccessGrantsParams = {
 export type AuthSlice = {
   currentUser?: User;
   currentUserRequest?: Promise<User | undefined>;
+  // Resource name `users/{email}` of the signed-in user. Mirrors the legacy
+  // Pinia auth store's `currentUserName`; drives `isLoggedIn`.
+  currentUserName?: string;
+  unauthenticatedOccurred: boolean;
+  authSessionKey: string;
+  isSelfEmailUpdate: boolean;
   loadCurrentUser: () => Promise<User | undefined>;
-  logout: (signinUrl: string) => Promise<void>;
+  isLoggedIn: () => boolean;
+  requireResetPassword: () => boolean;
+  setRequireResetPassword: (value: boolean) => void;
+  setUnauthenticatedOccurred: (value: boolean) => void;
+  fetchCurrentUser: () => Promise<User | undefined>;
+  login: (params: {
+    request: LoginRequest;
+    redirect?: boolean;
+    redirectUrl?: string;
+  }) => Promise<void>;
+  signup: (request: Partial<User>) => Promise<void>;
+  logout: () => Promise<void>;
+  sendEmailLoginCode: (email: string, workspace?: string) => Promise<void>;
+  updateCurrentUserNameForEmailChange: (newName: string) => void;
 };
 
 export type WorkspaceSlice = {
