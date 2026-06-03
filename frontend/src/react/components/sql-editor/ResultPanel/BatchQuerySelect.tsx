@@ -223,7 +223,7 @@ export function BatchQuerySelect({
   const validateExport = () =>
     selectedDatabaseNames.size > 0 && selectedDatabaseNames.size <= MAX_EXPORT;
 
-  const handleExport = ({ options, resolve, reject }: DataExportRequest) => {
+  const handleExport = ({ options, resolve }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
       const contents: DownloadContent[] = [];

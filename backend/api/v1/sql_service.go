@@ -185,20 +185,14 @@ func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEm
 }
 
 // preCheckAccess returns the user's most capable active access grant matching
-// the given query, or nil if none. It ranks candidates by capability count
-// (Unmask + Export, each worth 1 point) and returns the highest-ranked grant;
-// the rank is operation-agnostic, so callers gate on the specific capability
-// they need:
+// the given query, or nil if none. When `requireExport` is true the CEL
+// filter is narrowed to grants with `export == true`, so an unmask-only
+// grant on the same statement can't shadow a separately-active export
+// grant via slice-order ties (see PR #20491 review).
 //
-//   - Query authorizes on any grant (ACL bypass) and reads `Payload.Unmask` to
-//     decide `SkipMasking`.
-//   - Export must additionally check `Payload.Export` before treating the grant
-//     as authorizing — an unmask-only grant doesn't authorize Export, even
-//     though it matched the query.
-//
-// The returned grant is guaranteed to have a non-nil Payload — callers may
-// deref `Payload.Unmask` / `Payload.Export` without an additional check.
-func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
+// The returned grant has a non-nil Payload — callers may deref
+// `Payload.Unmask` / `Payload.Export` without an additional check.
+func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage, requireExport bool) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -230,6 +224,9 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		now,
 		strings.TrimSpace(statement),
 	)
+	if requireExport {
+		filter += ` && export == true`
+	}
 	filterQ, err := store.GetListAccessGrantFilter(filter)
 	if err != nil {
 		slog.Warn("failed to build access grant filter", log.BBError(err))
@@ -265,9 +262,12 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 // selectBestAccessGrant picks the highest-ranked grant by capability count
 // (Unmask + Export). A grant with both wins outright; otherwise the first
 // single-capability grant in slice order wins (ties resolve to the input
-// ordering, typically ListAccessGrants's ordering). Nil-payload grants are
-// skipped so callers can deref `Payload.Unmask` / `Payload.Export` without
-// an additional check.
+// ordering). Nil-payload grants are skipped so callers can deref
+// `Payload.Unmask` / `Payload.Export` without an additional check.
+//
+// This auto-find ranking is inherently ambiguous when two grants tie on
+// score — for deterministic selection callers should pass an explicit
+// `access_grant` in the request (see `resolveExplicitAccessGrant`).
 func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGrantMessage {
 	var best *store.AccessGrantMessage
 	bestScore := -1
@@ -298,7 +298,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, false /* requireExport */)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -946,14 +946,10 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
-	// preCheckAccess returns the most capable matching grant regardless of
-	// operation; gate on `Payload.Export` here so an unmask-only grant
-	// doesn't accidentally authorize an export.
-	matchedGrant := s.preCheckAccess(ctx, request.Statement, instance, database)
-	var accessGrant *store.AccessGrantMessage
-	if matchedGrant != nil && matchedGrant.Payload.Export {
-		accessGrant = matchedGrant
-	}
+	// requireExport=true narrows the CEL filter to grants with export=true,
+	// so a tied unmask-only grant can't shadow a separately-active export
+	// grant via slice order (PR #20491 bot review).
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, true /* requireExport */)
 
 	// Validate the request.
 	// New query ACL experience.
