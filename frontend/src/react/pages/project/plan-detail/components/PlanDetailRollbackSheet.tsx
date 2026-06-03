@@ -23,9 +23,9 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import {
   CreatePlanRequestSchema,

@@ -126,3 +126,15 @@ export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 export const PLAN_DETAIL_PHASE_CHANGES = "changes";
 export const PLAN_DETAIL_PHASE_REVIEW = "review";
 export const PLAN_DETAIL_PHASE_DEPLOY = "deploy";
+
+// Normalize a query value (string | string[] | undefined) to a single string.
+// Ported vue-free from projectV1RouteHelpers.getRouteQueryString.
+export function getRouteQueryString(
+  value?: string | string[] | undefined
+): string | undefined {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return typeof value[0] === "string" ? value[0] : undefined;
+  }
+  return undefined;
+}

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { AUTH_PASSWORD_FORGOT_MODULE } from "@/react/router/handles";
 import { router } from "@/router";
-import { AUTH_PASSWORD_FORGOT_MODULE } from "@/router/auth";
 import {
   type LoginRequest,
   LoginRequestSchema,

@@ -14,9 +14,9 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import {
   BatchUpdateDatabasesRequestSchema,

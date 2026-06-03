@@ -2,12 +2,14 @@ import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useVueRoute } from "@/react/hooks/useVueRoute";
+import {
+  PROJECT_V1_ROUTE_DETAIL,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router/handles";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { TabItem } from "./TabItem";
 
 /**

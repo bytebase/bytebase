@@ -23,6 +23,7 @@ import { useAppProject } from "@/react/hooks/useAppProject";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -31,7 +32,6 @@ import {
   useCurrentSQLEditorTab,
   useIsDisconnected,
 } from "@/react/stores/sqlEditor/tab";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { unknownProject } from "@/types";
 import {
   extractDatabaseResourceName,

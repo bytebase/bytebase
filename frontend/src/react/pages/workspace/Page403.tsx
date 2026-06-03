@@ -2,8 +2,8 @@ import { ChevronLeft, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { WORKSPACE_ROOT_MODULE } from "@/react/router/handles";
 import { router } from "@/router";
-import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import type { Permission } from "@/types";
 
 export function Page403() {

@@ -3,8 +3,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
+import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import { router } from "@/router";
-import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {

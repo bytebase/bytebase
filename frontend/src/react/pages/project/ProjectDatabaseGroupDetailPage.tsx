@@ -18,9 +18,9 @@ import {
 } from "@/react/components/ui/dropdown-menu";
 import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
+import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
 import { hasFeature } from "@/store";
 import {
   databaseGroupNamePrefix,

@@ -31,13 +31,13 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
 import { useAppStore } from "@/react/stores/app";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
 import { router } from "@/router";
-import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import { extractUserEmail, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";

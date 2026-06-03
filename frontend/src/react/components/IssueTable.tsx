@@ -31,10 +31,12 @@ import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import {
+  PROJECT_V1_ROUTE_DETAIL,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,

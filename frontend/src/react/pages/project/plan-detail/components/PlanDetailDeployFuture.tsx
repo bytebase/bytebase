@@ -20,8 +20,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { buildPlanDeployRouteFromRolloutName } from "@/react/router/routeHelpers";
 import { router } from "@/router";
-import { buildPlanDeployRouteFromRolloutName } from "@/router/dashboard/projectV1RouteHelpers";
 import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";

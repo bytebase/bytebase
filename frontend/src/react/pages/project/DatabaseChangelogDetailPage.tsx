@@ -7,14 +7,14 @@ import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";

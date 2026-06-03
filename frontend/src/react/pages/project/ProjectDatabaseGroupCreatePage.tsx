@@ -1,8 +1,8 @@
 import { DatabaseGroupForm } from "@/react/components/DatabaseGroupForm";
 import { useVueState } from "@/react/hooks/useVueState";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 export function ProjectDatabaseGroupCreatePage({

@@ -13,9 +13,9 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
+import { AUTH_SIGNUP_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 import { pushNotification, useAuthStore } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";

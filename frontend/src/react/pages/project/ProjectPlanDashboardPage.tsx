@@ -52,13 +52,13 @@ import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
-import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
+import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {

@@ -17,16 +17,16 @@ import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
+import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
+import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission, SQLReviewPolicy } from "@/types";

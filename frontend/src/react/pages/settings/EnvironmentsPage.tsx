@@ -60,14 +60,14 @@ import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import {
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { getEmptyRolloutPolicy } from "@/react/stores/app/policy";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { router } from "@/router";
-import {
-  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {

@@ -16,10 +16,10 @@ import {
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
 import { router } from "@/router";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";

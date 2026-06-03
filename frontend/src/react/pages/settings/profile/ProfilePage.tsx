@@ -28,16 +28,14 @@ import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import {
-  WORKSPACE_ROUTE_404,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { router } from "@/router";
 import { hasFeature, pushNotification, useAuthStore } from "@/store";
 import {
   AccountType,

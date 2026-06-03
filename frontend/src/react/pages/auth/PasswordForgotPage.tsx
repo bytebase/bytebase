@@ -5,9 +5,12 @@ import { authServiceClientConnect } from "@/connect";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  AUTH_PASSWORD_RESET_MODULE,
+  AUTH_SIGNIN_MODULE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { AUTH_PASSWORD_RESET_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { pushNotification } from "@/store";
 import { isValidEmail, resolveWorkspaceName } from "@/utils";
 

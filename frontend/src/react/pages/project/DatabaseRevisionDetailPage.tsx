@@ -1,12 +1,12 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { RevisionDetailPanel } from "@/react/components/revision";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { router } from "@/router";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { extractProjectResourceName } from "@/utils/v1/project";

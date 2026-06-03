@@ -1,19 +1,19 @@
 import { CheckCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { RouteTarget } from "@/react/router";
 import { cn } from "@/react/lib/utils";
+import type { RouteTarget } from "@/react/router";
 import { useNavigate } from "@/react/router";
-import { useAppStore } from "@/react/stores/app";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  SQL_EDITOR_WORKSHEET_MODULE,
   WORKSPACE_ROUTE_USERS,
 } from "@/react/router/handles";
-import { SQL_EDITOR_WORKSHEET_MODULE } from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";

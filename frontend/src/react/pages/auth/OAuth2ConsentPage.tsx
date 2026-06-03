@@ -12,9 +12,9 @@ import {
 } from "@/react/components/ui/select";
 import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";

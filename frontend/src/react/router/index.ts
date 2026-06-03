@@ -110,7 +110,9 @@ export function useCurrentRoute(): ReactRoute {
     query: Object.fromEntries(new URLSearchParams(location.search)),
     requiredPermissions: dedupePermissions(
       matches.flatMap(
-        (m) => (m.handle as RouteHandle | undefined)?.requiredPermissionList?.() ?? []
+        (m) =>
+          (m.handle as RouteHandle | undefined)?.requiredPermissionList?.() ??
+          []
       )
     ),
     overrideDocumentTitle: leafHandle?.overrideDocumentTitle ?? false,

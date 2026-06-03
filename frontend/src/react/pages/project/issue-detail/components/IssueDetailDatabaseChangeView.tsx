@@ -23,13 +23,13 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-} from "@/router/dashboard/projectV1";
-import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
+} from "@/react/router/handles";
+import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
+import { useAppStore } from "@/react/stores/app";
+import { router } from "@/router";
 import { getProjectNameAndDatabaseGroupName } from "@/store";
 import {
   isValidDatabaseGroupName,

@@ -11,9 +11,9 @@ import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { pushNotification, useAuthStore } from "@/store";
 import {
   LoginRequestSchema,

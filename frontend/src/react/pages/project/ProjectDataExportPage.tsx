@@ -15,10 +15,12 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
+import {
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";

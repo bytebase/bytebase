@@ -35,13 +35,13 @@ import {
   useServerState,
 } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
@@ -58,11 +58,9 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
-} from "@/router/dashboard/workspaceRoutes";
-import {
-  SETTING_ROUTE_WORKSPACE_GENERAL,
-  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-} from "@/router/dashboard/workspaceSetting";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { router } from "@/router";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";

@@ -24,12 +24,12 @@ import {
 } from "@/react/components/ui/table";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";

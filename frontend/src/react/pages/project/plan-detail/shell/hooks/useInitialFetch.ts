@@ -1,11 +1,11 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { MutableRefObject } from "react";
 import { useEffect } from "react";
-import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { router } from "@/router";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import type { PlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
