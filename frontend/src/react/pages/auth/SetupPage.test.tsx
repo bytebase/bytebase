@@ -30,13 +30,11 @@ vi.mock("@/react/router", async (importOriginal) => ({
   },
 }));
 
-vi.mock("@/store", () => ({
-  useAppFeature: () => ({ value: 0 }),
-}));
-
 vi.mock("@/react/stores/app", () => {
   const state = {
     enableOnboarding: () => true,
+    appFeatures: { "bb.feature.database-change-mode": 0 },
+    loadWorkspaceProfile: vi.fn(async () => undefined),
     listRoles: mocks.listRoles,
     fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
