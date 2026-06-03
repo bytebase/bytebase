@@ -856,6 +856,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	baseVars := map[string]any{
 		common.CELAttributeResourceProjectID: issue.ProjectID,
 		common.CELAttributeRequestUnmask:     accessGrant.Payload.Unmask,
+		common.CELAttributeRequestExport:     accessGrant.Payload.Export,
 	}
 
 	targets := accessGrant.Payload.Targets

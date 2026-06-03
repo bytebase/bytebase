@@ -157,6 +157,11 @@ message QueryRequest {
 message QueryResponse {
   // The query results.
   repeated QueryResult results = 1;
+
+  // The just-in-time access grant applied to this query, if any.
+  // Format: projects/{project}/accessGrants/{accessGrant}.
+  // Empty when the user was authorized through normal ACL rather than a grant.
+  string applied_access_grant = 2;
 }
 
 message QueryOption {
@@ -441,6 +446,11 @@ message ExportRequest {
 message ExportResponse {
   // The export file content.
   bytes content = 1;
+
+  // The just-in-time access grant applied to this export, if any.
+  // Format: projects/{project}/accessGrants/{accessGrant}.
+  // Empty when the user was authorized through normal ACL rather than a grant.
+  string applied_access_grant = 2;
 }
 
 message DiffMetadataRequest {

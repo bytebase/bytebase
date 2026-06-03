@@ -499,7 +499,7 @@ func getResponseString(response any) (string, error) {
 		case *v1pb.AdminExecuteResponse:
 			return redactAdminExecuteResponse(r)
 		case *v1pb.ExportResponse:
-			return nil
+			return redactExportResponse(r)
 		case *v1pb.LoginResponse:
 			return redactLoginResponse(r)
 		case *v1pb.ExchangeTokenResponse:
@@ -534,6 +534,17 @@ func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {
 		r.Password = maskedString
 	}
 	return r
+}
+
+// redactExportResponse drops the exported file content but keeps the applied
+// access grant so audit logs record which grant authorized the export.
+func redactExportResponse(r *v1pb.ExportResponse) *v1pb.ExportResponse {
+	if r == nil || r.AppliedAccessGrant == "" {
+		return nil
+	}
+	return &v1pb.ExportResponse{
+		AppliedAccessGrant: r.AppliedAccessGrant,
+	}
 }
 
 func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
@@ -733,7 +744,8 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 		return nil
 	}
 	n := &v1pb.QueryResponse{
-		Results: nil,
+		Results:            nil,
+		AppliedAccessGrant: r.AppliedAccessGrant,
 	}
 	for _, result := range r.Results {
 		n.Results = append(n.Results, &v1pb.QueryResult{

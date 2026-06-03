@@ -165,7 +165,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 // preCheckAccess finds and returns the best matching active access grant for the query.
 // It lists access grants filtered by project, creator, status, statement, target database,
 // and expiry, then prefers the grant with unmask=true if available.
-func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
+func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -195,7 +195,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
 		databaseFullName,
 		now,
-		strings.TrimSpace(request.Statement),
+		strings.TrimSpace(statement),
 	)
 	filterQ, err := store.GetListAccessGrantFilter(filter)
 	if err != nil {
@@ -217,7 +217,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	if len(grants) == 0 {
 		return nil
 	}
-	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), request.Statement)
+	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), statement)
 	if err != nil {
 		slog.Warn("failed to validate access grant query", log.BBError(err))
 		return nil
@@ -226,13 +226,34 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	// Pick the best grant (prefer unmask=true).
-	for _, grant := range grants {
-		if grant.Payload != nil && grant.Payload.Unmask {
-			return grant
+	// Pick the most capable grant: one covering more capabilities (unmask,
+	// export) wins, so the applied grant reported back to the caller reflects
+	// the broadest access the user holds for this exact query.
+	best := grants[0]
+	bestScore := accessGrantCapabilityScore(best)
+	for _, grant := range grants[1:] {
+		if score := accessGrantCapabilityScore(grant); score > bestScore {
+			best = grant
+			bestScore = score
 		}
 	}
-	return grants[0]
+	return best
+}
+
+// accessGrantCapabilityScore counts the capabilities (unmask, export) a grant
+// confers, used to pick the broadest matching grant in preCheckAccess.
+func accessGrantCapabilityScore(grant *store.AccessGrantMessage) int {
+	if grant.Payload == nil {
+		return 0
+	}
+	score := 0
+	if grant.Payload.Unmask {
+		score++
+	}
+	if grant.Payload.Export {
+		score++
+	}
+	return score
 }
 
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
@@ -243,7 +264,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request, instance, database)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -391,6 +412,9 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	response := &v1pb.QueryResponse{
 		Results: results,
+	}
+	if accessGrant != nil {
+		response.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
 	}
 
 	return connect.NewResponse(response), nil
@@ -886,6 +910,10 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
+	// When an active access grant covers this export request, the user is already
+	// authorized and we skip the regular ACL check, just like the Query request.
+	accessGrant := s.preCheckAccess(ctx, statement, instance, database)
+
 	// Validate the request.
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
@@ -903,7 +931,12 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if err != nil {
 		return nil, err
 	}
-	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
+	optionalAccessCheck := s.accessCheck
+	if accessGrant != nil && accessGrant.Payload.Export {
+		optionalAccessCheck = nil
+	}
+	skipMasking := accessGrant != nil && accessGrant.Payload.Unmask
+	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
 	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -911,9 +944,14 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
 	}
 
-	return connect.NewResponse(&v1pb.ExportResponse{
+	exportResponse := &v1pb.ExportResponse{
 		Content: bytes,
-	}), nil
+	}
+	if accessGrant != nil {
+		exportResponse.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
+	}
+
+	return connect.NewResponse(exportResponse), nil
 }
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
@@ -1043,6 +1081,7 @@ func doExport(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 	dataSource *storepb.DataSource,
+	skipMasking bool,
 ) ([]byte, time.Duration, error) {
 	if dataSource == nil {
 		return nil, 0, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found valid data source"))
@@ -1111,7 +1150,7 @@ func doExport(
 		return nil, duration, queryErr
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+	if !skipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 			return nil, duration, err

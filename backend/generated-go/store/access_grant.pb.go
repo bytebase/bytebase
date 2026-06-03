@@ -126,8 +126,10 @@ type AccessGrantPayload struct {
 	// Stored when the user provides a TTL instead of an absolute expire_time.
 	// The server computes expire_time from this value at activation time.
 	RequestedDuration *durationpb.Duration `protobuf:"bytes,6,opt,name=requested_duration,json=requestedDuration,proto3" json:"requested_duration,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Whether export the query result.
+	Export        bool `protobuf:"varint,7,opt,name=export,proto3" json:"export,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AccessGrantPayload) Reset() {
@@ -202,6 +204,13 @@ func (x *AccessGrantPayload) GetRequestedDuration() *durationpb.Duration {
 	return nil
 }
 
+func (x *AccessGrantPayload) GetExport() bool {
+	if x != nil {
+		return x.Export
+	}
+	return false
+}
+
 var File_store_access_grant_proto protoreflect.FileDescriptor
 
 const file_store_access_grant_proto_rawDesc = "" +
@@ -213,14 +222,15 @@ const file_store_access_grant_proto_rawDesc = "" +
 	"\aPENDING\x10\x01\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
-	"\aREVOKED\x10\x03\"\xd9\x01\n" +
+	"\aREVOKED\x10\x03\"\xf1\x01\n" +
 	"\x12AccessGrantPayload\x12\x19\n" +
 	"\bissue_id\x18\x01 \x01(\x03R\aissueId\x12\x18\n" +
 	"\atargets\x18\x02 \x03(\tR\atargets\x12\x14\n" +
 	"\x05query\x18\x03 \x01(\tR\x05query\x12\x16\n" +
 	"\x06unmask\x18\x04 \x01(\bR\x06unmask\x12\x16\n" +
 	"\x06reason\x18\x05 \x01(\tR\x06reason\x12H\n" +
-	"\x12requested_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x11requestedDurationB\x93\x01\n" +
+	"\x12requested_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x11requestedDuration\x12\x16\n" +
+	"\x06export\x18\a \x01(\bR\x06exportB\x93\x01\n" +
 	"\x12com.bytebase.storeB\x10AccessGrantProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

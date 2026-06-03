@@ -142,6 +142,9 @@ message AccessGrant {
   }
 
   string reason = 12;
+
+  // Whether export the query result.
+  bool export = 13;
 }
 
 message GetAccessGrantRequest {
@@ -177,6 +180,8 @@ message ListAccessGrantsRequest {
   // - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
   // - query: the access query, support "==" and ".contains(xx)" operator
   // - target: the target database fullname, support "==" operator.
+  // - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+  // - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
   //
   // Examples:
   // - creator == "users/dev@example.com"
@@ -186,6 +191,8 @@ message ListAccessGrantsRequest {
   // - issue == "projects/x/issues/123"
   // - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
   // - target == "instances/sample/databases/employee"
+  // - unmask == true
+  // - export == true && status == "ACTIVE"
   string filter = 4;
 
   // The order by of access grants.

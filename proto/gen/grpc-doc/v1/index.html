@@ -3252,6 +3252,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>export</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether export the query result. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3387,6 +3394,8 @@ Supported fields:
 - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator.
 - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator
 - target: the target database fullname, support &#34;==&#34; operator.
+- unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal.
+- export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
 
 Examples:
 - creator == &#34;users/dev@example.com&#34;
@@ -3395,7 +3404,9 @@ Examples:
 - creator == &#34;users/dev@example.com&#34; &amp;&amp; status == &#34;ACTIVE&#34;
 - issue == &#34;projects/x/issues/123&#34;
 - status == &#34;ACTIVE&#34; &amp;&amp; expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;
-- target == &#34;instances/sample/databases/employee&#34; </p></td>
+- target == &#34;instances/sample/databases/employee&#34;
+- unmask == true
+- export == true &amp;&amp; status == &#34;ACTIVE&#34; </p></td>
                 </tr>
               
                 <tr>
@@ -13577,6 +13588,15 @@ Oracle and search path in Postgres. </p></td>
                   <td><p>The export file content. </p></td>
                 </tr>
               
+                <tr>
+                  <td>applied_access_grant</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The just-in-time access grant applied to this export, if any.
+Format: projects/{project}/accessGrants/{accessGrant}.
+Empty when the user was authorized through normal ACL rather than a grant. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13851,6 +13871,15 @@ CosmosDB only. </p></td>
                   <td><a href="#bytebase.v1.QueryResult">QueryResult</a></td>
                   <td>repeated</td>
                   <td><p>The query results. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>applied_access_grant</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The just-in-time access grant applied to this query, if any.
+Format: projects/{project}/accessGrants/{accessGrant}.
+Empty when the user was authorized through normal ACL rather than a grant. </p></td>
                 </tr>
               
             </tbody>
@@ -19073,7 +19102,7 @@ When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding requ
 When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
 When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
 When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
-When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask
+When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask, request.export
 
 For examples:
 resource.environment_id == &#34;prod&#34; &amp;&amp; statement.affected_rows &gt;= 100

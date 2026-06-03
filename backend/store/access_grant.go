@@ -402,6 +402,18 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 						return nil, errors.Errorf("target value must be a string")
 					}
 					return qb.Q().Space("access_grant.payload->'targets' @> jsonb_build_array(to_jsonb(?::text))", targetStr), nil
+				case "unmask":
+					boolVal, ok := value.(bool)
+					if !ok {
+						return nil, errors.Errorf("unmask value must be a boolean")
+					}
+					return qb.Q().Space("COALESCE((access_grant.payload->>'unmask')::boolean, false) = ?", boolVal), nil
+				case "export":
+					boolVal, ok := value.(bool)
+					if !ok {
+						return nil, errors.Errorf("export value must be a boolean")
+					}
+					return qb.Q().Space("COALESCE((access_grant.payload->>'export')::boolean, false) = ?", boolVal), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}

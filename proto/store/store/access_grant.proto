@@ -35,4 +35,7 @@ message AccessGrantPayload {
   // Stored when the user provides a TTL instead of an absolute expire_time.
   // The server computes expire_time from this value at activation time.
   google.protobuf.Duration requested_duration = 6;
+
+  // Whether export the query result.
+  bool export = 7;
 }

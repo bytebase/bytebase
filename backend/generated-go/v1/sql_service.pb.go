@@ -659,9 +659,13 @@ func (x *QueryRequest) GetContainer() string {
 type QueryResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The query results.
-	Results       []*QueryResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Results []*QueryResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	// The just-in-time access grant applied to this query, if any.
+	// Format: projects/{project}/accessGrants/{accessGrant}.
+	// Empty when the user was authorized through normal ACL rather than a grant.
+	AppliedAccessGrant string `protobuf:"bytes,2,opt,name=applied_access_grant,json=appliedAccessGrant,proto3" json:"applied_access_grant,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *QueryResponse) Reset() {
@@ -699,6 +703,13 @@ func (x *QueryResponse) GetResults() []*QueryResult {
 		return x.Results
 	}
 	return nil
+}
+
+func (x *QueryResponse) GetAppliedAccessGrant() string {
+	if x != nil {
+		return x.AppliedAccessGrant
+	}
+	return ""
 }
 
 type QueryOption struct {
@@ -1578,9 +1589,13 @@ func (x *ExportRequest) GetSchema() string {
 type ExportResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The export file content.
-	Content       []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	// The just-in-time access grant applied to this export, if any.
+	// Format: projects/{project}/accessGrants/{accessGrant}.
+	// Empty when the user was authorized through normal ACL rather than a grant.
+	AppliedAccessGrant string `protobuf:"bytes,2,opt,name=applied_access_grant,json=appliedAccessGrant,proto3" json:"applied_access_grant,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ExportResponse) Reset() {
@@ -1618,6 +1633,13 @@ func (x *ExportResponse) GetContent() []byte {
 		return x.Content
 	}
 	return nil
+}
+
+func (x *ExportResponse) GetAppliedAccessGrant() string {
+	if x != nil {
+		return x.AppliedAccessGrant
+	}
+	return ""
 }
 
 type DiffMetadataRequest struct {
@@ -2723,9 +2745,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\tcontainer\x18\b \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_container\"C\n" +
+	"_container\"u\n" +
 	"\rQueryResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xa1\x03\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\x120\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xa1\x03\n" +
 	"\vQueryOption\x12^\n" +
 	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12]\n" +
 	"\x14mssql_explain_format\x18\x02 \x01(\x0e2+.bytebase.v1.QueryOption.MSSQLExplainFormatR\x12mssqlExplainFormat\"[\n" +
@@ -2866,9 +2889,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\bpassword\x18\x06 \x01(\tR\bpassword\x12$\n" +
 	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
-	"\a_schema\"*\n" +
+	"\a_schema\"\\\n" +
 	"\x0eExportResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"\xdc\x01\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\x120\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xdc\x01\n" +
 	"\x13DiffMetadataRequest\x12K\n" +
 	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
 	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12+\n" +

@@ -114,10 +114,12 @@ type AccessGrant struct {
 	// The query permission granted.
 	Query string `protobuf:"bytes,7,opt,name=query,proto3" json:"query,omitempty"`
 	// Whether the grant allows unmasking sensitive data.
-	Unmask        bool                   `protobuf:"varint,8,opt,name=unmask,proto3" json:"unmask,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	Reason        string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
+	Unmask     bool                   `protobuf:"varint,8,opt,name=unmask,proto3" json:"unmask,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	Reason     string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
+	// Whether export the query result.
+	Export        bool `protobuf:"varint,13,opt,name=export,proto3" json:"export,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -247,6 +249,13 @@ func (x *AccessGrant) GetReason() string {
 	return ""
 }
 
+func (x *AccessGrant) GetExport() bool {
+	if x != nil {
+		return x.Export
+	}
+	return false
+}
+
 type isAccessGrant_Expiration interface {
 	isAccessGrant_Expiration()
 }
@@ -331,6 +340,8 @@ type ListAccessGrantsRequest struct {
 	// - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
 	// - query: the access query, support "==" and ".contains(xx)" operator
 	// - target: the target database fullname, support "==" operator.
+	// - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+	// - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
 	//
 	// Examples:
 	// - creator == "users/dev@example.com"
@@ -340,6 +351,8 @@ type ListAccessGrantsRequest struct {
 	// - issue == "projects/x/issues/123"
 	// - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
 	// - target == "instances/sample/databases/employee"
+	// - unmask == true
+	// - export == true && status == "ACTIVE"
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of access grants.
 	// Support creator, expire_time, create_time. The default sorting order is ascending.
@@ -760,7 +773,7 @@ var File_v1_access_grant_service_proto protoreflect.FileDescriptor
 
 const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x9a\x05\n" +
+	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xb2\x05\n" +
 	"\vAccessGrant\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
@@ -777,7 +790,8 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x16\n" +
-	"\x06reason\x18\f \x01(\tR\x06reason\"F\n" +
+	"\x06reason\x18\f \x01(\tR\x06reason\x12\x16\n" +
+	"\x06export\x18\r \x01(\bR\x06export\"F\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\n" +

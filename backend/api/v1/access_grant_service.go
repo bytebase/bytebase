@@ -202,6 +202,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Targets:           ag.Targets,
 			Query:             ag.Query,
 			Unmask:            ag.Unmask,
+			Export:            ag.Export,
 			Reason:            ag.Reason,
 			RequestedDuration: requestedDuration,
 		},
@@ -428,6 +429,7 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		ag.Targets = p.Targets
 		ag.Query = p.Query
 		ag.Unmask = p.Unmask
+		ag.Export = p.Export
 		if p.IssueId != 0 {
 			ag.Issue = common.FormatIssue(msg.ProjectID, p.IssueId)
 		}

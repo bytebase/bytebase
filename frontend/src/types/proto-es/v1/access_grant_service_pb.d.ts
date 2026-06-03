@@ -113,6 +113,13 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
    * @generated from field: string reason = 12;
    */
   reason: string;
+
+  /**
+   * Whether export the query result.
+   *
+   * @generated from field: bool export = 13;
+   */
+  export: boolean;
 };
 
 /**
@@ -216,6 +223,8 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
    * - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
    * - query: the access query, support "==" and ".contains(xx)" operator
    * - target: the target database fullname, support "==" operator.
+   * - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+   * - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
    *
    * Examples:
    * - creator == "users/dev@example.com"
@@ -225,6 +234,8 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
    * - issue == "projects/x/issues/123"
    * - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
    * - target == "instances/sample/databases/employee"
+   * - unmask == true
+   * - export == true && status == "ACTIVE"
    *
    * @generated from field: string filter = 4;
    */

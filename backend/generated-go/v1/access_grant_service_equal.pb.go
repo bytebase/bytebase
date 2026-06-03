@@ -51,6 +51,9 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Reason != y.Reason {
 		return false
 	}
+	if x.Export != y.Export {
+		return false
+	}
 	return true
 }
 
