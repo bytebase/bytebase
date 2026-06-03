@@ -67,15 +67,15 @@ describe("buildAccessGrantFilter", () => {
   // must NOT enable the Export button because the backend exact-match
   // would still deny.
   test("statementExact emits exact CEL equality", () => {
-    expect(
-      buildAccessGrantFilter({ statementExact: "SELECT * FROM t" })
-    ).toBe(`query == "SELECT * FROM t"`);
+    expect(buildAccessGrantFilter({ statementExact: "SELECT * FROM t" })).toBe(
+      `query == "SELECT * FROM t"`
+    );
   });
 
   test("statementExact trims boundary whitespace", () => {
-    expect(
-      buildAccessGrantFilter({ statementExact: "\n  SELECT 1\n" })
-    ).toBe(`query == "SELECT 1"`);
+    expect(buildAccessGrantFilter({ statementExact: "\n  SELECT 1\n" })).toBe(
+      `query == "SELECT 1"`
+    );
   });
 
   test("statementExact escapes embedded quotes and newlines safely", () => {
@@ -102,8 +102,6 @@ describe("buildAccessGrantFilter", () => {
     // `statementExact === ""` is a meaningful filter (match grants whose
     // stored query is empty), distinct from `statementExact === undefined`
     // which means "no constraint". Don't conflate them.
-    expect(buildAccessGrantFilter({ statementExact: "" })).toBe(
-      `query == ""`
-    );
+    expect(buildAccessGrantFilter({ statementExact: "" })).toBe(`query == ""`);
   });
 });

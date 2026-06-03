@@ -279,9 +279,13 @@ export function DataExportButton({
       });
   }, [currentOption, isRequesting, onExport, t]);
 
+  // Returns true when the clipboard write succeeded — Generate callers
+  // gate the password commit on that so the masked input doesn't end up
+  // holding a value the user can never read back. PR #20491 bot review
+  // #3349557577.
   const copyPasswordToClipboard = useCallback(
-    async (value: string) => {
-      if (!value) return;
+    async (value: string): Promise<boolean> => {
+      if (!value) return false;
       try {
         await navigator.clipboard.writeText(value);
         pushNotification({
@@ -289,21 +293,30 @@ export function DataExportButton({
           style: "SUCCESS",
           title: t("common.copied"),
         });
+        return true;
       } catch {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("common.failed"),
         });
+        return false;
       }
     },
     [t]
   );
 
-  const handleGeneratePassword = useCallback(() => {
+  const handleGeneratePassword = useCallback(async () => {
     const next = generateRandomPassword();
-    setPassword(next);
-    void copyPasswordToClipboard(next);
+    // Only commit the generated password to state after the user has it
+    // on their clipboard. If the copy fails (insecure context, denied
+    // permission) the input stays empty so the user isn't left signing
+    // an export ZIP with a password they can't read back from the masked
+    // input.
+    const copied = await copyPasswordToClipboard(next);
+    if (copied) {
+      setPassword(next);
+    }
   }, [copyPasswordToClipboard]);
 
   const handleSelectDropdownFormat = (selected: ExportFormat) => {
