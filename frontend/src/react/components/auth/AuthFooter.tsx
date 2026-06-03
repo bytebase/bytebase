@@ -1,5 +1,6 @@
+import { useTranslation } from "react-i18next";
 import i18n from "@/plugins/i18n";
-import { useVueState } from "@/react/hooks/useVueState";
+import reactI18n from "@/react/i18n";
 import { router } from "@/react/router";
 import { emitStorageChangedEvent, setDocumentTitle } from "@/utils";
 import { STORAGE_KEY_LANGUAGE } from "@/utils/storage-keys";
@@ -27,6 +28,7 @@ function resolveLabel(locale: string): string {
 
 function setAppLocale(lang: string) {
   i18n.global.locale.value = lang;
+  void reactI18n.changeLanguage(lang);
   localStorage.setItem(STORAGE_KEY_LANGUAGE, JSON.stringify(lang));
   emitStorageChangedEvent();
   const route = router.currentRoute.value;
@@ -36,8 +38,8 @@ function setAppLocale(lang: string) {
 }
 
 export function AuthFooter() {
-  const currentLocale = useVueState(() => i18n.global.locale.value as string);
-  const activeLabel = resolveLabel(currentLocale);
+  const { i18n: reactI18nInstance } = useTranslation();
+  const activeLabel = resolveLabel(reactI18nInstance.language);
   const year = new Date().getFullYear();
 
   return (
