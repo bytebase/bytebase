@@ -28,6 +28,7 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -438,9 +439,8 @@ function ServiceAccountForm({
 
   // subscribe to re-render on project cache change
   void projectsByName;
-  const projectEntity = useVueState(() =>
-    project ? useAppStore.getState().getProjectByName(project) : undefined
-  );
+  const projectEntityFromName = useProjectByName(project ?? "");
+  const projectEntity = project ? projectEntityFromName : undefined;
 
   const parent = useVueState(() => project ?? workspaceResourceName);
 
@@ -681,11 +681,8 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
     : undefined;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    projectName
-      ? useAppStore.getState().getProjectByName(projectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(projectName ?? "");
+  const project = projectName ? projectFromName : undefined;
 
   const parent = useVueState(() => projectName ?? workspaceResourceName);
 

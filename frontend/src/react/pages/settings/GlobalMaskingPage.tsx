@@ -354,8 +354,8 @@ function MaskingRuleConfig({
 export function GlobalMaskingPage() {
   const { t } = useTranslation();
 
-  const hasSensitiveDataFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   const hasPermission = hasWorkspacePermissionV2(

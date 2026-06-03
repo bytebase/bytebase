@@ -69,6 +69,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   getMemberBindings,
@@ -162,7 +163,7 @@ function MemberTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -620,7 +621,7 @@ function MemberTableByRole({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
@@ -1381,7 +1382,7 @@ function EditMemberRoleDrawer({
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
   const settingsByName = useAppStore((s) => s.settingsByName);
   const hasEmailSetting = useMemo(
@@ -2062,11 +2063,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
     : undefined;
-  const project = useVueState(() =>
-    projectName
-      ? useAppStore.getState().getProjectByName(projectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(projectName ?? "");
+  const project = projectName ? projectFromName : undefined;
 
   const [memberSearchText, setMemberSearchText] = useState("");
   const [memberViewTab, setMemberViewTab] = useState<"MEMBERS" | "ROLES">(
@@ -2079,8 +2077,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   >();
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
 
-  const hasRequestRoleFeature = useVueState(() =>
-    useAppStore.getState().hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+  const hasRequestRoleFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
 
   // IAM policy loads are owned by the parent shells: ProjectRouteShell

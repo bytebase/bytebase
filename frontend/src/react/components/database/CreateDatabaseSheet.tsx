@@ -18,7 +18,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -102,11 +102,8 @@ export function CreateDatabaseSheet({
   // `forceIssueLabels` stay on the pre-existing `selectedProject` snapshot
   // pattern below — they have a known staleness seam that is out of scope
   // for BYT-9310. Do not collapse these back together without a separate spec.
-  const projectReactive = useVueState(() =>
-    effectiveProjectName
-      ? useAppStore.getState().getProjectByName(effectiveProjectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(effectiveProjectName ?? "");
+  const projectReactive = effectiveProjectName ? projectFromName : undefined;
   void projectsByName;
 
   // Note on hydration: projectStore.getProjectByName returns an

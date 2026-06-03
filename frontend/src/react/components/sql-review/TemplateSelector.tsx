@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { Separator } from "@/react/components/ui/separator";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { cn } from "@/react/lib/utils";
@@ -40,11 +41,10 @@ function ResourceBadge({ resource }: { resource: string }) {
     }
   }, [resource]);
 
-  const projectTitle = useVueState(() =>
-    resource.startsWith(projectNamePrefix)
-      ? useAppStore.getState().getProjectByName(resource)?.title
-      : undefined
-  );
+  const projectFromResource = useProjectByName(resource);
+  const projectTitle = resource.startsWith(projectNamePrefix)
+    ? projectFromResource?.title
+    : undefined;
   void projectsByName;
 
   if (resource.startsWith(environmentNamePrefix)) {

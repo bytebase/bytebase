@@ -91,7 +91,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     (s) => s.getWorkspaceProfile().passwordRestriction
   );
 
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const has2FAFeature = useVueState(() =>
     hasFeature(PlanFeature.FEATURE_TWO_FA)

@@ -47,7 +47,6 @@ import {
 } from "@/react/components/ui/table";
 import { Textarea } from "@/react/components/ui/textarea";
 import { BlockTooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   displayRoleDescriptionFromList,
   displayRoleTitleFromList,
@@ -682,8 +681,8 @@ export function RolesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Role | undefined>();
   const [deleteResources, setDeleteResources] = useState<string[]>([]);
 
-  const hasCustomRoleFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  const hasCustomRoleFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
 
   const canCreate = hasWorkspacePermissionV2("bb.roles.create");

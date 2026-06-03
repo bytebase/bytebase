@@ -16,6 +16,7 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -247,11 +248,8 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     : undefined;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    projectName
-      ? useAppStore.getState().getProjectByName(projectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(projectName ?? "");
+  const project = projectName ? projectFromName : undefined;
 
   const parent = useVueState(() => projectName ?? workspaceResourceName);
 

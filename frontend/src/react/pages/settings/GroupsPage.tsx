@@ -46,7 +46,6 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
@@ -478,7 +477,7 @@ function GroupForm({
 }: Omit<CreateGroupSheetProps, "open">) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
@@ -926,14 +925,12 @@ export function GroupsPage() {
   const listGroups = useAppStore((state) => state.listGroups);
   const fetchGroup = useAppStore((state) => state.fetchGroup);
 
-  const hasUserGroupFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
+  const hasUserGroupFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
   );
   const workspaceDomains = useAppStore((s) => s.getWorkspaceProfile().domains);
-  const hasDirectorySyncFeature = useVueState(() =>
-    useAppStore
-      .getState()
-      .hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+  const hasDirectorySyncFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
   const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
 
