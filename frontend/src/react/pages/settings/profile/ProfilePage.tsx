@@ -93,8 +93,8 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
-  const has2FAFeature = useVueState(() =>
-    hasFeature(PlanFeature.FEATURE_TWO_FA)
+  const has2FAFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_TWO_FA)
   );
 
   const requireMfa = useAppStore((s) => s.getWorkspaceProfile().requireMfa);

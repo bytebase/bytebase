@@ -18,7 +18,6 @@ import {
   getColumnCatalog,
   getTableCatalog,
 } from "@/react/stores/app/databaseCatalog";
-import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -112,8 +111,8 @@ export function DatabaseObjectExplorer({
     return typeof table === "string" ? table : "";
   });
   const databaseMetadata = useAppDatabaseMetadata(database.name);
-  const hasSensitiveDataFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);

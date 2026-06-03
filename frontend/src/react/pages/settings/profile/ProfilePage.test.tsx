@@ -67,6 +67,7 @@ vi.mock("@/react/stores/app", () => {
     workspacePolicy: undefined,
     getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
     fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
+    hasFeature: () => mocks.hasFeature(),
     // Migrated off the Pinia actuator/setting store mocks.
     isSaaSMode: () => false,
     getWorkspaceProfile: () => ({

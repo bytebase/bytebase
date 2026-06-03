@@ -79,6 +79,7 @@ vi.mock("@/react/stores/app", () => {
   const getState = () => ({
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getProjectClassification: mocks.getProjectClassification,
+    hasInstanceFeature: () => mocks.featureToRef().value,
     ...((mocks.dbSchemaStore() ?? {}) as Record<string, unknown>),
   });
   return {

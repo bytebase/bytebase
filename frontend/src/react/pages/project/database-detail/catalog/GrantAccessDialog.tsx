@@ -27,7 +27,6 @@ import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
 import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
 import type { SensitiveColumn } from "@/react/lib/sensitive-data/types";
@@ -36,7 +35,7 @@ import {
   getExpressionsForDatabaseResource as getResourceExpressions,
 } from "@/react/lib/sensitive-data/utils";
 import { useAppStore } from "@/react/stores/app";
-import { featureToRef, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
@@ -91,8 +90,8 @@ export function GrantAccessDialog({
 }: GrantAccessDialogProps) {
   const { t } = useTranslation();
 
-  const hasRequiredFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING, instance).value
+  const hasRequiredFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
   );
 
   const initialDatabaseResources = useMemo<DatabaseResource[]>(

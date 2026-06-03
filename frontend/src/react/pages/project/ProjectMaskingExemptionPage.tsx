@@ -31,7 +31,6 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   buildMemberSummary,
   generateGrantTitle,
@@ -49,7 +48,7 @@ import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { extractUserEmail, hasFeature, pushNotification } from "@/store";
+import { extractUserEmail, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import {
@@ -128,8 +127,8 @@ export function ProjectMaskingExemptionPage({
         : false,
     [project]
   );
-  const hasSensitiveDataFeature = useVueState(() =>
-    hasFeature(PlanFeature.FEATURE_DATA_MASKING)
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   const membersFromVue = useExemptionDataReact(projectName);

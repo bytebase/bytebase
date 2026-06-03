@@ -199,13 +199,21 @@ vi.mock("@/store", () => ({
 vi.mock("@/react/stores/app", () => ({
   useAppStore: Object.assign(
     (
-      selector: (state: { settingsByName: Record<string, unknown> }) => unknown
-    ) => selector({ settingsByName: {} }),
+      selector: (state: {
+        settingsByName: Record<string, unknown>;
+        hasInstanceFeature: () => boolean;
+      }) => unknown
+    ) =>
+      selector({
+        settingsByName: {},
+        hasInstanceFeature: () => mocks.featureToRef().value,
+      }),
     {
       getState: () => ({
         getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
         upsertPolicy: mocks.upsertPolicy,
         classification: () => [],
+        hasInstanceFeature: () => mocks.featureToRef().value,
       }),
     }
   ),

@@ -382,6 +382,7 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getSettingByName: mocks.getSettingByName,
     getProjectClassification: mocks.getProjectClassification,
+    hasInstanceFeature: () => mocks.featureToRef().value,
   });
   return {
     useAppStore: Object.assign(

@@ -17,12 +17,10 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { hasFeature } from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
@@ -72,8 +70,8 @@ export function ProjectDatabaseGroupDetailPage({
     });
   }, [resourceName]);
 
-  const hasDatabaseGroupFeature = useVueState(() =>
-    hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)
+  const hasDatabaseGroupFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)
   );
 
   const hasMatchedDatabases = useMemo(

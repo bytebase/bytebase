@@ -33,11 +33,10 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
-import { featureToRef, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -119,8 +118,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useProjectByName(projectName);
 
-  const hasJITFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_JIT).value
+  const hasJITFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_JIT)
   );
   const canList = useMemo(
     () =>

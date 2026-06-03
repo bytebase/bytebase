@@ -66,6 +66,7 @@ vi.mock("@/react/stores/app", () => {
     getSettingByName: mocks.getSettingByName,
     getProjectClassification: mocks.getProjectClassification,
     hasFeature: mocks.hasFeature,
+    hasInstanceFeature: () => mocks.featureToRef().value,
     instanceMissingLicense: mocks.instanceMissingLicense,
     updateDatabaseCatalog: mocks.updateDatabaseCatalog,
   });

@@ -9,11 +9,9 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
-import { useVueState } from "@/react/hooks/useVueState";
 import { updateTableCatalog } from "@/react/lib/column-data-table/utils";
 import { useAppStore } from "@/react/stores/app";
 import { getTableCatalog } from "@/react/stores/app/databaseCatalog";
-import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -46,8 +44,8 @@ export function TableMetadataTable({
   const { t } = useTranslation();
   const databaseEngine = getDatabaseEngine(database);
   const showSchemaColumn = hasSchemaProperty(databaseEngine);
-  const showClassificationColumn = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
+  const showClassificationColumn = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
