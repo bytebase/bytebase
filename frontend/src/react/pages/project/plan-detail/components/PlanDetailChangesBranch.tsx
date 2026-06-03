@@ -60,7 +60,6 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import {
@@ -725,23 +724,25 @@ function OptionsSection({
     }
     return [];
   }, [selectedSpec]);
-  const databases = useVueState(() =>
-    targets
-      .flatMap((target) => {
-        if (isValidDatabaseName(target)) {
-          return [databasesByName[target] ?? unknownDatabase()];
-        }
-        if (isValidDatabaseGroupName(target)) {
-          const dbGroup = useAppStore
-            .getState()
-            .getDBGroupByName(target, DatabaseGroupView.FULL);
-          return (dbGroup.matchedDatabases ?? []).map(
-            (database) => databasesByName[database.name] ?? unknownDatabase()
-          );
-        }
-        return [];
-      })
-      .filter((database) => isValidDatabaseName(database.name))
+  const databases = useMemo(
+    () =>
+      targets
+        .flatMap((target) => {
+          if (isValidDatabaseName(target)) {
+            return [databasesByName[target] ?? unknownDatabase()];
+          }
+          if (isValidDatabaseGroupName(target)) {
+            const dbGroup = useAppStore
+              .getState()
+              .getDBGroupByName(target, DatabaseGroupView.FULL);
+            return (dbGroup.matchedDatabases ?? []).map(
+              (database) => databasesByName[database.name] ?? unknownDatabase()
+            );
+          }
+          return [];
+        })
+        .filter((database) => isValidDatabaseName(database.name)),
+    [targets, databasesByName]
   );
   const firstDatabaseName = databases[0]?.name ?? "";
   const instanceName = firstDatabaseName
