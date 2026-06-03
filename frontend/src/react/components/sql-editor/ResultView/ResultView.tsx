@@ -128,66 +128,75 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  // The just-in-time access grant the backend applied to this query (if any),
-  // resolved to its export capability. When a grant already authorizes export,
-  // we show the real Export button even if the policy disables direct export.
-  //
-  // Use SearchMyAccessGrants rather than GetAccessGrant: the appliedAccessGrant
-  // is invariantly owned by the current user (preCheckAccess filters by
-  // `Creator == user.Email`), so SearchMy is always sufficient and avoids
-  // requiring project-wide `bb.accessGrants.get`. Without this, grant
-  // creators who lack that permission would see "Request export" instead of
-  // the real Export button because the GetAccessGrant 403 silently kept
-  // `appliedGrantAllowsExport` false. See PR #20491 bot review.
-  const appliedAccessGrantName = resultSet?.appliedAccessGrant;
+  // Show the real export button when the policy allows export, OR when the
+  // user holds any active export-capable grant for this statement — even if
+  // it's not the grant the Query path applied (Query prefers Unmask, so the
+  // applied grant may be unmask-only while a separate export grant exists).
+  // Without this independent search the UI would hide the Export button and
+  // direct the user to "Request export" despite already having a grant — see
+  // PR #20491 bot review (#3349086832).
   const searchMyAccessGrants = useAppStore((s) => s.searchMyAccessGrants);
+  const databaseProjectName = database.project;
+  const [exportGrantName, setExportGrantName] = useState<string>("");
+
   useEffect(() => {
-    if (!appliedAccessGrantName) return;
-    const parent = appliedAccessGrantName.replace(/\/accessGrants\/[^/]+$/, "");
-    void searchMyAccessGrants({
-      parent,
-      filter: { name: appliedAccessGrantName },
-    });
-  }, [appliedAccessGrantName, searchMyAccessGrants]);
-  const appliedGrantAllowsExport = useAppStore((s) =>
-    appliedAccessGrantName
-      ? !!s.accessGrantsByName[appliedAccessGrantName]?.export
-      : false
+    if (
+      !queryDataPolicy?.disableExport ||
+      !executeParams?.statement ||
+      !databaseProjectName
+    ) {
+      setExportGrantName("");
+      return;
+    }
+    let canceled = false;
+    void (async () => {
+      const result = await searchMyAccessGrants({
+        parent: databaseProjectName,
+        filter: {
+          target: database.name,
+          statement: executeParams.statement,
+          status: ["ACTIVE"],
+          export: true,
+        },
+      });
+      if (!canceled) {
+        setExportGrantName(result.accessGrants[0]?.name ?? "");
+      }
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, [
+    queryDataPolicy?.disableExport,
+    executeParams?.statement,
+    databaseProjectName,
+    database.name,
+    searchMyAccessGrants,
+  ]);
+
+  // Pull display fields from the cache populated by the search above.
+  const exportGrantIssue = useAppStore((s) =>
+    exportGrantName ? (s.accessGrantsByName[exportGrantName]?.issue ?? "") : ""
   );
-  const appliedGrantIssue = useAppStore((s) =>
-    appliedAccessGrantName
-      ? (s.accessGrantsByName[appliedAccessGrantName]?.issue ?? "")
-      : ""
-  );
-  const appliedGrantReason = useAppStore((s) =>
-    appliedAccessGrantName
-      ? (s.accessGrantsByName[appliedAccessGrantName]?.reason ?? "")
-      : ""
+  const exportGrantReason = useAppStore((s) =>
+    exportGrantName ? (s.accessGrantsByName[exportGrantName]?.reason ?? "") : ""
   );
 
-  // Show the real export button when the policy allows export, or when an
-  // applied access grant authorizes it (the backend bypasses the ACL via the
-  // grant). Otherwise fall back to "Request export".
-  const showExport =
-    !queryDataPolicy?.disableExport || appliedGrantAllowsExport;
+  const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
 
   // Surface a tooltip explaining the grant-based bypass only when the policy
   // itself would normally block export — in the everyday "policy allows
-  // export" case, no tooltip is needed. Renders the grant's fullname as a
-  // clickable link to the grant's approval issue, plus the user-typed
-  // reason (when present) for context.
+  // export" case, no tooltip is needed. Attributes to the export-capable
+  // grant (which may differ from the Query-applied grant when the user has
+  // separate unmask + export grants for the same statement).
   const exportTooltip = useMemo<ReactNode>(() => {
-    if (
-      !queryDataPolicy?.disableExport ||
-      !appliedGrantAllowsExport ||
-      !appliedAccessGrantName
-    ) {
+    if (!queryDataPolicy?.disableExport || !exportGrantName) {
       return undefined;
     }
-    const issueHref = appliedGrantIssue
-      ? appliedGrantIssue.startsWith("/")
-        ? appliedGrantIssue
-        : `/${appliedGrantIssue}`
+    const issueHref = exportGrantIssue
+      ? exportGrantIssue.startsWith("/")
+        ? exportGrantIssue
+        : `/${exportGrantIssue}`
       : undefined;
     return (
       <div className="flex flex-col gap-y-1">
@@ -200,23 +209,22 @@ export function ResultView({
             className="break-all underline"
             onClick={(e) => e.stopPropagation()}
           >
-            {appliedAccessGrantName}
+            {exportGrantName}
           </a>
         ) : (
-          <span className="break-all">{appliedAccessGrantName}</span>
+          <span className="break-all">{exportGrantName}</span>
         )}
-        {appliedGrantReason && (
-          <span className="text-xs opacity-80">{appliedGrantReason}</span>
+        {exportGrantReason && (
+          <span className="text-xs opacity-80">{exportGrantReason}</span>
         )}
       </div>
     );
   }, [
     t,
     queryDataPolicy?.disableExport,
-    appliedGrantAllowsExport,
-    appliedAccessGrantName,
-    appliedGrantIssue,
-    appliedGrantReason,
+    exportGrantName,
+    exportGrantIssue,
+    exportGrantReason,
   ]);
 
   // When direct export is unavailable, offer a "Request export" affordance that
