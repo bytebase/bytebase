@@ -3,10 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { storageKeySqlEditorAiSuggestion } from "@/utils";
-import { useDynamicSuggestions } from "../logic";
 import { useAIContext } from "./context";
+import { useDynamicSuggestions } from "./useDynamicSuggestions";
 
 type Props = {
   readonly onEnter: (query: string) => void;
@@ -28,34 +27,25 @@ function loadShowSuggestion(key: string): boolean {
  * / dismiss controls. Clicking the pill emits the suggestion to the
  * parent (`ChatPanel`) which submits it via `requestAI(query)`.
  *
- * `useDynamicSuggestions()` returns a Vue `ComputedRef<SuggestionContext>`
- * where the inner object is a Pinia/Vue `reactive(...)` — we read each
- * field via its own `useVueState` getter so React only re-renders when
- * the specific field changes.
+ * `useDynamicSuggestions()` is a React hook backed by a module store
+ * (subscribed via `useSyncExternalStore`); it returns the current
+ * `SuggestionContext` (or undefined) and re-renders when the suggestions
+ * or fetch state for the active metadata change.
  */
 export function DynamicSuggestions({ onEnter }: Props) {
   const { t } = useTranslation();
   const { databaseMetadata, engine, schema } = useAIContext();
-  // `useDynamicSuggestions` returns a Vue `ComputedRef<SuggestionContext>`
-  // whose `metadata` getter reads our params. We pass them via
-  // `MaybeRefOrGetter` getters so Vue's reactivity follows React's
-  // useVueState-bridged values (the React `databaseMetadata` etc. are
-  // already plain values that re-read on each call).
-  const suggestionsRef = useDynamicSuggestions({
-    databaseMetadata: () => databaseMetadata,
-    engine: () => engine,
-    schema: () => schema,
+  const suggestion = useDynamicSuggestions({
+    databaseMetadata,
+    engine,
+    schema,
   });
   const currentUserEmail = useCurrentUser().email;
 
-  const ready = useVueState(() => suggestionsRef.value?.ready ?? false);
-  const state = useVueState<"LOADING" | "IDLE" | "ENDED">(
-    () => suggestionsRef.value?.state ?? "IDLE"
-  );
-  const suggestionsCount = useVueState(
-    () => suggestionsRef.value?.suggestions.length ?? 0
-  );
-  const current = useVueState(() => suggestionsRef.value?.current());
+  const ready = suggestion?.ready ?? false;
+  const state = suggestion?.state ?? "IDLE";
+  const suggestionsCount = suggestion?.suggestions.length ?? 0;
+  const current = suggestion?.current();
 
   // Kick off the initial fetch when the component mounts and the cache
   // is empty — matches the Vue `onMounted` block. `useDynamicSuggestions`
@@ -63,7 +53,6 @@ export function DynamicSuggestions({ onEnter }: Props) {
   // every render — gate by `state` so we don't pile concurrent `fetch()`s
   // on top of an in-flight one (each fetch is a paid AI completion).
   useEffect(() => {
-    const suggestion = suggestionsRef.value;
     if (
       suggestion &&
       suggestion.suggestions.length === 0 &&
@@ -71,7 +60,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
     ) {
       void suggestion.fetch();
     }
-  }, [suggestionsRef, state]);
+  }, [suggestion, state]);
 
   // Per-user dismissable flag persisted to localStorage. Defaults to
   // visible. Same storage key the Vue version used (`useDynamicLocalStorage`
@@ -109,7 +98,6 @@ export function DynamicSuggestions({ onEnter }: Props) {
   if (!show) return null;
 
   const handleConsume = () => {
-    const suggestion = suggestionsRef.value;
     if (!suggestion) return;
     const curr = suggestion.current();
     if (!curr) return;
@@ -118,7 +106,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
   };
 
   const handleRefresh = () => {
-    suggestionsRef.value?.consume();
+    suggestion?.consume();
   };
 
   return (
