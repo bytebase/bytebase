@@ -3,35 +3,14 @@ package plsql
 import (
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	oracleparser "github.com/bytebase/omni/oracle/parser"
-	parser "github.com/bytebase/parser/plsql"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
 	base.RegisterSplitterFunc(storepb.Engine_ORACLE, SplitSQL)
-}
-
-// consumeTrailingSemicolon walks forward from stopIdx through hidden-channel
-// tokens (whitespace, comments) looking for a trailing ';' that belongs to the
-// statement ending at stopIdx. Returns the index of the ';' if found before any
-// default-channel token, otherwise stopIdx (no consumption). ParsePLSQL uses
-// this to avoid BYT-9367's secondary AST-classification leak.
-func consumeTrailingSemicolon(allTokens []antlr.Token, stopIdx int) int {
-	for nextIdx := stopIdx + 1; nextIdx < len(allTokens); nextIdx++ {
-		next := allTokens[nextIdx]
-		if next.GetTokenType() == parser.PlSqlParserSEMICOLON {
-			return nextIdx
-		}
-		if next.GetChannel() == antlr.TokenDefaultChannel {
-			return stopIdx
-		}
-	}
-	return stopIdx
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
@@ -110,59 +89,31 @@ func trimOracleSegmentTrailingHidden(text string) int {
 }
 
 func SplitSQLForCompletion(statement string) ([]base.Statement, error) {
-	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
-	if err != nil {
-		return nil, err
-	}
-	if tree == nil {
-		return nil, nil
-	}
-	tokens, ok := stream.(*antlr.CommonTokenStream)
-	if !ok {
-		return nil, nil
-	}
+	segments := oracleparser.Split(statement)
 
-	var result []base.Statement
-	for _, item := range tree.GetChildren() {
-		if stmt, ok := item.(parser.IUnit_statementContext); ok {
-			if isCallStatement(item) && len(result) > 0 {
-				lastResult := result[len(result)-1]
-				stopIndex := stmt.GetStop().GetTokenIndex()
-				lastToken := tokens.Get(stopIndex)
-				result[len(result)-1] = base.Statement{
-					Text: lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-					End: common.ConvertANTLRTokenToExclusiveEndPosition(
-						int32(lastToken.GetLine()),
-						int32(lastToken.GetColumn()),
-						lastToken.GetText(),
-					),
-					Empty: false,
-				}
-				continue
-			}
-
-			stopIndex := stmt.GetStop().GetTokenIndex()
-			lastToken := tokens.Get(stopIndex)
-
-			result = append(result, base.Statement{
-				Text: tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(lastToken.GetLine()),
-					int32(lastToken.GetColumn()),
-					lastToken.GetText(),
-				),
-				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-			})
+	result := make([]base.Statement, 0, len(segments))
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
+	for i := 0; i < len(segments); i++ {
+		seg := segments[i]
+		if seg.Kind == oracleparser.SegmentSQLPlusCommand {
+			continue
 		}
+		byteStart := seg.ByteStart
+		byteEnd := seg.ByteEnd
+		if end, ok := matchRecognizeDefineMergeEnd(statement, segments, i); ok {
+			byteEnd = end
+			i += 2
+		}
+		result = append(result, base.Statement{
+			Text:  statement[byteStart:byteEnd],
+			Start: positionMapper.Position(byteStart),
+			End:   positionMapper.Position(byteEnd),
+			Empty: seg.Empty(),
+			Range: &storepb.Range{
+				Start: int32(byteStart),
+				End:   int32(byteEnd),
+			},
+		})
 	}
 	return result, nil
-}
-
-func isCallStatement(item antlr.Tree) bool {
-	unitStmt, ok := item.(parser.IUnit_statementContext)
-	if !ok {
-		return false
-	}
-	// BYT-8268: Changed from Call_statement to Sql_call_statement
-	return unitStmt.Sql_call_statement() != nil
 }

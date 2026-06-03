@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -44,8 +42,6 @@ type ColumnAddNotNullColumnRequireDefaultRule struct {
 	BaseRule
 
 	currentDatabase string
-	tableName       string
-	isNotNull       bool
 }
 
 // NewColumnAddNotNullColumnRequireDefaultRule creates a new ColumnAddNotNullColumnRequireDefaultRule.
@@ -84,64 +80,5 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
 				)
 			}
 		}
-	}
-}
-
-// OnEnter is called when the parser enters a rule context.
-func (r *ColumnAddNotNullColumnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Alter_table":
-		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
-	case "Column_definition":
-		r.handleColumnDefinitionEnter(ctx.(*parser.Column_definitionContext))
-	case "Inline_constraint":
-		r.handleInlineConstraint(ctx.(*parser.Inline_constraintContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when the parser exits a rule context.
-func (r *ColumnAddNotNullColumnRequireDefaultRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Alter_table":
-		r.handleAlterTableExit()
-	case "Column_definition":
-		r.handleColumnDefinitionExit(ctx.(*parser.Column_definitionContext))
-	default:
-	}
-	return nil
-}
-
-func (r *ColumnAddNotNullColumnRequireDefaultRule) handleAlterTable(ctx *parser.Alter_tableContext) {
-	r.tableName = normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase)
-}
-
-func (r *ColumnAddNotNullColumnRequireDefaultRule) handleAlterTableExit() {
-	r.tableName = ""
-}
-
-func (r *ColumnAddNotNullColumnRequireDefaultRule) handleInlineConstraint(ctx *parser.Inline_constraintContext) {
-	if ctx.NOT() != nil {
-		r.isNotNull = true
-	}
-}
-
-func (r *ColumnAddNotNullColumnRequireDefaultRule) handleColumnDefinitionEnter(_ *parser.Column_definitionContext) {
-	r.isNotNull = false
-}
-
-func (r *ColumnAddNotNullColumnRequireDefaultRule) handleColumnDefinitionExit(ctx *parser.Column_definitionContext) {
-	if r.tableName == "" || !r.isNotNull {
-		return
-	}
-
-	if ctx.DEFAULT() == nil {
-		r.AddAdvice(
-			r.level,
-			code.NotNullColumnWithNoDefault.Int32(),
-			fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), r.currentDatabase)),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
 	}
 }

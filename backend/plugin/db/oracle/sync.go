@@ -664,7 +664,8 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			CONSTRAINT_TYPE,
 			SEARCH_CONDITION,
 			R_OWNER,
-			R_CONSTRAINT_NAME
+			R_CONSTRAINT_NAME,
+			DELETE_RULE
 		FROM SYS.ALL_CONSTRAINTS
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME, CONSTRAINT_NAME`, schemaName)
@@ -683,8 +684,8 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 	outerRTableMap := make(map[db.ConstraintKey]string)
 	for constraintRows.Next() {
 		var tableName, constraintName, constraintType string
-		var searchCondition, rOwner, rConstraintName sql.NullString
-		if err := constraintRows.Scan(&tableName, &constraintName, &constraintType, &searchCondition, &rOwner, &rConstraintName); err != nil {
+		var searchCondition, rOwner, rConstraintName, deleteRule sql.NullString
+		if err := constraintRows.Scan(&tableName, &constraintName, &constraintType, &searchCondition, &rOwner, &rConstraintName, &deleteRule); err != nil {
 			return nil, nil, nil, nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
@@ -730,6 +731,9 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 				foreignKey := &storepb.ForeignKeyMetadata{
 					Name:    constraintName,
 					Columns: constraintColumnMap[constraintKey],
+				}
+				if deleteRule.Valid && deleteRule.String != "NO ACTION" {
+					foreignKey.OnDelete = deleteRule.String
 				}
 				if rOwner.String == schemaName {
 					// Same-schema reference - don't set ReferencedSchema for portability

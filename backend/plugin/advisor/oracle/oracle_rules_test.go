@@ -3,7 +3,6 @@ package oracle
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -84,6 +83,35 @@ func TestOracleAdvisorUsesOmniWithoutANTLRFallback(t *testing.T) {
 			wantCount: 1,
 		},
 		{
+			name: "plsql loop nested dml",
+			statement: `BEGIN
+  FOR i IN 1..2 LOOP
+    UPDATE tech_book SET creator = 'x' WHERE UPPER(name) = 'A';
+  END LOOP;
+END;`,
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+				Level: storepb.SQLReviewRule_WARNING,
+			},
+			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
+			wantCount: 1,
+		},
+		{
+			name: "plsql case nested dml",
+			statement: `BEGIN
+  CASE
+    WHEN 1 = 1 THEN
+      DELETE FROM tech_book WHERE ABS(id) > 5;
+  END CASE;
+END;`,
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+				Level: storepb.SQLReviewRule_WARNING,
+			},
+			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
+			wantCount: 1,
+		},
+		{
 			name:      "json column type",
 			statement: "CREATE TABLE t(a int, b JSON)",
 			rule: &storepb.SQLReviewRule{
@@ -133,8 +161,7 @@ func assertOracleStmtsDidNotUseANTLRFallback(t *testing.T, stmts []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		antlrParsed := reflect.ValueOf(stmt.AST).Elem().FieldByName("antlrParsed").Bool()
-		if antlrParsed {
+		if _, ok := base.GetANTLRAST(stmt.AST); ok {
 			t.Fatalf("Oracle advisor used ANTLR fallback for %T", stmt.AST)
 		}
 	}

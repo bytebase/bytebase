@@ -24,3 +24,31 @@
   changeType: 1
 - statement: UPDATE t1 SET a = 1 WHERE a > 10
   changeType: 1
+- statement: |
+    BEGIN
+      UPDATE t1 SET a = 1;
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |
+    BEGIN
+      DELETE FROM t1;
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

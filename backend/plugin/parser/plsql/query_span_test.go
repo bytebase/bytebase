@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -226,10 +227,13 @@ func TestGetAccessTables(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		results, err := ParsePLSQL(test.statement)
+		results, err := ParsePLSQLOmni(test.statement)
 		require.NoError(t, err)
 		require.NotEmpty(t, results)
-		resources := getAccessTables("DB", results[0].Tree)
+		require.NotEmpty(t, results.Items)
+		raw, ok := results.Items[0].(*oracleast.RawStmt)
+		require.True(t, ok)
+		resources := collectOmniAccessTables("DB", raw.Stmt)
 		require.Equal(t, test.expected, resources, test.statement)
 	}
 }

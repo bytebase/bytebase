@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -87,37 +85,5 @@ func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *NamingIdentifierCaseRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Id_expression" {
-		r.handleIDExpression(ctx.(*parser.Id_expressionContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*NamingIdentifierCaseRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionContext) {
-	identifier := normalizeIDExpression(ctx)
-	if r.upper {
-		if identifier != strings.ToUpper(identifier) {
-			r.AddAdvice(
-				r.level,
-				code.NamingCaseMismatch.Int32(),
-				fmt.Sprintf("Identifier %q should be upper case", identifier),
-				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-			)
-		}
-	} else {
-		if identifier != strings.ToLower(identifier) {
-			r.AddAdvice(
-				r.level,
-				code.NamingCaseMismatch.Int32(),
-				fmt.Sprintf("Identifier %q should be lower case", identifier),
-				common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-			)
-		}
-	}
-}

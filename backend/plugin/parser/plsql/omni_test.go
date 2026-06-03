@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	parser "github.com/bytebase/parser/plsql"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/omni/oracle/ast"
@@ -157,7 +156,7 @@ func TestOracleOmniASTWrapper(t *testing.T) {
 	require.Nil(t, got)
 }
 
-func TestOracleOmniASTAsANTLRAST(t *testing.T) {
+func TestOracleOmniASTDoesNotProvideANTLRFallback(t *testing.T) {
 	start := &storepb.Position{Line: 4, Column: 1}
 	omniAST := &OmniAST{
 		Node:          &ast.SelectStmt{},
@@ -166,14 +165,8 @@ func TestOracleOmniASTAsANTLRAST(t *testing.T) {
 	}
 
 	antlrAST, ok := base.GetANTLRAST(omniAST)
-	require.True(t, ok)
-	require.Equal(t, start, antlrAST.StartPosition)
-	require.IsType(t, &parser.Sql_scriptContext{}, antlrAST.Tree)
-	require.NotNil(t, antlrAST.Tokens)
-
-	antlrASTAgain, ok := base.GetANTLRAST(omniAST)
-	require.True(t, ok)
-	require.Same(t, antlrAST, antlrASTAgain)
+	require.False(t, ok)
+	require.Nil(t, antlrAST)
 }
 
 func TestOracleByteOffsetToRunePosition(t *testing.T) {

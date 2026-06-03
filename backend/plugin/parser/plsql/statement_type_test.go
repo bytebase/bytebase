@@ -49,17 +49,15 @@ func TestGetStatementType(t *testing.T) {
 	}
 }
 
-func TestGetStatementTypeUsesOmniASTWithoutANTLRFallback(t *testing.T) {
+func TestGetStatementTypeUsesOmniAST(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "CREATE SEQUENCE seq START WITH 1;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 1)
 
-	omniAST, ok := stmts[0].AST.(*OmniAST)
+	_, ok := stmts[0].AST.(*OmniAST)
 	require.True(t, ok)
-	require.False(t, omniAST.antlrParsed)
 
 	sqlTypes, err := GetStatementTypes(base.ExtractASTs(stmts))
 	require.NoError(t, err)
 	require.Equal(t, []storepb.StatementType{storepb.StatementType_CREATE_SEQUENCE}, sqlTypes)
-	require.False(t, omniAST.antlrParsed)
 }

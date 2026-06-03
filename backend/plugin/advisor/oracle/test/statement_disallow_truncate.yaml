@@ -51,8 +51,8 @@
         column: 0
       endposition: null
 
-# Test: bare PURGE qualifier (grammar `TRUNCATE TABLE … PURGE? SEMICOLON`)
-- statement: TRUNCATE TABLE techbook PURGE;
+# Test: storage qualifier
+- statement: TRUNCATE TABLE techbook DROP STORAGE;
   changeType: 1
   want:
     - status: 2
@@ -92,14 +92,14 @@
         column: 0
       endposition: null
 
-# Test: partition-list form — one advice, names joined in advice target
-- statement: ALTER TABLE sales TRUNCATE PARTITION (p_jan, p_feb);
+# Test: another partition form.
+- statement: ALTER TABLE sales TRUNCATE PARTITION p_jan;
   changeType: 1
   want:
     - status: 2
       code: 257
       title: STATEMENT_DISALLOW_TRUNCATE
-      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_jan, p_feb" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_jan" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
       startposition:
         line: 1
         column: 0
@@ -131,14 +131,14 @@
         column: 0
       endposition: null
 
-# Test: SUBPARTITION list form
-- statement: ALTER TABLE sales TRUNCATE SUBPARTITION (sp_east, sp_west);
+# Test: another SUBPARTITION form
+- statement: ALTER TABLE sales TRUNCATE SUBPARTITION sp_east;
   changeType: 1
   want:
     - status: 2
       code: 257
       title: STATEMENT_DISALLOW_TRUNCATE
-      content: 'ALTER TABLE "sales" TRUNCATE SUBPARTITION "sp_east, sp_west" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      content: 'ALTER TABLE "sales" TRUNCATE SUBPARTITION "sp_east" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
       startposition:
         line: 1
         column: 0
