@@ -470,6 +470,29 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		a.NoError(perr, "commented parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 
+	// Alias/table-name qualifiers resolve case-insensitively (TiDB default): a
+	// SET or DELETE target whose case differs from the FROM alias must still be
+	// matched, not rejected. (TiDB executes all four of these.)
+	result, err = run("UPDATE test AS T SET t.c = 2 WHERE T.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName)
+
+	result, err = run("UPDATE test AS T JOIN test2 AS Y ON T.a = Y.a SET t.c = 2, y.c = 3")
+	a.NoError(err)
+	a.Len(result, 2)
+	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
+
+	result, err = run("DELETE t FROM test AS T WHERE T.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName)
+
+	result, err = run("DELETE T FROM test AS t WHERE t.a = 1")
+	a.NoError(err)
+	a.Len(result, 1)
+	a.Equal("test", result[0].SourceTableName)
+
 	// In the >maxMixedDMLCount same-table UNION path, case-only database
 	// differences (db.test vs DB.test) must be treated as the same table, not
 	// rejected as "different tables" — consistent with the cross-database guard.
@@ -519,4 +542,12 @@ func TestBackupHonorsCaseSensitivity(t *testing.T) {
 	a.NoError(err, "case-insensitive: test and Test are the same table")
 	_, err = run(true, sixMixedCase)
 	a.Error(err, "case-sensitive: test and Test are different tables")
+
+	// Alias/qualifier matching honors case sensitivity: a SET qualifier whose
+	// case differs from the alias resolves when case-insensitive but is a
+	// distinct (unresolvable) identifier when case-sensitive.
+	_, err = run(false, "UPDATE test AS T SET t.c = 2 WHERE T.a = 1")
+	a.NoError(err, "case-insensitive: alias T resolves qualifier t")
+	_, err = run(true, "UPDATE test AS T SET t.c = 2 WHERE T.a = 1")
+	a.Error(err, "case-sensitive: alias T and qualifier t are different identifiers")
 }

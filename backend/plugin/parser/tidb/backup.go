@@ -83,7 +83,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 		}
 
 		for _, node := range parsed.Items {
-			tables, err := extractTables(databaseName, node, item.Text, dbMetadata)
+			tables, err := extractTables(databaseName, node, item.Text, dbMetadata, isCaseSensitive)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
@@ -107,13 +107,13 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 }
 
 // extractTables extracts the affected table references from a single DML node.
-func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
+func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadata *model.DatabaseMetadata, isCaseSensitive bool) ([]statementInfo, error) {
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
-		infos, err := extractTablesFromDelete(databaseName, n, fullSQL)
+		infos, err := extractTablesFromDelete(databaseName, n, fullSQL, isCaseSensitive)
 		return requireTargets(infos, err, "DELETE")
 	case *ast.UpdateStmt:
-		infos, err := extractTablesFromUpdate(databaseName, n, fullSQL, dbMetadata)
+		infos, err := extractTablesFromUpdate(databaseName, n, fullSQL, dbMetadata, isCaseSensitive)
 		return requireTargets(infos, err, "UPDATE")
 	case *ast.BatchStmt:
 		// TiDB BATCH (non-transactional DML) is not supported by prior backup.
@@ -153,10 +153,6 @@ func extractTables(databaseName string, node ast.Node, fullSQL string, dbMetadat
 	}
 }
 
-// requireTargets fails when a recognized DML statement yields no backup target.
-// Returning an empty list with no error would let the task executor treat the
-// backup as a successful no-op and run the mutation unprotected (e.g. when a
-// table alias collides with a CTE name, so the only target gets filtered out).
 // isOverwritingInsert reports whether an INSERT can overwrite or delete
 // existing rows (REPLACE, or INSERT ... ON DUPLICATE KEY UPDATE), which prior
 // backup cannot back up. A plain INSERT only adds rows.
@@ -164,6 +160,21 @@ func isOverwritingInsert(n *ast.InsertStmt) bool {
 	return n.IsReplace || len(n.OnDuplicateKey) > 0
 }
 
+// identifierKey normalizes an identifier for use as a map key/lookup, honoring
+// the instance's case sensitivity. TiDB resolves table-name and alias
+// qualifiers case-insensitively by default, so a case-mismatched reference
+// (UPDATE test AS T SET t.c = ...) must still resolve to the same table.
+func identifierKey(name string, isCaseSensitive bool) string {
+	if isCaseSensitive {
+		return name
+	}
+	return strings.ToLower(name)
+}
+
+// requireTargets fails when a recognized DML statement yields no backup target.
+// Returning an empty list with no error would let the task executor treat the
+// backup as a successful no-op and run the mutation unprotected (e.g. when a
+// table alias collides with a CTE name, so the only target gets filtered out).
 func requireTargets(infos []statementInfo, err error, kind string) ([]statementInfo, error) {
 	if err != nil {
 		return nil, err
@@ -174,11 +185,11 @@ func requireTargets(infos []statementInfo, err error, kind string) ([]statementI
 	return infos, nil
 }
 
-func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL string) ([]statementInfo, error) {
+func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL string, isCaseSensitive bool) ([]statementInfo, error) {
 	cteNames := collectCTENames(fullSQL, n.Loc)
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
-	singleTables := collectSingleTables(databaseName, cteNames, n.Tables)
+	singleTables := collectSingleTables(databaseName, cteNames, n.Tables, isCaseSensitive)
 
 	if len(n.Using) == 0 {
 		// Single-table DELETE: DELETE FROM t WHERE ...
@@ -196,7 +207,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 
 	// Multi-table DELETE: DELETE t1, t2 FROM t1 JOIN t2 ... WHERE ...
 	// Tables = targets to delete from; Using = the referenced table list.
-	refTables := collectSingleTables(databaseName, cteNames, n.Using)
+	refTables := collectSingleTables(databaseName, cteNames, n.Using, isCaseSensitive)
 
 	var result []statementInfo
 	for _, target := range singleTables {
@@ -204,7 +215,7 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 		if target.Alias != "" {
 			name = target.Alias
 		}
-		ref, ok := refTables[name]
+		ref, ok := refTables[identifierKey(name, isCaseSensitive)]
 		if !ok {
 			return nil, errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", name)
 		}
@@ -223,11 +234,11 @@ func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL str
 	return result, nil
 }
 
-func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL string, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
+func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL string, dbMetadata *model.DatabaseMetadata, isCaseSensitive bool) ([]statementInfo, error) {
 	cteNames := collectCTENames(fullSQL, n.Loc)
 	stmtText := extractStatementText(fullSQL, n.Loc)
 
-	singleTables := collectSingleTables(databaseName, cteNames, n.Tables)
+	singleTables := collectSingleTables(databaseName, cteNames, n.Tables, isCaseSensitive)
 
 	// Determine which tables the SET clause writes, via column table prefixes.
 	updatedTables := make(map[string]bool)
@@ -242,13 +253,16 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 			unqualifiedColumns = append(unqualifiedColumns, assign.Column.Column)
 			continue
 		}
+		// Look up the qualifier case-insensitively (TiDB default): the alias/name
+		// resolves regardless of the case used in the SET clause.
+		key := identifierKey(table, isCaseSensitive)
 		// Skip only if the qualifier resolves to a CTE reference in the FROM — a
 		// CTE can't be a mutation target. A real table aliased with a CTE's name
 		// (its resolved table is real) is still an update target.
-		if ref, ok := singleTables[table]; ok && isCTERef(cteNames, ref) {
+		if ref, ok := singleTables[key]; ok && isCTERef(cteNames, ref) {
 			continue
 		}
-		updatedTables[table] = true
+		updatedTables[key] = true
 	}
 
 	// Resolve unqualified SET columns to their owning table(s) via metadata.
@@ -300,15 +314,15 @@ func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL str
 // collectSingleTables walks TableExpr slices and collects TableReference entries
 // keyed by alias or table name. A table's database is its explicit schema, or
 // the statement's database when unqualified.
-func collectSingleTables(databaseName string, cteNames map[string]bool, exprs []ast.TableExpr) map[string]*TableReference {
+func collectSingleTables(databaseName string, cteNames map[string]bool, exprs []ast.TableExpr, isCaseSensitive bool) map[string]*TableReference {
 	result := make(map[string]*TableReference)
 	for _, expr := range exprs {
-		collectSingleTablesFromExpr(databaseName, cteNames, expr, result)
+		collectSingleTablesFromExpr(databaseName, cteNames, expr, isCaseSensitive, result)
 	}
 	return result
 }
 
-func collectSingleTablesFromExpr(databaseName string, cteNames map[string]bool, expr ast.TableExpr, out map[string]*TableReference) {
+func collectSingleTablesFromExpr(databaseName string, cteNames map[string]bool, expr ast.TableExpr, isCaseSensitive bool, out map[string]*TableReference) {
 	switch e := expr.(type) {
 	case *ast.TableRef:
 		db := e.Schema
@@ -316,10 +330,14 @@ func collectSingleTablesFromExpr(databaseName string, cteNames map[string]bool, 
 			db = databaseName
 		}
 		ref := &TableReference{Database: db, Table: e.Name, Alias: e.Alias, ExplicitSchema: e.Schema != ""}
+		// Key by alias-or-name, normalized for case-insensitive instances (TiDB
+		// default) so a case-mismatched qualifier still resolves. The original
+		// Table/Alias on ref are preserved for the emitted SQL.
 		key := e.Name
 		if e.Alias != "" {
 			key = e.Alias
 		}
+		key = identifierKey(key, isCaseSensitive)
 		// A schema-qualified physical table and an unqualified same-named CTE can
 		// coexist in one FROM (TiDB keeps them distinct) but collapse to the same
 		// map key. Keep the real table: a CTE is never a backup target, and
@@ -330,10 +348,10 @@ func collectSingleTablesFromExpr(databaseName string, cteNames map[string]bool, 
 		out[key] = ref
 	case *ast.JoinClause:
 		if e.Left != nil {
-			collectSingleTablesFromExpr(databaseName, cteNames, e.Left, out)
+			collectSingleTablesFromExpr(databaseName, cteNames, e.Left, isCaseSensitive, out)
 		}
 		if e.Right != nil {
-			collectSingleTablesFromExpr(databaseName, cteNames, e.Right, out)
+			collectSingleTablesFromExpr(databaseName, cteNames, e.Right, isCaseSensitive, out)
 		}
 	default:
 	}
