@@ -70,7 +70,6 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   getMemberBindings,
   groupProjectRoleBindings,
@@ -175,8 +174,8 @@ function MemberTable({
   // Group expand state. Cache is keyed by group name and invalidated
   // when the group-binding *content* changes — not on `bindings`
   // reference change, because the parent rebuilds `memberBindings` via
-  // `useVueState(() => getMemberBindings(...))` and gets a new array
-  // identity on every render. We can't use the `prevBindingsRef.current
+  // `useMemo(() => getMemberBindings(...))` and gets a new array identity
+  // whenever its deps change. We can't use the `prevBindingsRef.current
   // !== bindings` shortcut that `GroupsPage` uses (its `groups` comes
   // from a reducer-backed `usePagedData` with stable identity).
   // Comparing a content-derived signature instead lets the cache only
@@ -1401,7 +1400,8 @@ function EditMemberRoleDrawer({
 
   // Live project role bindings for the member (reactively updated when IAM policy changes).
   // Active bindings come first, expired ones last; original order is preserved within each group.
-  const liveProjectRoleBindings = useVueState(() => {
+  const projectPoliciesByName = useAppStore((s) => s.projectPoliciesByName);
+  const liveProjectRoleBindings = useMemo(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
     const policy = getProjectIamPolicy(projectName);
     const matching = policy.bindings.filter((b) =>
@@ -1412,7 +1412,14 @@ function EditMemberRoleDrawer({
       const bExpired = isBindingPolicyExpired(b) ? 1 : 0;
       return aExpired - bExpired;
     });
-  });
+    // projectPoliciesByName backs getProjectIamPolicy — recompute on its change.
+  }, [
+    isProjectEditMode,
+    member,
+    projectName,
+    getProjectIamPolicy,
+    projectPoliciesByName,
+  ]);
 
   const [selectedBindings, setSelectedBindings] = useState<string[]>(
     initialBindings ?? []
@@ -2107,17 +2114,38 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // from the app store: subscribing to `workspacePolicy` above re-renders
   // this component on policy changes, and useVueState reads the latest getter
   // each render, so both reactivity sources are covered.
-  const memberBindings = useVueState(() =>
-    getMemberBindings({
-      policies:
-        projectName && projectIamPolicy
-          ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
-          : workspacePolicy
-            ? [{ level: "WORKSPACE" as const, policy: workspacePolicy }]
-            : [],
-      searchText: memberSearchText,
-      ignoreRoles: EMPTY_ROLE_SET,
-    })
+  // getMemberBindings reads member metadata from the group / user /
+  // service-account / workload-identity app-store maps via getState(); subscribe
+  // to them (plus the IAM policies) so the list refreshes when any of those
+  // caches hydrate.
+  const groupsByName = useAppStore((s) => s.groupsByName);
+  const usersByName = useAppStore((s) => s.usersByName);
+  const serviceAccountsByName = useAppStore((s) => s.serviceAccountsByName);
+  const workloadIdentitiesByName = useAppStore(
+    (s) => s.workloadIdentitiesByName
+  );
+  const memberBindings = useMemo(
+    () =>
+      getMemberBindings({
+        policies:
+          projectName && projectIamPolicy
+            ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
+            : workspacePolicy
+              ? [{ level: "WORKSPACE" as const, policy: workspacePolicy }]
+              : [],
+        searchText: memberSearchText,
+        ignoreRoles: EMPTY_ROLE_SET,
+      }),
+    [
+      projectName,
+      projectIamPolicy,
+      workspacePolicy,
+      memberSearchText,
+      groupsByName,
+      usersByName,
+      serviceAccountsByName,
+      workloadIdentitiesByName,
+    ]
   );
 
   const canSetIamPolicy = project
