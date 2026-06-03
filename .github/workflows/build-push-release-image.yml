@@ -37,11 +37,37 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Check if latest points to this release
         id: check_latest
+        shell: bash
         run: |
-          set +e
-          RELEASE_DIGEST=$(docker buildx imagetools inspect "bytebase/bytebase:${VERSION}" 2>/dev/null | awk '/^Digest:/ {print $2; exit}')
-          LATEST_DIGEST=$(docker buildx imagetools inspect "bytebase/bytebase:latest" 2>/dev/null | awk '/^Digest:/ {print $2; exit}')
-          set -e
+          set -euo pipefail
+
+          inspect_digest() {
+            local image="$1"
+            local allow_missing="$2"
+            local output
+            local digest
+
+            if output="$(docker buildx imagetools inspect "${image}" 2>&1)"; then
+              digest="$(printf '%s\n' "${output}" | awk '/^Digest:/ {print $2; exit}')"
+              if [ -z "${digest}" ]; then
+                echo "::error::Unable to find digest for ${image}"
+                exit 1
+              fi
+              printf '%s\n' "${digest}"
+              return
+            fi
+
+            if [ "${allow_missing}" = "true" ] && printf '%s\n' "${output}" | grep -Eiq 'not found|manifest unknown|no such|name unknown'; then
+              return
+            fi
+
+            echo "::error::Failed to inspect ${image}"
+            printf '%s\n' "${output}"
+            exit 1
+          }
+
+          RELEASE_DIGEST="$(inspect_digest "bytebase/bytebase:${VERSION}" true)"
+          LATEST_DIGEST="$(inspect_digest "bytebase/bytebase:latest" false)"
 
           echo "Release version: ${VERSION}"
           echo "Release digest: ${RELEASE_DIGEST:-<missing>}"
@@ -73,6 +99,7 @@ jobs:
   tag-latest:
     needs: build-release-image
     if: needs.build-release-image.outputs.should_tag_latest == 'true'
+    permissions: {}
     uses: ./.github/workflows/docker-tag-latest.yml
     with:
       version: ${{ needs.build-release-image.outputs.version }}
