@@ -162,6 +162,15 @@ export declare type QueryResponse = Message<"bytebase.v1.QueryResponse"> & {
    * @generated from field: repeated bytebase.v1.QueryResult results = 1;
    */
   results: QueryResult[];
+
+  /**
+   * The just-in-time access grant applied to this query, if any.
+   * Format: projects/{project}/accessGrants/{accessGrant}.
+   * Empty when the user was authorized through normal ACL rather than a grant.
+   *
+   * @generated from field: string applied_access_grant = 2;
+   */
+  appliedAccessGrant: string;
 };
 
 /**
@@ -1072,6 +1081,15 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
    * @generated from field: bytes content = 1;
    */
   content: Uint8Array;
+
+  /**
+   * The just-in-time access grant applied to this export, if any.
+   * Format: projects/{project}/accessGrants/{accessGrant}.
+   * Empty when the user was authorized through normal ACL rather than a grant.
+   *
+   * @generated from field: string applied_access_grant = 2;
+   */
+  appliedAccessGrant: string;
 };
 
 /**

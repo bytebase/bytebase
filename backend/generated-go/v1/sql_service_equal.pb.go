@@ -101,6 +101,9 @@ func (x *QueryResponse) Equal(y *QueryResponse) bool {
 			return false
 		}
 	}
+	if x.AppliedAccessGrant != y.AppliedAccessGrant {
+		return false
+	}
 	return true
 }
 
@@ -508,6 +511,9 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 		return x == nil && y == nil
 	}
 	if string(x.Content) != string(y.Content) {
+		return false
+	}
+	if x.AppliedAccessGrant != y.AppliedAccessGrant {
 		return false
 	}
 	return true

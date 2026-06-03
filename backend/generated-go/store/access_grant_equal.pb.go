@@ -43,5 +43,8 @@ func (x *AccessGrantPayload) Equal(y *AccessGrantPayload) bool {
 	if p, q := x.RequestedDuration, y.RequestedDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if x.Export != y.Export {
+		return false
+	}
 	return true
 }

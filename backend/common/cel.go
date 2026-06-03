@@ -34,6 +34,7 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.Variable(CELAttributeRequestExpirationDays, cel.IntType),
 	cel.Variable(CELAttributeRequestRole, cel.StringType),
 	cel.Variable(CELAttributeRequestUnmask, cel.BoolType),
+	cel.Variable(CELAttributeRequestExport, cel.BoolType),
 	// Risk scope
 	cel.Variable(CELAttributeRiskLevel, cel.StringType),
 	// Size limit

@@ -162,10 +162,50 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 	}
 }
 
-// preCheckAccess finds and returns the best matching active access grant for the query.
-// It lists access grants filtered by project, creator, status, statement, target database,
-// and expiry, then prefers the grant with unmask=true if available.
-func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
+// buildExportQueryContext assembles the db.QueryContext for an export request.
+// SkipMasking has to be set here (not only checked around the post-execution
+// MaskResults pass) because some drivers mask at query time via SQL rewrites
+// — by the time the second pass runs the rows would already be masked, and
+// a JIT grant with unmask=true would silently export masked data. See PR
+// #20487 review (RainbowDashy).
+func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, skipMasking bool) db.QueryContext {
+	qc := db.QueryContext{
+		Limit:                int(restriction.MaximumResultRows),
+		OperatorEmail:        userEmail,
+		MaximumSQLResultSize: restriction.MaximumResultSize,
+		SkipMasking:          skipMasking,
+	}
+	if restriction.MaxQueryTimeoutInSeconds > 0 {
+		qc.Timeout = &durationpb.Duration{Seconds: restriction.MaxQueryTimeoutInSeconds}
+	}
+	if schema != nil {
+		qc.Schema = *schema
+	}
+	return qc
+}
+
+// accessOperation distinguishes between Query and Export so preCheckAccess can pick
+// a grant whose capabilities actually authorize the operation in question.
+type accessOperation int
+
+const (
+	accessOperationQuery accessOperation = iota
+	accessOperationExport
+)
+
+// preCheckAccess finds and returns the best matching active access grant for the
+// requested operation. It lists active grants filtered by project, creator,
+// statement, target database, and expiry, then narrows and ranks them per
+// operation:
+//
+//   - Query: any matching grant confers ACL bypass; among them, prefer Unmask=true
+//     so SkipMasking can be turned on when the user is entitled to unmasked data.
+//   - Export: only grants with Export=true authorize the export, so filter to
+//     those first; among them, prefer Unmask=true to also skip masking.
+//
+// The returned grant is guaranteed to have a non-nil Payload — callers may
+// deref Payload.Unmask / Payload.Export without an additional check.
+func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage, operation accessOperation) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -195,7 +235,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
 		databaseFullName,
 		now,
-		strings.TrimSpace(request.Statement),
+		strings.TrimSpace(statement),
 	)
 	filterQ, err := store.GetListAccessGrantFilter(filter)
 	if err != nil {
@@ -217,7 +257,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	if len(grants) == 0 {
 		return nil
 	}
-	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), request.Statement)
+	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), statement)
 	if err != nil {
 		slog.Warn("failed to validate access grant query", log.BBError(err))
 		return nil
@@ -226,13 +266,35 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	// Pick the best grant (prefer unmask=true).
+	// Narrow to grants whose capabilities actually authorize this operation,
+	// then prefer Unmask=true so the caller can set SkipMasking when the
+	// user is entitled to unmasked data. Filtering keeps Query from ever
+	// being "covered" by an export-only grant (which would still bypass the
+	// ACL check) when an unmask grant exists in the same set — see the
+	// review note that the old combined score conflated the two dimensions.
+	var candidates []*store.AccessGrantMessage
 	for _, grant := range grants {
-		if grant.Payload != nil && grant.Payload.Unmask {
-			return grant
+		if grant.Payload == nil {
+			// Defensive: a nil payload means we can't read Unmask/Export
+			// anyway, so it can't authorize anything beyond raw ACL bypass.
+			// Skipping here also lets downstream callers deref Payload safely.
+			continue
+		}
+		if operation == accessOperationExport && !grant.Payload.Export {
+			continue
+		}
+		candidates = append(candidates, grant)
+	}
+	if len(candidates) == 0 {
+		return nil
+	}
+	best := candidates[0]
+	for _, grant := range candidates[1:] {
+		if !best.Payload.Unmask && grant.Payload.Unmask {
+			best = grant
 		}
 	}
-	return grants[0]
+	return best
 }
 
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
@@ -243,7 +305,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request, instance, database)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, accessOperationQuery)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -319,10 +381,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
 	}
 
-	var optionalAccessCheck accessCheckFunc
-	if accessGrant == nil {
-		optionalAccessCheck = s.accessCheck
-	}
+	// Span-level ACL still runs even when a JIT grant matched. The grant
+	// authorizes only its target databases — any cross-database reference
+	// (e.g. `SELECT * FROM db_b.secret` from a grant on `db_a`) still has
+	// to clear the regular IAM check on the foreign database. See PR
+	// #20487 review for the cross-DB exfiltration scenario this guards.
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
 	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
@@ -391,6 +455,9 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	response := &v1pb.QueryResponse{
 		Results: results,
+	}
+	if accessGrant != nil {
+		response.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
 	}
 
 	return connect.NewResponse(response), nil
@@ -886,6 +953,12 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
+	// When an active access grant covers this export request, the user is already
+	// authorized and we skip the regular ACL check, just like the Query request.
+	// `preCheckAccess(..., accessOperationExport)` only returns grants with
+	// Export=true, so the presence of a grant here is sufficient to bypass ACL.
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, accessOperationExport)
+
 	// Validate the request.
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
@@ -903,7 +976,16 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if err != nil {
 		return nil, err
 	}
-	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
+
+	// Same cross-database guardrail as Query: the JIT grant authorizes only
+	// its target databases, so span-level ACL still runs and only the
+	// granted targets are exempted from IAM. See PR #20487 review.
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	skipMasking := false
+	if accessGrant != nil {
+		skipMasking = accessGrant.Payload.Unmask
+	}
+	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
 	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -911,9 +993,14 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
 	}
 
-	return connect.NewResponse(&v1pb.ExportResponse{
+	exportResponse := &v1pb.ExportResponse{
 		Content: bytes,
-	}), nil
+	}
+	if accessGrant != nil {
+		exportResponse.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
+	}
+
+	return connect.NewResponse(exportResponse), nil
 }
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
@@ -1043,6 +1130,7 @@ func doExport(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 	dataSource *storepb.DataSource,
+	skipMasking bool,
 ) ([]byte, time.Duration, error) {
 	if dataSource == nil {
 		return nil, 0, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found valid data source"))
@@ -1073,17 +1161,7 @@ func doExport(
 		request.Limit,
 		database.ProjectID,
 	)
-	queryContext := db.QueryContext{
-		Limit:                int(queryRestriction.MaximumResultRows),
-		OperatorEmail:        user.Email,
-		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-	}
-	if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
-		queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
-	}
-	if request.Schema != nil {
-		queryContext.Schema = *request.Schema
-	}
+	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, skipMasking)
 
 	// Split the statement for span analysis
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
@@ -1111,7 +1189,7 @@ func doExport(
 		return nil, duration, queryErr
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+	if !skipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 			return nil, duration, err
@@ -1482,6 +1560,40 @@ func (s *SQLService) accessCheck(
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
 ) error {
+	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, nil)
+}
+
+// accessCheckWithGrant returns an accessCheckFunc that exempts the access
+// grant's target databases from IAM checks while keeping span-level checks for
+// every other source database. This preserves JIT-grant behavior for the
+// grant's target (the user is already authorized there) but blocks cross-
+// database exfiltration via cross-DB references like `SELECT * FROM db_b.t`
+// from a grant targeting `db_a` — see PR #20487 review.
+//
+// Pass `accessGrant == nil` to skip wrapping; callers in that case should
+// reference `s.accessCheck` directly.
+func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage) accessCheckFunc {
+	if accessGrant == nil || accessGrant.Payload == nil {
+		return s.accessCheck
+	}
+	grantedTargets := make(map[string]struct{}, len(accessGrant.Payload.Targets))
+	for _, t := range accessGrant.Payload.Targets {
+		grantedTargets[t] = struct{}{}
+	}
+	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool) error {
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, grantedTargets)
+	}
+}
+
+func (s *SQLService) accessCheckWithGrantedTargets(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	user *store.UserMessage,
+	spans []*parserbase.QuerySpan,
+	isExplain bool,
+	grantedTargets map[string]struct{},
+) error {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
 	if err != nil {
 		return err
@@ -1502,6 +1614,9 @@ func (s *SQLService) accessCheck(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
+		if _, granted := grantedTargets[databaseFullName]; granted {
+			return nil
+		}
 		attributes := map[string]any{
 			common.CELAttributeRequestTime:      time.Now(),
 			common.CELAttributeResourceDatabase: databaseFullName,
@@ -1585,9 +1700,13 @@ func (s *SQLService) accessCheck(
 
 		var deniedResources []string
 		for column := range span.SourceColumns {
+			columnDatabaseFullName := common.FormatDatabase(instance.ResourceID, column.Database)
+			if _, granted := grantedTargets[columnDatabaseFullName]; granted {
+				continue
+			}
 			attributes := map[string]any{
 				common.CELAttributeRequestTime:        time.Now(),
-				common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
+				common.CELAttributeResourceDatabase:   columnDatabaseFullName,
 				common.CELAttributeResourceSchemaName: column.Schema,
 				common.CELAttributeResourceTableName:  column.Table,
 			}

@@ -7878,6 +7878,10 @@ components:
             reason:
               type: string
               title: reason
+            export:
+              type: boolean
+              title: export
+              description: Whether export the query result.
         - oneOf:
             - type: object
               properties:
@@ -11392,6 +11396,13 @@ components:
           title: content
           format: byte
           description: The export file content.
+        appliedAccessGrant:
+          type: string
+          title: applied_access_grant
+          description: |-
+            The just-in-time access grant applied to this export, if any.
+             Format: projects/{project}/accessGrants/{accessGrant}.
+             Empty when the user was authorized through normal ACL rather than a grant.
       title: ExportResponse
       additionalProperties: false
     bytebase.v1.ExportVCSProviderUsersRequest:
@@ -12949,6 +12960,8 @@ components:
              - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
              - query: the access query, support "==" and ".contains(xx)" operator
              - target: the target database fullname, support "==" operator.
+             - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+             - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
 
              Examples:
              - creator == "users/dev@example.com"
@@ -12958,6 +12971,8 @@ components:
              - issue == "projects/x/issues/123"
              - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
              - target == "instances/sample/databases/employee"
+             - unmask == true
+             - export == true && status == "ACTIVE"
         orderBy:
           type: string
           title: order_by
@@ -15854,6 +15869,13 @@ components:
             $ref: '#/components/schemas/bytebase.v1.QueryResult'
           title: results
           description: The query results.
+        appliedAccessGrant:
+          type: string
+          title: applied_access_grant
+          description: |-
+            The just-in-time access grant applied to this query, if any.
+             Format: projects/{project}/accessGrants/{accessGrant}.
+             Empty when the user was authorized through normal ACL rather than a grant.
       title: QueryResponse
       additionalProperties: false
     bytebase.v1.QueryResult:
@@ -20487,7 +20509,7 @@ components:
              When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
              When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
              When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
-             When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask
+             When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask, request.data_export
 
              For examples:
              resource.environment_id == "prod" && statement.affected_rows >= 100
