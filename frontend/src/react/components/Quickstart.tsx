@@ -48,11 +48,11 @@ interface IntroItem {
  * see tasks they can perform; tasks that depend on the sample project
  * are filtered out when no sample project exists for this workspace.
  *
- * State sources (all Pinia, read via `useVueState`):
- *  - `actuatorStore.quickStartEnabled` — disabled in self-hosted /
- *    enterprise builds via the actuator config.
- *  - `uiStateStore.getIntroStateByKey(...)` — per-task done flags and
- *    the global `hidden` flag (toggled when the user dismisses).
+ * State sources (app store):
+ *  - `quickStartEnabled()` — disabled in self-hosted / enterprise builds
+ *    via the actuator config.
+ *  - `getIntroStateByKey(...)` — per-task done flags and the global
+ *    `hidden` flag (toggled when the user dismisses).
  *
  * Async fetches (project / sample issue / sample worksheet) run on
  * mount and fall back to undefined when the sample data is missing

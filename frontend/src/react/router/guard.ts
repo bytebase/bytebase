@@ -142,7 +142,7 @@ export function rootGuard({
     store.resetInstances();
     store.resetProjects();
     void import("@/plugins/ai/store").then(({ useConversationStore }) => {
-      useConversationStore().reset();
+      useConversationStore.getState().reset();
     });
     return null;
   }

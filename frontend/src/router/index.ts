@@ -174,7 +174,7 @@ router.beforeEach((to, from, next) => {
       useAppStore.getState().resetProjects();
     });
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
-      useConversationStore().reset();
+      useConversationStore.getState().reset();
     });
     next();
     return;
