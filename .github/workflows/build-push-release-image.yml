@@ -37,7 +37,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Check if version matches latest release tag
         id: check_latest
+        shell: bash
         run: |
+          set -euo pipefail
+
           LATEST_VERSION=$(git ls-remote --tags --refs origin 'refs/tags/[0-9]*.[0-9]*.[0-9]*' | awk -F/ '{print $3}' | sort -V | tail -n 1)
 
           echo "Release version: ${VERSION}"
