@@ -10,11 +10,13 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// TestSelectBestAccessGrantPicksHighestCapability covers the operation-
-// agnostic ranking introduced when the accessOperation enum was removed —
-// callers (Query, Export) gate on the capability they care about, so
-// preCheckAccess just returns the most capable matching grant.
-func TestSelectBestAccessGrantPicksHighestCapability(t *testing.T) {
+// TestSelectBestAccessGrantPrefersUnmask covers the Unmask-only ranking:
+// Export plays no role (Export callers already filtered the pool via the
+// `requireExport` CEL filter, and Query never reads `Payload.Export`).
+// Preferring Unmask=true is what addresses PR #20491 bot review
+// (#3349086819) — a user with an active unmask grant should never be
+// masked by Query when an export-only grant shares the slice.
+func TestSelectBestAccessGrantPrefersUnmask(t *testing.T) {
 	grantOf := func(unmask, export bool) *store.AccessGrantMessage {
 		return &store.AccessGrantMessage{
 			Payload: &storepb.AccessGrantPayload{Unmask: unmask, Export: export},
@@ -44,32 +46,31 @@ func TestSelectBestAccessGrantPicksHighestCapability(t *testing.T) {
 		require.Same(t, valid, got)
 	})
 
-	t.Run("dual-capability grant outranks single-capability grants", func(t *testing.T) {
-		dual := grantOf(true, true)
-		got := selectBestAccessGrant([]*store.AccessGrantMessage{
-			grantOf(true, false),
-			grantOf(false, true),
-			dual,
-		})
-		require.Same(t, dual, got)
+	t.Run("unmask grant wins over export-only grant regardless of slice order", func(t *testing.T) {
+		unmaskGrant := grantOf(true, false)
+		exportOnly := grantOf(false, true)
+		// Put exportOnly first to prove the win isn't due to position —
+		// Unmask scoring is what selects unmaskGrant.
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{exportOnly, unmaskGrant})
+		require.Same(t, unmaskGrant, got)
 	})
 
-	t.Run("single-capability tie resolves to slice order", func(t *testing.T) {
-		// Both A{unmask:true} and B{export:true} score 1. With strict ">",
-		// the first one in the slice wins. This is the documented
-		// behavior — callers gate on the specific capability they need.
-		a := grantOf(true, false)
-		b := grantOf(false, true)
-		got := selectBestAccessGrant([]*store.AccessGrantMessage{a, b})
-		require.Same(t, a, got, "first single-capability grant in slice order should win on tie")
+	t.Run("among multiple unmask grants the first in slice order wins", func(t *testing.T) {
+		first := grantOf(true, false)
+		second := grantOf(true, true)
+		// Both have Unmask=true → tied score (Export plays no role). First
+		// in slice wins via strict ">". Equivalent for Query callers
+		// since both grants yield the same SkipMasking=true.
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{first, second})
+		require.Same(t, first, got)
 	})
 
-	t.Run("returns a no-capability grant when nothing better matches", func(t *testing.T) {
-		// A grant with neither Unmask nor Export scores 0 but is still
-		// returned (it confers ACL bypass for Query).
-		zero := grantOf(false, false)
-		got := selectBestAccessGrant([]*store.AccessGrantMessage{zero})
-		require.Same(t, zero, got)
+	t.Run("returns a no-unmask grant when none have unmask", func(t *testing.T) {
+		// All-zero-score case: a no-unmask grant is still returned (it
+		// confers ACL bypass for Query, even if it can't unmask).
+		exportOnly := grantOf(false, true)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{exportOnly})
+		require.Same(t, exportOnly, got)
 	})
 }
 

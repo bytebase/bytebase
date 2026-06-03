@@ -275,11 +275,21 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 		if grant.Payload == nil {
 			continue
 		}
+		// Rank by Unmask only — Export plays no role in selection:
+		//
+		//   - Export callers pass `requireExport=true`, which pushes
+		//     `&& export == true` into the CEL filter, so every grant in
+		//     this slice already has `Export=true` and a per-grant Export
+		//     bump would just be a uniform constant.
+		//   - Query callers don't read `Payload.Export` from the returned
+		//     grant — they only consume `Payload.Unmask` for
+		//     `SkipMasking`.
+		//
+		// So preferring Unmask=true is the only ranking signal that
+		// affects observable behavior, and matches PR #20491 bot review
+		// (#3349086819) requesting Unmask wins ties for Query.
 		score := 0
 		if grant.Payload.Unmask {
-			score++
-		}
-		if grant.Payload.Export {
 			score++
 		}
 		if score > bestScore {
