@@ -5,7 +5,6 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { Separator } from "@/react/components/ui/separator";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -79,7 +78,7 @@ export function TemplateSelector({
 }: TemplateSelectorProps) {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
-  const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
+  const policyList = sqlReviewStore.reviewPolicyList;
 
   useEffect(() => {
     sqlReviewStore.fetchReviewPolicyList();

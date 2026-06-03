@@ -17,7 +17,6 @@ import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -166,12 +165,8 @@ export function ProjectSettingsPage() {
   // -----------------------------------------------------------------------
   // Security state
   // -----------------------------------------------------------------------
-  const reviewPolicyList = useVueState(
-    () => reviewStore.reviewPolicyList ?? []
-  );
-  const currentReviewPolicy = useVueState(() =>
-    reviewStore.getReviewPolicyByResouce(projectName)
-  );
+  const reviewPolicyList = reviewStore.reviewPolicyList;
+  const currentReviewPolicy = reviewStore.getReviewPolicyByResouce(projectName);
   const [pendingReviewPolicy, setPendingReviewPolicy] = useState<
     SQLReviewPolicy | undefined
   >(undefined);

@@ -17,7 +17,6 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -250,7 +249,7 @@ export function SQLReviewPage() {
     useSQLReviewStore.getState().fetchReviewPolicyList();
   }, []);
 
-  const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
+  const policyList = sqlReviewStore.reviewPolicyList;
 
   const filteredList = useMemo(() => {
     if (!searchText) return policyList;

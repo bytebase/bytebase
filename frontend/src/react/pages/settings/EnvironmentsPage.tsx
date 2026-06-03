@@ -57,7 +57,6 @@ import {
 } from "@/react/components/ui/tabs";
 import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
-import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
@@ -430,7 +429,7 @@ function SQLReviewSectionInner(
   );
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
 
-  const reviewPolicyList = useVueState(() => [...reviewStore.reviewPolicyList]);
+  const reviewPolicyList = reviewStore.reviewPolicyList;
 
   const currentPolicy = useMemo(() => {
     return reviewPolicyList.find((p) => p.resources.includes(resourcePath));

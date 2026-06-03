@@ -17,7 +17,6 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/react/router/handles";
@@ -43,6 +42,16 @@ import {
 // SQLReviewDetailPage
 // ============================================================
 
+// Stable placeholder for an unresolved policy — a module constant so the
+// `?? UNKNOWN_REVIEW_POLICY` fallback keeps a stable reference across renders.
+const UNKNOWN_REVIEW_POLICY = {
+  id: `${UNKNOWN_ID}`,
+  enforce: false,
+  name: "",
+  ruleList: [],
+  resources: [],
+};
+
 export function SQLReviewDetailPage({
   sqlReviewPolicySlug,
 }: {
@@ -63,16 +72,8 @@ export function SQLReviewDetailPage({
       .getOrFetchReviewPolicyByName(sqlReviewName, false);
   }, [sqlReviewName]);
 
-  const reviewPolicy = useVueState(
-    () =>
-      store.getReviewPolicyByName(sqlReviewName) ?? {
-        id: `${UNKNOWN_ID}`,
-        enforce: false,
-        name: "",
-        ruleList: [],
-        resources: [],
-      }
-  );
+  const reviewPolicy =
+    store.getReviewPolicyByName(sqlReviewName) ?? UNKNOWN_REVIEW_POLICY;
 
   // Set document title
   useEffect(() => {
