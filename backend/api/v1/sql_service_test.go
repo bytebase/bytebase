@@ -10,6 +10,69 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// TestSelectBestAccessGrantPicksHighestCapability covers the operation-
+// agnostic ranking introduced when the accessOperation enum was removed —
+// callers (Query, Export) gate on the capability they care about, so
+// preCheckAccess just returns the most capable matching grant.
+func TestSelectBestAccessGrantPicksHighestCapability(t *testing.T) {
+	grantOf := func(unmask, export bool) *store.AccessGrantMessage {
+		return &store.AccessGrantMessage{
+			Payload: &storepb.AccessGrantPayload{Unmask: unmask, Export: export},
+		}
+	}
+
+	t.Run("returns nil for empty input", func(t *testing.T) {
+		require.Nil(t, selectBestAccessGrant(nil))
+		require.Nil(t, selectBestAccessGrant([]*store.AccessGrantMessage{}))
+	})
+
+	t.Run("skips nil-payload grants and returns nil when none remain", func(t *testing.T) {
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{
+			{Payload: nil},
+			{Payload: nil},
+		})
+		require.Nil(t, got)
+	})
+
+	t.Run("returns the only valid grant when others have nil payloads", func(t *testing.T) {
+		valid := grantOf(true, false)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{
+			{Payload: nil},
+			valid,
+			{Payload: nil},
+		})
+		require.Same(t, valid, got)
+	})
+
+	t.Run("dual-capability grant outranks single-capability grants", func(t *testing.T) {
+		dual := grantOf(true, true)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{
+			grantOf(true, false),
+			grantOf(false, true),
+			dual,
+		})
+		require.Same(t, dual, got)
+	})
+
+	t.Run("single-capability tie resolves to slice order", func(t *testing.T) {
+		// Both A{unmask:true} and B{export:true} score 1. With strict ">",
+		// the first one in the slice wins. This is the documented
+		// behavior — callers gate on the specific capability they need.
+		a := grantOf(true, false)
+		b := grantOf(false, true)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{a, b})
+		require.Same(t, a, got, "first single-capability grant in slice order should win on tie")
+	})
+
+	t.Run("returns a no-capability grant when nothing better matches", func(t *testing.T) {
+		// A grant with neither Unmask nor Export scores 0 but is still
+		// returned (it confers ACL bypass for Query).
+		zero := grantOf(false, false)
+		got := selectBestAccessGrant([]*store.AccessGrantMessage{zero})
+		require.Same(t, zero, got)
+	})
+}
+
 // TestBuildExportQueryContextPropagatesSkipMasking pins the bug fix from PR
 // #20487: when an export is authorized by a JIT grant with unmask=true,
 // SkipMasking must reach db.QueryContext so the driver doesn't mask rows at

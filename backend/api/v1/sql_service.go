@@ -259,10 +259,16 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	// Pick the highest-ranked grant by capability count (Unmask + Export).
-	// A grant with both wins outright, otherwise the first single-capability
-	// grant in slice order wins (ties resolve to ListAccessGrants ordering).
-	// Skip nil-payload grants up front so callers can deref Payload safely.
+	return selectBestAccessGrant(grants)
+}
+
+// selectBestAccessGrant picks the highest-ranked grant by capability count
+// (Unmask + Export). A grant with both wins outright; otherwise the first
+// single-capability grant in slice order wins (ties resolve to the input
+// ordering, typically ListAccessGrants's ordering). Nil-payload grants are
+// skipped so callers can deref `Payload.Unmask` / `Payload.Export` without
+// an additional check.
+func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGrantMessage {
 	var best *store.AccessGrantMessage
 	bestScore := -1
 	for _, grant := range grants {
