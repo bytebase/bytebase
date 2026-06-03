@@ -93,7 +93,8 @@ const generateRandomPassword = (length = GENERATED_PASSWORD_LENGTH) => {
   crypto.getRandomValues(values);
   let out = "";
   for (let i = 0; i < length; i++) {
-    out += GENERATED_PASSWORD_CHARSET[values[i] % GENERATED_PASSWORD_CHARSET.length];
+    out +=
+      GENERATED_PASSWORD_CHARSET[values[i] % GENERATED_PASSWORD_CHARSET.length];
   }
   return out;
 };

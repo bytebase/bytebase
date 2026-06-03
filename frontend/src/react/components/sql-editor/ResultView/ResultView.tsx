@@ -131,13 +131,24 @@ export function ResultView({
   // The just-in-time access grant the backend applied to this query (if any),
   // resolved to its export capability. When a grant already authorizes export,
   // we show the real Export button even if the policy disables direct export.
+  //
+  // Use SearchMyAccessGrants rather than GetAccessGrant: the appliedAccessGrant
+  // is invariantly owned by the current user (preCheckAccess filters by
+  // `Creator == user.Email`), so SearchMy is always sufficient and avoids
+  // requiring project-wide `bb.accessGrants.get`. Without this, grant
+  // creators who lack that permission would see "Request export" instead of
+  // the real Export button because the GetAccessGrant 403 silently kept
+  // `appliedGrantAllowsExport` false. See PR #20491 bot review.
   const appliedAccessGrantName = resultSet?.appliedAccessGrant;
-  const fetchAccessGrant = useAppStore((s) => s.fetchAccessGrant);
+  const searchMyAccessGrants = useAppStore((s) => s.searchMyAccessGrants);
   useEffect(() => {
-    if (appliedAccessGrantName) {
-      void fetchAccessGrant(appliedAccessGrantName);
-    }
-  }, [appliedAccessGrantName, fetchAccessGrant]);
+    if (!appliedAccessGrantName) return;
+    const parent = appliedAccessGrantName.replace(/\/accessGrants\/[^/]+$/, "");
+    void searchMyAccessGrants({
+      parent,
+      filter: { name: appliedAccessGrantName },
+    });
+  }, [appliedAccessGrantName, searchMyAccessGrants]);
   const appliedGrantAllowsExport = useAppStore((s) =>
     appliedAccessGrantName
       ? !!s.accessGrantsByName[appliedAccessGrantName]?.export
