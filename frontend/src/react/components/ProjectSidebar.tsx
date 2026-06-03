@@ -15,7 +15,7 @@ import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
@@ -238,14 +238,9 @@ export function ProjectSidebar() {
   const rawItems = useSidebarItems();
   const filteredItems = useMemo(() => filterSidebarList(rawItems), [rawItems]);
 
-  const currentRouteName = useVueState(
-    () => router.currentRoute.value.name?.toString() ?? ""
-  );
-
-  const projectId = useVueState(
-    () =>
-      (router.currentRoute.value.params.projectId as string | undefined) ?? ""
-  );
+  const route = useCurrentRoute();
+  const currentRouteName = route.name?.toString() ?? "";
+  const projectId = (route.params.projectId as string | undefined) ?? "";
 
   const customLogo = useWorkspace()?.logo ?? "";
 

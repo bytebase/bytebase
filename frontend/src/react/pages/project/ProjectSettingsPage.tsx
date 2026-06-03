@@ -17,7 +17,7 @@ import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
@@ -129,9 +129,7 @@ export function ProjectSettingsPage() {
   const projectsByName = useAppStore((s) => s.projectsByName);
   const reviewStore = useSQLReviewStore();
 
-  const projectId = useVueState(
-    () => router.currentRoute.value.params.projectId as string
-  );
+  const projectId = useCurrentRoute().params.projectId as string;
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;

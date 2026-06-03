@@ -31,7 +31,7 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -108,7 +108,7 @@ export function IssueDetailCommentList() {
     (state) => state.batchGetOrFetchUsers
   );
   const currentUser = useCurrentUser();
-  const routeHash = useVueState(() => router.currentRoute.value.hash);
+  const routeHash = useCurrentRoute().hash;
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() =>
     useAppStore.getState().getProjectByName(projectName)

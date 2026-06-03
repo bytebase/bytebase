@@ -26,14 +26,17 @@ vi.mock("@/store", () => ({
   }),
 }));
 
-vi.mock("@/router", () => ({
-  router: {
-    currentRoute: {
-      get value() {
-        return { fullPath: fullPathRef.value, name: routeNameRef.value };
-      },
-    },
-  },
+vi.mock("@/react/router", () => ({
+  useCurrentRoute: () => ({
+    name: routeNameRef.value,
+    fullPath: fullPathRef.value,
+    hash: "",
+    params: {},
+    query: {},
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 vi.mock("@/utils/auth", () => ({
