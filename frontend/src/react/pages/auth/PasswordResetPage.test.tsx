@@ -9,14 +9,14 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
-  useActuatorV1Store: vi.fn(() => ({
+  appStoreState: {
     serverInfo: {
       restriction: {
-        passwordRestriction: undefined,
+        passwordRestriction: undefined as unknown,
         disallowPasswordSignin: false,
       },
     },
-  })),
+  },
   useAuthStore: vi.fn(() => ({
     requireResetPassword: false,
     setRequireResetPassword: vi.fn(),
@@ -43,24 +43,24 @@ vi.mock("@/react/hooks/useAppState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({
-        updateUser: mocks.updateUser,
-      }),
-    {
-      getState: () => ({
-        updateUser: mocks.updateUser,
-      }),
-    }
-  ),
-}));
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    ...mocks.appStoreState,
+    updateUser: mocks.updateUser,
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (state: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
 
 vi.mock("@/router", () => ({
   router: {
@@ -168,14 +168,12 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.currentRoute.value.query = {};
-  mocks.useActuatorV1Store.mockReturnValue({
-    serverInfo: {
-      restriction: {
-        passwordRestriction: undefined,
-        disallowPasswordSignin: false,
-      },
+  mocks.appStoreState.serverInfo = {
+    restriction: {
+      passwordRestriction: undefined,
+      disallowPasswordSignin: false,
     },
-  });
+  };
   mocks.useAuthStore.mockReturnValue({
     requireResetPassword: true,
     setRequireResetPassword: vi.fn(),
@@ -199,14 +197,12 @@ describe("PasswordResetPage", () => {
 
   test("code mode: redirects to signin when password signin is disallowed", () => {
     mocks.currentRoute.value.query = { email: "u@e.com" };
-    mocks.useActuatorV1Store.mockReturnValue({
-      serverInfo: {
-        restriction: {
-          passwordRestriction: undefined,
-          disallowPasswordSignin: true,
-        },
+    mocks.appStoreState.serverInfo = {
+      restriction: {
+        passwordRestriction: undefined,
+        disallowPasswordSignin: true,
       },
-    });
+    };
     const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
     render();
     expect(mocks.routerReplace).toHaveBeenCalledWith({

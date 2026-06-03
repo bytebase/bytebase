@@ -465,7 +465,7 @@ func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *storepb.
 	return next
 }
 
-func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, _ string) {
+func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, onDelete string) {
 	referencedTable := objectName(refTable)
 	referencedColumns := stringList(refColumns)
 	if len(columns) == 0 || referencedTable == "" {
@@ -476,6 +476,7 @@ func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadat
 		Columns:           columns,
 		ReferencedTable:   referencedTable,
 		ReferencedColumns: referencedColumns,
+		OnDelete:          onDelete,
 	}
 	table.ForeignKeys = append(table.ForeignKeys, foreignKey)
 }

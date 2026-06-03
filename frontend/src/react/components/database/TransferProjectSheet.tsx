@@ -11,8 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useActuatorV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 export function TransferProjectSheet({
@@ -27,9 +26,8 @@ export function TransferProjectSheet({
   onTransfer: (projectName: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const defaultProjectName = useVueState(
-    () => actuatorStore.serverInfo?.defaultProject ?? ""
+  const defaultProjectName = useAppStore(
+    (s) => s.serverInfo?.defaultProject ?? ""
   );
   const [mode, setMode] = useState<"project" | "unassign">("project");
   const [selectedProject, setSelectedProject] = useState("");

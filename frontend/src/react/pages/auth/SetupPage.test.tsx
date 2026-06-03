@@ -34,32 +34,27 @@ vi.mock("@/router/sqlEditor", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useActuatorV1Store: () => ({
-    enableOnboarding: true,
-    setupSample: mocks.setupSample,
-  }),
   useAppFeature: () => ({ value: 0 }),
-  useSettingV1Store: () => ({
-    updateWorkspaceProfile: mocks.updateWorkspaceProfile,
-  }),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({
-        listRoles: mocks.listRoles,
-      }),
-    {
-      getState: () => ({
-        listRoles: mocks.listRoles,
-        fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
-        getOrFetchProjectByName: mocks.getOrFetchProjectByName,
-        createProject: mocks.createProject,
-      }),
-    }
-  ),
-}));
+vi.mock("@/react/stores/app", () => {
+  const state = {
+    enableOnboarding: () => true,
+    listRoles: mocks.listRoles,
+    fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
+    getOrFetchProjectByName: mocks.getOrFetchProjectByName,
+    createProject: mocks.createProject,
+    setupSample: mocks.setupSample,
+    updateWorkspaceProfile: mocks.updateWorkspaceProfile,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector?: (s: typeof state) => unknown) =>
+        selector ? selector(state) : state,
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,

@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => ({
   useDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
   featureToRef: vi.fn(() => ({ value: true })),
-  useSettingV1Store: vi.fn(),
   updateTableCatalog: vi.fn(),
   getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
   getDatabaseProject: vi.fn(() => ({
@@ -42,6 +41,9 @@ const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(),
   getSettingByName: vi.fn(),
   getProjectClassification: vi.fn(),
+  hasFeature: vi.fn(() => true),
+  instanceMissingLicense: vi.fn(() => false),
+  updateDatabaseCatalog: vi.fn(),
 }));
 
 let TableMetadataTable: typeof import("./TableMetadataTable").TableMetadataTable;
@@ -56,8 +58,25 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
-  useSettingV1Store: mocks.useSettingV1Store,
 }));
+
+vi.mock("@/react/stores/app", () => {
+  const getState = () => ({
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getSettingByName: mocks.getSettingByName,
+    getProjectClassification: mocks.getProjectClassification,
+    hasFeature: mocks.hasFeature,
+    instanceMissingLicense: mocks.instanceMissingLicense,
+    updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (s: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
 
 vi.mock("@/react/hooks/useDatabaseCatalog", () => ({
   useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
@@ -281,12 +300,6 @@ beforeEach(async () => {
         level: 2,
       },
     },
-  });
-  mocks.useSettingV1Store.mockReset();
-  mocks.useSettingV1Store.mockReturnValue({
-    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
-    getSettingByName: mocks.getSettingByName,
-    getProjectClassification: mocks.getProjectClassification,
   });
   mocks.updateTableCatalog.mockReset();
   mocks.updateTableCatalog.mockResolvedValue(undefined);

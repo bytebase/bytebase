@@ -5,15 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -86,41 +83,8 @@ func (r *TableCommentConventionRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *TableCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.handleCreateTable(ctx.(*parser.Create_tableContext))
-	case "Comment_on_table":
-		r.handleCommentOnTable(ctx.(*parser.Comment_on_tableContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*TableCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableCommentConventionRule) handleCreateTable(ctx *parser.Create_tableContext) {
-	schemaName := r.currentDatabase
-	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), r.currentDatabase)
-	}
-
-	tableName := fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), r.currentDatabase))
-	r.tableNames = append(r.tableNames, tableName)
-	r.tableLine[tableName] = r.baseLine + ctx.GetStart().GetLine()
-}
-
-func (r *TableCommentConventionRule) handleCommentOnTable(ctx *parser.Comment_on_tableContext) {
-	if ctx.Tableview_name() == nil {
-		return
-	}
-
-	tableName := normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase)
-	r.tableComment[tableName] = plsqlparser.NormalizeQuotedString(ctx.Quoted_string())
-}
 
 // GetAdviceList returns the advice list.
 func (r *TableCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) {

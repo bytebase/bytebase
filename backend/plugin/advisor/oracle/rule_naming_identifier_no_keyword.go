@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -75,26 +73,5 @@ func (r *NamingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Id_expression" {
-		r.handleIDExpression(ctx.(*parser.Id_expressionContext))
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingIdentifierNoKeywordRule) handleIDExpression(ctx *parser.Id_expressionContext) {
-	identifier := normalizeIDExpression(ctx)
-	if plsqlparser.IsOracleKeyword(identifier) {
-		r.AddAdvice(
-			r.level,
-			code.NameIsKeywordIdentifier.Int32(),
-			fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

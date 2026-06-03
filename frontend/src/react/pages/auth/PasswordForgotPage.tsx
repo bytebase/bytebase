@@ -5,10 +5,10 @@ import { authServiceClientConnect } from "@/connect";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_PASSWORD_RESET_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { isValidEmail, resolveWorkspaceName } from "@/utils";
 
 export function PasswordForgotPage() {
@@ -16,16 +16,18 @@ export function PasswordForgotPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const passwordResetEnabled = useVueState(
-    () =>
-      useActuatorV1Store().serverInfo?.restriction?.passwordResetEnabled ??
-      false
-  );
-  const disallowPasswordSignin = useVueState(
-    () =>
-      useActuatorV1Store().serverInfo?.restriction?.disallowPasswordSignin ??
-      false
-  );
+  const serverInfo = useAppStore((state) => state.serverInfo);
+  const passwordResetEnabled =
+    serverInfo?.restriction?.passwordResetEnabled ?? false;
+  const disallowPasswordSignin =
+    serverInfo?.restriction?.disallowPasswordSignin ?? false;
+
+  // This page renders outside any shell, so the workspace bootstrap hasn't
+  // populated the app store yet — load server info so the password-reset
+  // restriction flags resolve.
+  useEffect(() => {
+    void useAppStore.getState().loadServerInfo();
+  }, []);
 
   useEffect(() => {
     if (disallowPasswordSignin) {

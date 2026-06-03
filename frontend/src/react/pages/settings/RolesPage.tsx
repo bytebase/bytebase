@@ -53,7 +53,7 @@ import {
   displayRoleTitleFromList,
 } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import {
   BASIC_WORKSPACE_PERMISSIONS,
@@ -674,7 +674,6 @@ export function RolesPage() {
   const listRoles = useAppStore((state) => state.listRoles);
   const getRoleByName = useAppStore((state) => state.getRoleByName);
   const deleteRole = useAppStore((state) => state.deleteRole);
-  const subscriptionStore = useSubscriptionV1Store();
 
   const [ready, setReady] = useState(false);
   const [detailRole, setDetailRole] = useState<Role | undefined>();
@@ -684,7 +683,7 @@ export function RolesPage() {
   const [deleteResources, setDeleteResources] = useState<string[]>([]);
 
   const hasCustomRoleFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
 
   const canCreate = hasWorkspacePermissionV2("bb.roles.create");

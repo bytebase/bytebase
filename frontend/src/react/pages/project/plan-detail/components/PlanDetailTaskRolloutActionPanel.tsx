@@ -21,7 +21,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -606,8 +606,11 @@ function PlanDetailStageEnvironment({
 }: {
   environmentName: string;
 }) {
-  const environmentStore = useEnvironmentV1Store();
-  const environment = environmentStore.getEnvironmentByName(environmentName);
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
+  );
 
   return (
     <span className="text-sm text-control">

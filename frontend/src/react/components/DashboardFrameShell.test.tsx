@@ -19,6 +19,11 @@ const mocks = vi.hoisted(() => ({
   useAppStore: vi.fn(),
 }));
 
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: mocks.useAppStore,
+}));
+
+// The legacy-Pinia bootstrap block reads these from `@/store`.
 vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => ({
     fetchEnvironments: mocks.fetchEnvironments,
@@ -26,10 +31,6 @@ vi.mock("@/store", () => ({
   useSettingV1Store: () => ({
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
   }),
-}));
-
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: mocks.useAppStore,
 }));
 
 vi.mock("./BannersWrapper", () => ({
@@ -57,17 +58,21 @@ beforeEach(async () => {
   mocks.loadWorkspaceProfile.mockResolvedValue(undefined);
   mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
   mocks.loadSubscription.mockResolvedValue(undefined);
-  mocks.useAppStore.mockImplementation((selector) =>
-    selector({
-      loadCurrentUser: mocks.loadCurrentUser,
-      loadServerInfo: mocks.loadServerInfo,
-      loadWorkspace: mocks.loadWorkspace,
-      loadEnvironmentList: mocks.loadEnvironmentList,
-      loadWorkspaceProfile: mocks.loadWorkspaceProfile,
-      loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
-      loadSubscription: mocks.loadSubscription,
-    })
-  );
+  const appStoreState = {
+    loadCurrentUser: mocks.loadCurrentUser,
+    loadServerInfo: mocks.loadServerInfo,
+    loadWorkspace: mocks.loadWorkspace,
+    loadEnvironmentList: mocks.loadEnvironmentList,
+    loadWorkspaceProfile: mocks.loadWorkspaceProfile,
+    loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
+    loadSubscription: mocks.loadSubscription,
+    fetchEnvironments: mocks.fetchEnvironments,
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+  };
+  mocks.useAppStore.mockImplementation((selector) => selector(appStoreState));
+  (
+    mocks.useAppStore as unknown as { getState: () => typeof appStoreState }
+  ).getState = () => appStoreState;
   ({ DashboardFrameShell } = await import("./DashboardFrameShell"));
 });
 

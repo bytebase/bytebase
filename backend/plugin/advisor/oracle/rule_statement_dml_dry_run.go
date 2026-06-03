@@ -5,16 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -82,49 +78,8 @@ func (r *StatementDmlDryRunRule) OnStatement(node ast.Node) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Insert_statement":
-		r.handleInsertStatement(ctx.(*parser.Insert_statementContext))
-	case "Update_statement":
-		r.handleUpdateStatement(ctx.(*parser.Update_statementContext))
-	case "Delete_statement":
-		r.handleDeleteStatement(ctx.(*parser.Delete_statementContext))
-	case "Merge_statement":
-		r.handleMergeStatement(ctx.(*parser.Merge_statementContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*StatementDmlDryRunRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *StatementDmlDryRunRule) handleInsertStatement(ctx *parser.Insert_statementContext) {
-	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
-	}
-}
-
-func (r *StatementDmlDryRunRule) handleUpdateStatement(ctx *parser.Update_statementContext) {
-	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
-	}
-}
-
-func (r *StatementDmlDryRunRule) handleDeleteStatement(ctx *parser.Delete_statementContext) {
-	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
-	}
-}
-
-func (r *StatementDmlDryRunRule) handleMergeStatement(ctx *parser.Merge_statementContext) {
-	if plsql.IsTopLevelStatement(ctx.GetParent()) {
-		r.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), r.baseLine+ctx.GetStart().GetLine())
-	}
-}
 
 func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
 	if r.explainCount >= common.MaximumLintExplainSize {

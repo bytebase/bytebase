@@ -30,11 +30,8 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  pushNotification,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { getSemanticTemplateList } from "@/types";
 import type {
   Algorithm,
@@ -99,13 +96,10 @@ function useEscapeKey(onEscape: () => void) {
 
 export function SemanticTypesPage() {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
-
-  const subscriptionStore = useSubscriptionV1Store();
 
   const hasPermission = hasWorkspacePermissionV2("bb.policies.update");
   const hasSensitiveDataFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const isReadonly = !hasPermission || !hasSensitiveDataFeature;
 
@@ -117,17 +111,19 @@ export function SemanticTypesPage() {
     algorithm?: Algorithm;
   } | null>(null);
 
-  const semanticTypeSettingValue = useVueState(() => {
-    const setting = settingStore.getSettingByName(
-      Setting_SettingName.SEMANTIC_TYPES
-    );
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const semanticTypeSettingValue = useMemo(() => {
+    const setting = useAppStore
+      .getState()
+      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
     return setting?.value?.value?.case === "semanticType"
       ? (setting.value.value.value.types ?? [])
       : [];
-  });
+  }, [settingsByName]);
 
   useEffect(() => {
-    settingStore
+    useAppStore
+      .getState()
       .getOrFetchSettingByName(Setting_SettingName.SEMANTIC_TYPES)
       .then(() => setLoaded(true));
   }, []);
@@ -145,7 +141,7 @@ export function SemanticTypesPage() {
 
   const upsertSetting = useCallback(
     async (types: SemanticTypeSetting_SemanticType[], notification: string) => {
-      await settingStore.upsertSetting({
+      await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.SEMANTIC_TYPES,
         value: create(SettingSettingValueSchema, {
           value: {

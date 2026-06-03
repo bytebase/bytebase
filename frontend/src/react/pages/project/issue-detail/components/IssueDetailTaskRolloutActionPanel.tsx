@@ -22,7 +22,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useEnvironmentV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -598,16 +598,17 @@ function IssueDetailTaskDatabaseName({ task }: { task: Task }) {
 function IssueDetailDatabaseTarget({ target }: { target: string }) {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const environmentStore = useEnvironmentV1Store();
+  const environmentList = useAppStore((s) => s.environmentList);
   const database = useVueState(
     () => databasesByName[target] ?? unknownDatabase()
   );
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      database.effectiveEnvironment ??
-        database.instanceResource?.environment ??
-        ""
-    )
+  const environmentName =
+    database.effectiveEnvironment ??
+    database.instanceResource?.environment ??
+    "";
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(target);
@@ -637,9 +638,10 @@ function IssueDetailStageEnvironment({
 }: {
   environmentName: string;
 }) {
-  const environmentStore = useEnvironmentV1Store();
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(environmentName)
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environment = useMemo(
+    () => useAppStore.getState().getEnvironmentByName(environmentName),
+    [environmentList, environmentName]
   );
 
   return (

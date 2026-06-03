@@ -18,7 +18,7 @@ import {
   getTableCatalog,
 } from "@/react/stores/app/databaseCatalog";
 import { router } from "@/router";
-import { featureToRef, useSettingV1Store } from "@/store";
+import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -79,7 +79,6 @@ export function DatabaseObjectExplorer({
   onExternalTableSearchKeywordChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
   const databaseEngine = getDatabaseEngine(database);
   const supportsSchema = hasSchemaProperty(databaseEngine);
   const schemaList = useAppStore((s) => s.getSchemaList(database.name));
@@ -118,10 +117,8 @@ export function DatabaseObjectExplorer({
   );
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);
-  const classificationConfig = useVueState(() =>
-    settingStore.getProjectClassification(
-      project.dataClassificationConfigId ?? ""
-    )
+  const classificationConfig = useAppStore((s) =>
+    s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
   const canUpdateCatalog = hasProjectPermissionV2(
     project,
@@ -256,11 +253,10 @@ export function DatabaseObjectExplorer({
     : undefined;
 
   useEffect(() => {
-    void settingStore.getOrFetchSettingByName(
-      Setting_SettingName.DATA_CLASSIFICATION,
-      true
-    );
-  }, [settingStore]);
+    void useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
+  }, []);
 
   useEffect(() => {
     setSelectedTableName((current) =>

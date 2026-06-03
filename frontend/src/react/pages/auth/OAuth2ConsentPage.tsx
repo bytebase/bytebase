@@ -15,7 +15,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useActuatorV1Store, useAuthStore } from "@/store";
+import { useAuthStore } from "@/store";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -31,7 +31,6 @@ export function OAuth2ConsentPage() {
   // which trips the React-hooks-in-callback lint rule (typescript:S6440)
   // despite Pinia memoizing the factory.
   const authStore = useAuthStore();
-  const actuatorStore = useActuatorV1Store();
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
@@ -41,7 +40,7 @@ export function OAuth2ConsentPage() {
   // user belongs to at least one workspace; on self-hosted there's a single
   // implicit workspace. We display it so the user can confirm which
   // workspace this OAuth grant will be bound to.
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const currentWorkspace = useWorkspace();
   const workspaceList = useAppStore((state) => state.workspaceList);
 
@@ -76,6 +75,11 @@ export function OAuth2ConsentPage() {
       setLoading(false);
       return;
     }
+
+    // This page renders outside any shell, so the workspace bootstrap hasn't
+    // populated the app store — load server info so `isSaaSMode()` resolves
+    // and the SaaS workspace picker can render.
+    void useAppStore.getState().loadServerInfo();
 
     (async () => {
       try {

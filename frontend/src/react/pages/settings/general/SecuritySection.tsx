@@ -20,7 +20,6 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -42,7 +41,7 @@ interface SecuritySectionProps {
 export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
   function SecuritySection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
-    const settingV1Store = useSettingV1Store();
+    const workspaceProfile = useAppStore((s) => s.getWorkspaceProfile());
 
     const hasWatermarkFeature = usePlanFeature(PlanFeature.FEATURE_WATERMARK);
     const hasDomainRestrictionFeature = usePlanFeature(
@@ -51,7 +50,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
     const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const getInitialState = useCallback((): SecurityState => {
-      const profile = settingV1Store.workspaceProfile;
+      const profile = workspaceProfile;
 
       // Watermark
       const enableWatermark = profile.watermark;
@@ -81,7 +80,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         domains,
         enableRestriction,
       };
-    }, [settingV1Store]);
+    }, [workspaceProfile]);
 
     const [state, setState] = useState<SecurityState>(getInitialState);
     const [domainInput, setDomainInput] = useState("");
@@ -108,7 +107,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
 
       // Watermark
       if (state.enableWatermark !== init.enableWatermark) {
-        await settingV1Store.updateWorkspaceProfile({
+        await useAppStore.getState().updateWorkspaceProfile({
           payload: { watermark: state.enableWatermark },
           updateMask: create(FieldMaskSchema, {
             paths: ["value.workspace_profile.watermark"],
@@ -125,7 +124,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         if (!state.neverExpire) {
           seconds = state.inputValue * 24 * 60 * 60;
         }
-        await settingV1Store.updateWorkspaceProfile({
+        await useAppStore.getState().updateWorkspaceProfile({
           payload: {
             maximumRoleExpiration: create(DurationSchema, {
               seconds: BigInt(seconds),
@@ -156,7 +155,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         domainUpdatePaths.push("value.workspace_profile.domains");
       }
       if (domainUpdatePaths.length > 0) {
-        await settingV1Store.updateWorkspaceProfile({
+        await useAppStore.getState().updateWorkspaceProfile({
           payload: {
             domains: currentValidDomains,
             enforceIdentityDomain: effectiveRestriction,
@@ -172,7 +171,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       // load-once cache, so we refresh it here so consumers like
       // <Watermark /> and <BannersWrapper /> pick up the new values.
       await useAppStore.getState().loadWorkspaceProfile(true);
-    }, [state, domainInput, settingV1Store, getInitialState]);
+    }, [state, domainInput, getInitialState]);
 
     useImperativeHandle(ref, () => ({ isDirty, revert, update }));
 

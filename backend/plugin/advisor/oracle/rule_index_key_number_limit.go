@@ -5,11 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -112,42 +109,5 @@ func (r *IndexKeyNumberLimitRule) checkConstraint(c *ast.TableConstraint) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *IndexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Table_index_clause":
-		r.handleTableIndexClause(ctx.(*parser.Table_index_clauseContext))
-	case "Out_of_line_constraint":
-		r.handleOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*IndexKeyNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *IndexKeyNumberLimitRule) handleTableIndexClause(ctx *parser.Table_index_clauseContext) {
-	keys := len(ctx.AllIndex_expr_option())
-	if keys > r.max {
-		r.AddAdvice(
-			r.level,
-			code.IndexKeyNumberExceedsLimit.Int32(),
-			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}
-
-func (r *IndexKeyNumberLimitRule) handleOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	keys := len(ctx.AllColumn_name())
-	if keys > r.max {
-		r.AddAdvice(
-			r.level,
-			code.IndexKeyNumberExceedsLimit.Int32(),
-			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

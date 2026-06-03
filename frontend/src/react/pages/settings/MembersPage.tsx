@@ -86,12 +86,7 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
@@ -167,8 +162,7 @@ function MemberTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -626,8 +620,7 @@ function MemberTableByRole({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
@@ -1388,15 +1381,18 @@ function EditMemberRoleDrawer({
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-  const settingV1Store = useSettingV1Store();
+  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
-  const hasEmailSetting = useVueState(
-    () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const hasEmailSetting = useMemo(
+    () => !!useAppStore.getState().getSettingByName(Setting_SettingName.EMAIL),
+    [settingsByName]
   );
   useEffect(() => {
-    settingV1Store.getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
-  }, [settingV1Store]);
+    useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
+  }, []);
 
   const isEditMode = !!member;
   const isProjectCreateMode = !!projectName && !isEditMode;
@@ -1446,13 +1442,13 @@ function EditMemberRoleDrawer({
   // Workspace-configured maximum role expiration, in days. PROJECT_OWNER
   // grants are exempt; returns undefined when no cap is set. Mirrors
   // RequestRoleSheet so direct grants and role requests behave the same.
-  const maximumRoleExpirationDays = useVueState(() => {
+  const workspaceProfile = useAppStore((s) => s.getWorkspaceProfile());
+  const maximumRoleExpirationDays = useMemo(() => {
     if (form.role === PresetRoleType.PROJECT_OWNER) return undefined;
-    const seconds =
-      settingV1Store.workspaceProfile.maximumRoleExpiration?.seconds;
+    const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
     return Math.floor(Number(seconds) / (60 * 60 * 24));
-  });
+  }, [workspaceProfile, form.role]);
 
   // Helpers for project edit mode
   const getSingleBindingRows = useCallback(
@@ -2048,8 +2044,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
-  const actuatorStore = useActuatorV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useCurrentUser();
   const projectsByName = useAppStore((s) => s.projectsByName);
   const updateProjectIamPolicy = useAppStore(
@@ -2058,8 +2052,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // subscribe to re-render on project cache change
   void projectsByName;
 
-  const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
-  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
+  const userCountInIam = useAppStore((s) => s.userCountInIam());
+  const userCountLimit = useAppStore((s) => s.userCountLimit());
   const remainingUserCount = useMemo(
     () => Math.max(0, userCountLimit - userCountInIam),
     [userCountLimit, userCountInIam]
@@ -2086,7 +2080,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
 
   const hasRequestRoleFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+    useAppStore.getState().hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
 
   // IAM policy loads are owned by the parent shells: ProjectRouteShell

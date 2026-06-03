@@ -30,17 +30,8 @@ const mocks = vi.hoisted(() => ({
   useAuthStore: vi.fn(() => ({
     updateCurrentUserNameForEmailChange: vi.fn(),
   })),
-  useSettingV1Store: vi.fn(() => ({
-    workspaceProfile: {
-      passwordRestriction: undefined,
-      requireMfa: false,
-    },
-  })),
   getWorkspaceRolesByName: vi.fn(() => new Set<string>()),
   fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
-  useActuatorV1Store: vi.fn(() => ({
-    isSaaSMode: false,
-  })),
   hasFeature: vi.fn(() => true),
   pushNotification: vi.fn(),
   getUserByIdentifier: vi.fn(),
@@ -66,26 +57,33 @@ vi.mock("@/react/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: vi.fn(),
 }));
 
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      getUserByIdentifier: mocks.getUserByIdentifier,
-      getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
-      updateUser: mocks.updateUser,
-      updateEmail: mocks.updateEmail,
-      roleList: [],
-      workspacePolicy: undefined,
-      getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
-      fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
+vi.mock("@/react/stores/app", () => {
+  const buildState = () => ({
+    getUserByIdentifier: mocks.getUserByIdentifier,
+    getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+    updateUser: mocks.updateUser,
+    updateEmail: mocks.updateEmail,
+    roleList: [],
+    workspacePolicy: undefined,
+    getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
+    fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
+    // Migrated off the Pinia actuator/setting store mocks.
+    isSaaSMode: () => false,
+    getWorkspaceProfile: () => ({
+      passwordRestriction: undefined,
+      requireMfa: false,
     }),
-}));
+  });
+  const useAppStore = (selector: (state: unknown) => unknown) =>
+    selector(buildState());
+  useAppStore.getState = () => buildState();
+  return { useAppStore };
+});
 
 vi.mock("@/store", () => ({
   hasFeature: mocks.hasFeature,
   pushNotification: mocks.pushNotification,
-  useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
-  useSettingV1Store: mocks.useSettingV1Store,
 }));
 
 vi.mock("@/router", () => ({

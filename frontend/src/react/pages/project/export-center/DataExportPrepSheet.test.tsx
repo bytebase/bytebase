@@ -189,13 +189,12 @@ const mocks = vi.hoisted(() => ({
   currentUser: { name: "users/me@example.com", email: "me@example.com" },
 }));
 
-const stableSettingStore = {
-  workspaceProfile: { sqlResultSize: BigInt(100 * 1024 * 1024) },
+const stableWorkspaceProfile = {
+  sqlResultSize: BigInt(100 * 1024 * 1024),
 };
 
 vi.mock("@/store", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
-  useSettingV1Store: () => stableSettingStore,
   pushNotification: mocks.pushNotification,
 }));
 
@@ -205,6 +204,9 @@ vi.mock("@/react/stores/app", () => {
     // `useProjectV1Store` now lives on the app store.
     getProjectByName: mocks.getProjectByName,
     projectsByName: {} as Record<string, unknown>,
+    // The workspace profile getter previously lived on the Pinia
+    // `useSettingV1Store`; it is now an app-store method.
+    getWorkspaceProfile: () => stableWorkspaceProfile,
     fetchDatabases: mocks.fetchDatabases,
     getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
     getDatabaseByName: mocks.getDatabaseByName,

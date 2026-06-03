@@ -35,13 +35,16 @@ const mocks = vi.hoisted(() => {
     dbSchemaStore: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
-    useSubscriptionV1Store: vi.fn(),
     getColumnCatalog: vi.fn(() => ({
       semanticType: "",
       classification: "",
     })),
     getTableCatalog: vi.fn(),
-    useSettingV1Store: vi.fn(),
+    getOrFetchSettingByName: vi.fn(),
+    getSettingByName: vi.fn(() => undefined),
+    getProjectClassification: vi.fn(() => undefined),
+    hasFeature: vi.fn(() => true),
+    instanceMissingLicense: vi.fn(() => false),
     featureToRef: vi.fn(() => ({ value: true })),
     getDatabaseProject: vi.fn((database: { project: string }) => ({
       name: database.project,
@@ -89,17 +92,28 @@ vi.mock("@/router", () => ({
   },
 }));
 
-// The component (and its child `DatabaseObjectExplorer`) now read dbSchema
-// getters via the app store. Route the existing `mocks.dbSchemaStore`
-// shape through `useAppStore` so the per-scenario `.mockReturnValue({...})`
-// calls in test bodies keep working without further changes.
+// The component (and its children `DatabaseObjectExplorer`, `TableDetailDialog`,
+// `TableMetadataTable`) now read dbSchema getters plus the former
+// setting/subscription store methods via the app store. Merge the
+// setting/subscription mocks into the `mocks.dbSchemaStore` shape so the
+// per-scenario `.mockReturnValue({...})` calls in test bodies keep working.
 vi.mock("@/react/stores/app", () => {
-  const useAppStore = (selector: (s: unknown) => unknown) =>
-    selector(mocks.dbSchemaStore());
-  useAppStore.getState = () => ({
+  const getState = () => ({
     updateDatabaseCatalog: mocks.updateDatabaseCatalog,
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getSettingByName: mocks.getSettingByName,
+    getProjectClassification: mocks.getProjectClassification,
+    hasFeature: mocks.hasFeature,
+    instanceMissingLicense: mocks.instanceMissingLicense,
+    ...((mocks.dbSchemaStore() ?? {}) as Record<string, unknown>),
   });
-  return { useAppStore };
+  return {
+    useAppStore: Object.assign(
+      (selector?: (s: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
 });
 
 vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
@@ -108,8 +122,6 @@ vi.mock("@/react/hooks/useAppDatabaseMetadata", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
-  useSettingV1Store: mocks.useSettingV1Store,
   featureToRef: mocks.featureToRef,
 }));
 
@@ -363,17 +375,15 @@ beforeEach(async () => {
   mocks.getTableCatalog.mockReturnValue({
     classification: "",
   });
-  mocks.useSettingV1Store.mockReset();
-  mocks.useSettingV1Store.mockReturnValue({
-    getOrFetchSettingByName: vi.fn(),
-    getSettingByName: vi.fn(() => undefined),
-    getProjectClassification: vi.fn(() => undefined),
-  });
-  mocks.useSubscriptionV1Store.mockReset();
-  mocks.useSubscriptionV1Store.mockReturnValue({
-    hasFeature: vi.fn(() => true),
-    instanceMissingLicense: vi.fn(() => false),
-  });
+  mocks.getOrFetchSettingByName.mockReset();
+  mocks.getSettingByName.mockReset();
+  mocks.getSettingByName.mockReturnValue(undefined);
+  mocks.getProjectClassification.mockReset();
+  mocks.getProjectClassification.mockReturnValue(undefined);
+  mocks.hasFeature.mockReset();
+  mocks.hasFeature.mockReturnValue(true);
+  mocks.instanceMissingLicense.mockReset();
+  mocks.instanceMissingLicense.mockReturnValue(false);
   mocks.featureToRef.mockReset();
   mocks.featureToRef.mockReturnValue({
     value: true,

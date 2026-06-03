@@ -16,7 +16,7 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useAppStore } from "@/react/stores/app";
 import {
   Announcement_AlertLevel,
   AnnouncementSchema,
@@ -46,14 +46,15 @@ export const AnnouncementSection = forwardRef<
   AnnouncementSectionProps
 >(function AnnouncementSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const settingV1Store = useSettingV1Store();
 
   const hasFeature = usePlanFeature(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT);
 
   const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
   const getRawAnnouncement = useCallback((): AnnouncementState => {
-    const announcement = settingV1Store.workspaceProfile.announcement;
+    const announcement = useAppStore
+      .getState()
+      .getWorkspaceProfile().announcement;
     if (announcement) {
       return {
         level: announcement.level,
@@ -66,7 +67,7 @@ export const AnnouncementSection = forwardRef<
       text: "",
       link: "",
     };
-  }, [settingV1Store]);
+  }, []);
 
   const [state, setState] = useState<AnnouncementState>(() =>
     cloneDeep(getRawAnnouncement())
@@ -82,7 +83,7 @@ export const AnnouncementSection = forwardRef<
   }, [getRawAnnouncement]);
 
   const update = useCallback(async () => {
-    await settingV1Store.updateWorkspaceProfile({
+    await useAppStore.getState().updateWorkspaceProfile({
       payload: {
         announcement: create(AnnouncementSchema, { ...state }),
       },
@@ -90,7 +91,7 @@ export const AnnouncementSection = forwardRef<
         paths: ["value.workspace_profile.announcement"],
       }),
     });
-  }, [state, settingV1Store]);
+  }, [state]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));
 

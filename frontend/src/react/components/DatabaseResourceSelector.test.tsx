@@ -48,10 +48,6 @@ vi.mock("@/plugins/i18n", () => ({
   t: (key: string) => key,
 }));
 
-vi.mock("@/store", () => ({
-  useEnvironmentV1Store: () => mocks.environmentStore,
-}));
-
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: (getter: () => unknown) => getter(),
 }));
@@ -90,6 +86,7 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
     fetchInstanceList: mocks.fetchInstanceList,
     fetchDatabases: mocks.fetchDatabases,
+    environmentList: mocks.environmentStore.environmentList,
   });
   return {
     useAppStore: Object.assign(

@@ -10,7 +10,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useAuthStore: vi.fn(),
-  useActuatorV1Store: vi.fn(),
   useAppStore: vi.fn(),
   useWorkspace: vi.fn(),
   isLoggedIn: { value: true },
@@ -42,26 +41,27 @@ mocks.useAuthStore.mockImplementation(() => ({
     return mocks.isLoggedIn.value;
   },
 }));
-mocks.useActuatorV1Store.mockImplementation(() => ({
-  get isSaaSMode() {
-    return mocks.isSaaSMode.value;
-  },
-}));
 mocks.useWorkspace.mockImplementation(() => mocks.currentWorkspace.value);
 // The OAuth2 consent page selects discrete app-store slices via
 // `useAppStore((state) => state.X)`. Resolve each selector against a
 // mock state that exposes the workspace list (live via getter) plus
-// the action mocks under test.
+// the action mocks under test. `isSaaSMode` is now an app-store method.
 mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
   selector({
     get workspaceList() {
       return mocks.workspaceList.value;
     },
+    isSaaSMode: () => mocks.isSaaSMode.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
     switchWorkspace: mocks.switchWorkspace,
   })
 );
+// The consent page also calls `useAppStore.getState().loadServerInfo()` on mount.
+(mocks.useAppStore as unknown as { getState: () => unknown }).getState =
+  () => ({
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+  });
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
@@ -77,7 +77,6 @@ vi.mock("@/react/stores/app", () => ({
 
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
-  useActuatorV1Store: mocks.useActuatorV1Store,
 }));
 
 // Test-only Select stub: Base UI's Select renders its popup through a portal,

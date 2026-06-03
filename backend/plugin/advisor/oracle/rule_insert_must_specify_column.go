@@ -4,9 +4,7 @@ package oracle
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -62,6 +60,9 @@ func (*InsertMustSpecifyColumnRule) Name() string {
 func (r *InsertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.InsertStmt)
 	if !ok {
+		if block, ok := node.(*ast.PLSQLBlock); ok {
+			r.checkPLSQLBlock(block)
+		}
 		return
 	}
 	if n.InsertType == ast.INSERT_SINGLE && n.Columns == nil {
@@ -85,26 +86,17 @@ func (r *InsertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 	}
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *InsertMustSpecifyColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Insert_into_clause" {
-		r.handleInsertIntoClause(ctx.(*parser.Insert_into_clauseContext))
-	}
-	return nil
+func (r *InsertMustSpecifyColumnRule) checkPLSQLBlock(block *ast.PLSQLBlock) {
+	omniWalkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
+		insertStmt, ok := stmt.(*ast.InsertStmt)
+		if !ok {
+			return true
+		}
+		r.OnStatement(insertStmt)
+		return false
+	})
 }
+
+// OnEnter is called when the parser enters a rule context.
 
 // OnExit is called when the parser exits a rule context.
-func (*InsertMustSpecifyColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *InsertMustSpecifyColumnRule) handleInsertIntoClause(ctx *parser.Insert_into_clauseContext) {
-	if ctx.Paren_column_list() == nil {
-		r.AddAdvice(
-			r.level,
-			code.InsertNotSpecifyColumn.Int32(),
-			"INSERT statement should specify column name.",
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

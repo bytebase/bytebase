@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { useAppStore } from "@/react/stores/app";
-import { useEnvironmentV1Store } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
@@ -154,8 +153,7 @@ async function generateChangeDatabaseTasks(
 }
 
 function getEnvironmentOrder(): string[] {
-  const environmentStore = useEnvironmentV1Store();
-  return environmentStore.environmentList.map((env) => env.name);
+  return useAppStore.getState().environmentList.map((env) => env.name);
 }
 
 function groupTasksIntoStages(

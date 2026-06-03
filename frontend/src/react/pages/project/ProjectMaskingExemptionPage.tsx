@@ -48,12 +48,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
-import {
-  extractUserEmail,
-  hasFeature,
-  pushNotification,
-  useSettingV1Store,
-} from "@/store";
+import { extractUserEmail, hasFeature, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import {
@@ -594,18 +589,16 @@ function rebuildExemptions(accessList: AccessUser[]) {
 
 function useExemptionDataReact(projectName: string) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups
   );
 
   // Ensure classification config is loaded
   useEffect(() => {
-    settingStore.getOrFetchSettingByName(
-      Setting_SettingName.DATA_CLASSIFICATION,
-      true
-    );
-  }, [settingStore]);
+    useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
+  }, []);
 
   const [rawAccessList, setRawAccessList] = useState<AccessUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1358,14 +1351,15 @@ function LevelBadge({
   noLimit?: boolean;
 }) {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
+  const settingsByName = useAppStore((s) => s.settingsByName);
 
-  const levelTitle = useVueState(() => {
+  const levelTitle = useMemo(() => {
     if (level === undefined) return undefined;
-    const config = settingStore.classification[0];
+    void settingsByName;
+    const config = useAppStore.getState().classification()[0];
     return config?.levels?.find((l: { level: number }) => l.level === level)
       ?.title;
-  });
+  }, [level, settingsByName]);
 
   const label = useMemo(() => {
     if (noLimit || level === undefined)

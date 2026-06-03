@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,7 +43,6 @@ type TableRequirePKRule struct {
 	BaseRule
 
 	currentDatabase string
-	tableName       string
 	tableWitPK      map[string]bool
 	tableLine       map[string]int
 }
@@ -114,38 +111,8 @@ func (*TableRequirePKRule) createTableHasPK(stmt *ast.CreateTableStmt) bool {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *TableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.handleCreateTable(ctx.(*parser.Create_tableContext))
-	case "Inline_constraint":
-		r.handleInlineConstraint(ctx.(*parser.Inline_constraintContext))
-	case "Constraint_clauses":
-		r.handleConstraintClauses(ctx.(*parser.Constraint_clausesContext))
-	case "Out_of_line_constraint":
-		r.handleOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
-	case "Alter_table":
-		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
-	case "Drop_table":
-		r.handleDropTable(ctx.(*parser.Drop_tableContext))
-	case "Drop_primary_key_or_unique_or_generic_clause":
-		r.handleDropPrimaryKey(ctx.(*parser.Drop_primary_key_or_unique_or_generic_clauseContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (r *TableRequirePKRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.tableName = ""
-	case "Alter_table":
-		r.tableName = ""
-	default:
-	}
-	return nil
-}
 
 // GetAdviceList returns the advice list.
 func (r *TableRequirePKRule) GetAdviceList() ([]*storepb.Advice, error) {
@@ -160,58 +127,4 @@ func (r *TableRequirePKRule) GetAdviceList() ([]*storepb.Advice, error) {
 		}
 	}
 	return r.BaseRule.GetAdviceList()
-}
-
-func (r *TableRequirePKRule) handleCreateTable(ctx *parser.Create_tableContext) {
-	schemaName := r.currentDatabase
-	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), r.currentDatabase)
-	}
-
-	r.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), r.currentDatabase))
-	r.tableWitPK[r.tableName] = false
-	r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
-}
-
-func (r *TableRequirePKRule) handleInlineConstraint(ctx *parser.Inline_constraintContext) {
-	if ctx.PRIMARY() != nil {
-		if _, exists := r.tableWitPK[r.tableName]; exists {
-			r.tableWitPK[r.tableName] = true
-		}
-	}
-}
-
-func (r *TableRequirePKRule) handleConstraintClauses(ctx *parser.Constraint_clausesContext) {
-	if ctx.PRIMARY() != nil {
-		if _, exists := r.tableWitPK[r.tableName]; exists {
-			r.tableWitPK[r.tableName] = true
-		}
-	}
-}
-
-func (r *TableRequirePKRule) handleOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	if ctx.PRIMARY() != nil {
-		if _, exists := r.tableWitPK[r.tableName]; exists {
-			r.tableWitPK[r.tableName] = true
-		}
-	}
-}
-
-func (r *TableRequirePKRule) handleAlterTable(ctx *parser.Alter_tableContext) {
-	r.tableName = normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase)
-}
-
-func (r *TableRequirePKRule) handleDropTable(ctx *parser.Drop_tableContext) {
-	tableName := normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase)
-	if _, exists := r.tableWitPK[tableName]; !exists {
-		return
-	}
-	delete(r.tableWitPK, tableName)
-}
-
-func (r *TableRequirePKRule) handleDropPrimaryKey(ctx *parser.Drop_primary_key_or_unique_or_generic_clauseContext) {
-	if _, exists := r.tableWitPK[r.tableName]; exists && ctx.PRIMARY() != nil {
-		r.tableWitPK[r.tableName] = false
-		r.tableLine[r.tableName] = r.baseLine + ctx.GetStop().GetLine()
-	}
 }

@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -117,64 +115,5 @@ func (r *NamingTableRule) checkTableName(tableName string, loc ast.Loc) {
 }
 
 // OnEnter is called when the parser enters a rule context.
-func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Create_table":
-		r.handleCreateTable(ctx.(*parser.Create_tableContext))
-	case "Alter_table_properties":
-		r.handleAlterTableProperties(ctx.(*parser.Alter_table_propertiesContext))
-	default:
-	}
-	return nil
-}
 
 // OnExit is called when the parser exits a rule context.
-func (*NamingTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingTableRule) handleCreateTable(ctx *parser.Create_tableContext) {
-	tableName := normalizeIdentifier(ctx.Table_name(), r.currentDatabase)
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}
-
-func (r *NamingTableRule) handleAlterTableProperties(ctx *parser.Alter_table_propertiesContext) {
-	if ctx.Tableview_name() == nil {
-		return
-	}
-	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), r.currentDatabase))
-	if tableName == "" {
-		return
-	}
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
-		)
-	}
-}

@@ -21,9 +21,7 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { usePlanFeature, useServerState } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   defaultAccessTokenDurationInHours,
   defaultRefreshTokenDurationInHours,
@@ -96,7 +94,6 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
   function AccountSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
 
-    const settingV1Store = useSettingV1Store();
     const listIdentityProviders = useAppStore(
       (state) => state.listIdentityProviders
     );
@@ -123,9 +120,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     );
 
     // Track whether the EMAIL setting is configured (required to enable email-code signin).
-    // Reactively reads from the Vue store so the value updates when EMAIL is (un)configured.
-    const hasEmailSetting = useVueState(
-      () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
+    // Reactively reads from the app store so the value updates when EMAIL is (un)configured.
+    const hasEmailSetting = useAppStore(
+      (s) => !!s.getSettingByName(Setting_SettingName.EMAIL)
     );
 
     // Fetch identity providers after the workspace resource name is ready.
@@ -137,20 +134,21 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
     // Fetch EMAIL setting on mount.
     useEffect(() => {
-      // Populate the EMAIL setting into the store cache; useVueState above
+      // Populate the EMAIL setting into the store cache; the selector above
       // picks up the change reactively.
-      settingV1Store.getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
-    }, [settingV1Store]);
+      useAppStore
+        .getState()
+        .getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
+    }, []);
 
     // --- Toggle state ---
     const getInitialToggleState = useCallback((): ToggleState => {
+      const profile = useAppStore.getState().getWorkspaceProfile();
       return {
-        disallowSignup: settingV1Store.workspaceProfile.disallowSignup,
-        requireMfa: settingV1Store.workspaceProfile.requireMfa,
-        disallowPasswordSignin:
-          settingV1Store.workspaceProfile.disallowPasswordSignin,
-        allowEmailCodeSignin:
-          settingV1Store.workspaceProfile.allowEmailCodeSignin,
+        disallowSignup: profile.disallowSignup,
+        requireMfa: profile.requireMfa,
+        disallowPasswordSignin: profile.disallowPasswordSignin,
+        allowEmailCodeSignin: profile.allowEmailCodeSignin,
       };
     }, []);
 
@@ -162,7 +160,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const getInitialPasswordRestriction =
       useCallback((): WorkspaceProfileSetting_PasswordRestriction => {
         return cloneDeep(
-          settingV1Store.workspaceProfile.passwordRestriction ??
+          useAppStore.getState().getWorkspaceProfile().passwordRestriction ??
             create(WorkspaceProfileSetting_PasswordRestrictionSchema, {})
         );
       }, []);
@@ -174,6 +172,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
     // --- Token duration state ---
     const getInitialTokenState = useCallback((): TokenState => {
+      const profile = useAppStore.getState().getWorkspaceProfile();
       const state: TokenState = {
         accessTokenDuration: defaultAccessTokenDurationInHours,
         accessTokenTimeFormat: "HOURS",
@@ -182,9 +181,8 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         inactiveTimeout: -1,
       };
 
-      const accessTokenSeconds = settingV1Store.workspaceProfile
-        .accessTokenDuration?.seconds
-        ? Number(settingV1Store.workspaceProfile.accessTokenDuration.seconds)
+      const accessTokenSeconds = profile.accessTokenDuration?.seconds
+        ? Number(profile.accessTokenDuration.seconds)
         : undefined;
       if (accessTokenSeconds && accessTokenSeconds > 0) {
         if (accessTokenSeconds < 60 * 60) {
@@ -197,9 +195,8 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         }
       }
 
-      const refreshTokenSeconds = settingV1Store.workspaceProfile
-        .refreshTokenDuration?.seconds
-        ? Number(settingV1Store.workspaceProfile.refreshTokenDuration.seconds)
+      const refreshTokenSeconds = profile.refreshTokenDuration?.seconds
+        ? Number(profile.refreshTokenDuration.seconds)
         : undefined;
       if (refreshTokenSeconds && refreshTokenSeconds > 0) {
         if (refreshTokenSeconds < 60 * 60 * 24) {
@@ -214,7 +211,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       }
 
       const inactiveTimeoutSeconds = Number(
-        settingV1Store.workspaceProfile.inactiveSessionTimeout?.seconds ?? 0
+        profile.inactiveSessionTimeout?.seconds ?? 0
       );
       if (inactiveTimeoutSeconds) {
         state.inactiveTimeout =
@@ -359,7 +356,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
       if (updateMaskPaths.length === 0) return;
 
-      await settingV1Store.updateWorkspaceProfile({
+      await useAppStore.getState().updateWorkspaceProfile({
         payload,
         updateMask: create(FieldMaskSchema, { paths: updateMaskPaths }),
       });

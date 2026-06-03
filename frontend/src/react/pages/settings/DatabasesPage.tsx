@@ -22,15 +22,10 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
@@ -64,8 +59,6 @@ export function DatabasesPage() {
   const removeDatabaseMetadataCache = useAppStore(
     (s) => s.removeDatabaseMetadataCache
   );
-  const actuatorStore = useActuatorV1Store();
-  const environmentStore = useEnvironmentV1Store();
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -110,23 +103,21 @@ export function DatabasesPage() {
         {
           id: "project",
           value: extractProjectResourceName(
-            actuatorStore.serverInfo?.defaultProject ?? ""
+            useAppStore.getState().serverInfo?.defaultProject ?? ""
           ),
         },
       ],
     };
   });
 
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useAppStore((s) => s.environmentList);
 
   // `serverInfo.defaultProject` is fetched asynchronously by the actuator
-  // store; wrap with `useVueState` so the filter value updates the moment
-  // it arrives instead of being captured as an empty string on first
-  // render (which sends a broken `projects/` filter to the backend).
-  const defaultProjectId = useVueState(() =>
-    extractProjectResourceName(actuatorStore.serverInfo?.defaultProject ?? "")
+  // store; use a selector so the filter value updates the moment it arrives
+  // instead of being captured as an empty string on first render (which
+  // sends a broken `projects/` filter to the backend).
+  const defaultProjectId = useAppStore((s) =>
+    extractProjectResourceName(s.serverInfo?.defaultProject ?? "")
   );
   // Shared "Unassigned" option used both by the dropdown (via onSearch) and
   // by the selected-tag display (via the scope's static `options`). `custom`

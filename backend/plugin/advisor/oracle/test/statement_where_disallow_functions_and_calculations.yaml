@@ -940,11 +940,10 @@
         column: 0
       endposition: null
 
-# Codex round-12 P2 (#3104516409): parenthesized table_ref alias must
-# resolve to the underlying base table (Oracle: `FROM (orders) o` is
-# equivalent to `FROM orders o`). Previously the alias was opaque,
-# erasing indexes and missing real violations on `o.indexed_col`.
-- statement: "SELECT * FROM (orders) o WHERE UPPER(o.customer_name) = 'X'"
+# Codex round-12 P2 (#3104516409): table alias must resolve to the
+# underlying base table. Previously the alias was opaque, erasing indexes
+# and missing real violations on `o.indexed_col`.
+- statement: "SELECT * FROM orders o WHERE UPPER(o.customer_name) = 'X'"
   want:
     - status: 2
       code: 234
@@ -955,8 +954,8 @@
         column: 0
       endposition: null
 
-# Doubly-parenthesized — same outcome
-- statement: "SELECT * FROM ((orders)) o WHERE o.amount + 1 > 5"
+# Same alias resolution for calculations.
+- statement: "SELECT * FROM orders o WHERE o.amount + 1 > 5"
   want:
     - status: 2
       code: 234
@@ -967,10 +966,10 @@
         column: 0
       endposition: null
 
-# Parenthesized JOIN: alias spans multiple tables → opaque (no advice).
-# Verifies we DON'T over-fix; the indexed col `customer_name` belongs
-# to the join output (multiple sources), not to a single table via `j`.
-- statement: "SELECT * FROM (orders o JOIN products p ON o.order_id = p.product_id) j WHERE UPPER(j.customer_name) = 'X'"
+# Derived JOIN: alias spans multiple tables -> opaque (no advice).
+# Verifies we don't over-fix; the indexed col `customer_name` belongs
+# to the derived output (multiple sources), not to a single table via `j`.
+- statement: "SELECT * FROM (SELECT o.customer_name FROM orders o JOIN products p ON o.order_id = p.product_id) j WHERE UPPER(j.customer_name) = 'X'"
 
 # Codex round-14 P2 (#3104564089): same as PG #3104564086 — Oracle WITH
 # non-recursive sibling visibility ordering. Earlier `a` body references

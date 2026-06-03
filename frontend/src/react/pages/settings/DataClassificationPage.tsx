@@ -8,13 +8,9 @@ import { ClassificationTree } from "@/react/components/ClassificationTree";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import classificationExample from "@/react/lib/sensitive-data/classification-example.json";
-import {
-  pushNotification,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import type {
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
   DataClassificationSetting_DataClassificationConfig,
@@ -131,17 +127,17 @@ function MonacoJSONEditor({
 
 export function DataClassificationPage() {
   const { t } = useTranslation();
-  const settingStore = useSettingV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
 
-  const hasClassificationFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(
-      PlanFeature.FEATURE_DATA_CLASSIFICATION
-    )
+  const hasClassificationFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_CLASSIFICATION)
   );
   const allowEdit = hasWorkspacePermissionV2("bb.settings.set");
 
-  const classificationConfigs = useVueState(() => settingStore.classification);
+  const settingsByName = useAppStore((s) => s.settingsByName);
+  const classificationConfigs = useMemo(
+    () => useAppStore.getState().classification(),
+    [settingsByName]
+  );
 
   const [loaded, setLoaded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -171,10 +167,11 @@ export function DataClassificationPage() {
 
   // Fetch setting on mount
   useEffect(() => {
-    settingStore
+    useAppStore
+      .getState()
       .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION)
       .then(() => setLoaded(true));
-  }, [settingStore]);
+  }, []);
 
   // Sync editor content when not editing
   useEffect(() => {
@@ -193,7 +190,7 @@ export function DataClassificationPage() {
 
   const upsertSetting = useCallback(
     async (configs: DataClassificationSetting_DataClassificationConfig[]) => {
-      await settingStore.upsertSetting({
+      await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.DATA_CLASSIFICATION,
         value: create(SettingValueSchema, {
           value: {
@@ -210,7 +207,7 @@ export function DataClassificationPage() {
         title: t("common.updated"),
       });
     },
-    [settingStore, t]
+    [t]
   );
 
   const onSave = async () => {

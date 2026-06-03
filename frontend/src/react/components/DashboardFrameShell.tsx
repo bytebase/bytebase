@@ -7,8 +7,10 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { BannersWrapper } from "./BannersWrapper";
 
 // Legacy Pinia bootstrap kept alongside the app-store bootstrap because the
-// remaining Vue surfaces still read from these Pinia stores. Once those Vue
-// readers are migrated this block can go away.
+// remaining Vue / shared-util surfaces still read from these Pinia stores
+// (e.g. expr.ts environment options, DashboardSidebar's app-feature profile).
+// The app store is loaded separately by useEnsureWorkspaceCommonData. Once
+// those Pinia readers are migrated this block can go away.
 const loadLegacyDashboardState = () => {
   return Promise.all([
     useEnvironmentV1Store().fetchEnvironments(),

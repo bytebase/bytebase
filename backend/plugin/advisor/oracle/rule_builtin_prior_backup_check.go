@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/oracle/ast"
-
-	"github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -71,8 +68,6 @@ type StatementPriorBackupCheckRule struct {
 	ctx      context.Context
 	checkCtx advisor.Context
 
-	updateStatements  []plsql.IUpdate_statementContext
-	deleteStatements  []plsql.IDelete_statementContext
 	statementInfoList []statementInfo
 	hasDDL            bool
 }
@@ -115,34 +110,6 @@ func (r *StatementPriorBackupCheckRule) OnStatement(node ast.Node) {
 func (r *StatementPriorBackupCheckRule) GetAdviceList() ([]*storepb.Advice, error) {
 	r.handleSQLScriptExit()
 	return r.BaseRule.GetAdviceList()
-}
-
-// OnEnter is called when the parser enters a rule context.
-func (r *StatementPriorBackupCheckRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Unit_statement" {
-		r.handleUnitStatement(ctx.(*plsql.Unit_statementContext))
-	}
-	return nil
-}
-
-// OnExit is called when the parser exits a rule context.
-func (r *StatementPriorBackupCheckRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Sql_script" {
-		r.handleSQLScriptExit()
-	}
-	return nil
-}
-
-func (r *StatementPriorBackupCheckRule) handleUnitStatement(ctx *plsql.Unit_statementContext) {
-	if dml := ctx.Data_manipulation_language_statements(); dml != nil {
-		if update := dml.Update_statement(); update != nil {
-			r.updateStatements = append(r.updateStatements, update)
-		} else if d := dml.Delete_statement(); d != nil {
-			r.deleteStatements = append(r.deleteStatements, d)
-		}
-	} else {
-		r.hasDDL = true
-	}
 }
 
 func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {

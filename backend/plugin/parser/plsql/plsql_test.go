@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/bytebase/omni/oracle/ast"
-	parser "github.com/bytebase/parser/plsql"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -39,11 +38,11 @@ func TestPLSQLParser(t *testing.T) {
 		},
 		{
 			statement:    "SELECT * FROM t1 WHERE c1 = ",
-			errorMessage: "Syntax error at line 1:27 \nrelated text: SELECT * FROM t1 WHERE c1 =",
+			errorMessage: "ERROR: syntax error at end of input (SQLSTATE 42601)",
 		},
 		{
 			statement:    "SELECT 1 FROM DUAL;\n   SELEC 5 FROM DUAL;\nSELECT 6 FROM DUAL;",
-			errorMessage: "Syntax error at line 2:10 \nrelated text: SELECT 1 FROM DUAL;\n   SELEC 5",
+			errorMessage: "ERROR: syntax error at or near \"SELEC\" (SQLSTATE 42601)",
 		},
 		// BYT-9302: CREATE TABLE with INTERVAL partitioning and DATE literal bound.
 		{
@@ -65,12 +64,10 @@ INTERVAL (NUMTODSINTERVAL(1,'DAY'))
 	}
 
 	for _, test := range tests {
-		results, err := ParsePLSQL(test.statement)
+		list, err := ParsePLSQLOmni(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err)
-			require.NotEmpty(t, results)
-			_, ok := results[0].Tree.(*parser.Sql_scriptContext)
-			require.True(t, ok)
+			require.NotEmpty(t, list.Items)
 		} else {
 			require.EqualError(t, err, test.errorMessage)
 		}
@@ -106,12 +103,12 @@ INSERT INTO t3 VALUES (1, 2);`,
 	}
 
 	for _, test := range tests {
-		results, err := ParsePLSQL(test.statement)
+		stmts, err := base.ParseStatements(storepb.Engine_ORACLE, test.statement)
 		require.NoError(t, err)
-		require.Equal(t, test.expectedCount, len(results), "Statement: %s", test.statement)
+		require.Equal(t, test.expectedCount, len(stmts), "Statement: %s", test.statement)
 
-		for i, result := range results {
-			require.Equal(t, test.expectedLines[i], base.GetLineOffset(result.StartPosition), "Statement %d", i+1)
+		for i, stmt := range stmts {
+			require.Equal(t, test.expectedLines[i], base.GetLineOffset(stmt.Start), "Statement %d", i+1)
 		}
 	}
 }
@@ -152,7 +149,7 @@ END;`)
 	require.Equal(t, "N", trigger.Referencing.NewAlias)
 }
 
-func TestParsePLSQLStatementsFallbackErrorUsesOriginalLine(t *testing.T) {
+func TestParsePLSQLStatementsOmniErrorUsesOriginalLine(t *testing.T) {
 	_, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT *
 FROM T;
 CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
@@ -172,20 +169,14 @@ BROKEN`)
 	require.Equal(t, int32(11), syntaxErr.Position.Line)
 }
 
-func TestParsePLSQLStatementsFallbackErrorUsesOriginalColumn(t *testing.T) {
+func TestParsePLSQLStatementsOmniErrorUsesOriginalColumn(t *testing.T) {
 	statement := `SELECT * FROM T; CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA (TXN_DATE DATE) PARTITION BY RANGE (TXN_DATE) INTERVAL (NUMTODSINTERVAL(1,'DAY')) (PARTITION P0 VALUES LESS THAN (DATE '2026-01-01') BROKEN`
-
-	_, wholeErr := ParsePLSQL(statement)
-	require.Error(t, wholeErr)
-	var wholeSyntaxErr *base.SyntaxError
-	require.True(t, errors.As(wholeErr, &wholeSyntaxErr))
-	require.NotNil(t, wholeSyntaxErr.Position)
 
 	_, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
 	require.Error(t, err)
 	var syntaxErr *base.SyntaxError
 	require.True(t, errors.As(err, &syntaxErr))
 	require.NotNil(t, syntaxErr.Position)
-	require.Equal(t, wholeSyntaxErr.Position.Line, syntaxErr.Position.Line)
-	require.Equal(t, wholeSyntaxErr.Position.Column, syntaxErr.Position.Column)
+	require.Equal(t, int32(1), syntaxErr.Position.Line)
+	require.Equal(t, int32(199), syntaxErr.Position.Column)
 }
