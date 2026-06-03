@@ -876,7 +876,9 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 				continue
 			}
 			if strings.HasPrefix(member, "users/") {
-				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+				// Principal emails are stored lower-cased, but IAM members may keep
+				// mixed casing; normalize so dedup and the deleted lookup below match.
+				emails[strings.ToLower(strings.TrimPrefix(member, "users/"))] = struct{}{}
 			} else if strings.HasPrefix(member, "groups/") {
 				groupRefs = append(groupRefs, strings.TrimPrefix(member, "groups/"))
 			}
@@ -886,7 +888,7 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 		members, _ := s.GetGroupMembersSnapshot(ctx, workspaceID, "groups/"+ref)
 		for member := range members {
 			if strings.HasPrefix(member, "users/") {
-				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+				emails[strings.ToLower(strings.TrimPrefix(member, "users/"))] = struct{}{}
 			}
 		}
 	}
