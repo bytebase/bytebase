@@ -430,6 +430,7 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		ag.Query = p.Query
 		ag.Unmask = p.Unmask
 		ag.Export = p.Export
+		ag.Reason = p.Reason
 		if p.IssueId != 0 {
 			ag.Issue = common.FormatIssue(msg.ProjectID, p.IssueId)
 		}

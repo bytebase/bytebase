@@ -277,12 +277,8 @@
         "readonly": "Sólo lectura"
       }
     },
-    "download-encryption-failed": "Error al cifrar la descarga.",
-    "download-failed": "Error en la descarga.",
-    "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
     "expired": "Expirado",
-    "self": "Editor de SQL",
-    "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión."
+    "self": "Editor de SQL"
   },
   "sql-review": {
     "create": {

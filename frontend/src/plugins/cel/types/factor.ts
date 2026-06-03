@@ -1,5 +1,6 @@
 import {
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_TIME,
   CEL_ATTRIBUTE_REQUEST_UNMASK,
@@ -57,7 +58,10 @@ export const StringFactorList = [
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
-export const BooleanFactorList = [CEL_ATTRIBUTE_REQUEST_UNMASK] as const;
+export const BooleanFactorList = [
+  CEL_ATTRIBUTE_REQUEST_UNMASK,
+  CEL_ATTRIBUTE_REQUEST_EXPORT,
+] as const;
 export type BooleanFactor = (typeof BooleanFactorList)[number];
 
 export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;

@@ -8,7 +8,14 @@ import {
   InfoIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -45,13 +52,12 @@ import {
   type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { createExplainToken } from "@/utils/pev2";
-import { SQL_ENGINE_QUOTES } from "@/utils/sql-download/engines";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { isDev, isNullOrUndefined } from "@/utils/util";
+import { isNullOrUndefined } from "@/utils/util";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -81,8 +87,14 @@ export interface SingleResultViewProps {
   database: Database;
   result: QueryResult;
   showExport: boolean;
+  // Optional tooltip shown on the export button — used to explain when the
+  // export is enabled by a JIT access grant despite the policy disabling it.
+  exportTooltip?: ReactNode;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
+  // Rendered in the toolbar when `showExport` is false — e.g. a
+  // "Request export" affordance when the policy disables direct export.
+  requestExportSlot?: ReactNode;
 }
 
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
@@ -217,8 +229,10 @@ function SingleResultViewInner({
   database,
   result,
   showExport,
+  exportTooltip,
   maximumExportCount,
   onExport,
+  requestExportSlot,
   engine,
   activeResult: _activeResult,
   columns,
@@ -240,22 +254,15 @@ function SingleResultViewInner({
   const { runQuery } = useExecuteSQL();
   const { copyAll } = useSelectionContext();
 
-  // Under isDev() (client-side download), drop SQL from the format list
-  // when the engine isn't in SQL_ENGINE_QUOTES — otherwise selecting SQL
-  // would reach serializeSQL and throw UnsupportedFormat at runtime.
-  // Production (backend Export RPC) handles all engines.
-  const supportFormats = useMemo(() => {
-    const all = [
+  const supportFormats = useMemo(
+    () => [
       ExportFormat.CSV,
       ExportFormat.JSON,
       ExportFormat.SQL,
       ExportFormat.XLSX,
-    ];
-    if (!isDev()) return all;
-    return SQL_ENGINE_QUOTES.has(engine)
-      ? all
-      : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
-  }, [engine]);
+    ],
+    []
+  );
 
   const dataTableRef = useRef<
     VirtualDataTableHandle | VirtualDataBlockHandle | null
@@ -586,17 +593,20 @@ function SingleResultViewInner({
                   {t("common.copy")}
                 </Button>
               )}
-              {showExport && (
+              {showExport ? (
                 <DataExportButton
                   size="sm"
                   disabled={!result || isEmpty(result)}
                   supportFormats={supportFormats}
                   viewMode="DRAWER"
                   supportPassword
+                  tooltip={exportTooltip}
                   maximumExportCount={maximumExportCount}
                   formContent={<DatabaseInfo database={database} />}
                   onExport={handleExport}
                 />
+              ) : (
+                requestExportSlot
               )}
             </div>
             <SelectionCopyTooltips />

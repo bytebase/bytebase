@@ -184,28 +184,21 @@ func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEm
 	return qc
 }
 
-// accessOperation distinguishes between Query and Export so preCheckAccess can pick
-// a grant whose capabilities actually authorize the operation in question.
-type accessOperation int
-
-const (
-	accessOperationQuery accessOperation = iota
-	accessOperationExport
-)
-
-// preCheckAccess finds and returns the best matching active access grant for the
-// requested operation. It lists active grants filtered by project, creator,
-// statement, target database, and expiry, then narrows and ranks them per
-// operation:
+// preCheckAccess returns the user's most capable active access grant matching
+// the given query, or nil if none. It ranks candidates by capability count
+// (Unmask + Export, each worth 1 point) and returns the highest-ranked grant;
+// the rank is operation-agnostic, so callers gate on the specific capability
+// they need:
 //
-//   - Query: any matching grant confers ACL bypass; among them, prefer Unmask=true
-//     so SkipMasking can be turned on when the user is entitled to unmasked data.
-//   - Export: only grants with Export=true authorize the export, so filter to
-//     those first; among them, prefer Unmask=true to also skip masking.
+//   - Query authorizes on any grant (ACL bypass) and reads `Payload.Unmask` to
+//     decide `SkipMasking`.
+//   - Export must additionally check `Payload.Export` before treating the grant
+//     as authorizing — an unmask-only grant doesn't authorize Export, even
+//     though it matched the query.
 //
 // The returned grant is guaranteed to have a non-nil Payload — callers may
-// deref Payload.Unmask / Payload.Export without an additional check.
-func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage, operation accessOperation) *store.AccessGrantMessage {
+// deref `Payload.Unmask` / `Payload.Export` without an additional check.
+func (s *SQLService) preCheckAccess(ctx context.Context, statement string, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -266,32 +259,26 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	// Narrow to grants whose capabilities actually authorize this operation,
-	// then prefer Unmask=true so the caller can set SkipMasking when the
-	// user is entitled to unmasked data. Filtering keeps Query from ever
-	// being "covered" by an export-only grant (which would still bypass the
-	// ACL check) when an unmask grant exists in the same set — see the
-	// review note that the old combined score conflated the two dimensions.
-	var candidates []*store.AccessGrantMessage
+	// Pick the highest-ranked grant by capability count (Unmask + Export).
+	// A grant with both wins outright, otherwise the first single-capability
+	// grant in slice order wins (ties resolve to ListAccessGrants ordering).
+	// Skip nil-payload grants up front so callers can deref Payload safely.
+	var best *store.AccessGrantMessage
+	bestScore := -1
 	for _, grant := range grants {
 		if grant.Payload == nil {
-			// Defensive: a nil payload means we can't read Unmask/Export
-			// anyway, so it can't authorize anything beyond raw ACL bypass.
-			// Skipping here also lets downstream callers deref Payload safely.
 			continue
 		}
-		if operation == accessOperationExport && !grant.Payload.Export {
-			continue
+		score := 0
+		if grant.Payload.Unmask {
+			score++
 		}
-		candidates = append(candidates, grant)
-	}
-	if len(candidates) == 0 {
-		return nil
-	}
-	best := candidates[0]
-	for _, grant := range candidates[1:] {
-		if !best.Payload.Unmask && grant.Payload.Unmask {
+		if grant.Payload.Export {
+			score++
+		}
+		if score > bestScore {
 			best = grant
+			bestScore = score
 		}
 	}
 	return best
@@ -305,7 +292,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, accessOperationQuery)
+	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -953,11 +940,14 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
-	// When an active access grant covers this export request, the user is already
-	// authorized and we skip the regular ACL check, just like the Query request.
-	// `preCheckAccess(..., accessOperationExport)` only returns grants with
-	// Export=true, so the presence of a grant here is sufficient to bypass ACL.
-	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, accessOperationExport)
+	// preCheckAccess returns the most capable matching grant regardless of
+	// operation; gate on `Payload.Export` here so an unmask-only grant
+	// doesn't accidentally authorize an export.
+	matchedGrant := s.preCheckAccess(ctx, request.Statement, instance, database)
+	var accessGrant *store.AccessGrantMessage
+	if matchedGrant != nil && matchedGrant.Payload.Export {
+		accessGrant = matchedGrant
+	}
 
 	// Validate the request.
 	// New query ACL experience.

@@ -68,6 +68,12 @@ export const buildAccessGrantFilter = (
       `create_time <= "${new Date(filter.createdTsBefore).toISOString()}"`
     );
   }
+  if (filter.unmask !== undefined) {
+    parts.push(`unmask == ${filter.unmask}`);
+  }
+  if (filter.export !== undefined) {
+    parts.push(`export == ${filter.export}`);
+  }
   return parts.join(" && ");
 };
 

@@ -150,6 +150,8 @@ export type AccessGrantFilter = {
   target?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
+  unmask?: boolean;
+  export?: boolean;
 };
 
 export type ListAccessGrantsParams = {

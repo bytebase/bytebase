@@ -26,6 +26,7 @@ export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
       return {
         error: "",
         results: response.results,
+        appliedAccessGrant: response.appliedAccessGrant,
       };
     } catch (err) {
       return {

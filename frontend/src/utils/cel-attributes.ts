@@ -23,6 +23,7 @@ export const CEL_ATTRIBUTE_STATEMENT_TEXT = "statement.text";
 export const CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS = "request.expiration_days";
 export const CEL_ATTRIBUTE_REQUEST_ROLE = "request.role";
 export const CEL_ATTRIBUTE_REQUEST_UNMASK = "request.unmask";
+export const CEL_ATTRIBUTE_REQUEST_EXPORT = "request.data_export";
 export const CEL_ATTRIBUTE_REQUEST_TIME = "request.time";
 
 // CEL attribute names for risk scope.

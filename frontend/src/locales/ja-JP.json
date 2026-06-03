@@ -277,12 +277,8 @@
         "readonly": "読み取り専用"
       }
     },
-    "download-encryption-failed": "ダウンロードの暗号化に失敗しました。",
-    "download-failed": "ダウンロードに失敗しました。",
-    "download-too-large": "ダウンロードするには結果が大きすぎます。行数を減らすか、エクスポートを使用してください。",
     "expired": "期限切れ",
-    "self": "SQLエディタ",
-    "sql-download-unavailable": "この接続では SQL ダウンロードを利用できません。"
+    "self": "SQLエディタ"
   },
   "sql-review": {
     "create": {

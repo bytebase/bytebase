@@ -119,6 +119,14 @@ export function AccessGrantItem({
               {t("sql-editor.grant-type-unmask")}
             </Badge>
           )}
+          {grant.export && (
+            <Badge
+              variant="default"
+              className="text-[10px] px-1.5 py-0 rounded-full"
+            >
+              {t("sql-editor.grant-type-export")}
+            </Badge>
+          )}
         </div>
         {expirationText && (
           <span className="text-xs text-control-placeholder shrink-0">

@@ -1,4 +1,4 @@
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,8 +9,10 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
@@ -214,32 +216,46 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
 
   return (
     <div className="py-4 w-full flex flex-col">
-      <div className="px-4">
-        <div className="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
-          <div className="flex flex-1 max-w-full items-center gap-x-2">
-            <AdvancedSearch
-              params={searchParams}
-              onParamsChange={setSearchParams}
-              scopeOptions={scopeOptions}
-              placeholder={t("issue.advanced-search.filter")}
-            />
-            <Tooltip
-              content={
-                !canCreate
-                  ? t("common.missing-required-permission", {
-                      permissions:
-                        PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.join(", "),
-                    })
-                  : undefined
-              }
+      <div className="px-4 mb-3">
+        <Alert
+          variant="warning"
+          title={t("export-center.deprecated.title")}
+          description={t("export-center.deprecated.description")}
+        >
+          <div className="mt-3 flex justify-end">
+            <Button
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              onClick={() => router.push({ name: SQL_EDITOR_HOME_MODULE })}
             >
-              <Button disabled={!canCreate} onClick={() => setShowDrawer(true)}>
-                <Download className="size-4 mr-1" />
-                {t("quick-action.request-export-data")}
-              </Button>
-            </Tooltip>
+              <SquareTerminal className="size-4 mr-1" />
+              {t("export-center.deprecated.open-sql-editor")}
+            </Button>
           </div>
-        </div>
+        </Alert>
+      </div>
+      <div className="px-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <AdvancedSearch
+          params={searchParams}
+          onParamsChange={setSearchParams}
+          scopeOptions={scopeOptions}
+          placeholder={t("issue.advanced-search.filter")}
+        />
+        <Tooltip
+          content={
+            !canCreate
+              ? t("common.missing-required-permission", {
+                  permissions:
+                    PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.join(", "),
+                })
+              : undefined
+          }
+        >
+          <Button disabled={!canCreate} onClick={() => setShowDrawer(true)}>
+            <Download className="size-4 mr-1" />
+            {t("quick-action.request-export-data")}
+          </Button>
+        </Tooltip>
       </div>
 
       {/* Issue list */}

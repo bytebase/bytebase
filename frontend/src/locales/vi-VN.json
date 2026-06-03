@@ -277,12 +277,8 @@
         "readonly": "Chỉ đọc"
       }
     },
-    "download-encryption-failed": "Không thể mã hóa bản tải xuống.",
-    "download-failed": "Tải xuống thất bại.",
-    "download-too-large": "Kết quả quá lớn để tải xuống. Hãy giảm số dòng hoặc sử dụng Xuất.",
     "expired": "Đã hết hạn",
-    "self": "Trình soạn thảo SQL",
-    "sql-download-unavailable": "Tải xuống SQL không khả dụng cho kết nối này."
+    "self": "Trình soạn thảo SQL"
   },
   "sql-review": {
     "create": {
