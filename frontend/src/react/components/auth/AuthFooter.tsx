@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import i18n from "@/plugins/i18n";
 import reactI18n from "@/react/i18n";
 import { router } from "@/react/router";
 import { emitStorageChangedEvent, setDocumentTitle } from "@/utils";
@@ -27,7 +26,6 @@ function resolveLabel(locale: string): string {
 }
 
 function setAppLocale(lang: string) {
-  i18n.global.locale.value = lang;
   void reactI18n.changeLanguage(lang);
   localStorage.setItem(STORAGE_KEY_LANGUAGE, JSON.stringify(lang));
   emitStorageChangedEvent();

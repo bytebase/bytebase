@@ -1,96 +1,40 @@
-import { useLocalStorage } from "@vueuse/core";
-import type { WritableComputedRef } from "vue";
-import { type Composer, createI18n } from "vue-i18n";
-import { STORAGE_KEY_LANGUAGE } from "@/utils/storage-keys";
+// The app's i18n is react-i18next (`@/react/i18n`). This module is a thin
+// compatibility layer over that single instance for non-React callers — shared
+// `.ts` modules that translate outside React components via `t` / `te` /
+// `locale`. React components use `useTranslation()` directly. vue-i18n is gone.
+import i18n from "@/react/i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
-const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
+// The shared `.ts` callers reference some legacy keys that aren't in the
+// React locale files (which are scoped to React-component usage). Merge the
+// legacy message set into the same react-i18next instance AT RUNTIME so those
+// keys resolve, without duplicating them into the React locale files (keeps
+// the React-i18n guard + locale set clean). React-owned keys win on conflict.
+for (const [lng, messages] of Object.entries(
+  mergedLocalMessage as Record<string, Record<string, unknown>>
+)) {
+  i18n.addResourceBundle(
+    lng,
+    "translation",
+    messages,
+    /* deep */ true,
+    /* overwrite */ false
+  );
+}
 
-const normalizeStoredLocale = (stored: string): string => {
-  if (validLocaleList.includes(stored)) {
-    return stored;
-  }
-  try {
-    const parsed = JSON.parse(stored);
-    return typeof parsed === "string" ? parsed : "";
-  } catch {
-    return "";
-  }
-};
+export const t = i18n.t.bind(i18n);
 
-const getValidLocale = () => {
-  const storage = useLocalStorage<string>(STORAGE_KEY_LANGUAGE, "");
+export const te = (key: string): boolean => i18n.exists(key);
 
-  const params = new URL(globalThis.location.href).searchParams;
-  let locale = params.get("locale") || "";
-  if (validLocaleList.includes(locale)) {
-    storage.value = locale;
-  }
-
-  locale = normalizeStoredLocale(storage.value || "");
-  if (validLocaleList.includes(locale)) {
-    return locale;
-  }
-
-  locale = navigator.language;
-  if (locale === "en") {
-    // To work with user stored legacy preferences, we switch to en-US
-    // here if we got "en" from localStorage
-    locale = "en-US";
-  }
-  if (locale === "ja") {
-    locale = "ja-JP";
-  }
-  if (locale === "es") {
-    locale = "es-ES";
-  }
-  if (locale === "vi") {
-    locale = "vi-VN";
-  }
-  if (validLocaleList.includes(locale)) {
-    return locale;
-  }
-
-  return "en-US";
-};
-
-const dtfOptions = {
-  full: {
-    month: "short" as const,
-    day: "numeric" as const,
-    year: "numeric" as const,
-    hour: "numeric" as const,
-    minute: "2-digit" as const,
-    timeZoneName: "short" as const,
+// Writable locale accessor mirroring the old vue-i18n `WritableComputedRef`
+// shape (`.value` get/set) for non-React callers.
+export const locale = {
+  get value(): string {
+    return i18n.language;
   },
-  date: {
-    month: "short" as const,
-    day: "numeric" as const,
-    year: "numeric" as const,
-  },
-  dateShort: {
-    month: "short" as const,
-    day: "numeric" as const,
+  set value(next: string) {
+    void i18n.changeLanguage(next);
   },
 };
-
-const datetimeFormats = Object.fromEntries(
-  validLocaleList.map((l) => [l, dtfOptions])
-);
-
-const i18n = createI18n({
-  legacy: false,
-  locale: getValidLocale(),
-  globalInjection: true,
-  messages: mergedLocalMessage as Record<string, Record<string, string>>,
-  datetimeFormats,
-  fallbackLocale: "en-US",
-});
-
-export const t = i18n.global.t as Composer["t"];
-
-export const te = i18n.global.te as Composer["te"];
-
-export const locale = i18n.global.locale as WritableComputedRef<string>;
 
 export default i18n;

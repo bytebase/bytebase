@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   changeLanguage: vi.fn(),
   emitStorageChangedEvent: vi.fn(),
   setDocumentTitle: vi.fn(),
-  locale: { value: "en-US" },
   currentRoute: {
     value: {
       title: undefined as string | undefined,
@@ -54,14 +53,6 @@ vi.mock("@/react/i18n", () => ({
   default: { changeLanguage: mocks.changeLanguage },
 }));
 
-vi.mock("@/plugins/i18n", () => ({
-  default: {
-    global: {
-      locale: mocks.locale,
-    },
-  },
-}));
-
 vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
@@ -99,7 +90,6 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.locale.value = "en-US";
   mocks.language.value = "en-US";
   mocks.currentRoute.value.title = undefined;
   storage.clear();
@@ -145,7 +135,7 @@ describe("AuthFooter", () => {
     unmount();
   });
 
-  test("invokes Vue i18n + storage + title setter on click", () => {
+  test("changes language + storage + title setter on click", () => {
     mocks.language.value = "en-US";
     mocks.currentRoute.value.title = "Signin";
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
@@ -157,7 +147,7 @@ describe("AuthFooter", () => {
     act(() => {
       esAnchor?.click();
     });
-    expect(mocks.locale.value).toBe("es-ES");
+    expect(mocks.changeLanguage).toHaveBeenCalledWith("es-ES");
     expect(localStorage.getItem("bb.language")).toBe('"es-ES"');
     expect(mocks.emitStorageChangedEvent).toHaveBeenCalledTimes(1);
     expect(mocks.setDocumentTitle).toHaveBeenCalledWith("Signin");
