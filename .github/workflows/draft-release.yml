@@ -19,3 +19,10 @@ jobs:
           args: release --config scripts/.goreleaser-release.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  tag-latest:
+    needs: draft-release
+    permissions: {}
+    uses: ./.github/workflows/docker-tag-latest.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit
