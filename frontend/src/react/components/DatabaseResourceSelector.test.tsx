@@ -48,10 +48,6 @@ vi.mock("@/plugins/i18n", () => ({
   t: (key: string) => key,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/components/AdvancedSearch", () => ({
   getValueFromScopes: (
     params: { scopes: { id: string; value: string }[] },

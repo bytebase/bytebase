@@ -87,10 +87,6 @@ vi.mock("@/react/lib/utils", () => ({
     cls.filter(Boolean).join(" "),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/hooks/useSessionPageSize", () => ({
   useSessionPageSize: () => [20, () => {}],
 }));

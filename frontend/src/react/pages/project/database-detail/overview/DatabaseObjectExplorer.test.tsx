@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => {
   return {
     currentRoute,
     routerReplace: vi.fn(() => Promise.resolve()),
-    useVueState: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     getColumnCatalog: vi.fn(() => ({
       semanticType: "",
@@ -56,10 +55,6 @@ let DatabaseObjectExplorer: typeof import("./DatabaseObjectExplorer").DatabaseOb
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({
@@ -284,8 +279,6 @@ beforeEach(async () => {
   );
   mocks.hasIndexSizeProperty.mockReset();
   mocks.hasIndexSizeProperty.mockReturnValue(true);
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.hasTableEngineProperty.mockReset();
   mocks.hasTableEngineProperty.mockReturnValue(false);
   mocks.instanceV1HasCollationAndCharacterSet.mockReset();

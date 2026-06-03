@@ -95,7 +95,6 @@ const mocks = vi.hoisted(() => {
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
-    useVueState: vi.fn(<T,>(getter: () => T) => getter()),
     cn: vi.fn((...values: Array<string | false | null | undefined>) =>
       values.filter(Boolean).join(" ")
     ),
@@ -198,10 +197,6 @@ vi.mock("@/react/components/ui/switch", () => ({
 
 vi.mock("@/react/components/ui/tooltip", () => ({
   Tooltip: mocks.Tooltip,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/lib/utils", () => ({

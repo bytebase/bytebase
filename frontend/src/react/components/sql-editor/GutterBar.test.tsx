@@ -9,8 +9,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  // Pinia bridge — runs the getter against the (mocked) Pinia stores.
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   // Zustand editor store project name.
   project: "projects/test" as string,
   // useAppProject (app store) return value.
@@ -27,10 +25,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/hooks/useAppProject", () => ({
@@ -105,7 +99,6 @@ beforeEach(async () => {
 
 describe("GutterBar", () => {
   test("renders 3 tabs when project does not allow JIT access", () => {
-    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.projectData = { allowJustInTimeAccess: false };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
@@ -115,7 +108,6 @@ describe("GutterBar", () => {
   });
 
   test("renders 4 tabs when project allows JIT access", () => {
-    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.projectData = { allowJustInTimeAccess: true };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
@@ -125,7 +117,6 @@ describe("GutterBar", () => {
   });
 
   test("click writes asidePanelTab via setAsidePanelTab", () => {
-    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.projectData = { allowJustInTimeAccess: false };
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
@@ -138,7 +129,6 @@ describe("GutterBar", () => {
   });
 
   test("logo link has target=_blank and rel=noopener noreferrer", () => {
-    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.projectData = { allowJustInTimeAccess: false };
     mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);

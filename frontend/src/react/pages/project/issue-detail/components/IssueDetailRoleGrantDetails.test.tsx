@@ -52,10 +52,6 @@ vi.mock("@/react/components/EnvironmentLabel", () => ({
 }));
 
 // Stub other modules the component pulls in.
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
-}));
-
 vi.mock("@/types/v1/database", () => ({
   unknownDatabase: () => ({
     name: "instances/-/databases/-",

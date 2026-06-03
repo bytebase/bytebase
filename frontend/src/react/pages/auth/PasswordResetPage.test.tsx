@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   appStoreState: {
     serverInfo: {
       restriction: {
@@ -32,10 +31,6 @@ const mocks = vi.hoisted(() => ({
   resetPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   resolveWorkspaceName: vi.fn(() => undefined),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

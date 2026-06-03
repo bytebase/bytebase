@@ -9,7 +9,6 @@ import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   routerPush: vi.fn(),
   currentRoute: {
     value: { query: {} as Record<string, string | undefined> },
@@ -20,10 +19,6 @@ const mocks = vi.hoisted(() => ({
   identityProviderList: [] as unknown[],
   listIdentityProviders: vi.fn(),
   authStore: null as unknown,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({

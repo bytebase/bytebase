@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
-  useVueState: vi.fn(),
   useDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
   featureToRef: vi.fn(() => ({ value: true })),
@@ -50,10 +49,6 @@ let TableMetadataTable: typeof import("./TableMetadataTable").TableMetadataTable
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/store", () => ({
@@ -252,8 +247,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({ schemas: [] });
   mocks.getTableCatalog.mockReset();

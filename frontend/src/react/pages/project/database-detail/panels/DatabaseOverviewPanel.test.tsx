@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
     schemaList: [{ name: "public" }, { name: "sales" }],
     currentRoute,
     routerReplace: vi.fn(() => Promise.resolve()),
-    useVueState: vi.fn(),
     dbSchemaStore: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
@@ -79,10 +78,6 @@ let DatabaseOverviewPanel: typeof import("./DatabaseOverviewPanel").DatabaseOver
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({
@@ -406,8 +401,6 @@ beforeEach(async () => {
   mocks.hasTableEngineProperty.mockReturnValue(false);
   mocks.instanceV1SupportsIndex.mockReset();
   mocks.instanceV1SupportsIndex.mockReturnValue(true);
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
   vi.resetModules();
   ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));

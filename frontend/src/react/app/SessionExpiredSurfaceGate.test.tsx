@@ -8,13 +8,6 @@ const isLoggedInRef = ref(true);
 const fullPathRef = ref("/");
 const routeNameRef = ref("workspace.dashboard");
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  // Passthrough — calls getter() synchronously on each render. Does NOT
-  // re-render when Vue state changes after mount; set state on the refs
-  // above BEFORE rendering in each test.
-  useVueState: <T,>(getter: () => T) => getter(),
-}));
-
 vi.mock("@/react/stores/app", () => ({
   useAppStore: <T,>(selector: (s: unknown) => T) =>
     selector({

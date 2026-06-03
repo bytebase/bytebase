@@ -253,10 +253,6 @@ vi.mock("@/react/components/ui/tree-utils", () => ({
   countVisibleRows: () => 0,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T): T => getter(),
-}));
-
 let SchemaPane: typeof import("./SchemaPane").SchemaPane;
 
 const renderInto = (element: ReactElement) => {

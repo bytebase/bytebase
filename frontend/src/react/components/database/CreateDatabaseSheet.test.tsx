@@ -156,10 +156,6 @@ vi.mock("@/react/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));

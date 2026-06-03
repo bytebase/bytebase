@@ -27,10 +27,6 @@ vi.mock("@/react/router", () => ({
   useCurrentRoute: () => mocks.route,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/components/FeatureBadge", () => ({
   FeatureBadge: () => <span data-testid="feature-badge" />,
 }));

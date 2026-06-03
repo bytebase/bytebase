@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
   createProject: vi.fn(),
   setupSample: vi.fn(),
   updateWorkspaceProfile: vi.fn(),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({
@@ -50,10 +49,6 @@ vi.mock("@/react/stores/app", () => {
     ),
   };
 });
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/react/components/auth/AuthFooter", () => ({
   AuthFooter: () => null,

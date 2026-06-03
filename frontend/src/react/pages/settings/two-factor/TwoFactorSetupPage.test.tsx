@@ -27,7 +27,6 @@ const regeneratedCurrentUser = {
 };
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useCurrentUser: vi.fn(() => legacyCurrentUser),
   updateUser: vi.fn(async () => regeneratedCurrentUser),
   pushNotification: vi.fn(),
@@ -35,10 +34,6 @@ const mocks = vi.hoisted(() => ({
   currentRoute: {
     value: { name: "workspace.setting.profile" },
   },
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

@@ -42,7 +42,6 @@ const mocks = vi.hoisted(() => {
     getChangelogByName: vi.fn(),
     useAppStore: vi.fn(),
     getTaskRunLog: vi.fn(),
-    useVueState: vi.fn((getter: () => unknown) => getter()),
     clipboardWriteText,
     pushNotification: vi.fn(),
     ReadonlyMonaco: vi.fn(
@@ -154,10 +153,6 @@ vi.mock("@/react/components/task-run-log", () => ({
   TaskRunLogViewer: mocks.TaskRunLogViewer,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/react/stores/app", () => ({
   useAppStore: mocks.useAppStore,
 }));
@@ -243,7 +238,6 @@ beforeEach(() => {
   mocks.useAppStore.mockReset();
   mocks.getTaskRunLog.mockReset();
   mocks.pushNotification.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.ReadonlyMonaco.mockClear();
   mocks.ReadonlyDiffMonaco.mockClear();
   mocks.TaskRunLogViewer.mockClear();

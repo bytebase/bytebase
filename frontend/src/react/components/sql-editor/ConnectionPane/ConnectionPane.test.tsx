@@ -99,17 +99,12 @@ const mocks = vi.hoisted(() => {
     treeStore,
     appStore,
     currentUser,
-    usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
     pushNotification: vi.fn(),
   };
 });
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
@@ -421,7 +416,6 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.usePiniaBridge.mockImplementation((getter) => getter());
   // Reset feature flags default to true for render-path tests.
   mocks.features.batchQuery = true;
   mocks.features.databaseGroups = true;

@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   login: vi.fn<(payload: unknown) => Promise<void>>(async () => {}),
   useAuthStore: vi.fn(),
   currentRoute: {
@@ -17,10 +16,6 @@ const mocks = vi.hoisted(() => ({
   resolveWorkspaceName: vi.fn(() => undefined),
 }));
 mocks.useAuthStore.mockImplementation(() => ({ login: mocks.login }));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,

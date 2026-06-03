@@ -22,9 +22,6 @@ const mocks = vi.hoisted(() => {
   return {
     restriction,
     appStoreState,
-    useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) =>
-      getter()
-    ),
     useAppStore: Object.assign(
       vi.fn((selector?: (s: typeof appStoreState) => unknown) =>
         selector ? selector(appStoreState) : appStoreState
@@ -39,10 +36,6 @@ const mocks = vi.hoisted(() => {
     resolveWorkspaceName: vi.fn(() => undefined),
   };
 });
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: mocks.useAppStore,

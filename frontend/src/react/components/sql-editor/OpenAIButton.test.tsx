@@ -10,8 +10,6 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  // Pinia bridge — runs the getter (resolves openAIEnabled from settings).
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   // Per-test controllable tab-derived state.
   tabState: {
     isDisconnected: false,
@@ -39,10 +37,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({

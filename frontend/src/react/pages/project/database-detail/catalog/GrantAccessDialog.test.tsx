@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
     resolveCELExpr: vi.fn(() => convertedExpr),
     stringifyConditionExpression: vi.fn(() => "serialized-selection"),
     featureToRef: vi.fn(() => ({ value: true })),
-    useVueState: vi.fn((getter: () => unknown) => getter()),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
   };
@@ -185,10 +184,6 @@ vi.mock("@/react/components/ui/input", () => ({
 
 vi.mock("@/react/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/store", () => ({

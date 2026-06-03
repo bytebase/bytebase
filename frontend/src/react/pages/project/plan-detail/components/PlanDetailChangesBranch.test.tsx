@@ -72,10 +72,6 @@ vi.mock("@bufbuild/protobuf", () => ({
   create: (_schema: unknown, init?: Record<string, unknown>) => ({ ...init }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/hooks/useSessionPageSize", () => ({
   useSessionPageSize: () => [20, () => {}],
 }));

@@ -28,10 +28,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {

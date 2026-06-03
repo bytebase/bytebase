@@ -9,7 +9,6 @@ import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   login: vi.fn<(payload: unknown) => Promise<void>>(async () => {}),
   useAuthStore: vi.fn(),
   routerPush: vi.fn(),
@@ -21,10 +20,6 @@ const mocks = vi.hoisted(() => ({
   resolveWorkspaceName: vi.fn(() => undefined),
 }));
 mocks.useAuthStore.mockImplementation(() => ({ login: mocks.login }));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,

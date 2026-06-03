@@ -25,7 +25,6 @@ const updatedCurrentUser = {
 };
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useCurrentUser: vi.fn(() => legacyCurrentUser),
   useAuthStore: vi.fn(() => ({
     updateCurrentUserNameForEmailChange: vi.fn(),
@@ -43,10 +42,6 @@ const mocks = vi.hoisted(() => ({
   migrateUserStorage: vi.fn(),
   setDocumentTitle: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
