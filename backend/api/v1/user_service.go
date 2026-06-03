@@ -861,7 +861,9 @@ func generateRecoveryCodes(n int) ([]string, error) {
 
 // countUsersInIamPolicy counts distinct user members in an IAM policy,
 // expanding group memberships. When allUsers is present and not in SaaS mode,
-// returns the total active principal count instead.
+// returns the total active principal count instead. Soft-deleted principals do
+// not occupy a seat, so emails whose principal is deleted are excluded; emails
+// without a principal yet (e.g. pending SaaS invites) are still counted.
 func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID string, policy *storepb.IamPolicy, saas bool) (int, error) {
 	emails := make(map[string]struct{})
 	var groupRefs []string
@@ -888,7 +890,28 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 			}
 		}
 	}
-	return len(emails), nil
+	if len(emails) == 0 {
+		return 0, nil
+	}
+	emailList := make([]string, 0, len(emails))
+	for email := range emails {
+		emailList = append(emailList, email)
+	}
+	// Pass an empty workspace to look up principals by email only: the seat set is
+	// already derived from policy, we just need each principal's deleted state.
+	users, err := s.BatchGetUsersByEmails(ctx, "", emailList)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to batch get users by emails")
+	}
+	deleted := 0
+	for _, user := range users {
+		if user.MemberDeleted {
+			if _, ok := emails[user.Email]; ok {
+				deleted++
+			}
+		}
+	}
+	return len(emails) - deleted, nil
 }
 
 // userCountGuard checks seat limits before adding a new IAM member (e.g. SSO login).
