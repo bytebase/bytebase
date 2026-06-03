@@ -6,7 +6,6 @@
 defineOptions({ inheritAttrs: false });
 
 import { computed, onMounted, onUnmounted, ref, useAttrs, watch } from "vue";
-import { useI18n } from "vue-i18n";
 
 // `containerClass` defaults to `h-full` so full-height pages (Welcome,
 // HistoryPane, AccessPane, etc.) keep the previous behavior. Callers that
@@ -24,7 +23,6 @@ const props = withDefaults(
 const containerClass = computed(() => props.containerClass);
 
 const attrs = useAttrs();
-const { locale } = useI18n();
 const container = ref<HTMLElement>();
 // biome-ignore lint/suspicious/noExplicitAny: React Root type from dynamic import
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -64,19 +62,12 @@ function render(): Promise<void> {
 
 async function doRender() {
   if (unmounted || !container.value) return;
-  const [{ mountReactPage, updateReactPage }, i18nModule] = await Promise.all([
-    import("./mount"),
-    import("./i18n"),
-  ]);
-  // Re-check after the dynamic imports — Close All / tab-switch can unmount
-  // this component while the imports are in flight. Without the guard,
+  const { mountReactPage, updateReactPage } = await import("./mount");
+  // Re-check after the dynamic import — Close All / tab-switch can unmount
+  // this component while the import is in flight. Without the guard,
   // `container.value` may be `undefined` by the time we call createRoot,
   // producing "Target container is not a DOM element".
   if (unmounted || !container.value) return;
-  if (i18nModule.default.language !== locale.value) {
-    await i18nModule.default.changeLanguage(locale.value);
-    if (unmounted || !container.value) return;
-  }
   // When the page component changes, unmount old root and create a fresh one
   // to avoid stale React state from the previous page.
   if (root && currentPage !== props.page) {
@@ -97,7 +88,6 @@ async function doRender() {
 }
 
 onMounted(() => render());
-watch(locale, () => render());
 watch([() => props.page, pageProps], () => render());
 onUnmounted(() => {
   unmounted = true;
