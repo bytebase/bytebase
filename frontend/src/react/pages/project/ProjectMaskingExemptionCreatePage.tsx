@@ -138,6 +138,9 @@ export function ProjectMaskingExemptionCreatePage({
     []
   );
 
+  // Subscribe so the classification options recompute when DATA_CLASSIFICATION
+  // loads (getClassificationLevelOptions reads the app store imperatively).
+  const settingsByName = useAppStore((s) => s.settingsByName);
   const factorOptionConfigMap = useMemo((): Map<Factor, OptionConfig> => {
     return factorList.reduce((map, factor) => {
       if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
@@ -151,7 +154,7 @@ export function ProjectMaskingExemptionCreatePage({
       }
       return map;
     }, new Map<Factor, OptionConfig>());
-  }, [factorList, projectName]);
+  }, [factorList, projectName, settingsByName]);
 
   const onRadioChange = useCallback(
     (value: RadioValue) => {

@@ -381,8 +381,13 @@ export function GlobalMaskingPage() {
 
   // Subscribe to reactive store data so the memo recomputes when settings load.
   const environmentOptions = useVueState(() => getEnvironmentIdOptions());
-  const classificationOptions = useVueState(() =>
-    getClassificationLevelOptions()
+  // `getClassificationLevelOptions` reads the app store imperatively, so key
+  // this on a `settingsByName` subscription to recompute once the
+  // DATA_CLASSIFICATION setting resolves.
+  const classificationSettingsByName = useAppStore((s) => s.settingsByName);
+  const classificationOptions = useMemo(
+    () => getClassificationLevelOptions(),
+    [classificationSettingsByName]
   );
 
   const factorOptionsMap = useMemo((): Map<Factor, OptionConfig> => {
