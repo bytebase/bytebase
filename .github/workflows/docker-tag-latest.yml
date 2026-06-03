@@ -7,6 +7,12 @@ on:
         description: 'Version to tag as latest (e.g., 1.0.0)'
         required: true
         type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to tag as latest (e.g., 1.0.0)'
+        required: true
+        type: string
 
 permissions: {}
 
