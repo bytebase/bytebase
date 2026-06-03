@@ -49,6 +49,10 @@ export function SetupPage() {
       await router.isReady();
       try {
         await Promise.all([
+          // Force-refresh server info so `enableOnboarding()` reflects the
+          // post-signup active-user count. This page renders outside any
+          // shell, so useEnsureWorkspaceCommonData hasn't run.
+          useAppStore.getState().fetchServerInfo(),
           useAppStore.getState().listRoles(),
           useAppStore.getState().fetchWorkspaceIamPolicy(),
         ]);

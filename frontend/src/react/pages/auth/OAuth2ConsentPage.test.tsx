@@ -57,6 +57,11 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
     switchWorkspace: mocks.switchWorkspace,
   })
 );
+// The consent page also calls `useAppStore.getState().loadServerInfo()` on mount.
+(mocks.useAppStore as unknown as { getState: () => unknown }).getState =
+  () => ({
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
+  });
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,

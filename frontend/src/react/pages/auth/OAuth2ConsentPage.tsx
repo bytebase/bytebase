@@ -76,6 +76,11 @@ export function OAuth2ConsentPage() {
       return;
     }
 
+    // This page renders outside any shell, so the workspace bootstrap hasn't
+    // populated the app store — load server info so `isSaaSMode()` resolves
+    // and the SaaS workspace picker can render.
+    void useAppStore.getState().loadServerInfo();
+
     (async () => {
       try {
         const response = await fetch(

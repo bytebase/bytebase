@@ -51,6 +51,7 @@ vi.mock("@/react/stores/app", () => {
   const getState = () => ({
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
   });
   return {
     useAppStore: Object.assign(

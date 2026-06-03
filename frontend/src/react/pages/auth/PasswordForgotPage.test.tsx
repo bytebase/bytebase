@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => {
   };
   const appStoreState = {
     serverInfo: { restriction } as { restriction: typeof restriction },
+    loadServerInfo: vi.fn().mockResolvedValue(undefined),
   };
   return {
     restriction,

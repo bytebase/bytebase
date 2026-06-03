@@ -26,6 +26,13 @@ export function SignupPage() {
   const serverInfo = useAppStore((s) => s.serverInfo);
   const needAdminSetup = activeUserCount === 0;
 
+  // This page renders outside any shell, so the workspace bootstrap hasn't
+  // populated the app store yet — load server info so the active-user count
+  // and signup restriction flags resolve.
+  useEffect(() => {
+    void useAppStore.getState().loadServerInfo();
+  }, []);
+
   const [acceptTermsAndPolicy, setAcceptTermsAndPolicy] = useState(
     !needAdminSetup
   );

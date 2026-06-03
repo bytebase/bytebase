@@ -22,6 +22,13 @@ export function PasswordForgotPage() {
   const disallowPasswordSignin =
     serverInfo?.restriction?.disallowPasswordSignin ?? false;
 
+  // This page renders outside any shell, so the workspace bootstrap hasn't
+  // populated the app store yet — load server info so the password-reset
+  // restriction flags resolve.
+  useEffect(() => {
+    void useAppStore.getState().loadServerInfo();
+  }, []);
+
   useEffect(() => {
     if (disallowPasswordSignin) {
       router.replace({

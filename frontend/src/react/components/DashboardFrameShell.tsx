@@ -2,18 +2,21 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DashboardFrameShellProps } from "@/react/dashboard-shell";
 import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";
-import { useAppStore } from "@/react/stores/app";
+import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { BannersWrapper } from "./BannersWrapper";
 
 // Legacy Pinia bootstrap kept alongside the app-store bootstrap because the
-// remaining Vue surfaces still read from these Pinia stores. Once those Vue
-// readers are migrated this block can go away.
+// remaining Vue / shared-util surfaces still read from these Pinia stores
+// (e.g. expr.ts environment options, DashboardSidebar's app-feature profile).
+// The app store is loaded separately by useEnsureWorkspaceCommonData. Once
+// those Pinia readers are migrated this block can go away.
 const loadLegacyDashboardState = () => {
-  const store = useAppStore.getState();
   return Promise.all([
-    store.fetchEnvironments(),
-    store.getOrFetchSettingByName(Setting_SettingName.WORKSPACE_PROFILE),
+    useEnvironmentV1Store().fetchEnvironments(),
+    useSettingV1Store().getOrFetchSettingByName(
+      Setting_SettingName.WORKSPACE_PROFILE
+    ),
   ]);
 };
 

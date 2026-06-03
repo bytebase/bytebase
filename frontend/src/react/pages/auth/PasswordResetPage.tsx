@@ -43,6 +43,13 @@ export function PasswordResetPage() {
   );
   const currentUser = useCurrentUser();
 
+  // This page renders outside any shell, so the workspace bootstrap hasn't
+  // populated the app store yet — load server info so the password policy
+  // checks resolve.
+  useEffect(() => {
+    void useAppStore.getState().loadServerInfo();
+  }, []);
+
   const redirectQuery = () => {
     const q = new URLSearchParams(window.location.search);
     return q.get("redirect") || "/";
