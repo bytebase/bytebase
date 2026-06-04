@@ -12,6 +12,16 @@
 -- `request.data_export == true` so any export-capable access-grant
 -- request still triggers approval even if no specific rule matches.
 --
+-- New rules are appended at the END of the array — we deliberately do
+-- NOT reorder existing REQUEST_ACCESS rules (for role grants / unmask /
+-- etc.) ahead of our additions. If a workspace already has a broad
+-- REQUEST_ACCESS rule that intentionally gates every REQUEST_ACCESS
+-- request, reordering would override the admin's chosen evaluation
+-- order. The runner returns the first source-matching rule whose
+-- condition holds; admins can manually reorder in the UI after this
+-- backfill if they want export-specific gates to win over their
+-- existing broad rules.
+--
 -- Per-workspace: `setting` is keyed by `(workspace, name)` so each
 -- workspace gets its own computed rules instead of one workspace's rules
 -- being broadcast to all (PR #20501 bot review #3353501482).
