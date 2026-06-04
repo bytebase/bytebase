@@ -62,7 +62,9 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		defer client.close()
 
 		// Check version compatibility
-		checkVersionCompatibility(w, client, args.Version)
+		if err := checkVersionCompatibility(w, client, args.Version); err != nil {
+			return err
+		}
 
 		var plan *v1pb.Plan
 		if w.Plan != "" {
