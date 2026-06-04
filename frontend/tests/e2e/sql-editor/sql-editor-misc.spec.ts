@@ -45,16 +45,14 @@ test.afterAll(async () => {
 });
 
 test.describe("Aside panel URL restoration (H3)", () => {
-  // H3 passes deterministically on free plan but fails consistently when
-  // an enterprise license is active. SQLEditorRouteShell.tsx restores
-  // the panel from `?panel=<tab>` only after the `project-context-ready`
-  // event fires (line 373) — under license, additional project-scoped
-  // fetches (approval template, query-data-policy, etc.) seem to delay
-  // or interleave with the restoration so the persisted WORKSHEET tab
-  // wins. Mark fixme until either the restoration is reordered or the
-  // event surface for license-fetches is understood. H4 below covers
-  // the gutter-click switching path that does work.
-  test.fixme("?panel=schema activates the Schema gutter tab on first load", async () => {
+  // Locks `?panel=<tab>` deep-link restoration: landing on the SQL editor
+  // with `?panel=schema` must activate the Schema gutter panel rather than
+  // the persisted-default (WORKSHEET) tab. Restoration runs on the
+  // `project-context-ready` event in SQLEditorRouteShell.tsx. Previously
+  // skipped on a stale "fails under license" note; re-verified passing under
+  // an enterprise license both in isolation and in the full suite, so it now
+  // runs as a live regression lock. H4 below covers the gutter-click path.
+  test("?panel=schema activates the Schema gutter tab on first load", async () => {
     const projectId = env.project.split("/").pop()!;
     await page.goto(
       `${env.baseURL}/sql-editor/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}?panel=schema`,
