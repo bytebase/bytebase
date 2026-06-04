@@ -2637,9 +2637,12 @@
       "self": "Admin mode"
     },
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
+    "and-more-grant": "… and {{count}} more grant",
+    "and-more-grants": "… and {{count}} more grants",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "failed-for-db": "Failed to export data for {{db}}",
+      "partial": "Partial batch export",
       "self": "Batch export",
       "tooltip": "Select at most {{max}} databases to batch export latest query results"
     },
@@ -2682,6 +2685,8 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "export-available-via-issue": "Export available via issue \"{{title}}\"",
+    "export-available-via-n-grants": "Export available via {{count}} access grants:",
     "export-enabled-by-grant": "Export enabled by access grant",
     "format": "Format",
     "format-default": "Default",

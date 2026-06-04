@@ -10,6 +10,7 @@ import {
 } from "@/react/components/DataExportButton";
 import { RequestExportButton } from "@/react/components/sql-editor/RequestExportButton";
 import { RequestQueryButton } from "@/react/components/sql-editor/RequestQueryButton";
+import { useExportGrantBypass } from "@/react/components/sql-editor/useExportGrantBypass";
 import { Button } from "@/react/components/ui/button";
 import {
   Tabs,
@@ -128,109 +129,25 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  // Show the real export button when the policy allows export, OR when the
-  // user holds any active export-capable grant for this statement — even if
-  // it's not the grant the Query path applied (Query prefers Unmask, so the
-  // applied grant may be unmask-only while a separate export grant exists).
-  // Without this independent search the UI would hide the Export button and
-  // direct the user to "Request export" despite already having a grant — see
-  // PR #20491 bot review (#3349086832).
-  const searchMyAccessGrants = useAppStore((s) => s.searchMyAccessGrants);
-  const databaseProjectName = database.project;
-  const [exportGrantName, setExportGrantName] = useState<string>("");
-
-  useEffect(() => {
-    if (
-      !queryDataPolicy?.disableExport ||
-      !executeParams?.statement ||
-      !databaseProjectName
-    ) {
-      setExportGrantName("");
-      return;
-    }
-    let canceled = false;
-    void (async () => {
-      const result = await searchMyAccessGrants({
-        parent: databaseProjectName,
-        filter: {
-          target: database.name,
-          // Exact match — the backend's JIT authorization path uses
-          // `query == ...` (preCheckAccess in sql_service.go). A
-          // substring match (`statement: ...`) would expose Export for
-          // queries that don't actually match any grant. PR #20491 bot
-          // review #3349385091.
-          statementExact: executeParams.statement,
-          status: ["ACTIVE"],
-          export: true,
-        },
-      });
-      if (!canceled) {
-        setExportGrantName(result.accessGrants[0]?.name ?? "");
-      }
-    })();
-    return () => {
-      canceled = true;
-    };
-  }, [
-    queryDataPolicy?.disableExport,
-    executeParams?.statement,
-    databaseProjectName,
-    database.name,
-    searchMyAccessGrants,
-  ]);
-
-  // Pull display fields from the cache populated by the search above.
-  const exportGrantIssue = useAppStore((s) =>
-    exportGrantName ? (s.accessGrantsByName[exportGrantName]?.issue ?? "") : ""
-  );
-  const exportGrantReason = useAppStore((s) =>
-    exportGrantName ? (s.accessGrantsByName[exportGrantName]?.reason ?? "") : ""
-  );
+  // Look up an active JIT export grant for this (target, statement) pair.
+  // When one exists, flip `showExport` so the real Export button surfaces
+  // even when the policy would normally block direct export — and let the
+  // hook render the attribution tooltip (PR #20491 bot reviews #3349086832,
+  // #3349385091). The check is independent of the Query-applied grant: the
+  // Query path prefers Unmask, so the applied grant may be unmask-only
+  // while a separate export grant exists.
+  // Hook dedupes `targets` by joined-string identity, so a fresh
+  // `[database.name]` literal per render is safe (no re-fetch unless
+  // the name actually changes).
+  const { grantName: exportGrantName, tooltip: exportTooltip } =
+    useExportGrantBypass({
+      enabled: !!queryDataPolicy?.disableExport,
+      project: database.project,
+      statement: executeParams?.statement ?? "",
+      targets: [database.name],
+    });
 
   const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
-
-  // Surface a tooltip explaining the grant-based bypass only when the policy
-  // itself would normally block export — in the everyday "policy allows
-  // export" case, no tooltip is needed. Attributes to the export-capable
-  // grant (which may differ from the Query-applied grant when the user has
-  // separate unmask + export grants for the same statement).
-  const exportTooltip = useMemo<ReactNode>(() => {
-    if (!queryDataPolicy?.disableExport || !exportGrantName) {
-      return undefined;
-    }
-    const issueHref = exportGrantIssue
-      ? exportGrantIssue.startsWith("/")
-        ? exportGrantIssue
-        : `/${exportGrantIssue}`
-      : undefined;
-    return (
-      <div className="flex flex-col gap-y-1">
-        <span>{t("sql-editor.export-enabled-by-grant")}</span>
-        {issueHref ? (
-          <a
-            href={issueHref}
-            target="_blank"
-            rel="noreferrer"
-            className="break-all underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {exportGrantName}
-          </a>
-        ) : (
-          <span className="break-all">{exportGrantName}</span>
-        )}
-        {exportGrantReason && (
-          <span className="text-xs opacity-80">{exportGrantReason}</span>
-        )}
-      </div>
-    );
-  }, [
-    t,
-    queryDataPolicy?.disableExport,
-    exportGrantName,
-    exportGrantIssue,
-    exportGrantReason,
-  ]);
 
   // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,

@@ -2637,9 +2637,12 @@
       "self": "Modo administrador"
     },
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
+    "and-more-grant": "… y {{count}} concesión más",
+    "and-more-grants": "… y {{count}} concesiones más",
     "and-n-more-databases": "y {{n}} bases de datos más",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
+      "partial": "Exportación parcial por lotes",
       "self": "Exportación por lotes",
       "tooltip": "Seleccione como máximo {{max}} bases de datos para exportar por lotes los resultados de las últimas consultas"
     },
@@ -2682,6 +2685,8 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
+    "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
     "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
     "format": "Formato",
     "format-default": "Predeterminado",
