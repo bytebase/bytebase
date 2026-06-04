@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/parsercontext"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -1180,8 +1181,8 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 	for _, item := range backupDetail.Items {
 		restore, err := parserbase.GenerateRestoreSQL(ctx, instance.Metadata.GetEngine(), parserbase.RestoreContext{
 			InstanceID:              instance.ResourceID,
-			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
-			ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(s.store),
+			GetDatabaseMetadataFunc: parsercontext.BuildGetDatabaseMetadataFunc(s.store),
+			ListDatabaseNamesFunc:   parsercontext.BuildListDatabaseNamesFunc(s.store),
 			IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		}, statements, item)
 		if err != nil {

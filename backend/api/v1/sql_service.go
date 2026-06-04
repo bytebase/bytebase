@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/parsercontext"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -642,9 +643,9 @@ func queryRetry(
 			ctx,
 			parserbase.GetQuerySpanContext{
 				InstanceID:                    instance.ResourceID,
-				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
@@ -745,9 +746,9 @@ func queryRetry(
 			ctx,
 			parserbase.GetQuerySpanContext{
 				InstanceID:                    instance.ResourceID,
-				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
@@ -1305,9 +1306,9 @@ func exportSQLWithContext(
 		database.DatabaseName,
 		request.Statement,
 		instance,
-		BuildGetDatabaseMetadataFunc(stores),
-		BuildListDatabaseNamesFunc(stores),
-		BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+		parsercontext.BuildGetDatabaseMetadataFunc(stores),
+		parsercontext.BuildListDatabaseNamesFunc(stores),
+		parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to extract resource list")
@@ -1439,119 +1440,10 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	return connect.NewResponse(resp), nil
 }
 
-func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine storepb.Engine) parserbase.GetLinkedDatabaseMetadataFunc {
-	if engine != storepb.Engine_ORACLE {
-		return nil
-	}
-	return func(ctx context.Context, instanceID string, linkedDatabaseName string, schemaName string) (string, string, *model.DatabaseMetadata, error) {
-		// Find the linked database metadata.
-		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			InstanceID: &instanceID,
-		})
-		if err != nil {
-			return "", "", nil, err
-		}
-		var linkedMeta *storepb.LinkedDatabaseMetadata
-		for _, database := range databases {
-			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-				Workspace:    common.GetWorkspaceIDFromContext(ctx),
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-			})
-			if err != nil {
-				return "", "", nil, err
-			}
-			if linkedMeta = meta.GetLinkedDatabase(linkedDatabaseName); linkedMeta != nil {
-				break
-			}
-		}
-		if linkedMeta == nil {
-			return "", "", nil, nil
-		}
-		// Find the linked database in Bytebase.
-		var linkedDatabase *store.DatabaseMessage
-		databaseName := linkedMeta.GetUsername()
-		if schemaName != "" {
-			databaseName = schemaName
-		}
-		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			DatabaseName: &databaseName,
-			Engine:       &engine,
-		})
-		if err != nil {
-			return "", "", nil, err
-		}
-		for _, database := range databaseList {
-			instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.InstanceID})
-			if err != nil {
-				return "", "", nil, err
-			}
-			if instance != nil {
-				for _, dataSource := range instance.Metadata.DataSources {
-					if strings.Contains(linkedMeta.GetHost(), dataSource.GetHost()) {
-						linkedDatabase = database
-						break
-					}
-				}
-				if linkedDatabase != nil {
-					break
-				}
-			}
-		}
-		if linkedDatabase == nil {
-			return "", "", nil, nil
-		}
-		// Get the linked database metadata.
-		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			InstanceID:   linkedDatabase.InstanceID,
-			DatabaseName: linkedDatabase.DatabaseName,
-		})
-		if err != nil {
-			return "", "", nil, err
-		}
-		if linkedDatabaseMetadata == nil {
-			return "", "", nil, nil
-		}
-		return linkedDatabase.InstanceID, linkedDatabaseName, linkedDatabaseMetadata, nil
-	}
-}
-
-func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
-	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			InstanceID:   instanceID,
-			DatabaseName: databaseName,
-		})
-		if err != nil {
-			return "", nil, err
-		}
-		if databaseMetadata == nil {
-			return "", nil, nil
-		}
-		return databaseName, databaseMetadata, nil
-	}
-}
-
-func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
-	return func(ctx context.Context, instanceID string) ([]string, error) {
-		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			InstanceID: &instanceID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		names := make([]string, 0, len(databases))
-		for _, database := range databases {
-			names = append(names, database.DatabaseName)
-		}
-		return names, nil
-	}
-}
+// The Build*Func parser-context helpers moved to
+// `backend/component/parsercontext` so the runner layer can use them
+// without an import cycle. See parsercontext.BuildGetDatabaseMetadataFunc,
+// BuildListDatabaseNamesFunc, BuildGetLinkedDatabaseMetadataFunc.
 
 // accessCheck check the access for the database. Do not support cross-project resources.
 func (s *SQLService) accessCheck(
