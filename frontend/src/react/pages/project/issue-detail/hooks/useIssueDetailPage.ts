@@ -13,6 +13,7 @@ import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
 } from "@/react/router/handles";
+import { buildPermissionDeniedRouteQuery } from "@/react/router/permissionDenied";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -384,7 +385,12 @@ export const useIssueDetailPage = ({
           if (error.code === Code.NotFound) {
             void router.push({ name: WORKSPACE_ROUTE_404 });
           } else if (error.code === Code.PermissionDenied) {
-            void router.push({ name: WORKSPACE_ROUTE_403 });
+            void router.push({
+              name: WORKSPACE_ROUTE_403,
+              query: buildPermissionDeniedRouteQuery({
+                route: router.currentRoute.value,
+              }),
+            });
           }
           patchState({ isInitializing: false });
           return;

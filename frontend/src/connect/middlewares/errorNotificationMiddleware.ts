@@ -41,6 +41,9 @@ export const errorNotificationInterceptor: Interceptor =
           ).includes(error.code)
         ) {
           // ignored
+        } else if (error.code === Code.PermissionDenied) {
+          // The auth interceptor navigates permission failures to /403, where
+          // the route-level guard displays the missing permission details.
         } else {
           const details = [error.message];
           maybePushNotification(

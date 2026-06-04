@@ -1,5 +1,6 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { Permission } from "@/types";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 
 const mocks = vi.hoisted(() => ({
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     value: {
       name: "workspace.home",
       fullPath: "/instances",
+      requiredPermissions: [] as Permission[],
     },
   },
 }));
@@ -63,7 +65,7 @@ const createRequest = ({
       .set(silentContextKey, silent)
       .set(ignoredCodesContextKey, ignoredCodes),
     method: { name: methodName },
-    service: { name: "bytebase.v1.TestService" },
+    service: { name: "TestService", typeName: "bytebase.v1.TestService" },
   }) as never;
 
 describe("authInterceptor", () => {
@@ -76,6 +78,7 @@ describe("authInterceptor", () => {
     mocks.currentRoute.value = {
       name: "workspace.home",
       fullPath: "/instances",
+      requiredPermissions: [],
     };
   });
 
@@ -167,7 +170,39 @@ describe("authInterceptor", () => {
     });
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "error.403",
-      query: undefined,
+      query: {
+        from: "/instances",
+        api: "/bytebase.v1.TestService/Chat",
+        permissions: "",
+        resources: "",
+      },
+    });
+  });
+
+  test("builds a permission denied route query from request and route metadata", async () => {
+    mocks.currentRoute.value = {
+      name: "workspace.database",
+      fullPath: "/databases?q=project:unassigned",
+      requiredPermissions: ["bb.databases.list"],
+    };
+    const error = new ConnectError(
+      'user does not have permission "bb.databases.list"',
+      Code.PermissionDenied
+    );
+    const next = vi.fn().mockRejectedValue(error);
+
+    await expect(authInterceptor(next)(createRequest())).rejects.toMatchObject({
+      code: Code.PermissionDenied,
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "error.403",
+      query: {
+        from: "/databases?q=project:unassigned",
+        api: "/bytebase.v1.TestService/Chat",
+        permissions: "bb.databases.list",
+        resources: "",
+      },
     });
   });
 });
