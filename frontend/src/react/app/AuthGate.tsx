@@ -33,13 +33,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const isAuthRoute = Boolean(
     currentRouteName && isAuthRelatedRoute(currentRouteName)
   );
+  const currentUserWorkspace = currentUser?.workspace ?? "";
+  const currentUserGroupsKey = (currentUser?.groups ?? []).join("\0");
 
   const [ready, setReady] = useState(false);
 
   // Load workspace-scoped data once authenticated, then reveal the app.
   useEffect(() => {
     const store = useAppStore.getState();
-    if (!isLoggedIn || !currentUser) {
+    if (!isLoggedIn || !currentUserName) {
       setReady(true);
       return;
     }
@@ -50,14 +52,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
       store.fetchWorkspaceIamPolicy(),
       store.loadWorkspaceList(),
       store.listRoles(),
-      store.batchGetOrFetchGroups(currentUser.groups),
+      store.batchGetOrFetchGroups(
+        currentUserGroupsKey ? currentUserGroupsKey.split("\0") : []
+      ),
     ]).finally(() => {
       if (!cancelled) setReady(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, currentUser]);
+  }, [currentUserGroupsKey, currentUserName, currentUserWorkspace, isLoggedIn]);
 
   // Periodically revalidate the session (skip when logged out / on auth routes).
   useEffect(() => {
@@ -65,7 +69,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
       const store = useAppStore.getState();
       if (!store.isLoggedIn() || store.unauthenticatedOccurred) return;
       if (isAuthRoute) return;
-      void store.fetchCurrentUser();
+      void (async () => {
+        const user = await store.fetchCurrentUser();
+        if (!user || !store.isLoggedIn() || store.unauthenticatedOccurred) {
+          return;
+        }
+        await Promise.allSettled([
+          store.fetchWorkspaceIamPolicy(),
+          store.listRoles(),
+        ]);
+      })();
     }, CHECK_AUTHORIZATION_INTERVAL);
     return () => clearInterval(id);
   }, [isAuthRoute]);
