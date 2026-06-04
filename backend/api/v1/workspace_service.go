@@ -401,8 +401,11 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
 	}
 
-	// Guard: count members in the new policy BEFORE saving.
-	// Allow over-limit workspaces to reduce seats incrementally (e.g. after license downgrade).
+	// Guard: count user seats in the new policy BEFORE saving. Only reject when this
+	// change increases the user seat count beyond the limit. Over-limit workspaces (e.g.
+	// after a license downgrade) may still hold steady or reduce seats, and seat-neutral
+	// edits such as adding a service account or workload identity are always allowed
+	// because those members do not occupy a seat.
 	userLimit := s.licenseService.GetUserLimit(ctx, workspaceID)
 	newCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy, s.profile.SaaS)
 	if err != nil {
@@ -413,7 +416,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
 		}
-		if newCount >= oldCount {
+		if newCount > oldCount {
 			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
 		}
 	}
