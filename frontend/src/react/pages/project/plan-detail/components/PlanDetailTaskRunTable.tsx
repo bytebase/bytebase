@@ -234,29 +234,11 @@ function TaskRunComment({ taskRun }: { taskRun: TaskRun }) {
     return taskRun.detail || "-";
   })();
 
-  const commentLink =
-    taskRun.status === TaskRun_Status.FAILED && comment.includes("version")
-      ? {
-          link: "https://docs.bytebase.com/change-database/troubleshoot/?source=console#duplicate-version",
-          title: t("common.troubleshoot"),
-        }
-      : undefined;
-
   return (
     <div className="flex flex-col gap-y-0.5 xl:flex-row xl:items-center xl:gap-x-1">
       <div className="min-w-0 flex-1">
         <EllipsisText className="line-clamp-1" text={comment} />
       </div>
-      {commentLink && (
-        <a
-          className="normal-link shrink-0"
-          href={commentLink.link}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {commentLink.title}
-        </a>
-      )}
     </div>
   );
 }
