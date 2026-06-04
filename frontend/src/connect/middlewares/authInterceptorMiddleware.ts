@@ -1,7 +1,14 @@
-import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
+import {
+  Code,
+  ConnectError,
+  type Interceptor,
+  type StreamRequest,
+  type UnaryRequest,
+} from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_403 } from "@/react/router/handles";
+import { buildPermissionDeniedRouteQuery } from "@/react/router/permissionDenied";
 import { pushNotification } from "@/store";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
@@ -16,6 +23,25 @@ const extractPermissionDeniedDetail = (error: unknown) => {
     }
   }
   return undefined;
+};
+
+const buildPermissionDeniedQuery = ({
+  errorDetail,
+  req,
+}: {
+  errorDetail: ReturnType<typeof extractPermissionDeniedDetail>;
+  req: StreamRequest | UnaryRequest;
+}) => {
+  const route = router.currentRoute.value;
+  const permissions =
+    errorDetail?.requiredPermissions ?? route.requiredPermissions;
+  const resources = errorDetail?.resources ?? [];
+  return buildPermissionDeniedRouteQuery({
+    route,
+    api: errorDetail?.method ?? `/${req.service.typeName}/${req.method.name}`,
+    permissions,
+    resources,
+  });
 };
 
 const handleUnauthenticatedFailure = ({
@@ -98,14 +124,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
         const errorDetail = extractPermissionDeniedDetail(error);
         router.push({
           name: WORKSPACE_ROUTE_403,
-          query: errorDetail
-            ? {
-                from: router.currentRoute.value.fullPath,
-                api: errorDetail.method,
-                permissions: errorDetail.requiredPermissions.join(","),
-                resources: errorDetail.resources.join(","),
-              }
-            : undefined,
+          query: buildPermissionDeniedQuery({ errorDetail, req }),
         });
       }
     }

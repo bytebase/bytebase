@@ -6,6 +6,7 @@ import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
 } from "@/react/router/handles";
+import { buildPermissionDeniedRouteQuery } from "@/react/router/permissionDenied";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import type { PlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
@@ -66,7 +67,12 @@ export function useInitialFetch({
           if (error.code === Code.NotFound) {
             void router.push({ name: WORKSPACE_ROUTE_404 });
           } else if (error.code === Code.PermissionDenied) {
-            void router.push({ name: WORKSPACE_ROUTE_403 });
+            void router.push({
+              name: WORKSPACE_ROUTE_403,
+              query: buildPermissionDeniedRouteQuery({
+                route: router.currentRoute.value,
+              }),
+            });
           }
           patchState({ isInitializing: false });
           return;
