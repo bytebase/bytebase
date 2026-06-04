@@ -15,10 +15,13 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/export"
+	"github.com/bytebase/bytebase/backend/component/parsercontext"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -838,6 +841,19 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 }
 
 // buildCELVariablesForAccessGrant builds CEL variables for ACCESS_GRANT issues.
+//
+// Emits one CEL variable map per (target database, schema, table) referenced
+// by the grant's query — mirroring how EXPORT_DATA expands its rule
+// evaluation across the per-statement schema/table set. This lets
+// REQUEST_ACCESS rules use the same `resource.db_engine /
+// resource.database_name / resource.schema_name / resource.table_name`
+// attributes EXPORT_DATA rules already use, so a workspace's export
+// approval policy applies identically whether the export goes through
+// the direct DATABASE_EXPORT issue path or the JIT access-grant path.
+//
+// Statement parsing failures fall back to per-target vars without
+// schema/table info — rules keyed on db_engine / database_name / env
+// still evaluate.
 func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
 	if payload.AccessGrantId == "" {
@@ -864,7 +880,9 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		return []map[string]any{baseVars}, true, nil
 	}
 
+	statement := accessGrant.Payload.Query
 	var celVarsList []map[string]any
+
 	for _, target := range targets {
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
 		if err != nil {
@@ -881,15 +899,67 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		if len(databases) == 0 {
 			continue
 		}
-
 		database := databases[0]
-		celVars := maps.Clone(baseVars)
-		if database.EffectiveEnvironmentID != nil {
-			celVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
-		} else {
-			celVars[common.CELAttributeResourceEnvironmentID] = ""
+
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, false, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 		}
-		celVarsList = append(celVarsList, celVars)
+		if instance == nil {
+			continue
+		}
+		engine := instance.Metadata.GetEngine()
+
+		targetVars := maps.Clone(baseVars)
+		targetVars[common.CELAttributeResourceInstanceID] = database.InstanceID
+		targetVars[common.CELAttributeResourceDatabaseName] = database.DatabaseName
+		targetVars[common.CELAttributeResourceDBEngine] = engine.String()
+		if database.EffectiveEnvironmentID != nil {
+			targetVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
+		} else {
+			targetVars[common.CELAttributeResourceEnvironmentID] = ""
+		}
+
+		// Extract referenced schemas/tables from the grant's query. On
+		// failure (parser error, unsupported engine, empty query) we
+		// emit one vars map without schema/table — rules keyed on
+		// db_engine / database_name / env still get to evaluate.
+		var resources []parserbase.SchemaResource
+		if statement != "" {
+			resources, err = export.GetResources(
+				ctx,
+				stores,
+				engine,
+				database.DatabaseName,
+				statement,
+				instance,
+				parsercontext.BuildGetDatabaseMetadataFunc(stores),
+				parsercontext.BuildListDatabaseNamesFunc(stores),
+				parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, engine),
+			)
+			if err != nil {
+				slog.Debug("failed to extract resources from access grant query; emitting target vars without schema/table",
+					slog.String("target", target), slog.String("instance", database.InstanceID),
+					log.BBError(err))
+				resources = nil
+			}
+		}
+
+		if len(resources) == 0 {
+			celVarsList = append(celVarsList, targetVars)
+			continue
+		}
+
+		for _, r := range resources {
+			v := maps.Clone(targetVars)
+			if r.Schema != "" {
+				v[common.CELAttributeResourceSchemaName] = r.Schema
+			}
+			if r.Table != "" {
+				v[common.CELAttributeResourceTableName] = r.Table
+			}
+			celVarsList = append(celVarsList, v)
+		}
 	}
 
 	if len(celVarsList) == 0 {

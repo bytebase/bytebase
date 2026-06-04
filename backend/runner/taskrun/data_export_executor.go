@@ -15,11 +15,11 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
+	"github.com/bytebase/bytebase/backend/component/parsercontext"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -353,9 +353,9 @@ func (exec *DataExportExecutor) exportSQLWithContext(
 		database.DatabaseName,
 		result.Statement,
 		instance,
-		apiv1.BuildGetDatabaseMetadataFunc(exec.store),
-		apiv1.BuildListDatabaseNamesFunc(exec.store),
-		apiv1.BuildGetLinkedDatabaseMetadataFunc(exec.store, instance.Metadata.GetEngine()),
+		parsercontext.BuildGetDatabaseMetadataFunc(exec.store),
+		parsercontext.BuildListDatabaseNamesFunc(exec.store),
+		parsercontext.BuildGetLinkedDatabaseMetadataFunc(exec.store, instance.Metadata.GetEngine()),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to extract resource list")

@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/parsercontext"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -735,7 +736,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		Driver:                connection,
 		CurrentDatabase:       database.DatabaseName,
 		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),
-		ListDatabaseNamesFunc: BuildListDatabaseNamesFunc(s.store),
+		ListDatabaseNamesFunc: parsercontext.BuildListDatabaseNamesFunc(s.store),
 		InstanceID:            instance.ResourceID,
 		IsObjectCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
