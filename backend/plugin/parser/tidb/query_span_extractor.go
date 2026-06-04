@@ -22,6 +22,11 @@ type querySpanExtractor struct {
 	ctes              []*base.PseudoTable
 	outerTableSources []base.TableSource
 	tableSourcesFrom  []base.TableSource
+
+	// viewResolutionStack tracks the views currently being expanded so a
+	// cyclic view reference (a view that transitively references itself) is
+	// reported as an error instead of recursing until the stack overflows.
+	viewResolutionStack map[string]bool
 }
 
 func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
@@ -557,13 +562,14 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 		// So that the subquery can access the outer schema.
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
-			ctx:               q.ctx,
-			defaultDatabase:   q.defaultDatabase,
-			metaCache:         q.metaCache,
-			gCtx:              q.gCtx,
-			ctes:              q.ctes,
-			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
-			tableSourcesFrom:  []base.TableSource{},
+			ctx:                 q.ctx,
+			defaultDatabase:     q.defaultDatabase,
+			metaCache:           q.metaCache,
+			gCtx:                q.gCtx,
+			ctes:                q.ctes,
+			outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
+			tableSourcesFrom:    []base.TableSource{},
+			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		}
 		tableSource, err := subqueryExtractor.extractTableSourceFromNode(node.Query)
 		if err != nil {
@@ -874,7 +880,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 		if lowerTableName == strings.ToLower(view) {
 			viewMeta := schema.GetView(view)
 			if viewMeta != nil {
-				columns, err := q.getColumnsForView(viewMeta.Definition)
+				columns, err := q.getColumnsForView(databaseName, viewMeta.Name, viewMeta.Definition)
 				if err != nil {
 					return nil, err
 				}
@@ -894,8 +900,14 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 	}
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsForView(databaseName, viewName, definition string) ([]base.QuerySpanResult, error) {
+	key := viewResolutionKey(databaseName, viewName)
+	if q.viewResolutionStack[key] {
+		return nil, errors.Errorf("cyclic view reference detected while resolving %q", viewName)
+	}
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
+	newQ.viewResolutionStack = cloneViewResolutionStack(q.viewResolutionStack)
+	newQ.viewResolutionStack[key] = true
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
@@ -904,6 +916,18 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 		return nil, span.NotFoundError
 	}
 	return span.Results, nil
+}
+
+func viewResolutionKey(databaseName, viewName string) string {
+	return databaseName + "\x00" + viewName
+}
+
+func cloneViewResolutionStack(in map[string]bool) map[string]bool {
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.DatabaseMetadata, error) {
