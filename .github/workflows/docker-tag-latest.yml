@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: 'Version to tag as latest (e.g., 1.0.0)'
-        required: false
+        required: true
         type: string
   workflow_call:
     inputs:
@@ -27,12 +27,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Tag latest image in DockerHub
         run: |
-          # Use input version if provided, otherwise extract from branch name
-          if [ -n "${{ inputs.version }}" ]; then
-            RELEASE_VERSION="${{ inputs.version }}"
-          else
-            RELEASE_VERSION=${GITHUB_REF_NAME#release/}
-          fi
+          RELEASE_VERSION="${{ inputs.version }}"
           echo version: ${RELEASE_VERSION}
           docker buildx imagetools create -t bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
           docker buildx imagetools create -t bytebase/bytebase-action:latest bytebase/bytebase-action:${RELEASE_VERSION}

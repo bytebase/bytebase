@@ -632,7 +632,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
 
-	if err := s.preAddUserGuard(ctx, workspaceID); err != nil {
+	if err := s.preUndeleteUserGuard(ctx, workspaceID, user); err != nil {
 		return nil, err
 	}
 
@@ -861,7 +861,9 @@ func generateRecoveryCodes(n int) ([]string, error) {
 
 // countUsersInIamPolicy counts distinct user members in an IAM policy,
 // expanding group memberships. When allUsers is present and not in SaaS mode,
-// returns the total active principal count instead.
+// returns the total active principal count instead. Soft-deleted principals do
+// not occupy a seat, so emails whose principal is deleted are excluded; emails
+// without a principal yet (e.g. pending SaaS invites) are still counted.
 func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID string, policy *storepb.IamPolicy, saas bool) (int, error) {
 	emails := make(map[string]struct{})
 	var groupRefs []string
@@ -874,7 +876,9 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 				continue
 			}
 			if strings.HasPrefix(member, "users/") {
-				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+				// Principal emails are stored lower-cased, but IAM members may keep
+				// mixed casing; normalize so dedup and the deleted lookup below match.
+				emails[strings.ToLower(strings.TrimPrefix(member, "users/"))] = struct{}{}
 			} else if strings.HasPrefix(member, "groups/") {
 				groupRefs = append(groupRefs, strings.TrimPrefix(member, "groups/"))
 			}
@@ -884,11 +888,32 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 		members, _ := s.GetGroupMembersSnapshot(ctx, workspaceID, "groups/"+ref)
 		for member := range members {
 			if strings.HasPrefix(member, "users/") {
-				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+				emails[strings.ToLower(strings.TrimPrefix(member, "users/"))] = struct{}{}
 			}
 		}
 	}
-	return len(emails), nil
+	if len(emails) == 0 {
+		return 0, nil
+	}
+	emailList := make([]string, 0, len(emails))
+	for email := range emails {
+		emailList = append(emailList, email)
+	}
+	// Pass an empty workspace to look up principals by email only: the seat set is
+	// already derived from policy, we just need each principal's deleted state.
+	users, err := s.BatchGetUsersByEmails(ctx, "", emailList)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to batch get users by emails")
+	}
+	deleted := 0
+	for _, user := range users {
+		if user.MemberDeleted {
+			if _, ok := emails[user.Email]; ok {
+				deleted++
+			}
+		}
+	}
+	return len(emails) - deleted, nil
 }
 
 // userCountGuard checks seat limits before adding a new IAM member (e.g. SSO login).
@@ -913,7 +938,7 @@ func userCountGuard(ctx context.Context, s *store.Store, licenseService *enterpr
 	return nil
 }
 
-// preAddUserGuard checks seat limits before creating or undeleting a principal.
+// preAddUserGuard checks seat limits before creating a principal.
 // Only enforces when the IAM policy contains allUsers, because without allUsers
 // a new principal does not occupy a seat until explicitly added to IAM.
 func (s *UserService) preAddUserGuard(ctx context.Context, workspaceID string) error {
@@ -922,6 +947,22 @@ func (s *UserService) preAddUserGuard(ctx context.Context, workspaceID string) e
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
 	}
 	if !policyContainsAllUsers(p.Policy) {
+		return nil
+	}
+	return userCountGuard(ctx, s.store, s.licenseService, workspaceID, p.Policy, s.profile.SaaS)
+}
+
+// preUndeleteUserGuard checks seat limits before reactivating a principal.
+// A soft-deleted principal does not occupy a seat, so undeleting one that is
+// already referenced by workspace IAM (via allUsers, a direct binding, or a
+// group) re-occupies a seat and must respect the limit. When the principal is
+// not referenced, undeleting adds no seat and is always allowed.
+func (s *UserService) preUndeleteUserGuard(ctx context.Context, workspaceID string, user *store.UserMessage) error {
+	p, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
+	}
+	if len(utils.GetUserIAMPolicyBindings(ctx, s.store, workspaceID, user, p.Policy)) == 0 {
 		return nil
 	}
 	return userCountGuard(ctx, s.store, s.licenseService, workspaceID, p.Policy, s.profile.SaaS)

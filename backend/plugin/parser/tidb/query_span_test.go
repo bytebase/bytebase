@@ -231,6 +231,39 @@ func TestGetQuerySpanMissingTableUnionedWithAccessTables(t *testing.T) {
 	a.True(foundUnknown, "not-found table must be unioned into SourceColumns so the pre-execute ACL check sees it")
 }
 
+// TestGetQuerySpanCyclicViewReference pins that a cyclic view reference is
+// reported as an error rather than recursing until the stack overflows.
+// Ported from the MySQL guard (#20153).
+func TestGetQuerySpanCyclicViewReference(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Views: []*storepb.ViewMetadata{
+					{Name: "v1", Definition: "SELECT * FROM v2"},
+					{Name: "v2", Definition: "SELECT * FROM v1"},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+
+	_, err := GetQuerySpan(
+		context.TODO(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNamesLister,
+		},
+		base.Statement{Text: "SELECT * FROM v1"},
+		"db",
+		"",
+		false,
+	)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cyclic view reference")
+}
+
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)

@@ -12,23 +12,47 @@ concurrency:
 jobs:
   build-release-image:
     runs-on: ubuntu-latest
+    outputs:
+      should_tag_latest: ${{ steps.check_latest.outputs.should_tag_latest }}
+      version: ${{ steps.extract.outputs.version }}
     permissions:
       contents: read
       id-token: write
-      actions: write
     steps:
       - uses: actions/checkout@v6
       - name: Extract build args
+        id: extract
         # Extract version from branch name
         # Example: branch name `release/1.0.0` sets up env.IMAGE_VERSION=1.0.0
         run: |
-          echo "VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
-          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          VERSION="${GITHUB_REF_NAME#release/}"
+          GIT_COMMIT="$(git rev-parse HEAD)"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> "$GITHUB_ENV"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - name: Login to DockerHub
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Check if version matches latest release tag
+        id: check_latest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LATEST_VERSION=$(git ls-remote --tags --refs origin 'refs/tags/[0-9]*.[0-9]*.[0-9]*' | awk -F/ '{print $3}' | sort -V | tail -n 1)
+
+          echo "Release version: ${VERSION}"
+          echo "Latest release tag: ${LATEST_VERSION:-<missing>}"
+
+          if [ "${VERSION}" = "${LATEST_VERSION}" ]; then
+            echo "should_tag_latest=true" >> "$GITHUB_OUTPUT"
+            echo "version matches latest release tag"
+          else
+            echo "should_tag_latest=false" >> "$GITHUB_OUTPUT"
+            echo "version does not match latest release tag"
+          fi
       - uses: depot/setup-action@v1
       - name: Build and push
         id: bytebase_build
@@ -45,41 +69,11 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
-      - name: Check if version is latest
-        id: check_latest
-        run: |
-          # Fetch all branches to get release branches
-          git fetch --all
-
-          # Get all release branch versions
-          VERSIONS=$(git branch -r | grep -o 'release/[0-9]*\.[0-9]*\.[0-9]*' | sed 's/release\///' | sort -V)
-
-          # Get the latest version
-          LATEST_VERSION=$(echo "$VERSIONS" | tail -n 1)
-
-          echo "Current version: ${{ env.VERSION }}"
-          echo "Latest version: $LATEST_VERSION"
-
-          # Check if current version is the latest
-          if [ "${{ env.VERSION }}" = "$LATEST_VERSION" ]; then
-            echo "is_latest=true" >> $GITHUB_OUTPUT
-            echo "✅ This is the latest version"
-          else
-            echo "is_latest=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ This is not the latest version"
-          fi
-      - name: Trigger docker-tag-latest workflow
-        if: steps.check_latest.outputs.is_latest == 'true'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'docker-tag-latest.yml',
-              ref: 'main',
-              inputs: {
-                version: '${{ env.VERSION }}'
-              }
-            });
-            console.log('✅ Triggered docker-tag-latest workflow for version ${{ env.VERSION }}');
+  tag-latest:
+    needs: build-release-image
+    if: needs.build-release-image.outputs.should_tag_latest == 'true'
+    permissions: {}
+    uses: ./.github/workflows/docker-tag-latest.yml
+    with:
+      version: ${{ needs.build-release-image.outputs.version }}
+    secrets: inherit

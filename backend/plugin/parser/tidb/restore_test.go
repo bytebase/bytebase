@@ -718,3 +718,52 @@ func TestGenerateRestoreSQLNoDisjointUniqueKey(t *testing.T) {
 	require.Contains(t, err.Error(), "no disjoint unique key found",
 		"error must be the no-disjoint-key error from generateUpdateRestore, not a different failure mode")
 }
+
+// TestGenerateRestoreSQLAliasTargetMultiTableDelete pins BYT-9623: restore must
+// reverse the whole class of alias-target multi-table DELETEs. backup.go keys
+// the backup item by the physical table name, but n.Tables holds the delete-
+// target ALIASES; containsTable must resolve those through the FROM/USING ref
+// map. Pre-fix, every form below returned "no DML statement found in extracted
+// SQL" -> silent data loss on rollback.
+func TestGenerateRestoreSQLAliasTargetMultiTableDelete(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	restore := func(input, sourceTable string) (string, error) {
+		return GenerateRestoreSQL(context.Background(), base.RestoreContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IsCaseSensitive:         false,
+		}, input, &store.PriorBackupDetail_Item{
+			SourceTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/db",
+				Table:    sourceTable,
+			},
+			TargetTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/bbarchive",
+				Table:    "prefix_1_" + sourceTable,
+			},
+			StartPosition: &store.Position{Line: 0, Column: 0},
+			EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+		})
+	}
+
+	// (target table -> must resolve through the alias in the FROM/USING list)
+	cases := []struct {
+		name, input, sourceTable string
+	}{
+		{"comma-from target test", "DELETE t1, t2 FROM test AS t1, test2 AS t2 WHERE t1.a = t2.a;", "test"},
+		{"comma-from target test2", "DELETE t1, t2 FROM test AS t1, test2 AS t2 WHERE t1.a = t2.a;", "test2"},
+		{"join target test", "DELETE t1 FROM test t1 JOIN test2 t2 ON t1.a = t2.a;", "test"},
+		{"using target test", "DELETE FROM t1 USING test t1, test2 t2 WHERE t1.a = t2.a;", "test"},
+	}
+	for _, tc := range cases {
+		result, err := restore(tc.input, tc.sourceTable)
+		require.NoError(t, err, "%s: alias-target multi-table DELETE must be restorable", tc.name)
+		require.Contains(t, result, "INSERT INTO `db`.`"+tc.sourceTable+"`",
+			"%s: rollback must re-insert the deleted rows into the resolved physical table", tc.name)
+	}
+
+	// A JOIN-only USING reference (never a delete target) must NOT be matched —
+	// matching it would re-insert rows that were never deleted (#20345 bug).
+	_, err := restore("DELETE t1 FROM test t1 JOIN test2 t2 ON t1.a = t2.a;", "test2")
+	require.Error(t, err, "test2 is JOIN-only (filter), not a delete target; it must not produce a restore")
+}
