@@ -2637,9 +2637,12 @@
       "self": "管理员模式"
     },
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
+    "and-more-grant": "… 还有 {{count}} 个授权",
+    "and-more-grants": "… 还有 {{count}} 个授权",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
+      "partial": "部分批量导出",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
@@ -2682,6 +2685,8 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
+    "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
     "export-enabled-by-grant": "由访问授权启用导出",
     "format": "格式化",
     "format-default": "默认",

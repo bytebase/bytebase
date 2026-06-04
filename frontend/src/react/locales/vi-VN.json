@@ -2637,9 +2637,12 @@
       "self": "Chế độ quản trị"
     },
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
+    "and-more-grant": "… và {{count}} cấp quyền nữa",
+    "and-more-grants": "… và {{count}} cấp quyền nữa",
     "and-n-more-databases": "và {{n}} cơ sở dữ liệu khác",
     "batch-export": {
       "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
+      "partial": "Xuất hàng loạt một phần",
       "self": "Xuất hàng loạt",
       "tooltip": "Chọn tối đa {{max}} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
     },
@@ -2682,6 +2685,8 @@
     "expire-at": "Hết hạn lúc {{time}}",
     "expire-in": "Hết hạn sau {{time}}",
     "expired": "Đã hết hạn",
+    "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
+    "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
     "format": "Định dạng",
     "format-default": "Mặc định",

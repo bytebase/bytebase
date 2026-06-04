@@ -2637,9 +2637,12 @@
       "self": "管理者モード"
     },
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
+    "and-more-grant": "他 {{count}} 件のアクセス権限",
+    "and-more-grants": "他 {{count}} 件のアクセス権限",
     "and-n-more-databases": "他 {{n}} 件のデータベース",
     "batch-export": {
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
+      "partial": "部分的な一括エクスポート",
       "self": "一括エクスポート",
       "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {{max}} 個のデータベースを選択してください"
     },
@@ -2682,6 +2685,8 @@
     "expire-at": "{{time}} に期限切れ",
     "expire-in": "{{time}} 後に期限切れ",
     "expired": "期限切れ",
+    "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
+    "export-available-via-n-grants": "{{count}} 件のアクセス権限によりエクスポート可能:",
     "export-enabled-by-grant": "アクセス権限により有効になっています",
     "format": "フォーマット",
     "format-default": "デフォルト",
