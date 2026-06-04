@@ -100,23 +100,47 @@ export function useExportGrantBypass({
       setGrantsByTarget((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       return;
     }
+    // Clear stale matches synchronously so the UI doesn't surface a
+    // grant matched to the previous (statement, targets) tuple while
+    // the new search is in flight. Without this, a user changing the
+    // SQL statement would briefly see Export promise authorization
+    // the new statement doesn't actually have. Bot review #3357266207.
+    // Same idempotent-reset guard so the no-prior-data case (initial
+    // mount, subsequent identity-only re-renders) doesn't churn.
+    setGrantsByTarget((prev) => (Object.keys(prev).length === 0 ? prev : {}));
     let canceled = false;
     void (async () => {
       // Fan out: one search per target. Each call narrows to the
       // single target server-side so `pageSize: 1` suffices.
+      //
+      // Each request is independently try/catch'd: a failure on
+      // target A (network, auth, rate-limit) MUST NOT discard the
+      // successful results from targets B/C/D. `Promise.all` would
+      // reject the whole batch on the first failure; we want partial
+      // success. The failed target falls back to `undefined`, which
+      // ResultView/BatchQuerySelect treat as "no grant" → Request
+      // Export surfaces for that DB. Bot review #3357266207.
       const results = await Promise.all(
-        targets.map((target) =>
-          searchMyAccessGrants({
-            parent: project,
-            filter: {
-              statementExact: statement,
-              status: ["ACTIVE"],
-              export: true,
+        targets.map(async (target) => {
+          try {
+            const res = await searchMyAccessGrants({
+              parent: project,
+              filter: {
+                statementExact: statement,
+                status: ["ACTIVE"],
+                export: true,
+                target,
+              },
+              pageSize: 1,
+            });
+            return { target, grant: res.accessGrants[0] };
+          } catch {
+            return {
               target,
-            },
-            pageSize: 1,
-          }).then((res) => ({ target, grant: res.accessGrants[0] }))
-        )
+              grant: undefined as AccessGrant | undefined,
+            };
+          }
+        })
       );
       if (canceled) return;
       const byTarget: Record<string, AccessGrant | undefined> = {};
