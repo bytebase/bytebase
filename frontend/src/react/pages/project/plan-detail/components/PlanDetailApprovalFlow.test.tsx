@@ -56,10 +56,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
   },
@@ -97,7 +99,7 @@ vi.mock("@/react/stores/app", () => ({
         // so the candidate list re-renders when the policy resolves.
         projectPoliciesByName: { "projects/p1": { bindings: [] } },
         // The approval flow subscribes to projectsByName so the project
-        // useVueState getter re-renders when the cache changes.
+        // selector re-renders when the cache changes.
         projectsByName: { "projects/p1": { allowSelfApproval: false } },
         getIssueComments: mocks.issueCommentStore.getIssueComments,
       }),

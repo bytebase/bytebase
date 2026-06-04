@@ -39,7 +39,8 @@ vi.mock("@/react/components/InstanceAssignmentSheet", () => ({
   InstanceAssignmentSheet: () => null,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
   },

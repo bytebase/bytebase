@@ -8,7 +8,6 @@ import {
   authServiceClientConnect,
   settingServiceClientConnect,
   subscriptionServiceClientConnect,
-  userServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -43,7 +42,6 @@ import {
   UpdateSettingRequestSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   CancelPurchaseRequestSchema,
   CreatePurchaseRequestSchema,
@@ -72,26 +70,6 @@ import {
 } from "@/types/v1/environment";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
-
-// Propagate subscription updates to the parallel Pinia subscription
-// store. Without this, components that read feature gates via
-// `featureToRef` / `hasFeature` (Pinia path) stay stale after the user
-// uploads a license or completes a SaaS purchase — they would have to
-// refresh the page to see the new plan take effect. The Pinia store is
-// loaded lazily to avoid a static module cycle (`@/store/modules/v1/*`
-// transitively re-imports this app store).
-const syncSubscriptionToPinia = (subscription: Subscription): void => {
-  void import("@/store/modules/v1/subscription").then(
-    ({ useSubscriptionV1Store }) => {
-      try {
-        useSubscriptionV1Store().setSubscription(subscription);
-      } catch {
-        // Pinia not initialized yet (very early app boot); the Pinia
-        // store reads from the same endpoint on its own first call.
-      }
-    }
-  );
-};
 
 // Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
 // Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
@@ -236,14 +214,13 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     },
 
     loadWorkspace: async () => {
-      // Always re-fetch currentUser to get the latest auth context.
-      // The cached currentUser may be from before login (undefined or stale).
-      const user = await userServiceClientConnect
-        .getCurrentUser({})
-        .catch(() => undefined);
-      if (user) {
-        set({ currentUser: user });
-      }
+      // Resolve the authenticated user via the cached loader. It returns the
+      // existing currentUser when present (login / fetchCurrentUser refresh it
+      // on the auth transition), so we must NOT mint a fresh currentUser object
+      // here: a raw getCurrentUser() response is a new reference every call,
+      // which thrashes effects keyed on `currentUser` (e.g. AuthGate's mount
+      // gate) into an unmount/remount fetch loop.
+      const user = await get().loadCurrentUser();
       const name =
         user?.workspace ||
         get().currentUser?.workspace ||
@@ -489,7 +466,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
         .then((subscription) => {
           set({ subscription, subscriptionRequest: undefined });
-          syncSubscriptionToPinia(subscription);
           return subscription;
         })
         .catch(() => {
@@ -505,7 +481,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
         .then((subscription) => {
           set({ subscription, subscriptionRequest: undefined });
-          syncSubscriptionToPinia(subscription);
           return subscription;
         })
         .catch(() => {
@@ -521,7 +496,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         createProto(UploadLicenseRequestSchema, { license })
       );
       set({ subscription });
-      syncSubscriptionToPinia(subscription);
       return subscription;
     },
 
@@ -818,7 +792,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     setSubscription: (subscription) => {
       set({ subscription });
-      syncSubscriptionToPinia(subscription);
     },
 
     hasSplitInstanceLicense: () =>

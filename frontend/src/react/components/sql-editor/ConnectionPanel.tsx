@@ -12,9 +12,9 @@ import {
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { ConnectionPane } from "./ConnectionPane/ConnectionPane";

@@ -2,8 +2,8 @@ import { EyeOffIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_GLOBAL_MASKING } from "@/router/dashboard/workspaceRoutes";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_GLOBAL_MASKING } from "@/react/router/handles";
 import { hasWorkspacePermissionV2 } from "@/utils/iam/permission";
 
 export function SensitiveDataIcon() {

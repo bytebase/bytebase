@@ -1,4 +1,4 @@
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 import { lazyExecuteDomAction } from "../../dom";
 
 export interface DomActionArgs {
@@ -7,7 +7,7 @@ export interface DomActionArgs {
   value?: string;
 }
 
-export function createDomActionTool(router: Router) {
+export function createDomActionTool(router: AppRouterInstance) {
   return async (args: DomActionArgs): Promise<string> => {
     const result = await lazyExecuteDomAction(args, router);
     return JSON.stringify(result);

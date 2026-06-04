@@ -99,17 +99,13 @@ const mocks = vi.hoisted(() => {
     treeStore,
     appStore,
     currentUser,
-    usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
     pushNotification: vi.fn(),
   };
 });
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
@@ -218,22 +214,37 @@ vi.mock("@/types", () => ({
   }),
 }));
 
-vi.mock("@/types/proto-es/v1/instance_service_pb", () => ({
+vi.mock("@/types/proto-es/v1/instance_service_pb", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/types/proto-es/v1/instance_service_pb")
+  >()),
   DataSourceType: { ADMIN: 1, READ_ONLY: 2 },
 }));
 
-vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
-  PlanFeature: {
-    FEATURE_BATCH_QUERY: 1,
-    FEATURE_DATABASE_GROUPS: 2,
-    FEATURE_ENVIRONMENT_TIERS: 3,
-  },
-  PlanType: { FREE: 0, TEAM: 1, ENTERPRISE: 3 },
-}));
+vi.mock(
+  "@/types/proto-es/v1/subscription_service_pb",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/types/proto-es/v1/subscription_service_pb")
+    >()),
+    PlanFeature: {
+      FEATURE_BATCH_QUERY: 1,
+      FEATURE_DATABASE_GROUPS: 2,
+      FEATURE_ENVIRONMENT_TIERS: 3,
+    },
+    PlanType: { FREE: 0, TEAM: 1, ENTERPRISE: 3 },
+  })
+);
 
-vi.mock("@/types/proto-es/v1/database_group_service_pb", () => ({
-  DatabaseGroupView: { FULL: 2 },
-}));
+vi.mock(
+  "@/types/proto-es/v1/database_group_service_pb",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/types/proto-es/v1/database_group_service_pb")
+    >()),
+    DatabaseGroupView: { FULL: 2 },
+  })
+);
 
 vi.mock("@/utils", () => ({
   extractDatabaseResourceName: (n: string) => ({
@@ -421,7 +432,6 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.usePiniaBridge.mockImplementation((getter) => getter());
   // Reset feature flags default to true for render-path tests.
   mocks.features.batchQuery = true;
   mocks.features.databaseGroups = true;

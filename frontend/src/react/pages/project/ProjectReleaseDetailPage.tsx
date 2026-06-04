@@ -25,7 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -53,9 +53,7 @@ export function ProjectReleaseDetailPage({
   const release = useAppStore((state) => state.getReleaseByName(releaseName));
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

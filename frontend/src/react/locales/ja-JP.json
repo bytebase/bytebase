@@ -113,6 +113,10 @@
       "stay-signed-in": "ログインしたままにする",
       "title": "セッションの有効期限が近づいています"
     },
+    "login-as-another": {
+      "content": "ホームページへリダイレクトさせていただきます。",
+      "title": "別のユーザーとしてログインしています"
+    },
     "oauth-callback": {
       "invalid-state": "認証に失敗しました：無効なコールバック状態です。もう一度お試しください。",
       "opener-failed": "認証は完了しましたが、親ウィンドウとの通信に失敗しました。このウィンドウを閉じてもう一度お試しください。",
@@ -157,6 +161,7 @@
       "existing-user": "すでにアカウントをお持ちですか？",
       "title": "アカウントを登録してください"
     },
+    "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの期限切れ"
   },
   "banner": {
@@ -228,6 +233,7 @@
     "back-to-workspace": "ワークスペースに戻る",
     "bypassed": "バイパス済み",
     "cancel": "キャンセル",
+    "canceled": "キャンセル",
     "cannot-undo-this-action": "この操作は元に戻せません",
     "catalog": "カタログ",
     "changelog": "Changelog",
@@ -272,8 +278,10 @@
     "deselect-all": "すべての選択を解除",
     "detail": "詳細",
     "detailed-guide": "詳細ガイド",
+    "dingtalk": "DingTalk",
     "disable": "無効化",
     "discard-changes": "変更をキャンセルする",
+    "discord": "Discord",
     "dismiss": "閉じる",
     "done": "完了",
     "download": "ダウンロード",
@@ -295,6 +303,7 @@
     "expired": "期限切れ",
     "export": "エクスポート",
     "failed": "失敗",
+    "feishu": "Feishu",
     "file-selector": {
       "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります",
       "type-limit": "タイプ {{extension}} のファイルのみがサポートされます"
@@ -305,6 +314,7 @@
     "from": "開始",
     "general": "全般",
     "go-back": "戻る",
+    "google-chat": "Google Chat",
     "group": "グループ",
     "groups": "グループ",
     "history": "履歴",
@@ -322,6 +332,7 @@
     "key": "キー",
     "labels": "ラベル",
     "language": "言語",
+    "lark": "Lark",
     "learn-more": "もっと詳しく知る",
     "leave-without-saving": "変更を保存していませんか?",
     "license": "ライセンス",
@@ -347,6 +358,7 @@
     "next": "次のステップ",
     "no": "いいえ",
     "no-data": "データなし",
+    "no-license": "ライセンスがありません",
     "not-started": "未開始",
     "ok": "わかりました",
     "only-creator-allowed-export": "エクスポートできるのは作成者のみです",
@@ -421,6 +433,7 @@
     "sign-up": "登録する",
     "skip": "スキップ",
     "skipped": "スキップ",
+    "slack": "Slack",
     "snapshot": "スナップショット",
     "sql": "SQL",
     "stage": "ステージ",
@@ -433,6 +446,7 @@
     "system": "システム",
     "table": "テーブル",
     "task": "タスク",
+    "teams": "Teams",
     "text-wrap": "テキストの折り返し",
     "tips": "プロンプトメッセージ",
     "title": "タイトル",
@@ -465,6 +479,7 @@
     "want-help": "ヘルプが必要ですか",
     "warning": "警告する",
     "webhooks": "Webhook",
+    "wecom": "WeCom",
     "write-only": "書き込み専用",
     "yes": "はい",
     "you": "あなた"
@@ -563,6 +578,7 @@
   },
   "data-source": {
     "additional-node-addresses": "追加のノードアドレス",
+    "admin": "管理者",
     "automatic-query-data-source": "自動",
     "connection-string-schema": "接続文字列モード",
     "connection-type": "接続タイプ",
@@ -576,6 +592,7 @@
     "private-key-passphrase": "秘密鍵のパスフレーズ",
     "private-key-passphrase-placeholder": "秘密鍵が暗号化されていない場合は空のままにしてください",
     "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
+    "read-only": "読み取り専用",
     "read-replica-host": "リードレプリカホスト",
     "read-replica-port": "リードレプリカポート",
     "replica-set": "レプリカセット",
@@ -1328,6 +1345,7 @@
       "change-database": "データベースの変更",
       "change-from-sql-editor": "SQL エディタからの変更",
       "edit-schema": "スキーマを編集",
+      "export-data": "データをエクスポート",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -1382,6 +1400,7 @@
     },
     "recovery-code": "リカバリーコード"
   },
+  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} があなたのアカウントへのアクセスを要求しています",
@@ -1712,6 +1731,32 @@
       "name": "名前"
     },
     "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "イシューに承認が必要な場合",
+          "title": "イシューは承認待ちです"
+        },
+        "issue-approved": {
+          "label": "すべての承認ステップが完了したとき",
+          "title": "イシューが承認されました"
+        },
+        "issue-creation": {
+          "label": "新しいイシューが作成されたとき",
+          "title": "イシュー を作成する"
+        },
+        "issue-sent-back": {
+          "label": "承認者がイシューを差し戻したとき",
+          "title": "イシューが差し戻されました"
+        },
+        "pipeline-completed": {
+          "label": "パイプラインが正常に完了したとき",
+          "title": "パイプラインが完了しました"
+        },
+        "pipeline-failed": {
+          "label": "パイプラインタスクが失敗したとき",
+          "title": "パイプラインが失敗しました"
+        }
+      },
       "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート",
       "creation": {
         "desc": "{{destination}} の Webhook を作成します",
@@ -1758,6 +1803,7 @@
     "visit-member": "メンバー | メンバーにアクセスする",
     "visit-project": "プロジェクトにアクセスする"
   },
+  "refresh-remind": {},
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
@@ -1806,9 +1852,29 @@
     "custom-roles": {
       "self": "カスタムロール"
     },
+    "gitops-service-agent": {
+      "description": "GitOps を介して自動化された CI/CD ワークフローでデータベース変更を作成および実行するための権限。",
+      "self": "GitOps サービスエージェント"
+    },
     "import-from-role": "ロールからインポート",
+    "project-developer": {
+      "description": "基本的なプロジェクト情報を表示し、データベースの変更、データ クエリ、およびデータ エクスポート リクエストを自分で開始できます。",
+      "self": "プロジェクト開発者"
+    },
+    "project-owner": {
+      "description": "プロジェクト内のすべての権限。",
+      "self": "プロジェクトオーナー"
+    },
+    "project-releaser": {
+      "description": "プロジェクトの基本情報を表示し、指定したプロセスの変更をリリースできます。",
+      "self": "プロジェクト発行者"
+    },
     "project-roles": {
       "self": "プロジェクトのロール"
+    },
+    "project-viewer": {
+      "description": "プロジェクトとデータベースの基本情報を閲覧するための読み取り専用権限。ユーザーはデータクエリやエクスポートをリクエストするチケットを自分で発行できます。",
+      "self": "プロジェクトビューア"
     },
     "select-role": "ロールの選択",
     "self": "ロール",
@@ -1817,7 +1883,27 @@
       "description-placeholder": "ロールの説明を入力してください",
       "title-placeholder": "ロールのタイトルを入力してください"
     },
+    "sql-editor-read-user": {
+      "description": "DDLまたはDMLアクセスなしで、データベースデータのクエリのための読み取り専用権限。",
+      "self": "SQLエディタ読み取り専用ユーザー"
+    },
+    "sql-editor-user": {
+      "description": "指定した範囲内のデータをクエリできます。",
+      "self": "SQLエディタのユーザー"
+    },
     "title": "タイトル",
+    "workspace-admin": {
+      "description": "ワークスペース内のすべての権限。",
+      "self": "ワークスペース管理者"
+    },
+    "workspace-dba": {
+      "description": "ワークスペースのすべてのデータベースとインスタンスを管理できます",
+      "self": "ワークスペースDBA"
+    },
+    "workspace-member": {
+      "description": "ワークスペースの通常のユーザー",
+      "self": "ワークスペースメンバー"
+    },
     "workspace-roles": {
       "self": "ワークスペースのロール"
     }
@@ -2516,11 +2602,13 @@
       "non-empty-folder-content": "すべてのワークシートをルート フォルダーに移動しますか、それとも削除するだけですか?",
       "non-empty-folder-title": "空でないフォルダ"
     },
+    "mine": "マイワークシート",
     "move-worksheets": "ワークシートを移動する",
     "notifications": {
       "duplicate-success": "「マイワークシート」にコピーされました"
     },
-    "search-sheets": "ワークシートの検索"
+    "search-sheets": "ワークシートの検索",
+    "shared": "共有"
   },
   "sql-editor": {
     "access-grants": "アクセス付与",
@@ -3665,6 +3753,7 @@
     "skip-task": "タスクをスキップ | タスクをスキップ",
     "started": "開始日時",
     "status": {
+      "available": "利用可能",
       "canceled": "キャンセル",
       "done": "終わり",
       "failed": "失敗",

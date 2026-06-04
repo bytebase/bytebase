@@ -42,12 +42,12 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getUserFullNameByType } from "@/store/modules/v1/common";
 import {

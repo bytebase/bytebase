@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { Separator } from "@/react/components/ui/separator";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -40,11 +40,10 @@ function ResourceBadge({ resource }: { resource: string }) {
     }
   }, [resource]);
 
-  const projectTitle = useVueState(() =>
-    resource.startsWith(projectNamePrefix)
-      ? useAppStore.getState().getProjectByName(resource)?.title
-      : undefined
-  );
+  const projectFromResource = useProjectByName(resource);
+  const projectTitle = resource.startsWith(projectNamePrefix)
+    ? projectFromResource?.title
+    : undefined;
   void projectsByName;
 
   if (resource.startsWith(environmentNamePrefix)) {
@@ -79,7 +78,7 @@ export function TemplateSelector({
 }: TemplateSelectorProps) {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
-  const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
+  const policyList = sqlReviewStore.reviewPolicyList;
 
   useEffect(() => {
     sqlReviewStore.fetchReviewPolicyList();

@@ -1,13 +1,15 @@
 import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
 import { useAppProject } from "@/react/hooks/useAppProject";
-import { useVueRoute } from "@/react/hooks/useVueRoute";
+import { useReactiveRoute } from "@/react/hooks/useReactiveRoute";
+import { router } from "@/react/router";
+import {
+  PROJECT_V1_ROUTE_DETAIL,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router/handles";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { TabItem } from "./TabItem";
 
 /**
@@ -24,7 +26,9 @@ export function GutterBar() {
   const resolvedProject = useAppProject(projectName);
   const project = projectName ? resolvedProject : undefined;
 
-  const routeProjectParam = useVueRoute().params.project as string | undefined;
+  const routeProjectParam = useReactiveRoute().params.project as
+    | string
+    | undefined;
 
   const logoHref = routeProjectParam
     ? router.resolve({

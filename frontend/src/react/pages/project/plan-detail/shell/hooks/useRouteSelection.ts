@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getRouteQueryString } from "@/router/dashboard/projectV1RouteHelpers";
+import { getRouteQueryString } from "@/react/router/handles";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 

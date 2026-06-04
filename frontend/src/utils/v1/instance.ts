@@ -1,6 +1,5 @@
 import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
-import { useSubscriptionV1Store } from "@/store";
 import type { MaybeRef } from "@/types";
 import {
   isValidInstanceName,
@@ -18,9 +17,10 @@ import {
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
-  const store = useSubscriptionV1Store();
+  const currentPlan = appStoreUtilBridge()?.currentPlan() ?? PlanType.FREE;
   let name = instance.title;
   // For unknown instance, we will use the name as the title.
   if (instance.title === unknownInstance().title) {
@@ -29,7 +29,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if (
     isValidInstanceName(instance.name) &&
     !instance.activation &&
-    store.currentPlan !== PlanType.FREE
+    currentPlan !== PlanType.FREE
   ) {
     name += ` (${t("common.no-license")})`;
   }

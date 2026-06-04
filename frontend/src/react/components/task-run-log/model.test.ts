@@ -31,10 +31,6 @@ vi.mock("@/connect", () => ({
   sheetServiceClientConnect: {},
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: () => undefined,
-}));
-
 vi.mock("@/react/stores/app", () => ({
   useAppStore: () => vi.fn(),
 }));

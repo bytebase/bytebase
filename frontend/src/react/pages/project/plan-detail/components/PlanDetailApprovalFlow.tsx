@@ -15,17 +15,17 @@ import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -56,9 +56,9 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
 
-// Stable empty array for the comments selector — useVueState's getter must
-// return a cached reference when we want React to skip re-renders, otherwise
-// useSyncExternalStore will treat every render as a snapshot change.
+// Stable empty array for the comments selector — the selector must return a
+// cached reference when we want React to skip re-renders, otherwise the store
+// subscription will treat every render as a snapshot change.
 const EMPTY_COMMENTS: IssueComment[] = [];
 
 export function PlanDetailSidebarApprovalFlow() {
@@ -682,14 +682,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   // Subscribe directly to the Zustand project IAM cache so this step
-  // re-renders the moment loadProjectIamPolicy() resolves. Wrapping the
-  // Zustand getter in useVueState would only react to Vue dependencies
-  // and miss the Zustand write, leaving the candidates list empty on a
-  // cold plan page.
+  // re-renders the moment loadProjectIamPolicy() resolves.
   const projectIamPolicy = useAppStore(
     (state) => state.projectPoliciesByName[projectName]
   );

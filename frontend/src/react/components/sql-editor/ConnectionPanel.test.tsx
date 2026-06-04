@@ -23,12 +23,9 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { push: mocks.routerPush },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
-  INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({

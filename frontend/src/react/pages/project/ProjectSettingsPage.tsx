@@ -16,17 +16,17 @@ import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
-import { router } from "@/router";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
+import { useWorkspaceApprovalSettingStore } from "@/react/stores/workspaceApprovalSetting";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission, SQLReviewPolicy } from "@/types";
@@ -129,15 +129,11 @@ export function ProjectSettingsPage() {
   const projectsByName = useAppStore((s) => s.projectsByName);
   const reviewStore = useSQLReviewStore();
 
-  const projectId = useVueState(
-    () => router.currentRoute.value.params.projectId as string
-  );
+  const projectId = useCurrentRoute().params.projectId as string;
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   const isDefault = isDefaultProject(projectName);
 
   const hasPermission = useCallback(
@@ -169,12 +165,8 @@ export function ProjectSettingsPage() {
   // -----------------------------------------------------------------------
   // Security state
   // -----------------------------------------------------------------------
-  const reviewPolicyList = useVueState(
-    () => reviewStore.reviewPolicyList ?? []
-  );
-  const currentReviewPolicy = useVueState(() =>
-    reviewStore.getReviewPolicyByResouce(projectName)
-  );
+  const reviewPolicyList = reviewStore.reviewPolicyList;
+  const currentReviewPolicy = reviewStore.getReviewPolicyByResouce(projectName);
   const [pendingReviewPolicy, setPendingReviewPolicy] = useState<
     SQLReviewPolicy | undefined
   >(undefined);

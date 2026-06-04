@@ -1,5 +1,4 @@
 import { getProjectByName } from "@/react/stores/app/projectAccess";
-import { checkQuerierPermission, useEnvironmentV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -15,8 +14,10 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Environment } from "@/types/v1/environment";
+import { type Environment, unknownEnvironment } from "@/types/v1/environment";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { hasWorkspacePermissionV2 } from "../iam";
+import { checkQuerierPermission } from "./iam";
 import { extractProjectResourceName } from "./project";
 
 export const databaseV1Url = (db: Database) => {
@@ -103,7 +104,9 @@ export const getDatabaseProject = (database: Database): Project => {
 
 // Get effective environment entity
 export const getDatabaseEnvironment = (database: Database): Environment => {
-  return useEnvironmentV1Store().getEnvironmentByName(
-    database.effectiveEnvironment ?? ""
+  return (
+    appStoreUtilBridge()?.getEnvironmentByName(
+      database.effectiveEnvironment ?? ""
+    ) ?? unknownEnvironment()
   );
 };

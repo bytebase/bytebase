@@ -8,9 +8,9 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useSubscriptionState } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
   Instance,

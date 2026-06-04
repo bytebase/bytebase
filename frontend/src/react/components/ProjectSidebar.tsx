@@ -11,12 +11,10 @@ import {
 import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useWorkspace } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { useRecentVisit } from "@/react/hooks/useRecentVisit";
+import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
@@ -35,8 +33,8 @@ import {
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
-} from "@/router/dashboard/projectV1";
-import { useRecentVisit } from "@/router/useRecentVisit";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
@@ -75,12 +73,13 @@ function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
   const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
 
-  const isDefault = useVueState(() => {
-    const projectId =
-      (router.currentRoute.value.params.projectId as string | undefined) ?? "";
-    const projectName = projectId ? `${projectNamePrefix}${projectId}` : "";
-    return !!defaultProject && projectName === defaultProject;
-  });
+  const sidebarRoute = useCurrentRoute();
+  const sidebarProjectId =
+    (sidebarRoute.params.projectId as string | undefined) ?? "";
+  const sidebarProjectName = sidebarProjectId
+    ? `${projectNamePrefix}${sidebarProjectId}`
+    : "";
+  const isDefault = !!defaultProject && sidebarProjectName === defaultProject;
 
   return useMemo(
     (): SidebarItem[] => [
@@ -238,29 +237,15 @@ export function ProjectSidebar() {
   const rawItems = useSidebarItems();
   const filteredItems = useMemo(() => filterSidebarList(rawItems), [rawItems]);
 
-  const currentRouteName = useVueState(
-    () => router.currentRoute.value.name?.toString() ?? ""
-  );
-
-  const projectId = useVueState(
-    () =>
-      (router.currentRoute.value.params.projectId as string | undefined) ?? ""
-  );
+  const route = useCurrentRoute();
+  const currentRouteName = route.name?.toString() ?? "";
+  const projectId = (route.params.projectId as string | undefined) ?? "";
 
   const customLogo = useWorkspace()?.logo ?? "";
 
-  // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
-  const recordVisitRef = useRef<((path: string) => void) | null>(null);
-  useEffect(() => {
-    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
-    // recent-visit helper so React components don't need a Vue effect scope.
-    const scope = effectScope();
-    scope.run(() => {
-      const { record } = useRecentVisit();
-      recordVisitRef.current = record;
-    });
-    return () => scope.stop();
-  }, []);
+  const { record } = useRecentVisit();
+  const recordVisitRef = useRef(record);
+  recordVisitRef.current = record;
 
   // Ensure the project is fetched into the store cache.
   // ProjectRouteShell also fetches it, but this guards against race conditions.

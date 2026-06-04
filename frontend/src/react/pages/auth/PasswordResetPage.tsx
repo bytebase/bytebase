@@ -10,17 +10,16 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
+import { router } from "@/react/router";
+import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { pushNotification, useAuthStore } from "@/store";
+import { pushNotification } from "@/store";
 import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 
 export function PasswordResetPage() {
   const { t } = useTranslation();
@@ -38,9 +37,7 @@ export function PasswordResetPage() {
   const passwordRestriction = serverInfo?.restriction?.passwordRestriction;
   const disallowPasswordSignin =
     serverInfo?.restriction?.disallowPasswordSignin ?? false;
-  const requireResetPassword = useVueState(
-    () => useAuthStore().requireResetPassword
-  );
+  const requireResetPassword = useAppStore((s) => s.requireResetPassword());
   const currentUser = useCurrentUser();
 
   // This page renders outside any shell, so the workspace bootstrap hasn't
@@ -136,7 +133,7 @@ export function PasswordResetPage() {
           style: "SUCCESS",
           title: t("common.updated"),
         });
-        await useAuthStore().login({
+        await useAppStore.getState().login({
           request: create(LoginRequestSchema, {
             email,
             password,
@@ -167,7 +164,7 @@ export function PasswordResetPage() {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    useAuthStore().setRequireResetPassword(false);
+    useAppStore.getState().setRequireResetPassword(false);
     router.replace(redirectQuery());
   };
 

@@ -7,16 +7,14 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/router";
-import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-} from "@/router/dashboard/projectV1";
+import { router } from "@/react/router";
 import {
   PLAN_DETAIL_PHASE_CHANGES,
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
-} from "@/router/dashboard/projectV1RouteHelpers";
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+} from "@/react/router/handles";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";

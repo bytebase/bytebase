@@ -57,17 +57,16 @@ import {
 } from "@/react/components/ui/tabs";
 import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
-import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
-import { getEmptyRolloutPolicy } from "@/react/stores/app/policy";
-import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { getEmptyRolloutPolicy } from "@/react/stores/app/policy";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -430,7 +429,7 @@ function SQLReviewSectionInner(
   );
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
 
-  const reviewPolicyList = useVueState(() => [...reviewStore.reviewPolicyList]);
+  const reviewPolicyList = reviewStore.reviewPolicyList;
 
   const currentPolicy = useMemo(() => {
     return reviewPolicyList.find((p) => p.resources.includes(resourcePath));
@@ -1271,8 +1270,7 @@ function SortableEnvironmentRow({
 // `ReorderSheetInner` is keyed by an open counter so it remounts fresh
 // every time the Sheet opens (re-initializing its `list` state from the
 // snapshot), but does NOT reset mid-session when the parent's
-// `environments` prop gets a new reference on every render (which
-// `useVueState` does — it spreads the store's array). A naive
+// `environments` prop gets a new reference on every render. A naive
 // `useEffect([open, environments])` reset would clobber the user's drag
 // reorder the instant the parent re-renders, which was the previous bug.
 function ReorderSheet({
@@ -1352,7 +1350,7 @@ function ReorderSheetInner({
 
   // Compare against the initial order captured at mount, not against the
   // live `environments` prop (which may change reference on every parent
-  // render thanks to useVueState spreading the store array).
+  // render).
   const initialOrderRef = useRef(environments.map((e) => e.id));
   const orderChanged = useMemo(() => {
     if (list.length !== initialOrderRef.current.length) return true;

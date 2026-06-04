@@ -9,10 +9,12 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
+import {
+  AUTH_2FA_SETUP_MODULE,
+  SETTING_ROUTE_PROFILE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
-import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";

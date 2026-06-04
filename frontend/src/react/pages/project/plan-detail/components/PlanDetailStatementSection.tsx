@@ -11,7 +11,6 @@ import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
 import { ReleaseInfoCard } from "@/react/components/release/ReleaseInfoCard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -108,17 +107,17 @@ export function PlanDetailStatementSection({
     }
   }, [targetDatabaseNames]);
   // Show Schema Editor only when at least one target's engine supports it.
-  // Wrapped in useVueState so the eligibility flips back on once the Pinia
-  // store hydrates the targets — otherwise a Plan opened before its targets
+  // Memoized on the databasesByName subscription so eligibility flips on once
+  // the store hydrates the targets — otherwise a Plan opened before its targets
   // are cached would render with the button perpetually hidden.
-  const schemaEditorEligible = useVueState(() => {
+  const schemaEditorEligible = useMemo(() => {
     if (targetDatabaseNames.length === 0) return false;
     return targetDatabaseNames.some((name) => {
       const db = databasesByName[name];
       if (!db || !isValidDatabaseName(db.name)) return false;
       return engineSupportsSchemaEditor(getInstanceResource(db).engine);
     });
-  });
+  }, [targetDatabaseNames, databasesByName]);
   const language = useMemo(() => {
     if (!targetDatabaseName) return "sql";
     const database = databasesByName[targetDatabaseName] ?? unknownDatabase();

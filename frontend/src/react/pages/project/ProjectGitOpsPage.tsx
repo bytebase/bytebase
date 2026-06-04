@@ -14,12 +14,12 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
-import { router } from "@/router";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -47,9 +47,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [selectedIdentityName, setSelectedIdentityName] = useState("");

@@ -1,9 +1,9 @@
 import { SquareTerminal } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { router } from "@/react/router";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { defaultProject, isDefaultProject } from "@/types/v1/project";
 

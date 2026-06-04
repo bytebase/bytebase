@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { type Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
 import { DeployTaskStatus } from "./DeployTaskStatus";

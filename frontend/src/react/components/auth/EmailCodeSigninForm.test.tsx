@@ -17,8 +17,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useAuthStore: () => ({
-    sendEmailLoginCode: mocks.sendEmailLoginCode,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => ({}), {
+    getState: () => ({
+      sendEmailLoginCode: mocks.sendEmailLoginCode,
+      // resolveWorkspaceName() (the 2nd send-code arg) reads this.
+      workspaceResourceName: () => "",
+    }),
   }),
 }));
 
@@ -51,6 +58,7 @@ vi.mock("react-i18next", () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let EmailCodeSigninForm: typeof import("./EmailCodeSigninForm").EmailCodeSigninForm;

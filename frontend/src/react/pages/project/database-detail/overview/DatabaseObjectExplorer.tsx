@@ -11,14 +11,12 @@ import {
 } from "@/react/components/ui/select";
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
-import { useVueState } from "@/react/hooks/useVueState";
+import { router, useCurrentRoute } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
   getColumnCatalog,
   getTableCatalog,
 } from "@/react/stores/app/databaseCatalog";
-import { router } from "@/router";
-import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -107,13 +105,11 @@ export function DatabaseObjectExplorer({
       schema: selectedSchemaName,
     })
   );
-  const routeTable = useVueState(() => {
-    const table = router.currentRoute.value.query.table;
-    return typeof table === "string" ? table : "";
-  });
+  const tableQuery = useCurrentRoute().query.table;
+  const routeTable = typeof tableQuery === "string" ? tableQuery : "";
   const databaseMetadata = useAppDatabaseMetadata(database.name);
-  const hasSensitiveDataFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const catalog = useDatabaseCatalog(database.name, false);
   const project = getDatabaseProject(database);

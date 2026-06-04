@@ -13,27 +13,16 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
     replace: mocks.routerReplace,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL: "project.plan.detail.spec.detail",
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS: "project.plan.detail.specs",
-}));
-
-vi.mock("@/router/dashboard/projectV1RouteHelpers", () => ({
-  getRouteQueryString: (value: string | string[] | undefined) =>
-    Array.isArray(value) ? value[0] : value,
-  PLAN_DETAIL_PHASE_CHANGES: "changes",
-  PLAN_DETAIL_PHASE_REVIEW: "review",
-  PLAN_DETAIL_PHASE_DEPLOY: "deploy",
 }));
 
 vi.mock("@/utils", () => ({
@@ -105,7 +94,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "create",
-          routeName: "project.plan.detail.specs",
+          routeName: "workspace.project.plan.detail.specs",
           pageHost: null,
         }),
       { wrapper }
@@ -216,7 +205,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "project.plan.detail.specs",
+          routeName: "workspace.project.plan.detail.specs",
           pageHost: null,
         }),
       { wrapper }
@@ -244,7 +233,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "project.plan.detail.specs",
+          routeName: "workspace.project.plan.detail.specs",
           pageHost: null,
         }),
       { wrapper }
@@ -275,7 +264,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "project.plan.detail.spec.detail",
+          routeName: "workspace.project.plan.detail.spec.detail",
           specId: "spec-1",
           pageHost: null,
         }),
@@ -359,7 +348,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          routeName: "project.plan.detail.spec.detail",
+          routeName: "workspace.project.plan.detail.spec.detail",
           specId,
           pageHost: null,
         }),
@@ -389,7 +378,7 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId,
-          routeName: "project.plan.detail.spec.detail",
+          routeName: "workspace.project.plan.detail.spec.detail",
           specId: "spec-1",
           pageHost: null,
         }),

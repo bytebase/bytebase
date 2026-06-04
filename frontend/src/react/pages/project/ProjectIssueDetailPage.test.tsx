@@ -28,15 +28,22 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: { value: { query: {} } },
     replace: vi.fn(),
   },
+  useCurrentRoute: () => ({
+    name: undefined,
+    fullPath: "",
+    hash: "",
+    params: {},
+    query: {},
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 vi.mock("./issue-detail/hooks/useIssueDetailPage", () => ({

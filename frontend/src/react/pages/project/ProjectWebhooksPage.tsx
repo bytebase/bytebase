@@ -23,13 +23,13 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";
@@ -48,9 +48,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [deleteTarget, setDeleteTarget] = useState<Webhook | null>(null);
 

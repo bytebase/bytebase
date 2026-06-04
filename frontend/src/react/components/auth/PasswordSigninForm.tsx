@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { router } from "@/router";
-import { AUTH_PASSWORD_FORGOT_MODULE } from "@/router/auth";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
+import { router } from "@/react/router";
+import { AUTH_PASSWORD_FORGOT_MODULE } from "@/react/router/handles";
 import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 
 type Props = {
   readonly loading: boolean;

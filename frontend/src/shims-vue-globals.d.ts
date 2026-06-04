@@ -1,5 +1,4 @@
 import type dayjs from "dayjs";
-import type { Composer } from "vue-i18n";
 import type { humanizeDate, humanizeTs } from "./utils";
 
 export {};
@@ -13,8 +12,5 @@ declare module "vue" {
     humanizeDate: typeof humanizeDate;
     isDev: boolean;
     isRelease: boolean;
-    $t: Composer["t"];
-    $te: Composer["te"];
-    $tm: Composer["tm"];
   }
 }

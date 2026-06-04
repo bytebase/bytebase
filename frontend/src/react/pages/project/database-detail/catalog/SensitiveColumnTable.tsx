@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import type { MaskData } from "@/react/lib/sensitive-data/types";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 

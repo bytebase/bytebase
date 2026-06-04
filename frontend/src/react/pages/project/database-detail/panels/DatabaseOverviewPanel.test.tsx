@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
     schemaList: [{ name: "public" }, { name: "sales" }],
     currentRoute,
     routerReplace: vi.fn(() => Promise.resolve()),
-    useVueState: vi.fn(),
     dbSchemaStore: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
@@ -78,18 +77,26 @@ vi.stubGlobal("localStorage", mocks.localStorage);
 let DatabaseOverviewPanel: typeof import("./DatabaseOverviewPanel").DatabaseOverviewPanel;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     currentRoute: mocks.currentRoute,
   },
+  useCurrentRoute: () => ({
+    name: undefined,
+    fullPath: "",
+    hash: "",
+    params: {},
+    query: mocks.currentRoute.value.query,
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 // The component (and its children `DatabaseObjectExplorer`, `TableDetailDialog`,
@@ -104,6 +111,7 @@ vi.mock("@/react/stores/app", () => {
     getSettingByName: mocks.getSettingByName,
     getProjectClassification: mocks.getProjectClassification,
     hasFeature: mocks.hasFeature,
+    hasInstanceFeature: () => mocks.featureToRef().value,
     instanceMissingLicense: mocks.instanceMissingLicense,
     ...((mocks.dbSchemaStore() ?? {}) as Record<string, unknown>),
   });
@@ -394,8 +402,6 @@ beforeEach(async () => {
   mocks.hasTableEngineProperty.mockReturnValue(false);
   mocks.instanceV1SupportsIndex.mockReset();
   mocks.instanceV1SupportsIndex.mockReturnValue(true);
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
   vi.resetModules();
   ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
@@ -589,7 +595,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("syncs selected table to the route query and restores it from the route", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "public", table: "orders" };
 
     const { container, render, unmount } = renderIntoContainer(
@@ -699,7 +705,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("clears a stale table query when the table does not exist", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "public", table: "missing" };
 
     const { render, unmount } = renderIntoContainer(
@@ -726,7 +732,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("keeps an existing schema query instead of clearing it during initialization", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "sales" };
 
     const { container, render, unmount } = renderIntoContainer(
@@ -882,7 +888,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("does not fall back to the first schema for schema-scoped sequences", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "sales" };
 
     mocks.instanceV1SupportsSequence.mockReturnValue(true);
@@ -971,7 +977,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("does not fall back to the first schema for schema-scoped streams and tasks", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "sales" };
 
     mocks.getDatabaseEngine.mockReturnValue(Engine.SNOWFLAKE);
@@ -1016,7 +1022,7 @@ describe("DatabaseOverviewPanel", () => {
   });
 
   test("does not fall back to the first schema for schema-scoped package objects", async () => {
-    const { router } = await import("@/router");
+    const { router } = await import("@/react/router");
     router.currentRoute.value.query = { schema: "sales" };
 
     mocks.getDatabaseEngine.mockReturnValue(Engine.ORACLE);

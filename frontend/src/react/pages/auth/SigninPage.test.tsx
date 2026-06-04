@@ -9,7 +9,6 @@ import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   routerPush: vi.fn(),
   currentRoute: {
     value: { query: {} as Record<string, string | undefined> },
@@ -22,19 +21,12 @@ const mocks = vi.hoisted(() => ({
   authStore: null as unknown,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNUP_MODULE: "auth.signup",
 }));
 
 vi.mock("@/store", () => ({
@@ -47,6 +39,7 @@ vi.mock("@/react/stores/app", () => {
     ...(mocks.actuatorStore as Record<string, unknown>),
     identityProviderList: () => mocks.identityProviderList,
     listIdentityProviders: mocks.listIdentityProviders,
+    login: (mocks.authStore as { login: unknown }).login,
   });
   return {
     useAppStore: Object.assign(
@@ -59,6 +52,9 @@ vi.mock("@/react/stores/app", () => {
 
 vi.mock("@/utils", () => ({
   openWindowForSSO: mocks.openWindowForSSO,
+}));
+
+vi.mock("@/react/lib/workspace", () => ({
   resolveWorkspaceName: () => undefined,
 }));
 
@@ -67,6 +63,9 @@ vi.mock("react-i18next", () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  // Completes the mock for the react-i18next migration: `@/react/i18n`
+  // registers this plugin via `i18next.use(...)`.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 vi.mock("@/react/components/BytebaseLogo", () => ({

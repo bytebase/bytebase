@@ -1,18 +1,14 @@
 import { SessionExpiredSurface } from "@/react/components/auth/SessionExpiredSurface";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { useAuthStore } from "@/store";
+import { useCurrentRoute } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import { isAuthRelatedRoute } from "@/utils/auth";
 
 export function SessionExpiredSurfaceGate() {
-  const isAuthRoute = useVueState(() =>
-    isAuthRelatedRoute(String(router.currentRoute.value.name ?? ""))
-  );
-  const isLoggedIn = useVueState(() => useAuthStore().isLoggedIn);
-  const unauthenticatedOccurred = useVueState(
-    () => useAuthStore().unauthenticatedOccurred
-  );
-  const currentPath = useVueState(() => router.currentRoute.value.fullPath);
+  const route = useCurrentRoute();
+  const isAuthRoute = isAuthRelatedRoute(String(route.name ?? ""));
+  const isLoggedIn = useAppStore((s) => s.isLoggedIn());
+  const unauthenticatedOccurred = useAppStore((s) => s.unauthenticatedOccurred);
+  const currentPath = route.fullPath;
   // Match the guards that previously lived in AuthContext.vue: the
   // surface is only shown for an already-signed-in user on a non-auth
   // route who just lost their session — otherwise the modal would block

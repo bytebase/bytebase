@@ -3,13 +3,13 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useAuthStore } from "@/store";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
+import { router } from "@/react/router";
+import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import type { OAuthState, OAuthWindowEventPayload } from "@/types/oauth";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 import { clearOAuthState, retrieveOAuthState } from "@/utils/sso";
 
 export function OAuthCallbackPage() {
@@ -125,7 +125,7 @@ export function OAuthCallbackPage() {
         return;
       }
 
-      await useAuthStore().login({
+      await useAppStore.getState().login({
         request: create(LoginRequestSchema, {
           idpName,
           idpContext: {

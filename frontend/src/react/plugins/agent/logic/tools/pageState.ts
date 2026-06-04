@@ -1,4 +1,4 @@
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 import { lazyExtractDomTree } from "../../dom";
 import { extractRouteContext } from "../context";
 
@@ -6,7 +6,7 @@ export interface PageStateArgs {
   mode?: "semantic" | "dom";
 }
 
-export function createPageStateTool(router: Router) {
+export function createPageStateTool(router: AppRouterInstance) {
   return async (args?: PageStateArgs): Promise<string> => {
     const route = router.currentRoute.value;
     const base: Record<string, unknown> = {

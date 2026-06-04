@@ -7,14 +7,14 @@ import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
@@ -33,18 +33,14 @@ import {
   formatAbsoluteDateTime,
   getInstanceResource,
 } from "@/utils";
-import {
-  extractInstanceResourceName,
-  instanceV1SupportsSchemaRollback,
-} from "@/utils/v1/instance";
-import { extractProjectResourceName } from "@/utils/v1/project";
+import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
 import { extractTaskLink } from "@/utils/v1/revision";
 import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
 export interface DatabaseChangelogDetailPageProps {
-  project: string;
-  instance: string;
-  database: string;
+  projectId: string;
+  instanceId: string;
+  databaseName: string;
   changelogId: string;
 }
 
@@ -194,9 +190,9 @@ function CopyButton({ content }: { content: string }) {
 }
 
 export function DatabaseChangelogDetailPage({
-  project,
-  instance,
-  database,
+  projectId,
+  instanceId,
+  databaseName,
   changelogId,
 }: DatabaseChangelogDetailPageProps) {
   const { t } = useTranslation();
@@ -213,10 +209,6 @@ export function DatabaseChangelogDetailPage({
   const [hasTaskRunDatabaseSync, setHasTaskRunDatabaseSync] = useState<
     boolean | undefined
   >(undefined);
-
-  const projectId = extractProjectResourceName(project);
-  const instanceId = extractInstanceResourceName(instance);
-  const databaseName = extractDatabaseResourceName(database).databaseName;
 
   const detail = useProjectDatabaseDetail({
     projectId,
@@ -369,8 +361,8 @@ export function DatabaseChangelogDetailPage({
   ]);
 
   const databaseDisplayName =
-    extractDatabaseResourceName(detail.database?.name ?? database)
-      .databaseName || databaseName;
+    extractDatabaseResourceName(detail.database?.name ?? "").databaseName ||
+    databaseName;
   const formattedCreateTime = useMemo(() => {
     if (!resolvedChangelog?.createTime) {
       return "";

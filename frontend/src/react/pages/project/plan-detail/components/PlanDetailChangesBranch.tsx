@@ -58,15 +58,15 @@ import {
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { getProjectNameAndDatabaseGroupName, pushNotification } from "@/store";
 import {
   isValidDatabaseGroupName,
@@ -192,9 +192,7 @@ export function PlanDetailChangesBranch({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
-  );
+  const project = useProjectByName(`projects/${page.projectId}`);
   const [showAddSpecSheet, setShowAddSpecSheet] = useState(false);
   const [showTargetSelectorSheet, setShowTargetSelectorSheet] = useState(false);
   const [specPendingDelete, setSpecPendingDelete] = useState<Plan_Spec | null>(
@@ -714,9 +712,7 @@ function OptionsSection({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(`projects/${page.projectId}`)
-  );
+  const project = useProjectByName(`projects/${page.projectId}`);
   const databasesByName = useAppStore((s) => s.databasesByName);
   const [sheetStatement, setSheetStatementValue] = useState("");
   const [isSheetOversize, setIsSheetOversize] = useState(false);
@@ -728,23 +724,25 @@ function OptionsSection({
     }
     return [];
   }, [selectedSpec]);
-  const databases = useVueState(() =>
-    targets
-      .flatMap((target) => {
-        if (isValidDatabaseName(target)) {
-          return [databasesByName[target] ?? unknownDatabase()];
-        }
-        if (isValidDatabaseGroupName(target)) {
-          const dbGroup = useAppStore
-            .getState()
-            .getDBGroupByName(target, DatabaseGroupView.FULL);
-          return (dbGroup.matchedDatabases ?? []).map(
-            (database) => databasesByName[database.name] ?? unknownDatabase()
-          );
-        }
-        return [];
-      })
-      .filter((database) => isValidDatabaseName(database.name))
+  const databases = useMemo(
+    () =>
+      targets
+        .flatMap((target) => {
+          if (isValidDatabaseName(target)) {
+            return [databasesByName[target] ?? unknownDatabase()];
+          }
+          if (isValidDatabaseGroupName(target)) {
+            const dbGroup = useAppStore
+              .getState()
+              .getDBGroupByName(target, DatabaseGroupView.FULL);
+            return (dbGroup.matchedDatabases ?? []).map(
+              (database) => databasesByName[database.name] ?? unknownDatabase()
+            );
+          }
+          return [];
+        })
+        .filter((database) => isValidDatabaseName(database.name)),
+    [targets, databasesByName]
   );
   const firstDatabaseName = databases[0]?.name ?? "";
   const instanceName = firstDatabaseName

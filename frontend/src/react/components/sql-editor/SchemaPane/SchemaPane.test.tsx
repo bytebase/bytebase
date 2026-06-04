@@ -163,7 +163,10 @@ vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: { MYSQL: "/mysql.svg" } as Record<string, string>,
 }));
 
-vi.mock("@/router", () => ({ router: { resolve: () => ({ href: "/" }) } }));
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
+  router: { resolve: () => ({ href: "/" }) },
+}));
 vi.mock("@/router/sqlEditor", () => ({
   SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));
@@ -248,10 +251,6 @@ vi.mock("@/react/components/ui/tree", () => ({
 
 vi.mock("@/react/components/ui/tree-utils", () => ({
   countVisibleRows: () => 0,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T): T => getter(),
 }));
 
 let SchemaPane: typeof import("./SchemaPane").SchemaPane;

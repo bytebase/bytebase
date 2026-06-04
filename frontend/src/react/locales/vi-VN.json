@@ -113,6 +113,10 @@
       "stay-signed-in": "Tiếp tục duy trì đăng nhập",
       "title": "Phiên của bạn sắp kết thúc"
     },
+    "login-as-another": {
+      "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ.",
+      "title": "Bạn đã đăng nhập với tư cách người dùng khác"
+    },
     "oauth-callback": {
       "invalid-state": "Xác thực thất bại: Trạng thái gọi lại không hợp lệ. Vui lòng thử lại.",
       "opener-failed": "Xác thực đã hoàn tất, nhưng không thể giao tiếp với cửa sổ cha. Vui lòng đóng cửa sổ này và thử lại.",
@@ -157,6 +161,7 @@
       "existing-user": "Đã có tài khoản?",
       "title": "Đăng ký tài khoản của bạn"
     },
+    "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
   },
   "banner": {
@@ -228,6 +233,7 @@
     "back-to-workspace": "Quay lại workspace",
     "bypassed": "Đã bỏ qua",
     "cancel": "Hủy",
+    "canceled": "Đã hủy",
     "cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
     "catalog": "Danh mục",
     "changelog": "Changelog",
@@ -272,8 +278,10 @@
     "deselect-all": "Bỏ chọn tất cả",
     "detail": "Chi tiết",
     "detailed-guide": "Hướng dẫn chi tiết",
+    "dingtalk": "DingTalk",
     "disable": "Tắt",
     "discard-changes": "Hủy thay đổi",
+    "discord": "Discord",
     "dismiss": "Loại bỏ",
     "done": "Hoàn tất",
     "download": "Tải xuống",
@@ -295,6 +303,7 @@
     "expired": "Đã hết hạn",
     "export": "Xuất",
     "failed": "Thất bại",
+    "feishu": "Feishu",
     "file-selector": {
       "size-limit": "Kích thước tệp phải nhỏ hơn {{size}} MiB",
       "type-limit": "Chỉ hỗ trợ tệp {{extension}}"
@@ -305,6 +314,7 @@
     "from": "Từ",
     "general": "Chung",
     "go-back": "Quay lại",
+    "google-chat": "Google Chat",
     "group": "Nhóm",
     "groups": "Nhóm",
     "history": "Lịch sử",
@@ -322,6 +332,7 @@
     "key": "Khóa",
     "labels": "Nhãn",
     "language": "Ngôn ngữ",
+    "lark": "Lark",
     "learn-more": "Tìm hiểu thêm",
     "leave-without-saving": "Thoát mà không lưu?",
     "license": "Giấy phép",
@@ -347,6 +358,7 @@
     "next": "Tiếp theo",
     "no": "Không",
     "no-data": "Không có dữ liệu",
+    "no-license": "Không có giấy phép",
     "not-started": "Chưa bắt đầu",
     "ok": "OK",
     "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
@@ -421,6 +433,7 @@
     "sign-up": "Đăng ký",
     "skip": "Bỏ qua",
     "skipped": "Đã bỏ qua",
+    "slack": "Slack",
     "snapshot": "Ảnh chụp nhanh",
     "sql": "SQL",
     "stage": "Giai đoạn",
@@ -433,6 +446,7 @@
     "system": "Hệ thống",
     "table": "Bảng",
     "task": "Tác vụ",
+    "teams": "Teams",
     "text-wrap": "Ngắt dòng văn bản",
     "tips": "Mẹo",
     "title": "Tiêu đề",
@@ -465,6 +479,7 @@
     "want-help": "Cần trợ giúp",
     "warning": "Cảnh báo",
     "webhooks": "Webhook",
+    "wecom": "WeCom",
     "write-only": "chỉ ghi",
     "yes": "Có",
     "you": "bạn"
@@ -563,6 +578,7 @@
   },
   "data-source": {
     "additional-node-addresses": "Địa chỉ nút bổ sung",
+    "admin": "Quản trị",
     "automatic-query-data-source": "Tự động",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
     "connection-type": "Loại kết nối",
@@ -576,6 +592,7 @@
     "private-key-passphrase": "Mật khẩu khóa riêng",
     "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa",
     "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
+    "read-only": "Chỉ đọc",
     "read-replica-host": "Máy chủ bản sao đọc",
     "read-replica-port": "Cổng bản sao đọc",
     "replica-set": "Bộ bản sao",
@@ -1328,6 +1345,7 @@
       "change-database": "Thay đổi cơ sở dữ liệu",
       "change-from-sql-editor": "Thay đổi từ SQL Editor",
       "edit-schema": "Chỉnh sửa schema",
+      "export-data": "Xuất dữ liệu",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
     },
@@ -1382,6 +1400,7 @@
     },
     "recovery-code": "Mã khôi phục"
   },
+  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
@@ -1712,6 +1731,32 @@
       "name": "Tên"
     },
     "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "Khi vấn đề đang chờ phê duyệt",
+          "title": "Cần phê duyệt vấn đề"
+        },
+        "issue-approved": {
+          "label": "Khi tất cả các bước phê duyệt hoàn tất",
+          "title": "Vấn đề đã được phê duyệt"
+        },
+        "issue-creation": {
+          "label": "Khi vấn đề mới được tạo",
+          "title": "Tạo vấn đề"
+        },
+        "issue-sent-back": {
+          "label": "Khi người phê duyệt trả lại vấn đề",
+          "title": "Vấn đề bị trả lại"
+        },
+        "pipeline-completed": {
+          "label": "Khi pipeline hoàn thành thành công",
+          "title": "Pipeline hoàn thành"
+        },
+        "pipeline-failed": {
+          "label": "Khi các tác vụ pipeline thất bại",
+          "title": "Pipeline thất bại"
+        }
+      },
       "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
       "creation": {
         "desc": "Tạo webhook tương ứng cho kênh {{destination}} nhận tin nhắn.",
@@ -1758,6 +1803,7 @@
     "visit-member": "Truy cập Thành viên | Thành viên",
     "visit-project": "Truy cập Dự án"
   },
+  "refresh-remind": {},
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
@@ -1806,9 +1852,29 @@
     "custom-roles": {
       "self": "Vai trò tùy chỉnh"
     },
+    "gitops-service-agent": {
+      "description": "Quyền cho quy trình CI/CD tự động để tạo và thực thi các thay đổi cơ sở dữ liệu qua GitOps.",
+      "self": "Tác nhân Dịch vụ GitOps"
+    },
     "import-from-role": "Nhập từ vai trò",
+    "project-developer": {
+      "description": "Tất cả các quyền xem, cộng với các quyền yêu cầu thay đổi cơ sở dữ liệu.",
+      "self": "Nhà phát triển dự án"
+    },
+    "project-owner": {
+      "description": "Tất cả các quyền trong dự án",
+      "self": "Chủ sở hữu dự án"
+    },
+    "project-releaser": {
+      "description": "Tất cả các quyền xem, cộng với quyền xem xét các yêu cầu thay đổi cơ sở dữ liệu cho mục đích phát hành.",
+      "self": "Người phát hành dự án"
+    },
     "project-roles": {
       "self": "Vai trò dự án"
+    },
+    "project-viewer": {
+      "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án và cơ sở dữ liệu; người dùng có thể tự tạo yêu cầu để truy vấn và xuất dữ liệu.",
+      "self": "Người xem dự án"
     },
     "select-role": "Chọn vai trò",
     "self": "Vai trò",
@@ -1817,7 +1883,27 @@
       "description-placeholder": "Nhập mô tả vai trò",
       "title-placeholder": "Nhập tiêu đề vai trò"
     },
+    "sql-editor-read-user": {
+      "description": "Quyền chỉ đọc để truy vấn dữ liệu cơ sở dữ liệu, không có quyền DDL hoặc DML.",
+      "self": "Người dùng Trình soạn thảo SQL chỉ đọc"
+    },
+    "sql-editor-user": {
+      "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu.",
+      "self": "Người dùng Trình soạn thảo SQL"
+    },
     "title": "Tiêu đề",
+    "workspace-admin": {
+      "description": "Quản trị viên không gian làm việc có tất cả các quyền trong không gian làm việc.",
+      "self": "Quản trị viên không gian làm việc"
+    },
+    "workspace-dba": {
+      "description": "DBA không gian làm việc có tất cả các quyền trong không gian làm việc ngoại trừ quản lý thành viên không gian làm việc.",
+      "self": "DBA không gian làm việc"
+    },
+    "workspace-member": {
+      "description": "Thành viên không gian làm việc là vai trò cơ bản nhất trong không gian làm việc.",
+      "self": "Thành viên không gian làm việc"
+    },
     "workspace-roles": {
       "self": "Vai trò không gian làm việc"
     }
@@ -2516,11 +2602,13 @@
       "non-empty-folder-content": "Bạn muốn di chuyển tất cả các trang tính vào thư mục gốc hay chỉ xóa chúng?",
       "non-empty-folder-title": "Thư mục không trống"
     },
+    "mine": "Của tôi",
     "move-worksheets": "Di chuyển các trang tính",
     "notifications": {
       "duplicate-success": "Đã nhân bản thành công vào \"Trang tính của tôi\""
     },
-    "search-sheets": "Tìm kiếm Trang tính"
+    "search-sheets": "Tìm kiếm Trang tính",
+    "shared": "Được chia sẻ"
   },
   "sql-editor": {
     "access-grants": "Cấp quyền truy cập",
@@ -3665,6 +3753,7 @@
     "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
     "started": "Bắt đầu",
     "status": {
+      "available": "Có sẵn",
       "canceled": "Đã hủy",
       "done": "Hoàn tất",
       "failed": "Thất bại",

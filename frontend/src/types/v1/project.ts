@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { useActuatorV1Store } from "@/store/modules/v1/actuator";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { Project } from "../proto-es/v1/project_service_pb";
@@ -10,7 +10,7 @@ export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 // Check if a project name is the default project.
 // Reads the default project name from the actuator store.
 export const isDefaultProject = (name: string): boolean => {
-  const defaultProject = useActuatorV1Store().serverInfo?.defaultProject;
+  const defaultProject = appStoreUtilBridge()?.defaultProjectName();
   return !!defaultProject && name === defaultProject;
 };
 

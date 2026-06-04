@@ -36,9 +36,9 @@ import {
   roleHasDatabaseLimitation,
 } from "@/react/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/react/lib/role";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import type { Permission } from "@/types";
 import { type DatabaseResource, PresetRoleType } from "@/types";

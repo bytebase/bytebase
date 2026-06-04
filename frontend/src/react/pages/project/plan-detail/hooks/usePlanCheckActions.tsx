@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix, pushNotification } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
@@ -27,9 +27,7 @@ export function usePlanCheckActions() {
   void projectsByName;
   const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const allowRunChecks = useMemo(() => {
     if (page.plan.hasRollout) return false;

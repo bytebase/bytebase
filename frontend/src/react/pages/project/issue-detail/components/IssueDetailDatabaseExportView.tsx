@@ -24,11 +24,10 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   getProjectNameAndDatabaseGroupName,
@@ -640,8 +639,9 @@ function IssueDetailDatabaseExportDatabaseTarget({
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentList = useAppStore((s) => s.environmentList);
-  const database = useVueState(
-    () => databasesByName[target] ?? unknownDatabase()
+  const database = useMemo(
+    () => databasesByName[target] ?? unknownDatabase(),
+    [databasesByName, target]
   );
   const environmentName =
     database.effectiveEnvironment ??

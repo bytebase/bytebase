@@ -24,18 +24,23 @@ vi.mock("@/plugins/i18n", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useAuthStore: () => mocks.authStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/utils/app-store-bridge", () => ({
+  appStoreUtilBridge: () => ({
+    isLoggedIn: () => mocks.authStore.isLoggedIn,
+    setUnauthenticatedOccurred: (v: boolean) => {
+      mocks.authStore.unauthenticatedOccurred = v;
+    },
+  }),
+}));
+
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: mocks.currentRoute,
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
-  WORKSPACE_ROUTE_403: "workspace.403",
 }));
 
 vi.mock("../refreshToken", () => ({
@@ -161,7 +166,7 @@ describe("authInterceptor", () => {
       code: Code.PermissionDenied,
     });
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.403",
+      name: "error.403",
       query: undefined,
     });
   });

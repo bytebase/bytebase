@@ -12,8 +12,8 @@ import {
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
-import { router } from "@/router";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { router } from "@/react/router";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function MCPPage() {

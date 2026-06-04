@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useAuthStore: vi.fn(),
   useAppStore: vi.fn(),
   useWorkspace: vi.fn(),
@@ -52,6 +51,7 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
       return mocks.workspaceList.value;
     },
     isSaaSMode: () => mocks.isSaaSMode.value,
+    isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
     switchWorkspace: mocks.switchWorkspace,
@@ -62,10 +62,6 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
   () => ({
     loadServerInfo: vi.fn().mockResolvedValue(undefined),
   });
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/react/hooks/useAppState", () => ({
   useWorkspace: mocks.useWorkspace,
@@ -116,16 +112,13 @@ vi.mock("@/react/components/ui/select", () => ({
   ),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     back: mocks.routerBack,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNIN_MODULE: "auth.signin",
 }));
 
 vi.mock("@/react/components/BytebaseLogo", () => ({

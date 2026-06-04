@@ -27,10 +27,6 @@ vi.mock("@/react/router", () => ({
   useCurrentRoute: () => mocks.route,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/components/FeatureBadge", () => ({
   FeatureBadge: () => <span data-testid="feature-badge" />,
 }));
@@ -75,6 +71,7 @@ vi.mock("@/react/stores/app", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 

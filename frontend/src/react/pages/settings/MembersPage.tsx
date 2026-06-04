@@ -69,7 +69,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import {
   getMemberBindings,
   groupProjectRoleBindings,
@@ -162,7 +162,7 @@ function MemberTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -174,8 +174,8 @@ function MemberTable({
   // Group expand state. Cache is keyed by group name and invalidated
   // when the group-binding *content* changes — not on `bindings`
   // reference change, because the parent rebuilds `memberBindings` via
-  // `useVueState(() => getMemberBindings(...))` and gets a new array
-  // identity on every render. We can't use the `prevBindingsRef.current
+  // `useMemo(() => getMemberBindings(...))` and gets a new array identity
+  // whenever its deps change. We can't use the `prevBindingsRef.current
   // !== bindings` shortcut that `GroupsPage` uses (its `groups` comes
   // from a reducer-backed `usePagedData` with stable identity).
   // Comparing a content-derived signature instead lets the cache only
@@ -620,7 +620,7 @@ function MemberTableByRole({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
@@ -1381,7 +1381,7 @@ function EditMemberRoleDrawer({
   const updateProjectIamPolicy = useAppStore(
     (state) => state.updateProjectIamPolicy
   );
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const roleList = useAppStore((state) => state.roleList);
   const settingsByName = useAppStore((s) => s.settingsByName);
   const hasEmailSetting = useMemo(
@@ -1400,7 +1400,8 @@ function EditMemberRoleDrawer({
 
   // Live project role bindings for the member (reactively updated when IAM policy changes).
   // Active bindings come first, expired ones last; original order is preserved within each group.
-  const liveProjectRoleBindings = useVueState(() => {
+  const projectPoliciesByName = useAppStore((s) => s.projectPoliciesByName);
+  const liveProjectRoleBindings = useMemo(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
     const policy = getProjectIamPolicy(projectName);
     const matching = policy.bindings.filter((b) =>
@@ -1411,7 +1412,14 @@ function EditMemberRoleDrawer({
       const bExpired = isBindingPolicyExpired(b) ? 1 : 0;
       return aExpired - bExpired;
     });
-  });
+    // projectPoliciesByName backs getProjectIamPolicy — recompute on its change.
+  }, [
+    isProjectEditMode,
+    member,
+    projectName,
+    getProjectIamPolicy,
+    projectPoliciesByName,
+  ]);
 
   const [selectedBindings, setSelectedBindings] = useState<string[]>(
     initialBindings ?? []
@@ -2062,11 +2070,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
     : undefined;
-  const project = useVueState(() =>
-    projectName
-      ? useAppStore.getState().getProjectByName(projectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(projectName ?? "");
+  const project = projectName ? projectFromName : undefined;
 
   const [memberSearchText, setMemberSearchText] = useState("");
   const [memberViewTab, setMemberViewTab] = useState<"MEMBERS" | "ROLES">(
@@ -2079,8 +2084,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   >();
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
 
-  const hasRequestRoleFeature = useVueState(() =>
-    useAppStore.getState().hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+  const hasRequestRoleFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
 
   // IAM policy loads are owned by the parent shells: ProjectRouteShell
@@ -2089,37 +2094,42 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // (+ referenced groups) on /settings/members. This page just reads them.
   // Subscribe directly to the Zustand projectPoliciesByName slice so the
   // member table re-renders when loadProjectIamPolicy / updateProjectIamPolicy
-  // writes to the app store. Wrapping `getProjectIamPolicy()` in
-  // `useVueState` would only re-render on Vue reactivity changes and miss
-  // these Zustand writes.
+  // writes to the app store.
   const projectIamPolicy = useAppStore((state) =>
     projectName ? state.projectPoliciesByName[projectName] : undefined
   );
-
-  // `useVueState` ensures we re-render whenever any reactive dep
-  // `getMemberBindings(...)` reads from changes — IAM policies, but
-  // also the group / user / service-account / workload-identity stores
-  // it pulls metadata from. The result array reference changes on every
-  // render; the table component handles that with content-based change
-  // detection (a group-bindings signature) so its expand-cache only
-  // resets on real membership changes.
-  // Keep this in useVueState so it re-runs when the Pinia user/group/
-  // service-account/workload-identity stores that getMemberBindings reads
-  // for member metadata change. The workspace IAM policy itself now comes
-  // from the app store: subscribing to `workspacePolicy` above re-renders
-  // this component on policy changes, and useVueState reads the latest getter
-  // each render, so both reactivity sources are covered.
-  const memberBindings = useVueState(() =>
-    getMemberBindings({
-      policies:
-        projectName && projectIamPolicy
-          ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
-          : workspacePolicy
-            ? [{ level: "WORKSPACE" as const, policy: workspacePolicy }]
-            : [],
-      searchText: memberSearchText,
-      ignoreRoles: EMPTY_ROLE_SET,
-    })
+  // getMemberBindings reads member metadata from the group / user /
+  // service-account / workload-identity app-store maps via getState(); subscribe
+  // to them (plus the IAM policies) so the list refreshes when any of those
+  // caches hydrate.
+  const groupsByName = useAppStore((s) => s.groupsByName);
+  const usersByName = useAppStore((s) => s.usersByName);
+  const serviceAccountsByName = useAppStore((s) => s.serviceAccountsByName);
+  const workloadIdentitiesByName = useAppStore(
+    (s) => s.workloadIdentitiesByName
+  );
+  const memberBindings = useMemo(
+    () =>
+      getMemberBindings({
+        policies:
+          projectName && projectIamPolicy
+            ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
+            : workspacePolicy
+              ? [{ level: "WORKSPACE" as const, policy: workspacePolicy }]
+              : [],
+        searchText: memberSearchText,
+        ignoreRoles: EMPTY_ROLE_SET,
+      }),
+    [
+      projectName,
+      projectIamPolicy,
+      workspacePolicy,
+      memberSearchText,
+      groupsByName,
+      usersByName,
+      serviceAccountsByName,
+      workloadIdentitiesByName,
+    ]
   );
 
   const canSetIamPolicy = project

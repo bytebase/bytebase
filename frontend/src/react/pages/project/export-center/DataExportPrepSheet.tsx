@@ -20,13 +20,13 @@ import {
 } from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { DEFAULT_MAX_RESULT_SIZE_IN_MB, pushNotification } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
@@ -91,9 +91,7 @@ export function DataExportPrepSheet({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
 
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
 
   const [step, setStep] = useState<Step>(1);
@@ -559,11 +557,12 @@ function TargetBadge({ target }: { target: string }) {
   const isGroupTarget = isValidDatabaseGroupName(target);
   const databasesByName = useAppStore((s) => s.databasesByName);
 
-  // Always call useVueState unconditionally (rules of hooks)
-  const db = useVueState(() =>
-    isDatabaseTarget
-      ? (databasesByName[target] ?? unknownDatabase())
-      : undefined
+  const db = useMemo(
+    () =>
+      isDatabaseTarget
+        ? (databasesByName[target] ?? unknownDatabase())
+        : undefined,
+    [isDatabaseTarget, databasesByName, target]
   );
 
   if (isDatabaseTarget && db) {

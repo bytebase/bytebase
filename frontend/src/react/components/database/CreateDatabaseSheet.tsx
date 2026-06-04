@@ -18,11 +18,11 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import {
   defaultCharsetOfEngineV1,
@@ -96,17 +96,14 @@ export function CreateDatabaseSheet({
 
   const effectiveProjectName = fixedProjectName || projectName;
 
-  // Intentional split: enforceIssueTitle is read reactively via useVueState
-  // because it's a governance gate that MUST reflect the live project state
+  // Intentional split: enforceIssueTitle is read reactively (via the app-store
+  // project cache) because it's a governance gate that MUST reflect live state
   // (workspace-picker swaps change projects mid-form). `issueLabels` /
   // `forceIssueLabels` stay on the pre-existing `selectedProject` snapshot
   // pattern below — they have a known staleness seam that is out of scope
   // for BYT-9310. Do not collapse these back together without a separate spec.
-  const projectReactive = useVueState(() =>
-    effectiveProjectName
-      ? useAppStore.getState().getProjectByName(effectiveProjectName)
-      : undefined
-  );
+  const projectFromName = useProjectByName(effectiveProjectName ?? "");
+  const projectReactive = effectiveProjectName ? projectFromName : undefined;
   void projectsByName;
 
   // Note on hydration: projectStore.getProjectByName returns an

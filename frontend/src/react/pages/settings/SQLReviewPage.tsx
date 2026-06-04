@@ -17,13 +17,12 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceRoutes";
+} from "@/react/router/handles";
+import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { pushNotification } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
@@ -250,7 +249,7 @@ export function SQLReviewPage() {
     useSQLReviewStore.getState().fetchReviewPolicyList();
   }, []);
 
-  const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
+  const policyList = sqlReviewStore.reviewPolicyList;
 
   const filteredList = useMemo(() => {
     if (!searchText) return policyList;

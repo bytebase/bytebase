@@ -4,11 +4,9 @@
       "content": "Lo redirigiremos a la página de inicio.",
       "title": "Has iniciado sesión como otro usuario"
     },
-    "password-forgot": "Contraseña olvidada",
     "password-reset": {
       "title": "Restablecer su contraseña"
     },
-    "profile-setup": "Configurar perfil",
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
   },
@@ -72,12 +70,9 @@
     }
   },
   "error-page": {
-    "forbidden": "Prohibido",
     "not-found": "No encontrado"
   },
-  "export-center": {
-    "self": "centro de exportacion"
-  },
+  "export-center": {},
   "gitops": {
     "self": "GitOps"
   },
@@ -93,12 +88,8 @@
       "export-data": "Exportar datos"
     }
   },
-  "multi-factor": {
-    "self": "Autenticación de múltiples factores"
-  },
-  "oauth": {
-    "unknown-event": "Tipo de evento inesperado, OAuth falló."
-  },
+  "multi-factor": {},
+  "oauth": {},
   "oauth2": {
     "consent": {
       "title": "Solicitud de autorización"
@@ -137,14 +128,10 @@
           "label": "Cuando las tareas del pipeline fallan",
           "title": "Pipeline fallido"
         }
-      },
-      "create-webhook": "Crear webhook"
+      }
     }
   },
-  "refresh-remind": {
-    "description": "Se ha detectado una versión obsoleta. Por favor, actualice la página.",
-    "title": "Versión obsoleta detectada"
-  },
+  "refresh-remind": {},
   "release": {
     "releases": "Lanzamientos"
   },
@@ -256,7 +243,6 @@
       "integration": "Integración",
       "mcp": "MCP",
       "members": "Miembros",
-      "profile": "Perfil",
       "security-and-policy": "Seguridad y Política",
       "sso": "SSO",
       "subscription": "Suscripción"
@@ -281,9 +267,7 @@
     "self": "Editor de SQL"
   },
   "sql-review": {
-    "create": {
-      "breadcrumb": "Crear política de revisión SQL"
-    },
+    "create": {},
     "level": {
       "error": "Error",
       "name": "Nivel",

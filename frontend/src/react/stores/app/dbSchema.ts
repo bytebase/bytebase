@@ -34,8 +34,8 @@ const cacheKey = (metadataName: string, filter: string, limit: number) =>
 // same reference keeps `useAppStore((s) => s.getXxxMetadata(...))`
 // selectors stable across renders so React's `Object.is` check doesn't
 // fire on every unrelated store update. The legacy Pinia store created a
-// fresh proto each call, but Pinia consumers wrapped the call in
-// `usePiniaBridge` (Vue `watch`) which papered over the instability.
+// fresh proto each call, but its Vue-reactivity bridge papered over the
+// resulting instability.
 const EMPTY_TABLE_METADATA: TableMetadata = createProto(
   TableMetadataSchema,
   {}

@@ -15,7 +15,7 @@ import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -522,9 +522,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const stepApprover = issue.approvers[stepIndex];
 
@@ -566,9 +564,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
 
   // Subscribe directly to the Zustand project IAM cache so groupNames /
   // candidateEmails recompute the moment loadProjectIamPolicy() resolves.
-  // Wrapping the Zustand getter in useVueState would only react to Vue
-  // dependencies and miss the Zustand write, leaving the approval step
-  // empty on a cold issue page.
   const projectIamPolicy = useAppStore(
     (state) => state.projectPoliciesByName[projectName]
   );

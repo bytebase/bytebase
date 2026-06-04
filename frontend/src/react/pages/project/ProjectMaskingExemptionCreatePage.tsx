@@ -20,13 +20,13 @@ import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
 import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
 import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { hasFeature, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -64,9 +64,7 @@ export function ProjectMaskingExemptionCreatePage({
   const projectName = `${projectNamePrefix}${projectId}`;
   // subscribe to re-render on project cache change
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   // Ensure classification config is loaded
   useEffect(() => {
@@ -75,8 +73,8 @@ export function ProjectMaskingExemptionCreatePage({
       .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
   }, []);
 
-  const hasRequiredFeature = useVueState(() =>
-    hasFeature(PlanFeature.FEATURE_DATA_MASKING)
+  const hasRequiredFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   // Form state

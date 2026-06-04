@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
@@ -36,13 +37,9 @@ vi.mock("@/react/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { push: mocks.routerPush },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
-  INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
-  PROJECT_V1_ROUTE_DASHBOARD: "workspace.project",
 }));
 
 vi.mock("@/store", () => ({

@@ -6,7 +6,7 @@ import {
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
 import { SigninPage } from "@/react/pages/auth/SigninPage";
-import { useAuthStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 
 export function SessionExpiredSurface({
   currentPath,
@@ -20,7 +20,7 @@ export function SessionExpiredSurface({
       <button
         type="button"
         className="text-sm text-control-light hover:underline"
-        onClick={() => useAuthStore().logout()}
+        onClick={() => useAppStore.getState().logout()}
       >
         {t("common.logout")}
       </button>

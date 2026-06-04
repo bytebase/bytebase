@@ -15,6 +15,7 @@ import {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) =>
       options && "count" in options ? `${key}:${options.count}` : key,

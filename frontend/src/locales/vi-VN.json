@@ -4,11 +4,9 @@
       "content": "Chúng tôi sẽ chuyển hướng bạn đến trang chủ.",
       "title": "Bạn đã đăng nhập với tư cách người dùng khác"
     },
-    "password-forgot": "Quên mật khẩu",
     "password-reset": {
       "title": "Đặt lại mật khẩu của bạn"
     },
-    "profile-setup": "Thiết lập hồ sơ",
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
   },
@@ -72,12 +70,9 @@
     }
   },
   "error-page": {
-    "forbidden": "Bị cấm",
     "not-found": "Không tìm thấy"
   },
-  "export-center": {
-    "self": "Trung tâm xuất"
-  },
+  "export-center": {},
   "gitops": {
     "self": "GitOps"
   },
@@ -93,12 +88,8 @@
       "export-data": "Xuất dữ liệu"
     }
   },
-  "multi-factor": {
-    "self": "Xác thực đa yếu tố"
-  },
-  "oauth": {
-    "unknown-event": "Loại sự kiện không mong đợi, OAuth không thành công."
-  },
+  "multi-factor": {},
+  "oauth": {},
   "oauth2": {
     "consent": {
       "title": "Yêu cầu ủy quyền"
@@ -137,14 +128,10 @@
           "label": "Khi các tác vụ pipeline thất bại",
           "title": "Pipeline thất bại"
         }
-      },
-      "create-webhook": "Tạo webhook"
+      }
     }
   },
-  "refresh-remind": {
-    "description": "Đã phát hiện phiên bản lỗi thời. Vui lòng làm mới trang.",
-    "title": "Đã phát hiện phiên bản lỗi thời"
-  },
+  "refresh-remind": {},
   "release": {
     "releases": "Bản phát hành"
   },
@@ -256,7 +243,6 @@
       "integration": "Tích hợp",
       "mcp": "MCP",
       "members": "Thành viên",
-      "profile": "Hồ sơ",
       "security-and-policy": "Bảo mật & Chính sách",
       "sso": "SSO",
       "subscription": "Gói đăng ký"
@@ -281,9 +267,7 @@
     "self": "Trình soạn thảo SQL"
   },
   "sql-review": {
-    "create": {
-      "breadcrumb": "Tạo chính sách đánh giá SQL"
-    },
+    "create": {},
     "level": {
       "error": "Lỗi",
       "name": "Cấp độ",

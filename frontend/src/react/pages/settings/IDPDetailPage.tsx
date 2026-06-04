@@ -22,10 +22,9 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
+import { router, useCurrentRoute } from "@/react/router";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import {
   getIdentityProviderResourceId,
@@ -1116,10 +1115,8 @@ export function IDPDetailPage() {
     (state) => state.deleteIdentityProvider
   );
 
-  // Reactively read idpId from Vue Router's current route params
-  const idpId = useVueState(
-    () => router.currentRoute.value.params.idpId as string | undefined
-  );
+  // Reactively read idpId from the current route params
+  const idpId = useCurrentRoute().params.idpId as string | undefined;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);

@@ -96,8 +96,6 @@ describe("DashboardFrameShell", () => {
 
     expect(onReady).toHaveBeenCalled();
     expect(mocks.loadCurrentUser).toHaveBeenCalled();
-    expect(mocks.fetchEnvironments).toHaveBeenCalled();
-    expect(mocks.getOrFetchSettingByName).toHaveBeenCalled();
     const targets = onReady.mock.lastCall?.[0];
     expect(targets.banner).toBeInstanceOf(HTMLDivElement);
     expect(targets.body).toBeInstanceOf(HTMLDivElement);

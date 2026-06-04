@@ -25,20 +25,17 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
-import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import {
-  WORKSPACE_ROUTE_404,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/router/dashboard/workspaceRoutes";
+import { router } from "@/react/router";
 import {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-} from "@/router/dashboard/workspaceSetting";
-import { hasFeature, pushNotification, useAuthStore } from "@/store";
+  WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
+import { hasFeature, pushNotification } from "@/store";
 import {
   AccountType,
   ALL_USERS_USER_EMAIL,
@@ -62,7 +59,9 @@ interface ProfilePageProps {
 export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const { t } = useTranslation();
 
-  const authStore = useAuthStore();
+  const updateCurrentUserNameForEmailChange = useAppStore(
+    (state) => state.updateCurrentUserNameForEmailChange
+  );
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
@@ -93,15 +92,15 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     (s) => s.getWorkspaceProfile().passwordRestriction
   );
 
-  const isSaaSMode = useVueState(() => useAppStore.getState().isSaaSMode());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
-  const has2FAFeature = useVueState(() =>
-    hasFeature(PlanFeature.FEATURE_TWO_FA)
+  const has2FAFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_TWO_FA)
   );
 
   const requireMfa = useAppStore((s) => s.getWorkspaceProfile().requireMfa);
 
-  const tempRecoveryCodes = useVueState(() => currentUser.tempRecoveryCodes);
+  const tempRecoveryCodes = currentUser.tempRecoveryCodes;
 
   // --- Derived values ---
   const isSelf = currentUser.name === user.name;
@@ -244,7 +243,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         const updatedUser = await updateEmail(oldEmail, editingUser.email);
         migrateUserStorage(oldEmail, editingUser.email);
         if (isSelf) {
-          authStore.updateCurrentUserNameForEmailChange(updatedUser.name);
+          updateCurrentUserNameForEmailChange(updatedUser.name);
           setCurrentUser(updatedUser);
         }
       }

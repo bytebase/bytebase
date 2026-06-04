@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";

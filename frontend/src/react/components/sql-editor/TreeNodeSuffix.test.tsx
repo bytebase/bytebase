@@ -18,7 +18,6 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   getSQLEditorTabsState: vi.fn(),
   getWorksheetByName: vi.fn<(name: string) => unknown>(),
   getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
@@ -30,10 +29,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/stores/app", () => {
@@ -132,7 +127,6 @@ const renderIntoContainer = (element: React.ReactElement) => {
 let TreeNodeSuffix: typeof import("./TreeNodeSuffix").TreeNodeSuffix;
 
 beforeEach(async () => {
-  mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
   mocks.getWorksheetByName.mockImplementation((name: string) => ({
     name,
     starred: false,

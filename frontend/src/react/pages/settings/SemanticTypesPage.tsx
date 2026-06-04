@@ -29,7 +29,6 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getSemanticTemplateList } from "@/types";
@@ -98,8 +97,8 @@ export function SemanticTypesPage() {
   const { t } = useTranslation();
 
   const hasPermission = hasWorkspacePermissionV2("bb.policies.update");
-  const hasSensitiveDataFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const isReadonly = !hasPermission || !hasSensitiveDataFeature;
 

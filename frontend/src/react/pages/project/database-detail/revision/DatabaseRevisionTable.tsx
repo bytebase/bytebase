@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { humanizeDate } from "@/utils";

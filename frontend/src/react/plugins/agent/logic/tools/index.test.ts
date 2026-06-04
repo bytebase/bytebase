@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 
 vi.mock("../skills", () => ({
   getSkill: vi.fn(async () => "skill"),
@@ -33,7 +33,9 @@ describe("agent tools navigate", () => {
     );
     vi.mocked(createNavigateTool).mockReturnValue(navigateTool);
     const onNavigate = vi.fn();
-    const executeTool = createToolExecutor({} as Router, { onNavigate });
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      onNavigate,
+    });
 
     const result = await executeTool(
       "navigate",
@@ -129,7 +131,7 @@ describe("agent tools ask_user", () => {
   });
 
   test("parses choose prompts with sanitized options", async () => {
-    const executeTool = createToolExecutor({} as Router);
+    const executeTool = createToolExecutor({} as AppRouterInstance);
 
     const result = await executeTool(
       "ask_user",
@@ -175,7 +177,7 @@ describe("agent tools ask_user", () => {
   });
 
   test("falls back to input when choose options are missing", async () => {
-    const executeTool = createToolExecutor({} as Router);
+    const executeTool = createToolExecutor({} as AppRouterInstance);
 
     const result = await executeTool(
       "ask_user",
@@ -263,10 +265,10 @@ describe("agent tools concurrency guard", () => {
       );
     });
 
-    const firstExecutor = createToolExecutor({} as Router, {
+    const firstExecutor = createToolExecutor({} as AppRouterInstance, {
       chatId: "thread-1",
     });
-    const secondExecutor = createToolExecutor({} as Router, {
+    const secondExecutor = createToolExecutor({} as AppRouterInstance, {
       chatId: "thread-2",
     });
 

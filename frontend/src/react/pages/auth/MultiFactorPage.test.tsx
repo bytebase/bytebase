@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   login: vi.fn<(payload: unknown) => Promise<void>>(async () => {}),
   useAuthStore: vi.fn(),
   currentRoute: {
@@ -18,18 +17,31 @@ const mocks = vi.hoisted(() => ({
 }));
 mocks.useAuthStore.mockImplementation(() => ({ login: mocks.login }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => ({}), {
+    getState: () => ({ login: mocks.login, workspaceResourceName: () => "" }),
+  }),
+}));
+
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: mocks.currentRoute,
   },
+  useCurrentRoute: () => ({
+    name: "",
+    fullPath: "/",
+    hash: "",
+    params: {},
+    query: mocks.currentRoute.value.query,
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 vi.mock("@/utils", () => {
@@ -46,6 +58,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {

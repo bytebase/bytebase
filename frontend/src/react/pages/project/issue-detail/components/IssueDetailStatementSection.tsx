@@ -8,7 +8,7 @@ import { ReleaseInfoCard } from "@/react/components/release/ReleaseInfoCard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useCurrentUser, useReleaseByName } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix, pushNotification } from "@/store";
@@ -59,11 +59,7 @@ export function IssueDetailStatementSection({
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
   const currentUser = useCurrentUser();
-  const project = useVueState(() =>
-    useAppStore
-      .getState()
-      .getProjectByName(`${projectNamePrefix}${page.projectId}`)
-  );
+  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const releaseName =
     spec.config?.case === "changeDatabaseConfig"
       ? spec.config.value.release

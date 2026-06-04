@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
     resolveCELExpr: vi.fn(() => convertedExpr),
     stringifyConditionExpression: vi.fn(() => "serialized-selection"),
     featureToRef: vi.fn(() => ({ value: true })),
-    useVueState: vi.fn((getter: () => unknown) => getter()),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
   };
@@ -187,10 +186,6 @@ vi.mock("@/react/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
   pushNotification: vi.fn(),
@@ -199,13 +194,21 @@ vi.mock("@/store", () => ({
 vi.mock("@/react/stores/app", () => ({
   useAppStore: Object.assign(
     (
-      selector: (state: { settingsByName: Record<string, unknown> }) => unknown
-    ) => selector({ settingsByName: {} }),
+      selector: (state: {
+        settingsByName: Record<string, unknown>;
+        hasInstanceFeature: () => boolean;
+      }) => unknown
+    ) =>
+      selector({
+        settingsByName: {},
+        hasInstanceFeature: () => mocks.featureToRef().value,
+      }),
     {
       getState: () => ({
         getOrFetchPolicyByParentAndType: mocks.getOrFetchPolicyByParentAndType,
         upsertPolicy: mocks.upsertPolicy,
         classification: () => [],
+        hasInstanceFeature: () => mocks.featureToRef().value,
       }),
     }
   ),

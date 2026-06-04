@@ -1,36 +1,19 @@
-import { router } from "@/router";
-import {
-  AUTH_MFA_MODULE,
-  AUTH_OAUTH_CALLBACK_MODULE,
-  AUTH_OIDC_CALLBACK_MODULE,
-  AUTH_PASSWORD_FORGOT_MODULE,
-  AUTH_PASSWORD_RESET_MODULE,
-  AUTH_SIGNIN_ADMIN_MODULE,
-  AUTH_SIGNIN_MODULE,
-  AUTH_SIGNUP_MODULE,
-} from "@/router/auth";
-import { useActuatorV1Store } from "@/store";
+// Auth/landing route-name literals. Inlined (no imports) on purpose: this
+// helper lives in the widely-imported `@/utils` barrel, so importing the route
+// constants from `@/react/router/handles` here would add that module to the
+// barrel's load graph and tip a fragile load-order cycle (app store ↔ @/utils
+// ↔ @/types). The values mirror `@/react/router/handles`.
+const AUTH_RELATED_ROUTES = [
+  "auth.signin",
+  "auth.signin.admin",
+  "auth.signup",
+  "auth.mfa",
+  "auth.password.reset",
+  "auth.password.forgot",
+  "auth.oauth.callback",
+  "auth.oidc.callback",
+];
 
 export const isAuthRelatedRoute = (routeName: string) => {
-  return [
-    AUTH_SIGNIN_MODULE,
-    AUTH_SIGNIN_ADMIN_MODULE,
-    AUTH_SIGNUP_MODULE,
-    AUTH_MFA_MODULE,
-    AUTH_PASSWORD_RESET_MODULE,
-    AUTH_PASSWORD_FORGOT_MODULE,
-    AUTH_OAUTH_CALLBACK_MODULE,
-    AUTH_OIDC_CALLBACK_MODULE,
-  ].includes(routeName);
-};
-
-export const resolveWorkspaceName = (): string | undefined => {
-  const actuatorStore = useActuatorV1Store();
-  const route = router.currentRoute.value;
-
-  const workspaceID = route.query["workspace"] as string | undefined;
-  const workspaceNameFromQuery = workspaceID
-    ? `workspaces/${workspaceID}`
-    : undefined;
-  return actuatorStore.workspaceResourceName || workspaceNameFromQuery;
+  return AUTH_RELATED_ROUTES.includes(routeName);
 };
