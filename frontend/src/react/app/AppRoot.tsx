@@ -26,6 +26,17 @@ function rootLoader({ request }: LoaderFunctionArgs) {
 // Attach the guard to the root (RootLayout) route.
 routes[0].loader = rootLoader;
 
+// react-router runs `rootLoader` during initial hydration. With partial
+// hydration (the v7 default) and no hydrate fallback, react-router first
+// renders the matched route tree — for "/" that is the element-less
+// `WORKSPACE_ROOT_MODULE` index route — for one tick before the loader's
+// `redirect()` resolves, logging "No HydrateFallback element provided" and
+// "Matched leaf route at location '/' does not have an element". The loader
+// resolves synchronously (it reads the app store and returns a redirect), so a
+// fallback that renders nothing is shown for ~0 frames; defining one satisfies
+// react-router's partial-hydration contract and silences both warnings.
+routes[0].HydrateFallback = () => null;
+
 export const appRouter = createBrowserRouter(routes);
 
 // Let non-component code (the auth slice) navigate through this instance.

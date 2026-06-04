@@ -5,6 +5,7 @@ import { DashboardBodyShell } from "@/react/components/DashboardBodyShell";
 import { DashboardSidebar } from "@/react/components/DashboardSidebar";
 import { ProjectSidebar } from "@/react/components/ProjectSidebar";
 import { Quickstart } from "@/react/components/Quickstart";
+import { RoutePermissionGuardShell } from "@/react/components/RoutePermissionGuardShell";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -15,7 +16,8 @@ import {
 // Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
 // `DashboardBodyShell` (header + sidebar slot + body slot) and portals the
 // React sidebar, routed body (`<Outlet/>` — the Vue named views collapse to
-// one outlet here), and quickstart into the shell's reported targets. The
+// one outlet here, gated by `RoutePermissionGuardShell` on non-project
+// routes), and quickstart into the shell's reported targets. The
 // shell owns the responsive sidebar / mobile drawer; this layout supplies the
 // React `DashboardSidebar` tree directly instead of the Vue ReactSidebarMount.
 // Also ports the agent keyboard shortcut from the Vue layout's lifecycle.
@@ -51,6 +53,17 @@ export function BodyLayout() {
     mainContainer: null,
   });
 
+  // Non-project routes render through `RoutePermissionGuardShell`: it mounts
+  // into the shell's content target and reports a non-null target only once the
+  // route's `requiredPermissions` are satisfied, so a restricted page never
+  // mounts (it shows the permission-denied / request-role fallback instead).
+  // This mirrors the Vue `BodyLayout.vue` content teleport. Project routes
+  // (`workspace.project.*`) bypass this gate — their gating belongs to
+  // `ProjectRouteShell`, which loads the project resource for project-scoped
+  // permission checks.
+  const [permissionTarget, setPermissionTarget] =
+    useState<HTMLDivElement | null>(null);
+
   // Agent toggle shortcut (Ctrl/Cmd+Shift+A), ported from the Vue layout.
   useEffect(() => {
     const handler = async (e: KeyboardEvent) => {
@@ -84,7 +97,25 @@ export function BodyLayout() {
           )
         : null}
 
-      {targets.content ? createPortal(<Outlet />, targets.content) : null}
+      {isProjectRoute
+        ? targets.content
+          ? createPortal(<Outlet />, targets.content)
+          : null
+        : targets.content
+          ? createPortal(
+              <RoutePermissionGuardShell
+                routeKey={routeKey}
+                className="m-4"
+                targetClassName="h-full min-h-0"
+                onReady={setPermissionTarget}
+              />,
+              targets.content
+            )
+          : null}
+
+      {!isProjectRoute && permissionTarget
+        ? createPortal(<Outlet />, permissionTarget)
+        : null}
 
       {targets.quickstart
         ? createPortal(<Quickstart />, targets.quickstart)

@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject, redirect } from "react-router-dom";
 import { BodyLayout } from "@/react/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/react/app/layouts/DashboardLayout";
+import { rootGuard } from "@/react/router/guard";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -75,6 +76,7 @@ import {
 } from "@/react/router/handles";
 import { RouteShellOutletPlaceholder } from "@/react/router/layoutPlaceholders";
 import { lazyPage } from "@/react/router/lazyPage";
+import type { Permission } from "@/types";
 
 // Translated from `@/router/dashboard/**`. Vue named views (`content`,
 // `leftSidebar`, `body`) collapse to the single `<Outlet/>` of each layout
@@ -90,11 +92,22 @@ import { lazyPage } from "@/react/router/lazyPage";
 const workspaceLevelRoutes: RouteObject[] = [
   {
     index: true,
-    // The bare workspace root ("/") has no page; `rootGuard` always redirects
-    // it dynamically (change-mode → SQL Editor, else last visit / landing), so
-    // it intentionally renders nothing. `guardRedirect` records that for the
-    // route-reachability test.
+    // The bare workspace root ("/") has no page; it redirects dynamically
+    // (change-mode → SQL Editor, else last visit / landing). The global guard
+    // on the root route only re-runs on initial document load, NOT on
+    // client-side navigations (the root route is already matched, so its loader
+    // is not revalidated) — so after an in-app `navigate("/")` (e.g. post-login)
+    // "/" would render this element-less index and show a blank page until a
+    // manual refresh. This index-route loader runs `rootGuard` whenever "/" is
+    // freshly matched (client nav AND initial load, since the index route is
+    // newly matched each time), so the redirect always fires. `guardRedirect`
+    // records the no-element redirect for the route-reachability test.
     handle: { name: WORKSPACE_ROOT_MODULE, guardRedirect: true },
+    loader: ({ request }) =>
+      rootGuard({
+        name: WORKSPACE_ROOT_MODULE,
+        url: new URL(request.url),
+      }),
   },
   {
     path: "landing",
@@ -114,7 +127,10 @@ const workspaceLevelRoutes: RouteObject[] = [
   },
   {
     path: "instances",
-    handle: { name: INSTANCE_ROUTE_DASHBOARD },
+    handle: {
+      name: INSTANCE_ROUTE_DASHBOARD,
+      requiredPermissionList: (): Permission[] => ["bb.instances.list"],
+    },
     lazy: lazyPage(
       () => import("@/react/pages/settings/InstancesPage"),
       (m) => m.InstancesPage
@@ -122,7 +138,10 @@ const workspaceLevelRoutes: RouteObject[] = [
   },
   {
     path: "databases",
-    handle: { name: DATABASE_ROUTE_DASHBOARD },
+    handle: {
+      name: DATABASE_ROUTE_DASHBOARD,
+      requiredPermissionList: (): Permission[] => ["bb.databases.list"],
+    },
     lazy: lazyPage(
       () => import("@/react/pages/settings/DatabasesPage"),
       (m) => m.DatabasesPage
@@ -130,7 +149,12 @@ const workspaceLevelRoutes: RouteObject[] = [
   },
   {
     path: "environments",
-    handle: { name: ENVIRONMENT_V1_ROUTE_DASHBOARD },
+    handle: {
+      name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
+      requiredPermissionList: (): Permission[] => [
+        "bb.settings.getEnvironment",
+      ],
+    },
     lazy: lazyPage(
       () => import("@/react/pages/settings/EnvironmentsPage"),
       (m) => m.EnvironmentsPage
@@ -167,7 +191,13 @@ const workspaceLevelRoutes: RouteObject[] = [
     children: [
       {
         index: true,
-        handle: { name: WORKSPACE_ROUTE_SQL_REVIEW },
+        handle: {
+          name: WORKSPACE_ROUTE_SQL_REVIEW,
+          requiredPermissionList: (): Permission[] => [
+            "bb.reviewConfigs.list",
+            "bb.policies.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/SQLReviewPage"),
           (m) => m.SQLReviewPage
@@ -175,7 +205,12 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "new",
-        handle: { name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE },
+        handle: {
+          name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+          requiredPermissionList: (): Permission[] => [
+            "bb.reviewConfigs.create",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/SQLReviewCreatePage"),
           (m) => m.SQLReviewCreatePage
@@ -183,7 +218,13 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: ":sqlReviewPolicySlug",
-        handle: { name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL },
+        handle: {
+          name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.reviewConfigs.get",
+            "bb.policies.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/SQLReviewDetailPage"),
           (m) => m.SQLReviewDetailPage
@@ -191,9 +232,14 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
     ],
   },
-  // /idps — SettingRouteShell layout.
+  // /idps — SettingRouteShell layout. The parent carries the route permission
+  // so both children (list + detail) inherit it via the matched-chain
+  // aggregation in `assembleRoute`.
   {
     path: "idps",
+    handle: {
+      requiredPermissionList: (): Permission[] => ["bb.identityProviders.get"],
+    },
     element: <RouteShellOutletPlaceholder />,
     children: [
       {
@@ -229,7 +275,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "custom-approval",
-        handle: { name: WORKSPACE_ROUTE_CUSTOM_APPROVAL },
+        handle: {
+          name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/CustomApprovalPage"),
           (m) => m.CustomApprovalPage
@@ -237,7 +286,12 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "global-masking",
-        handle: { name: WORKSPACE_ROUTE_GLOBAL_MASKING },
+        handle: {
+          name: WORKSPACE_ROUTE_GLOBAL_MASKING,
+          requiredPermissionList: (): Permission[] => [
+            "bb.policies.getMaskingRulePolicy",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/GlobalMaskingPage"),
           (m) => m.GlobalMaskingPage
@@ -245,7 +299,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "semantic-types",
-        handle: { name: WORKSPACE_ROUTE_SEMANTIC_TYPES },
+        handle: {
+          name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/SemanticTypesPage"),
           (m) => m.SemanticTypesPage
@@ -253,7 +310,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "data-classification",
-        handle: { name: WORKSPACE_ROUTE_DATA_CLASSIFICATION },
+        handle: {
+          name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/DataClassificationPage"),
           (m) => m.DataClassificationPage
@@ -261,7 +321,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "audit-log",
-        handle: { name: WORKSPACE_ROUTE_AUDIT_LOG },
+        handle: {
+          name: WORKSPACE_ROUTE_AUDIT_LOG,
+          requiredPermissionList: (): Permission[] => ["bb.auditLogs.search"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/AuditLogPage"),
           (m) => m.AuditLogPage
@@ -269,7 +332,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "users",
-        handle: { name: WORKSPACE_ROUTE_USERS },
+        handle: {
+          name: WORKSPACE_ROUTE_USERS,
+          requiredPermissionList: (): Permission[] => ["bb.users.list"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/UsersPage"),
           (m) => m.UsersPage
@@ -277,7 +343,12 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "service-accounts",
-        handle: { name: WORKSPACE_ROUTE_SERVICE_ACCOUNTS },
+        handle: {
+          name: WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.serviceAccounts.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/ServiceAccountsPage"),
           (m) => m.ServiceAccountsPage
@@ -285,7 +356,12 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "workload-identities",
-        handle: { name: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES },
+        handle: {
+          name: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
+          requiredPermissionList: (): Permission[] => [
+            "bb.workloadIdentities.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/WorkloadIdentitiesPage"),
           (m) => m.WorkloadIdentitiesPage
@@ -293,7 +369,12 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "members",
-        handle: { name: WORKSPACE_ROUTE_MEMBERS },
+        handle: {
+          name: WORKSPACE_ROUTE_MEMBERS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.workspaces.getIamPolicy",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/MembersPage"),
           (m) => m.MembersPage
@@ -301,7 +382,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "groups",
-        handle: { name: WORKSPACE_ROUTE_GROUPS },
+        handle: {
+          name: WORKSPACE_ROUTE_GROUPS,
+          requiredPermissionList: (): Permission[] => ["bb.groups.list"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/GroupsPage"),
           (m) => m.GroupsPage
@@ -309,7 +393,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "roles",
-        handle: { name: WORKSPACE_ROUTE_ROLES },
+        handle: {
+          name: WORKSPACE_ROUTE_ROLES,
+          requiredPermissionList: (): Permission[] => ["bb.roles.list"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/RolesPage"),
           (m) => m.RolesPage
@@ -324,7 +411,10 @@ const workspaceLevelRoutes: RouteObject[] = [
     children: [
       {
         path: "im",
-        handle: { name: WORKSPACE_ROUTE_IM },
+        handle: {
+          name: WORKSPACE_ROUTE_IM,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/IMPage"),
           (m) => m.IMPage
@@ -332,7 +422,10 @@ const workspaceLevelRoutes: RouteObject[] = [
       },
       {
         path: "mcp",
-        handle: { name: WORKSPACE_ROUTE_MCP },
+        handle: {
+          name: WORKSPACE_ROUTE_MCP,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/MCPPage"),
           (m) => m.MCPPage
@@ -367,7 +460,13 @@ const workspaceSettingRoutes: RouteObject[] = [
       },
       {
         path: "general",
-        handle: { name: SETTING_ROUTE_WORKSPACE_GENERAL },
+        handle: {
+          name: SETTING_ROUTE_WORKSPACE_GENERAL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.settings.getWorkspaceProfile",
+            "bb.policies.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/GeneralPage"),
           (m) => m.GeneralPage
@@ -375,7 +474,10 @@ const workspaceSettingRoutes: RouteObject[] = [
       },
       {
         path: "subscription",
-        handle: { name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION },
+        handle: {
+          name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/SubscriptionPage"),
           (m) => m.SubscriptionPage
@@ -391,7 +493,12 @@ const workspaceSettingRoutes: RouteObject[] = [
 const environmentV1Routes: RouteObject[] = [
   {
     path: "environments/:environmentName",
-    handle: { name: "workspace.environment.detail" },
+    handle: {
+      name: "workspace.environment.detail",
+      requiredPermissionList: (): Permission[] => [
+        "bb.settings.getEnvironment",
+      ],
+    },
     loader: ({ params }) =>
       redirect(`/environments#${params.environmentName ?? ""}`),
   },
@@ -401,7 +508,10 @@ const environmentV1Routes: RouteObject[] = [
 const instanceRoutes: RouteObject[] = [
   {
     path: "instances/new",
-    handle: { name: INSTANCE_ROUTE_CREATE },
+    handle: {
+      name: INSTANCE_ROUTE_CREATE,
+      requiredPermissionList: (): Permission[] => ["bb.instances.create"],
+    },
     lazy: lazyPage(
       () => import("@/react/pages/settings/CreateInstancePage"),
       (m) => m.CreateInstancePage
@@ -413,7 +523,10 @@ const instanceRoutes: RouteObject[] = [
     children: [
       {
         index: true,
-        handle: { name: INSTANCE_ROUTE_DETAIL },
+        handle: {
+          name: INSTANCE_ROUTE_DETAIL,
+          requiredPermissionList: (): Permission[] => ["bb.instances.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/InstanceDetailPage"),
           (m) => m.InstanceDetailPage
@@ -421,7 +534,13 @@ const instanceRoutes: RouteObject[] = [
       },
       {
         path: "databases/:databaseName",
-        handle: { name: INSTANCE_ROUTE_DATABASE_DETAIL },
+        handle: {
+          name: INSTANCE_ROUTE_DATABASE_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.projects.get",
+            "bb.databases.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/InstanceDatabaseRedirectPage"),
           (m) => m.InstanceDatabaseRedirectPage
@@ -432,9 +551,23 @@ const instanceRoutes: RouteObject[] = [
 ];
 
 // Project routes (`/projects/:projectId/**`), ProjectRouteShell layout.
+//
+// The `requiredPermissionList` entries on the parent (`bb.projects.get`) and
+// each leaf are ported 1:1 from the legacy vue routes. They aggregate via
+// `assembleRoute` into `route.requiredPermissions`, but are not yet *enforced*:
+// project gating is owned by `ProjectRouteShell` (which loads the project for
+// project-scoped IAM checks), and that shell is still the
+// `RouteShellOutletPlaceholder` until a later migration phase mounts it.
+// `BodyLayout` intentionally does not route project routes through its generic
+// workspace-level `RoutePermissionGuardShell` (those checks need the project
+// resource). The lists live here so that phase activates them without
+// re-deriving the data.
 const projectV1Routes: RouteObject[] = [
   {
     path: "projects/:projectId",
+    handle: {
+      requiredPermissionList: (): Permission[] => ["bb.projects.get"],
+    },
     element: <RouteShellOutletPlaceholder />,
     children: [
       {
@@ -447,7 +580,10 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "databases",
-        handle: { name: PROJECT_V1_ROUTE_DATABASES },
+        handle: {
+          name: PROJECT_V1_ROUTE_DATABASES,
+          requiredPermissionList: (): Permission[] => ["bb.databases.list"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectDatabasesPage"),
           (m) => m.ProjectDatabasesPage
@@ -466,7 +602,13 @@ const projectV1Routes: RouteObject[] = [
         children: [
           {
             index: true,
-            handle: { name: PROJECT_V1_ROUTE_MASKING_EXEMPTION },
+            handle: {
+              name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+              requiredPermissionList: (): Permission[] => [
+                "bb.databases.get",
+                "bb.policies.getMaskingExemptionPolicy",
+              ],
+            },
             lazy: lazyPage(
               () => import("@/react/pages/project/ProjectMaskingExemptionPage"),
               (m) => m.ProjectMaskingExemptionPage
@@ -474,7 +616,15 @@ const projectV1Routes: RouteObject[] = [
           },
           {
             path: "create",
-            handle: { name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE },
+            handle: {
+              name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
+              requiredPermissionList: (): Permission[] => [
+                "bb.policies.createMaskingExemptionPolicy",
+                "bb.policies.updateMaskingExemptionPolicy",
+                "bb.databases.list",
+                "bb.databaseCatalogs.get",
+              ],
+            },
             lazy: lazyPage(
               () =>
                 import(
@@ -490,7 +640,12 @@ const projectV1Routes: RouteObject[] = [
         children: [
           {
             index: true,
-            handle: { name: PROJECT_V1_ROUTE_DATABASE_GROUPS },
+            handle: {
+              name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+              requiredPermissionList: (): Permission[] => [
+                "bb.databaseGroups.list",
+              ],
+            },
             lazy: lazyPage(
               () => import("@/react/pages/project/ProjectDatabaseGroupsPage"),
               (m) => m.ProjectDatabaseGroupsPage
@@ -498,7 +653,13 @@ const projectV1Routes: RouteObject[] = [
           },
           {
             path: "create",
-            handle: { name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE },
+            handle: {
+              name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
+              requiredPermissionList: (): Permission[] => [
+                "bb.databaseGroups.create",
+                "bb.databases.list",
+              ],
+            },
             lazy: lazyPage(
               () =>
                 import("@/react/pages/project/ProjectDatabaseGroupCreatePage"),
@@ -507,7 +668,13 @@ const projectV1Routes: RouteObject[] = [
           },
           {
             path: ":databaseGroupName",
-            handle: { name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL },
+            handle: {
+              name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+              requiredPermissionList: (): Permission[] => [
+                "bb.databaseGroups.get",
+                "bb.databases.list",
+              ],
+            },
             lazy: lazyPage(
               () =>
                 import("@/react/pages/project/ProjectDatabaseGroupDetailPage"),
@@ -518,7 +685,10 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "issues",
-        handle: { name: PROJECT_V1_ROUTE_ISSUES },
+        handle: {
+          name: PROJECT_V1_ROUTE_ISSUES,
+          requiredPermissionList: (): Permission[] => ["bb.issues.list"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectIssueDashboardPage"),
           (m) => m.ProjectIssueDashboardPage
@@ -526,7 +696,13 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "plans",
-        handle: { name: PROJECT_V1_ROUTE_PLANS },
+        handle: {
+          name: PROJECT_V1_ROUTE_PLANS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.databases.list",
+            "bb.plans.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectPlanDashboardPage"),
           (m) => m.ProjectPlanDashboardPage
@@ -534,7 +710,16 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "sync-schema",
-        handle: { name: PROJECT_V1_ROUTE_SYNC_SCHEMA },
+        handle: {
+          name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
+          requiredPermissionList: (): Permission[] => [
+            "bb.databases.sync",
+            "bb.databases.list",
+            "bb.databases.get",
+            "bb.databases.getSchema",
+            "bb.changelogs.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectSyncSchemaPage"),
           (m) => m.ProjectSyncSchemaPage
@@ -542,7 +727,10 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "audit-logs",
-        handle: { name: PROJECT_V1_ROUTE_AUDIT_LOGS },
+        handle: {
+          name: PROJECT_V1_ROUTE_AUDIT_LOGS,
+          requiredPermissionList: (): Permission[] => ["bb.auditLogs.search"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectAuditLogPage"),
           (m) => m.ProjectAuditLogPage
@@ -561,7 +749,12 @@ const projectV1Routes: RouteObject[] = [
           },
           {
             path: "new",
-            handle: { name: PROJECT_V1_ROUTE_WEBHOOK_CREATE },
+            handle: {
+              name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
+              requiredPermissionList: (): Permission[] => [
+                "bb.projects.update",
+              ],
+            },
             lazy: lazyPage(
               () => import("@/react/pages/project/ProjectWebhookCreatePage"),
               (m) => m.ProjectWebhookCreatePage
@@ -579,7 +772,12 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "members",
-        handle: { name: PROJECT_V1_ROUTE_MEMBERS },
+        handle: {
+          name: PROJECT_V1_ROUTE_MEMBERS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.projects.getIamPolicy",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/MembersPage"),
           (m) => m.MembersPage
@@ -587,7 +785,12 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "service-accounts",
-        handle: { name: PROJECT_V1_ROUTE_SERVICE_ACCOUNTS },
+        handle: {
+          name: PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.serviceAccounts.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/ServiceAccountsPage"),
           (m) => m.ServiceAccountsPage
@@ -595,7 +798,12 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "workload-identities",
-        handle: { name: PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES },
+        handle: {
+          name: PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
+          requiredPermissionList: (): Permission[] => [
+            "bb.workloadIdentities.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/settings/WorkloadIdentitiesPage"),
           (m) => m.WorkloadIdentitiesPage
@@ -611,7 +819,10 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "instances/:instanceId/databases/:databaseName",
-        handle: { name: PROJECT_V1_ROUTE_DATABASE_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+          requiredPermissionList: (): Permission[] => ["bb.databases.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectDatabaseDetailPage"),
           (m) => m.ProjectDatabaseDetailPage
@@ -619,7 +830,13 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "instances/:instanceId/databases/:databaseName/changelogs/:changelogId",
-        handle: { name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.databases.get",
+            "bb.changelogs.get",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/DatabaseChangelogDetailPage"),
           (m) => m.DatabaseChangelogDetailPage
@@ -627,7 +844,10 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "instances/:instanceId/databases/:databaseName/revisions/:revisionId",
-        handle: { name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+          requiredPermissionList: (): Permission[] => ["bb.databases.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/DatabaseRevisionDetailPage"),
           (m) => m.DatabaseRevisionDetailPage
@@ -635,7 +855,13 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "data-export",
-        handle: { name: PROJECT_V1_ROUTE_DATA_EXPORT },
+        handle: {
+          name: PROJECT_V1_ROUTE_DATA_EXPORT,
+          requiredPermissionList: (): Permission[] => [
+            "bb.issues.list",
+            "bb.databases.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectDataExportPage"),
           (m) => m.ProjectDataExportPage
@@ -646,7 +872,10 @@ const projectV1Routes: RouteObject[] = [
         children: [
           {
             index: true,
-            handle: { name: PROJECT_V1_ROUTE_RELEASES },
+            handle: {
+              name: PROJECT_V1_ROUTE_RELEASES,
+              requiredPermissionList: (): Permission[] => ["bb.releases.list"],
+            },
             lazy: lazyPage(
               () => import("@/react/pages/project/ProjectReleaseDashboardPage"),
               (m) => m.ProjectReleaseDashboardPage
@@ -654,7 +883,10 @@ const projectV1Routes: RouteObject[] = [
           },
           {
             path: ":releaseId",
-            handle: { name: PROJECT_V1_ROUTE_RELEASE_DETAIL },
+            handle: {
+              name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
+              requiredPermissionList: (): Permission[] => ["bb.releases.get"],
+            },
             lazy: lazyPage(
               () => import("@/react/pages/project/ProjectReleaseDetailPage"),
               (m) => m.ProjectReleaseDetailPage
@@ -664,7 +896,13 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "gitops",
-        handle: { name: PROJECT_V1_ROUTE_GITOPS },
+        handle: {
+          name: PROJECT_V1_ROUTE_GITOPS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.workloadIdentities.list",
+            "bb.databases.list",
+          ],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectGitOpsPage"),
           (m) => m.ProjectGitOpsPage
@@ -673,7 +911,14 @@ const projectV1Routes: RouteObject[] = [
       // Plan detail — three routes share ProjectPlanDetailPage.
       {
         path: "plans/:planId",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.plans.get",
+            "bb.planCheckRuns.get",
+            "bb.taskRuns.list",
+          ],
+        },
         lazy: lazyPage(
           () =>
             import("@/react/pages/project/plan-detail/ProjectPlanDetailPage"),
@@ -682,7 +927,14 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "plans/:planId/specs",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS },
+        handle: {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+          requiredPermissionList: (): Permission[] => [
+            "bb.plans.get",
+            "bb.planCheckRuns.get",
+            "bb.taskRuns.list",
+          ],
+        },
         lazy: lazyPage(
           () =>
             import("@/react/pages/project/plan-detail/ProjectPlanDetailPage"),
@@ -691,7 +943,14 @@ const projectV1Routes: RouteObject[] = [
       },
       {
         path: "plans/:planId/specs/:specId",
-        handle: { name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+          requiredPermissionList: (): Permission[] => [
+            "bb.plans.get",
+            "bb.planCheckRuns.get",
+            "bb.taskRuns.list",
+          ],
+        },
         lazy: lazyPage(
           () =>
             import("@/react/pages/project/plan-detail/ProjectPlanDetailPage"),
@@ -701,7 +960,10 @@ const projectV1Routes: RouteObject[] = [
       // Issue detail.
       {
         path: "issues/:issueId",
-        handle: { name: PROJECT_V1_ROUTE_ISSUE_DETAIL },
+        handle: {
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          requiredPermissionList: (): Permission[] => ["bb.issues.get"],
+        },
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectIssueDetailPage"),
           (m) => m.ProjectIssueDetailPage
