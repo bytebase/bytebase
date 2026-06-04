@@ -66,7 +66,6 @@
     "lossless-json": "^4.3.0",
     "lucide-react": "^1.14.0",
     "lucide-static": "^1.14.0",
-    "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@31.0.1",
     "monaco-languageclient": "10.7.0",
@@ -96,7 +95,6 @@
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
     "vue": "3.5.34",
-    "vue-draggable-plus": "^0.6.0",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
