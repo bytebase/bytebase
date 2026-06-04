@@ -66,6 +66,19 @@ interface UseExportGrantBypassResult {
 // readable.
 const LIST_CAP = 5;
 
+// Cap parallel `SearchMyAccessGrants` lookups so a batch query over
+// hundreds of databases (database-group expansion, multi-tenant
+// projects) doesn't fire hundreds of concurrent RPCs the moment
+// results render — that would put real DB/CEL-parser pressure on the
+// API for a UI affordance the user might never interact with. Bot
+// review #3357335452.
+//
+// 10 is a pragmatic ceiling: the common 1–10 DB batch fits in one
+// chunk (same single round-trip as before the cap), and a 200-DB
+// batch becomes 20 sequential rounds of 10 — bounded server load,
+// ≤2s tail latency on typical RTTs.
+const LOOKUP_CONCURRENCY = 10;
+
 export function useExportGrantBypass({
   enabled,
   project,
@@ -120,33 +133,45 @@ export function useExportGrantBypass({
       // success. The failed target falls back to `undefined`, which
       // ResultView/BatchQuerySelect treat as "no grant" → Request
       // Export surfaces for that DB. Bot review #3357266207.
-      const results = await Promise.all(
-        targets.map(async (target) => {
-          try {
-            const res = await searchMyAccessGrants({
-              parent: project,
-              filter: {
-                statementExact: statement,
-                status: ["ACTIVE"],
-                export: true,
-                target,
-              },
-              pageSize: 1,
-            });
-            return { target, grant: res.accessGrants[0] };
-          } catch {
-            return {
-              target,
-              grant: undefined as AccessGrant | undefined,
-            };
-          }
-        })
-      );
-      if (canceled) return;
+      //
+      // Chunked at `LOOKUP_CONCURRENCY` so we cap the in-flight RPC
+      // count even on batches of hundreds of DBs. Bot review
+      // #3357335452.
       const byTarget: Record<string, AccessGrant | undefined> = {};
-      for (const { target, grant } of results) {
-        byTarget[target] = grant;
+      for (let i = 0; i < targets.length; i += LOOKUP_CONCURRENCY) {
+        if (canceled) return;
+        const chunk = targets.slice(i, i + LOOKUP_CONCURRENCY);
+        const chunkResults = await Promise.all(
+          chunk.map(async (target) => {
+            try {
+              const res = await searchMyAccessGrants({
+                parent: project,
+                filter: {
+                  statementExact: statement,
+                  status: ["ACTIVE"],
+                  export: true,
+                  target,
+                },
+                pageSize: 1,
+              });
+              return { target, grant: res.accessGrants[0] };
+            } catch {
+              return {
+                target,
+                grant: undefined as AccessGrant | undefined,
+              };
+            }
+          })
+        );
+        for (const { target, grant } of chunkResults) {
+          byTarget[target] = grant;
+        }
       }
+      if (canceled) return;
+      // Single commit at the end (not per-chunk) — the matched /
+      // unmatched derivation downstream is whole-set, so partial
+      // updates would flicker Export ↔ Request Export as chunks
+      // resolve.
       setGrantsByTarget(byTarget);
     })();
     return () => {
