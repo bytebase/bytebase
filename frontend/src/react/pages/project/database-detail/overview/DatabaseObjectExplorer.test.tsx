@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => {
   return {
     currentRoute,
     routerReplace: vi.fn(() => Promise.resolve()),
-    useVueState: vi.fn(),
     useDatabaseCatalog: vi.fn(),
     getColumnCatalog: vi.fn(() => ({
       semanticType: "",
@@ -55,18 +54,26 @@ const mocks = vi.hoisted(() => {
 let DatabaseObjectExplorer: typeof import("./DatabaseObjectExplorer").DatabaseObjectExplorer;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     currentRoute: mocks.currentRoute,
   },
+  useCurrentRoute: () => ({
+    name: undefined,
+    fullPath: "",
+    hash: "",
+    params: {},
+    query: mocks.currentRoute.value.query,
+    requiredPermissions: [],
+    overrideDocumentTitle: false,
+    meta: {},
+  }),
 }));
 
 // The component now reads dbSchema getters plus the former setting-store
@@ -78,6 +85,7 @@ vi.mock("@/react/stores/app", () => {
   const getState = () => ({
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getProjectClassification: mocks.getProjectClassification,
+    hasInstanceFeature: () => mocks.featureToRef().value,
     ...((mocks.dbSchemaStore() ?? {}) as Record<string, unknown>),
   });
   return {
@@ -272,8 +280,6 @@ beforeEach(async () => {
   );
   mocks.hasIndexSizeProperty.mockReset();
   mocks.hasIndexSizeProperty.mockReturnValue(true);
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.hasTableEngineProperty.mockReset();
   mocks.hasTableEngineProperty.mockReturnValue(false);
   mocks.instanceV1HasCollationAndCharacterSet.mockReset();

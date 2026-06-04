@@ -42,7 +42,6 @@ const mocks = vi.hoisted(() => {
     getChangelogByName: vi.fn(),
     useAppStore: vi.fn(),
     getTaskRunLog: vi.fn(),
-    useVueState: vi.fn((getter: () => unknown) => getter()),
     clipboardWriteText,
     pushNotification: vi.fn(),
     ReadonlyMonaco: vi.fn(
@@ -125,21 +124,15 @@ vi.mock("lucide-react", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASES: mocks.projectRouteNames.databases,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL: mocks.projectRouteNames.databaseDetail,
-  PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL:
-    mocks.projectRouteNames.databaseChangelogDetail,
-  PROJECT_V1_ROUTE_SYNC_SCHEMA: mocks.projectRouteNames.syncSchema,
 }));
 
 vi.mock("@/react/components/ui/button", () => ({
@@ -159,10 +152,6 @@ vi.mock("@/react/components/monaco", () => ({
 
 vi.mock("@/react/components/task-run-log", () => ({
   TaskRunLogViewer: mocks.TaskRunLogViewer,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/stores/app", () => ({
@@ -250,7 +239,6 @@ beforeEach(() => {
   mocks.useAppStore.mockReset();
   mocks.getTaskRunLog.mockReset();
   mocks.pushNotification.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.ReadonlyMonaco.mockClear();
   mocks.ReadonlyDiffMonaco.mockClear();
   mocks.TaskRunLogViewer.mockClear();
@@ -337,9 +325,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -378,9 +366,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -420,9 +408,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { unmount, render } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/from-prop",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "from-prop",
         changelogId: "7",
       })
     );
@@ -470,9 +458,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -537,9 +525,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -592,9 +580,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -653,9 +641,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -732,9 +720,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const createPage = () =>
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       });
     const { container, render, unmount } = renderIntoContainer(createPage());
@@ -798,9 +786,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -856,9 +844,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -911,9 +899,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -954,9 +942,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -1001,9 +989,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -1043,9 +1031,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "7",
       })
     );
@@ -1065,9 +1053,9 @@ describe("DatabaseChangelogDetailPage", () => {
 
     render(
       createElement(DatabaseChangelogDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db1",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
         changelogId: "8",
       })
     );

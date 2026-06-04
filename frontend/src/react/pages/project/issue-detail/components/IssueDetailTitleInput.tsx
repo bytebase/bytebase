@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -22,9 +22,7 @@ export function IssueDetailTitleInput() {
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [title, setTitle] = useState(page.issue?.title || "");
   const [isEditing, setIsEditing] = useState(false);

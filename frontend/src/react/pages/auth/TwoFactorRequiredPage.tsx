@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
 import { TwoFactorSetupPage } from "@/react/pages/settings/two-factor/TwoFactorSetupPage";
-import { useAuthStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 
 export function TwoFactorRequiredPage() {
   const { t } = useTranslation();
@@ -12,7 +12,9 @@ export function TwoFactorRequiredPage() {
         description={t("two-factor.messages.2fa-required")}
       />
       <div className="w-full p-2 sm:p-8 sm:px-16">
-        <TwoFactorSetupPage cancelAction={() => useAuthStore().logout()} />
+        <TwoFactorSetupPage
+          cancelAction={() => useAppStore.getState().logout()}
+        />
       </div>
     </div>
   );

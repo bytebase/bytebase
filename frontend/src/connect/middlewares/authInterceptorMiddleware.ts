@@ -1,9 +1,17 @@
-import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
+import {
+  Code,
+  ConnectError,
+  type Interceptor,
+  type StreamRequest,
+  type UnaryRequest,
+} from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_403 } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useAuthStore } from "@/store";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_403 } from "@/react/router/handles";
+import { buildPermissionDeniedRouteQuery } from "@/react/router/permissionDenied";
+import { pushNotification } from "@/store";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 import { refreshTokens } from "../refreshToken";
 
@@ -17,6 +25,25 @@ const extractPermissionDeniedDetail = (error: unknown) => {
   return undefined;
 };
 
+const buildPermissionDeniedQuery = ({
+  errorDetail,
+  req,
+}: {
+  errorDetail: ReturnType<typeof extractPermissionDeniedDetail>;
+  req: StreamRequest | UnaryRequest;
+}) => {
+  const route = router.currentRoute.value;
+  const permissions =
+    errorDetail?.requiredPermissions ?? route.requiredPermissions;
+  const resources = errorDetail?.resources ?? [];
+  return buildPermissionDeniedRouteQuery({
+    route,
+    api: errorDetail?.method ?? `/${req.service.typeName}/${req.method.name}`,
+    permissions,
+    resources,
+  });
+};
+
 const handleUnauthenticatedFailure = ({
   silent,
   isLoggedIn,
@@ -24,8 +51,11 @@ const handleUnauthenticatedFailure = ({
   silent: boolean;
   isLoggedIn: boolean;
 }) => {
-  const authStore = useAuthStore();
-  authStore.unauthenticatedOccurred = true;
+  // Flag the app store (the session source of truth) so React's
+  // SessionExpiredSurface fires. Routed through the util bridge (a leaf module)
+  // to avoid a load-time cycle — the app store imports the connect clients this
+  // interceptor wraps.
+  appStoreUtilBridge()?.setUnauthenticatedOccurred(true);
   if (!silent && isLoggedIn) {
     pushNotification({
       module: "bytebase",
@@ -40,7 +70,6 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
   try {
     return await next(req);
   } catch (error) {
-    const authStore = useAuthStore();
     const silent = req.contextValues.get(silentContextKey);
     const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
 
@@ -66,7 +95,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
           console.error(e);
           handleUnauthenticatedFailure({
             silent,
-            isLoggedIn: authStore.isLoggedIn,
+            isLoggedIn: appStoreUtilBridge()?.isLoggedIn() ?? false,
           });
           throw error;
         }
@@ -80,7 +109,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
           ) {
             handleUnauthenticatedFailure({
               silent,
-              isLoggedIn: authStore.isLoggedIn,
+              isLoggedIn: appStoreUtilBridge()?.isLoggedIn() ?? false,
             });
           }
           throw retryError;
@@ -95,14 +124,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
         const errorDetail = extractPermissionDeniedDetail(error);
         router.push({
           name: WORKSPACE_ROUTE_403,
-          query: errorDetail
-            ? {
-                from: router.currentRoute.value.fullPath,
-                api: errorDetail.method,
-                permissions: errorDetail.requiredPermissions.join(","),
-                resources: errorDetail.resources.join(","),
-              }
-            : undefined,
+          query: buildPermissionDeniedQuery({ errorDetail, req }),
         });
       }
     }

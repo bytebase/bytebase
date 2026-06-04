@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
 import { PlanCheckSection } from "@/react/components/plan-check/PlanCheckSection";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
@@ -26,9 +26,7 @@ export function IssueDetailChecks() {
   const currentUser = useCurrentUser();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
 
   const summary = useMemo(

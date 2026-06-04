@@ -11,11 +11,9 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { useWorkspace } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
+import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useAuthStore } from "@/store";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -26,16 +24,11 @@ export function OAuth2ConsentPage() {
   const [error, setError] = useState("");
   const [clientName, setClientName] = useState("");
 
-  // Pinia store singletons are resolved once at the top of the component so
-  // the useVueState selector closures don't repeat the use*-prefixed call —
-  // which trips the React-hooks-in-callback lint rule (typescript:S6440)
-  // despite Pinia memoizing the factory.
-  const authStore = useAuthStore();
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
 
-  const isLoggedIn = useVueState(() => authStore.isLoggedIn);
+  const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   // Workspace context shown on the consent card. On SaaS, every Bytebase
   // user belongs to at least one workspace; on self-hosted there's a single
   // implicit workspace. We display it so the user can confirm which

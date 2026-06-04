@@ -8,14 +8,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  language: { value: "en-US" },
+  changeLanguage: vi.fn(),
   emitStorageChangedEvent: vi.fn(),
   setDocumentTitle: vi.fn(),
-  routeTitle: vi.fn((_route: unknown) => "Signin"),
-  locale: { value: "en-US" },
   currentRoute: {
     value: {
-      meta: {} as { title?: (route: unknown) => string },
+      title: undefined as string | undefined,
     },
   },
 }));
@@ -39,19 +38,23 @@ const localStorageMock = {
   },
 };
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/plugins/i18n", () => ({
-  default: {
-    global: {
-      locale: mocks.locale,
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    i18n: {
+      get language() {
+        return mocks.language.value;
+      },
+      changeLanguage: mocks.changeLanguage,
     },
-  },
+  }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/i18n", () => ({
+  default: { changeLanguage: mocks.changeLanguage },
+}));
+
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     currentRoute: mocks.currentRoute,
   },
@@ -87,8 +90,8 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.locale.value = "en-US";
-  mocks.currentRoute.value.meta = {};
+  mocks.language.value = "en-US";
+  mocks.currentRoute.value.title = undefined;
   storage.clear();
   Object.defineProperty(globalThis, "localStorage", {
     value: localStorageMock,
@@ -106,7 +109,7 @@ afterEach(() => {
 
 describe("AuthFooter", () => {
   test("renders five language links in order", () => {
-    mocks.useVueState.mockReturnValue("en-US");
+    mocks.language.value = "en-US";
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
     render();
     const anchors = Array.from(container.querySelectorAll("a"));
@@ -121,7 +124,7 @@ describe("AuthFooter", () => {
   });
 
   test("highlights the current locale with text-main", () => {
-    mocks.useVueState.mockReturnValue("zh-CN");
+    mocks.language.value = "zh-CN";
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
     render();
     const anchors = Array.from(container.querySelectorAll("a"));
@@ -132,9 +135,9 @@ describe("AuthFooter", () => {
     unmount();
   });
 
-  test("invokes Vue i18n + storage + title setter on click", () => {
-    mocks.useVueState.mockReturnValue("en-US");
-    mocks.currentRoute.value.meta = { title: mocks.routeTitle };
+  test("changes language + storage + title setter on click", () => {
+    mocks.language.value = "en-US";
+    mocks.currentRoute.value.title = "Signin";
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
     render();
     const esAnchor = Array.from(container.querySelectorAll("a")).find(
@@ -144,10 +147,9 @@ describe("AuthFooter", () => {
     act(() => {
       esAnchor?.click();
     });
-    expect(mocks.locale.value).toBe("es-ES");
+    expect(mocks.changeLanguage).toHaveBeenCalledWith("es-ES");
     expect(localStorage.getItem("bb.language")).toBe('"es-ES"');
     expect(mocks.emitStorageChangedEvent).toHaveBeenCalledTimes(1);
-    expect(mocks.routeTitle).toHaveBeenCalledTimes(1);
     expect(mocks.setDocumentTitle).toHaveBeenCalledWith("Signin");
     unmount();
   });

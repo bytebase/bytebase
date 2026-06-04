@@ -13,12 +13,14 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
+import { router } from "@/react/router";
+import {
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -51,9 +53,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   );
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [showDrawer, setShowDrawer] = useState(false);
 
@@ -476,12 +476,8 @@ function IssueListItem({
   );
   const creator = creatorUser || unknownUser(issue.creator);
 
-  const issueProject = useVueState(() =>
-    useAppStore
-      .getState()
-      .getProjectByName(
-        `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
-      )
+  const issueProject = useProjectByName(
+    `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
 
   const createTimeTs = Math.floor(

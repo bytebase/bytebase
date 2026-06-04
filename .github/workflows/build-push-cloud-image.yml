@@ -16,15 +16,24 @@ env:
   IMAGE_NAME: bytebase-cloud
 
 jobs:
-  build-and-push:
+  build-bytebase:
     runs-on: depot-ubuntu-24.04-arm-4
+    outputs:
+      cloud_version: ${{ steps.extract.outputs.cloud_version }}
+      git_commit: ${{ steps.extract.outputs.git_commit }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Extract build args
+        id: extract
         run: |
-          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          CLOUD_VERSION="cloud-$(date -u +%Y%m%d)"
+          GIT_COMMIT="$(git rev-parse HEAD)"
+          echo "CLOUD_VERSION=${CLOUD_VERSION}" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> "$GITHUB_ENV"
+          echo "cloud_version=${CLOUD_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "git_commit=${GIT_COMMIT}" >> "$GITHUB_OUTPUT"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -52,7 +61,7 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            VERSION=cloud
+            VERSION=${{ env.CLOUD_VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
 
       - name: Get GKE credentials
@@ -63,3 +72,51 @@ jobs:
 
       - name: Restart deployment
         run: kubectl rollout restart deployment/bytebase-cloud --namespace cloud
+
+  build-bytebase-action:
+    needs: build-bytebase
+    runs-on: ubuntu-latest
+    env:
+      CLOUD_VERSION: ${{ needs.build-bytebase.outputs.cloud_version }}
+      GIT_COMMIT: ${{ needs.build-bytebase.outputs.git_commit }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: depot/setup-action@v1
+
+      - name: Build and push bytebase-action image
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          project: ${{ secrets.DEPOT_PROJECT}}
+          token: ${{ secrets.DEPOT_TOKEN }}
+          file: scripts/Dockerfile.action
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            bytebase/bytebase-action:cloud
+          build-args: |
+            VERSION=${{ env.CLOUD_VERSION }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+
+      - name: Build and push bytebase-action Debian image
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          project: ${{ secrets.DEPOT_PROJECT}}
+          token: ${{ secrets.DEPOT_TOKEN }}
+          file: scripts/Dockerfile.action-debian
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            bytebase/bytebase-action:cloud-debian
+          build-args: |
+            VERSION=${{ env.CLOUD_VERSION }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}

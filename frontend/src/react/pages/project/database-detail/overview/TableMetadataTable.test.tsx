@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
-  useVueState: vi.fn(),
   useDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
   featureToRef: vi.fn(() => ({ value: true })),
@@ -49,11 +48,8 @@ const mocks = vi.hoisted(() => ({
 let TableMetadataTable: typeof import("./TableMetadataTable").TableMetadataTable;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/store", () => ({
@@ -66,6 +62,7 @@ vi.mock("@/react/stores/app", () => {
     getSettingByName: mocks.getSettingByName,
     getProjectClassification: mocks.getProjectClassification,
     hasFeature: mocks.hasFeature,
+    hasInstanceFeature: () => mocks.featureToRef().value,
     instanceMissingLicense: mocks.instanceMissingLicense,
     updateDatabaseCatalog: mocks.updateDatabaseCatalog,
   });
@@ -251,8 +248,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({ schemas: [] });
   mocks.getTableCatalog.mockReset();

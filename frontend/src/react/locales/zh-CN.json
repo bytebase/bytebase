@@ -113,6 +113,10 @@
       "stay-signed-in": "保持登录状态",
       "title": "您的会话即将结束"
     },
+    "login-as-another": {
+      "content": "我们将把您重定向到主页。",
+      "title": "您已以其他用户身份登录"
+    },
     "oauth-callback": {
       "invalid-state": "认证失败：无效的回调状态。请重试。",
       "opener-failed": "认证已完成,但与父窗口通信失败。请关闭此窗口并重试。",
@@ -157,6 +161,7 @@
       "existing-user": "已有账号?",
       "title": "注册您的账号"
     },
+    "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "令牌已过期"
   },
   "banner": {
@@ -228,6 +233,7 @@
     "back-to-workspace": "返回工作区",
     "bypassed": "已绕过",
     "cancel": "取消",
+    "canceled": "已取消",
     "cannot-undo-this-action": "这个操作无法撤销",
     "catalog": "Catalog",
     "changelog": "变更历史",
@@ -272,8 +278,10 @@
     "deselect-all": "取消全选",
     "detail": "详情",
     "detailed-guide": "详细指南",
+    "dingtalk": "钉钉",
     "disable": "禁用",
     "discard-changes": "取消修改",
+    "discord": "Discord",
     "dismiss": "关闭",
     "done": "完成",
     "download": "下载",
@@ -295,6 +303,7 @@
     "expired": "已过期",
     "export": "导出",
     "failed": "失败",
+    "feishu": "飞书",
     "file-selector": {
       "size-limit": "文件大小需小于 {{size}} MiB",
       "type-limit": "仅支持 {{extension}} 类型的文件"
@@ -305,6 +314,7 @@
     "from": "从",
     "general": "通用",
     "go-back": "返回",
+    "google-chat": "Google Chat",
     "group": "组",
     "groups": "分组",
     "history": "历史记录",
@@ -322,6 +332,7 @@
     "key": "键",
     "labels": "标签",
     "language": "语言",
+    "lark": "Lark",
     "learn-more": "了解更多",
     "leave-without-saving": "不保存变动？",
     "license": "License",
@@ -347,6 +358,7 @@
     "next": "下一步",
     "no": "否",
     "no-data": "无数据",
+    "no-license": "无证书",
     "not-started": "未开始",
     "ok": "确定",
     "only-creator-allowed-export": "只有创建者可以导出",
@@ -421,6 +433,7 @@
     "sign-up": "注册",
     "skip": "跳过",
     "skipped": "已跳过",
+    "slack": "Slack",
     "snapshot": "快照",
     "sql": "SQL",
     "stage": "阶段",
@@ -433,6 +446,7 @@
     "system": "系统",
     "table": "表",
     "task": "任务",
+    "teams": "Teams",
     "text-wrap": "文本折行",
     "tips": "提示信息",
     "title": "标题",
@@ -440,7 +454,6 @@
     "total": "总计",
     "total-n-items": "共 {{n}} 项",
     "transfer": "转移",
-    "troubleshoot": "排查问题",
     "type": "类型",
     "type-to-search": "输入以搜索",
     "unassigned": "未分配",
@@ -465,6 +478,7 @@
     "want-help": "需要帮助",
     "warning": "警告",
     "webhooks": "Webhook",
+    "wecom": "企业微信",
     "write-only": "仅写入",
     "yes": "是",
     "you": "您"
@@ -563,6 +577,7 @@
   },
   "data-source": {
     "additional-node-addresses": "附加节点地址",
+    "admin": "管理员",
     "automatic-query-data-source": "自动",
     "connection-string-schema": "连接串模式",
     "connection-type": "连接类型",
@@ -576,6 +591,7 @@
     "private-key-passphrase": "私钥密码",
     "private-key-passphrase-placeholder": "如果私钥未加密，请留空",
     "private-key-passphrase-tip": "加密私钥的可选密码",
+    "read-only": "只读",
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "replica-set": "副本集",
@@ -1328,6 +1344,7 @@
       "change-database": "变更数据库",
       "change-from-sql-editor": "从 SQL 编辑器变更",
       "edit-schema": "编辑 Schema",
+      "export-data": "导出数据",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -1382,6 +1399,7 @@
     },
     "recovery-code": "恢复码"
   },
+  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} 正在请求访问您的账户",
@@ -1712,6 +1730,32 @@
       "name": "名称"
     },
     "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "当工单需要审批",
+          "title": "工单待审批"
+        },
+        "issue-approved": {
+          "label": "当所有审批步骤完成时通知",
+          "title": "工单审批通过"
+        },
+        "issue-creation": {
+          "label": "当一个新的工单被创建",
+          "title": "创建工单"
+        },
+        "issue-sent-back": {
+          "label": "当工单被审批人退回",
+          "title": "工单被退回"
+        },
+        "pipeline-completed": {
+          "label": "当流水线成功完成",
+          "title": "流水线完成"
+        },
+        "pipeline-failed": {
+          "label": "当流水线任务失败",
+          "title": "流水线失败"
+        }
+      },
       "activity-support-direct-message": "支持向相关用户发送私信通知",
       "creation": {
         "desc": "为 {{destination}} 创建一个 webhook",
@@ -1758,6 +1802,7 @@
     "visit-member": "访问成员 | 成员",
     "visit-project": "访问项目"
   },
+  "refresh-remind": {},
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
@@ -1806,9 +1851,29 @@
     "custom-roles": {
       "self": "自定义角色"
     },
+    "gitops-service-agent": {
+      "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。",
+      "self": "GitOps 服务代理"
+    },
     "import-from-role": "从角色导入",
+    "project-developer": {
+      "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。",
+      "self": "项目开发者"
+    },
+    "project-owner": {
+      "description": "项目内的所有权限。",
+      "self": "项目所有者"
+    },
+    "project-releaser": {
+      "description": "可查看项目基本信息，并可在指定流程中发布变更。",
+      "self": "项目发布者"
+    },
     "project-roles": {
       "self": "项目角色"
+    },
+    "project-viewer": {
+      "description": "仅可查看项目和数据库的基本信息，用户可自助发起工单请求数据查询和导出。",
+      "self": "项目查看者"
     },
     "select-role": "选择角色",
     "self": "角色",
@@ -1817,7 +1882,27 @@
       "description-placeholder": "输入角色描述",
       "title-placeholder": "输入角色称谓"
     },
+    "sql-editor-read-user": {
+      "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。",
+      "self": "SQL 编辑器只读用户"
+    },
+    "sql-editor-user": {
+      "description": "可查询指定范围的数据。",
+      "self": "SQL 编辑器用户"
+    },
     "title": "称谓",
+    "workspace-admin": {
+      "description": "工作空间内的所有权限。",
+      "self": "工作空间管理员"
+    },
+    "workspace-dba": {
+      "description": "可以管理工作空间的所有数据库和实例",
+      "self": "工作空间 DBA"
+    },
+    "workspace-member": {
+      "description": "工作空间中的普通用户",
+      "self": "工作空间成员"
+    },
     "workspace-roles": {
       "self": "工作空间角色"
     }
@@ -2516,11 +2601,13 @@
       "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
       "non-empty-folder-title": "非空文件夹"
     },
+    "mine": "我的",
     "move-worksheets": "移动工作表",
     "notifications": {
       "duplicate-success": "已成功拷贝至“我的工作表”"
     },
-    "search-sheets": "搜索工作表"
+    "search-sheets": "搜索工作表",
+    "shared": "共享的"
   },
   "sql-editor": {
     "access-grants": "访问授权",
@@ -3665,6 +3752,7 @@
     "skip-task": "跳过任务 | 跳过任务",
     "started": "开始于",
     "status": {
+      "available": "就绪",
       "canceled": "已取消",
       "done": "完成",
       "failed": "失败",

@@ -8,9 +8,8 @@ import {
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
+import { router, useCurrentRoute } from "@/react/router";
 import { IssueDetailActivity } from "./issue-detail/components/IssueDetailActivity";
 import { IssueDetailBranchContent } from "./issue-detail/components/IssueDetailBranchContent";
 import { IssueDetailHeader } from "./issue-detail/components/IssueDetailHeader";
@@ -31,10 +30,9 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
   // Selected spec id is mirrored to the URL as ?spec=<id> so that links
   // (e.g. from audit rows in the comment list) can deep-link a spec without
   // navigating away from the issue detail page.
-  const databaseChangeSelectedSpecId = useVueState(() => {
-    const v = router.currentRoute.value.query.spec;
-    return typeof v === "string" ? v : "";
-  });
+  const specQuery = useCurrentRoute().query.spec;
+  const databaseChangeSelectedSpecId =
+    typeof specQuery === "string" ? specQuery : "";
   const setDatabaseChangeSelectedSpecId = useCallback((id: string) => {
     void router.replace({
       query: { ...router.currentRoute.value.query, spec: id || undefined },

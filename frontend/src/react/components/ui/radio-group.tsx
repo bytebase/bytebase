@@ -27,7 +27,7 @@ function RadioGroupItem({
       <Radio.Root
         value={value}
         className={cn(
-          "flex size-4 items-center justify-center rounded-full border border-control-border",
+          "flex size-4 shrink-0 items-center justify-center rounded-full border border-control-border",
           "data-[checked]:border-accent data-[checked]:border-[5px]",
           "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-50"

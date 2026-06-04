@@ -19,27 +19,21 @@ const mocks = vi.hoisted(() => ({
   createProject: vi.fn(),
   setupSample: vi.fn(),
   updateWorkspaceProfile: vi.fn(),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     isReady: mocks.routerIsReady,
     push: mocks.routerPush,
   },
 }));
 
-vi.mock("@/router/sqlEditor", () => ({
-  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
-}));
-
-vi.mock("@/store", () => ({
-  useAppFeature: () => ({ value: 0 }),
-}));
-
 vi.mock("@/react/stores/app", () => {
   const state = {
     enableOnboarding: () => true,
+    appFeatures: { "bb.feature.database-change-mode": 0 },
+    loadWorkspaceProfile: vi.fn(async () => undefined),
     listRoles: mocks.listRoles,
     fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
@@ -55,10 +49,6 @@ vi.mock("@/react/stores/app", () => {
     ),
   };
 });
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
 
 vi.mock("@/react/components/auth/AuthFooter", () => ({
   AuthFooter: () => null,
@@ -94,6 +84,7 @@ vi.mock("@/react/components/ResourceIdField", async () => {
 });
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,

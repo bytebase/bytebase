@@ -17,8 +17,8 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/react/router/handles";
 import { getProjectNameAndDatabaseGroupName } from "@/store";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 

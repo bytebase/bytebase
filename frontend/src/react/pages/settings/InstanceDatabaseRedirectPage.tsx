@@ -5,10 +5,12 @@ import {
   instanceNamePrefix,
   isValidProjectName,
 } from "@/react/lib/resourceName";
+import { router } from "@/react/router";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+} from "@/react/router/handles";
 import { getOrFetchDatabaseByName } from "@/react/stores/app/databaseAccess";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 
 export function InstanceDatabaseRedirectPage({

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BannersWrapper } from "@/react/components/BannersWrapper";
 import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { RequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";

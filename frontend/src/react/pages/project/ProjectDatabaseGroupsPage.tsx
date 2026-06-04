@@ -10,13 +10,13 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
-} from "@/router/dashboard/projectV1";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import {
   getProjectNameAndDatabaseGroupName,
   projectNamePrefix,
@@ -37,9 +37,7 @@ export function ProjectDatabaseGroupsPage({
   void projectsByName;
 
   const projectName = `${projectNamePrefix}${projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const [dbGroupList, setDbGroupList] = useState<DatabaseGroup[]>([]);
   const [loading, setLoading] = useState(true);

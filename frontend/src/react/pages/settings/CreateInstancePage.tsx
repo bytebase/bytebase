@@ -9,9 +9,9 @@ import {
   useInstanceFormContext,
 } from "@/react/components/instance";
 import type { InfoSection } from "@/react/components/instance/info-content";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 
 const MIN_DOCKED_MAIN_WIDTH = 700;

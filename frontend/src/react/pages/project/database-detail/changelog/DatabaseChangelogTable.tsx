@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   type Changelog,

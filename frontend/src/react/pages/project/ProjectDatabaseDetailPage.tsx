@@ -3,7 +3,6 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { LocationQueryRaw } from "vue-router";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { TransferProjectSheet } from "@/react/components/database";
 import { Alert } from "@/react/components/ui/alert";
@@ -14,9 +13,9 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -49,7 +48,7 @@ const buildDatabaseDetailRoute = (
   },
   options?: {
     hash?: string;
-    query?: LocationQueryRaw;
+    query?: Record<string, string | undefined>;
   }
 ) => {
   const databaseMatches = database.name.match(
@@ -76,7 +75,7 @@ export interface ProjectDatabaseDetailPageProps {
   instanceId: string;
   databaseName: string;
   hash?: string;
-  query?: LocationQueryRaw;
+  query?: Record<string, string | undefined>;
 }
 
 export function ProjectDatabaseDetailPage({

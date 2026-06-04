@@ -1,4 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { last } from "lodash-es";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -11,7 +12,6 @@ import {
 } from "react";
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import {
   getCurrentSQLEditorTab,
@@ -24,9 +24,8 @@ import {
   AISettingSchema,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { wrapRefAsPromise } from "@/utils";
-import { aiContextEvents, getChatByTab } from "../logic";
-import { useConversationStore } from "../store";
+import { aiContextEvents } from "../logic";
+import { conversationListByConnection, useConversationStore } from "../store";
 import type { AIContextEvents, Conversation } from "../types";
 
 /**
@@ -93,7 +92,7 @@ export function useAIContext(): ReactAIContext {
 const EMPTY_AI_SETTING: AISetting = createProto(AISettingSchema, {});
 
 export function AIContextProvider({ children }: { children: ReactNode }) {
-  // ---- Vue-side state bridged via useVueState ----------------------------
+  // ---- AI setting --------------------------------------------------------
 
   // The original Vue ProvideAIContext fetched the AI setting on mount.
   // Mirror that here. `getOrFetchSettingByName` is idempotent; firing it
@@ -133,32 +132,55 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
   // ---- Per-tab chat info -------------------------------------------------
   //
-  // `getChatByTab(tab)` returns an `AIChatInfo` whose inner `list`,
-  // `ready`, and `selected` are Vue refs (the conversation list is
-  // backed by a Pinia store). We select the tab from Zustand, memoize
-  // the per-tab chat, and bridge each inner ref via its own
-  // `useVueState` getter — subscribing at the right dep granularity
-  // (chat list mutations don't churn `ready`, and so on). `deps:
-  // [chatInfo]` re-subscribes each watch when the tab's chat is
-  // swapped, since the swap arrives through Zustand rather than Vue.
-  const chatInfo = useMemo(() => getChatByTab(currentTab), [currentTab]);
+  // Conversations live in the Zustand `useConversationStore`. We subscribe to
+  // the conversation map + per-connection ready flags and derive the current
+  // tab's chat (list / ready / selected) with plain React state — no Vue refs.
+  const tabInstance = currentTab?.connection.instance;
+  const tabDatabase = currentTab?.connection.database;
+  const connKey =
+    tabInstance && tabDatabase ? `${tabInstance}/${tabDatabase}` : "";
 
-  const chatList = useVueState<Conversation[]>(() => chatInfo.list.value, {
-    deep: true,
-    deps: [chatInfo],
-  });
-  const chatReady = useVueState<boolean>(() => chatInfo.ready.value, {
-    deps: [chatInfo],
-  });
-  const chatSelected = useVueState<Conversation | undefined>(
-    () => chatInfo.selected.value,
-    { deps: [chatInfo] }
-  );
+  const conversationsById = useConversationStore((s) => s.conversationsById);
+  const readyByConnection = useConversationStore((s) => s.readyByConnection);
+
+  // Fetch the tab's conversations on connection change; the store sets the
+  // ready flag and merges results.
+  useEffect(() => {
+    if (!tabInstance || !tabDatabase) return;
+    void useConversationStore.getState().fetchConversationListByConnection({
+      instance: tabInstance,
+      database: tabDatabase,
+    } as never);
+  }, [tabInstance, tabDatabase]);
+
+  const chatList = useMemo<Conversation[]>(() => {
+    if (!tabInstance || !tabDatabase) return [];
+    return Object.values(conversationsById)
+      .filter((c) => c.instance === tabInstance && c.database === tabDatabase)
+      .sort((a, b) => a.created_ts - b.created_ts);
+  }, [conversationsById, tabInstance, tabDatabase]);
+
+  const chatReady = connKey ? !!readyByConnection[connKey] : false;
+
+  // Explicit per-connection selection; falls back to the last conversation
+  // once the connection is ready (mirrors the Vue `watch` default).
+  const [selectedIdByConn, setSelectedIdByConn] = useState<
+    Record<string, string | undefined>
+  >({});
+  const selectedId = connKey ? selectedIdByConn[connKey] : undefined;
+  const chatSelected = useMemo<Conversation | undefined>(() => {
+    const explicit = selectedId
+      ? chatList.find((c) => c.id === selectedId)
+      : undefined;
+    if (explicit) return explicit;
+    return chatReady ? last(chatList) : undefined;
+  }, [selectedId, chatList, chatReady]);
   const setChatSelected = useCallback(
     (next: Conversation | undefined) => {
-      chatInfo.selected.value = next;
+      if (!connKey) return;
+      setSelectedIdByConn((prev) => ({ ...prev, [connKey]: next?.id }));
     },
-    [chatInfo]
+    [connKey]
   );
   const chat = useMemo<ReactAIChatInfo>(
     () => ({
@@ -170,11 +192,9 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     [chatList, chatReady, chatSelected, setChatSelected]
   );
 
-  // Live handle to the current tab's chat for the event listeners
-  // below — they fire outside React's render and must read the latest
-  // refs without re-subscribing on every tab switch.
-  const chatInfoRef = useRef(chatInfo);
-  chatInfoRef.current = chatInfo;
+  // Latest selection map for the event listeners (which fire outside render).
+  const selectedIdByConnRef = useRef(selectedIdByConn);
+  selectedIdByConnRef.current = selectedIdByConn;
 
   // ---- React-side state --------------------------------------------------
 
@@ -191,38 +211,46 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
   // ---- Event listeners (mirror ProvideAIContext.vue) ---------------------
 
-  const conversationStore = useConversationStore();
-
-  // We need the latest chat refs + tab from inside the listeners.
-  // `chatInfoRef` always points at the current tab's chat, and
-  // `getCurrentSQLEditorTab()` reads the live Zustand tab at fire time.
+  // The listeners fire outside render. They read the live tab via
+  // `getCurrentSQLEditorTab()`, await the store's per-connection fetch (so a
+  // brand-new tab doesn't create a duplicate empty conversation before its
+  // existing ones hydrate), then read/select through the store +
+  // `selectedIdByConnRef`.
   useEffect(() => {
+    const selectFor = (conn: { instance: string; database: string }) => {
+      const ck = `${conn.instance}/${conn.database}`;
+      const list = conversationListByConnection(
+        useConversationStore.getState(),
+        conn
+      );
+      const selId = selectedIdByConnRef.current[ck];
+      const explicit = selId ? list.find((c) => c.id === selId) : undefined;
+      return { ck, list, selected: explicit ?? last(list) };
+    };
+
     const offNewConversation = events.on(
       "new-conversation",
       async ({ input }) => {
         const tab = getCurrentSQLEditorTab();
         if (!tab) return;
-        // Wait until the per-tab chat fetch has resolved before deciding
-        // whether to reuse or create. Without this guard a brand-new tab
-        // sees `selected === undefined` and creates a duplicate empty
-        // conversation when one would have hydrated a beat later.
-        await wrapRefAsPromise(chatInfoRef.current.ready, /* expected */ true);
+        const conn = tab.connection;
+        await useConversationStore
+          .getState()
+          .fetchConversationListByConnection(conn);
         setShowHistoryDialog(false);
 
-        const sel = chatInfoRef.current.selected.value;
-        if (!sel || sel.messageList.length !== 0) {
+        const { ck, selected } = selectFor(conn);
+        if (!selected || selected.messageList.length !== 0) {
           // Reuse if the current chat is empty, otherwise create a fresh one.
-          const c = await conversationStore.createConversation({
-            name: "",
-            ...tab.connection,
-          });
-          chatInfoRef.current.selected.value = c;
+          const c = await useConversationStore
+            .getState()
+            .createConversation({ name: "", ...conn });
+          setSelectedIdByConn((prev) => ({ ...prev, [ck]: c.id }));
         }
         if (input) {
           // rAF mirrors the Vue version — gives `PromptInput`'s
           // pending-pre-input effect a frame to land after the conversation
-          // creation settles. Without it the seed text can be dropped if
-          // the effect fires before `selected` updates.
+          // creation settles.
           requestAnimationFrame(() => {
             setPendingPreInput(input);
           });
@@ -233,14 +261,19 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     const offSendChat = events.on("send-chat", async ({ content, newChat }) => {
       const tab = getCurrentSQLEditorTab();
       if (!tab) return;
-      await wrapRefAsPromise(chatInfoRef.current.ready, /* expected */ true);
+      const conn = tab.connection;
+      await useConversationStore
+        .getState()
+        .fetchConversationListByConnection(conn);
       if (newChat) {
         setShowHistoryDialog(false);
-        const c = await conversationStore.createConversation({
-          name: "",
-          ...tab.connection,
-        });
-        chatInfoRef.current.selected.value = c;
+        const c = await useConversationStore
+          .getState()
+          .createConversation({ name: "", ...conn });
+        setSelectedIdByConn((prev) => ({
+          ...prev,
+          [`${conn.instance}/${conn.database}`]: c.id,
+        }));
       }
       requestAnimationFrame(() => {
         setPendingSendChat({ content });
@@ -251,10 +284,9 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       offNewConversation();
       offSendChat();
     };
-    // `events` and `conversationStore` are stable singletons;
-    // `chatInfoRef` / `getCurrentSQLEditorTab` read the latest values
-    // at fire time — no need to re-subscribe on tab change.
-  }, [events, conversationStore]);
+    // `events` is a stable singleton; `getCurrentSQLEditorTab` /
+    // `selectedIdByConnRef` / the store read the latest values at fire time.
+  }, [events]);
 
   // ---- Memoized value bundle --------------------------------------------
 

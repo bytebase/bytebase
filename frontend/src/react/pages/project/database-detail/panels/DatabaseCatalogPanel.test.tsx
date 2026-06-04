@@ -176,7 +176,6 @@ const mocks = vi.hoisted(() => {
   return {
     localStorage,
     featureToRef: vi.fn(() => ({ value: true })),
-    useVueState: vi.fn((getter: () => unknown) => getter()),
     useDatabaseCatalog: vi.fn(() => makeDatabaseCatalog()),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
@@ -361,10 +360,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
   pushNotification: mocks.pushNotification,
@@ -382,6 +377,7 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getSettingByName: mocks.getSettingByName,
     getProjectClassification: mocks.getProjectClassification,
+    hasInstanceFeature: () => mocks.featureToRef().value,
   });
   return {
     useAppStore: Object.assign(
@@ -400,7 +396,8 @@ vi.mock("@/utils", () => ({
   instanceV1MaskingForNoSQL: mocks.instanceV1MaskingForNoSQL,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },
@@ -473,8 +470,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue(makeDatabaseCatalog());
   mocks.getOrFetchPolicyByParentAndType.mockReset();

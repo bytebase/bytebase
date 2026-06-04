@@ -1,13 +1,13 @@
-import { uniq } from "lodash-es";
+import { isUndefined, uniq } from "lodash-es";
+import { getProjectByName } from "@/react/stores/app/projectAccess";
 import {
   ensureGroupIdentifier,
   extractServiceAccountId,
   extractWorkloadIdentityId,
   groupNamePrefix,
-  useGroupStore,
-  useWorkspaceV1Store,
 } from "@/store";
 import {
+  getUserFullNameByType,
   serviceAccountNamePrefix,
   userNamePrefix,
   workloadIdentityNamePrefix,
@@ -15,11 +15,19 @@ import {
 import {
   ALL_USERS_USER_EMAIL,
   groupBindingPrefix,
+  type QueryPermission,
+  QueryPermissionQueryAny,
   serviceAccountBindingPrefix,
+  unknownUser,
   workloadIdentityBindingPrefix,
 } from "@/types";
+import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { ensureUserFullName } from "@/utils/v1/user";
 
@@ -75,7 +83,8 @@ export const getUserListInBinding = ({
 
   const resolveGroup =
     getGroupByIdentifier ??
-    ((identifier: string) => useGroupStore().getGroupByIdentifier(identifier));
+    ((identifier: string) =>
+      appStoreUtilBridge()?.getGroupByIdentifier(identifier));
   const fullnameList = [];
 
   for (const member of binding.members) {
@@ -106,7 +115,6 @@ export const memberMapToRolesInProjectIAM = (
   targetRole?: string,
   getGroupByIdentifier?: (identifier: string) => Group | undefined
 ): Map<string, Set<string>> => {
-  const workspaceStore = useWorkspaceV1Store();
   // Map<userfullname, Set<roles/{role}>>
   const rolesMapByName = new Map<string, Set<string>>();
 
@@ -133,7 +141,10 @@ export const memberMapToRolesInProjectIAM = (
   }
 
   // Handle workspace level project roles.
-  for (const [role, userSet] of workspaceStore.roleMapToUsers.entries()) {
+  const roleMapToUsers =
+    appStoreUtilBridge()?.workspaceRoleMapToUsers() ??
+    new Map<string, Set<string>>();
+  for (const [role, userSet] of roleMapToUsers.entries()) {
     if (targetRole && role !== targetRole) {
       continue;
     }
@@ -167,4 +178,86 @@ export const filterBindingsByUserName = ({
       fullnameList.includes(name)
     );
   });
+};
+
+// Project-level IAM permission check. Reads the React app store (project IAM
+// policy + roles) via the util bridge — relocated from the deleted Pinia
+// `projectIamPolicy` store, whose data was never populated in the React shell.
+const checkProjectIAMPolicyWithExpr = (
+  user: User,
+  project: Project,
+  requiredPermissions: QueryPermission[],
+  bindingExprCheck: (expr?: Expr) => boolean
+): boolean => {
+  const policy = appStoreUtilBridge()?.getProjectIamPolicy(project.name);
+  if (!policy) {
+    return false;
+  }
+  for (const binding of policy.bindings) {
+    const nameList = getUserListInBinding({ binding, ignoreGroup: false });
+    if (
+      !nameList.includes(getUserFullNameByType(user)) &&
+      !nameList.includes(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`)
+    ) {
+      continue;
+    }
+    const permissions =
+      appStoreUtilBridge()?.getRoleByName(binding.role)?.permissions || [];
+    for (const permission of permissions) {
+      if (requiredPermissions.includes(permission as QueryPermission)) {
+        if (bindingExprCheck(binding.parsedExpr)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+export const checkQuerierPermission = (
+  database: Database,
+  permissions: QueryPermission[] = QueryPermissionQueryAny,
+  schema?: string,
+  table?: string
+): boolean => {
+  return checkProjectIAMPolicyWithExpr(
+    appStoreUtilBridge()?.currentUser() ?? unknownUser(),
+    getProjectByName(database.project),
+    permissions,
+    (expr?: Expr): boolean => {
+      if (!expr) {
+        return true;
+      }
+      const conditionExpr = convertFromExpr(expr);
+      if (
+        conditionExpr.expiredTime &&
+        new Date(conditionExpr.expiredTime).getTime() < Date.now()
+      ) {
+        return false;
+      }
+      if (
+        conditionExpr.databaseResources &&
+        conditionExpr.databaseResources.length > 0
+      ) {
+        for (const databaseResource of conditionExpr.databaseResources) {
+          if (databaseResource.databaseFullName === database.name) {
+            if (isUndefined(schema) && isUndefined(table)) {
+              return true;
+            }
+            if (
+              isUndefined(databaseResource.schema) ||
+              (isUndefined(databaseResource.schema) &&
+                isUndefined(databaseResource.table)) ||
+              (databaseResource.schema === schema &&
+                databaseResource.table === table)
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+      return true;
+    }
+  );
 };

@@ -3,8 +3,8 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { pushNotification } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {

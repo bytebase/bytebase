@@ -1,6 +1,6 @@
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import {
   extractDatabaseGroupName,

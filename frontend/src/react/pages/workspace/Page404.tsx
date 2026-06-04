@@ -2,14 +2,14 @@ import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.svg";
 import { Button } from "@/react/components/ui/button";
-import { router } from "@/router";
-import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/react/router/handles";
 
 export function Page404() {
   const { t } = useTranslation();
 
   const goHome = () => {
-    router.push({ name: WORKSPACE_ROOT_MODULE });
+    router.push({ name: WORKSPACE_ROUTE_LANDING });
   };
 
   return (

@@ -3,6 +3,17 @@ export interface ApiClientOptions {
   credentials?: { email: string; password: string }; // Optional only during server startup before credentials are known
 }
 
+export interface IamBinding {
+  role: string;
+  members: string[];
+  condition?: { expression: string; title?: string };
+}
+
+export interface IamPolicy {
+  bindings: IamBinding[];
+  etag?: string;
+}
+
 export class BytebaseApiClient {
   private baseURL: string;
   private token = "";
@@ -77,6 +88,75 @@ export class BytebaseApiClient {
     await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
   }
 
+  // Generic workspace setting upsert. Mirrors the frontend store's
+  // `upsertSetting({ name, value })` in store/modules/v1/setting.ts —
+  // same endpoint, same body shape, just exposed for tests that need to
+  // configure workspace-level state in beforeAll.
+  //
+  // `name` is the bare enum value (e.g., "WORKSPACE_PROFILE",
+  // "WORKSPACE_APPROVAL") — `settings/` is prefixed here.
+  // `updateMaskPath` is the gRPC field mask path (e.g.,
+  // "value.workspace_profile.external_url" or "value.workspace_approval").
+  async upsertSetting(
+    name: string,
+    value: unknown,
+    updateMaskPath: string,
+  ): Promise<void> {
+    await this.request<unknown>(
+      "PATCH",
+      `/v1/settings/${name}?updateMask=${encodeURIComponent(updateMaskPath)}&allowMissing=true`,
+      { name: `settings/${name}`, value },
+    );
+  }
+
+  // Convenience wrapper for the most common workspace-setting call.
+  // Silences the "Bytebase has not configured --external-url" banner
+  // (frontend BannersWrapper.tsx checks `serverInfo.externalUrl` for a
+  // truthy value).
+  async setWorkspaceExternalUrl(externalUrl: string): Promise<void> {
+    await this.upsertSetting(
+      "WORKSPACE_PROFILE",
+      { workspaceProfile: { externalUrl } },
+      "value.workspace_profile.external_url",
+    );
+  }
+
+  // Read a setting; returns null on 404 (setting never set on this server).
+  async getSetting(name: string): Promise<{ name: string; value?: unknown } | null> {
+    try {
+      return await this.request<{ name: string; value?: unknown }>(
+        "GET",
+        `/v1/settings/${name}`,
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  // Creates a new project with the given resourceId and title. Used by the
+  // seed-test-data fixture to ensure tests have ≥ 2 projects (the
+  // project-switcher CUJ in connection.spec.ts needs an alternative to the
+  // default "Sample Project").
+  async createProject(
+    projectId: string,
+    title: string,
+    settings: { allowRequestRole?: boolean; allowJustInTimeAccess?: boolean } = {},
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/projects?projectId=${projectId}`,
+      {
+        title,
+        ...(settings.allowRequestRole !== undefined && {
+          allowRequestRole: settings.allowRequestRole,
+        }),
+        ...(settings.allowJustInTimeAccess !== undefined && {
+          allowJustInTimeAccess: settings.allowJustInTimeAccess,
+        }),
+      },
+    );
+  }
+
   // Installs an enterprise license JWT. The JWT must be signed by Bytebase's
   // license RSA key — generate it out of band; this client only uploads it.
   async uploadLicense(license: string): Promise<void> {
@@ -142,9 +222,21 @@ export class BytebaseApiClient {
   }
 
   async upsertPolicy(parent: string, policyType: string, policy: unknown) {
-    // Derive the oneof field name from policyType: "masking_exemption" → "masking_exemption_policy"
-    // The backend expects the updateMask to target the specific policy oneof field.
-    const updateMask = `${policyType}_policy`;
+    // The URL segment is the lowercased enum name (e.g. "data_query") but
+    // the updateMask must reference the proto FIELD name in the Policy
+    // oneof — which is NOT always `${policyType}_policy`. For most
+    // policies the two coincide (masking_exemption → masking_exemption_policy),
+    // but `data_query` maps to `query_data_policy` (words reversed —
+    // see proto/v1/v1/org_policy_service.proto). Map explicitly so the
+    // gateway accepts the mask.
+    const fieldByType: Record<string, string> = {
+      rollout: "rollout_policy",
+      masking_exemption: "masking_exemption_policy",
+      masking_rule: "masking_rule_policy",
+      data_query: "query_data_policy",
+      tag: "tag_policy",
+    };
+    const updateMask = fieldByType[policyType] ?? `${policyType}_policy`;
     return this.request<unknown>(
       "PATCH",
       `/v1/${parent}/policies/${policyType}?allowMissing=true&updateMask=${updateMask}`,
@@ -185,6 +277,40 @@ export class BytebaseApiClient {
     });
   }
 
+  // Note: createUser is defined earlier in this file (added by the demo
+  // -> signup migration on main, signature `(email, password, title)`).
+  // Tests that previously used the local duplicate `(email, title, password)`
+  // must use the canonical signature now.
+
+  // IAM — project. Read the current policy, mutate bindings (typically
+  // by appending), and POST it back. Caller is responsible for
+  // preserving the etag and any existing bindings they care about.
+  async getProjectIamPolicy(project: string): Promise<IamPolicy> {
+    return this.request<IamPolicy>("GET", `/v1/${project}:getIamPolicy`);
+  }
+
+  async setProjectIamPolicy(project: string, policy: IamPolicy): Promise<IamPolicy> {
+    return this.request<IamPolicy>(
+      "POST",
+      `/v1/${project}:setIamPolicy`,
+      { resource: project, policy, etag: policy.etag ?? "" },
+    );
+  }
+
+  // Convenience: append a single binding (members + optional condition)
+  // to a project's IAM policy without disturbing existing bindings.
+  // Re-fetches before the write to pick up any concurrent etag bump.
+  async appendProjectBinding(
+    project: string,
+    role: string,
+    members: string[],
+    condition?: { expression: string; title?: string },
+  ): Promise<void> {
+    const current = await this.getProjectIamPolicy(project);
+    current.bindings.push({ role, members, condition: condition ?? { expression: "" } });
+    await this.setProjectIamPolicy(project, current);
+  }
+
   // Service Accounts
   async createServiceAccount(parent: string, serviceAccountId: string, title: string) {
     return this.request<{ name: string; email: string }>("POST",
@@ -207,6 +333,34 @@ export class BytebaseApiClient {
     try { await this.request<unknown>("DELETE", `/v1/workloadIdentities/${email}`); } catch { /* ignore */ }
   }
 
+  // Database groups — a project-scoped collection of databases selected
+  // by a CEL condition (e.g. `resource.database_name.startsWith("hr_")`).
+  // The SQL editor's connection panel surfaces groups under the
+  // "Database Group" tab so users can run a query against all matching
+  // databases at once (batch query).
+  async createDatabaseGroup(
+    project: string,
+    groupId: string,
+    title: string,
+    conditionExpression: string,
+  ): Promise<{ name: string }> {
+    // The proto binds `body: "database_group"` on CreateDatabaseGroup,
+    // so the HTTP body is the DatabaseGroup payload directly (not
+    // wrapped under `databaseGroup`).
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/${project}/databaseGroups?databaseGroupId=${groupId}`,
+      {
+        title,
+        databaseExpr: { expression: conditionExpression },
+      },
+    );
+  }
+
+  async deleteDatabaseGroup(name: string): Promise<void> {
+    try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
+  }
+
   // Sheets
   async createSheet(project: string, content: string): Promise<string> {
     const b64 = Buffer.from(content).toString("base64");
@@ -214,6 +368,38 @@ export class BytebaseApiClient {
       "POST", `/v1/${project}/sheets`, { content: b64 }
     );
     return resp.name;
+  }
+
+  // Worksheets — distinct from Sheets. SQL Editor's left sidebar tree shows
+  // Worksheets, identified by `projects/{project}/worksheets/{uuid}`. The
+  // UUID portion is what the editor URL takes (`/sheets/{uuid}` confusingly
+  // routes to a worksheet).
+  async createWorksheet(project: string, title: string, database: string, content: string): Promise<{ name: string }> {
+    const b64 = Buffer.from(content).toString("base64");
+    return this.request<{ name: string }>(
+      "POST", `/v1/${project}/worksheets`,
+      { title, database, content: b64, visibility: "PRIVATE" },
+    );
+  }
+
+  async deleteWorksheet(name: string): Promise<void> {
+    try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
+  }
+
+  // Locate a database by short name (e.g., "family_prod") across every
+  // instance reachable to the test user. Used by tests that need a database
+  // outside the env-discovered default (e.g., R7 needs both hr_prod and a
+  // MySQL family_prod).
+  async findDatabaseByShortName(shortName: string): Promise<{ database: string; instance: string; engine: string } | null> {
+    const { instances } = await this.listInstances();
+    for (const inst of instances) {
+      const { databases } = await this.listDatabases(inst.name);
+      const match = databases.find((d) => d.name.endsWith(`/${shortName}`));
+      if (match) {
+        return { database: match.name, instance: inst.name, engine: inst.engine };
+      }
+    }
+    return null;
   }
 
   // Plans
@@ -232,7 +418,16 @@ export class BytebaseApiClient {
   }
 
   async runPlanChecks(planName: string): Promise<void> {
-    await this.request("POST", `/v1/${planName}:runPlanChecks`, {});
+    try {
+      await this.request("POST", `/v1/${planName}:runPlanChecks`, {});
+    } catch (err) {
+      // Once a rollout exists, the server rejects `runPlanChecks` with
+      // "cannot run plan checks because plan already has a rollout".
+      // That state implies checks already completed at issue-creation
+      // time — calling again is unnecessary, so swallow this case.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("already has a rollout")) throw err;
+    }
   }
 
   async getPlanCheckRun(planName: string): Promise<{ status: string; results: { status: string; type: string; title: string }[] }> {
@@ -255,11 +450,58 @@ export class BytebaseApiClient {
   }
 
   // Project settings
-  async updateProjectSettings(project: string, settings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean }): Promise<void> {
+  async updateProjectSettings(
+    project: string,
+    settings: {
+      requireIssueApproval?: boolean;
+      requirePlanCheckNoError?: boolean;
+      allowJustInTimeAccess?: boolean;
+      allowRequestRole?: boolean;
+      // When license is installed, project.allow_self_approval defaults
+      // to false → an issue's creator cannot approve their own issue
+      // (403 "cannot approve because self-approval is not allowed for
+      // this project"). Tests that have a single admin both create and
+      // approve must flip this to true.
+      allowSelfApproval?: boolean;
+      // DATA_CLASSIFICATION config id the project uses. Must reference a config
+      // already defined in the DATA_CLASSIFICATION setting (UpdateProject
+      // validates it exists).
+      dataClassificationConfigId?: string;
+    },
+  ): Promise<void> {
     const fields: string[] = [];
-    if (settings.requireIssueApproval !== undefined) fields.push("require_issue_approval");
-    if (settings.requirePlanCheckNoError !== undefined) fields.push("require_plan_check_no_error");
-    await this.request("PATCH", `/v1/${project}?update_mask=${fields.join(",")}`, settings);
+    const body: Record<string, unknown> = { name: project };
+    if (settings.requireIssueApproval !== undefined) {
+      fields.push("require_issue_approval");
+      body.requireIssueApproval = settings.requireIssueApproval;
+    }
+    if (settings.requirePlanCheckNoError !== undefined) {
+      fields.push("require_plan_check_no_error");
+      body.requirePlanCheckNoError = settings.requirePlanCheckNoError;
+    }
+    if (settings.allowJustInTimeAccess !== undefined) {
+      fields.push("allow_just_in_time_access");
+      body.allowJustInTimeAccess = settings.allowJustInTimeAccess;
+    }
+    if (settings.allowRequestRole !== undefined) {
+      fields.push("allow_request_role");
+      body.allowRequestRole = settings.allowRequestRole;
+    }
+    if (settings.allowSelfApproval !== undefined) {
+      fields.push("allow_self_approval");
+      body.allowSelfApproval = settings.allowSelfApproval;
+    }
+    if (settings.dataClassificationConfigId !== undefined) {
+      fields.push("data_classification_config_id");
+      body.dataClassificationConfigId = settings.dataClassificationConfigId;
+    }
+    if (fields.length === 0) {
+      throw new Error("updateProjectSettings: no fields specified");
+    }
+    // Use the camelCase `updateMask` query key (the grpc-gateway form the
+    // other helpers in this file use) with snake_case field paths, so the mask
+    // is bound explicitly rather than relying on a body-derived fallback.
+    await this.request("PATCH", `/v1/${project}?updateMask=${fields.join(",")}`, body);
   }
 
   async getProject(project: string): Promise<Record<string, unknown>> {
@@ -267,19 +509,48 @@ export class BytebaseApiClient {
   }
 
   // Review config
-  async getReviewConfig(name: string): Promise<{ name: string; rules: { type: string; level: string; engine: string; payload: string }[] }> {
-    return this.request("GET", `/v1/${name}`);
+  // Upsert (create-or-update) a ReviewConfig. Mirrors the UI's
+  // updateReviewConfig(allowMissing=true) call from
+  // store/modules/sqlReview.ts. Lets tests own their review-config
+  // fixture rather than relying on a demo-seeded one.
+  //
+  // The rule's `payload` field, despite being present on GET responses,
+  // is rejected as "unknown" on PATCH bodies — omit it. Per-rule
+  // configuration that needs a payload would go via a separate update.
+  async upsertReviewConfig(
+    configId: string,
+    title: string,
+    rules: { type: string; level: string; engine: string }[],
+    enabled = true,
+  ): Promise<{ name: string }> {
+    const name = `reviewConfigs/${configId}`;
+    return this.request<{ name: string }>(
+      "PATCH",
+      `/v1/${name}?allowMissing=true&updateMask=title,enabled,rules`,
+      { name, title, enabled, rules },
+    );
   }
 
-  async updateReviewConfigRuleLevel(configName: string, ruleType: string, engine: string, newLevel: string): Promise<void> {
-    const config = await this.getReviewConfig(configName);
-    for (const rule of config.rules) {
-      if (rule.type === ruleType && rule.engine === engine) {
-        rule.level = newLevel;
-        break;
-      }
-    }
-    await this.request("PATCH", `/v1/${configName}?update_mask=rules`, { rules: config.rules });
+  async deleteReviewConfig(name: string): Promise<void> {
+    try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
+  }
+
+  // Bind a ReviewConfig to a project (or environment / instance) by
+  // upserting a TagPolicy on the resource with the well-known key
+  // `bb.tag.review_config` → `reviewConfigs/<id>`. Mirrors the UI's
+  // upsertReviewConfigTag() helper in store/modules/sqlReview.ts.
+  async upsertReviewConfigTag(resource: string, reviewConfigName: string): Promise<void> {
+    await this.request<unknown>(
+      "PATCH",
+      `/v1/${resource}/policies/tag?allowMissing=true&updateMask=tag_policy`,
+      {
+        name: `${resource}/policies/tag`,
+        type: "TAG",
+        tagPolicy: {
+          tags: { "bb.tag.review_config": reviewConfigName },
+        },
+      },
+    );
   }
 
   // Multi-user helper

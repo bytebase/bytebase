@@ -9,6 +9,7 @@ const { mockContextRef } = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string, vars?: Record<string, unknown>) => {
       let s = key;
@@ -52,10 +53,6 @@ vi.mock("@/react/components/EnvironmentLabel", () => ({
 }));
 
 // Stub other modules the component pulls in.
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
-}));
-
 vi.mock("@/types/v1/database", () => ({
   unknownDatabase: () => ({
     name: "instances/-/databases/-",

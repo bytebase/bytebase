@@ -5,8 +5,8 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 import {

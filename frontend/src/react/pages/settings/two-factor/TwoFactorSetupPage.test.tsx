@@ -27,7 +27,6 @@ const regeneratedCurrentUser = {
 };
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useCurrentUser: vi.fn(() => legacyCurrentUser),
   updateUser: vi.fn(async () => regeneratedCurrentUser),
   pushNotification: vi.fn(),
@@ -35,10 +34,6 @@ const mocks = vi.hoisted(() => ({
   currentRoute: {
     value: { name: "workspace.setting.profile" },
   },
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -56,19 +51,12 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_2FA_SETUP_MODULE: "auth.2fa-setup",
-}));
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  SETTING_ROUTE_PROFILE: "workspace.setting.profile",
 }));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {

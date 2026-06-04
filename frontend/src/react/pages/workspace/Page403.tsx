@@ -2,8 +2,8 @@ import { ChevronLeft, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { router } from "@/router";
-import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/react/router/handles";
 import type { Permission } from "@/types";
 
 export function Page403() {
@@ -30,7 +30,7 @@ export function Page403() {
   const requestAPI = query.api;
 
   const goHome = () => {
-    router.push({ name: WORKSPACE_ROOT_MODULE });
+    router.push({ name: WORKSPACE_ROUTE_LANDING });
   };
 
   return (

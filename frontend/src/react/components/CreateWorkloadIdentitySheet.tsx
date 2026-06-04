@@ -14,7 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { ensureWorkloadIdentityFullName } from "@/react/stores/app/workloadIdentity";
 import { pushNotification } from "@/store";
@@ -144,9 +144,8 @@ function WorkloadIdentityForm({
     (state) => state.updateWorkloadIdentity
   );
 
-  const projectEntity = useVueState(() =>
-    project ? useAppStore.getState().getProjectByName(project) : undefined
-  );
+  const projectFromName = useProjectByName(project ?? "");
+  const projectEntity = project ? projectFromName : undefined;
   void projectsByName;
 
   const isEditMode = !!workloadIdentity && !!workloadIdentity.email;

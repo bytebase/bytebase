@@ -95,7 +95,6 @@ const mocks = vi.hoisted(() => {
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
-    useVueState: vi.fn(<T,>(getter: () => T) => getter()),
     cn: vi.fn((...values: Array<string | false | null | undefined>) =>
       values.filter(Boolean).join(" ")
     ),
@@ -159,6 +158,7 @@ vi.mock("lucide-react", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
@@ -200,26 +200,19 @@ vi.mock("@/react/components/ui/tooltip", () => ({
   Tooltip: mocks.Tooltip,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/react/lib/utils", () => ({
   cn: mocks.cn,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },
 }));
 
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL: "database-group.detail",
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS: "plan.detail.specs",
-}));
-
-vi.mock("@/router/dashboard/projectV1RouteHelpers", () => ({
+vi.mock("@/react/router/routeHelpers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router/routeHelpers")>()),
   buildPlanDeployRouteFromPlanName: mocks.buildPlanDeployRouteFromPlanName,
 }));
 

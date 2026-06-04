@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   serverInfo: { externalUrl: "https://example.com" } as
     | { externalUrl: string }
     | undefined,
@@ -28,10 +27,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -73,7 +68,8 @@ vi.mock("@/utils", () => ({
   extractWorksheetID: mocks.extractWorksheetID,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },
@@ -151,8 +147,6 @@ beforeEach(async () => {
   mocks.patchWorksheet.mockResolvedValue({});
   mocks.tabStatus = "CLEAN";
 
-  mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
-
   // Mock clipboard
   Object.defineProperty(navigator, "clipboard", {
     value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -201,9 +195,6 @@ describe("SharePopoverBody", () => {
       email: "other@example.com",
       name: "users/other@example.com",
     });
-    mocks.usePiniaBridge.mockImplementation((getter: () => unknown) =>
-      getter()
-    );
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />
@@ -264,9 +255,6 @@ describe("SharePopoverBody", () => {
 
   test("copy button disabled when currentTab status is not CLEAN", () => {
     mocks.tabStatus = "DIRTY";
-    mocks.usePiniaBridge.mockImplementation((getter: () => unknown) =>
-      getter()
-    );
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />

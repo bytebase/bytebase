@@ -1,4 +1,4 @@
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 import type {
   DomActionParams,
   DomActionResult,
@@ -61,7 +61,7 @@ function getElementRef(params: DomActionParams): string | undefined {
 
 export async function lazyExecuteDomAction(
   params: DomActionParams,
-  router?: Router
+  router?: AppRouterInstance
 ): Promise<DomActionResult> {
   const elementRef = getElementRef(params);
   if (!elementRef) {
@@ -84,7 +84,7 @@ export async function lazyExecuteDomAction(
     return formatRefreshError(`Element [${elementRef}] is stale.`);
   }
 
-  // For <a> clicks, use Vue Router to avoid full page reload
+  // For <a> clicks, use Vue AppRouterInstance to avoid full page reload
   if (params.type === "click" && router) {
     const path = isSameOriginLink(entry.element);
     if (path) {

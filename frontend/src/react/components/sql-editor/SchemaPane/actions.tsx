@@ -18,10 +18,10 @@ import { useTranslation } from "react-i18next";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { keyWithPosition } from "@/react/lib/keyWithPosition";
+import { router } from "@/react/router";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,

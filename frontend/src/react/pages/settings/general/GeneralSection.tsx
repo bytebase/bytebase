@@ -23,9 +23,9 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useServerState } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
+import { SQL_EDITOR_HOME_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 

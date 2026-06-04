@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
@@ -55,7 +54,6 @@ import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
   getDatabaseIdOptionConfig,
-  getEnvironmentIdOptions,
   getInstanceIdOptionConfig,
   getProjectIdOptionConfig,
   hasWorkspacePermissionV2,
@@ -354,8 +352,8 @@ function MaskingRuleConfig({
 export function GlobalMaskingPage() {
   const { t } = useTranslation();
 
-  const hasSensitiveDataFeature = useVueState(() =>
-    useAppStore.getState().hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   const hasPermission = hasWorkspacePermissionV2(
@@ -379,8 +377,16 @@ export function GlobalMaskingPage() {
     []
   );
 
-  // Subscribe to reactive store data so the memo recomputes when settings load.
-  const environmentOptions = useVueState(() => getEnvironmentIdOptions());
+  // Recomputes once the environment list loads into the app store.
+  const environmentList = useAppStore((s) => s.environmentList);
+  const environmentOptions = useMemo(
+    () =>
+      environmentList.map((env) => ({
+        label: `${env.title} (${env.id})`,
+        value: env.id,
+      })),
+    [environmentList]
+  );
   // `getClassificationLevelOptions` reads the app store imperatively, so key
   // this on a `settingsByName` subscription to recompute once the
   // DATA_CLASSIFICATION setting resolves.

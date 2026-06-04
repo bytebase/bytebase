@@ -43,6 +43,43 @@ const DYNAMIC_PREFIXES = [
   // Role-grant expiration presets, rendered via t(preset.labelKey) in
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
+  // Keys consumed by SHARED non-React `.ts` modules that translate via
+  // `@/plugins/i18n` (the same react-i18next instance — vue-i18n is gone), but
+  // live OUTSIDE this checker's React-only scan, so they read as unused. They
+  // must stay in the React locale files (statically loaded; the runtime legacy
+  // merge does not resolve them reliably at first render — e.g. /roles). Listed
+  // with the shared caller that uses them:
+  //   - role.*.self / .description — displayRoleTitle / displayRoleTitleFromList
+  //     (src/utils/role.ts, src/react/lib/role.ts)
+  "role.",
+  //   - project.webhook.activity-item.* — projectWebhookV1ActivityItemList
+  //     (src/types/v1/projectWebhook.ts)
+  "project.webhook.activity-item.",
+  //   - webhook / IM type names — projectWebhookV1TypeItemList (same file)
+  "common.dingtalk",
+  "common.discord",
+  "common.feishu",
+  "common.google-chat",
+  "common.lark",
+  "common.slack",
+  "common.teams",
+  "common.wecom",
+  //   - common.canceled — src/utils/accessGrant.ts
+  "common.canceled",
+  //   - common.no-license — src/utils/v1/instance.ts (instance display name)
+  "common.no-license",
+  //   - data-source.{admin,read-only} — dataSourceType (src/utils/v1/instance.ts)
+  "data-source.admin",
+  "data-source.read-only",
+  //   - sheet.{mine,shared} — src/views/sql-editor/Sheet/context.ts
+  "sheet.mine",
+  "sheet.shared",
+  //   - task.status.available — src/utils/v1/issue/rollout.ts
+  "task.status.available",
+  //   - auth.token-expired-description — src/connect/middlewares/authInterceptorMiddleware.ts
+  "auth.token-expired-description",
+  //   - issue.title.export-data — src/utils/v1/issue/issue.ts
+  "issue.title.export-data",
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

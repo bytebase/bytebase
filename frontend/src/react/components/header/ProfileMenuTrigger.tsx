@@ -21,7 +21,6 @@ import {
   useWorkspace,
 } from "@/react/hooks/useAppState";
 import {
-  AUTH_SIGNIN_MODULE,
   isSqlEditorRouteName,
   SETTING_ROUTE_PROFILE,
   SQL_EDITOR_HOME_MODULE,
@@ -236,15 +235,9 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              const redirect =
-                route.fullPath.startsWith("/auth") || !route.fullPath
-                  ? undefined
-                  : route.fullPath;
-              const signinUrl = navigate.resolve({
-                name: AUTH_SIGNIN_MODULE,
-                query: { redirect },
-              }).fullPath;
-              void useAppStore.getState().logout(signinUrl);
+              // logout() computes the signin redirect itself (mirrors the
+              // legacy Pinia auth store) and hard-redirects to clear state.
+              void useAppStore.getState().logout();
             }}
           >
             {t("common.logout")}

@@ -66,13 +66,11 @@
     "lossless-json": "^4.3.0",
     "lucide-react": "^1.14.0",
     "lucide-static": "^1.14.0",
-    "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@31.0.1",
     "monaco-languageclient": "10.7.0",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.21.0",
-    "pinia": "3.0.4",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "qrcode.react": "^4.2.0",
@@ -83,6 +81,7 @@
     "react-i18next": "^17.0.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.11.0",
+    "react-router-dom": "^7.16.0",
     "regenerator-runtime": "^0.14.1",
     "rxjs": "^7.8.2",
     "scroll-into-view-if-needed": "^3.1.0",
@@ -96,7 +95,6 @@
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
     "vue": "3.5.34",
-    "vue-draggable-plus": "^0.6.0",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
@@ -162,8 +160,6 @@
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2",
     "vue-component-type-helpers": "^3.2.8",
-    "vue-i18n": "11.4.2",
-    "vue-router": "4.6.4",
     "vue-tsc": "3.2.8",
     "ws": "^8.20.0"
   },

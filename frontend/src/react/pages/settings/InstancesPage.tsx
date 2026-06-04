@@ -63,13 +63,12 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import type { InstanceFilter } from "@/react/stores/app/types";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
-import { featureToRef, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   isValidInstanceName,
@@ -186,8 +185,8 @@ function EnvironmentName({ environmentName }: { environmentName: string }) {
     environment.name === UNKNOWN_ENVIRONMENT_NAME ||
     environment.name === NULL_ENVIRONMENT_NAME;
 
-  const hasEnvTierFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
+  const hasEnvTierFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";

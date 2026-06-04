@@ -17,8 +17,8 @@ import {
 } from "@/react/components/ui/table";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";

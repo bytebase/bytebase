@@ -1,16 +1,11 @@
-import { type Router } from "vue-router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
-} from "@/router/dashboard/projectV1";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+} from "@/react/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName, extractProjectResourceName } from "./v1";
-
-export const isSQLEditorRoute = (router: Router) => {
-  return router.currentRoute.value.name?.toString().startsWith("sql-editor");
-};
 
 export const autoDatabaseRoute = (database: Database) => {
   const name = PROJECT_V1_ROUTE_DATABASE_DETAIL;

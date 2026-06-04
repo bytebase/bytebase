@@ -15,7 +15,8 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: vi.fn(),
   },

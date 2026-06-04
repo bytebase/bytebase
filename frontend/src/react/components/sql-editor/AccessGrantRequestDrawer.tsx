@@ -20,12 +20,12 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   AccessGrant_Status,
   AccessGrantSchema,

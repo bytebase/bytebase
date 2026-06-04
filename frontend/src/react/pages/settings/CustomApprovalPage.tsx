@@ -1,11 +1,10 @@
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RulesSection } from "@/react/components/CustomApproval/RulesSection";
 import { APPROVAL_SOURCES } from "@/react/components/CustomApproval/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Alert } from "@/react/components/ui/alert";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import {
   useWorkspaceApprovalSettingStore,
@@ -94,7 +93,9 @@ function SourceSection({
   hasFeature: boolean;
   onShowFeatureModal: () => void;
 }) {
-  const rules = useVueState(() => store.getRulesBySource(source));
+  // getRulesBySource returns a fresh filtered array each call, so memoize on
+  // the store + source to keep a stable reference.
+  const rules = useMemo(() => store.getRulesBySource(source), [store, source]);
 
   return (
     <RulesSection

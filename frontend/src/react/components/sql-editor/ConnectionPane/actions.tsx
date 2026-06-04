@@ -7,11 +7,11 @@ import {
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useSQLEditorAllowAdmin } from "@/react/hooks/useSQLEditorBridge";
+import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/react/router/handles";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import type {
   BatchQueryContext,
   SQLEditorConnection,

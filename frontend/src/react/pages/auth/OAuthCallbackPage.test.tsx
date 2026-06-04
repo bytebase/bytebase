@@ -9,7 +9,6 @@ import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   login: vi.fn<(payload: unknown) => Promise<void>>(async () => {}),
   useAuthStore: vi.fn(),
   routerPush: vi.fn(),
@@ -22,23 +21,22 @@ const mocks = vi.hoisted(() => ({
 }));
 mocks.useAuthStore.mockImplementation(() => ({ login: mocks.login }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => ({}), {
+    getState: () => ({ login: mocks.login, workspaceResourceName: () => "" }),
+  }),
+}));
+
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNIN_MODULE: "auth.signin",
 }));
 
 vi.mock("@/utils/sso", () => ({
@@ -73,6 +71,7 @@ vi.mock("@/types/proto-es/v1/auth_service_pb", async (importOriginal) => {
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let OAuthCallbackPage: typeof import("./OAuthCallbackPage").OAuthCallbackPage;

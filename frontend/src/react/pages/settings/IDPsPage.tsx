@@ -48,10 +48,9 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/react/router";
+import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
 import {
   getIdentityProviderResourceId,
@@ -136,9 +135,7 @@ interface FieldMappingState {
 
 function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
   const { t } = useTranslation();
-  const externalUrl = useVueState(
-    () => useAppStore.getState().serverInfo?.externalUrl ?? ""
-  );
+  const externalUrl = useAppStore((s) => s.serverInfo?.externalUrl ?? "");
 
   const redirectUrl = useMemo(() => {
     const url = externalUrl || window.origin;
@@ -1301,8 +1298,8 @@ function CreateWizardDrawer({
   const identityProviderList = useIdentityProviderList();
   useEscapeKey(onClose);
 
-  const hasEnterpriseSSOFeature = useVueState(() =>
-    useAppStore.getState().hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO)
+  const hasEnterpriseSSOFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO)
   );
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -1973,8 +1970,8 @@ export function IDPsPage() {
   const [ready, setReady] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
-  const hasSSOFeature = useVueState(() =>
-    useAppStore.getState().hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
+  const hasSSOFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
   );
   const canCreate = hasWorkspacePermissionV2("bb.identityProviders.create");
 

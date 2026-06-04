@@ -9,7 +9,14 @@ import {
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
-import { useCurrentRoute, useNavigate } from "@/react/router";
+import { router, useCurrentRoute, useNavigate } from "@/react/router";
+import {
+  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_INSTANCE_MODULE,
+  SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_WORKSHEET_MODULE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -21,14 +28,6 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { router } from "@/router";
-import {
-  SQL_EDITOR_DATABASE_MODULE,
-  SQL_EDITOR_HOME_MODULE,
-  SQL_EDITOR_INSTANCE_MODULE,
-  SQL_EDITOR_PROJECT_MODULE,
-  SQL_EDITOR_WORKSHEET_MODULE,
-} from "@/router/sqlEditor";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,

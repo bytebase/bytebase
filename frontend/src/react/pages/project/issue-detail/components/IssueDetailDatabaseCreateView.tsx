@@ -3,11 +3,11 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   formatEnvironmentName,
@@ -36,9 +36,7 @@ export function IssueDetailDatabaseCreateView() {
   const projectsByName = useAppStore((s) => s.projectsByName);
   const environmentList = useAppStore((s) => s.environmentList);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
 
   const createDatabaseSpec = useMemo(() => {

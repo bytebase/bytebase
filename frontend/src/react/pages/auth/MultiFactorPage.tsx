@@ -6,11 +6,10 @@ import logoFull from "@/assets/logo-full.svg";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { useAuthStore } from "@/store";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
+import { useCurrentRoute } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 
@@ -20,10 +19,8 @@ export function MultiFactorPage() {
   const [otpCodes, setOtpCodes] = useState<string[]>([]);
   const [recoveryCode, setRecoveryCode] = useState("");
 
-  const mfaTempToken = useVueState(
-    () =>
-      (router.currentRoute.value.query.mfaTempToken as string | undefined) ?? ""
-  );
+  const mfaTempToken =
+    (useCurrentRoute().query.mfaTempToken as string | undefined) ?? "";
 
   const challengeDescription = useMemo(() => {
     if (mfaType === "OTP") {
@@ -42,7 +39,7 @@ export function MultiFactorPage() {
       workspace: resolveWorkspaceName(),
       ...(mfaType === "OTP" ? { otpCode: effectiveOtp } : { recoveryCode }),
     });
-    await useAuthStore().login({ request, redirect: true });
+    await useAppStore.getState().login({ request, redirect: true });
   };
 
   const onOtpFinish = (value: string[]) => {

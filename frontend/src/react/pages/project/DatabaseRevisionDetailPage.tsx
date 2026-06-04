@@ -1,32 +1,26 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { RevisionDetailPanel } from "@/react/components/revision";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
-} from "@/router/dashboard/projectV1";
-import { extractDatabaseResourceName } from "@/utils/v1/database";
-import { extractInstanceResourceName } from "@/utils/v1/instance";
-import { extractProjectResourceName } from "@/utils/v1/project";
+} from "@/react/router/handles";
 import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
 export function DatabaseRevisionDetailPage({
-  project,
-  instance,
-  database,
+  projectId,
+  instanceId,
+  databaseName,
   revisionId,
 }: {
-  project: string;
-  instance: string;
-  database: string;
+  projectId: string;
+  instanceId: string;
+  databaseName: string;
   revisionId: string;
 }) {
   const { t } = useTranslation();
-  const projectId = extractProjectResourceName(project);
-  const { databaseName } = extractDatabaseResourceName(database);
-  const instanceId = extractInstanceResourceName(instance);
   const detail = useProjectDatabaseDetail({
     projectId,
     instanceId,

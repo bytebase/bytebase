@@ -11,12 +11,9 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { resolve: vi.fn(() => ({ fullPath: "/x" })) },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL: "project.dbgroup.detail",
 }));
 
 vi.mock("@/store", () => ({

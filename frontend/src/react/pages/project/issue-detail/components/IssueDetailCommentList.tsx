@@ -29,15 +29,15 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import { router, useCurrentRoute } from "@/react/router";
+import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
 import { useAppStore } from "@/react/stores/app";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/react/stores/app/issueComment";
-import { router } from "@/router";
-import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import { extractUserEmail, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
@@ -108,11 +108,9 @@ export function IssueDetailCommentList() {
     (state) => state.batchGetOrFetchUsers
   );
   const currentUser = useCurrentUser();
-  const routeHash = useVueState(() => router.currentRoute.value.hash);
+  const routeHash = useCurrentRoute().hash;
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const issueName = page.issue?.name || page.plan?.issue || "";
   // `getIssueComments` returns a stable empty array on miss, so reading it
@@ -368,9 +366,7 @@ function IssueDescriptionCommentRow({
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(page.issue?.creator || "")

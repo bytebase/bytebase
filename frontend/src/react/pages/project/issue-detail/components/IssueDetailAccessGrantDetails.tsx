@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
@@ -25,9 +25,7 @@ export function IssueDetailAccessGrantDetails() {
     (state) => state.searchMyAccessGrants
   );
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
   void projectsByName;
   const [isLoading, setIsLoading] = useState(true);
   const [accessGrant, setAccessGrant] = useState<AccessGrant | undefined>();
@@ -171,8 +169,9 @@ export function IssueDetailAccessGrantDetails() {
 
 function IssueDetailAccessGrantTarget({ target }: { target: string }) {
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const database = useVueState(
-    () => databasesByName[target] ?? unknownDatabase()
+  const database = useMemo(
+    () => databasesByName[target] ?? unknownDatabase(),
+    [databasesByName, target]
   );
   // Subscribe to the env cache so the row re-resolves once it loads; compute
   // via getState() in a memo because getEnvironmentByName returns a fresh

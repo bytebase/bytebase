@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import {
@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useEnvironmentList } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
 import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
@@ -177,36 +176,37 @@ function IssueDetailDatabaseResourceTable({
 }) {
   const { t } = useTranslation();
   // Subscribe to the instance cache so rows reactively pick up titles once
-  // instances hydrate; a bare getState() read would not re-render here because
-  // useVueState only tracks Vue dependencies.
+  // instances hydrate; a bare getState() read would not re-render here.
   const instancesByName = useAppStore((s) => s.instancesByName);
   const databasesByName = useAppStore((s) => s.databasesByName);
   // Subscribe so titles refresh if the environment list changes.
-  void useAppStore((s) => s.environmentList);
-  const rows = useVueState(() =>
-    databaseResourceList.map((resource) => {
-      const database =
-        databasesByName[resource.databaseFullName] ?? unknownDatabase();
-      const { databaseName, instanceName } = extractDatabaseResourceName(
-        resource.databaseFullName
-      );
-      const instance = instanceName
-        ? instancesByName[`instances/${instanceName}`]
-        : database.instanceResource;
-      const environmentName =
-        database.effectiveEnvironment ??
-        database.instanceResource?.environment ??
-        "";
-      const environment = useAppStore
-        .getState()
-        .getEnvironmentByName(environmentName);
-      return {
-        databaseName,
-        environmentTitle: environment.title,
-        instanceTitle: instance?.title ?? "",
-        resource,
-      };
-    })
+  const environmentList = useAppStore((s) => s.environmentList);
+  const rows = useMemo(
+    () =>
+      databaseResourceList.map((resource) => {
+        const database =
+          databasesByName[resource.databaseFullName] ?? unknownDatabase();
+        const { databaseName, instanceName } = extractDatabaseResourceName(
+          resource.databaseFullName
+        );
+        const instance = instanceName
+          ? instancesByName[`instances/${instanceName}`]
+          : database.instanceResource;
+        const environmentName =
+          database.effectiveEnvironment ??
+          database.instanceResource?.environment ??
+          "";
+        const environment = useAppStore
+          .getState()
+          .getEnvironmentByName(environmentName);
+        return {
+          databaseName,
+          environmentTitle: environment.title,
+          instanceTitle: instance?.title ?? "",
+          resource,
+        };
+      }),
+    [databaseResourceList, databasesByName, instancesByName, environmentList]
   );
 
   return (

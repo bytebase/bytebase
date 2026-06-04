@@ -9,8 +9,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  // Pinia bridge — resolves the current user's email from the Pinia ref.
-  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   // Zustand editor store project read.
   project: "projects/proj1" as string,
   // Current tab connection database used to derive default targets.
@@ -28,10 +26,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/usePiniaBridge", () => ({
-  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -92,14 +86,11 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: mocks.routerResolve,
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_ISSUE_DETAIL: "project.issue-detail",
 }));
 
 vi.mock("@/utils", () => ({
@@ -327,8 +318,6 @@ const setupMocks = () => {
   mocks.currentTabDatabase = "instances/inst1/databases/db1";
 
   mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
-
-  mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
 };
 
 beforeEach(async () => {

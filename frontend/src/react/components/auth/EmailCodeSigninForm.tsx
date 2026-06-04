@@ -4,12 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
-import { pushNotification, useAuthStore } from "@/store";
+import { resolveWorkspaceName } from "@/react/lib/workspace";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { isValidEmail, resolveWorkspaceName } from "@/utils";
+import { isValidEmail } from "@/utils";
 
 type Props = {
   readonly loading: boolean;
@@ -60,7 +62,9 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
     if (!isValidEmail(email) || sending || resendCountdown > 0) return;
     setSending(true);
     try {
-      await useAuthStore().sendEmailLoginCode(email, resolveWorkspaceName());
+      await useAppStore
+        .getState()
+        .sendEmailLoginCode(email, resolveWorkspaceName());
       setStep("code");
       startCountdown();
     } catch (e) {

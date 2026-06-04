@@ -48,16 +48,9 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: { replace: mocks.replace },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_DATABASE_DETAIL: mocks.routeNames.databaseDetail,
-  PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL:
-    mocks.routeNames.databaseChangelogDetail,
-  PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL:
-    mocks.routeNames.databaseRevisionDetail,
 }));
 
 vi.mock("@/store", () => ({}));

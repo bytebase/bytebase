@@ -4,11 +4,9 @@
       "content": "ホームページへリダイレクトさせていただきます。",
       "title": "別のユーザーとしてログインしています"
     },
-    "password-forgot": "パスワードを忘れる",
     "password-reset": {
       "title": "あなたのパスワードをリセット"
     },
-    "profile-setup": "プロフィール設定",
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの有効期限が切れました"
   },
@@ -72,12 +70,9 @@
     }
   },
   "error-page": {
-    "forbidden": "アクセス禁止",
     "not-found": "ページが見つかりません"
   },
-  "export-center": {
-    "self": "エクスポートセンター"
-  },
+  "export-center": {},
   "gitops": {
     "self": "GitOps"
   },
@@ -93,12 +88,8 @@
       "export-data": "データをエクスポート"
     }
   },
-  "multi-factor": {
-    "self": "多要素認証"
-  },
-  "oauth": {
-    "unknown-event": "不明なイベント タイプ、認証に失敗しました"
-  },
+  "multi-factor": {},
+  "oauth": {},
   "oauth2": {
     "consent": {
       "title": "認証リクエスト"
@@ -137,14 +128,10 @@
           "label": "パイプラインタスクが失敗したとき",
           "title": "パイプラインが失敗しました"
         }
-      },
-      "create-webhook": "Webhook の作成"
+      }
     }
   },
-  "refresh-remind": {
-    "description": "古いバージョンが検出されました。ページを更新してください。",
-    "title": "古いバージョンが検出されました"
-  },
+  "refresh-remind": {},
   "release": {
     "releases": "リリース"
   },
@@ -256,7 +243,6 @@
       "integration": "連携",
       "mcp": "MCP",
       "members": "メンバー",
-      "profile": "プロフィール",
       "security-and-policy": "セキュリティポリシー",
       "sso": "SSO",
       "subscription": "サブスクリプション"
@@ -281,9 +267,7 @@
     "self": "SQLエディタ"
   },
   "sql-review": {
-    "create": {
-      "breadcrumb": "SQL レビューポリシーを作成する"
-    },
+    "create": {},
     "level": {
       "error": "エラー",
       "name": "レベル",

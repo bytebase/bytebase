@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   appStoreState: {
     serverInfo: {
       restriction: {
@@ -16,9 +15,9 @@ const mocks = vi.hoisted(() => ({
         disallowPasswordSignin: false,
       },
     },
+    requireResetPassword: (() => true) as () => boolean,
   },
   useAuthStore: vi.fn(() => ({
-    requireResetPassword: false,
     setRequireResetPassword: vi.fn(),
     login: vi.fn(async () => {}),
   })),
@@ -32,10 +31,8 @@ const mocks = vi.hoisted(() => ({
   resetPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   resolveWorkspaceName: vi.fn(() => undefined),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+  login: vi.fn(async () => {}),
+  setRequireResetPassword: vi.fn(),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -52,6 +49,9 @@ vi.mock("@/react/stores/app", () => {
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
     loadServerInfo: vi.fn().mockResolvedValue(undefined),
+    login: mocks.login,
+    setRequireResetPassword: mocks.setRequireResetPassword,
+    workspaceResourceName: () => "",
   });
   return {
     useAppStore: Object.assign(
@@ -62,16 +62,13 @@ vi.mock("@/react/stores/app", () => {
   };
 });
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     push: mocks.routerPush,
     currentRoute: mocks.currentRoute,
   },
-}));
-
-vi.mock("@/router/auth", () => ({
-  AUTH_SIGNIN_MODULE: "auth.signin",
 }));
 
 vi.mock("@/connect", () => ({
@@ -81,11 +78,9 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/utils", () => {
-  return {
-    resolveWorkspaceName: mocks.resolveWorkspaceName,
-  };
-});
+vi.mock("@/react/lib/workspace", () => ({
+  resolveWorkspaceName: mocks.resolveWorkspaceName,
+}));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bufbuild/protobuf")>();
@@ -127,6 +122,7 @@ vi.mock("react-i18next", () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let PasswordResetPage: typeof import("./PasswordResetPage").PasswordResetPage;
@@ -174,8 +170,8 @@ beforeEach(async () => {
       disallowPasswordSignin: false,
     },
   };
+  mocks.appStoreState.requireResetPassword = () => true;
   mocks.useAuthStore.mockReturnValue({
-    requireResetPassword: true,
     setRequireResetPassword: vi.fn(),
     login: vi.fn(async () => {}),
   });
@@ -184,11 +180,7 @@ beforeEach(async () => {
 
 describe("PasswordResetPage", () => {
   test("forced-reset mode: redirects when requireResetPassword is false", () => {
-    mocks.useAuthStore.mockReturnValue({
-      requireResetPassword: false,
-      setRequireResetPassword: vi.fn(),
-      login: vi.fn(),
-    });
+    mocks.appStoreState.requireResetPassword = () => false;
     const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
     render();
     expect(mocks.routerReplace).toHaveBeenCalled();
@@ -254,12 +246,6 @@ describe("PasswordResetPage", () => {
   test("code mode: confirm calls resetPassword and logs in on success", async () => {
     mocks.currentRoute.value.query = { email: "u@e.com" };
     mocks.resetPassword.mockResolvedValue({});
-    const login = vi.fn(async () => {});
-    mocks.useAuthStore.mockReturnValue({
-      requireResetPassword: true,
-      setRequireResetPassword: vi.fn(),
-      login,
-    });
     const { container, render, unmount } = renderIntoContainer(
       <PasswordResetPage />
     );
@@ -289,7 +275,7 @@ describe("PasswordResetPage", () => {
         newPassword: "Passw0rd!",
       })
     );
-    expect(login).toHaveBeenCalled();
+    expect(mocks.login).toHaveBeenCalled();
     unmount();
   });
 });

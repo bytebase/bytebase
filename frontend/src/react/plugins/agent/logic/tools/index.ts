@@ -1,4 +1,4 @@
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 import { getSkill, type GetSkillArgs } from "../skills";
 import type {
   AgentAskUserKind,
@@ -398,7 +398,7 @@ const withPageMutationLock = async <T>(
 };
 
 export function createToolExecutor(
-  router: Router,
+  router: AppRouterInstance,
   options: CreateToolExecutorOptions = {}
 ): ToolExecutor {
   const navigateTool = createNavigateTool(router);

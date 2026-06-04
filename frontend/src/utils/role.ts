@@ -1,13 +1,13 @@
 import { t } from "@/plugins/i18n";
-import { useRoleStore } from "@/store";
 import type { Permission } from "@/types/iam";
 import { PresetRoleType } from "@/types/iam";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 
 export const checkRoleContainsAnyPermission = (
   roleName: string,
   ...permissions: Permission[]
 ): boolean => {
-  const role = useRoleStore().getRoleByName(roleName);
+  const role = appStoreUtilBridge()?.getRoleByName(roleName);
   if (!role) {
     return false;
   }
@@ -44,7 +44,7 @@ export const displayRoleTitle = (role: string): string => {
       return t("role.project-viewer.self");
   }
   // Use role.title if possible
-  const item = useRoleStore().roleList.find((r) => r.name === role);
+  const item = appStoreUtilBridge()?.getRoleByName(role);
   // Fallback to extracted resource name otherwise
   return item?.title || extractRoleResourceName(role);
 };
@@ -73,7 +73,7 @@ export const displayRoleDescription = (role: string): string => {
       return t("role.project-viewer.description");
   }
   // Use role.description if possible
-  const item = useRoleStore().roleList.find((r) => r.name === role);
+  const item = appStoreUtilBridge()?.getRoleByName(role);
   // Fallback to extracted resource name otherwise
   return item?.description || extractRoleResourceName(role);
 };

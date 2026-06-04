@@ -180,10 +180,6 @@ vi.mock("@/react/hooks/useEscapeKey", () => ({
   useEscapeKey: () => {},
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/react/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: vi.fn(() => undefined),
   roleHasDatabaseLimitation: vi.fn((role: string) =>
@@ -269,6 +265,7 @@ vi.mock("@bufbuild/protobuf", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 

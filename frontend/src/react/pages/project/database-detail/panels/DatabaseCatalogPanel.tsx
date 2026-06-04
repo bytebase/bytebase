@@ -20,7 +20,6 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useDatabaseCatalog } from "@/react/hooks/useDatabaseCatalog";
-import { useVueState } from "@/react/hooks/useVueState";
 import type {
   MaskData,
   MaskDataTarget,
@@ -30,7 +29,7 @@ import {
   isCurrentColumnException,
 } from "@/react/lib/sensitive-data/utils";
 import { useAppStore } from "@/react/stores/app";
-import { featureToRef, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import type { Permission } from "@/types";
 import type {
   ColumnCatalog,
@@ -210,8 +209,8 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const classificationConfig = useAppStore((s) =>
     s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
-  const hasSensitiveDataFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING, instance).value
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
   );
 
   const [searchText, setSearchText] = useState("");

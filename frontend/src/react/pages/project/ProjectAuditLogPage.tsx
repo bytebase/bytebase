@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { AuditLogTable } from "@/react/components/AuditLogTable";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -12,9 +12,7 @@ export function ProjectAuditLogPage({ projectId }: { projectId: string }) {
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
-  const project = useVueState(() =>
-    useAppStore.getState().getProjectByName(projectName)
-  );
+  const project = useProjectByName(projectName);
 
   const canExport = project
     ? hasProjectPermissionV2(project, "bb.auditLogs.export")

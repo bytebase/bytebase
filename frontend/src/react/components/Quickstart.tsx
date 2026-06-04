@@ -1,19 +1,19 @@
 import { CheckCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { RouteLocationRaw } from "vue-router";
 import { cn } from "@/react/lib/utils";
+import type { RouteTarget } from "@/react/router";
 import { useNavigate } from "@/react/router";
-import { useAppStore } from "@/react/stores/app";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  SQL_EDITOR_WORKSHEET_MODULE,
   WORKSPACE_ROUTE_USERS,
-} from "@/router/dashboard/workspaceRoutes";
-import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
+} from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
@@ -31,7 +31,7 @@ const SAMPLE_SHEET_ID = "101";
 
 interface IntroItem {
   name: string;
-  link: RouteLocationRaw;
+  link: RouteTarget;
   done: boolean;
   hide?: boolean;
   requiredPermissions?: Permission[];
@@ -48,11 +48,11 @@ interface IntroItem {
  * see tasks they can perform; tasks that depend on the sample project
  * are filtered out when no sample project exists for this workspace.
  *
- * State sources (all Pinia, read via `useVueState`):
- *  - `actuatorStore.quickStartEnabled` — disabled in self-hosted /
- *    enterprise builds via the actuator config.
- *  - `uiStateStore.getIntroStateByKey(...)` — per-task done flags and
- *    the global `hidden` flag (toggled when the user dismisses).
+ * State sources (app store):
+ *  - `quickStartEnabled()` — disabled in self-hosted / enterprise builds
+ *    via the actuator config.
+ *  - `getIntroStateByKey(...)` — per-task done flags and the global
+ *    `hidden` flag (toggled when the user dismisses).
  *
  * Async fetches (project / sample issue / sample worksheet) run on
  * mount and fall back to undefined when the sample data is missing

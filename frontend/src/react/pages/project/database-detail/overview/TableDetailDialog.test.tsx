@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
-  useVueState: vi.fn(),
   useDatabaseCatalog: vi.fn(),
   updateDatabaseCatalog: vi.fn(),
   getTableCatalog: vi.fn(),
@@ -46,10 +45,6 @@ let TableDetailDialog: typeof import("./TableDetailDialog").TableDetailDialog;
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/components/ui/dialog", () => ({
@@ -241,8 +236,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getSettingByName.mockReset();
   mocks.getProjectClassification.mockReset();

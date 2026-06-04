@@ -1,11 +1,4 @@
-export * from "./actuator";
-export * from "./auth";
+// The legacy Pinia v1 stores have been removed (migrated to the React app
+// store at `@/react/stores/app`). Only the pinia-free resource-name / helper
+// module remains.
 export * from "./common";
-export * from "./environment";
-export * from "./group";
-export * from "./permission";
-export * from "./policy";
-export * from "./projectIamPolicy";
-export * from "./setting";
-export * from "./subscription";
-export * from "./workspace";

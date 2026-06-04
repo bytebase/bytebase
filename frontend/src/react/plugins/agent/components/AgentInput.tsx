@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/react/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";

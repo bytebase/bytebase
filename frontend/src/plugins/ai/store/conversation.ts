@@ -1,10 +1,9 @@
 import { groupBy, omit } from "lodash-es";
-import { defineStore } from "pinia";
 import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
-import { computed, reactive, ref, unref, watchEffect } from "vue";
-import type { MaybeRef, SQLEditorConnection } from "@/types";
+import { create } from "zustand";
+import type { SQLEditorConnection } from "@/types";
 import type { Conversation, Message } from "../types";
 
 type RowStatus = "NORMAL" | "ARCHIVED";
@@ -28,114 +27,146 @@ type EntityCreate<T> = Omit<T, "_id" | "created_ts" | "row_status">;
 
 PouchDB.plugin(PouchDBFind);
 
-const convertConversationToEntity = (conversation: Conversation) => {
-  const c: ConversationEntity = {
-    ...omit(conversation, "id", "messageList"),
-    _id: conversation.id,
-    row_status: "NORMAL",
-  };
-  return c;
-};
+const convertConversationToEntity = (
+  conversation: Conversation
+): ConversationEntity => ({
+  ...omit(conversation, "id", "messageList"),
+  _id: conversation.id,
+  row_status: "NORMAL",
+});
 
-const convertMessageToEntity = (message: Message) => {
-  const m: MessageEntity = {
-    ...omit(message, "id", "conversation"),
-    _id: message.id,
-    row_status: "NORMAL",
-    conversation_id: message.conversation.id,
-  };
-  return m;
-};
-
-const useLocalCache = () => {
-  const conversationById = reactive(new Map<string, Conversation>());
-  const messageById = reactive(new Map<string, Message>());
-
-  const convertConversation = (
-    c: ConversationEntity,
-    messageList: Message[] = []
-  ): Conversation => {
-    const existed = conversationById.get(c._id);
-    if (existed) {
-      Object.assign(existed, {
-        ...c,
-        messageList,
-      });
-      return existed;
-    }
-    const conversation = reactive({
-      ...c,
-      id: c._id,
-      messageList,
-    });
-    conversationById.set(conversation.id, conversation);
-    return conversation;
-  };
-
-  const convertMessage = (
-    m: MessageEntity,
-    conversation: Conversation
-  ): Message => {
-    const existed = messageById.get(m._id);
-    if (existed) {
-      Object.assign(existed, {
-        ...m,
-        conversation,
-      });
-    }
-    const message = reactive({
-      ...m,
-      id: m._id,
-      conversation,
-    });
-    messageById.set(message.id, message);
-    return message;
-  };
-
-  const getConversationById = (id: string) => {
-    return conversationById.get(id)!;
-  };
-  const getMessageById = (id: string) => {
-    return messageById.get(id)!;
-  };
-
-  return {
-    conversationById,
-    convertConversation,
-    convertMessage,
-    getConversationById,
-    getMessageById,
-  };
-};
+const convertMessageToEntity = (message: Message): MessageEntity => ({
+  ...omit(message, "id", "conversation"),
+  _id: message.id,
+  row_status: "NORMAL",
+  conversation_id: message.conversation.id,
+});
 
 const FK_MESSAGE_CONVERSATION_ID = "fk_message_conversation_id";
 
-export const useConversationStore = defineStore("ai-conversation", () => {
-  const conversations = new PouchDB<ConversationEntity>(
-    "bb.plugin.ai.conversations"
-  );
-  const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
-  const ready: Promise<unknown>[] = [];
-  ready.push(
-    messages.createIndex({
-      index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },
-    })
-  );
+const conversations = new PouchDB<ConversationEntity>(
+  "bb.plugin.ai.conversations"
+);
+const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
+const ready: Promise<unknown>[] = [];
+ready.push(
+  messages.createIndex({
+    index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },
+  })
+);
 
-  const {
-    conversationById,
-    convertConversation,
-    convertMessage,
-    getConversationById,
-  } = useLocalCache();
+const connectionKey = (conn: { instance: string; database: string }) =>
+  `${conn.instance}/${conn.database}`;
 
-  const conversationList = computed(() => {
-    return [...conversationById.values()];
-  });
+type ConversationState = {
+  conversationsById: Record<string, Conversation>;
+  readyByConnection: Record<string, boolean>;
+  fetchConversationListByConnection: (
+    conn: SQLEditorConnection
+  ) => Promise<Conversation[]>;
+  createConversation: (
+    conversationCreate: EntityCreate<ConversationEntity>
+  ) => Promise<Conversation>;
+  updateConversation: (conversation: Conversation) => Promise<Conversation>;
+  deleteConversation: (id: string) => Promise<void>;
+  createMessage: (
+    messageCreate: EntityCreate<MessageEntity>
+  ) => Promise<Message>;
+  updateMessage: (message: Message) => Promise<Message>;
+  reset: () => Promise<void>;
+};
+
+// Build a plain Conversation (with its message back-refs) from entities.
+const buildConversation = (
+  c: ConversationEntity,
+  messageEntities: MessageEntity[]
+): Conversation => {
+  const conversation: Conversation = {
+    ...omit(c, "_id", "_rev", "row_status"),
+    id: c._id,
+    messageList: [],
+  } as Conversation;
+  conversation.messageList = messageEntities
+    .map<Message>(
+      (m) =>
+        ({
+          ...omit(m, "_id", "_rev", "row_status", "conversation_id"),
+          id: m._id,
+          conversation,
+        }) as Message
+    )
+    .sort((a, b) => a.created_ts - b.created_ts);
+  return conversation;
+};
+
+// Immutably replace a conversation in the map.
+const withConversation = (
+  byId: Record<string, Conversation>,
+  conversation: Conversation
+): Record<string, Conversation> => ({
+  ...byId,
+  [conversation.id]: conversation,
+});
+
+export const useConversationStore = create<ConversationState>((set, get) => {
+  const deleteConversation = async (id: string): Promise<void> => {
+    const conversation = get().conversationsById[id];
+    if (!conversation) return;
+    if (conversation.messageList.length > 0) {
+      await messages.bulkDocs(
+        conversation.messageList.map((message) => ({
+          ...convertMessageToEntity(message),
+          row_status: "ARCHIVED" as const,
+        }))
+      );
+    }
+    await conversations.put(
+      { ...convertConversationToEntity(conversation), row_status: "ARCHIVED" },
+      { force: true }
+    );
+    set((state) => {
+      const next = { ...state.conversationsById };
+      delete next[id];
+      return { conversationsById: next };
+    });
+  };
+
+  const updateMessage = async (message: Message): Promise<Message> => {
+    await messages.put(convertMessageToEntity(message), { force: true });
+    const conversation = get().conversationsById[message.conversation.id];
+    if (conversation) {
+      const nextConversation: Conversation = {
+        ...conversation,
+        messageList: conversation.messageList.map((m) =>
+          m.id === message.id ? message : m
+        ),
+      };
+      set((state) => ({
+        conversationsById: withConversation(
+          state.conversationsById,
+          nextConversation
+        ),
+      }));
+    }
+    return message;
+  };
+
+  const fixAbnormalMessages = async (messageList: Message[]) => {
+    const requests = messageList
+      .filter((message) => message.status === "LOADING")
+      .map((message) =>
+        updateMessage({
+          ...message,
+          status: "FAILED",
+          error: "Request timeout",
+        })
+      );
+    await Promise.all(requests);
+  };
 
   const fetchConversationListByConnection = async (
     conn: SQLEditorConnection
-  ) => {
+  ): Promise<Conversation[]> => {
     const conversationEntityList = (
       await conversations.find({
         selector: {
@@ -145,51 +176,49 @@ export const useConversationStore = defineStore("ai-conversation", () => {
         },
       })
     ).docs;
-    const flattenMessageMessageList = (
+    const flattenMessageList = (
       await messages.find({
         selector: {
           row_status: { $eq: "NORMAL" },
-          conversation_id: {
-            $in: conversationEntityList.map((c) => c._id),
-          },
+          conversation_id: { $in: conversationEntityList.map((c) => c._id) },
         },
       })
     ).docs;
 
     const groupByConversationId = groupBy(
-      flattenMessageMessageList,
+      flattenMessageList,
       (m) => m.conversation_id
     );
     conversationEntityList.sort((a, b) => a.created_ts - b.created_ts);
-    const rawConversationList = conversationEntityList.map<Conversation>(
-      (c) => {
-        const conversation = convertConversation(c);
-        const messageEntityList = groupByConversationId[c._id] ?? [];
-        conversation.messageList = messageEntityList.map((m) =>
-          convertMessage(m, conversation)
-        );
-        conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
-        return conversation;
-      }
+    const rawConversationList = conversationEntityList.map<Conversation>((c) =>
+      buildConversation(c, groupByConversationId[c._id] ?? [])
     );
+
     await fixAbnormalMessages(
       rawConversationList.flatMap((c) => c.messageList)
     );
-    // cleanup empty conversations
-    const emptyConversationList: Conversation[] = [];
-    rawConversationList.forEach((conversation) => {
-      if (conversation.messageList.length === 0) {
-        emptyConversationList.push(conversation);
-      }
+
+    const emptyConversationList = rawConversationList.filter(
+      (c) => c.messageList.length === 0
+    );
+
+    set((state) => {
+      const next = { ...state.conversationsById };
+      for (const c of rawConversationList) next[c.id] = c;
+      return {
+        conversationsById: next,
+        readyByConnection: {
+          ...state.readyByConnection,
+          [connectionKey(conn)]: true,
+        },
+      };
     });
+
     await Promise.all(
-      emptyConversationList.map((conversation) =>
-        deleteConversation(conversation.id)
-      )
+      emptyConversationList.map((c) => deleteConversation(c.id))
     );
-    return rawConversationList.filter(
-      (conversation) => conversation.messageList.length > 0
-    );
+
+    return rawConversationList.filter((c) => c.messageList.length > 0);
   };
 
   const createConversation = async (
@@ -203,38 +232,36 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     };
     const response = await conversations.put(c);
     c._rev = response.rev;
-    return convertConversation(c);
+    const conversation = buildConversation(c, []);
+    set((state) => ({
+      conversationsById: withConversation(
+        state.conversationsById,
+        conversation
+      ),
+    }));
+    return conversation;
   };
 
-  const updateConversation = async (conversation: Conversation) => {
-    const c = convertConversationToEntity(conversation);
-    await conversations.put(c, { force: true });
-    return convertConversation(c, conversation.messageList);
+  const updateConversation = async (
+    conversation: Conversation
+  ): Promise<Conversation> => {
+    await conversations.put(convertConversationToEntity(conversation), {
+      force: true,
+    });
+    const existing = get().conversationsById[conversation.id];
+    const next: Conversation = {
+      ...conversation,
+      messageList: existing?.messageList ?? conversation.messageList,
+    };
+    set((state) => ({
+      conversationsById: withConversation(state.conversationsById, next),
+    }));
+    return next;
   };
 
-  const deleteConversation = async (id: string) => {
-    const conversation = getConversationById(id);
-    if (conversation.messageList.length > 0) {
-      await messages.bulkDocs(
-        conversation.messageList.map((message) => ({
-          ...convertMessageToEntity(message),
-          row_status: "ARCHIVED",
-        }))
-      );
-    }
-    await conversations.put(
-      {
-        ...convertConversationToEntity(conversation),
-        row_status: "ARCHIVED",
-      },
-      {
-        force: true,
-      }
-    );
-    conversationById.delete(conversation.id);
-  };
-
-  const createMessage = async (messageCreate: EntityCreate<MessageEntity>) => {
+  const createMessage = async (
+    messageCreate: EntityCreate<MessageEntity>
+  ): Promise<Message> => {
     const m: MessageEntity = {
       _id: uuidv1(),
       created_ts: Date.now(),
@@ -243,29 +270,26 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     };
     const response = await messages.put(m);
     m._rev = response.rev;
-    const conversation = getConversationById(m.conversation_id);
-    const message = convertMessage(m, conversation);
-    conversation.messageList.push(message);
+    const conversation = get().conversationsById[m.conversation_id];
+    const message: Message = {
+      ...omit(m, "_id", "_rev", "row_status", "conversation_id"),
+      id: m._id,
+      conversation,
+    } as Message;
+    if (conversation) {
+      const nextConversation: Conversation = {
+        ...conversation,
+        messageList: [...conversation.messageList, message],
+      };
+      message.conversation = nextConversation;
+      set((state) => ({
+        conversationsById: withConversation(
+          state.conversationsById,
+          nextConversation
+        ),
+      }));
+    }
     return message;
-  };
-
-  const updateMessage = async (message: Message) => {
-    const m = convertMessageToEntity(message);
-    await messages.put(m, {
-      force: true,
-    });
-    return convertMessage(m, message.conversation);
-  };
-
-  const fixAbnormalMessages = async (messageList: Message[]) => {
-    const requests = messageList
-      .filter((message) => message.status === "LOADING")
-      .map((message) => {
-        message.status = "FAILED";
-        message.error = "Request timeout";
-        return updateMessage(message);
-      });
-    await Promise.all(requests);
   };
 
   const reset = async () => {
@@ -273,13 +297,14 @@ export const useConversationStore = defineStore("ai-conversation", () => {
       await Promise.all(ready);
       await Promise.all([conversations.destroy(), messages.destroy()]);
     } catch {
-      // nothing todo
+      // nothing to do
     }
+    set({ conversationsById: {}, readyByConnection: {} });
   };
 
   return {
-    conversationById,
-    conversationList,
+    conversationsById: {},
+    readyByConnection: {},
     fetchConversationListByConnection,
     createConversation,
     updateConversation,
@@ -290,21 +315,17 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   };
 });
 
-export const useConversationListByConnection = (
-  conn: MaybeRef<SQLEditorConnection>
-) => {
-  const store = useConversationStore();
-  const ready = ref(false);
-  watchEffect(async () => {
-    ready.value = false;
-    await store.fetchConversationListByConnection(unref(conn));
-    ready.value = true;
-  });
-  const list = computed(() => {
-    const { instance, database } = unref(conn);
-    return store.conversationList.filter(
-      (c) => c.instance === instance && c.database === database
-    );
-  });
-  return { list, ready };
-};
+// Conversations for a given connection, sorted by creation time (mirrors the
+// Vue store's filtered `conversationList`).
+export const conversationListByConnection = (
+  state: ConversationState,
+  conn: { instance: string; database: string }
+): Conversation[] =>
+  Object.values(state.conversationsById)
+    .filter((c) => c.instance === conn.instance && c.database === conn.database)
+    .sort((a, b) => a.created_ts - b.created_ts);
+
+export const isConnectionReady = (
+  state: ConversationState,
+  conn: { instance: string; database: string }
+): boolean => !!state.readyByConnection[connectionKey(conn)];

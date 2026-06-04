@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
-  useVueState: vi.fn((getter: () => unknown) => getter()),
   rulesToTemplate: vi.fn(() => reviewTemplate),
   getOrFetchProjectByName: vi.fn(),
   getProjectByName: vi.fn(() => undefined),
@@ -33,11 +32,8 @@ const mocks = vi.hoisted(() => ({
 let TemplateSelector: typeof import("./TemplateSelector").TemplateSelector;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/react/lib/sql-review/utils", () => ({
@@ -107,8 +103,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.rulesToTemplate.mockReset();
   mocks.rulesToTemplate.mockReturnValue(reviewTemplate);
   mocks.getOrFetchProjectByName.mockReset();

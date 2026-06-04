@@ -1,6 +1,6 @@
-import type { Router } from "vue-router";
+import type { AppRouterInstance } from "@/react/router";
 
-function getRouteMap(router: Router): string[] {
+function getRouteMap(router: AppRouterInstance): string[] {
   const routes = router.getRoutes();
   const paths = new Set<string>();
 
@@ -25,7 +25,7 @@ function getRouteMap(router: Router): string[] {
   return [...paths].sort();
 }
 
-export function createNavigateTool(router: Router) {
+export function createNavigateTool(router: AppRouterInstance) {
   return async (args: { path?: string; list?: boolean }): Promise<string> => {
     if (args.list) {
       const routes = getRouteMap(router);

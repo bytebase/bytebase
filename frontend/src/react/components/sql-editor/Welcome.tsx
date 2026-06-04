@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { useAppProject } from "@/react/hooks/useAppProject";
+import { router } from "@/react/router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { router } from "@/router";
-import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { WelcomeButton } from "./WelcomeButton";
 
 export type WelcomeProps = {

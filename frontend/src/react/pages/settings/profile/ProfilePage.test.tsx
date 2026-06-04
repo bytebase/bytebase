@@ -25,7 +25,6 @@ const updatedCurrentUser = {
 };
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useCurrentUser: vi.fn(() => legacyCurrentUser),
   useAuthStore: vi.fn(() => ({
     updateCurrentUserNameForEmailChange: vi.fn(),
@@ -45,10 +44,6 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermissionV2: vi.fn(() => true),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/react/hooks/useAppState", () => ({
   useCurrentUser: mocks.useCurrentUser,
 }));
@@ -63,10 +58,12 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
     updateUser: mocks.updateUser,
     updateEmail: mocks.updateEmail,
+    updateCurrentUserNameForEmailChange: () => {},
     roleList: [],
     workspacePolicy: undefined,
     getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
     fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
+    hasFeature: () => mocks.hasFeature(),
     // Migrated off the Pinia actuator/setting store mocks.
     isSaaSMode: () => false,
     getWorkspaceProfile: () => ({
@@ -86,26 +83,12 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     replace: mocks.routerReplace,
     push: mocks.routerPush,
   },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/router/dashboard/workspaceRoutes")>();
-  return {
-    ...actual,
-    WORKSPACE_ROUTE_404: "404",
-    WORKSPACE_ROUTE_USER_PROFILE: "user-profile",
-  };
-});
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  SETTING_ROUTE_PROFILE_TWO_FACTOR: "profile.two-factor",
-  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION: "workspace.subscription",
 }));
 
 vi.mock("@/utils", () => ({
@@ -218,6 +201,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let ProfilePage: typeof import("./ProfilePage").ProfilePage;

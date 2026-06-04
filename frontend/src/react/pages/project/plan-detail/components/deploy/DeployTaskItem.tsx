@@ -13,7 +13,7 @@ import { ReadonlyMonaco } from "@/react/components/monaco";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
+import { router } from "@/react/router";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type Stage,

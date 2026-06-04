@@ -13,11 +13,10 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppFeature } from "@/react/hooks/useAppState";
+import { router } from "@/react/router";
+import { SQL_EDITOR_HOME_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { router } from "@/router";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useAppFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
@@ -99,9 +98,7 @@ function SetupWizard() {
   const [resourceValid, setResourceValid] = useState(false);
 
   const enableOnboarding = useAppStore((s) => s.enableOnboarding());
-  const databaseChangeMode = useVueState(
-    () => useAppFeature("bb.feature.database-change-mode").value
-  );
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
   useEffect(() => {
     if (!enableOnboarding) {

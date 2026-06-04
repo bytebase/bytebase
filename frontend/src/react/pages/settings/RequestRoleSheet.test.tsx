@@ -111,11 +111,8 @@ vi.mock("@/react/components/RoleSelect", () => ({
     }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
@@ -147,14 +144,11 @@ vi.mock("@/types/proto-es/v1/issue_service_pb", () => ({
 
 vi.mock("@/types/proto-es/v1/project_service_pb", () => ({}));
 
-vi.mock("@/router", () => ({
+vi.mock("@/react/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     resolve: () => ({ fullPath: "/issues/1" }),
   },
-}));
-
-vi.mock("@/router/dashboard/projectV1", () => ({
-  PROJECT_V1_ROUTE_ISSUE_DETAIL: "issue-detail",
 }));
 
 vi.mock("@/react/lib/project-member/utils", () => ({
