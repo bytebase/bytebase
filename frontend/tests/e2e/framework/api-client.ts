@@ -498,7 +498,10 @@ export class BytebaseApiClient {
     if (fields.length === 0) {
       throw new Error("updateProjectSettings: no fields specified");
     }
-    await this.request("PATCH", `/v1/${project}?update_mask=${fields.join(",")}`, body);
+    // Use the camelCase `updateMask` query key (the grpc-gateway form the
+    // other helpers in this file use) with snake_case field paths, so the mask
+    // is bound explicitly rather than relying on a body-derived fallback.
+    await this.request("PATCH", `/v1/${project}?updateMask=${fields.join(",")}`, body);
   }
 
   async getProject(project: string): Promise<Record<string, unknown>> {
