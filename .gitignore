@@ -28,6 +28,7 @@ bytebase-build
 
 # Claude Code user-specific configuration
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Git worktrees
 .worktrees/
