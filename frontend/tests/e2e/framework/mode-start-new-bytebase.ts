@@ -69,24 +69,49 @@ function checkPort(port: number): Promise<boolean> {
   });
 }
 
-// True when something is actively listening on the port. Inverse of checkPort.
+// True when something is actively listening on the port. The bytebase
+// sample-postgres processes are started with `-h ""` (no TCP listen) +
+// `-k /tmp` (Unix socket directory), so a TCP probe ALWAYS fails even
+// when the postgres is up and answering queries — verified by reading
+// the `ps -ef` output of a running e2e instance. Probe the Unix socket
+// at /tmp/.s.PGSQL.${port} first; fall back to TCP for any environment
+// that does configure TCP (CI containers, future flag changes).
 function isPortListening(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = new net.Socket();
-    socket.setTimeout(500);
-    socket.once("connect", () => {
-      socket.destroy();
-      resolve(true);
-    });
-    socket.once("timeout", () => {
-      socket.destroy();
-      resolve(false);
-    });
-    socket.once("error", () => {
-      socket.destroy();
-      resolve(false);
-    });
-    socket.connect(port, "127.0.0.1");
+    // Try the Unix socket first.
+    const unixPath = `/tmp/.s.PGSQL.${port}`;
+    const unix = new net.Socket();
+    let unixDone = false;
+    unix.setTimeout(500);
+    const done = (value: boolean) => {
+      if (unixDone) return;
+      unixDone = true;
+      unix.destroy();
+      if (value) {
+        resolve(true);
+        return;
+      }
+      // Fallback: TCP probe.
+      const tcp = new net.Socket();
+      tcp.setTimeout(500);
+      tcp.once("connect", () => {
+        tcp.destroy();
+        resolve(true);
+      });
+      tcp.once("timeout", () => {
+        tcp.destroy();
+        resolve(false);
+      });
+      tcp.once("error", () => {
+        tcp.destroy();
+        resolve(false);
+      });
+      tcp.connect(port, "127.0.0.1");
+    };
+    unix.once("connect", () => done(true));
+    unix.once("timeout", () => done(false));
+    unix.once("error", () => done(false));
+    unix.connect(unixPath);
   });
 }
 
@@ -133,8 +158,19 @@ export async function startServer(): Promise<{
   baseURL: string;
   adminEmail: string;
   adminPassword: string;
-  hasLicense: boolean;
 }> {
+  // License is REQUIRED (the suite is enterprise-only). Verify it's present
+  // BEFORE booting the server, so a missing license fails fast and never
+  // orphans a server process.
+  const license = process.env.BYTEBASE_E2E_LICENSE?.trim();
+  if (!license) {
+    throw new Error(
+      "BYTEBASE_E2E_LICENSE is required to run the e2e suite. Set it to a valid " +
+        "enterprise license JWT (signed by Bytebase's license key) and re-run. " +
+        "The suite does not run on the free plan.",
+    );
+  }
+
   // Check both CWD-relative and repo-root-relative paths
   const candidates = [
     process.env.BYTEBASE_BIN,
@@ -203,21 +239,10 @@ export async function startServer(): Promise<{
   // Signup sets cookies only; this api-client uses bearer tokens.
   await api.login(ADMIN_EMAIL, ADMIN_PASSWORD);
 
-  // Phase 3b: Install an enterprise license if one was provided via
-  // BYTEBASE_E2E_LICENSE. Specs that exercise gated features (masking,
-  // classification) require this; specs read env.hasLicense and skip
-  // themselves when it's false. See frontend/tests/e2e/AGENTS.md for how
-  // to obtain a dev license.
-  const license = process.env.BYTEBASE_E2E_LICENSE?.trim();
-  const hasLicense = Boolean(license);
-  if (license) {
-    await api.uploadLicense(license);
-  } else {
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[e2e bootstrap] BYTEBASE_E2E_LICENSE not set — workspace will run on the free plan. Enterprise-gated specs will skip themselves."
-    );
-  }
+  // Phase 3b: Install the enterprise license. Its presence was verified at
+  // the top of startServer (before boot); install it now that the API client
+  // is logged in. See frontend/tests/e2e/AGENTS.md for a dev license.
+  await api.uploadLicense(license);
 
   // Phase 3c: Provision the DBA fixture user that plan-detail approval
   // specs use as the second approver. The previous demo dump pre-seeded
@@ -270,7 +295,7 @@ export async function startServer(): Promise<{
     "Sample Postgres instances did not start listening on PORT+3 / PORT+4."
   );
 
-  return { baseURL, adminEmail: ADMIN_EMAIL, adminPassword: ADMIN_PASSWORD, hasLicense };
+  return { baseURL, adminEmail: ADMIN_EMAIL, adminPassword: ADMIN_PASSWORD };
 }
 
 export function stopServer(): void {

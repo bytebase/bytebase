@@ -5,11 +5,8 @@ export class PlanDetailPage {
   readonly baseURL: string;
 
   readonly changesSection: Locator;
-  readonly reviewSection: Locator;
   readonly deploySection: Locator;
   readonly manualCreateRolloutButton: Locator;
-  readonly bypassWarningsCheckbox: Locator;
-  readonly confirmRolloutButton: Locator;
   readonly retryButton: Locator;
   // The plan/issue title input rendered in PlanDetailHeader. It is an
   // <input> bound to the plan or issue title — first textbox on the page.
@@ -20,11 +17,8 @@ export class PlanDetailPage {
     this.baseURL = baseURL;
 
     this.changesSection = page.getByText("Changes").first();
-    this.reviewSection = page.getByText("Review").first();
     this.deploySection = page.getByText("Deploy").first();
     this.manualCreateRolloutButton = page.getByRole("button", { name: "Manually create rollout" });
-    this.bypassWarningsCheckbox = page.getByRole("checkbox", { name: "Bypass warnings" });
-    this.confirmRolloutButton = page.getByRole("dialog").getByRole("button", { name: "Confirm" });
     this.retryButton = page.getByRole("button", { name: "Retry" });
     this.headerTitle = page.getByRole("textbox").first();
   }
@@ -48,17 +42,6 @@ export class PlanDetailPage {
     if (await dismiss.isVisible({ timeout: 2000 }).catch(() => false)) {
       await dismiss.click();
     }
-  }
-
-  async createRolloutWithBypass() {
-    await this.manualCreateRolloutButton.click();
-    await this.bypassWarningsCheckbox.check();
-    // Arm the response waiter BEFORE clicking so a fast response isn't missed.
-    const responsePromise = this.page.waitForResponse(
-      (r) => r.url().includes("Rollout") && r.status() < 400
-    );
-    await this.confirmRolloutButton.click();
-    await responsePromise;
   }
 
   async runTask() {
@@ -92,30 +75,39 @@ export class PlanDetailPage {
     return true;
   }
 
+  // Click "Show details" if collapsed; no-op when already expanded or when no
+  // toggle exists (always-open section). When the rollout already exists the
+  // CHANGES section auto-collapses by default — call this before reading any
+  // content inside CHANGES (check counts, spec tabs).
+  async expandSection(sectionName: string): Promise<void> {
+    const toggle = this.getSectionToggle(sectionName);
+    if (!(await toggle.isVisible({ timeout: 1000 }).catch(() => false))) return;
+    const text = (await toggle.textContent()) ?? "";
+    if (text.includes("Show")) {
+      await toggle.click();
+      await expect(toggle).toHaveText(/Hide details/, { timeout: 5_000 });
+    }
+  }
+
+  // Spec tabs render as `<button>N. <Kind></button>` (e.g.
+  // "1. Database Change") inside the CHANGES section. The "1." and
+  // "Database Change" pieces live in separate child spans — so plain
+  // textContent has no separator. Matching the BUTTON's accessible name
+  // (which inserts the space) via getByRole sidesteps that.
+  //
+  // Caller must expandSection("Changes") first if a rollout exists,
+  // since the section auto-collapses in that state and the tab won't be
+  // in the visible DOM.
   specTab(n: number): Locator {
-    return this.page.getByText("Changes").locator("..").getByText(`#${n}`).first();
+    return this.page
+      .getByRole("button", { name: new RegExp(`^${n}\\.\\s+\\w`) })
+      .first();
   }
 
-  // Returns the count number for the given status (Warning/Success/Error)
-  // in the inline Checks area (h3 level, not sidebar h4).
-  inlineCheckCount(status: string): Locator {
-    return this.page
-      .getByRole("heading", { name: "Checks", level: 3 })
-      .locator("../..")
-      .getByText(status)
-      .locator("..")
-      .getByText(/^\d+$/);
-  }
-
-  // Returns the count number for the given status (Warning/Success/Error)
-  // in the sidebar Checks area (h4 level).
-  sidebarCheckCount(status: string): Locator {
-    return this.page
-      .getByRole("complementary")
-      .getByRole("heading", { name: "Checks", level: 4 })
-      .locator("..")
-      .getByText(status)
-      .locator("..")
-      .getByText(/^\d+$/);
+  // The plan-wide "Checks" summary button in the CHANGES section. Shows
+  // Success/Warning/Error entries (each rendered only when its count > 0)
+  // and opens the results drawer on click. Distinct from "Run checks".
+  checksSummary(): Locator {
+    return this.page.getByRole("button", { name: "Checks", exact: true });
   }
 }
