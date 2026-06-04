@@ -182,7 +182,7 @@ export function useCurrentRoute(): ReactRoute {
 // (backs `router.currentRoute.value`).
 //
 // Memoized so it returns a referentially STABLE object between actual route
-// changes. `router.currentRoute.value` backs the `useVueRoute`
+// changes. `router.currentRoute.value` backs the `useReactiveRoute`
 // `useSyncExternalStore` snapshot (and ~110 imperative call sites); a fresh
 // object on every read makes external stores re-render forever ("The result of
 // getSnapshot should be cached to avoid an infinite loop"). `fullPath` + `name`

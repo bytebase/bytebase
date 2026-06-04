@@ -19,6 +19,6 @@ const getSnapshot = (): ReactRoute => router.currentRoute.value;
  * changes, param updates). Backed by the react-router data router via the
  * `@/react/router` shim.
  */
-export const useVueRoute = (): ReactRoute => {
+export const useReactiveRoute = (): ReactRoute => {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 };
