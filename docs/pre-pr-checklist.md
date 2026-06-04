@@ -142,7 +142,21 @@ spots — they document what helpers exist and what guarantees they make.
 Stale references don't break the build but they actively mislead future
 contributors and AI agents that read these docs at session start.
 
-## 4. Lint and Format Gate
+## 4. Image Compatibility Window
+
+**Skip if:** diff does not touch server version metadata, actuator compatibility
+metadata, or `bytebase-action` version/compatibility logic.
+
+Verify the diff preserves the compatibility windows:
+
+- Cloud supports `bytebase-action` versions from the last 7 days.
+- Self-hosted supports `bytebase-action` versions from the last 2 minor releases.
+
+If the diff changes, narrows, or may break the compatibility window, call out
+the policy change, compatibility impact, and validation plan in the PR
+description.
+
+## 5. Lint and Format Gate
 
 **Skip if:** no code changes (docs-only PR).
 
@@ -166,7 +180,7 @@ pnpm --dir frontend type-check
 buf lint proto
 ```
 
-## 5. Test Gate
+## 6. Test Gate
 
 **Skip if:** no code changes.
 
@@ -175,7 +189,7 @@ buf lint proto
 - For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
 
-## 6. SonarCloud Properties
+## 7. SonarCloud Properties
 
 **Skip if:** no new files or directories added.
 
@@ -184,7 +198,7 @@ Update `.sonarcloud.properties` to reflect the latest file structure:
 - `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
 - `sonar.cpd.exclusions` to skip copy-paste detection on test files
 
-## 7. Final Verification
+## 8. Final Verification
 
 Before running `gh pr create`:
 
