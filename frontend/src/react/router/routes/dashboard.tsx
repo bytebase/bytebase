@@ -76,6 +76,7 @@ import {
 } from "@/react/router/handles";
 import { RouteShellOutletPlaceholder } from "@/react/router/layoutPlaceholders";
 import { lazyPage } from "@/react/router/lazyPage";
+import { ProjectRouteGate } from "@/react/router/ProjectRouteGate";
 import type { Permission } from "@/types";
 
 // Translated from `@/router/dashboard/**`. Vue named views (`content`,
@@ -550,25 +551,22 @@ const instanceRoutes: RouteObject[] = [
   },
 ];
 
-// Project routes (`/projects/:projectId/**`), ProjectRouteShell layout.
+// Project routes (`/projects/:projectId/**`).
 //
 // The `requiredPermissionList` entries on the parent (`bb.projects.get`) and
-// each leaf are ported 1:1 from the legacy vue routes. They aggregate via
-// `assembleRoute` into `route.requiredPermissions`, but are not yet *enforced*:
-// project gating is owned by `ProjectRouteShell` (which loads the project for
-// project-scoped IAM checks), and that shell is still the
-// `RouteShellOutletPlaceholder` until a later migration phase mounts it.
-// `BodyLayout` intentionally does not route project routes through its generic
-// workspace-level `RoutePermissionGuardShell` (those checks need the project
-// resource). The lists live here so that phase activates them without
-// re-deriving the data.
+// each leaf are ported 1:1 from the legacy vue routes and aggregate via
+// `assembleRoute` into `route.requiredPermissions`. `ProjectRouteGate` (the
+// parent element) loads the project and enforces those permissions before its
+// `<Outlet/>` mounts the leaf — project-scoped checks need the loaded `Project`
+// resource, which is why `BodyLayout` routes project routes straight to this
+// gate instead of its generic workspace-level `RoutePermissionGuardShell`.
 const projectV1Routes: RouteObject[] = [
   {
     path: "projects/:projectId",
     handle: {
       requiredPermissionList: (): Permission[] => ["bb.projects.get"],
     },
-    element: <RouteShellOutletPlaceholder />,
+    element: <ProjectRouteGate />,
     children: [
       {
         index: true,
