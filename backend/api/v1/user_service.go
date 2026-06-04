@@ -632,7 +632,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
 
-	if err := s.preAddUserGuard(ctx, workspaceID); err != nil {
+	if err := s.preUndeleteUserGuard(ctx, workspaceID, user); err != nil {
 		return nil, err
 	}
 
@@ -938,7 +938,7 @@ func userCountGuard(ctx context.Context, s *store.Store, licenseService *enterpr
 	return nil
 }
 
-// preAddUserGuard checks seat limits before creating or undeleting a principal.
+// preAddUserGuard checks seat limits before creating a principal.
 // Only enforces when the IAM policy contains allUsers, because without allUsers
 // a new principal does not occupy a seat until explicitly added to IAM.
 func (s *UserService) preAddUserGuard(ctx context.Context, workspaceID string) error {
@@ -947,6 +947,22 @@ func (s *UserService) preAddUserGuard(ctx context.Context, workspaceID string) e
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
 	}
 	if !policyContainsAllUsers(p.Policy) {
+		return nil
+	}
+	return userCountGuard(ctx, s.store, s.licenseService, workspaceID, p.Policy, s.profile.SaaS)
+}
+
+// preUndeleteUserGuard checks seat limits before reactivating a principal.
+// A soft-deleted principal does not occupy a seat, so undeleting one that is
+// already referenced by workspace IAM (via allUsers, a direct binding, or a
+// group) re-occupies a seat and must respect the limit. When the principal is
+// not referenced, undeleting adds no seat and is always allowed.
+func (s *UserService) preUndeleteUserGuard(ctx context.Context, workspaceID string, user *store.UserMessage) error {
+	p, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
+	}
+	if len(utils.GetUserIAMPolicyBindings(ctx, s.store, workspaceID, user, p.Policy)) == 0 {
 		return nil
 	}
 	return userCountGuard(ctx, s.store, s.licenseService, workspaceID, p.Policy, s.profile.SaaS)
