@@ -268,6 +268,88 @@ func TestSeatLimitAllowsServiceAccountWhenOverLimit(t *testing.T) {
 	a.ErrorContains(err, "exceeding the limit")
 }
 
+// TestSeatLimitGuardsUndeleteOfBoundUser verifies that undeleting a user who is
+// still referenced by workspace IAM re-occupies a seat and is blocked when the
+// workspace is at the limit — closing the delete-bound-user, refill, undelete
+// loophole. Undelete is still allowed when a seat is free.
+func TestSeatLimitGuardsUndeleteOfBoundUser(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	const freeSeatLimit = 20
+
+	a.NoError(ctl.setLicense(ctx))
+
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	workspace := actuator.Msg.Workspace
+	baseline := int(actuator.Msg.UserCountInIam)
+
+	// Fill the workspace to exactly the FREE limit with explicit IAM members (no allUsers).
+	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: workspace}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	memberBinding := &v1pb.Binding{Role: "roles/workspaceMember"}
+	policy.Bindings = append(policy.Bindings, memberBinding)
+
+	var victim *v1pb.User
+	for i := baseline; i < freeSeatLimit; i++ {
+		resp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+			User: &v1pb.User{
+				Title:    fmt.Sprintf("member-%d", i),
+				Email:    fmt.Sprintf("member-%d@bytebase.com", i),
+				Password: "1024bytebase",
+			},
+		}))
+		a.NoError(err)
+		memberBinding.Members = append(memberBinding.Members, fmt.Sprintf("user:%s", resp.Msg.Email))
+		if victim == nil {
+			victim = resp.Msg
+		}
+	}
+	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Etag:     policy.Etag,
+		Policy:   policy,
+		Resource: workspace,
+	}))
+	a.NoError(err)
+
+	// A filler user created up front, bound later to consume the seat freed by deletion.
+	fillerResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "filler", Email: "filler@bytebase.com", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+
+	// Drop the license: FREE limit (20) now applies; the workspace sits exactly at limit.
+	a.NoError(ctl.removeLicense(ctx))
+	atLimit, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	a.EqualValues(freeSeatLimit, atLimit.Msg.UserCountInIam)
+
+	// Deleting the bound victim frees a seat (its lingering binding no longer counts).
+	_, err = ctl.userServiceClient.DeleteUser(ctx, connect.NewRequest(&v1pb.DeleteUserRequest{Name: victim.Name}))
+	a.NoError(err)
+
+	// Undelete is allowed while a seat is free (still bound, re-occupies the freed seat).
+	_, err = ctl.userServiceClient.UndeleteUser(ctx, connect.NewRequest(&v1pb.UndeleteUserRequest{Name: victim.Name}))
+	a.NoError(err)
+
+	// Now exploit: free the seat again and refill it with the filler user.
+	_, err = ctl.userServiceClient.DeleteUser(ctx, connect.NewRequest(&v1pb.DeleteUserRequest{Name: victim.Name}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, workspace, fmt.Sprintf("user:%s", fillerResp.Msg.Email), "roles/workspaceMember")
+	a.NoError(err)
+
+	// Undeleting the still-bound victim would exceed the limit and must be rejected.
+	_, err = ctl.userServiceClient.UndeleteUser(ctx, connect.NewRequest(&v1pb.UndeleteUserRequest{Name: victim.Name}))
+	a.Error(err)
+	a.ErrorContains(err, "reaching the limit")
+}
+
 func TestUpdateUserEmail(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
