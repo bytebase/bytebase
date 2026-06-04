@@ -161,6 +161,7 @@
       "existing-user": "¿Ya tienes una cuenta?",
       "title": "Registre su cuenta"
     },
+    "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
   },
   "banner": {
@@ -232,6 +233,7 @@
     "back-to-workspace": "Volver al espacio de trabajo",
     "bypassed": "Omitido",
     "cancel": "Cancelar",
+    "canceled": "Cancelado",
     "cannot-undo-this-action": "No se puede deshacer esta acción",
     "catalog": "Catálogo",
     "changelog": "Changelog",
@@ -276,8 +278,10 @@
     "deselect-all": "Deseleccionar todo",
     "detail": "Detalle",
     "detailed-guide": "guía detallada",
+    "dingtalk": "DingTalk",
     "disable": "Deshabilitar",
     "discard-changes": "Descartar cambios",
+    "discord": "Discord",
     "dismiss": "Descartar",
     "done": "Hecho",
     "download": "Descargar",
@@ -299,6 +303,7 @@
     "expired": "Expirado",
     "export": "Exportar",
     "failed": "Error",
+    "feishu": "Feishu",
     "file-selector": {
       "size-limit": "El tamaño del archivo debe ser menor que {{size}} MiB",
       "type-limit": "Solo se admiten archivos {{extension}}"
@@ -309,6 +314,7 @@
     "from": "Desde",
     "general": "General",
     "go-back": "Volver",
+    "google-chat": "Google Chat",
     "group": "Grupo",
     "groups": "Grupos",
     "history": "Historial",
@@ -326,6 +332,7 @@
     "key": "Clave",
     "labels": "Etiquetas",
     "language": "Idioma",
+    "lark": "Lark",
     "learn-more": "Aprender más",
     "leave-without-saving": "¿Salir sin guardar?",
     "license": "Licencia",
@@ -351,6 +358,7 @@
     "next": "Siguiente",
     "no": "No",
     "no-data": "Sin datos",
+    "no-license": "Sin licencia",
     "not-started": "No iniciado",
     "ok": "OK",
     "only-creator-allowed-export": "Solo el creador puede exportar",
@@ -425,6 +433,7 @@
     "sign-up": "Registrarse",
     "skip": "Omitir",
     "skipped": "Omitido",
+    "slack": "Slack",
     "snapshot": "Instantánea",
     "sql": "SQL",
     "stage": "Etapa",
@@ -437,6 +446,7 @@
     "system": "Sistema",
     "table": "Tabla",
     "task": "Tarea",
+    "teams": "Teams",
     "text-wrap": "Ajuste de texto",
     "tips": "Consejos",
     "title": "Título",
@@ -469,6 +479,7 @@
     "want-help": "¿Quiere ayuda?",
     "warning": "Advertencia",
     "webhooks": "Webhooks",
+    "wecom": "WeCom",
     "write-only": "solo escritura",
     "yes": "Sí",
     "you": "tu"
@@ -567,6 +578,7 @@
   },
   "data-source": {
     "additional-node-addresses": "Direcciones de nodos adicionales",
+    "admin": "Admin",
     "automatic-query-data-source": "Automática",
     "connection-string-schema": "Esquema de cadena de conexión",
     "connection-type": "Tipo de conección",
@@ -580,6 +592,7 @@
     "private-key-passphrase": "Frase de contraseña de clave privada",
     "private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada",
     "private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
+    "read-only": "Solo lectura",
     "read-replica-host": "Anfitrión de réplica de lectura",
     "read-replica-port": "Puerto de réplica de lectura",
     "replica-set": "Conjunto de réplicas",
@@ -1332,6 +1345,7 @@
       "change-database": "Modificar base de datos",
       "change-from-sql-editor": "Modificar desde el editor SQL",
       "edit-schema": "Editar esquema",
+      "export-data": "Exportar datos",
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
@@ -1386,6 +1400,7 @@
     },
     "recovery-code": "Código de recuperación"
   },
+  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} está solicitando acceso a tu cuenta",
@@ -1716,6 +1731,32 @@
       "name": "Nombre"
     },
     "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "Cuando se requiere aprobación de incidencia",
+          "title": "Notificación de aprobación de incidencia"
+        },
+        "issue-approved": {
+          "label": "Cuando se completan todos los pasos de aprobación",
+          "title": "Incidencia aprobada"
+        },
+        "issue-creation": {
+          "label": "Cuando se crea una nueva incidencia",
+          "title": "Creación de incidencia"
+        },
+        "issue-sent-back": {
+          "label": "Cuando un aprobador devuelve la incidencia",
+          "title": "Incidencia devuelta"
+        },
+        "pipeline-completed": {
+          "label": "Cuando el pipeline se completa con éxito",
+          "title": "Pipeline completado"
+        },
+        "pipeline-failed": {
+          "label": "Cuando las tareas del pipeline fallan",
+          "title": "Pipeline fallido"
+        }
+      },
       "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
       "creation": {
         "desc": "Cree el webhook correspondiente para el canal {{destination}} que reciba el mensaje.",
@@ -1762,6 +1803,7 @@
     "visit-member": "Visitar Miembro | Miembros",
     "visit-project": "Visitar Proyectos"
   },
+  "refresh-remind": {},
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
@@ -1810,9 +1852,29 @@
     "custom-roles": {
       "self": "Roles personalizados"
     },
+    "gitops-service-agent": {
+      "description": "Permisos para flujos de trabajo automatizados de CI/CD para crear y ejecutar cambios de base de datos a través de GitOps.",
+      "self": "Agente de Servicio GitOps"
+    },
     "import-from-role": "Importar desde el rol",
+    "project-developer": {
+      "description": "El desarrollador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "self": "Desarrollador del proyecto"
+    },
+    "project-owner": {
+      "description": "El propietario del proyecto tiene todos los permisos dentro del proyecto.",
+      "self": "Propietario del proyecto"
+    },
+    "project-releaser": {
+      "description": "El liberador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "self": "Liberador del proyecto"
+    },
     "project-roles": {
       "self": "Roles de proyecto"
+    },
+    "project-viewer": {
+      "description": "Permisos de solo lectura para ver información básica del proyecto y la base de datos; los usuarios pueden iniciar tickets por su cuenta para solicitar consultas y exportaciones de datos.",
+      "self": "Espectador del proyecto"
     },
     "select-role": "Seleccionar rol",
     "self": "Rol",
@@ -1821,7 +1883,27 @@
       "description-placeholder": "Ingrese la descripción del rol",
       "title-placeholder": "Ingrese el título del rol"
     },
+    "sql-editor-read-user": {
+      "description": "Permisos de solo lectura para consultar datos de la base de datos, sin acceso DDL o DML.",
+      "self": "Usuario de solo lectura del editor SQL"
+    },
+    "sql-editor-user": {
+      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "self": "Usuario del editor SQL"
+    },
     "title": "Título",
+    "workspace-admin": {
+      "description": "El administrador del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo.",
+      "self": "Administrador del espacio de trabajo"
+    },
+    "workspace-dba": {
+      "description": "El DBA del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo.",
+      "self": "DBA del espacio de trabajo"
+    },
+    "workspace-member": {
+      "description": "El miembro del espacio de trabajo es un usuario normal sin privilegios especiales dentro del espacio de trabajo.",
+      "self": "Miembro del espacio de trabajo"
+    },
     "workspace-roles": {
       "self": "Roles de espacio de trabajo"
     }
@@ -2520,11 +2602,13 @@
       "non-empty-folder-content": "¿Desea mover todas las hojas de cálculo a la carpeta raíz o simplemente eliminarlas?",
       "non-empty-folder-title": "carpeta no vacía"
     },
+    "mine": "Mío",
     "move-worksheets": "Hojas de trabajo de movimiento",
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     },
-    "search-sheets": "Hojas de búsqueda"
+    "search-sheets": "Hojas de búsqueda",
+    "shared": "Compartido"
   },
   "sql-editor": {
     "access-grants": "Concesiones de acceso",
@@ -3669,6 +3753,7 @@
     "skip-task": "Saltar tarea | Saltar tareas",
     "started": "Iniciado",
     "status": {
+      "available": "Disponible",
       "canceled": "Cancelado",
       "done": "Hecho",
       "failed": "Fallido",

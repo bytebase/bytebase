@@ -10,7 +10,6 @@ import { Input } from "@/react/components/ui/input";
 import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { useAuthStore } from "@/store";
 import { isValidEmail } from "@/utils";
 
 export function SignupPage() {
@@ -96,7 +95,7 @@ export function SignupPage() {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      await useAuthStore().signup({ email, password, name });
+      await useAppStore.getState().signup({ email, password, name });
     } finally {
       setIsLoading(false);
     }

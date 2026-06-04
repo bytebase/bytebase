@@ -7,26 +7,20 @@ import {
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/react/router/handles";
-import { extractDatabaseResourceName } from "@/utils/v1/database";
-import { extractInstanceResourceName } from "@/utils/v1/instance";
-import { extractProjectResourceName } from "@/utils/v1/project";
 import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
 export function DatabaseRevisionDetailPage({
-  project,
-  instance,
-  database,
+  projectId,
+  instanceId,
+  databaseName,
   revisionId,
 }: {
-  project: string;
-  instance: string;
-  database: string;
+  projectId: string;
+  instanceId: string;
+  databaseName: string;
   revisionId: string;
 }) {
   const { t } = useTranslation();
-  const projectId = extractProjectResourceName(project);
-  const { databaseName } = extractDatabaseResourceName(database);
-  const instanceId = extractInstanceResourceName(instance);
   const detail = useProjectDatabaseDetail({
     projectId,
     instanceId,

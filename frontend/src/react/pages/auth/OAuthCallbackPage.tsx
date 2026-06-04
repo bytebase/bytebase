@@ -6,7 +6,7 @@ import { Button } from "@/react/components/ui/button";
 import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
-import { useAuthStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { OAuthState, OAuthWindowEventPayload } from "@/types/oauth";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
@@ -125,7 +125,7 @@ export function OAuthCallbackPage() {
         return;
       }
 
-      await useAuthStore().login({
+      await useAppStore.getState().login({
         request: create(LoginRequestSchema, {
           idpName,
           idpContext: {

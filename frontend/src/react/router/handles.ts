@@ -1,51 +1,42 @@
-// Route-name constants for the React router. Kept VUE-FREE: the only re-export
-// is from `@/router/dashboard/workspaceRoutes` (a pure-constant, import-free
-// module). Everything else is inlined as literals, because the source
-// vue-router modules eagerly import Vue SFCs / vue-i18n — re-exporting from them
-// would pull the whole Vue graph into the React bundle and break the teardown
-// phase. Values mirror the corresponding `@/router/**` modules; those are
-// deleted in teardown, at which point this file becomes the single source.
+// Route-name constants for the React router — the single source of truth.
+// Fully VUE-FREE and self-contained (no `@/router/**` imports): the legacy
+// vue-router modules are retired, so all values are inlined as literals here.
 
-import {
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DASHBOARD,
-} from "@/router/dashboard/workspaceRoutes";
-
-// workspaceRoutes.ts is import-free (no Vue), so re-exporting it is safe.
-export {
-  DATABASE_ROUTE_DASHBOARD,
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_ROOT_MODULE,
-  WORKSPACE_ROUTE_403,
-  WORKSPACE_ROUTE_404,
-  WORKSPACE_ROUTE_AUDIT_LOG,
-  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
-  WORKSPACE_ROUTE_DATA_EXPORT,
-  WORKSPACE_ROUTE_GLOBAL_MASKING,
-  WORKSPACE_ROUTE_GROUPS,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
-  WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-  WORKSPACE_ROUTE_IM,
-  WORKSPACE_ROUTE_INTEGRATION,
-  WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_MCP,
-  WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_RISK_ASSESSMENT,
-  WORKSPACE_ROUTE_ROLES,
-  WORKSPACE_ROUTE_SEMANTIC_TYPES,
-  WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
-  WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
-  WORKSPACE_ROUTE_USERS,
-  WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
-} from "@/router/dashboard/workspaceRoutes";
+// --- dashboard/workspaceRoutes (inlined) ---
+export const WORKSPACE_ROOT_MODULE = "workspace.root";
+export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
+export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
+export const WORKSPACE_ROUTE_DATA_EXPORT = "workspace.data-export";
+export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
+export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
+export const INSTANCE_ROUTE_DASHBOARD = "workspace.instance";
+export const PROJECT_V1_ROUTE_DASHBOARD = "workspace.project";
+export const ENVIRONMENT_V1_ROUTE_DASHBOARD = "workspace.environment";
+export const WORKSPACE_ROUTE_SQL_REVIEW = "workspace.sql-review";
+export const WORKSPACE_ROUTE_SQL_REVIEW_CREATE = `${WORKSPACE_ROUTE_SQL_REVIEW}.create`;
+export const WORKSPACE_ROUTE_SQL_REVIEW_DETAIL = `${WORKSPACE_ROUTE_SQL_REVIEW}.detail`;
+export const WORKSPACE_ROUTE_RISK_ASSESSMENT = "workspace.risk-assessment";
+export const WORKSPACE_ROUTE_CUSTOM_APPROVAL = "workspace.custom-approval";
+export const WORKSPACE_ROUTE_GLOBAL_MASKING = "workspace.global-masking";
+export const WORKSPACE_ROUTE_SEMANTIC_TYPES = "workspace.semantic-types";
+export const WORKSPACE_ROUTE_DATA_CLASSIFICATION =
+  "workspace.data-classification";
+export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
+export const WORKSPACE_ROUTE_USERS = "workspace.users";
+export const WORKSPACE_ROUTE_SERVICE_ACCOUNTS = "workspace.service-accounts";
+export const WORKSPACE_ROUTE_WORKLOAD_IDENTITIES =
+  "workspace.workload-identities";
+export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
+export const WORKSPACE_ROUTE_GROUPS = "workspace.groups";
+export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
+export const WORKSPACE_ROUTE_IDENTITY_PROVIDERS =
+  "workspace.identity-providers";
+export const WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL = `${WORKSPACE_ROUTE_IDENTITY_PROVIDERS}.detail`;
+export const WORKSPACE_ROUTE_INTEGRATION = "workspace.integration";
+export const WORKSPACE_ROUTE_IM = `${WORKSPACE_ROUTE_INTEGRATION}.im`;
+export const WORKSPACE_ROUTE_MCP = `${WORKSPACE_ROUTE_INTEGRATION}.mcp`;
+export const WORKSPACE_ROUTE_403 = "error.403";
+export const WORKSPACE_ROUTE_404 = "error.404";
 
 // --- auth.ts ---
 export const AUTH_SIGNIN_MODULE = "auth.signin";

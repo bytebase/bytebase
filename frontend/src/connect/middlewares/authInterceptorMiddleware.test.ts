@@ -24,7 +24,15 @@ vi.mock("@/plugins/i18n", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useAuthStore: () => mocks.authStore,
+}));
+
+vi.mock("@/utils/app-store-bridge", () => ({
+  appStoreUtilBridge: () => ({
+    isLoggedIn: () => mocks.authStore.isLoggedIn,
+    setUnauthenticatedOccurred: (v: boolean) => {
+      mocks.authStore.unauthenticatedOccurred = v;
+    },
+  }),
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({

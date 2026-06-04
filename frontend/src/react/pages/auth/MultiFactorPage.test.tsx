@@ -21,6 +21,12 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
 }));
 
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => ({}), {
+    getState: () => ({ login: mocks.login, workspaceResourceName: () => "" }),
+  }),
+}));
+
 vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
@@ -52,6 +58,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 vi.mock("@bufbuild/protobuf", async (importOriginal) => {

@@ -156,9 +156,9 @@ describe("DatabaseRevisionDetailPage", () => {
     });
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db-from-prop",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db-from-prop",
         revisionId: "7",
       })
     );
@@ -190,9 +190,9 @@ describe("DatabaseRevisionDetailPage", () => {
     });
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionDetailPage, {
-        project: "projects/proj1",
-        instance: "instances/inst1",
-        database: "instances/inst1/databases/db-from-prop",
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db-from-prop",
         revisionId: "7",
       })
     );

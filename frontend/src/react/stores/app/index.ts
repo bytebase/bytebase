@@ -38,6 +38,7 @@ export {
   projectResourceNameFromId,
 } from "./utils";
 export type { ProjectListParams } from "./types";
+import { registerAppStoreUtilBridge } from "@/utils/app-store-bridge";
 import { registerPermissionCheckers } from "@/utils/iam/permission";
 import type { AppStoreState } from "./types";
 
@@ -86,6 +87,30 @@ registerPermissionCheckers({
     useAppStore.getState().hasWorkspacePermission(permission),
   hasProjectPermission: (project, permission) =>
     useAppStore.getState().hasProjectPermission(project, permission),
+});
+
+// Back the subscription / environment reads in shared `@/utils` helpers with
+// this store, replacing the legacy Pinia stores those helpers used to read.
+registerAppStoreUtilBridge({
+  currentUser: () => useAppStore.getState().currentUser,
+  isLoggedIn: () => useAppStore.getState().isLoggedIn(),
+  setUnauthenticatedOccurred: (value) =>
+    useAppStore.getState().setUnauthenticatedOccurred(value),
+  defaultProjectName: () =>
+    useAppStore.getState().serverInfo?.defaultProject ?? "",
+  currentPlan: () => useAppStore.getState().currentPlan(),
+  hasFeature: (feature) => useAppStore.getState().hasFeature(feature),
+  environmentList: () => useAppStore.getState().environmentList,
+  getEnvironmentByName: (name, fallback) =>
+    useAppStore.getState().getEnvironmentByName(name, fallback),
+  roleList: () => useAppStore.getState().roleList,
+  getRoleByName: (name) => useAppStore.getState().getRoleByName(name),
+  getGroupByIdentifier: (identifier) =>
+    useAppStore.getState().getGroupByIdentifier(identifier),
+  workspaceRoleMapToUsers: () =>
+    useAppStore.getState().workspaceRoleMapToUsers(),
+  getProjectIamPolicy: (project) =>
+    useAppStore.getState().getProjectIamPolicy(project),
 });
 
 export function isDefaultProjectName(name: string) {

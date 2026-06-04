@@ -4,11 +4,9 @@
       "content": "我们将把您重定向到主页。",
       "title": "您已以其他用户身份登录"
     },
-    "password-forgot": "忘记密码",
     "password-reset": {
       "title": "重置您的密码"
     },
-    "profile-setup": "设置个人资料",
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "Token 已过期"
   },
@@ -72,12 +70,9 @@
     }
   },
   "error-page": {
-    "forbidden": "禁止访问",
     "not-found": "页面未找到"
   },
-  "export-center": {
-    "self": "导出中心"
-  },
+  "export-center": {},
   "gitops": {
     "self": "GitOps"
   },
@@ -93,12 +88,8 @@
       "export-data": "导出数据"
     }
   },
-  "multi-factor": {
-    "self": "多重认证"
-  },
-  "oauth": {
-    "unknown-event": "未知的事件类型，认证失败"
-  },
+  "multi-factor": {},
+  "oauth": {},
   "oauth2": {
     "consent": {
       "title": "授权请求"
@@ -137,14 +128,10 @@
           "label": "当流水线任务失败",
           "title": "流水线失败"
         }
-      },
-      "create-webhook": "创建 webhook"
+      }
     }
   },
-  "refresh-remind": {
-    "description": "检测到过时版本。请刷新页面。",
-    "title": "检测到过时版本"
-  },
+  "refresh-remind": {},
   "release": {
     "releases": "发布包"
   },
@@ -256,7 +243,6 @@
       "integration": "集成",
       "mcp": "MCP",
       "members": "成员",
-      "profile": "个人信息",
       "security-and-policy": "安全 & 策略",
       "sso": "SSO",
       "subscription": "订阅"
@@ -281,9 +267,7 @@
     "self": "SQL 编辑器"
   },
   "sql-review": {
-    "create": {
-      "breadcrumb": "创建审核策略"
-    },
+    "create": {},
     "level": {
       "error": "错误",
       "name": "级别",

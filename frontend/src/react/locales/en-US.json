@@ -161,6 +161,7 @@
       "existing-user": "Already have an account?",
       "title": "Register your account"
     },
+    "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
   },
   "banner": {
@@ -232,6 +233,7 @@
     "back-to-workspace": "Back to workspace",
     "bypassed": "Bypassed",
     "cancel": "Cancel",
+    "canceled": "Canceled",
     "cannot-undo-this-action": "You cannot undo this action",
     "catalog": "Catalog",
     "changelog": "Changelog",
@@ -276,8 +278,10 @@
     "deselect-all": "Deselect all",
     "detail": "Detail",
     "detailed-guide": "detailed guide",
+    "dingtalk": "DingTalk",
     "disable": "Disable",
     "discard-changes": "Discard changes",
+    "discord": "Discord",
     "dismiss": "Dismiss",
     "done": "Done",
     "download": "Download",
@@ -299,6 +303,7 @@
     "expired": "Expired",
     "export": "Export",
     "failed": "Failed",
+    "feishu": "Feishu",
     "file-selector": {
       "size-limit": "File size should less than {{size}} MiB",
       "type-limit": "Only support {{extension}} file"
@@ -309,6 +314,7 @@
     "from": "From",
     "general": "General",
     "go-back": "Go back",
+    "google-chat": "Google Chat",
     "group": "Group",
     "groups": "Groups",
     "history": "History",
@@ -326,6 +332,7 @@
     "key": "Key",
     "labels": "Labels",
     "language": "Language",
+    "lark": "Lark",
     "learn-more": "Learn more",
     "leave-without-saving": "Leave without saving?",
     "license": "License",
@@ -351,6 +358,7 @@
     "next": "Next",
     "no": "No",
     "no-data": "No data",
+    "no-license": "No license",
     "not-started": "Not started",
     "ok": "OK",
     "only-creator-allowed-export": "Only the creator is allowed to export",
@@ -425,6 +433,7 @@
     "sign-up": "Sign up",
     "skip": "Skip",
     "skipped": "Skipped",
+    "slack": "Slack",
     "snapshot": "Snapshot",
     "sql": "SQL",
     "stage": "Stage",
@@ -437,6 +446,7 @@
     "system": "System",
     "table": "Table",
     "task": "Task",
+    "teams": "Teams",
     "text-wrap": "Text Wrap",
     "tips": "Tips",
     "title": "Title",
@@ -469,6 +479,7 @@
     "want-help": "Want help",
     "warning": "Warning",
     "webhooks": "Webhooks",
+    "wecom": "WeCom",
     "write-only": "write only",
     "yes": "Yes",
     "you": "you"
@@ -567,6 +578,7 @@
   },
   "data-source": {
     "additional-node-addresses": "Additional Node Addresses",
+    "admin": "Admin",
     "automatic-query-data-source": "Automatic",
     "connection-string-schema": "Connection String Schema",
     "connection-type": "Connection Type",
@@ -580,6 +592,7 @@
     "private-key-passphrase": "Private Key Passphrase",
     "private-key-passphrase-placeholder": "Leave empty if your private key is not encrypted",
     "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
+    "read-only": "RO",
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "replica-set": "Replica Set",
@@ -1332,6 +1345,7 @@
       "change-database": "Change database",
       "change-from-sql-editor": "Change from SQL Editor",
       "edit-schema": "Edit schema",
+      "export-data": "Export data",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1386,6 +1400,7 @@
     },
     "recovery-code": "Recovery code"
   },
+  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} is requesting access to your account",
@@ -1716,6 +1731,32 @@
       "name": "Name"
     },
     "webhook": {
+      "activity-item": {
+        "issue-approval-notify": {
+          "label": "When issue is pending approval",
+          "title": "Issue approval needed"
+        },
+        "issue-approved": {
+          "label": "Notify when all approval steps are completed",
+          "title": "Issue approved"
+        },
+        "issue-creation": {
+          "label": "When new issue has been created",
+          "title": "Issue creation"
+        },
+        "issue-sent-back": {
+          "label": "When issue is sent back by an approver",
+          "title": "Issue sent back"
+        },
+        "pipeline-completed": {
+          "label": "When pipeline completes successfully",
+          "title": "Pipeline completed"
+        },
+        "pipeline-failed": {
+          "label": "When pipeline tasks fail",
+          "title": "Pipeline failed"
+        }
+      },
       "activity-support-direct-message": "Support send direct messages to related users",
       "creation": {
         "desc": "Create the corresponding webhook for the {{destination}} channel receiving the message.",
@@ -1762,6 +1803,7 @@
     "visit-member": "Visit Member | Members",
     "visit-project": "Visit Projects"
   },
+  "refresh-remind": {},
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
@@ -1810,9 +1852,29 @@
     "custom-roles": {
       "self": "Custom roles"
     },
+    "gitops-service-agent": {
+      "description": "Permissions for automated CI/CD workflows to create and execute database changes via GitOps.",
+      "self": "GitOps Service Agent"
+    },
     "import-from-role": "Import from role",
+    "project-developer": {
+      "description": "All viewer permissions, plus permissions for requesting database changes.",
+      "self": "Project Developer"
+    },
+    "project-owner": {
+      "description": "All permissions within the project",
+      "self": "Project Owner"
+    },
+    "project-releaser": {
+      "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes.",
+      "self": "Project Releaser"
+    },
     "project-roles": {
       "self": "Project roles"
+    },
+    "project-viewer": {
+      "description": "Read-only permissions for viewing basic project and database information; users may self-initiate tickets to request data queries and exports.",
+      "self": "Project Viewer"
     },
     "select-role": "Select role",
     "self": "Role",
@@ -1821,7 +1883,27 @@
       "description-placeholder": "Input role description",
       "title-placeholder": "Input role title"
     },
+    "sql-editor-read-user": {
+      "description": "Read-only permissions for querying database data, without DDL or DML access.",
+      "self": "SQL Editor Read User"
+    },
+    "sql-editor-user": {
+      "description": "Permissions for querying database data.",
+      "self": "SQL Editor User"
+    },
     "title": "Title",
+    "workspace-admin": {
+      "description": "Workspace Admin has all permissions within the workspace.",
+      "self": "Workspace Admin"
+    },
+    "workspace-dba": {
+      "description": "Workspace DBA has all permissions within the workspace except for managing workspace members.",
+      "self": "Workspace DBA"
+    },
+    "workspace-member": {
+      "description": "Workspace Member is the most basic role within the workspace.",
+      "self": "Workspace Member"
+    },
     "workspace-roles": {
       "self": "Workspace roles"
     }
@@ -2520,11 +2602,13 @@
       "non-empty-folder-content": "Do you want to move all worksheets into the root folder or just delete them?",
       "non-empty-folder-title": "Non-empty folder"
     },
+    "mine": "Mine",
     "move-worksheets": "Move worksheets",
     "notifications": {
       "duplicate-success": "Successfully duplicate the worksheet"
     },
-    "search-sheets": "Search Sheets"
+    "search-sheets": "Search Sheets",
+    "shared": "Shared"
   },
   "sql-editor": {
     "access-grants": "Access Grants",
@@ -3669,6 +3753,7 @@
     "skip-task": "Skip task | Skip tasks",
     "started": "Started",
     "status": {
+      "available": "Available",
       "canceled": "Canceled",
       "done": "Done",
       "failed": "Failed",

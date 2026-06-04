@@ -14,9 +14,13 @@ import {
   useDynamicLocalStorage,
   WebStorageHelper,
 } from "@/utils";
+import { getCurrentUserV1 } from "../../migration-helpers";
 import { extractUserEmail } from "../../v1";
-import { useCurrentUserV1 } from "../../v1/auth";
-import { EXTENDED_TAB_FIELDS, useExtendedTabStore } from "./extendedTab";
+import {
+  deleteExtendedTab,
+  EXTENDED_TAB_FIELDS,
+  fetchExtendedTab,
+} from "./extendedTab";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
@@ -28,13 +32,11 @@ type PersistentTab = Pick<
 type LegacyStoredTab = PersistentTab & { statement?: string };
 
 export const migrateLegacyCache = async () => {
-  const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserEmail(me.value.name));
+  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
 
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
   );
-  const extendedTabStore = useExtendedTabStore();
   const tabIdListKey = computed(() => `${keyNamespace.value}.tab-id-list`);
   const tabIdListMapByProject = useDynamicLocalStorage<
     Record<string, string[]>
@@ -68,7 +70,7 @@ export const migrateLegacyCache = async () => {
       tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
     }
 
-    await extendedTabStore.fetchExtendedTab(tab, () => {
+    await fetchExtendedTab(tab, () => {
       // When the first time of migration, the extended doc in IndexedDB is not
       // found.
       // Fallback to the original PersistentTab in LocalStorage if possible.
@@ -101,7 +103,7 @@ export const migrateLegacyCache = async () => {
         continue;
       }
       const tab = await loadStoredTab(tabId);
-      await extendedTabStore.deleteExtendedTab(tabId);
+      await deleteExtendedTab(tabId);
       if (!tab) {
         continue;
       }
@@ -113,8 +115,7 @@ export const migrateLegacyCache = async () => {
 };
 
 export const migrateDraftsFromCache = async (project: string) => {
-  const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserEmail(me.value.name));
+  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
 
   const viewStateByTab = useDynamicLocalStorage<
     Map</* tab.id */ string, EditorPanelViewState>
@@ -168,8 +169,7 @@ export const migrateDraftsFromCache = async (project: string) => {
 };
 
 export const migrateTabViewState = (project: string) => {
-  const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserEmail(me.value.name));
+  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
 
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`

@@ -6,9 +6,9 @@ vi.mock("@/react/pages/auth/SigninPage", () => ({
   SigninPage: () => <button data-testid="signin-bridge">Sign in</button>,
 }));
 
-vi.mock("@/store", () => ({
-  useAuthStore: () => ({
-    logout: vi.fn(),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(() => ({}), {
+    getState: () => ({ logout: vi.fn() }),
   }),
 }));
 
@@ -16,6 +16,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 import { Dialog, DialogContent } from "@/react/components/ui/dialog";

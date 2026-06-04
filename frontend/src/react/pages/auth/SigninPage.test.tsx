@@ -39,6 +39,7 @@ vi.mock("@/react/stores/app", () => {
     ...(mocks.actuatorStore as Record<string, unknown>),
     identityProviderList: () => mocks.identityProviderList,
     listIdentityProviders: mocks.listIdentityProviders,
+    login: (mocks.authStore as { login: unknown }).login,
   });
   return {
     useAppStore: Object.assign(
@@ -62,6 +63,9 @@ vi.mock("react-i18next", () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  // Completes the mock for the react-i18next migration: `@/react/i18n`
+  // registers this plugin via `i18next.use(...)`.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 vi.mock("@/react/components/BytebaseLogo", () => ({

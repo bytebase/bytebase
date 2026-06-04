@@ -6,13 +6,7 @@ const sources = import.meta.glob(
     "./pages/settings/**/*.{ts,tsx}",
     "./pages/auth/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
-    "../router/dashboard/projectV1.ts",
-    "../router/dashboard/workspace.ts",
-    "../router/dashboard/workspaceSetting.ts",
-    "../layouts/BodyLayout.vue",
-    "../layouts/SQLEditorLayout.vue",
     "../components/ProvideSQLEditorContext.vue",
-    "./ReactRouteShellBridge.vue",
     "./components/ProjectRouteShell.tsx",
     "./components/SettingRouteShell.tsx",
     "./components/InstanceRouteShell.tsx",
@@ -43,12 +37,7 @@ const currentUserMigrationSources = import.meta.glob(
 ) as Record<string, string>;
 
 const instanceMigrationSources = import.meta.glob(
-  [
-    "../router/index.ts",
-    "../router/dashboard/instance.ts",
-    "../utils/expr.ts",
-    "../utils/v1/issue/issue.ts",
-  ],
+  ["../utils/expr.ts", "../utils/v1/issue/issue.ts"],
   {
     query: "?raw",
     import: "default",
@@ -67,8 +56,6 @@ const removedLegacyInstanceStoreSources = import.meta.glob(
 
 const databaseMigrationSources = import.meta.glob(
   [
-    "../router/index.ts",
-    "../router/dashboard/instance.ts",
     "../utils/expr.ts",
     "../utils/v1/revision.ts",
     "../utils/v1/changelog.ts",
@@ -276,19 +263,6 @@ describe("React Project and Settings legacy Vue dependencies", () => {
         }
       }
     }
-    expect(violations).toEqual([]);
-  });
-
-  test("instance database redirect stays in the React view layer", () => {
-    const source = databaseMigrationSources["../router/dashboard/instance.ts"];
-    const bannedRouterLogic = [
-      "@/react/stores/app/databaseAccess",
-      "getOrFetchDatabaseByName",
-      "beforeEnter",
-    ];
-    const violations = bannedRouterLogic.filter((pattern) =>
-      source.includes(pattern)
-    );
     expect(violations).toEqual([]);
   });
 

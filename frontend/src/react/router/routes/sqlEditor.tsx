@@ -30,7 +30,11 @@ const SqlEditorLayoutRoute = () => (
 export const sqlEditorRoutes: RouteObject[] = [
   {
     path: "/sql-editor",
-    handle: { name: "sql-editor" },
+    // `layoutAsPage` marks this parent as rendering its own content (the
+    // `SQLEditorLayout` inspects the route and draws everything); its child
+    // routes are intentionally element-less and render into an empty Outlet.
+    // The route-reachability test relies on this flag to allow those children.
+    handle: { name: "sql-editor", layoutAsPage: true },
     element: <SqlEditorLayoutRoute />,
     children: [
       {

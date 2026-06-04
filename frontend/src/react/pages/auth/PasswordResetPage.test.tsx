@@ -31,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   resetPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   resolveWorkspaceName: vi.fn(() => undefined),
+  login: vi.fn(async () => {}),
+  setRequireResetPassword: vi.fn(),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -47,6 +49,9 @@ vi.mock("@/react/stores/app", () => {
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
     loadServerInfo: vi.fn().mockResolvedValue(undefined),
+    login: mocks.login,
+    setRequireResetPassword: mocks.setRequireResetPassword,
+    workspaceResourceName: () => "",
   });
   return {
     useAppStore: Object.assign(
@@ -117,6 +122,7 @@ vi.mock("react-i18next", () => ({
     t: (key: string, vars?: Record<string, unknown>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let PasswordResetPage: typeof import("./PasswordResetPage").PasswordResetPage;
@@ -240,11 +246,6 @@ describe("PasswordResetPage", () => {
   test("code mode: confirm calls resetPassword and logs in on success", async () => {
     mocks.currentRoute.value.query = { email: "u@e.com" };
     mocks.resetPassword.mockResolvedValue({});
-    const login = vi.fn(async () => {});
-    mocks.useAuthStore.mockReturnValue({
-      setRequireResetPassword: vi.fn(),
-      login,
-    });
     const { container, render, unmount } = renderIntoContainer(
       <PasswordResetPage />
     );
@@ -274,7 +275,7 @@ describe("PasswordResetPage", () => {
         newPassword: "Passw0rd!",
       })
     );
-    expect(login).toHaveBeenCalled();
+    expect(mocks.login).toHaveBeenCalled();
     unmount();
   });
 });

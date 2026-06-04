@@ -2,8 +2,9 @@ import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_403 } from "@/react/router/handles";
-import { pushNotification, useAuthStore } from "@/store";
+import { pushNotification } from "@/store";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 import { refreshTokens } from "../refreshToken";
 
@@ -24,16 +25,11 @@ const handleUnauthenticatedFailure = ({
   silent: boolean;
   isLoggedIn: boolean;
 }) => {
-  const authStore = useAuthStore();
-  authStore.unauthenticatedOccurred = true;
-  // Bridge: also flag the app store (the post-migration session source of
-  // truth) so React's SessionExpiredSurface fires once the Vue shell is gone.
-  // Dynamic-imported to avoid a load-time cycle (the app store imports the
-  // connect clients this interceptor wraps). The Pinia set above is removed in
-  // the teardown phase.
-  void import("@/react/stores/app").then(({ useAppStore }) => {
-    useAppStore.getState().setUnauthenticatedOccurred(true);
-  });
+  // Flag the app store (the session source of truth) so React's
+  // SessionExpiredSurface fires. Routed through the util bridge (a leaf module)
+  // to avoid a load-time cycle — the app store imports the connect clients this
+  // interceptor wraps.
+  appStoreUtilBridge()?.setUnauthenticatedOccurred(true);
   if (!silent && isLoggedIn) {
     pushNotification({
       module: "bytebase",
@@ -48,7 +44,6 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
   try {
     return await next(req);
   } catch (error) {
-    const authStore = useAuthStore();
     const silent = req.contextValues.get(silentContextKey);
     const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
 
@@ -74,7 +69,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
           console.error(e);
           handleUnauthenticatedFailure({
             silent,
-            isLoggedIn: authStore.isLoggedIn,
+            isLoggedIn: appStoreUtilBridge()?.isLoggedIn() ?? false,
           });
           throw error;
         }
@@ -88,7 +83,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
           ) {
             handleUnauthenticatedFailure({
               silent,
-              isLoggedIn: authStore.isLoggedIn,
+              isLoggedIn: appStoreUtilBridge()?.isLoggedIn() ?? false,
             });
           }
           throw retryError;

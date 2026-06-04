@@ -6,11 +6,7 @@ import {
   batchGetOrFetchProjects,
   fetchProjectList,
 } from "@/react/stores/app/projectAccess";
-import {
-  instanceNamePrefix,
-  projectNamePrefix,
-  useEnvironmentV1Store,
-} from "@/store";
+import { instanceNamePrefix, projectNamePrefix } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
@@ -20,6 +16,7 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
+import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 
 type LabeledOption = { value: string; label: string };
 
@@ -39,7 +36,7 @@ export type OptionConfig = {
 };
 
 export const getEnvironmentIdOptions = (): LabeledOption[] => {
-  const environmentList = useEnvironmentV1Store().environmentList;
+  const environmentList = appStoreUtilBridge()?.environmentList() ?? [];
   return environmentList.map((env) => ({
     label: `${env.title} (${env.id})`,
     value: env.id,

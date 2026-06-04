@@ -9,7 +9,6 @@ import {
 } from "@/react/components/ui/dialog";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
-import { useAuthStore } from "@/store";
 import { storageKeyLastActivity } from "@/utils/storage-keys";
 
 const SHOW_THRESHOLD_MIN = 3;
@@ -69,7 +68,7 @@ export function InactiveRemindModal() {
     }
     logoutTimerRef.current = setTimeout(
       () => {
-        useAuthStore().logout();
+        useAppStore.getState().logout();
       },
       SHOW_THRESHOLD_MIN * 60 * 1000
     );
@@ -87,7 +86,7 @@ export function InactiveRemindModal() {
     setLastActivityTs(now);
   };
 
-  const logout = () => useAuthStore().logout();
+  const logout = () => useAppStore.getState().logout();
 
   if (!shouldShow) return null;
 

@@ -72,7 +72,6 @@
     "monaco-languageclient": "10.7.0",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.21.0",
-    "pinia": "3.0.4",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "qrcode.react": "^4.2.0",
@@ -163,7 +162,6 @@
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2",
     "vue-component-type-helpers": "^3.2.8",
-    "vue-router": "4.6.4",
     "vue-tsc": "3.2.8",
     "ws": "^8.20.0"
   },

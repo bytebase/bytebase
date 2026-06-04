@@ -9,6 +9,7 @@ import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
+  WORKSPACE_ROUTE_MY_ISSUES,
 } from "@/react/router/handles";
 
 // Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
@@ -30,12 +31,16 @@ export function BodyLayout() {
     matches.at(-1)?.handle as { name?: string } | undefined
   )?.name;
   const isRootPath = currentRouteName === WORKSPACE_ROOT_MODULE;
+  // Workspace "My Issues" is a standalone full-width page: header (with logo)
+  // but no sidebar, mirroring the Vue IssuesRouteShell (variant="issues").
+  const isMyIssues = currentRouteName === WORKSPACE_ROUTE_MY_ISSUES;
   // Project-scoped routes (`workspace.project.*`) get the project sidebar; the
   // bare projects list (`workspace.project`) keeps the workspace sidebar.
   const isProjectRoute = Boolean(
     currentRouteName?.startsWith(`${PROJECT_V1_ROUTE_DASHBOARD}.`)
   );
   const Sidebar = isProjectRoute ? ProjectSidebar : DashboardSidebar;
+  const variant = isMyIssues ? "issues" : "workspace";
   const routeKey = `${location.pathname}${location.search}`;
 
   const [targets, setTargets] = useState<DashboardShellTargets>({
@@ -67,7 +72,7 @@ export function BodyLayout() {
   return (
     <>
       <DashboardBodyShell
-        variant="workspace"
+        variant={variant}
         isRootPath={isRootPath}
         routeKey={routeKey}
         onReady={setTargets}

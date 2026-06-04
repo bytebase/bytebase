@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AuthFooter } from "@/react/components/auth/AuthFooter";
 import { PasswordSigninForm } from "@/react/components/auth/PasswordSigninForm";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
-import { useAuthStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 
 export function SigninAdminPage() {
@@ -14,7 +14,7 @@ export function SigninAdminPage() {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      await useAuthStore().login({ request, redirect: true });
+      await useAppStore.getState().login({ request, redirect: true });
     } finally {
       setIsLoading(false);
     }

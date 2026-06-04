@@ -8,7 +8,7 @@ import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { useCurrentRoute } from "@/react/router";
-import { useAuthStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
@@ -39,7 +39,7 @@ export function MultiFactorPage() {
       workspace: resolveWorkspaceName(),
       ...(mfaType === "OTP" ? { otpCode: effectiveOtp } : { recoveryCode }),
     });
-    await useAuthStore().login({ request, redirect: true });
+    await useAppStore.getState().login({ request, redirect: true });
   };
 
   const onOtpFinish = (value: string[]) => {

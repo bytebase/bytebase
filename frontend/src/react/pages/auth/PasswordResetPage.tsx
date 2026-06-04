@@ -14,7 +14,7 @@ import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import { AUTH_SIGNIN_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useAuthStore } from "@/store";
+import { pushNotification } from "@/store";
 import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
@@ -133,7 +133,7 @@ export function PasswordResetPage() {
           style: "SUCCESS",
           title: t("common.updated"),
         });
-        await useAuthStore().login({
+        await useAppStore.getState().login({
           request: create(LoginRequestSchema, {
             email,
             password,
@@ -164,7 +164,7 @@ export function PasswordResetPage() {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    useAuthStore().setRequireResetPassword(false);
+    useAppStore.getState().setRequireResetPassword(false);
     router.replace(redirectQuery());
   };
 

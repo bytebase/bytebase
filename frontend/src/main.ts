@@ -11,18 +11,11 @@ import "./plugins/highlight";
 // constructs the toastManager singleton. Must load before any auth/error
 // interceptor can fire pushNotification during bootstrap RPCs.
 import "./react/lib/toast";
-import { setActivePinia } from "pinia";
 import { useAppStore } from "./react/stores/app";
-import { pinia } from "./store";
 import { isDev, isRelease, migrateStorageKeys } from "./utils";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
-
-// Transition shim: activate Pinia outside a Vue app so the Pinia stores still
-// referenced by shared `.ts` utils keep working during the Vue→React
-// migration. Removed in teardown once no Pinia store remains.
-setActivePinia(pinia);
 
 // Migrate renamed localStorage keys before any store reads from storage.
 migrateStorageKeys();

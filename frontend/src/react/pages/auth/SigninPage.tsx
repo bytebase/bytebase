@@ -17,7 +17,7 @@ import { resolveWorkspaceName } from "@/react/lib/workspace";
 import { router } from "@/react/router";
 import { AUTH_SIGNUP_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useAuthStore } from "@/store";
+import { pushNotification } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
@@ -99,7 +99,7 @@ export function SigninPage(props: SigninPageProps) {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      await useAuthStore().login({
+      await useAppStore.getState().login({
         request,
         redirect,
         redirectUrl,

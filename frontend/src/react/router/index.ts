@@ -115,7 +115,16 @@ function resolveTarget(to: RouteTarget): string {
     return `${search ? `${to.path}?${search}` : to.path}${hash}`;
   }
   // Pre-resolved full path (already carries its own query/hash).
-  return to.fullPath ?? "/";
+  if (to.fullPath) {
+    return to.fullPath;
+  }
+  // No name/path/fullPath: a query (and/or hash) update against the *current*
+  // location. vue-router's `router.replace({ query })` keeps the current path;
+  // returning "/" here instead would bounce the user to the workspace root
+  // (and its redirect), e.g. the DatabasesPage URL-sync landing on /issues.
+  const search = to.query ? buildSearchString(to.query) : "";
+  const path = window.location.pathname;
+  return `${search ? `${path}?${search}` : path}${hash}`;
 }
 
 // Shared builder for both the `useCurrentRoute` hook and the non-hook
@@ -171,6 +180,14 @@ export function useCurrentRoute(): ReactRoute {
 
 // Non-hook snapshot of the current route, read from the registered data router
 // (backs `router.currentRoute.value`).
+//
+// Memoized so it returns a referentially STABLE object between actual route
+// changes. `router.currentRoute.value` backs the `useVueRoute`
+// `useSyncExternalStore` snapshot (and ~110 imperative call sites); a fresh
+// object on every read makes external stores re-render forever ("The result of
+// getSnapshot should be cached to avoid an infinite loop"). `fullPath` + `name`
+// fully identify the route — params, query and matches all derive from the URL.
+let currentRouteCache: ReactRoute | undefined;
 function currentRouteSnapshot(): ReactRoute {
   const state = getAppRouterState();
   const location = state?.location ?? { pathname: "/", search: "", hash: "" };
@@ -179,7 +196,15 @@ function currentRouteSnapshot(): ReactRoute {
     string,
     string | string[] | undefined
   >;
-  return assembleRoute(location, matches, leafParams);
+  const next = assembleRoute(location, matches, leafParams);
+  if (
+    !currentRouteCache ||
+    currentRouteCache.fullPath !== next.fullPath ||
+    currentRouteCache.name !== next.name
+  ) {
+    currentRouteCache = next;
+  }
+  return currentRouteCache;
 }
 
 export function resolveRoute(to: RouteTarget): ReactResolvedRoute {

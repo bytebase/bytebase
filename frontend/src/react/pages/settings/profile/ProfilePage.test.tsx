@@ -58,6 +58,7 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
     updateUser: mocks.updateUser,
     updateEmail: mocks.updateEmail,
+    updateCurrentUserNameForEmailChange: () => {},
     roleList: [],
     workspacePolicy: undefined,
     getWorkspaceRolesByName: mocks.getWorkspaceRolesByName,
@@ -200,6 +201,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let ProfilePage: typeof import("./ProfilePage").ProfilePage;

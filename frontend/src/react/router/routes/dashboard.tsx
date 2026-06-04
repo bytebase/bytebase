@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router-dom";
+import { Navigate, type RouteObject, redirect } from "react-router-dom";
 import { BodyLayout } from "@/react/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/react/app/layouts/DashboardLayout";
 import {
@@ -90,7 +90,11 @@ import { lazyPage } from "@/react/router/lazyPage";
 const workspaceLevelRoutes: RouteObject[] = [
   {
     index: true,
-    handle: { name: WORKSPACE_ROOT_MODULE },
+    // The bare workspace root ("/") has no page; `rootGuard` always redirects
+    // it dynamically (change-mode → SQL Editor, else last visit / landing), so
+    // it intentionally renders nothing. `guardRedirect` records that for the
+    // route-reachability test.
+    handle: { name: WORKSPACE_ROOT_MODULE, guardRedirect: true },
   },
   {
     path: "landing",
@@ -381,13 +385,15 @@ const workspaceSettingRoutes: RouteObject[] = [
   },
 ];
 
-// Environment detail — redirect-only route in vue. Translated to a leaf with
-// no element; the redirect logic reattaches in a later phase. Kept so the
-// route name resolves.
+// Environment detail — redirect-only route in vue (it redirected to the
+// environments dashboard with the environment name as a `#hash`). A leaf with
+// no element/lazy renders a blank body, so the redirect is the element here.
 const environmentV1Routes: RouteObject[] = [
   {
     path: "environments/:environmentName",
     handle: { name: "workspace.environment.detail" },
+    loader: ({ params }) =>
+      redirect(`/environments#${params.environmentName ?? ""}`),
   },
 ];
 
@@ -434,6 +440,10 @@ const projectV1Routes: RouteObject[] = [
       {
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
+        // The project root has no page of its own — redirect to the Issues
+        // tab (mirrors the legacy vue-router DETAIL → ISSUES redirect). `issues`
+        // is relative to the parent `projects/:projectId`.
+        element: <Navigate to="issues" replace />,
       },
       {
         path: "databases",
@@ -697,20 +707,33 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.ProjectIssueDetailPage
         ),
       },
-      // Legacy rollout paths — redirect-only in vue. Kept as nameless-element
-      // placeholders so the route names resolve; redirect logic reattaches in
-      // a later phase.
+      // Legacy rollout paths. The plan detail page now hosts the rollout: it
+      // shows the deploy phase when the plan has a rollout and selects a
+      // stage/task from the `?stageId=`/`?taskId=` query (see
+      // usePlanDetailPage). So these path-based deep links redirect to the plan
+      // detail page, converting the path stage/task into that query form so the
+      // selection is preserved. The route names are kept so bookmarks resolve.
       {
         path: "plans/:planId/rollout",
         handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT },
+        loader: ({ params }) =>
+          redirect(`/projects/${params.projectId}/plans/${params.planId}`),
       },
       {
         path: "plans/:planId/rollout/stages/:stageId",
         handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE },
+        loader: ({ params }) =>
+          redirect(
+            `/projects/${params.projectId}/plans/${params.planId}?stageId=${params.stageId}`
+          ),
       },
       {
         path: "plans/:planId/rollout/stages/:stageId/tasks/:taskId",
         handle: { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK },
+        loader: ({ params }) =>
+          redirect(
+            `/projects/${params.projectId}/plans/${params.planId}?stageId=${params.stageId}&taskId=${params.taskId}`
+          ),
       },
     ],
   },
@@ -732,14 +755,12 @@ export const dashboardRoutes: RouteObject[] = [
           ...environmentV1Routes,
           ...instanceRoutes,
           ...projectV1Routes,
-        ],
-      },
-      {
-        path: "issues",
-        element: <RouteShellOutletPlaceholder />,
-        children: [
+          // Workspace "My Issues" — lives under BodyLayout for the shared
+          // dashboard header, but renders as a standalone full-width page
+          // (header with logo, no sidebar): BodyLayout switches it to the
+          // `issues` shell variant.
           {
-            index: true,
+            path: "issues",
             handle: { name: WORKSPACE_ROUTE_MY_ISSUES },
             lazy: lazyPage(
               () => import("@/react/pages/workspace/MyIssuesPage"),

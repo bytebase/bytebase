@@ -304,3 +304,10 @@ export const isDatabaseName = (name: string): boolean => {
   const regex = /^instances\/([^/]+)\/databases\/(.+)$/;
   return regex.test(name);
 };
+
+export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
+
+export const ensureGroupIdentifier = (id: string) => {
+  const email = extractGroupEmail(id);
+  return `${groupNamePrefix}${email}`;
+};

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { isConnectedSQLEditorTab } from "@/react/lib/sqlEditorConnection";
+import { getValidDataSourceByPolicy } from "@/react/lib/sqlEditorDataSource";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { getSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -33,7 +34,6 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
   getInstanceResource,
-  getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
 import { flattenNoSQLResult } from "@/utils/sqlResult";

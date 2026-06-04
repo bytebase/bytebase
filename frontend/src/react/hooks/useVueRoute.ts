@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { ReactRoute } from "@/react/router";
 import { router } from "@/react/router";
 
@@ -8,6 +8,10 @@ import { router } from "@/react/router";
 const subscribe = (onChange: () => void): (() => void) =>
   router.afterEach(() => onChange());
 
+// `router.currentRoute.value` is memoized at the router level — it returns a
+// referentially stable object between actual route changes — so it satisfies
+// `useSyncExternalStore`'s requirement that `getSnapshot` be cached (otherwise
+// React re-renders forever: "The result of getSnapshot should be cached").
 const getSnapshot = (): ReactRoute => router.currentRoute.value;
 
 /**
@@ -16,6 +20,5 @@ const getSnapshot = (): ReactRoute => router.currentRoute.value;
  * `@/react/router` shim.
  */
 export const useVueRoute = (): ReactRoute => {
-  const subscribeFn = useCallback(subscribe, []);
-  return useSyncExternalStore(subscribeFn, getSnapshot, getSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 };

@@ -33,18 +33,14 @@ import {
   formatAbsoluteDateTime,
   getInstanceResource,
 } from "@/utils";
-import {
-  extractInstanceResourceName,
-  instanceV1SupportsSchemaRollback,
-} from "@/utils/v1/instance";
-import { extractProjectResourceName } from "@/utils/v1/project";
+import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
 import { extractTaskLink } from "@/utils/v1/revision";
 import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
 export interface DatabaseChangelogDetailPageProps {
-  project: string;
-  instance: string;
-  database: string;
+  projectId: string;
+  instanceId: string;
+  databaseName: string;
   changelogId: string;
 }
 
@@ -194,9 +190,9 @@ function CopyButton({ content }: { content: string }) {
 }
 
 export function DatabaseChangelogDetailPage({
-  project,
-  instance,
-  database,
+  projectId,
+  instanceId,
+  databaseName,
   changelogId,
 }: DatabaseChangelogDetailPageProps) {
   const { t } = useTranslation();
@@ -213,10 +209,6 @@ export function DatabaseChangelogDetailPage({
   const [hasTaskRunDatabaseSync, setHasTaskRunDatabaseSync] = useState<
     boolean | undefined
   >(undefined);
-
-  const projectId = extractProjectResourceName(project);
-  const instanceId = extractInstanceResourceName(instance);
-  const databaseName = extractDatabaseResourceName(database).databaseName;
 
   const detail = useProjectDatabaseDetail({
     projectId,
@@ -369,8 +361,8 @@ export function DatabaseChangelogDetailPage({
   ]);
 
   const databaseDisplayName =
-    extractDatabaseResourceName(detail.database?.name ?? database)
-      .databaseName || databaseName;
+    extractDatabaseResourceName(detail.database?.name ?? "").databaseName ||
+    databaseName;
   const formattedCreateTime = useMemo(() => {
     if (!resolvedChangelog?.createTime) {
       return "";

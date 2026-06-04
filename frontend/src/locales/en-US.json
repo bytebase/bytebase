@@ -4,11 +4,9 @@
       "content": "We will redirect you to the home page.",
       "title": "You have logged in as another user"
     },
-    "password-forgot": "Forgot Password",
     "password-reset": {
       "title": "Reset your password"
     },
-    "profile-setup": "Profile Setup",
     "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
   },
@@ -72,12 +70,9 @@
     }
   },
   "error-page": {
-    "forbidden": "Forbidden",
     "not-found": "Not Found"
   },
-  "export-center": {
-    "self": "Export Center"
-  },
+  "export-center": {},
   "gitops": {
     "self": "GitOps"
   },
@@ -93,12 +88,8 @@
       "export-data": "Export data"
     }
   },
-  "multi-factor": {
-    "self": "Multi-factor authentication"
-  },
-  "oauth": {
-    "unknown-event": "Unexpected event type, OAuth failed."
-  },
+  "multi-factor": {},
+  "oauth": {},
   "oauth2": {
     "consent": {
       "title": "Authorization Request"
@@ -137,14 +128,10 @@
           "label": "When pipeline tasks fail",
           "title": "Pipeline failed"
         }
-      },
-      "create-webhook": "Create webhook"
+      }
     }
   },
-  "refresh-remind": {
-    "description": "Detect outdated version. Please refresh the page.",
-    "title": "Outdated version detected"
-  },
+  "refresh-remind": {},
   "release": {
     "releases": "Releases"
   },
@@ -256,7 +243,6 @@
       "integration": "Integration",
       "mcp": "MCP",
       "members": "Members",
-      "profile": "Profile",
       "security-and-policy": "Security & Policy",
       "sso": "SSO",
       "subscription": "Subscription"
@@ -281,9 +267,7 @@
     "self": "SQL Editor"
   },
   "sql-review": {
-    "create": {
-      "breadcrumb": "Create SQL review policy"
-    },
+    "create": {},
     "level": {
       "error": "Error",
       "name": "Level",

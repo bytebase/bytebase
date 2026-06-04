@@ -35,7 +35,7 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { hasFeature, pushNotification, useAuthStore } from "@/store";
+import { hasFeature, pushNotification } from "@/store";
 import {
   AccountType,
   ALL_USERS_USER_EMAIL,
@@ -59,7 +59,9 @@ interface ProfilePageProps {
 export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const { t } = useTranslation();
 
-  const authStore = useAuthStore();
+  const updateCurrentUserNameForEmailChange = useAppStore(
+    (state) => state.updateCurrentUserNameForEmailChange
+  );
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier
   );
@@ -241,7 +243,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         const updatedUser = await updateEmail(oldEmail, editingUser.email);
         migrateUserStorage(oldEmail, editingUser.email);
         if (isSelf) {
-          authStore.updateCurrentUserNameForEmailChange(updatedUser.name);
+          updateCurrentUserNameForEmailChange(updatedUser.name);
           setCurrentUser(updatedUser);
         }
       }
