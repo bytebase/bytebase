@@ -108,7 +108,10 @@ function resolveTarget(to: RouteTarget): string {
       : `#${to.hash}`
     : "";
   if (to.name) {
-    return `${resolvePath(to.name, { params: to.params, query: to.query })}${hash}`;
+    return `${resolvePath(to.name, {
+      params: inheritCurrentParams(to.params),
+      query: to.query,
+    })}${hash}`;
   }
   if (to.path) {
     const search = to.query ? buildSearchString(to.query) : "";
@@ -125,6 +128,18 @@ function resolveTarget(to: RouteTarget): string {
   const search = to.query ? buildSearchString(to.query) : "";
   const path = window.location.pathname;
   return `${search ? `${path}?${search}` : path}${hash}`;
+}
+
+function inheritCurrentParams(
+  params: Record<string, string | string[] | undefined> | undefined
+): Record<string, string | string[] | undefined> {
+  const merged = { ...currentRouteSnapshot().params };
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value !== undefined) {
+      merged[key] = value;
+    }
+  }
+  return merged;
 }
 
 // Shared builder for both the `useCurrentRoute` hook and the non-hook
