@@ -512,25 +512,50 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 //
 // For UPDATE: the table must appear as the qualifier of at least one SET
 // assignment — being only joined for filtering is not enough.
-//
-// For DELETE: n.Tables holds the explicit delete-targets (mutation set);
-// n.Using holds JOIN-only refs (filter set). Only n.Tables counts as
-// mutation. Per Codex P1 follow-on catch on PR #20345 — pre-fix
-// matching n.Using too caused a backup item targeting a USING-only
-// table to generate rollback SQL that re-inserted rows that were never
-// deleted (reintroducing stale data).
 func containsTable(node ast.Node, database, table string, targetCols map[string]bool) bool {
 	switch n := node.(type) {
 	case *ast.UpdateStmt:
 		return updateMutatesTable(n, database, table, targetCols)
 	case *ast.DeleteStmt:
+		return deleteMutatesTable(n, database, table)
+	default:
+	}
+	return false
+}
+
+// deleteMutatesTable reports whether the DELETE removes rows from the specified
+// physical table.
+//
+// Single-table DELETE (no USING): n.Tables is the physical table.
+//
+// Multi-table DELETE (DELETE t1, t2 FROM ...): n.Tables holds the delete-target
+// ALIASES (or bare names), which must be resolved through the FROM/USING ref
+// map to their physical tables — backup.go keys each backup item by the
+// physical name (BYT-9623). n.Using is the JOIN-only filter set, used here ONLY
+// to resolve aliases; it is never matched as a mutation target, because doing
+// so re-inserted rows that were never deleted (Codex P1 catch on PR #20345).
+func deleteMutatesTable(n *ast.DeleteStmt, database, table string) bool {
+	if len(n.Using) == 0 {
 		for _, expr := range n.Tables {
 			if tableExprReferences(expr, database, table) {
 				return true
 			}
 		}
-		// n.Using is JOIN-only (filter set), not mutation — do NOT match.
-	default:
+		return false
+	}
+	refs := extractSingleTablesFromTableExprs(database, n.Using)
+	for _, target := range n.Tables {
+		ref, ok := target.(*ast.TableRef)
+		if !ok {
+			continue
+		}
+		resolved, ok := refs[strings.ToLower(ref.Name)]
+		if !ok {
+			continue
+		}
+		if strings.EqualFold(resolved.Database, database) && strings.EqualFold(resolved.Table, table) {
+			return true
+		}
 	}
 	return false
 }
