@@ -65,6 +65,26 @@ describe("ProjectTable", () => {
     ]);
   });
 
+  test("keeps plain clicks on row links native without a row click handler", () => {
+    act(() => {
+      root.render(
+        <ProjectTable projectList={[project]} getRowHref={() => "#sample"} />
+      );
+    });
+
+    const links = [...container.querySelectorAll("a")];
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      const notPrevented = link.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(notPrevented).toBe(true);
+    }
+  });
+
   test("routes plain clicks on row links through the row click handler", () => {
     const onRowClick = vi.fn();
 

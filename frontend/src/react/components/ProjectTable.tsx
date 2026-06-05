@@ -329,7 +329,7 @@ const ProjectRowView = memo(function ProjectRowView({
   return (
     <TableRow
       className={cn(clickable && "cursor-pointer")}
-      onClick={(event) => onRowClick(project, event)}
+      onClick={clickable ? (event) => onRowClick(project, event) : undefined}
     >
       {showSelection ? (
         <TableCell
@@ -359,7 +359,7 @@ const ProjectRowView = memo(function ProjectRowView({
           <a
             href={rowHref}
             className="block hover:underline"
-            onClick={handleRowLinkClick}
+            onClick={clickable ? handleRowLinkClick : undefined}
           >
             {resourceIdContent}
           </a>
@@ -373,7 +373,7 @@ const ProjectRowView = memo(function ProjectRowView({
             <a
               href={rowHref}
               className="min-w-0 block hover:underline"
-              onClick={handleRowLinkClick}
+              onClick={clickable ? handleRowLinkClick : undefined}
             >
               {titleContent}
             </a>
