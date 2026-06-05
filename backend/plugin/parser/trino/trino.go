@@ -55,25 +55,13 @@ func parseTrinoStatements(statement string) ([]base.ParsedStatement, error) {
 
 	result := make([]base.ParsedStatement, 0, len(stmts))
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		parsed, err := parseSegment(stmt)
+		if err != nil {
+			return nil, err
 		}
-		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
-			result = append(result, ps)
-			continue
-		}
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 {
-			pe := errs[0]
-			return nil, convertParseError(stmt.Text, &pe, stmt.Start)
-		}
-		var node ast.Node
-		if file != nil && len(file.Stmts) > 0 {
-			node = file.Stmts[0]
-		}
-		ps.AST = &omniAST{
-			node:     node,
-			startPos: stmt.Start,
+		ps := base.ParsedStatement{Statement: stmt}
+		if parsed != nil {
+			ps.AST = parsed
 		}
 		result = append(result, ps)
 	}
@@ -95,24 +83,35 @@ func parseTrinoSQL(statement string) ([]*omniAST, error) {
 
 	var result []*omniAST
 	for _, stmt := range stmts {
-		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
-			continue
+		parsed, err := parseSegment(stmt)
+		if err != nil {
+			return nil, err
 		}
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 {
-			pe := errs[0]
-			return nil, convertParseError(stmt.Text, &pe, stmt.Start)
+		if parsed != nil {
+			result = append(result, parsed)
 		}
-		var node ast.Node
-		if file != nil && len(file.Stmts) > 0 {
-			node = file.Stmts[0]
-		}
-		result = append(result, &omniAST{
-			node:     node,
-			startPos: stmt.Start,
-		})
 	}
 	return result, nil
+}
+
+// parseSegment parses a single already-split statement segment into an
+// *omniAST. A blank or comment-only segment yields (nil, nil) so callers can
+// decide whether to keep a placeholder (parseTrinoStatements) or skip it
+// (parseTrinoSQL). The first omni parse error is translated into the
+// coordinates of the original input via convertParseError.
+func parseSegment(stmt base.Statement) (*omniAST, error) {
+	if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
+		return nil, nil
+	}
+	file, errs := parser.Parse(stmt.Text)
+	if len(errs) > 0 {
+		return nil, convertParseError(stmt.Text, &errs[0], stmt.Start)
+	}
+	var node ast.Node
+	if file != nil && len(file.Stmts) > 0 {
+		node = file.Stmts[0]
+	}
+	return &omniAST{node: node, startPos: stmt.Start}, nil
 }
 
 // convertParseError converts an omni *parser.ParseError to a *base.SyntaxError
