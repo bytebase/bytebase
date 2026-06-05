@@ -776,10 +776,12 @@
       "self": "Condición"
     },
     "delete-group": "Eliminar el grupo de bases de datos {{name}}",
-    "matched-database": "Base de datos coincidente",
+    "load-database-failed": "Error al cargar bases de datos",
+    "matched-databases": "Bases de datos coincidentes",
     "no-matched-databases": "No hay bases de datos coincidentes",
     "select": "Seleccionar grupo de bases de datos",
-    "unmatched-database": "Base de datos no coincidente"
+    "unmatched-databases": "Bases de datos no coincidentes",
+    "unmatched-databases-preview": "Vista previa"
   },
   "db": {
     "catalog": {

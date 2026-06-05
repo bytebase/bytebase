@@ -776,10 +776,12 @@
       "self": "条件"
     },
     "delete-group": "データベースグループ {{name}} を削除",
-    "matched-database": "一致したデータベース",
+    "load-database-failed": "データベースの読み込みに失敗しました",
+    "matched-databases": "一致したデータベース",
     "no-matched-databases": "一致するデータベースがありません",
     "select": "データベースグループを選択",
-    "unmatched-database": "一致しないデータベース"
+    "unmatched-databases": "一致しないデータベース",
+    "unmatched-databases-preview": "プレビュー"
   },
   "db": {
     "catalog": {
