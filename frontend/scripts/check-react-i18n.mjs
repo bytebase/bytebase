@@ -1,6 +1,6 @@
 // frontend/scripts/check-react-i18n.mjs
 //
-// Enforces strict 1:1 mapping between React code and React locale files:
+// Enforces strict 1:1 mapping between source code and canonical locale files:
 //   1. Missing keys      — t("key") in code but key not in locale files
 //   2. Unused keys       — key in locale files but not referenced in code
 //   3. Consistency       — all locale files must have the exact same key set
@@ -44,11 +44,10 @@ const DYNAMIC_PREFIXES = [
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
   // Keys consumed by SHARED non-React `.ts` modules that translate via
-  // `@/plugins/i18n` (the same react-i18next instance — vue-i18n is gone), but
+  // `@/react/i18n` (the same react-i18next instance — vue-i18n is gone), but
   // live OUTSIDE this checker's React-only scan, so they read as unused. They
-  // must stay in the React locale files (statically loaded; the runtime legacy
-  // merge does not resolve them reliably at first render — e.g. /roles). Listed
-  // with the shared caller that uses them:
+  // must stay in the canonical locale files. Listed with the shared caller
+  // that uses them:
   //   - role.*.self / .description — displayRoleTitle / displayRoleTitleFromList
   //     (src/utils/role.ts, src/react/lib/role.ts)
   "role.",
@@ -84,13 +83,9 @@ const DYNAMIC_PREFIXES = [
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const REACT_DIR = resolve(ROOT, "src/react");
-const LOCALES_DIR = resolve(REACT_DIR, "locales");
-// Additional React-side source roots outside `src/react/`. The AI plugin
-// keeps its React tree co-located with its framework-agnostic logic at
-// `src/plugins/ai/react/`; include those files when scanning for `t(...)`
-// usage so its i18n keys don't read as "unused".
-const EXTRA_REACT_DIRS = [resolve(ROOT, "src/plugins/ai/react")];
+const SOURCE_DIR = resolve(ROOT, "src");
+const LOCALES_DIR = resolve(ROOT, "src/locales");
+const SOURCE_SCAN_DIRS = [SOURCE_DIR];
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
 let errors = 0;
@@ -107,7 +102,7 @@ function findFiles(dir, ext) {
   const results = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = resolve(dir, entry.name);
-    if (entry.isDirectory() && entry.name !== "locales") {
+    if (entry.isDirectory() && !["locales", "proto-es"].includes(entry.name)) {
       results.push(...findFiles(full, ext));
     } else if (entry.isFile() && entry.name.endsWith(ext)) {
       results.push(full);
@@ -129,6 +124,26 @@ function flatten(obj, prefix = "") {
   return result;
 }
 
+function mergeMessages(base, override) {
+  const result = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    const existing = result[key];
+    if (
+      existing &&
+      typeof existing === "object" &&
+      !Array.isArray(existing) &&
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
+      result[key] = mergeMessages(existing, value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // i18next pluralization: _one/_other suffixes map to the base key in code
 function baseKey(key) {
   return key.replace(/_(one|other|zero|few|many)$/, "");
@@ -139,19 +154,17 @@ function isDynamic(key) {
 }
 
 // ---------------------------------------------------------------------------
-// Collect translation keys from React source (.tsx and .ts) files
+// Collect translation keys from source files
 // ---------------------------------------------------------------------------
 function collectSourceKeys() {
-  const files = [
-    ...findFiles(REACT_DIR, ".tsx"),
-    ...findFiles(REACT_DIR, ".ts"),
-    ...EXTRA_REACT_DIRS.flatMap((dir) => [
-      ...findFiles(dir, ".tsx"),
-      ...findFiles(dir, ".ts"),
-    ]),
-  ];
+  const files = SOURCE_SCAN_DIRS.flatMap((dir) => [
+    ...findFiles(dir, ".tsx"),
+    ...findFiles(dir, ".ts"),
+    ...findFiles(dir, ".vue"),
+  ]);
   const keys = new Set();
-  // Only match single/double quoted strings — template literals with ${} are dynamic keys
+  // Only match single/double quoted strings — template literals with ${} are dynamic keys.
+  // This covers React `t("key")`, shared-module `t("key")`, and Vue `$t("key")`.
   const re = /\bt\(\s*["']([^"']+)["']/g;
   // <Trans i18nKey="..."> — react-i18next component-interpolation pattern
   const transRe = /\bi18nKey\s*=\s*["']([^"']+)["']/g;
@@ -171,7 +184,7 @@ function collectSourceKeys() {
 }
 
 // ---------------------------------------------------------------------------
-// Collect keys from a locale (main + dynamic)
+// Collect keys from a locale (main + generated/dynamic sections)
 // ---------------------------------------------------------------------------
 function loadLocaleKeys(locale) {
   const main = JSON.parse(
@@ -180,7 +193,27 @@ function loadLocaleKeys(locale) {
   const dynamic = JSON.parse(
     readFileSync(resolve(LOCALES_DIR, `dynamic/${locale}.json`), "utf-8")
   );
-  return new Set(Object.keys(flatten({ ...main, dynamic })));
+  const sqlReview = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `sql-review/${locale}.json`), "utf-8")
+  );
+  const subscription = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `subscription/${locale}.json`), "utf-8")
+  );
+  const sections = mergeMessages(
+    {
+      "sql-review": sqlReview,
+      subscription,
+    },
+    main
+  );
+  return new Set(
+    Object.keys(
+      flatten({
+        ...sections,
+        dynamic,
+      })
+    )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +260,7 @@ if (unused.length > 0) {
     error(`  - ${key}`);
   }
   console.error(
-    "\nRemove from frontend/src/react/locales/ or add to DYNAMIC_PREFIXES if referenced indirectly (helper return, template literal).\n"
+    "\nRemove from frontend/src/locales/ or add to DYNAMIC_PREFIXES if referenced indirectly (helper return, template literal).\n"
   );
 }
 
@@ -289,9 +322,17 @@ for (const locale of LOCALES) {
   const dynamic = JSON.parse(
     readFileSync(resolve(LOCALES_DIR, `dynamic/${locale}.json`), "utf-8")
   );
+  const sqlReview = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `sql-review/${locale}.json`), "utf-8")
+  );
+  const subscription = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `subscription/${locale}.json`), "utf-8")
+  );
   const issues = [
     ...findSingleBracePlaceholders(main),
     ...findSingleBracePlaceholders(dynamic, "dynamic"),
+    ...findSingleBracePlaceholders(sqlReview, "sql-review"),
+    ...findSingleBracePlaceholders(subscription, "subscription"),
   ];
   if (issues.length > 0) {
     console.error(

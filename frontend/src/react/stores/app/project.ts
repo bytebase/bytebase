@@ -77,6 +77,17 @@ function createUnknownProject() {
   });
 }
 
+const unknownProject = createUnknownProject();
+const defaultProjectByName = new Map<string, Project>();
+
+function getDefaultProject(name: string) {
+  const existing = defaultProjectByName.get(name);
+  if (existing) return existing;
+  const project = createDefaultProject(name);
+  defaultProjectByName.set(name, project);
+  return project;
+}
+
 export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
   // Immutable bulk upsert into the by-name cache.
   const upsertProjects = (projects: Project[]): void => {
@@ -102,12 +113,12 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
     // returns a non-null Project, synthesizing the default-project or
     // unknown-project placeholder when the name is not in the cache.
     getProjectByName: (name) => {
-      if (name === UNKNOWN_PROJECT_NAME) return createUnknownProject();
+      if (name === UNKNOWN_PROJECT_NAME) return unknownProject;
       const defaultProject = defaultProjectName(get);
       if (name && name === defaultProject) {
-        return get().projectsByName[name] ?? createDefaultProject(name);
+        return get().projectsByName[name] ?? getDefaultProject(name);
       }
-      return get().projectsByName[name] ?? createUnknownProject();
+      return get().projectsByName[name] ?? unknownProject;
     },
 
     fetchProject: async (name, silent = false) => {
@@ -268,7 +279,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       if (cached && cached.name !== UNKNOWN_PROJECT_NAME) {
         return cached;
       }
-      return (await get().fetchProject(name, silent)) ?? createUnknownProject();
+      return (await get().fetchProject(name, silent)) ?? unknownProject;
     },
 
     fetchProjectList: async (params) => {

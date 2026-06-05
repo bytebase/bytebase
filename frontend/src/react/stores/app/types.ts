@@ -549,7 +549,7 @@ export type DBGroupSlice = {
     view?: DatabaseGroupView
   ) => Promise<DatabaseGroup | undefined>;
   listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
-  // Synchronous cache read. Returns `unknownDatabaseGroup()` when absent or
+  // Synchronous cache read. Returns a stable unknownDatabaseGroup when absent or
   // when a FULL view is requested but only BASIC is cached.
   getDBGroupByName: (name: string, view?: DatabaseGroupView) => DatabaseGroup;
   getOrFetchDBGroupByName: (
@@ -1058,7 +1058,7 @@ export type PlanSlice = {
 export type RolloutSlice = {
   rolloutsByName: Record<string, Rollout>;
   fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
-  // Synchronous cache read; returns `unknownRollout()` on miss.
+  // Synchronous cache read; returns a stable unknownRollout on miss.
   getRolloutByName: (name: string) => Rollout;
 };
 

@@ -1,4 +1,4 @@
-import { t as translate } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -121,25 +121,28 @@ export const releaseNameOfTaskV1 = (task: Task): string => {
 
 export const stringifyTaskStatus = (
   status: Task_Status | TaskRun_Status,
-  t: (key: string, named?: Record<string, unknown>) => string = translate
+  translate: (
+    key: string,
+    named?: Record<string, unknown>
+  ) => string = i18n.t.bind(i18n)
 ): string => {
   switch (status) {
     case Task_Status.NOT_STARTED:
-      return t("task.status.not-started");
+      return translate("task.status.not-started");
     case Task_Status.PENDING:
-      return t("task.status.pending");
+      return translate("task.status.pending");
     case Task_Status.RUNNING:
-      return t("task.status.running");
+      return translate("task.status.running");
     case Task_Status.DONE:
-      return t("task.status.done");
+      return translate("task.status.done");
     case Task_Status.FAILED:
-      return t("task.status.failed");
+      return translate("task.status.failed");
     case Task_Status.CANCELED:
-      return t("task.status.canceled");
+      return translate("task.status.canceled");
     case Task_Status.SKIPPED:
-      return t("task.status.skipped");
+      return translate("task.status.skipped");
     case TaskRun_Status.AVAILABLE:
-      return t("task.status.available");
+      return translate("task.status.available");
     default:
       return Task_Status[status] || String(status);
   }

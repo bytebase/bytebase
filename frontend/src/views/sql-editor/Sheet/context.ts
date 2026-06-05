@@ -5,7 +5,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -404,11 +404,11 @@ const convertToWorksheetLikeItem = (
 const rootLabelFor = (view: SheetViewMode): string => {
   switch (view) {
     case "my":
-      return t("sheet.mine");
+      return i18n.t("sheet.mine");
     case "shared":
-      return t("sheet.shared");
+      return i18n.t("sheet.shared");
     case "draft":
-      return t("common.draft");
+      return i18n.t("common.draft");
     default:
       return "";
   }
@@ -1139,7 +1139,7 @@ export const openWorksheetByName = async ({
     useAppStore.getState().notify({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("common.access-denied"),
+      title: i18n.t("common.access-denied"),
     });
     return undefined;
   }

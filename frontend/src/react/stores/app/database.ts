@@ -39,6 +39,12 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
   set,
   get
 ) => {
+  let unknownDatabase: Database | undefined;
+  const getUnknownDatabase = () => {
+    unknownDatabase ??= createUnknownDatabase();
+    return unknownDatabase;
+  };
+
   // Mirrors the legacy Pinia `batchComposeDatabase`: pre-caches the owning
   // projects and guarantees `instanceResource` is populated (with a fallback)
   // so consumers can read engine / instance off any database.
@@ -143,12 +149,12 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     getDatabaseList: () => Object.values(get().databasesByName),
 
     getDatabaseByName: (name) =>
-      get().databasesByName[name] ?? createUnknownDatabase(),
+      get().databasesByName[name] ?? getUnknownDatabase(),
 
     fetchDatabase: (name) => fetchByName(name, false),
 
     getOrFetchDatabaseByName: async (name, silent = true) =>
-      (await fetchByName(name, silent)) ?? createUnknownDatabase(),
+      (await fetchByName(name, silent)) ?? getUnknownDatabase(),
 
     batchFetchDatabases: async (names) => {
       const validNames = uniq(names).filter(isValidDatabaseName);

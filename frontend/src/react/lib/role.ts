@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 
 const PresetRoleType = {
@@ -52,12 +52,12 @@ const extractRoleResourceName = (resourceId: string): string => {
 
 const displayPresetRoleTitle = (roleName: string): string => {
   const key = PRESET_ROLE_TITLE_KEYS[roleName];
-  return key ? t(key) : roleName;
+  return key ? i18n.t(key) : roleName;
 };
 
 const displayPresetRoleDescription = (roleName: string): string => {
   const key = PRESET_ROLE_DESCRIPTION_KEYS[roleName];
-  return key ? t(key) : roleName;
+  return key ? i18n.t(key) : roleName;
 };
 
 export const displayRoleTitleFromList = (

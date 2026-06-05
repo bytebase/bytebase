@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { t, te } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule } from "@/types/proto-es/v1/review_config_service_pb";
 import {
@@ -801,16 +801,16 @@ export const getRuleLocalization = (
   engine?: Engine
 ): { title: string; description: string } => {
   const key = getRuleLocalizationKey(type);
-  let title = t(`sql-review.rule.${key}.title`);
-  let description = t(`sql-review.rule.${key}.description`);
+  let title = i18n.t(`sql-review.rule.${key}.title`);
+  let description = i18n.t(`sql-review.rule.${key}.description`);
 
   if (engine) {
     const engineSpecificKey = `${key}.${Engine[engine].toLowerCase()}`;
-    if (te(`sql-review.rule.${engineSpecificKey}.title`)) {
-      title = t(`sql-review.rule.${engineSpecificKey}.title`);
+    if (i18n.exists(`sql-review.rule.${engineSpecificKey}.title`)) {
+      title = i18n.t(`sql-review.rule.${engineSpecificKey}.title`);
     }
-    if (te(`sql-review.rule.${engineSpecificKey}.description`)) {
-      description = t(`sql-review.rule.${engineSpecificKey}.description`);
+    if (i18n.exists(`sql-review.rule.${engineSpecificKey}.description`)) {
+      description = i18n.t(`sql-review.rule.${engineSpecificKey}.description`);
     }
   }
 

@@ -11,8 +11,10 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/plugins/i18n", () => ({
-  t: (key: string) => key,
+vi.mock("@/react/i18n", () => ({
+  default: {
+    t: (key: string) => key,
+  },
 }));
 
 vi.mock("@/react/router", () => ({

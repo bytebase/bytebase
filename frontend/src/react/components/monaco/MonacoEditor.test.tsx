@@ -174,7 +174,7 @@ beforeEach(() => {
 describe("MonacoEditor", () => {
   test("keeps the legacy heartbeat interpolation text", () => {
     const locale = JSON.parse(
-      readFileSync(resolve("src/react/locales/en-US.json"), "utf-8")
+      readFileSync(resolve("src/locales/en-US.json"), "utf-8")
     ) as {
       "sql-editor": {
         "web-socket": {

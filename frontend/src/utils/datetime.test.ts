@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@/plugins/i18n", () => ({
-  locale: { value: "en-US" },
+vi.mock("@/react/i18n", () => ({
+  default: {
+    language: "en-US",
+  },
 }));
 
 import {

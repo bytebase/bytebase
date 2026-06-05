@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
@@ -41,6 +40,10 @@ import {
   preloadRolloutPermissionContext,
   RUNNABLE_TASK_STATUSES,
 } from "../../issue-detail/utils/rollout";
+import {
+  ScheduledRunTimeInput,
+  TASK_ROLLOUT_ACTION_SHEET_WIDTH,
+} from "../../utils/taskRolloutActionPanel";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
@@ -303,7 +306,7 @@ export function PlanDetailTaskRolloutActionPanel({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent width="wide">
+      <SheetContent width={TASK_ROLLOUT_ACTION_SHEET_WIDTH}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
@@ -392,16 +395,11 @@ export function PlanDetailTaskRolloutActionPanel({
                     : t("task.schedule-for-later.description")}
                 </div>
                 {runTimeInMS !== undefined && (
-                  <Input
+                  <ScheduledRunTimeInput
                     className="mt-2"
-                    onChange={(event) =>
-                      setRunTimeInMS(
-                        parseDatetimeLocalValue(event.target.value)
-                      )
-                    }
+                    onChange={setRunTimeInMS}
                     placeholder={t("task.select-scheduled-time")}
-                    type="datetime-local"
-                    value={formatDatetimeLocalValue(runTimeInMS)}
+                    value={runTimeInMS}
                   />
                 )}
               </div>
@@ -577,21 +575,6 @@ function groupTasksByStage(tasks: Task[]) {
     grouped.get(stageId)?.push(task);
   }
   return grouped;
-}
-
-function formatDatetimeLocalValue(value?: number) {
-  if (value === undefined) return "";
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function parseDatetimeLocalValue(value: string) {
-  return value ? new Date(value).getTime() : undefined;
 }
 
 function PlanDetailTaskDatabaseName({ task }: { task: Task }) {

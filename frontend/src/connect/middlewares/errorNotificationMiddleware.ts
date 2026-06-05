@@ -1,5 +1,5 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { pushNotification } from "@/store";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 
@@ -57,7 +57,7 @@ export const errorNotificationInterceptor: Interceptor =
         // or other frontend exception.
         // Expect not to be here.
         maybePushNotification(
-          `${t("common.error")}: ${req.service.name}/${req.method.name}`,
+          `${i18n.t("common.error")}: ${req.service.name}/${req.method.name}`,
           String(error)
         );
       }

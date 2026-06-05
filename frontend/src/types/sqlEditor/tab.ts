@@ -1,5 +1,5 @@
-import { t } from "@/plugins/i18n";
 import type { Selection as MonacoSelection } from "@/react/components/monaco/types";
+import i18n from "@/react/i18n";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
@@ -19,9 +19,9 @@ export type QueryDataSourceType =
 export const getDataSourceTypeI18n = (dsType?: DataSourceType) => {
   switch (dsType) {
     case DataSourceType.ADMIN:
-      return t("sql-editor.batch-query.select-data-source.admin");
+      return i18n.t("sql-editor.batch-query.select-data-source.admin");
     case DataSourceType.READ_ONLY:
-      return t("sql-editor.batch-query.select-data-source.readonly");
+      return i18n.t("sql-editor.batch-query.select-data-source.readonly");
     default:
       return "Unknown";
   }

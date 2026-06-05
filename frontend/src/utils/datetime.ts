@@ -1,4 +1,4 @@
-import { locale } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 
 export const RELATIVE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const DEFAULT_NOW_THRESHOLD_MS = 10_000;
@@ -8,7 +8,7 @@ type RelativeTimeFormatOptions = {
 };
 
 export function getActiveLocale(): string {
-  return locale.value;
+  return i18n.language;
 }
 
 export function formatRelativeTime(

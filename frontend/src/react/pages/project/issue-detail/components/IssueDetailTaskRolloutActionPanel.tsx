@@ -7,7 +7,7 @@ import { rolloutServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -21,6 +21,10 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import {
+  ScheduledRunTimeInput,
+  TASK_ROLLOUT_ACTION_SHEET_WIDTH,
+} from "@/react/pages/project/utils/taskRolloutActionPanel";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -318,7 +322,7 @@ export function IssueDetailTaskRolloutActionPanel({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent width="wide">
+      <SheetContent width={TASK_ROLLOUT_ACTION_SHEET_WIDTH}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
@@ -383,44 +387,35 @@ export function IssueDetailTaskRolloutActionPanel({
                 <h3 className="mb-1 font-medium text-control">
                   {t("task.execution-time")}
                 </h3>
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                  <label className="inline-flex items-center gap-x-2 text-sm">
-                    <input
-                      checked={runTimeInMS === undefined}
-                      name="run-time-mode"
-                      onChange={() => setRunTimeInMS(undefined)}
-                      type="radio"
-                    />
-                    <span>{t("task.run-immediately.self")}</span>
-                  </label>
-                  <label className="inline-flex items-center gap-x-2 text-sm">
-                    <input
-                      checked={runTimeInMS !== undefined}
-                      name="run-time-mode"
-                      onChange={() =>
-                        setRunTimeInMS(Date.now() + DEFAULT_RUN_DELAY_MS)
-                      }
-                      type="radio"
-                    />
-                    <span>{t("task.schedule-for-later.self")}</span>
-                  </label>
-                </div>
+                <RadioGroup
+                  className="flex! flex-col gap-2 sm:flex-row sm:gap-4"
+                  onValueChange={(value) =>
+                    setRunTimeInMS(
+                      value === "immediate"
+                        ? undefined
+                        : Date.now() + DEFAULT_RUN_DELAY_MS
+                    )
+                  }
+                  value={runTimeInMS === undefined ? "immediate" : "scheduled"}
+                >
+                  <RadioGroupItem value="immediate">
+                    {t("task.run-immediately.self")}
+                  </RadioGroupItem>
+                  <RadioGroupItem value="scheduled">
+                    {t("task.schedule-for-later.self")}
+                  </RadioGroupItem>
+                </RadioGroup>
                 <div className="mt-1 text-sm text-control-light">
                   {runTimeInMS === undefined
                     ? t("task.run-immediately.description")
                     : t("task.schedule-for-later.description")}
                 </div>
                 {runTimeInMS !== undefined && (
-                  <Input
+                  <ScheduledRunTimeInput
                     className="mt-2"
-                    onChange={(event) =>
-                      setRunTimeInMS(
-                        parseDatetimeLocalValue(event.target.value)
-                      )
-                    }
+                    onChange={setRunTimeInMS}
                     placeholder={t("task.select-scheduled-time")}
-                    type="datetime-local"
-                    value={formatDatetimeLocalValue(runTimeInMS)}
+                    value={runTimeInMS}
                   />
                 )}
               </div>
@@ -735,16 +730,4 @@ function taskStatusLabel(t: (key: string) => string, status: Task_Status) {
     default:
       return t("task.status.not-started");
   }
-}
-
-function formatDatetimeLocalValue(value?: number) {
-  if (value === undefined) {
-    return "";
-  }
-  return new Date(value).toISOString().slice(0, 16);
-}
-
-function parseDatetimeLocalValue(value: string) {
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : undefined;
 }

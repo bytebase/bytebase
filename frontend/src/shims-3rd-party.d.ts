@@ -1,8 +1,5 @@
 declare module "pev2" {
-  import type { defineComponent } from "vue";
+  const Plan: unknown;
 
-  const Plan: ReturnType<typeof defineComponent>;
-
-   
   export { Plan };
 }
