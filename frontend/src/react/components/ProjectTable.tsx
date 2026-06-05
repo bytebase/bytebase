@@ -27,6 +27,7 @@ export type ProjectTableSortKey = "title";
 export type ProjectTableSortDirection = "asc" | "desc";
 
 type RenderActions = (project: Project) => ReactNode;
+type ProjectRowClickEvent = ReactMouseEvent<HTMLElement>;
 
 export interface ProjectTableProps {
   /** Rows to render. */
@@ -57,6 +58,8 @@ export interface ProjectTableProps {
    */
   readonly showActions?: boolean;
   readonly renderActions?: RenderActions;
+  /** Native link target for each row, used by title anchors. */
+  readonly getRowHref?: (project: Project) => string;
   /** Currently-checked rows (selection mode). */
   readonly selectedProjectNames?: readonly string[];
   /** Selection-change callback. */
@@ -69,10 +72,7 @@ export interface ProjectTableProps {
    * Click handler. Receives the original event so callers can detect
    * `ctrl`/`meta` modifiers for "open in new tab".
    */
-  readonly onRowClick?: (
-    project: Project,
-    event: ReactMouseEvent<HTMLTableRowElement>
-  ) => void;
+  readonly onRowClick?: (project: Project, event: ProjectRowClickEvent) => void;
   readonly className?: string;
 }
 
@@ -100,6 +100,7 @@ export function ProjectTable({
   showLabels = true,
   showActions = false,
   renderActions,
+  getRowHref,
   selectedProjectNames = [],
   onSelectedChange,
   sortKey,
@@ -145,6 +146,8 @@ export function ProjectTable({
   onRowClickRef.current = onRowClick;
   const renderActionsRef = useRef(renderActions);
   renderActionsRef.current = renderActions;
+  const getRowHrefRef = useRef(getRowHref);
+  getRowHrefRef.current = getRowHref;
 
   const handleSelectAll = useCallback(() => {
     const cb = onSelectedChangeRef.current;
@@ -166,7 +169,7 @@ export function ProjectTable({
   }, []);
 
   const handleRowClick = useCallback(
-    (project: Project, event: ReactMouseEvent<HTMLTableRowElement>) => {
+    (project: Project, event: ProjectRowClickEvent) => {
       onRowClickRef.current?.(project, event);
     },
     []
@@ -251,6 +254,7 @@ export function ProjectTable({
               showLabels={showLabels}
               showActions={showActions}
               clickable={!!onRowClick}
+              rowHref={getRowHrefRef.current?.(project)}
               keyword={keyword}
               onToggleRow={handleToggleRow}
               onRowClick={handleRowClick}
@@ -272,12 +276,10 @@ interface ProjectRowViewProps {
   showLabels: boolean;
   showActions: boolean;
   clickable: boolean;
+  rowHref?: string;
   keyword: string;
   onToggleRow: (name: string) => void;
-  onRowClick: (
-    project: Project,
-    event: ReactMouseEvent<HTMLTableRowElement>
-  ) => void;
+  onRowClick: (project: Project, event: ProjectRowClickEvent) => void;
   renderActions: (project: Project) => ReactNode;
 }
 
@@ -290,6 +292,7 @@ const ProjectRowView = memo(function ProjectRowView({
   showLabels,
   showActions,
   clickable,
+  rowHref,
   keyword,
   onToggleRow,
   onRowClick,
@@ -299,10 +302,34 @@ const ProjectRowView = memo(function ProjectRowView({
   const resourceId = getProjectName(project.name);
   const isDefault = resourceId === "default";
   const titleText = project.title || resourceId;
+  const titleContent = (
+    <EllipsisText text={titleText} className="min-w-0">
+      <HighlightLabelText text={titleText} keyword={keyword} />
+    </EllipsisText>
+  );
+  const resourceIdContent = (
+    <EllipsisText text={resourceId}>
+      <HighlightLabelText text={resourceId} keyword={keyword} />
+    </EllipsisText>
+  );
+  const handleRowLinkClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    onRowClick(project, event);
+  };
   return (
     <TableRow
       className={cn(clickable && "cursor-pointer")}
-      onClick={(event) => onRowClick(project, event)}
+      onClick={clickable ? (event) => onRowClick(project, event) : undefined}
     >
       {showSelection ? (
         <TableCell
@@ -328,15 +355,31 @@ const ProjectRowView = memo(function ProjectRowView({
         </TableCell>
       ) : null}
       <TableCell>
-        <EllipsisText text={resourceId}>
-          <HighlightLabelText text={resourceId} keyword={keyword} />
-        </EllipsisText>
+        {rowHref ? (
+          <a
+            href={rowHref}
+            className="block hover:underline"
+            onClick={clickable ? handleRowLinkClick : undefined}
+          >
+            {resourceIdContent}
+          </a>
+        ) : (
+          resourceIdContent
+        )}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-x-2 min-w-0">
-          <EllipsisText text={titleText} className="min-w-0">
-            <HighlightLabelText text={titleText} keyword={keyword} />
-          </EllipsisText>
+          {rowHref ? (
+            <a
+              href={rowHref}
+              className="min-w-0 block hover:underline"
+              onClick={clickable ? handleRowLinkClick : undefined}
+            >
+              {titleContent}
+            </a>
+          ) : (
+            titleContent
+          )}
           {project.state === State.DELETED ? (
             <Badge variant="warning" className="text-xs shrink-0">
               {t("common.archived")}

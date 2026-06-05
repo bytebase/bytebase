@@ -587,7 +587,7 @@ export function ProjectsPage() {
   }, []);
 
   const handleRowClick = useCallback(
-    (project: Project, e: React.MouseEvent) => {
+    (project: Project, e: React.MouseEvent<HTMLElement>) => {
       const route = router.resolve(projectIssuesRoute(project));
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
@@ -597,6 +597,10 @@ export function ProjectsPage() {
     },
     []
   );
+
+  const getProjectHref = useCallback((project: Project) => {
+    return router.resolve(projectIssuesRoute(project)).fullPath;
+  }, []);
 
   const handleProjectAction = useCallback(() => {
     fetchProjects(true);
@@ -640,6 +644,7 @@ export function ProjectsPage() {
               onAction={handleProjectAction}
             />
           )}
+          getRowHref={getProjectHref}
           selectedProjectNames={Array.from(selectedNames)}
           onSelectedChange={(names) => setSelectedNames(new Set(names))}
           sortKey={sortKey}

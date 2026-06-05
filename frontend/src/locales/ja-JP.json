@@ -842,8 +842,14 @@
   "export-center": {
     "data-export": "データエクスポート",
     "deprecated": {
-      "description": "エクスポートセンターは将来のリリースで非推奨になります。新しいデータエクスポートには、SQL エディターのエクスポート機能の使用をご検討ください。",
+      "approval-flow-link-text": "リクエストアクセスの承認フロー",
+      "configure-approval-flow": "<lnk>{{linkText}}</lnk>が設定されていることをご確認ください。",
+      "enable-jit-first": "プロジェクトの<lnk>{{linkText}}</lnk>を有効にすると、ユーザーは SQL エディターから Just-in-Time のエクスポートリクエストを送信できます。",
+      "go-to-sql-editor-for-export": "データのエクスポートには SQL エディターをご利用ください。",
+      "intro": "エクスポートセンターは今後のリリースで非推奨になります。",
       "open-sql-editor": "SQL エディターを開く",
+      "project-jit-link-text": "Just-in-Time アクセス",
+      "request-via-jit": "ユーザーは SQL エディターから Just-in-Time のエクスポートリクエストを送信できます。",
       "title": "エクスポートセンターは非推奨になります"
     }
   },
