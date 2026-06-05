@@ -1178,7 +1178,6 @@
       "details": "Access Grant Details",
       "expired-at": "Expired at",
       "export-results-to-file": "Export results to a file",
-      "includes-sensitive-access": "includes sensitive access",
       "this-grant-allows": "This grant allows",
       "unmask-data-in-results": "Unmask sensitive data in results"
     },

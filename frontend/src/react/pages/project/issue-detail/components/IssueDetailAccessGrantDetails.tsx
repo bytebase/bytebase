@@ -1,4 +1,4 @@
-import { AlertTriangle, Download, EyeOff, Loader2, Shield } from "lucide-react";
+import { Download, EyeOff, Loader2, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
@@ -195,12 +195,12 @@ function IssueDetailAccessGrantTarget({ target }: { target: string }) {
 }
 
 /**
- * "This grant allows" card: a warning-toned header bar (the verdict
- * plus a `· includes sensitive access` suffix when a Tier-2 capability
- * — currently unmask — is present) and one row per granted capability.
- * Built from `warning` / `control-*` tokens only; kept local for now,
- * can be lifted when the request drawer's confirmation step adopts the
- * same shape.
+ * "This grant allows" card: a neutral header bar and one row per
+ * granted capability. The risk signal lives in the rows, not the
+ * chrome — the unmask row goes warning-toned (text + icon) while
+ * everything else stays grey. Built from `warning` / `control-*`
+ * tokens only; kept local for now, can be lifted when the request
+ * drawer's confirmation step adopts the same shape.
  */
 function GrantScopeCard({
   unmask,
@@ -210,33 +210,20 @@ function GrantScopeCard({
   exportAllowed: boolean;
 }) {
   const { t } = useTranslation();
-  const sensitive = unmask;
   return (
-    <div className="overflow-hidden rounded-sm border border-warning">
-      {/* Header is always warning-toned regardless of which capabilities
-          the grant carries: any access grant warrants attention, and a
-          uniform header keeps the visual language consistent. The
-          icon and the "includes sensitive access" suffix still vary so
-          the verdict still differentiates Tier-2 (unmask) from Tier-1
-          (export-only). */}
-      <div className="flex items-center gap-x-2 border-b border-warning bg-warning/10 px-3 py-2 text-sm font-medium text-warning-hover">
-        {sensitive ? (
-          <AlertTriangle className="size-4 shrink-0" />
-        ) : (
-          <Shield className="size-4 shrink-0" />
-        )}
-        <span>
-          {sensitive
-            ? `${t("issue.access-grant.this-grant-allows")} · ${t("issue.access-grant.includes-sensitive-access")}`
-            : t("issue.access-grant.this-grant-allows")}
-        </span>
+    <div className="overflow-hidden rounded-sm border border-control-border">
+      <div className="flex items-center gap-x-2 border-b border-control-border bg-control-bg px-3 py-2 text-sm font-medium text-control">
+        <Shield className="size-4 shrink-0" />
+        <span>{t("issue.access-grant.this-grant-allows")}</span>
       </div>
       <div className="flex flex-col">
         {unmask && (
-          <div className="flex items-center gap-x-2 px-3 py-2 text-sm">
-            {/* Yellow to match the header — flags unmask as the
-                sensitive capability inside an otherwise neutral list. */}
-            <EyeOff className="size-4 shrink-0 text-warning-hover" />
+          // Unmask carries the entire sensitive-access signal —
+          // warning-toned text + icon make the verdict live in the
+          // row itself. Export and any future Tier-1 capability stay
+          // neutral; the contrast is the warning.
+          <div className="flex items-center gap-x-2 px-3 py-2 text-sm text-warning-hover">
+            <EyeOff className="size-4 shrink-0" />
             <span>{t("issue.access-grant.unmask-data-in-results")}</span>
           </div>
         )}
