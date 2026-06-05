@@ -2,6 +2,7 @@ package trino
 
 import (
 	"context"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/bytebase/omni/trino/catalog"
@@ -35,7 +36,7 @@ func init() {
 // legacy completer's "every column in the default schema, ranked by priority".
 // Those fields are therefore left empty here.
 func Completion(_ context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	cat := buildCompletionCatalog(cCtx)
+	cat := buildCompletionCatalog(cCtx, statement)
 
 	byteOffset := caretToByteOffset(statement, caretLine, caretOffset)
 	cands := completion.Complete(statement, byteOffset, cat)
@@ -54,26 +55,41 @@ func Completion(_ context.Context, cCtx base.CompletionContext, statement string
 // context's metadata. Each bytebase database becomes a Trino catalog; its
 // schemas, tables/views and columns are copied in. The session's current
 // catalog/schema are set from the context defaults so unqualified names resolve
-// there. Returns nil when no metadata is available (omni Complete then offers
+// there. Returns nil when no catalogs are available (omni Complete then offers
 // only keywords and statement-derived CTE names).
-func buildCompletionCatalog(cCtx base.CompletionContext) *catalog.Catalog {
+//
+// Every catalog name is registered cheaply so catalog-level completion can list
+// them all, but full schema/table/column metadata is loaded only for catalogs
+// the current statement actually needs (the default catalog and any catalog
+// named in the statement). Trino instances routinely federate many catalogs and
+// the LSP invokes completion on every keystroke, so eagerly loading all of them
+// would fan out into hundreds of metadata fetches and stall completion.
+func buildCompletionCatalog(cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	if cCtx.Metadata == nil || cCtx.ListDatabaseNames == nil {
 		return nil
 	}
 	ctx := context.Background()
 	names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID)
-	if err != nil {
+	if err != nil || len(names) == 0 {
 		return nil
 	}
 
+	lowerStmt := strings.ToLower(statement)
+	defaultDB := catalog.Normalize(cCtx.DefaultDatabase)
+
 	cat := catalog.New()
-	loaded := false
 	for _, dbName := range names {
+		norm := catalog.Normalize(dbName)
+		// Register the catalog name (cheap) so catalog-level completion lists it.
+		cat.EnsureCatalog(norm)
+		if !catalogNeeded(norm, defaultDB, lowerStmt) {
+			continue
+		}
 		_, meta, err := cCtx.Metadata(ctx, cCtx.InstanceID, dbName)
 		if err != nil || meta == nil {
 			continue
 		}
-		database := cat.EnsureCatalog(catalog.Normalize(dbName))
+		database := cat.EnsureCatalog(norm)
 		for _, schemaName := range meta.ListSchemaNames() {
 			schemaMeta := meta.GetSchemaMetadata(schemaName)
 			if schemaMeta == nil {
@@ -94,11 +110,7 @@ func buildCompletionCatalog(cCtx base.CompletionContext) *catalog.Catalog {
 				}
 				sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
 			}
-			loaded = true
 		}
-	}
-	if !loaded {
-		return nil
 	}
 
 	if cCtx.DefaultDatabase != "" {
@@ -108,6 +120,31 @@ func buildCompletionCatalog(cCtx base.CompletionContext) *catalog.Catalog {
 		cat.SetCurrentSchema(catalog.Normalize(cCtx.DefaultSchema))
 	}
 	return cat
+}
+
+// catalogNeeded reports whether the current completion statement needs this
+// catalog's full schema/table/column metadata loaded: true for the session
+// default catalog and for any catalog whose name appears in the statement text
+// (a qualified reference such as catalog.schema.table). The reference check is a
+// case-insensitive substring, which errs toward loading an occasional extra
+// catalog rather than missing a referenced one.
+func catalogNeeded(normName, defaultDB, lowerStmt string) bool {
+	if normName == "" {
+		return false
+	}
+	if defaultDB != "" && normName == defaultDB {
+		return true
+	}
+	// A catalog name containing a double quote is rewritten inside a quoted
+	// reference (each " is escaped as ""), so its normalized form is not a literal
+	// substring of the statement and the check below would miss it. Such names are
+	// vanishingly rare; load them unconditionally rather than drop completion. A
+	// double quote is the only identifier character Trino re-spells when quoting —
+	// every other character appears verbatim, so the substring check is reliable.
+	if strings.Contains(normName, `"`) {
+		return true
+	}
+	return strings.Contains(lowerStmt, strings.ToLower(normName))
 }
 
 // columnsOf converts storepb columns into omni catalog columns (names

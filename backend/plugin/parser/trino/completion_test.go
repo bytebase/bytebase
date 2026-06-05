@@ -155,6 +155,56 @@ func TestCompletionNilMetadata(t *testing.T) {
 	}
 }
 
+// TestCompletionLoadsOnlyNeededCatalogs verifies that completion loads full
+// metadata only for the default catalog and catalogs named in the statement, not
+// for every catalog on the instance. On a Trino instance federating many
+// catalogs, eager loading would fan out a metadata fetch per keystroke.
+func TestCompletionLoadsOnlyNeededCatalogs(t *testing.T) {
+	metas := []*storepb.DatabaseSchemaMetadata{
+		{Name: "Company", Schemas: []*storepb.SchemaMetadata{{Name: "dbo", Tables: []*storepb.TableMetadata{{Name: "Employees", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+		{Name: "School", Schemas: []*storepb.SchemaMetadata{{Name: "sch", Tables: []*storepb.TableMetadata{{Name: "Student", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+		{Name: "Warehouse", Schemas: []*storepb.SchemaMetadata{{Name: "wh", Tables: []*storepb.TableMetadata{{Name: "Item", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+	}
+	loads := map[string]int{}
+	getter := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+		loads[databaseName]++
+		for _, m := range metas {
+			if m.Name == databaseName {
+				return "", model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_MYSQL, false /* isObjectCaseSensitive */), nil
+			}
+		}
+		return "", nil, errors.Errorf("database %q not found", databaseName)
+	}
+	lister := func(context.Context, string) ([]string, error) {
+		return []string{"Company", "School", "Warehouse"}, nil
+	}
+	cCtx := base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "Company",
+		DefaultSchema:     "dbo",
+		Metadata:          getter,
+		ListDatabaseNames: lister,
+	}
+
+	// Completing within the default catalog must not load School or Warehouse.
+	stmt := "SELECT * FROM "
+	_, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
+	require.NoError(t, err)
+	assert.Zerof(t, loads["School"], "unreferenced catalog School must not be loaded; loads=%v", loads)
+	assert.Zerof(t, loads["Warehouse"], "unreferenced catalog Warehouse must not be loaded; loads=%v", loads)
+	assert.NotZerof(t, loads["Company"], "default catalog Company should be loaded; loads=%v", loads)
+
+	// Naming a catalog in the statement loads it — and still not the others.
+	for k := range loads {
+		delete(loads, k)
+	}
+	stmt = "SELECT * FROM School."
+	_, err = Completion(context.Background(), cCtx, stmt, 1, len(stmt))
+	require.NoError(t, err)
+	assert.NotZerof(t, loads["School"], "referenced catalog School should be loaded; loads=%v", loads)
+	assert.Zerof(t, loads["Warehouse"], "still-unreferenced catalog Warehouse must not be loaded; loads=%v", loads)
+}
+
 func hasCandidate(cands []base.Candidate, text string, typ base.CandidateType) bool {
 	for _, c := range cands {
 		if c.Text == text && c.Type == typ {
