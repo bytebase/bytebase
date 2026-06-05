@@ -49,3 +49,4 @@ scripts/azure-marketplace/*.backup
 
 # superpowers brainstorm sessions (visual companion mockups)
 .superpowers/
+vendor

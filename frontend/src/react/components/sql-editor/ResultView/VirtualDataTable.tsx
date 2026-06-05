@@ -22,6 +22,7 @@ import {
 import { ColumnSortedIcon } from "./ColumnSortedIcon";
 import { getPlainValue } from "./cell-value";
 import { useBinaryFormatContext, useSelectionContext } from "./context";
+import { ResultCopyContextMenu } from "./ResultCopyContextMenu";
 import { TableCell } from "./TableCell";
 import type {
   ResultTableColumn,
@@ -264,208 +265,210 @@ export const VirtualDataTable = forwardRef<
   );
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full flex-1 min-h-0 overflow-auto rounded-sm border dark:border-zinc-500"
-    >
-      {/* Header */}
+    <ResultCopyContextMenu>
       <div
-        className="sticky top-0 z-1 bg-control-bg dark:bg-gray-700 flex shadow-sm"
-        style={{ minWidth: minRowWidth }}
+        ref={containerRef}
+        className="relative w-full flex-1 min-h-0 overflow-auto rounded-sm border dark:border-zinc-500"
       >
-        {/* Index header */}
-        <HeaderCell
-          width={indexColWidth}
-          onResizeStart={(e) => tableResize.onResizeStart(0, e)}
+        {/* Header */}
+        <div
+          className="sticky top-0 z-1 bg-control-bg dark:bg-gray-700 flex shadow-sm"
+          style={{ minWidth: minRowWidth }}
         >
-          <div
-            className={cn(
-              "textinfolabel pr-1 opacity-0",
-              selectionDisabled ? "pl-1" : "pl-4"
-            )}
+          {/* Index header */}
+          <HeaderCell
+            width={indexColWidth}
+            onResizeStart={(e) => tableResize.onResizeStart(0, e)}
           >
-            {totalRows}
-          </div>
-        </HeaderCell>
-
-        {/* Data column headers */}
-        {columns.map((header, columnIndex) => {
-          const slotWidth = tableResize.getColumnWidth(columnIndex + 1);
-          const isLast = columnIndex === columns.length - 1;
-          const isSelected =
-            selectionState.rows.length === 0 &&
-            selectionState.columns.includes(columnIndex);
-          const reason = getMaskingReason?.(columnIndex);
-          return (
-            <HeaderCell
-              key={`${columnIndex}-${header.id}`}
-              width={slotWidth}
-              borderRight={!isLast}
-              onResizeStart={(e) =>
-                tableResize.onResizeStart(columnIndex + 1, e)
-              }
-              onClick={(e) => handleSelectColumn(e, columnIndex)}
+            <div
               className={cn(
-                "px-3 py-1.5 min-w-8 text-left text-xs font-medium text-control-light dark:text-gray-300 tracking-wider",
-                !selectionDisabled &&
-                  "cursor-pointer hover:bg-control-bg-hover dark:hover:bg-gray-800",
-                isSelected && "bg-accent/10! dark:bg-accent/40!"
+                "textinfolabel pr-1 opacity-0",
+                selectionDisabled ? "pl-1" : "pl-4"
               )}
             >
-              <div className="flex items-center min-w-0 gap-x-1">
-                <span className="min-w-0 truncate select-none">
-                  {String(header.name).length > 0 ? (
-                    header.name
-                  ) : (
-                    <br className="min-h-4 inline-flex" />
-                  )}
-                </span>
-                {reason && (
-                  <span className="shrink-0">
-                    <MaskingReasonPopover
-                      reason={reason}
-                      statement={statement}
-                      database={database.name}
-                    />
-                  </span>
-                )}
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleSort(columnIndex);
-                  }}
-                  role="button"
-                  tabIndex={-1}
-                  className="shrink-0 inline-flex"
-                >
-                  <ColumnSortedIcon
-                    isSorted={getColumnSortDirection(columnIndex)}
-                  />
-                </span>
-                {binaryColumnSet.has(columnIndex) && (
-                  <span
-                    onClick={(e) => e.stopPropagation()}
-                    className="shrink-0"
-                  >
-                    <BinaryFormatButton
-                      format={getBinaryFormat({ colIndex: columnIndex })}
-                      onFormatChange={(format: BinaryFormat) =>
-                        setBinaryFormat({ colIndex: columnIndex, format })
-                      }
-                    />
-                  </span>
-                )}
-              </div>
-            </HeaderCell>
-          );
-        })}
-      </div>
+              {totalRows}
+            </div>
+          </HeaderCell>
 
-      {/* Virtualized body */}
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          minWidth: minRowWidth,
-          position: "relative",
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const rowIndex = virtualRow.index;
-          const row = rows[rowIndex];
-          if (!row) return null;
-          const isActive = activeRowIndex === rowIndex;
-          const rowSelected =
-            selectionState.columns.length === 0 &&
-            selectionState.rows.includes(rowIndex);
-          return (
-            <div
-              key={virtualRow.key}
-              data-row-index={rowIndex}
-              className="flex absolute inset-x-0 group"
-              style={{
-                top: 0,
-                transform: `translateY(${virtualRow.start}px)`,
-                height: `${ROW_HEIGHT}px`,
-                minWidth: minRowWidth,
-              }}
-            >
-              {/* Index cell */}
-              <div
+          {/* Data column headers */}
+          {columns.map((header, columnIndex) => {
+            const slotWidth = tableResize.getColumnWidth(columnIndex + 1);
+            const isLast = columnIndex === columns.length - 1;
+            const isSelected =
+              selectionState.rows.length === 0 &&
+              selectionState.columns.includes(columnIndex);
+            const reason = getMaskingReason?.(columnIndex);
+            return (
+              <HeaderCell
+                key={`${columnIndex}-${header.id}`}
+                width={slotWidth}
+                borderRight={!isLast}
+                onResizeStart={(e) =>
+                  tableResize.onResizeStart(columnIndex + 1, e)
+                }
+                onClick={(e) => handleSelectColumn(e, columnIndex)}
                 className={cn(
-                  "relative flex items-center shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-r border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
-                  isActive && "bg-accent/10! dark:bg-accent/40!",
-                  rowSelected && "bg-accent/20! dark:bg-accent/40!"
+                  "px-3 py-1.5 min-w-8 text-left text-xs font-medium text-control-light dark:text-gray-300 tracking-wider",
+                  !selectionDisabled &&
+                    "cursor-pointer hover:bg-control-bg-hover dark:hover:bg-gray-800",
+                  isSelected && "bg-accent/10! dark:bg-accent/40!"
                 )}
-                data-col-index={0}
+              >
+                <div className="flex items-center min-w-0 gap-x-1">
+                  <span className="min-w-0 truncate select-none">
+                    {String(header.name).length > 0 ? (
+                      header.name
+                    ) : (
+                      <br className="min-h-4 inline-flex" />
+                    )}
+                  </span>
+                  {reason && (
+                    <span className="shrink-0">
+                      <MaskingReasonPopover
+                        reason={reason}
+                        statement={statement}
+                        database={database.name}
+                      />
+                    </span>
+                  )}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleSort(columnIndex);
+                    }}
+                    role="button"
+                    tabIndex={-1}
+                    className="shrink-0 inline-flex"
+                  >
+                    <ColumnSortedIcon
+                      isSorted={getColumnSortDirection(columnIndex)}
+                    />
+                  </span>
+                  {binaryColumnSet.has(columnIndex) && (
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0"
+                    >
+                      <BinaryFormatButton
+                        format={getBinaryFormat({ colIndex: columnIndex })}
+                        onFormatChange={(format: BinaryFormat) =>
+                          setBinaryFormat({ colIndex: columnIndex, format })
+                        }
+                      />
+                    </span>
+                  )}
+                </div>
+              </HeaderCell>
+            );
+          })}
+        </div>
+
+        {/* Virtualized body */}
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            minWidth: minRowWidth,
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const rowIndex = virtualRow.index;
+            const row = rows[rowIndex];
+            if (!row) return null;
+            const isActive = activeRowIndex === rowIndex;
+            const rowSelected =
+              selectionState.columns.length === 0 &&
+              selectionState.rows.includes(rowIndex);
+            return (
+              <div
+                key={virtualRow.key}
+                data-row-index={rowIndex}
+                className="flex absolute inset-x-0 group"
                 style={{
+                  top: 0,
+                  transform: `translateY(${virtualRow.start}px)`,
                   height: `${ROW_HEIGHT}px`,
-                  width: `${indexColWidth}px`,
+                  minWidth: minRowWidth,
                 }}
               >
-                <span
+                {/* Index cell */}
+                <div
                   className={cn(
-                    "textinfolabel pr-1 truncate",
-                    selectionDisabled ? "pl-1" : "pl-4"
+                    "relative flex items-center shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-r border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
+                    isActive && "bg-accent/10! dark:bg-accent/40!",
+                    rowSelected && "bg-accent/20! dark:bg-accent/40!"
                   )}
+                  data-col-index={0}
+                  style={{
+                    height: `${ROW_HEIGHT}px`,
+                    width: `${indexColWidth}px`,
+                  }}
                 >
-                  {rowIndex + 1}
-                </span>
-                {!selectionDisabled && (
-                  <button
-                    type="button"
-                    aria-label={`Select row ${rowIndex + 1}`}
-                    onClick={(e) => handleSelectRow(e, rowIndex)}
+                  <span
                     className={cn(
-                      "absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10 dark:bg-white/10 dark:hover:bg-accent/40",
-                      rowSelected && "bg-accent/20! dark:bg-accent/40!"
+                      "textinfolabel pr-1 truncate",
+                      selectionDisabled ? "pl-1" : "pl-4"
                     )}
-                  />
-                )}
-              </div>
-
-              {/* Data cells */}
-              {row.item.values.map((cell, columnIndex) => {
-                const cellWidth = tableResize.getColumnWidth(columnIndex + 1);
-                const isLastCol = columnIndex === row.item.values.length - 1;
-                return (
-                  <div
-                    key={`${rowIndex}-${columnIndex + 1}`}
-                    className={cn(
-                      "relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
-                      !isLastCol && "border-r",
-                      // Match the Vue version: an active (search-matched) row
-                      // highlights every cell in that row, not just the index
-                      // column.
-                      isActive && "bg-accent/10! dark:bg-accent/40!"
-                    )}
-                    data-col-index={columnIndex + 1}
-                    style={{
-                      height: `${ROW_HEIGHT}px`,
-                      width: `${cellWidth}px`,
-                    }}
                   >
-                    <div className="h-full flex items-center overflow-hidden">
-                      <TableCell
-                        value={cell}
-                        keyword={search.query}
-                        scope={search.scopes.find(
-                          (s) => s.id === columns[columnIndex]?.id
-                        )}
-                        rowIndex={rowIndex}
-                        colIndex={columnIndex}
-                        allowSelect
-                        columnType={getColumnTypeByIndex(columnIndex)}
-                        database={database}
-                      />
+                    {rowIndex + 1}
+                  </span>
+                  {!selectionDisabled && (
+                    <button
+                      type="button"
+                      aria-label={`Select row ${rowIndex + 1}`}
+                      onClick={(e) => handleSelectRow(e, rowIndex)}
+                      className={cn(
+                        "absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10 dark:bg-white/10 dark:hover:bg-accent/40",
+                        rowSelected && "bg-accent/20! dark:bg-accent/40!"
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Data cells */}
+                {row.item.values.map((cell, columnIndex) => {
+                  const cellWidth = tableResize.getColumnWidth(columnIndex + 1);
+                  const isLastCol = columnIndex === row.item.values.length - 1;
+                  return (
+                    <div
+                      key={`${rowIndex}-${columnIndex + 1}`}
+                      className={cn(
+                        "relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
+                        !isLastCol && "border-r",
+                        // Match the Vue version: an active (search-matched) row
+                        // highlights every cell in that row, not just the index
+                        // column.
+                        isActive && "bg-accent/10! dark:bg-accent/40!"
+                      )}
+                      data-col-index={columnIndex + 1}
+                      style={{
+                        height: `${ROW_HEIGHT}px`,
+                        width: `${cellWidth}px`,
+                      }}
+                    >
+                      <div className="h-full flex items-center overflow-hidden">
+                        <TableCell
+                          value={cell}
+                          keyword={search.query}
+                          scope={search.scopes.find(
+                            (s) => s.id === columns[columnIndex]?.id
+                          )}
+                          rowIndex={rowIndex}
+                          colIndex={columnIndex}
+                          allowSelect
+                          columnType={getColumnTypeByIndex(columnIndex)}
+                          database={database}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </ResultCopyContextMenu>
   );
 });
 

@@ -3,6 +3,7 @@ import { isEmpty } from "lodash-es";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
   InfoIcon,
@@ -30,6 +31,12 @@ import {
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -66,6 +73,7 @@ import {
 import { instanceV1Name } from "@/utils/v1/instance";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { SQLResultViewProvider, useSelectionContext } from "./context";
+import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 import { DetailPanel } from "./DetailPanel";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
@@ -191,6 +199,8 @@ export function SingleResultView(props: SingleResultViewProps) {
     <SQLResultViewProvider
       dark={dark}
       disallowCopyingData={disallowCopyingData}
+      engine={engine}
+      schema={props.params.connection.schema}
       rows={rows}
       columns={columns}
     >
@@ -252,7 +262,7 @@ function SingleResultViewInner({
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const policyMaxRows = queryDataPolicy.maximumResultRows;
   const { runQuery } = useExecuteSQL();
-  const { copyAll } = useSelectionContext();
+  const { copy, canCopyAsInsert } = useSelectionContext();
 
   const supportFormats = useMemo(
     () => [
@@ -579,19 +589,57 @@ function SingleResultViewInner({
                 </span>
               </div>
               {!disallowCopyingData && rows.length > 0 && (
+                // Split button: the main action copies as plain text (TSV); the
+                // dropdown caret (hover) offers CSV and, for SQL engines, SQL.
                 // `variant="outline"` is `bg-transparent + text-control`, which
                 // disappears inside the admin-mode dark backdrop. Force an
                 // opaque light-on-dark surface in `.dark` to match the Vue
                 // toolbar's contrast (light gray bg + dark text).
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
-                  onClick={copyAll}
-                >
-                  <CopyIcon className="size-4" />
-                  {t("common.copy")}
-                </Button>
+                <div className="flex items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 rounded-r-none border-r-0 dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
+                    onClick={() => copy("all", formatAsText)}
+                  >
+                    <CopyIcon className="size-4" />
+                    {t("common.copy")}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      openOnHover
+                      delay={100}
+                      render={
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label={t("common.copy")}
+                          className="h-7 w-6 px-0 rounded-l-none dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
+                        >
+                          <ChevronDownIcon className="size-4" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="min-w-0">
+                      <DropdownMenuItem
+                        onClick={() => copy("all", formatAsCSV)}
+                        className="px-2 py-1 text-xs gap-x-1.5"
+                      >
+                        <CopyIcon className="size-3" />
+                        {t("sql-editor.copy-all-rows-as-csv")}
+                      </DropdownMenuItem>
+                      {canCopyAsInsert && (
+                        <DropdownMenuItem
+                          onClick={() => copy("all", formatAsSQL)}
+                          className="px-2 py-1 text-xs gap-x-1.5"
+                        >
+                          <CopyIcon className="size-3" />
+                          {t("sql-editor.copy-all-rows-as-sql")}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
               {showExport ? (
                 <DataExportButton
