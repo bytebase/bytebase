@@ -1,9 +1,7 @@
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Download, EyeOff, Loader2, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { Alert } from "@/react/components/ui/alert";
-import { Badge } from "@/react/components/ui/badge";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -114,13 +112,6 @@ export function IssueDetailAccessGrantDetails() {
               <span className="text-sm text-control-light">
                 {t("common.statement")}
               </span>
-              {accessGrant.unmask && (
-                <Alert
-                  variant="warning"
-                  showIcon={false}
-                  description={t("sql-editor.unmask-warning")}
-                />
-              )}
               <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
                 <pre className="whitespace-pre-wrap font-mono text-sm">
                   {accessGrant.query}
@@ -134,18 +125,10 @@ export function IssueDetailAccessGrantDetails() {
               <span className="text-sm text-control-light">
                 {t("common.permissions")}
               </span>
-              <div className="flex flex-wrap gap-2">
-                {accessGrant.unmask && (
-                  <Badge variant="secondary">
-                    {t("sql-editor.access-type-unmask")}
-                  </Badge>
-                )}
-                {accessGrant.export && (
-                  <Badge variant="secondary">
-                    {t("sql-editor.access-type-export")}
-                  </Badge>
-                )}
-              </div>
+              <GrantScopeCard
+                unmask={accessGrant.unmask}
+                exportAllowed={accessGrant.export}
+              />
             </div>
           )}
 
@@ -206,6 +189,71 @@ function IssueDetailAccessGrantTarget({ target }: { target: string }) {
           <span className="mx-1 shrink-0 text-gray-500">&gt;</span>
           <span className="truncate text-gray-800">{databaseName}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Renders the "this grant allows" card: a header bar (the verdict + a
+ * structural warning when any Tier-2 capability — currently unmask —
+ * is present) plus one row per capability granted.
+ *
+ * Border + header tone flip to `warning` when `unmask` is true so risk
+ * presence is encoded in the card chrome, not just in a per-row tag.
+ * This replaces the previous floating unmask-warning banner above the
+ * SQL block; the verdict and the warning live in one place attached
+ * to the permissions list.
+ *
+ * No new color tokens — built from `warning`, `control-bg`, `control-
+ * border`, `control-light`. Kept local for now; can be lifted to a
+ * shared component when the request drawer's confirmation step adopts
+ * the same shape.
+ */
+function GrantScopeCard({
+  unmask,
+  exportAllowed,
+}: {
+  unmask: boolean;
+  exportAllowed: boolean;
+}) {
+  const { t } = useTranslation();
+  const sensitive = unmask;
+  return (
+    <div className="overflow-hidden rounded-sm border border-warning">
+      {/* Header is always warning-toned regardless of which capabilities
+          the grant carries: any access grant warrants attention, and a
+          uniform header keeps the visual language consistent. The
+          icon and the "includes sensitive access" suffix still vary so
+          the verdict still differentiates Tier-2 (unmask) from Tier-1
+          (export-only). */}
+      <div className="flex items-center gap-x-2 border-b border-warning bg-warning/10 px-3 py-2 text-sm font-medium text-warning-hover">
+        {sensitive ? (
+          <AlertTriangle className="size-4 shrink-0" />
+        ) : (
+          <Shield className="size-4 shrink-0" />
+        )}
+        <span>
+          {sensitive
+            ? `${t("issue.access-grant.this-grant-allows")} · ${t("issue.access-grant.includes-sensitive-access")}`
+            : t("issue.access-grant.this-grant-allows")}
+        </span>
+      </div>
+      <div className="flex flex-col">
+        {unmask && (
+          <div className="flex items-center gap-x-2 px-3 py-2 text-sm">
+            {/* Yellow to match the header — flags unmask as the
+                sensitive capability inside an otherwise neutral list. */}
+            <EyeOff className="size-4 shrink-0 text-warning-hover" />
+            <span>{t("issue.access-grant.unmask-data-in-results")}</span>
+          </div>
+        )}
+        {exportAllowed && (
+          <div className="flex items-center gap-x-2 px-3 py-2 text-sm">
+            <Download className="size-4 shrink-0 text-control-light" />
+            <span>{t("issue.access-grant.export-results-to-file")}</span>
+          </div>
+        )}
       </div>
     </div>
   );
