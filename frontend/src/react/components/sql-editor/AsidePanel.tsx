@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
-import { router } from "@/react/router";
+import { RouterLink } from "@/react/components/RouterLink";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -79,31 +79,17 @@ export function AsidePanel() {
   // Vue's `<template #empty>` — rich empty state when the user is not
   // a member of any project. Shows a "go to create" link when the user
   // has `bb.projects.create`, or an "ask the admin" hint otherwise.
-  // Vue Router resolves the dashboard route to its href; rendering a
-  // plain anchor lets the page navigate via the router's history side
-  // effects without dragging react-router-dom into the bundle.
-  const projectsHref = router.resolve({
-    name: PROJECT_V1_ROUTE_DASHBOARD,
-    hash: "#new",
-  }).href;
   const emptyContent = (
     <div className="text-sm text-control-placeholder flex flex-col gap-1">
       <p>
         {t("sql-editor.no-project.not-member-of-any-projects")}{" "}
         {allowCreateProject ? (
-          <a
-            href={projectsHref}
+          <RouterLink
+            to={{ name: PROJECT_V1_ROUTE_DASHBOARD, hash: "#new" }}
             className="text-accent hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              router.push({
-                name: PROJECT_V1_ROUTE_DASHBOARD,
-                hash: "#new",
-              });
-            }}
           >
             {t("sql-editor.no-project.go-to-create")}
-          </a>
+          </RouterLink>
         ) : null}
       </p>
       {!allowCreateProject ? (

@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ChatAction } from "@/plugins/ai/types";
-import { Button } from "@/react/components/ui/button";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +18,6 @@ import {
 } from "@/react/components/ui/popover";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
@@ -245,21 +245,23 @@ function AINotConfiguredButton({
             <p>
               {t("plugin.ai.not-configured.self")}{" "}
               {allowConfigure ? (
-                <Button
-                  variant="link"
-                  size="sm"
+                <RouterLink
+                  to={{
+                    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                    hash: "#ai-assistant",
+                  }}
                   tabIndex={-1}
-                  className="h-auto p-0 text-accent"
+                  className={buttonVariants({
+                    variant: "link",
+                    size: "sm",
+                    className: "h-auto p-0 text-accent",
+                  })}
                   onClick={() => {
                     setOpen(false);
-                    void router.push({
-                      name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                      hash: "#ai-assistant",
-                    });
                   }}
                 >
                   {t("plugin.ai.not-configured.go-to-configure")}
-                </Button>
+                </RouterLink>
               ) : (
                 t("plugin.ai.not-configured.contact-admin-to-configure")
               )}

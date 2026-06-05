@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button } from "@/react/components/ui/button";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
 import { Switch } from "@/react/components/ui/switch";
 import {
@@ -16,7 +17,6 @@ import {
 } from "@/react/components/ui/tabs";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
@@ -680,15 +680,12 @@ function MissingExternalURLAttention() {
     >
       {canConfigure && (
         <div className="mt-1">
-          <Button
-            size="sm"
-            className="w-fit"
-            onClick={() =>
-              router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
-            }
+          <RouterLink
+            to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
+            className={buttonVariants({ size: "sm", className: "w-fit" })}
           >
             {t("common.configure-now")}
-          </Button>
+          </RouterLink>
         </div>
       )}
     </Alert>

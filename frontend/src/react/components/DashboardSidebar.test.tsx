@@ -26,9 +26,27 @@ const mocks = vi.hoisted(() => ({
   workspaceLogo: "",
   record: vi.fn(),
   push: vi.fn(),
-  resolve: vi.fn(({ name }: { name: string }) => ({
-    fullPath: `/${name}`,
-  })),
+  resolve: vi.fn((target: string | { name?: string; path?: string }) => {
+    const routePathByName: Record<string, string> = {
+      "sql-editor.home": "/sql-editor",
+      "workspace.database": "/databases",
+      "workspace.environment": "/environments",
+      "workspace.instance": "/instances",
+      "workspace.landing": "/landing",
+      "workspace.project": "/projects",
+    };
+    const href =
+      typeof target === "string"
+        ? target
+        : (target.path ??
+          (target.name
+            ? (routePathByName[target.name] ?? `/${target.name}`)
+            : "/"));
+    return {
+      href,
+      fullPath: href,
+    };
+  }),
 }));
 
 const t = vi.hoisted(
@@ -87,6 +105,10 @@ vi.mock("@/react/router", () => ({
     push: mocks.push,
     resolve: mocks.resolve,
   }),
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
   DATABASE_ROUTE_DASHBOARD: "workspace.database",
   ENVIRONMENT_V1_ROUTE_DASHBOARD: "workspace.environment",
   INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
@@ -188,7 +210,7 @@ describe("DashboardSidebar", () => {
     render();
 
     const logoLink = container.querySelector<HTMLAnchorElement>("nav > a");
-    expect(logoLink?.getAttribute("href")).toBe(`/${SQL_EDITOR_HOME_MODULE}`);
+    expect(logoLink?.getAttribute("href")).toBe("/sql-editor");
     expect(logoLink?.querySelector("img")?.getAttribute("src")).toBe(
       "https://example.com/logo.png"
     );
@@ -199,7 +221,7 @@ describe("DashboardSidebar", () => {
       );
     });
 
-    expect(mocks.record).toHaveBeenCalledWith(`/${SQL_EDITOR_HOME_MODULE}`);
+    expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
     expect(mocks.push).toHaveBeenCalledWith({ name: SQL_EDITOR_HOME_MODULE });
 
     unmount();
@@ -220,7 +242,7 @@ describe("DashboardSidebar", () => {
     unmount();
   });
 
-  test("leaves modifier-click navigation to the browser", () => {
+  test("leaves modified and middle-click route navigation to the browser", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DashboardSidebar />
     );
@@ -229,13 +251,27 @@ describe("DashboardSidebar", () => {
     const projectsLink = Array.from(container.querySelectorAll("a")).find(
       (link) => link.textContent?.includes("Projects")
     );
-    projectsLink?.addEventListener("click", (event) => event.preventDefault());
-    const event = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      ctrlKey: true,
-    });
-    projectsLink?.dispatchEvent(event);
+    expect(projectsLink).toBeInstanceOf(HTMLAnchorElement);
+
+    const clickOptions: MouseEventInit[] = [
+      { ctrlKey: true },
+      { metaKey: true },
+      { shiftKey: true },
+      { altKey: true },
+      { button: 1 },
+    ];
+
+    for (const options of clickOptions) {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ...options,
+      });
+      projectsLink?.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    }
 
     expect(mocks.push).not.toHaveBeenCalled();
 

@@ -7,6 +7,19 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => {
+  const resolveRouteTarget = (target: string | { path?: unknown }) => {
+    const path =
+      typeof target === "string"
+        ? target
+        : typeof target.path === "string"
+          ? target.path
+          : "/mock-route";
+
+    return {
+      href: path,
+      fullPath: path,
+    };
+  };
   const localStorage = {
     clear: vi.fn(),
     getItem: vi.fn(() => null),
@@ -36,6 +49,8 @@ const mocks = vi.hoisted(() => {
     previousChangelog,
     localStorage,
     routerPush: vi.fn(),
+    routerResolve: vi.fn(resolveRouteTarget),
+    resolveRouteTarget,
     useProjectDatabaseDetail: vi.fn(),
     getOrFetchChangelogByName: vi.fn(),
     fetchPreviousChangelog: vi.fn(),
@@ -132,6 +147,7 @@ vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
+    resolve: mocks.routerResolve,
   },
 }));
 
@@ -232,6 +248,8 @@ beforeEach(() => {
   mocks.localStorage.removeItem.mockReset();
   mocks.localStorage.clear.mockReset();
   mocks.routerPush.mockReset();
+  mocks.routerResolve.mockReset();
+  mocks.routerResolve.mockImplementation(mocks.resolveRouteTarget);
   mocks.useProjectDatabaseDetail.mockReset();
   mocks.getOrFetchChangelogByName.mockReset();
   mocks.fetchPreviousChangelog.mockReset();

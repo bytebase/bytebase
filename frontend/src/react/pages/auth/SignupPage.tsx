@@ -4,6 +4,7 @@ import { AuthFooter } from "@/react/components/auth/AuthFooter";
 import { UserPasswordFields } from "@/react/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/react/components/auth/userPasswordValidation";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
@@ -232,16 +233,12 @@ export function SignupPage() {
               <span className="pl-2 bg-white text-control">
                 {t("auth.sign-up.existing-user")}
               </span>
-              <a
-                href="#"
+              <RouterLink
+                to={{ name: AUTH_SIGNIN_MODULE, query }}
                 className="accent-link px-2 bg-white"
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push({ name: AUTH_SIGNIN_MODULE, query });
-                }}
               >
                 {t("common.sign-in")}
-              </a>
+              </RouterLink>
             </div>
           </div>
         )}

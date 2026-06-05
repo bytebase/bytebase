@@ -16,6 +16,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -1146,11 +1147,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 <div className="sm:col-span-2 ml-0 sm:ml-3">
                   <label htmlFor="activation" className="textlabel block">
                     {t("subscription.instance-assignment.assign-license")} (
-                    <a href="/setting/subscription" className="accent-link">
+                    <RouterLink
+                      to="/setting/subscription"
+                      className="accent-link"
+                    >
                       {t("subscription.instance-assignment.n-license-remain", {
                         n: availableLicenseCountText,
                       })}
-                    </a>
+                    </RouterLink>
                     )
                   </label>
                   <div className="h-8.5 flex flex-row items-center mt-1">

@@ -2,8 +2,8 @@ import { Check, Copy, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
-import { router } from "@/react/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -113,31 +113,6 @@ export function DatabaseDetailHeader({
     }
   }, [database.name]);
 
-  const handleEnvironmentClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (isValidEnv) {
-        void router.push({
-          path: `/${formatEnvironmentName(environment.id)}`,
-        });
-      }
-    },
-    [environment, isValidEnv]
-  );
-
-  const handleInstanceClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (canViewInstance && instanceId) {
-        void router.push({
-          name: INSTANCE_ROUTE_DETAIL,
-          params: { instanceId },
-        });
-      }
-    },
-    [canViewInstance, instanceId]
-  );
-
   return (
     <div className="flex min-w-0 flex-1 shrink-0 flex-col gap-y-2">
       <div className="flex w-full min-w-0 flex-col">
@@ -167,14 +142,15 @@ export function DatabaseDetailHeader({
         <div className="flex items-center gap-x-1.5">
           <span className="text-control-light">{t("common.environment")}</span>
           {isValidEnv ? (
-            <a
+            <RouterLink
+              to={{ path: `/${formatEnvironmentName(environment.id)}` }}
               className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
               style={environmentBadgeStyle}
-              onClick={handleEnvironmentClick}
+              onClick={(e) => e.stopPropagation()}
             >
               <span>{environmentTitle}</span>
               {isProductionEnv && <ShieldAlert className="h-4 w-4 shrink-0" />}
-            </a>
+            </RouterLink>
           ) : (
             <span className="italic text-control-light">
               {environmentTitle}
@@ -184,16 +160,20 @@ export function DatabaseDetailHeader({
         <div className="flex items-center gap-x-1.5">
           <span className="text-control-light">{t("common.instance")}</span>
           {canViewInstance && instanceId ? (
-            <a
+            <RouterLink
+              to={{
+                name: INSTANCE_ROUTE_DETAIL,
+                params: { instanceId },
+              }}
               className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
-              onClick={handleInstanceClick}
+              onClick={(e) => e.stopPropagation()}
             >
               <EngineIcon
                 engine={instanceResource.engine}
                 className="h-4 w-4"
               />
               {instanceLabel}
-            </a>
+            </RouterLink>
           ) : (
             <span className="inline-flex items-center gap-x-1">
               <EngineIcon

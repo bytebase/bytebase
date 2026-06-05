@@ -21,6 +21,7 @@ import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { ReadonlyDiffMonaco } from "@/react/components/monaco";
+import { RouterLink } from "@/react/components/RouterLink";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -677,10 +678,9 @@ function CommentActionSentence({
           )
         ) {
           const planUID = page.plan ? extractPlanUID(page.plan.name) : "";
-          const planHref = page.plan
-            ? router.resolve(buildPlanDeployRouteFromPlanName(page.plan.name))
-                .href
-            : "";
+          const planRoute = page.plan
+            ? buildPlanDeployRouteFromPlanName(page.plan.name)
+            : undefined;
           const sentence =
             page.issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID
@@ -693,15 +693,15 @@ function CommentActionSentence({
           return (
             <span className="wrap-break-word min-w-0 text-gray-600">
               {sentence}
-              {planUID && planHref && (
+              {planUID && planRoute && (
                 <>
                   {" "}
-                  <a
+                  <RouterLink
+                    to={planRoute}
                     className="font-medium text-accent hover:underline"
-                    href={planHref}
                   >
                     #{planUID}
-                  </a>
+                  </RouterLink>
                 </>
               )}
             </span>
@@ -874,27 +874,14 @@ function SpecChangeRow({
   const specIdShort = specId.slice(0, 8);
   // Only link to specs that still exist in the live plan — otherwise the spec
   // view would silently bounce back to specs[0].
-  const href = specInfo?.specId
-    ? router.resolve({
+  const specRoute = specInfo?.specId
+    ? {
         query: {
           ...router.currentRoute.value.query,
           spec: specInfo.specId,
         },
-      }).href
-    : null;
-  const onClick = href
-    ? (e: React.MouseEvent) => {
-        // Allow modifier-clicks (open in new tab) to use the native href.
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        void router.push({
-          query: {
-            ...router.currentRoute.value.query,
-            spec: specInfo!.specId,
-          },
-        });
       }
-    : undefined;
+    : null;
 
   const chip = (
     <span className="inline-flex items-center gap-1">
@@ -910,14 +897,13 @@ function SpecChangeRow({
   return (
     <span className="inline-flex items-center gap-1 whitespace-nowrap text-gray-600">
       {children}{" "}
-      {href != null ? (
-        <a
+      {specRoute != null ? (
+        <RouterLink
           className="inline-flex items-center gap-1 hover:underline"
-          href={href}
-          onClick={onClick}
+          to={specRoute}
         >
           {chip}
-        </a>
+        </RouterLink>
       ) : (
         chip
       )}

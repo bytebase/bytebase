@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Button } from "@/react/components/ui/button";
-import { router } from "@/react/router";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { AgentMessage, ToolCall } from "../logic/types";
@@ -91,10 +91,6 @@ export function AgentChat({ className }: AgentChatProps) {
 
   function goConfigure() {
     clearError(currentChatId);
-    router.push({
-      name: SETTING_ROUTE_WORKSPACE_GENERAL,
-      hash: "#ai-assistant",
-    });
   }
 
   function dismiss() {
@@ -223,9 +219,16 @@ export function AgentChat({ className }: AgentChatProps) {
           <div className="mt-1">{t("agent.ai-not-configured.description")}</div>
           <div className="mt-3 flex flex-wrap gap-x-2 gap-y-2">
             {allowConfigure && (
-              <Button variant="default" size="sm" onClick={goConfigure}>
+              <RouterLink
+                to={{
+                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                  hash: "#ai-assistant",
+                }}
+                className={buttonVariants({ size: "sm" })}
+                onClick={goConfigure}
+              >
                 {t("agent.ai-not-configured.configure")}
-              </Button>
+              </RouterLink>
             )}
             <Button variant="outline" size="sm" onClick={dismiss}>
               {t("common.dismiss")}

@@ -15,7 +15,7 @@ import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 const mocks = vi.hoisted(() => ({
   getMinimumRequiredPlan: vi.fn(),
   isDev: vi.fn(),
-  navigatePush: vi.fn(),
+  routerPush: vi.fn(),
   t: vi.fn(),
   urlfy: vi.fn((value: string) => `https://${value}`),
   useAppStore: vi.fn(),
@@ -79,9 +79,10 @@ vi.mock("@/react/hooks/useAppState", () => ({
 vi.mock("@/react/router", () => ({
   SETTING_ROUTE_WORKSPACE_GENERAL: "setting.workspace.general",
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION: "setting.workspace.subscription",
-  useNavigate: () => ({
-    push: mocks.navigatePush,
-  }),
+  router: {
+    push: mocks.routerPush,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
+  },
 }));
 
 vi.mock("@/react/stores/app", () => ({
@@ -124,7 +125,7 @@ beforeEach(async () => {
   mocks.getMinimumRequiredPlan.mockReturnValue(PlanType.FREE);
   mocks.isDev.mockReset();
   mocks.isDev.mockReturnValue(false);
-  mocks.navigatePush.mockReset();
+  mocks.routerPush.mockReset();
   mocks.t.mockReset();
   mocks.t.mockImplementation(interpolate);
   mocks.urlfy.mockClear();
@@ -180,16 +181,16 @@ describe("BannersWrapper", () => {
       "Bytebase has not configured --external-url"
     );
 
-    const configureButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent?.includes("Configure now"));
+    const configureButton = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.includes("Configure now")
+    );
     act(() => {
       configureButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true })
+        new MouseEvent("click", { bubbles: true, cancelable: true })
       );
     });
 
-    expect(mocks.navigatePush).toHaveBeenCalledWith({
+    expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "setting.workspace.general",
     });
     unmount();

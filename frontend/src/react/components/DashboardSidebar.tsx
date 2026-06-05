@@ -16,6 +16,7 @@ import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
+import { RouterLink } from "@/react/components/RouterLink";
 import {
   useAppFeature,
   useIsSaaSMode,
@@ -27,11 +28,11 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  router,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
   SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
-  useNavigate,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
@@ -296,7 +297,6 @@ const childRouteClass =
 export function DashboardSidebar() {
   const rawItems = useSidebarItems();
   const filteredItems = useMemo(() => filterSidebarList(rawItems), [rawItems]);
-  const navigate = useNavigate();
   const currentRoute = useCurrentRoute();
   const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
   const workspace = useWorkspace();
@@ -362,16 +362,15 @@ export function DashboardSidebar() {
 
   // -- Navigation ------------------------------------------------------------
 
-  const resolveHomeRoute = useCallback(() => {
+  const homeRoute = useMemo(() => {
     const target =
       databaseChangeMode === DatabaseChangeMode.EDITOR
         ? SQL_EDITOR_HOME_MODULE
         : WORKSPACE_ROUTE_LANDING;
     return {
       name: target,
-      route: navigate.resolve({ name: target }),
     };
-  }, [databaseChangeMode, navigate]);
+  }, [databaseChangeMode]);
 
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
     if (item.children && item.children.length > 0) {
@@ -389,38 +388,14 @@ export function DashboardSidebar() {
     }
   }, []);
 
-  const resolveHref = useCallback(
-    (name: string) => navigate.resolve({ name }).fullPath,
-    [navigate]
-  );
-
-  const handleRouteClick = useCallback(
-    (e: React.MouseEvent, name: string) => {
-      // Allow Ctrl/Meta+click to open in new tab naturally.
-      if (e.ctrlKey || e.metaKey) return;
-      e.preventDefault();
-      void navigate.push({ name });
-    },
-    [navigate]
-  );
-
-  const handleHomeClick = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>) => {
-      const { name, route } = resolveHomeRoute();
-      record(route.fullPath);
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      void navigate.push({ name });
-    },
-    [navigate, record, resolveHomeRoute]
-  );
+  const handleHomeClick = useCallback(() => {
+    const route = router.resolve(homeRoute);
+    record(route.fullPath);
+  }, [homeRoute, record]);
 
   // -- Logo ------------------------------------------------------------------
 
   const logoSrc = workspace?.logo || logoFull;
-  const homeHref = resolveHomeRoute().route.fullPath;
 
   // -- Render ----------------------------------------------------------------
 
@@ -431,14 +406,15 @@ export function DashboardSidebar() {
           const classes = getItemClass(child, currentRouteName);
           if (child.type === "route" && child.name) {
             return (
-              <a
+              <RouterLink
                 key={`${parentIndex}-${j}`}
-                href={resolveHref(child.name)}
+                to={{
+                  name: child.name,
+                }}
                 className={`${childRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
-                onClick={(e) => handleRouteClick(e, child.name!)}
               >
                 {child.title}
-              </a>
+              </RouterLink>
             );
           }
           if (child.type === "div") {
@@ -474,15 +450,16 @@ export function DashboardSidebar() {
       const classes = getItemClass(item, currentRouteName);
       const Icon = item.icon;
       return (
-        <a
+        <RouterLink
           key={index}
-          href={resolveHref(item.name)}
+          to={{
+            name: item.name,
+          }}
           className={`${parentRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
-          onClick={(e) => handleRouteClick(e, item.name!)}
         >
           {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
           {item.title}
-        </a>
+        </RouterLink>
       );
     }
 
@@ -519,13 +496,13 @@ export function DashboardSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <a
-        href={homeHref}
+      <RouterLink
+        to={homeRoute}
         className="p-2 shrink-0 m-auto cursor-pointer"
         onClick={handleHomeClick}
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
-      </a>
+      </RouterLink>
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>

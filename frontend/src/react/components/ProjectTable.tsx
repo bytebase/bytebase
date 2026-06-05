@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { memo, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
@@ -355,12 +356,16 @@ const ProjectRowView = memo(function ProjectRowView({
         </TableCell>
       ) : null}
       <TableCell>
-        {rowHref ? (
-          <a
-            href={rowHref}
+        {rowHref && clickable ? (
+          <RouterLink
+            to={rowHref}
             className="block hover:underline"
-            onClick={clickable ? handleRowLinkClick : undefined}
+            onClick={handleRowLinkClick}
           >
+            {resourceIdContent}
+          </RouterLink>
+        ) : rowHref ? (
+          <a href={rowHref} className="block hover:underline">
             {resourceIdContent}
           </a>
         ) : (
@@ -369,12 +374,16 @@ const ProjectRowView = memo(function ProjectRowView({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-x-2 min-w-0">
-          {rowHref ? (
-            <a
-              href={rowHref}
+          {rowHref && clickable ? (
+            <RouterLink
+              to={rowHref}
               className="min-w-0 block hover:underline"
-              onClick={clickable ? handleRowLinkClick : undefined}
+              onClick={handleRowLinkClick}
             >
+              {titleContent}
+            </RouterLink>
+          ) : rowHref ? (
+            <a href={rowHref} className="min-w-0 block hover:underline">
               {titleContent}
             </a>
           ) : (

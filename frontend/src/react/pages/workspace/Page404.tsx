@@ -1,16 +1,12 @@
 import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.svg";
-import { Button } from "@/react/components/ui/button";
-import { router } from "@/react/router";
+import { RouterLink } from "@/react/components/RouterLink";
+import { buttonVariants } from "@/react/components/ui/button";
 import { WORKSPACE_ROUTE_LANDING } from "@/react/router/handles";
 
 export function Page404() {
   const { t } = useTranslation();
-
-  const goHome = () => {
-    router.push({ name: WORKSPACE_ROUTE_LANDING });
-  };
 
   return (
     <div className="w-full px-4 grid place-items-center py-24">
@@ -19,10 +15,13 @@ export function Page404() {
         {t("common.resource-not-found")}
       </p>
       <div className="mt-12">
-        <Button variant="outline" size="sm" onClick={goHome}>
+        <RouterLink
+          to={{ name: WORKSPACE_ROUTE_LANDING }}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           <ChevronLeft className="h-4 w-4" />
           {t("error-page.go-back-home")}
-        </Button>
+        </RouterLink>
       </div>
     </div>
   );

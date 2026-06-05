@@ -6,6 +6,7 @@ import logoFull from "@/assets/logo-full.svg";
 import { authServiceClientConnect } from "@/connect";
 import { UserPasswordFields } from "@/react/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/react/components/auth/userPasswordValidation";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
@@ -251,16 +252,12 @@ export function PasswordResetPage() {
             <div className="w-full border-t border-control-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <a
-              href="#"
+            <RouterLink
+              to={{ name: AUTH_SIGNIN_MODULE }}
               className="accent-link bg-white px-2"
-              onClick={(e) => {
-                e.preventDefault();
-                router.push({ name: AUTH_SIGNIN_MODULE });
-              }}
             >
               {t("auth.password-forget.return-to-sign-in")}
-            </a>
+            </RouterLink>
           </div>
         </div>
       )}

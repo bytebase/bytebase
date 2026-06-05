@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { RevisionDetailPanel } from "@/react/components/revision";
-import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
@@ -30,68 +30,53 @@ export function DatabaseRevisionDetailPage({
   });
   const revisionName = `${detail.databaseName}/revisions/${revisionId}`;
 
-  const handleProjectBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASES,
-      params: { projectId },
-    });
-  };
-
-  const handleDatabaseBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-      params: {
-        projectId,
-        instanceId,
-        databaseName,
-      },
-    });
-  };
-
-  const handleRevisionBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-      params: {
-        projectId,
-        instanceId,
-        databaseName,
-      },
-      hash: "#revision",
-    });
-  };
-
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex flex-wrap items-center gap-x-2 text-sm text-control-light">
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASES,
+                params: { projectId },
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleProjectBreadcrumbClick}
             >
               {t("common.databases")}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+                params: {
+                  projectId,
+                  instanceId,
+                  databaseName,
+                },
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleDatabaseBreadcrumbClick}
             >
               {databaseName}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+                params: {
+                  projectId,
+                  instanceId,
+                  databaseName,
+                },
+                hash: "#revision",
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleRevisionBreadcrumbClick}
             >
               {t("database.revision.self")}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li className="text-main">{revisionId}</li>

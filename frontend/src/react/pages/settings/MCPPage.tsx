@@ -1,8 +1,9 @@
 import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button } from "@/react/components/ui/button";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
   Tabs,
@@ -12,7 +13,6 @@ import {
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
-import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -98,16 +98,16 @@ export function MCPPage() {
                 {t("settings.general.workspace.external-url.description")}
               </span>
               {canConfigureExternalUrl && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-3"
-                  onClick={() =>
-                    router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
-                  }
+                <RouterLink
+                  to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "sm",
+                    className: "ml-3",
+                  })}
                 >
                   {t("common.configure-now")}
-                </Button>
+                </RouterLink>
               )}
             </>
           }

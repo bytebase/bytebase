@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
   environmentNamePrefix,
@@ -23,19 +23,15 @@ export function ResourceLink({ resource }: { resource: string }) {
 function EnvironmentResourceLink({ resource }: { resource: string }) {
   const { t } = useTranslation();
   return (
-    <a
-      href={`/${resource}`}
+    <RouterLink
+      to={{ path: `/${resource}` }}
       className="inline-flex items-center gap-x-1"
-      onClick={(e) => {
-        e.preventDefault();
-        router.push({ path: `/${resource}` });
-      }}
     >
       <span className="text-control-light text-xs mr-0.5">
         {t("common.environment")}:
       </span>
       <EnvironmentLabel environmentName={resource} />
-    </a>
+    </RouterLink>
   );
 }
 
@@ -54,18 +50,14 @@ function ProjectResourceLink({ resource }: { resource: string }) {
   void projectsByName;
 
   return (
-    <a
-      href={`/${resource}`}
+    <RouterLink
+      to={{ path: `/${resource}` }}
       className="inline-flex items-center gap-x-1 normal-link"
-      onClick={(e) => {
-        e.preventDefault();
-        router.push({ path: `/${resource}` });
-      }}
     >
       <span className="text-control-light text-xs mr-0.5">
         {t("common.project")}:
       </span>
       <span>{project?.title || resource}</span>
-    </a>
+    </RouterLink>
   );
 }

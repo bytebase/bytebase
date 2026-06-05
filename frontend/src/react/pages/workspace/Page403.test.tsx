@@ -21,6 +21,7 @@ vi.mock("@/react/router", () => ({
   router: {
     currentRoute: mocks.currentRoute,
     push: mocks.routerPush,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
   },
 }));
 
@@ -53,13 +54,15 @@ describe("Page403", () => {
       root.render(<Page403 />);
     });
 
-    const button = Array.from(container.querySelectorAll("button")).find((el) =>
+    const link = Array.from(container.querySelectorAll("a")).find((el) =>
       el.textContent?.includes("error-page.go-back-home")
     );
-    expect(button).toBeTruthy();
+    expect(link).toBeTruthy();
 
     act(() => {
-      button?.click();
+      link?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
     });
 
     expect(mocks.routerPush).toHaveBeenCalledWith({

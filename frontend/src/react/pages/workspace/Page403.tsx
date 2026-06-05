@@ -1,7 +1,8 @@
 import { ChevronLeft, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import { RouterLink } from "@/react/components/RouterLink";
+import { buttonVariants } from "@/react/components/ui/button";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_LANDING } from "@/react/router/handles";
 import type { Permission } from "@/types";
@@ -28,10 +29,6 @@ export function Page403() {
 
   const fromPath = query.from;
   const requestAPI = query.api;
-
-  const goHome = () => {
-    router.push({ name: WORKSPACE_ROUTE_LANDING });
-  };
 
   return (
     <div className="mx-6 my-2">
@@ -65,10 +62,13 @@ export function Page403() {
               </div>
             )}
             <div className="mt-2">
-              <Button variant="outline" size="sm" onClick={goHome}>
+              <RouterLink
+                to={{ name: WORKSPACE_ROUTE_LANDING }}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
                 <ChevronLeft className="h-4 w-4" />
                 {t("error-page.go-back-home")}
-              </Button>
+              </RouterLink>
             </div>
           </div>
         </div>

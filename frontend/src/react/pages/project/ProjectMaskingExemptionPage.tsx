@@ -13,6 +13,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -1030,16 +1031,12 @@ function ExemptionDetailPanel({
             member.member.startsWith(workloadIdentityBindingPrefix) ? (
             <span className="font-medium">{userEmail}</span>
           ) : (
-            <a
+            <RouterLink
               className="normal-link font-medium"
-              href={`/users/${userEmail}`}
-              onClick={(e) => {
-                e.preventDefault();
-                router.push(`/users/${userEmail}`);
-              }}
+              to={`/users/${userEmail}`}
             >
               {userEmail}
-            </a>
+            </RouterLink>
           )}
         </div>
         <div className="mt-1 text-sm textinfolabel">
@@ -1207,13 +1204,6 @@ function ExemptionResourceTable({
 
   const isSentinel = (value: string): boolean => value === "" || value === "-1";
 
-  const handleDatabaseClick = (resource: DatabaseResource) => {
-    const path = resource.databaseFullName.startsWith("/")
-      ? resource.databaseFullName
-      : `/${resource.databaseFullName}`;
-    router.push(path);
-  };
-
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -1255,12 +1245,16 @@ function ExemptionResourceTable({
                       {t("database.all")}
                     </span>
                   ) : showDatabaseLink ? (
-                    <span
+                    <RouterLink
+                      to={
+                        resource.databaseFullName.startsWith("/")
+                          ? resource.databaseFullName
+                          : `/${resource.databaseFullName}`
+                      }
                       className="normal-link cursor-pointer"
-                      onClick={() => handleDatabaseClick(resource)}
                     >
                       {databaseName}
-                    </span>
+                    </RouterLink>
                   ) : (
                     <span className="text-control-light">{databaseName}</span>
                   )}

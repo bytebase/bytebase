@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
+import { RouterLink } from "@/react/components/RouterLink";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
@@ -378,36 +379,6 @@ export function DatabaseChangelogDetailPage({
     return bytesToString(Number(resolvedChangelog.schemaSize));
   }, [resolvedChangelog?.schemaSize]);
 
-  const handleProjectBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASES,
-      params: { projectId },
-    });
-  };
-
-  const handleDatabaseBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-      params: {
-        projectId,
-        instanceId,
-        databaseName,
-      },
-    });
-  };
-
-  const handleChangelogBreadcrumbClick = () => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-      params: {
-        projectId,
-        instanceId,
-        databaseName,
-      },
-      hash: "#changelog",
-    });
-  };
-
   const handleRollback = () => {
     if (!resolvedChangelog || !detail.database) {
       return;
@@ -443,33 +414,48 @@ export function DatabaseChangelogDetailPage({
       <nav aria-label="Breadcrumb" className="mb-4">
         <ol className="flex flex-wrap items-center gap-x-2 text-sm text-control-light">
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASES,
+                params: { projectId },
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleProjectBreadcrumbClick}
             >
               {t("common.databases")}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+                params: {
+                  projectId,
+                  instanceId,
+                  databaseName,
+                },
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleDatabaseBreadcrumbClick}
             >
               {databaseDisplayName}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <button
-              type="button"
+            <RouterLink
+              to={{
+                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+                params: {
+                  projectId,
+                  instanceId,
+                  databaseName,
+                },
+                hash: "#changelog",
+              }}
               className="transition-colors hover:text-accent"
-              onClick={handleChangelogBreadcrumbClick}
             >
               {t("changelog.self")}
-            </button>
+            </RouterLink>
           </li>
           <li aria-hidden="true">/</li>
           <li className="text-main">{changelogId}</li>
@@ -499,17 +485,13 @@ export function DatabaseChangelogDetailPage({
             <div className="flex items-center justify-between">
               <p className="text-lg text-main">{t("issue.task-run.logs")}</p>
               {taskFullLink ? (
-                <a
-                  href={taskFullLink}
+                <RouterLink
+                  to={{ path: taskFullLink }}
                   className="flex items-center gap-x-1 text-sm text-control-light transition-colors hover:text-accent"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    router.push({ path: taskFullLink });
-                  }}
                 >
                   {t("common.show-more")}
                   <ArrowUpRight className="size-4" />
-                </a>
+                </RouterLink>
               ) : null}
             </div>
             {showTaskRunLogs ? (

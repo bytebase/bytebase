@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 
@@ -313,15 +314,15 @@ export function useExportGrantBypass({
           )}
           {issueHref && (
             <div className="flex justify-end pt-1">
-              <a
-                href={issueHref}
+              <RouterLink
+                to={issueHref}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs underline whitespace-nowrap"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("sql-editor.view-issue")}
-              </a>
+              </RouterLink>
             </div>
           )}
         </div>
@@ -360,15 +361,15 @@ export function useExportGrantBypass({
               <div key={grant.name} className="flex items-start gap-x-1">
                 <span className="select-none opacity-60">•</span>
                 {href ? (
-                  <a
-                    href={href}
+                  <RouterLink
+                    to={href}
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 min-w-0 underline break-words line-clamp-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {display}
-                  </a>
+                  </RouterLink>
                 ) : (
                   <span className="flex-1 min-w-0 break-words line-clamp-1">
                     {display}

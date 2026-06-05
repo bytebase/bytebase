@@ -2,6 +2,7 @@ import { Check, FastForward, Minus, Pause, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
@@ -151,15 +152,15 @@ export function IssueDetailDatabaseCreateView() {
             </span>
             {isTaskDone && createdDatabase ? (
               <>
-                <a
+                <RouterLink
                   className="normal-link"
-                  href={databaseV1Url(createdDatabase)}
+                  to={databaseV1Url(createdDatabase)}
                 >
                   {
                     extractDatabaseResourceName(createdDatabase.name)
                       .databaseName
                   }
-                </a>
+                </RouterLink>
                 <span className="text-sm text-gray-500">
                   ({t("common.created")})
                 </span>
@@ -197,7 +198,7 @@ function IssueDetailDatabaseCreateEnvironment({
   children: string;
   environmentName: string;
 }) {
-  const style = useMemo(() => {
+  const environmentPath = useMemo(() => {
     if (!isValidEnvironmentName(environmentName)) {
       return undefined;
     }
@@ -205,18 +206,17 @@ function IssueDetailDatabaseCreateEnvironment({
     if (!id) {
       return undefined;
     }
-    const href = `/${formatEnvironmentName(id)}`;
-    return href;
+    return `/${formatEnvironmentName(id)}`;
   }, [environmentName]);
 
-  if (!style) {
+  if (!environmentPath) {
     return <span>{children}</span>;
   }
 
   return (
-    <a className="normal-link hover:underline" href={style}>
+    <RouterLink className="normal-link hover:underline" to={environmentPath}>
       <span>{children}</span>
-    </a>
+    </RouterLink>
   );
 }
 
@@ -245,16 +245,16 @@ function IssueDetailDatabaseCreateInstance({
   }
 
   return (
-    <a
+    <RouterLink
+      to={instanceHref}
       className="inline-flex items-center gap-x-1 normal-link hover:underline"
-      href={instanceHref}
       onClick={(event) => {
         event.stopPropagation();
       }}
     >
       <EngineIcon engine={instance.engine} className="h-4 w-4" />
       <span className="truncate">{children}</span>
-    </a>
+    </RouterLink>
   );
 }
 

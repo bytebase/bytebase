@@ -11,6 +11,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { RouterLink } from "@/react/components/RouterLink";
 import { SelectionActionBar } from "@/react/components/SelectionActionBar";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
@@ -650,8 +651,8 @@ export const IssueListItem = memo(function IssueListItem({
               <IssueStatusIcon status={issue.status} />
             </div>
             {issue.title ? (
-              <a
-                href={issueUrl}
+              <RouterLink
+                to={issueUrl}
                 className="font-medium text-main text-base hover:underline min-w-0 block"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -661,15 +662,15 @@ export const IssueListItem = memo(function IssueListItem({
                     keyword={highlightWords}
                   />
                 </EllipsisText>
-              </a>
+              </RouterLink>
             ) : (
-              <a
-                href={issueUrl}
+              <RouterLink
+                to={issueUrl}
                 className="font-medium text-base truncate hover:underline italic text-control-placeholder"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("common.untitled")}
-              </a>
+              </RouterLink>
             )}
             <RiskLevelIcon riskLevel={issue.riskLevel} />
             {labels.map((label: Label) => (
@@ -691,41 +692,35 @@ export const IssueListItem = memo(function IssueListItem({
             {t("common.created")}
             <HumanizeTs ts={createTimeTs} />
             <span>&middot;</span>
-            <a
+            <RouterLink
               className="hover:underline"
-              href="#"
+              to={{
+                name: WORKSPACE_ROUTE_USER_PROFILE,
+                params: { principalEmail: creator.email },
+              }}
               onClick={(e) => {
-                e.preventDefault();
                 e.stopPropagation();
-                router.push({
-                  name: WORKSPACE_ROUTE_USER_PROFILE,
-                  params: { principalEmail: creator.email },
-                });
               }}
             >
               {creator.title}
-            </a>
+            </RouterLink>
             {showProject && issueProject && (
               <>
                 <span>&middot;</span>
-                <a
+                <RouterLink
                   className="hover:underline"
-                  href="#"
+                  to={{
+                    name: PROJECT_V1_ROUTE_DETAIL,
+                    params: {
+                      projectId: extractProjectResourceName(issueProject.name),
+                    },
+                  }}
                   onClick={(e) => {
-                    e.preventDefault();
                     e.stopPropagation();
-                    router.push({
-                      name: PROJECT_V1_ROUTE_DETAIL,
-                      params: {
-                        projectId: extractProjectResourceName(
-                          issueProject.name
-                        ),
-                      },
-                    });
                   }}
                 >
                   {issueProject.title}
-                </a>
+                </RouterLink>
               </>
             )}
           </div>

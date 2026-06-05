@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
+import { RouterLink } from "@/react/components/RouterLink";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -469,18 +470,12 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                   ))}
                 </div>
                 {!hasFeature(PlanFeature.FEATURE_IAM) && (
-                  <a
-                    href="#"
+                  <RouterLink
+                    to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
                     className="normal-link"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      router.push({
-                        name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-                      });
-                    }}
                   >
                     {t("settings.profile.subscription")}
-                  </a>
+                  </RouterLink>
                 )}
               </dd>
             </div>

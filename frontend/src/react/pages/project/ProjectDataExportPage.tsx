@@ -9,8 +9,9 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button } from "@/react/components/ui/button";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
@@ -64,22 +65,6 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   // for export" would be misleading if export is in fact gated there).
   const queryDataPolicy = useSQLEditorQueryDataPolicy(projectName);
 
-  // Resolved hrefs for the inline links in the deprecation banner.
-  // Memoized so render-time JSX stays cheap, and so SPA navigation
-  // works via the click handler while right-click / cmd-click still
-  // opens the real path in a new tab.
-  const projectSettingsHref = useMemo(
-    () =>
-      router.resolve({
-        name: PROJECT_V1_ROUTE_SETTINGS,
-        params: { projectId },
-      }).fullPath,
-    [projectId]
-  );
-  const customApprovalHref = useMemo(
-    () => router.resolve({ name: WORKSPACE_ROUTE_CUSTOM_APPROVAL }).fullPath,
-    []
-  );
   // Workspace-level setting permission: gates the "configure your
   // approval flow" sentence so non-admins don't see advice they can't
   // act on. `bb.settings.set` is the same check the workspace settings
@@ -291,13 +276,12 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
                       // closing tag so the wrapping `<a>` never gets
                       // generated and the link silently vanishes.
                       lnk: (
-                        <a
-                          className="text-accent underline hover:text-accent-hover"
-                          href={projectSettingsHref}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            router.push(projectSettingsHref);
+                        <RouterLink
+                          to={{
+                            name: PROJECT_V1_ROUTE_SETTINGS,
+                            params: { projectId },
                           }}
+                          className="text-accent underline hover:text-accent-hover"
                         />
                       ),
                     }}
@@ -321,13 +305,9 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
                     }}
                     components={{
                       lnk: (
-                        <a
+                        <RouterLink
+                          to={{ name: WORKSPACE_ROUTE_CUSTOM_APPROVAL }}
                           className="text-accent underline hover:text-accent-hover"
-                          href={customApprovalHref}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            router.push(customApprovalHref);
-                          }}
                         />
                       ),
                     }}
@@ -338,14 +318,16 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
           }
         >
           <div className="mt-3 flex justify-end">
-            <Button
-              size="sm"
-              className="shrink-0 whitespace-nowrap"
-              onClick={() => router.push({ name: SQL_EDITOR_HOME_MODULE })}
+            <RouterLink
+              to={{ name: SQL_EDITOR_HOME_MODULE }}
+              className={buttonVariants({
+                size: "sm",
+                className: "shrink-0 whitespace-nowrap",
+              })}
             >
               <SquareTerminal className="size-4 mr-1" />
               {t("export-center.deprecated.open-sql-editor")}
-            </Button>
+            </RouterLink>
           </div>
         </Alert>
       </div>
@@ -661,8 +643,8 @@ function IssueListItem({
               <IssueStatusIcon status={issue.status} />
             </div>
             {issue.title ? (
-              <a
-                href={issueUrl}
+              <RouterLink
+                to={issueUrl}
                 className="font-medium text-main text-base truncate hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -670,15 +652,15 @@ function IssueListItem({
                   text={issue.title}
                   keyword={highlightWords}
                 />
-              </a>
+              </RouterLink>
             ) : (
-              <a
-                href={issueUrl}
+              <RouterLink
+                to={issueUrl}
                 className="font-medium text-base truncate hover:underline italic text-control-placeholder"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("common.untitled")}
-              </a>
+              </RouterLink>
             )}
             <RiskLevelIcon riskLevel={issue.riskLevel} />
             {validLabels.map((label: { value: string; color: string }) => (
@@ -703,20 +685,18 @@ function IssueListItem({
               <span>{humanizeTs(createTimeTs)}</span>
             </Tooltip>
             <span>&middot;</span>
-            <a
+            <RouterLink
               className="hover:underline"
-              href="#"
+              to={{
+                name: WORKSPACE_ROUTE_USER_PROFILE,
+                params: { principalEmail: creator.email },
+              }}
               onClick={(e) => {
-                e.preventDefault();
                 e.stopPropagation();
-                router.push({
-                  name: WORKSPACE_ROUTE_USER_PROFILE,
-                  params: { principalEmail: creator.email },
-                });
               }}
             >
               {creator.title}
-            </a>
+            </RouterLink>
           </div>
           {/* Expanded description for search highlights */}
           {expanded && (

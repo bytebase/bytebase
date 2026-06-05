@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -209,15 +210,15 @@ export function AccessGrantItem({
               </Button>
             )}
             {grant.issue && (
-              <a
-                href={issueLink}
+              <RouterLink
+                to={issueLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center justify-center h-6 text-xs px-2 rounded-xs hover:bg-control-bg text-control"
               >
                 {t("sql-editor.view-issue")}
-              </a>
+              </RouterLink>
             )}
           </div>
         </div>

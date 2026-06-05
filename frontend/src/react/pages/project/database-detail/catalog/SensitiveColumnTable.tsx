@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -19,7 +20,6 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import type { MaskData } from "@/react/lib/sensitive-data/types";
-import { router } from "@/react/router";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 
@@ -220,23 +220,21 @@ export function SensitiveColumnTable({
                     </TableCell>
                   )}
                   <TableCell className="text-main">
-                    <a
+                    <RouterLink
                       className="normal-link"
-                      href={
-                        router.resolve({
-                          ...autoDatabaseRoute(database),
-                          query: {
-                            schema: item.schema,
-                            table: item.table,
-                          },
-                          hash: "overview",
-                        }).fullPath
-                      }
+                      to={{
+                        ...autoDatabaseRoute(database),
+                        query: {
+                          schema: item.schema,
+                          table: item.table,
+                        },
+                        hash: "overview",
+                      }}
                     >
                       {item.schema
                         ? `${item.schema}.${item.table}`
                         : item.table}
-                    </a>
+                    </RouterLink>
                   </TableCell>
                   <TableCell className="text-main">
                     {item.column || t("common.empty")}

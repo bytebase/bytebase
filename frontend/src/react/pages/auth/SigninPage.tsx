@@ -4,6 +4,7 @@ import { AuthFooter } from "@/react/components/auth/AuthFooter";
 import { EmailCodeSigninForm } from "@/react/components/auth/EmailCodeSigninForm";
 import { PasswordSigninForm } from "@/react/components/auth/PasswordSigninForm";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -204,19 +205,15 @@ export function SigninPage(props: SigninPageProps) {
                   {!disallowSignup && (
                     <div className="mt-3 flex justify-center items-center text-sm text-control gap-x-2">
                       <span>{t("auth.sign-in.new-user")}</span>
-                      <a
-                        href="#"
-                        className="accent-link"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push({
-                            name: AUTH_SIGNUP_MODULE,
-                            query,
-                          });
+                      <RouterLink
+                        to={{
+                          name: AUTH_SIGNUP_MODULE,
+                          query,
                         }}
+                        className="accent-link"
                       >
                         {t("common.sign-up")}
-                      </a>
+                      </RouterLink>
                     </div>
                   )}
                 </TabsPanel>

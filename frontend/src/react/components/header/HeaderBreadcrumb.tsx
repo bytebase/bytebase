@@ -1,6 +1,7 @@
 import { Building2, Check, ChevronDown, FolderKanban } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Badge } from "@/react/components/ui/badge";
 import {
   Popover,
@@ -20,11 +21,7 @@ import {
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
-import {
-  useCurrentRoute,
-  useNavigate,
-  WORKSPACE_ROUTE_LANDING,
-} from "@/react/router";
+import { useCurrentRoute, WORKSPACE_ROUTE_LANDING } from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
@@ -71,7 +68,6 @@ function WorkspaceSegment() {
   const label = planLabel(t, currentPlan);
   const hasMultiple = workspaceList.length > 1;
   const switchWorkspace = useSwitchWorkspace();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const onSwitch = useCallback(
@@ -83,21 +79,11 @@ function WorkspaceSegment() {
     [currentWorkspaceName, switchWorkspace]
   );
 
-  const workspaceHref = navigate.resolve({
-    name: WORKSPACE_ROUTE_LANDING,
-  }).href;
-
   return (
     <div className="inline-flex items-center">
-      <a
-        href={workspaceHref}
+      <RouterLink
+        to={{ name: WORKSPACE_ROUTE_LANDING }}
         className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
-        onClick={(e) => {
-          if (!e.metaKey && !e.ctrlKey) {
-            e.preventDefault();
-            void navigate.push({ name: WORKSPACE_ROUTE_LANDING });
-          }
-        }}
       >
         <Building2 className="size-4 text-control-light shrink-0" />
         <span className="truncate max-w-40">{workspace?.title}</span>
@@ -109,7 +95,7 @@ function WorkspaceSegment() {
             {label}
           </Badge>
         )}
-      </a>
+      </RouterLink>
       {hasMultiple && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger

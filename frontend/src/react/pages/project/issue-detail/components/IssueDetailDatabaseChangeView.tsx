@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { instanceRoleServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
+import { RouterLink } from "@/react/components/RouterLink";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Select,
@@ -139,12 +140,12 @@ export function IssueDetailDatabaseChangeView({
           </div>
 
           {page.plan && (
-            <a
+            <RouterLink
+              to={planHref}
               className="px-3 text-sm text-accent hover:underline"
-              href={planHref}
             >
               {t("plan.go-to-plan-page")} →
-            </a>
+            </RouterLink>
           )}
         </div>
 

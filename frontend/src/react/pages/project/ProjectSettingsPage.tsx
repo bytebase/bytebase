@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -100,15 +101,12 @@ function ApprovalFlowIndicator({
       content={
         <div className="flex flex-col gap-y-1">
           <span>{tooltipText}</span>
-          <button
-            type="button"
-            className="text-accent underline text-left"
-            onClick={() =>
-              router.push({ name: WORKSPACE_ROUTE_CUSTOM_APPROVAL })
-            }
+          <RouterLink
+            to={{ name: WORKSPACE_ROUTE_CUSTOM_APPROVAL }}
+            className="text-accent underline text-left hover:text-accent-hover"
           >
             {t("project.settings.issue-related.view-approval-flow")}
-          </button>
+          </RouterLink>
         </div>
       }
     >
