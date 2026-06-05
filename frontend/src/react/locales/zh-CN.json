@@ -1176,7 +1176,11 @@
         }
       },
       "details": "访问授权详情",
-      "expired-at": "过期时间"
+      "expired-at": "过期时间",
+      "export-results-to-file": "将结果导出为文件",
+      "includes-sensitive-access": "包含敏感访问",
+      "this-grant-allows": "此授权允许",
+      "unmask-data-in-results": "在结果中查看未脱敏的敏感数据"
     },
     "action-anyway": "仍要{{action}}",
     "advanced-search": {

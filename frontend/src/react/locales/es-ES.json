@@ -1176,7 +1176,11 @@
         }
       },
       "details": "Detalles de la concesión de acceso",
-      "expired-at": "Expiró el"
+      "expired-at": "Expiró el",
+      "export-results-to-file": "Exportar resultados a un archivo",
+      "includes-sensitive-access": "incluye acceso sensible",
+      "this-grant-allows": "Esta concesión permite",
+      "unmask-data-in-results": "Desenmascarar datos sensibles en los resultados"
     },
     "action-anyway": "{{action}} de todos modos",
     "advanced-search": {

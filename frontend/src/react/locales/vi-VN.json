@@ -1176,7 +1176,11 @@
         }
       },
       "details": "Chi tiết cấp quyền truy cập",
-      "expired-at": "Hết hạn lúc"
+      "expired-at": "Hết hạn lúc",
+      "export-results-to-file": "Xuất kết quả ra tệp",
+      "includes-sensitive-access": "bao gồm truy cập dữ liệu nhạy cảm",
+      "this-grant-allows": "Cấp quyền này cho phép",
+      "unmask-data-in-results": "Hiển thị dữ liệu nhạy cảm trong kết quả"
     },
     "action-anyway": "{{action}} bằng mọi cách",
     "advanced-search": {

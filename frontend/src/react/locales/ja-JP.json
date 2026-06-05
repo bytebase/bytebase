@@ -1176,7 +1176,11 @@
         }
       },
       "details": "アクセス付与の詳細",
-      "expired-at": "有効期限"
+      "expired-at": "有効期限",
+      "export-results-to-file": "結果をファイルにエクスポート",
+      "includes-sensitive-access": "機密データへのアクセスを含む",
+      "this-grant-allows": "このアクセス権限で許可される操作",
+      "unmask-data-in-results": "結果内の機密データのマスクを解除"
     },
     "action-anyway": "まだ {{action}} が必要です",
     "advanced-search": {
