@@ -1176,7 +1176,10 @@
         }
       },
       "details": "アクセス付与の詳細",
-      "expired-at": "有効期限"
+      "expired-at": "有効期限",
+      "export-results-to-file": "結果をファイルにエクスポート",
+      "this-grant-allows": "このアクセス権限で許可される操作",
+      "unmask-data-in-results": "結果内の機密データのマスクを解除"
     },
     "action-anyway": "まだ {{action}} が必要です",
     "advanced-search": {
@@ -2792,7 +2795,6 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
-    "unmask-warning": "クエリ結果にマスク解除された機密データが含まれる場合があります。",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "vertical-display": "縦型表示",

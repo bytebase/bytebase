@@ -1176,7 +1176,10 @@
         }
       },
       "details": "Chi tiết cấp quyền truy cập",
-      "expired-at": "Hết hạn lúc"
+      "expired-at": "Hết hạn lúc",
+      "export-results-to-file": "Xuất kết quả ra tệp",
+      "this-grant-allows": "Cấp quyền này cho phép",
+      "unmask-data-in-results": "Hiển thị dữ liệu nhạy cảm trong kết quả"
     },
     "action-anyway": "{{action}} bằng mọi cách",
     "advanced-search": {
@@ -2792,7 +2795,6 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",
     "text-format": "Định dạng văn bản",
-    "unmask-warning": "Kết quả truy vấn có thể bao gồm dữ liệu nhạy cảm chưa che.",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "vertical-display": "Hiển thị dọc",

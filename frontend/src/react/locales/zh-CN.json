@@ -1176,7 +1176,10 @@
         }
       },
       "details": "访问授权详情",
-      "expired-at": "过期时间"
+      "expired-at": "过期时间",
+      "export-results-to-file": "将结果导出为文件",
+      "this-grant-allows": "此授权允许",
+      "unmask-data-in-results": "在结果中查看未脱敏的敏感数据"
     },
     "action-anyway": "仍要{{action}}",
     "advanced-search": {
@@ -2792,7 +2795,6 @@
     "table-empty-placeholder": "点击 \"运行\" 执行查询",
     "table-view": "表格视图",
     "text-format": "文本格式",
-    "unmask-warning": "查询结果可能包含未脱敏的敏感数据。",
     "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "vertical-display": "竖向展示",

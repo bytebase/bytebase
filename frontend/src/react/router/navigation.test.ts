@@ -12,6 +12,7 @@ beforeEach(() => {
     new Map<string, string>([
       ["auth.signin", "/auth"],
       ["project.detail", "/projects/:projectId"],
+      ["project.issue.detail", "/projects/:projectId/issues/:issueId"],
     ])
   );
 });
@@ -41,6 +42,39 @@ describe("navigation resolvePath", () => {
 
   test("unknown name falls back to / (never throws mid-guard)", () => {
     expect(resolvePath("does.not.exist")).toBe("/");
+  });
+
+  // Regression: a substring-prefix collision in the params bag (e.g.
+  // `:project` inherited from the SQL-editor route alongside an
+  // explicit `:projectId` for an issue route) used to corrupt the
+  // longer placeholder, turning `/projects/:projectId/issues/:issueId`
+  // into `/projects/<v>Id/issues/123`. The substitution must match
+  // `:key` as a whole token.
+  test("does not substring-replace `:project` inside `:projectId`", () => {
+    expect(
+      resolvePath("project.issue.detail", {
+        params: {
+          project: "from-inherited-route",
+          projectId: "project-sample",
+          issueId: "123",
+        },
+      })
+    ).toBe("/projects/project-sample/issues/123");
+  });
+
+  // Order-of-iteration safety: even if the shorter key appears first
+  // in `Object.entries`, the negative-lookahead guard prevents the
+  // collision. Both orderings must produce the same result.
+  test("token match is independent of params iteration order", () => {
+    expect(
+      resolvePath("project.issue.detail", {
+        params: {
+          projectId: "p1",
+          project: "p1",
+          issueId: "i1",
+        },
+      })
+    ).toBe("/projects/p1/issues/i1");
   });
 });
 

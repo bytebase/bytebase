@@ -79,7 +79,18 @@ export function resolvePath(
     for (const [key, value] of Object.entries(options.params)) {
       if (value === undefined) continue;
       const single = Array.isArray(value) ? (value[0] ?? "") : value;
-      path = path.replace(`:${key}`, encodeURIComponent(single));
+      // Match `:key` only when NOT followed by another identifier char,
+      // so `:project` doesn't substring-match inside `:projectId` and
+      // turn `/projects/:projectId/...` into `/projects/<v>Id/...`. The
+      // collision shows up when callers merge in inherited route params
+      // (e.g. the SQL editor's `:project` clobbers the issue route's
+      // `:projectId`). React-router param names are restricted to
+      // `[A-Za-z0-9_]+`, so the negative lookahead is safe — no regex
+      // escape needed.
+      path = path.replace(
+        new RegExp(`:${key}(?![A-Za-z0-9_])`),
+        encodeURIComponent(single)
+      );
     }
   }
   if (options.query) {
