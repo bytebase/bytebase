@@ -12,6 +12,7 @@ import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useWorkspace } from "@/react/hooks/useAppState";
 import { useRecentVisit } from "@/react/hooks/useRecentVisit";
 import { router, useCurrentRoute } from "@/react/router";
@@ -328,56 +329,33 @@ export function ProjectSidebar() {
     }
   }, []);
 
-  const resolveHref = useCallback(
-    (path: string) =>
-      router.resolve({
-        name: path,
-        params: { projectId },
-      }).fullPath,
-    [projectId]
-  );
-
-  const handleItemClick = useCallback(
-    (e: React.MouseEvent, path: string) => {
+  const recordItemVisit = useCallback(
+    (path: string) => {
       const route = router.resolve({
         name: path,
         params: { projectId },
       });
       recordVisitRef.current?.(route.fullPath);
-      if (e.ctrlKey || e.metaKey) {
-        // Let the browser's native <a> Ctrl/Meta-click handle new-tab opening.
-        return;
-      }
-      e.preventDefault();
-      router.push(route);
     },
     [projectId]
   );
 
-  const resolveHomeRoute = useCallback(() => {
-    return router.resolve({
+  const homeRoute = useMemo(
+    () => ({
       name: PROJECT_V1_ROUTE_DETAIL,
       params: { projectId },
-    });
-  }, [projectId]);
-
-  const handleHomeClick = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>) => {
-      const route = resolveHomeRoute();
-      recordVisitRef.current?.(route.fullPath);
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      router.push(route);
-    },
-    [resolveHomeRoute]
+    }),
+    [projectId]
   );
+
+  const handleHomeClick = useCallback(() => {
+    const route = router.resolve(homeRoute);
+    recordVisitRef.current?.(route.fullPath);
+  }, [homeRoute]);
 
   // -- Logo ------------------------------------------------------------------
 
   const logoSrc = customLogo || logoFull;
-  const homeHref = resolveHomeRoute().fullPath;
 
   // -- Render ----------------------------------------------------------------
 
@@ -388,14 +366,17 @@ export function ProjectSidebar() {
           const classes = getItemClass(child, currentRouteName);
           if (child.path) {
             return (
-              <a
+              <RouterLink
                 key={`${parentIndex}-${j}`}
-                href={resolveHref(child.path)}
+                to={{
+                  name: child.path,
+                  params: { projectId },
+                }}
                 className={`${childRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
-                onClick={(e) => handleItemClick(e, child.path!)}
+                onClick={() => recordItemVisit(child.path!)}
               >
                 {child.title}
-              </a>
+              </RouterLink>
             );
           }
           return null;
@@ -414,15 +395,18 @@ export function ProjectSidebar() {
     if (!hasChildren && item.path) {
       const classes = getItemClass(item, currentRouteName);
       return (
-        <a
+        <RouterLink
           key={index}
-          href={resolveHref(item.path)}
+          to={{
+            name: item.path,
+            params: { projectId },
+          }}
           className={`${parentRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
-          onClick={(e) => handleItemClick(e, item.path!)}
+          onClick={() => recordItemVisit(item.path!)}
         >
           {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
           {item.title}
-        </a>
+        </RouterLink>
       );
     }
 
@@ -453,13 +437,13 @@ export function ProjectSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <a
-        href={homeHref}
+      <RouterLink
+        to={homeRoute}
         className="p-2 shrink-0 m-auto cursor-pointer"
         onClick={handleHomeClick}
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
-      </a>
+      </RouterLink>
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>

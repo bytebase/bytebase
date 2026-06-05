@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
@@ -203,9 +204,9 @@ export function IssueDetailLabels() {
                   {settingsHref &&
                     project &&
                     hasProjectPermissionV2(project, "bb.projects.update") && (
-                      <a
+                      <RouterLink
+                        to={settingsHref}
                         className="flex items-center gap-x-2 textinfolabel normal-link"
-                        href={settingsHref}
                       >
                         <span>
                           {t(
@@ -213,7 +214,7 @@ export function IssueDetailLabels() {
                           )}
                         </span>
                         <ExternalLink className="h-4 w-4" />
-                      </a>
+                      </RouterLink>
                     )}
                 </div>
               ) : (

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
+import { RouterLink } from "@/react/components/RouterLink";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
@@ -499,17 +500,13 @@ export function DatabaseChangelogDetailPage({
             <div className="flex items-center justify-between">
               <p className="text-lg text-main">{t("issue.task-run.logs")}</p>
               {taskFullLink ? (
-                <a
-                  href={taskFullLink}
+                <RouterLink
+                  to={{ path: taskFullLink }}
                   className="flex items-center gap-x-1 text-sm text-control-light transition-colors hover:text-accent"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    router.push({ path: taskFullLink });
-                  }}
                 >
                   {t("common.show-more")}
                   <ArrowUpRight className="size-4" />
-                </a>
+                </RouterLink>
               ) : null}
             </div>
             {showTaskRunLogs ? (

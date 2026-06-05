@@ -32,6 +32,7 @@ import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -134,17 +135,15 @@ function EnvironmentName({
 
   if (link) {
     return (
-      <a
-        href={`/${formatEnvironmentName(environment.id)}`}
+      <RouterLink
+        to={{ path: `/${formatEnvironmentName(environment.id)}` }}
         onClick={(e) => {
-          e.preventDefault();
           e.stopPropagation();
-          router.push({ path: `/${formatEnvironmentName(environment.id)}` });
         }}
         className="hover:underline"
       >
         {content}
-      </a>
+      </RouterLink>
     );
   }
 

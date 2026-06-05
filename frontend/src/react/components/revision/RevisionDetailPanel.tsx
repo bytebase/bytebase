@@ -1,11 +1,11 @@
 import { ArrowUpRight, LoaderCircle } from "lucide-react";
-import { type MouseEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco";
+import { RouterLink } from "@/react/components/RouterLink";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { useRevisionByName } from "@/react/hooks/useAppState";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -142,20 +142,6 @@ export function RevisionDetailPanel({
     ? bytesToString(new TextEncoder().encode(statement).length)
     : "";
 
-  const handleTaskFullLinkClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
-    event.preventDefault();
-    router.push({ path: taskFullLink });
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-2 text-sm text-gray-400">
@@ -188,14 +174,13 @@ export function RevisionDetailPanel({
               <div className="flex items-center justify-between">
                 <p className="text-lg text-main">{t("issue.task-run.logs")}</p>
                 {taskFullLink ? (
-                  <a
-                    href={taskFullLink}
+                  <RouterLink
+                    to={{ path: taskFullLink }}
                     className="flex items-center gap-x-1 text-sm text-control-light transition-colors hover:text-accent"
-                    onClick={handleTaskFullLinkClick}
                   >
                     {t("common.show-more")}
                     <ArrowUpRight className="h-4 w-4" />
-                  </a>
+                  </RouterLink>
                 ) : null}
               </div>
               <TaskRunLogViewer taskRunName={revision.taskRun} />
