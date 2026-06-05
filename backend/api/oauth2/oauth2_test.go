@@ -54,6 +54,17 @@ func TestIsAllowedDynamicClientRedirectURI(t *testing.T) {
 		{name: "antigravity callback", uri: "https://antigravity.google/oauth-callback", want: true},
 		{name: "antigravity wrong path", uri: "https://antigravity.google/evil", want: false},
 
+		// Cursor IDE / cursor-agent CLI — fixed cloud MCP OAuth callback.
+		{name: "cursor.com callback", uri: "https://www.cursor.com/agents/mcp/oauth/callback", want: true},
+		{name: "cursor.com explicit port 443", uri: "https://www.cursor.com:443/agents/mcp/oauth/callback", want: true},
+		{name: "cursor.com over http", uri: "http://www.cursor.com/agents/mcp/oauth/callback", want: false},
+		{name: "cursor.com wrong path", uri: "https://www.cursor.com/something-else", want: false},
+		{name: "cursor.com bare host", uri: "https://cursor.com/agents/mcp/oauth/callback", want: false},
+		{name: "cursor.com subdomain spoof", uri: "https://www.cursor.com.evil.com/agents/mcp/oauth/callback", want: false},
+		{name: "cursor.com userinfo spoof", uri: "https://www.cursor.com@evil.com/agents/mcp/oauth/callback", want: false},
+		{name: "cursor.com dot-segment traversal", uri: "https://www.cursor.com/agents/mcp/oauth/callback/../evil", want: false},
+		{name: "cursor.com non-default port", uri: "https://www.cursor.com:8443/agents/mcp/oauth/callback", want: false},
+
 		// Arbitrary HTTPS / HTTP must stay rejected (the #20033 protection).
 		{name: "arbitrary https", uri: "https://evil.com/callback", want: false},
 		{name: "non-localhost http", uri: "http://evil.com/callback", want: false},

@@ -231,6 +231,11 @@ func isAllowedHostedRedirectURI(u *url.URL) bool {
 	case "antigravity.google":
 		// Google Antigravity.
 		return u.Path == "/oauth-callback"
+	case "www.cursor.com":
+		// Cursor IDE and Cursor CLI (cursor-agent) route MCP OAuth through this
+		// fixed cloud callback. The cursor:// scheme above predates this flow and
+		// is no longer used for DCR, so the scheme entry alone doesn't help.
+		return u.Path == "/agents/mcp/oauth/callback"
 	default:
 		return false
 	}
