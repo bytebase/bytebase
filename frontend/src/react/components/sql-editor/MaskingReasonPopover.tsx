@@ -1,4 +1,5 @@
 import { EyeOff } from "lucide-react";
+import type { SyntheticEvent } from "react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
@@ -57,6 +58,10 @@ export function MaskingReasonPopover({
     onClick?.();
   };
 
+  const stopResultTableEvent = (event: SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <>
       <Popover>
@@ -67,7 +72,11 @@ export function MaskingReasonPopover({
           // UI so it doesn't warn about missing native button semantics.
           nativeButton={false}
           render={
-            <div className="inline-flex items-center gap-0.5 cursor-pointer">
+            <div
+              className="inline-flex items-center gap-0.5 cursor-pointer"
+              onClick={stopResultTableEvent}
+              onPointerDown={stopResultTableEvent}
+            >
               {reason.semanticTypeIcon && (
                 <img
                   src={reason.semanticTypeIcon}
@@ -86,6 +95,8 @@ export function MaskingReasonPopover({
           side="bottom"
           align="start"
           className="min-w-80 max-w-md"
+          onClick={stopResultTableEvent}
+          onPointerDown={stopResultTableEvent}
         >
           <div className="w-full flex flex-col gap-y-2">
             <div className="font-medium flex items-center gap-2">
