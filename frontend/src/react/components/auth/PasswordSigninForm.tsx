@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { resolveWorkspaceName } from "@/react/lib/workspace";
@@ -58,14 +59,6 @@ export function PasswordSigninForm({
     );
   };
 
-  const goToForgot = (e: React.MouseEvent) => {
-    e.preventDefault();
-    router.push({
-      name: AUTH_PASSWORD_FORGOT_MODULE,
-      query: { hint: router.currentRoute.value.query.hint },
-    });
-  };
-
   return (
     <form className="flex flex-col gap-y-6 px-1" onSubmit={trySignin}>
       <div>
@@ -99,14 +92,16 @@ export function PasswordSigninForm({
             <span className="text-error ml-0.5">*</span>
           </div>
           {showForgotPassword && (
-            <a
-              href="#"
+            <RouterLink
+              to={{
+                name: AUTH_PASSWORD_FORGOT_MODULE,
+                query: { hint: router.currentRoute.value.query.hint },
+              }}
               className="text-sm font-normal text-control-light hover:underline focus:outline-hidden"
               tabIndex={-1}
-              onClick={goToForgot}
             >
               {t("auth.sign-in.forget-password")}
-            </a>
+            </RouterLink>
           )}
         </label>
         <div className="relative flex flex-row items-center mt-1 rounded-md shadow-xs">

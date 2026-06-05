@@ -61,6 +61,22 @@
   - Href-only internal anchors in issue-detail pages and `GroupsPage.tsx`
   - Any `href="#"` controls, which may need buttons instead of links.
 
+## Second-Pass Migration Targets
+
+Follow-up exploration found more React internal navigation patterns after the
+initial PR pass. Migrate the clearly navigational cases below; leave action
+buttons, menu actions, and table-row click handlers alone unless the target is
+already a real anchor.
+
+- Auth route links currently rendered as `href="#"`.
+- Settings and landing-page internal anchors resolved with `router.push` or
+  `router.resolve`.
+- Database/project internal anchors and link-styled spans.
+- Internal links that intentionally open in a new tab, preserving `target`,
+  `rel`, and propagation handlers.
+- Pure navigation button CTAs where the button only routes and has no workflow
+  side effects.
+
 ---
 
 ## Task 1: Add RouterLink Tests

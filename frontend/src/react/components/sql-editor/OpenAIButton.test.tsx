@@ -105,11 +105,15 @@ vi.mock("@/plugins/ai/logic/prompt", () => ({
 
 vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
-  router: { push: mocks.routerPush },
+  router: {
+    push: mocks.routerPush,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
+  },
 }));
 
 // Minimal primitive stubs.
 vi.mock("@/react/components/ui/button", () => ({
+  buttonVariants: ({ className }: { className?: string } = {}) => className,
   Button: ({
     children,
     onClick,

@@ -68,6 +68,7 @@ vi.mock("@/react/router", async (importOriginal) => ({
     replace: mocks.routerReplace,
     push: mocks.routerPush,
     currentRoute: mocks.currentRoute,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
   },
 }));
 

@@ -66,6 +66,7 @@ vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
   },
 }));
 
@@ -220,17 +221,19 @@ describe("DatabaseRevisionDetailPage", () => {
       "instances/inst1/databases/db-from-hook/revisions/7"
     );
 
-    const clickButton = async (label: string) => {
-      const button = Array.from(container.querySelectorAll("button")).find(
+    const clickBreadcrumb = async (label: string) => {
+      const link = Array.from(container.querySelectorAll("a")).find(
         (candidate) => candidate.textContent === label
       );
 
       await act(async () => {
-        button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        link?.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
       });
     };
 
-    await clickButton("common.databases");
+    await clickBreadcrumb("common.databases");
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: mocks.routeNames.databases,
       params: {
@@ -238,7 +241,7 @@ describe("DatabaseRevisionDetailPage", () => {
       },
     });
 
-    await clickButton("db-from-prop");
+    await clickBreadcrumb("db-from-prop");
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: mocks.routeNames.databaseDetail,
       params: {
@@ -248,7 +251,7 @@ describe("DatabaseRevisionDetailPage", () => {
       },
     });
 
-    await clickButton("database.revision.self");
+    await clickBreadcrumb("database.revision.self");
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: mocks.routeNames.databaseDetail,
       params: {
@@ -259,9 +262,9 @@ describe("DatabaseRevisionDetailPage", () => {
       hash: "#revision",
     });
 
-    const databaseBreadcrumb = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent === "db-from-prop");
+    const databaseBreadcrumb = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "db-from-prop"
+    );
 
     expect(databaseBreadcrumb).not.toBeNull();
 

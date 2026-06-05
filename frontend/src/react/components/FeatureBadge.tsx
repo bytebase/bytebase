@@ -1,6 +1,7 @@
 import { Lock, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useSubscriptionState } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import type {
@@ -88,12 +89,12 @@ export function FeatureBadge({
   if (clickable) {
     return (
       <Tooltip content={tooltip}>
-        <a
-          href="/setting/subscription"
+        <RouterLink
+          to="/setting/subscription"
           className={className ?? "text-accent inline-flex"}
         >
           <Sparkles className="w-5 h-5" />
-        </a>
+        </RouterLink>
       </Tooltip>
     );
   }

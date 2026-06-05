@@ -4,6 +4,7 @@ import { ExternalLink, Loader2, Package } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { cn } from "@/react/lib/utils";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
@@ -55,15 +56,15 @@ export function ReleaseInfoCard({
           </span>
         </div>
         {effectiveRelease && (
-          <a
+          <RouterLink
+            to={`/${effectiveRelease.name}`}
             className="inline-flex items-center gap-x-1 text-sm text-accent hover:underline"
-            href={`/${effectiveRelease.name}`}
             rel="noreferrer"
             target="_blank"
           >
             <span>{t("common.view")}</span>
             <ExternalLink className="h-4 w-4" />
-          </a>
+          </RouterLink>
         )}
       </div>
       {body}
@@ -111,14 +112,14 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
                 {t("release.files")} ({release.files.length})
               </div>
               {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
-                <a
+                <RouterLink
+                  to={`/${release.name}`}
                   className="text-sm text-accent hover:underline"
-                  href={`/${release.name}`}
                   rel="noreferrer"
                   target="_blank"
                 >
                   {t("release.view-all-files")}
-                </a>
+                </RouterLink>
               )}
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">

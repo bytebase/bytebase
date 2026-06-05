@@ -531,19 +531,17 @@ function SQLReviewSectionInner(
               onChange={setEnforce}
             />
             <div className="flex items-center gap-x-1">
-              <span
-                className="textlabel normal-link text-accent! cursor-pointer"
-                onClick={() => {
-                  router.push({
-                    name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-                    params: {
-                      sqlReviewPolicySlug: sqlReviewPolicySlug(pendingPolicy),
-                    },
-                  });
+              <RouterLink
+                to={{
+                  name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                  params: {
+                    sqlReviewPolicySlug: sqlReviewPolicySlug(pendingPolicy),
+                  },
                 }}
+                className="textlabel normal-link text-accent! cursor-pointer"
               >
                 {pendingPolicy.name}
-              </span>
+              </RouterLink>
               {canUpdatePolicy && (
                 <button
                   type="button"

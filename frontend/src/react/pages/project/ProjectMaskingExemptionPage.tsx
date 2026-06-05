@@ -1204,13 +1204,6 @@ function ExemptionResourceTable({
 
   const isSentinel = (value: string): boolean => value === "" || value === "-1";
 
-  const handleDatabaseClick = (resource: DatabaseResource) => {
-    const path = resource.databaseFullName.startsWith("/")
-      ? resource.databaseFullName
-      : `/${resource.databaseFullName}`;
-    router.push(path);
-  };
-
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -1252,12 +1245,16 @@ function ExemptionResourceTable({
                       {t("database.all")}
                     </span>
                   ) : showDatabaseLink ? (
-                    <span
+                    <RouterLink
+                      to={
+                        resource.databaseFullName.startsWith("/")
+                          ? resource.databaseFullName
+                          : `/${resource.databaseFullName}`
+                      }
                       className="normal-link cursor-pointer"
-                      onClick={() => handleDatabaseClick(resource)}
                     >
                       {databaseName}
-                    </span>
+                    </RouterLink>
                   ) : (
                     <span className="text-control-light">{databaseName}</span>
                   )}

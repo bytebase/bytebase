@@ -14,6 +14,7 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { RouterLink } from "@/react/components/RouterLink";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -162,9 +163,9 @@ function AuditLogViewCell({ log }: { log: AuditLog }) {
   if (!target) return null;
   const href = target.startsWith("/") ? target : `/${target}`;
   return (
-    <a href={href} target="_blank" rel="noreferrer">
+    <RouterLink to={href} target="_blank" rel="noreferrer">
       <ExternalLink className="size-4 text-accent" />
-    </a>
+    </RouterLink>
   );
 }
 

@@ -11,7 +11,7 @@ import {
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button } from "@/react/components/ui/button";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
@@ -318,14 +318,16 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
           }
         >
           <div className="mt-3 flex justify-end">
-            <Button
-              size="sm"
-              className="shrink-0 whitespace-nowrap"
-              onClick={() => router.push({ name: SQL_EDITOR_HOME_MODULE })}
+            <RouterLink
+              to={{ name: SQL_EDITOR_HOME_MODULE }}
+              className={buttonVariants({
+                size: "sm",
+                className: "shrink-0 whitespace-nowrap",
+              })}
             >
               <SquareTerminal className="size-4 mr-1" />
               {t("export-center.deprecated.open-sql-editor")}
-            </Button>
+            </RouterLink>
           </div>
         </Alert>
       </div>

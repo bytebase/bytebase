@@ -17,6 +17,7 @@ import {
 } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
@@ -1930,14 +1931,14 @@ export function DatabaseGroupTarget({
           {groupName}
         </span>
         {showExternalLink && (
-          <a
+          <RouterLink
+            to={route}
             className="flex items-center opacity-60 hover:opacity-100"
-            href={router.resolve(route).href}
             rel="noreferrer"
             target="_blank"
           >
             <ExternalLink className="h-4 w-4" />
-          </a>
+          </RouterLink>
         )}
       </div>
       {matchedDatabases.length > 0 && (

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
 import { authServiceClientConnect } from "@/connect";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -67,13 +68,6 @@ export function PasswordForgotPage() {
     }
   };
 
-  const goToSignin = () => {
-    router.push({
-      name: AUTH_SIGNIN_MODULE,
-      query: router.currentRoute.value.query,
-    });
-  };
-
   return (
     <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
       <div>
@@ -132,16 +126,15 @@ export function PasswordForgotPage() {
           <div className="w-full border-t border-control-border" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <a
-            href="#"
-            className="accent-link bg-white px-2"
-            onClick={(e) => {
-              e.preventDefault();
-              goToSignin();
+          <RouterLink
+            to={{
+              name: AUTH_SIGNIN_MODULE,
+              query: router.currentRoute.value.query,
             }}
+            className="accent-link bg-white px-2"
           >
             {t("auth.password-forget.return-to-sign-in")}
-          </a>
+          </RouterLink>
         </div>
       </div>
     </div>

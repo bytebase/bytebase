@@ -25,7 +25,8 @@ import {
   rolloutServiceClientConnect,
 } from "@/connect";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
-import { Button } from "@/react/components/ui/button";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -443,17 +444,17 @@ export function IssueDetailActionBar() {
     <>
       <div className="flex items-center gap-x-2">
         {shouldShowPlanLink && planRoute && (
-          <Button
-            className="gap-x-1"
-            onClick={() => {
-              void router.push(planRoute);
-            }}
-            variant="outline"
+          <RouterLink
+            to={planRoute}
+            className={buttonVariants({
+              variant: "outline",
+              className: "gap-x-1",
+            })}
           >
             <span>#{extractPlanUID(page.plan.name)}</span>
             <span>{t("common.plan")}</span>
             <ExternalLink className="size-3.5" />
-          </Button>
+          </RouterLink>
         )}
 
         {primaryAction &&

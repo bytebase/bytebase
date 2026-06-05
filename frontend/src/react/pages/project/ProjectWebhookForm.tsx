@@ -3,7 +3,8 @@ import { isEqual } from "lodash-es";
 import { EllipsisVertical, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
@@ -298,10 +299,6 @@ export function ProjectWebhookForm({
     });
   }, [project, state, testProjectWebhook, t, withLoading]);
 
-  const imSettingsUrl = useMemo(() => {
-    return router.resolve({ name: WORKSPACE_ROUTE_IM }).fullPath;
-  }, []);
-
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 mb-6 px-4">
@@ -341,15 +338,12 @@ export function ProjectWebhookForm({
               {t("settings.general.workspace.external-url.description")}
             </div>
             {hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile") && (
-              <Button
-                size="sm"
-                className="mt-2"
-                onClick={() =>
-                  router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
-                }
+              <RouterLink
+                to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
+                className={buttonVariants({ size: "sm", className: "mt-2" })}
               >
                 {t("common.configure-now")}
-              </Button>
+              </RouterLink>
             )}
           </div>
         )}
@@ -487,14 +481,14 @@ export function ProjectWebhookForm({
                 ) : (
                   <span className="text-control-light">
                     {t("project.webhook.direct-messages-warning")}{" "}
-                    <a
-                      href={imSettingsUrl}
+                    <RouterLink
+                      to={{ name: WORKSPACE_ROUTE_IM }}
                       target="_blank"
                       rel="noreferrer"
                       className="normal-link"
                     >
                       {t("common.configure-now")}
-                    </a>
+                    </RouterLink>
                   </span>
                 )}
               </div>

@@ -1,9 +1,9 @@
 import { CheckCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import { cn } from "@/react/lib/utils";
 import type { RouteTarget } from "@/react/router";
-import { useNavigate } from "@/react/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -60,7 +60,6 @@ interface IntroItem {
  */
 export function Quickstart() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -315,9 +314,9 @@ export function Quickstart() {
           {introList.map((intro, index) => {
             const active = isTaskActive(index);
             return (
-              <button
+              <RouterLink
                 key={`${intro.name}-${index}`}
-                type="button"
+                to={intro.link}
                 className={cn(
                   "group cursor-pointer flex items-center gap-x-1 text-sm font-medium",
                   index === 0 && "justify-start",
@@ -328,9 +327,6 @@ export function Quickstart() {
                     : "text-control-light group-hover:text-control-light-hover",
                   intro.done && "line-through"
                 )}
-                onClick={() => {
-                  void navigate.push(intro.link);
-                }}
               >
                 <span className="relative h-5 w-5 inline-flex items-center justify-center">
                   {intro.done ? (
@@ -351,7 +347,7 @@ export function Quickstart() {
                   )}
                 </span>
                 <span className="inline-flex">{intro.name}</span>
-              </button>
+              </RouterLink>
             );
           })}
         </div>

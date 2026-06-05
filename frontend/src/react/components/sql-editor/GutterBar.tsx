@@ -1,8 +1,8 @@
 import logoIcon from "@/assets/logo-icon.svg";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Separator } from "@/react/components/ui/separator";
 import { useAppProject } from "@/react/hooks/useAppProject";
 import { useReactiveRoute } from "@/react/hooks/useReactiveRoute";
-import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DETAIL,
   WORKSPACE_ROUTE_LANDING,
@@ -30,12 +30,12 @@ export function GutterBar() {
     | string
     | undefined;
 
-  const logoHref = routeProjectParam
-    ? router.resolve({
+  const logoRoute = routeProjectParam
+    ? {
         name: PROJECT_V1_ROUTE_DETAIL,
         params: { projectId: routeProjectParam },
-      }).href
-    : router.resolve({ name: WORKSPACE_ROUTE_LANDING }).href;
+      }
+    : { name: WORKSPACE_ROUTE_LANDING };
 
   const handleClickTab = (target: AsidePanelTab) => {
     setAsidePanelTab(target);
@@ -45,9 +45,9 @@ export function GutterBar() {
     <div className="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1">
       <div className="flex flex-col gap-y-1">
         <div className="flex flex-col justify-center items-center pb-1">
-          <a href={logoHref} target="_blank" rel="noopener noreferrer">
+          <RouterLink to={logoRoute} target="_blank" rel="noopener noreferrer">
             <img className="w-9 h-auto" src={logoIcon} alt="Bytebase" />
-          </a>
+          </RouterLink>
         </div>
         <Separator />
         <TabItem tab="WORKSHEET" onClick={() => handleClickTab("WORKSHEET")} />

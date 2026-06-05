@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import { RouterLink } from "@/react/components/RouterLink";
+import { Button, buttonVariants } from "@/react/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,6 @@ import {
 import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-  useNavigate,
 } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -79,7 +79,6 @@ function BannerDismissButton({
 
 function BannerExternalUrl() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const hasPermission = useWorkspacePermission(
     "bb.settings.setWorkspaceProfile"
   );
@@ -98,16 +97,16 @@ function BannerExternalUrl() {
           </div>
           {hasPermission ? (
             <div className="order-3 mt-2 w-full shrink-0 sm:order-2 sm:mt-0 sm:w-auto">
-              <Button
-                type="button"
-                className="h-auto rounded-md bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50"
-                onClick={() => {
-                  void navigate.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL });
-                }}
+              <RouterLink
+                to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
+                className={buttonVariants({
+                  className:
+                    "h-auto rounded-md bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
+                })}
               >
                 {t("common.configure-now")}
                 <Wrench className="ml-1 size-5" />
-              </Button>
+              </RouterLink>
             </div>
           ) : null}
           <div className="order-2 -mr-1 shrink-0 sm:order-3 sm:ml-3">
@@ -124,7 +123,6 @@ function BannerExternalUrl() {
 
 function BannerSubscription() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { currentPlan, daysBeforeExpire, expireAt, isExpired, isTrialing } =
     useSubscriptionState();
 
@@ -161,14 +159,9 @@ function BannerSubscription() {
           <p className="ml-3 truncate text-base font-medium text-white">
             {content}
           </p>
-          <button
-            type="button"
+          <RouterLink
+            to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
             className="flex cursor-pointer items-center justify-center py-1 text-base font-medium text-white underline hover:opacity-80"
-            onClick={() => {
-              void navigate.push({
-                name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-              });
-            }}
           >
             {t(
               isTrialing
@@ -176,7 +169,7 @@ function BannerSubscription() {
                 : "subscription.purchase.update"
             )}
             <ShoppingCart className="ml-1 size-5 text-white" />
-          </button>
+          </RouterLink>
         </div>
       </div>
     </div>
@@ -231,7 +224,6 @@ function BannerAnnouncement() {
 
 function BannerUpgradeSubscription() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { serverInfo } = useServerState();
   const { currentPlan } = useSubscriptionState();
   const getMinimumRequiredPlan = useAppStore(
@@ -260,7 +252,6 @@ function BannerUpgradeSubscription() {
 
   const gotoSubscriptionPage = () => {
     setShowModal(false);
-    void navigate.push({ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION });
   };
 
   if (!showBanner) return null;
@@ -293,10 +284,14 @@ function BannerUpgradeSubscription() {
               />
             </div>
             <div className="ml-2">
-              <Button size="sm" onClick={gotoSubscriptionPage}>
+              <RouterLink
+                to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
+                className={buttonVariants({ size: "sm" })}
+                onClick={gotoSubscriptionPage}
+              >
                 <Sparkles className="h-auto w-4" />
                 {t("subscription.upgrade")}
-              </Button>
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -328,9 +323,13 @@ function BannerUpgradeSubscription() {
               </ul>
             </div>
             <div className="mt-3 mb-4 w-full">
-              <Button className="w-full" onClick={gotoSubscriptionPage}>
+              <RouterLink
+                to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
+                className={buttonVariants({ className: "w-full" })}
+                onClick={gotoSubscriptionPage}
+              >
                 {t("subscription.upgrade-now")}
-              </Button>
+              </RouterLink>
             </div>
           </div>
         </DialogContent>

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { RouterLink } from "@/react/components/RouterLink";
 import { UserCell } from "@/react/components/UserCell";
 import { UserSelect } from "@/react/components/UserSelect";
 import { Alert } from "@/react/components/ui/alert";
@@ -1029,17 +1030,15 @@ export function GroupsPage() {
               content={
                 <span>
                   {t("settings.members.groups.workspace-domain-required")}{" "}
-                  <a
-                    href={
-                      router.resolve({
-                        name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                        hash: "#domain-restriction",
-                      }).href
-                    }
+                  <RouterLink
+                    to={{
+                      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                      hash: "#domain-restriction",
+                    }}
                     className="underline text-accent"
                   >
                     {t("common.configure")}
-                  </a>
+                  </RouterLink>
                 </span>
               }
             >

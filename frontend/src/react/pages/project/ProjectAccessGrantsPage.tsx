@@ -11,6 +11,7 @@ import {
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { RouterLink } from "@/react/components/RouterLink";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -33,7 +34,6 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { pushNotification } from "@/store";
@@ -651,10 +651,8 @@ function AccessGrantRow({
             </Button>
           )}
           {grant.issue && (
-            <a
-              href={
-                grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`
-              }
+            <RouterLink
+              to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -662,7 +660,7 @@ function AccessGrantRow({
               <Button variant="ghost" size="sm">
                 {t("sql-editor.view-issue")}
               </Button>
-            </a>
+            </RouterLink>
           )}
         </div>
       </TableCell>
@@ -734,13 +732,13 @@ function DatabaseTargets({ targets }: { targets: string[] }) {
   const rest = targets.length - visible.length;
 
   const renderLink = (target: string) => (
-    <span
+    <RouterLink
       key={target}
+      to={{ path: `/${target}` }}
       className="normal-link hover:underline cursor-pointer text-sm"
-      onClick={() => router.push({ path: `/${target}` })}
     >
       {getDatabaseName(target)}
-    </span>
+    </RouterLink>
   );
 
   const inline = (
