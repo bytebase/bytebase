@@ -1,127 +1,91 @@
 package trino
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	trinoparser "github.com/bytebase/parser/trino"
+	"unicode/utf8"
+
+	"github.com/bytebase/omni/trino/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
 	base.RegisterSplitterFunc(storepb.Engine_TRINO, SplitSQL)
 }
 
-// SplitSQL splits the given SQL statement into multiple SQL statements.
-// Following TSQL's pattern, we try parser-based splitting first, then fall back to tokenizer.
+// SplitSQL splits the input into multiple SQL statements using the omni Trino
+// splitter, then converts each Segment into a base.Statement with the position
+// fields bytebase expects.
+//
+// Positions are computed in a single O(n) pass over the input.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	result, err := splitByParser(statement)
-	if err != nil {
-		// Fall back to tokenizer-based split
-		return splitByTokenizer(statement)
-	}
-	return result, nil
-}
-
-func splitByTokenizer(statement string) ([]base.Statement, error) {
-	t := tokenizer.NewTokenizer(statement)
-	return t.SplitStandardMultiSQL()
-}
-
-func splitByParser(statement string) ([]base.Statement, error) {
-	input := antlr.NewInputStream(statement)
-	lexer := trinoparser.NewTrinoLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := trinoparser.NewTrinoParser(stream)
-
-	// Remove default error listener and add our own
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parser.RemoveErrorListeners()
-	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	parser.AddErrorListener(parserErrorListener)
-
-	parser.BuildParseTrees = true
-	tree := parser.Parse()
-
-	if lexerErrorListener.Err != nil {
-		return nil, lexerErrorListener.Err
+	segs := parser.Split(statement)
+	if len(segs) == 0 {
+		return nil, nil
 	}
 
-	if parserErrorListener.Err != nil {
-		return nil, parserErrorListener.Err
-	}
-
-	var result []base.Statement
-	tokens := stream.GetAllTokens()
-	byteOffsetStart := 0
-
-	// Walk through all statements
-	for _, stmts := range tree.AllStatements() {
-		if stmts == nil {
-			continue
+	type pos struct{ line, col int }
+	positions := make(map[int]pos, len(segs)*3)
+	for _, seg := range segs {
+		positions[seg.ByteStart] = pos{}
+		positions[seg.ByteEnd] = pos{}
+		// Also collect the position immediately past the trailing ';' for the
+		// End column.
+		if seg.ByteEnd < len(statement) && statement[seg.ByteEnd] == ';' {
+			positions[seg.ByteEnd+1] = pos{}
 		}
+	}
 
-		// Get SingleStatement from StatementsContext
-		singleStmt := stmts.SingleStatement()
-		if singleStmt == nil {
-			continue
+	line, col := 1, 1
+	for i := 0; i <= len(statement); {
+		if _, need := positions[i]; need {
+			positions[i] = pos{line, col}
 		}
-
-		startToken := singleStmt.GetStart()
-		stopToken := singleStmt.GetStop()
-		if startToken == nil || stopToken == nil {
-			continue
+		if i == len(statement) {
+			break
 		}
-
-		// Find the actual start position
-		endIdx := stopToken.GetTokenIndex()
-
-		// Check if there's a semicolon after the statement and include it
-		finalEndIdx := endIdx
-		if endIdx+1 < len(tokens) && tokens[endIdx+1].GetTokenType() == trinoparser.TrinoLexerSEMICOLON_ {
-			finalEndIdx = endIdx + 1
+		r, size := utf8.DecodeRuneInString(statement[i:])
+		if r == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
 		}
+		i += size
+	}
 
-		// Calculate proper end position (1-based exclusive per proto spec)
-		endToken := tokens[finalEndIdx]
-
-		// Calculate byte range: include leading whitespace from where previous statement ended
-		rangeEnd := endToken.GetStop() + 1 // exclusive end
-
-		// Include leading whitespace in text by getting from original statement
-		// This ensures Start.Line - 1 == BaseLine for proper position mapping
-		text := statement[byteOffsetStart:rangeEnd]
-
-		// Calculate start position based on byteOffsetStart (including leading whitespace)
-		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
-
-		result = append(result, base.Statement{
-			Text: text,
-			Range: &storepb.Range{
-				Start: int32(byteOffsetStart),
-				End:   int32(rangeEnd),
-			},
+	stmts := make([]base.Statement, 0, len(segs))
+	for _, seg := range segs {
+		// bytebase historically returns Text including the trailing ';' delimiter
+		// (when present). omni's Segment.Text excludes it, so we re-attach when
+		// the byte after ByteEnd is ';'.
+		text := seg.Text
+		end := seg.ByteEnd
+		if end < len(statement) && statement[end] == ';' {
+			text = statement[seg.ByteStart : end+1]
+			end++
+		}
+		sp := positions[seg.ByteStart]
+		ep, ok := positions[end]
+		if !ok {
+			ep = positions[seg.ByteEnd]
+		}
+		stmts = append(stmts, base.Statement{
+			Text:  text,
+			Empty: seg.Empty(),
 			Start: &storepb.Position{
-				Line:   int32(startLine + 1),   // 1-based
-				Column: int32(startColumn + 1), // 1-based
+				Line:   int32(sp.line),
+				Column: int32(sp.col),
 			},
 			End: &storepb.Position{
-				Line:   int32(endToken.GetLine()),                                 // 1-based
-				Column: int32(endToken.GetColumn() + len(endToken.GetText()) + 1), // 1-based exclusive
+				Line:   int32(ep.line),
+				Column: int32(ep.col),
 			},
-			Empty: false,
+			Range: &storepb.Range{
+				Start: int32(seg.ByteStart),
+				End:   int32(end),
+			},
 		})
-
-		byteOffsetStart = rangeEnd
 	}
-
-	return result, nil
+	return stmts, nil
 }

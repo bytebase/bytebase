@@ -4,17 +4,33 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/trino"
+	"github.com/bytebase/omni/trino/analysis"
+	"github.com/bytebase/omni/trino/ast"
+	"github.com/bytebase/omni/trino/parser"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// querySpanExtractor extracts query spans from Trino statements.
-// This follows the TSQL pattern for consistency.
+// defaultTrinoSchema is the schema assumed for a table reference that omits the
+// schema qualifier. The legacy plugin used "public" for the data-access-control
+// resource format, and the query-span fixtures encode catalog.public.table; we
+// keep that so the resource keys are unchanged across the cutover.
+const defaultTrinoSchema = "public"
+
+// querySpanExtractor analyses a single Trino statement and produces a
+// base.QuerySpan: the set of physical columns it reads (expanded against
+// catalog metadata when available), the predicate columns it filters on, and
+// its statement classification.
+//
+// The extractor delegates table/column lineage to omni's analysis.GetQuerySpan,
+// then applies bytebase-specific post-processing:
+//   - default catalog/schema fill-in for bare table references (Trino's
+//     catalog.schema.table → base.ColumnResource Database/Schema/Table),
+//   - EXPLAIN unwrap so an EXPLAIN <query> still reports the tables it reads,
+//   - expansion of each accessed table to its columns via the metadata getter,
+//   - mapping omni's PredicateColumns onto the expanded source columns.
 type querySpanExtractor struct {
 	ctx context.Context
 
@@ -24,25 +40,11 @@ type querySpanExtractor struct {
 
 	gCtx base.GetQuerySpanContext
 
-	// CTEs for handling WITH clauses - following TSQL pattern
-	ctes []*base.PseudoTable
-
-	// Table sources for resolving columns - following TSQL pattern
-	tableSourcesFrom []base.TableSource
-
-	// Parse results - following TSQL pattern
-	sourceColumns    base.SourceColumnSet
-	predicateColumns base.SourceColumnSet
-
-	// Outer table sources for correlated subqueries
-	outerTableSources []base.TableSource
-
-	// Metadata cache
+	// metaCache memoises database metadata lookups within a single span.
 	metaCache map[string]*model.DatabaseMetadata
 }
 
 // newQuerySpanExtractor creates a new Trino query span extractor.
-// This follows the TSQL constructor pattern.
 func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		defaultDatabase:     defaultDatabase,
@@ -50,252 +52,258 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		metaCache:           make(map[string]*model.DatabaseMetadata),
-		sourceColumns:       make(base.SourceColumnSet),
-		predicateColumns:    make(base.SourceColumnSet),
 	}
 }
 
-// getQuerySpan extracts the query span for a Trino statement.
-// This method follows the TSQL pattern for consistency.
+// getQuerySpan extracts the query span for a single Trino statement.
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	q.sourceColumns = make(base.SourceColumnSet)
-	q.predicateColumns = make(base.SourceColumnSet)
-	q.tableSourcesFrom = []base.TableSource{}
-	q.ctes = []*base.PseudoTable{}
 
-	// Parse the statement
-	parseResults, err := ParseTrino(statement)
+	// Split into top-level statements; query-span analysis expects exactly one
+	// non-empty statement (matching the legacy behaviour).
+	stmts, err := SplitSQL(statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse Trino statement")
+		return nil, err
 	}
-
-	// Query span extraction expects exactly one statement
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
-	}
-
-	result := parseResults[0]
-
-	if result.Tree == nil {
-		return nil, errors.New("failed to parse Trino statement, no parse tree found")
-	}
-
-	// Get accessed tables for basic query type determination
-	accessTables := q.extractAccessedTables(result.Tree)
-	queryType, isExplainAnalyze := getQueryType(result.Tree)
-
-	// For non-SELECT queries, return basic span following TSQL pattern
-	if queryType != base.Select && queryType != base.Explain && queryType != base.SelectInfoSchema {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessTables,
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// Special handling for EXPLAIN following TSQL pattern
-	if isExplainAnalyze || queryType == base.Explain {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessTables,
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// Use ANTLR listener to extract source columns and results
-	listener := newTrinoQuerySpanListener(q)
-	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
-
-	if listener.err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(listener.err, &resourceNotFound) {
-			return &base.QuerySpan{
-				Type:          queryType,
-				SourceColumns: accessTables,
-				Results:       []base.QuerySpanResult{},
-				NotFoundError: resourceNotFound,
-			}, nil
+	nonEmpty := 0
+	var single string
+	for _, s := range stmts {
+		if s.Empty || strings.TrimSpace(s.Text) == "" {
+			continue
 		}
-		return nil, listener.err
+		nonEmpty++
+		single = s.Text
+	}
+	if nonEmpty == 0 {
+		return &base.QuerySpan{
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+	if nonEmpty > 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", nonEmpty)
 	}
 
-	// Expand table references to columns following TSQL pattern
-	fullSourceColumns := q.expandTableReferencesToColumns(accessTables)
+	// Resolve the statement type up front so non-SELECT statements short-circuit
+	// the way the legacy plugin did. EXPLAIN ANALYZE classifies as base.Select.
+	file, errs := parser.Parse(single)
+	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		return nil, errors.Errorf("failed to parse Trino statement: %s", single)
+	}
+	node := file.Stmts[0]
+	queryType, _ := getQueryType(node)
+	// Promote a user SELECT/EXPLAIN that references a system schema, matching the
+	// legacy containsSystemSchema heuristic.
+	switch queryType {
+	case base.Select, base.Explain:
+		if containsSystemSchema(single) {
+			queryType = base.SelectInfoSchema
+		}
+	default:
+	}
 
-	// Process predicate columns following TSQL pattern
-	fullPredicateColumns := q.expandPredicateColumns(fullSourceColumns)
+	// For statements that don't read columns into a result set (DML, DDL), the
+	// legacy plugin returned a basic span: the accessed tables as source
+	// columns, no per-column results. CREATE VIEW / EXPLAIN over a query still
+	// report the underlying tables.
+	readsResults := queryType == base.Select ||
+		queryType == base.Explain ||
+		queryType == base.SelectInfoSchema
 
-	// Expand SELECT * results following TSQL pattern
-	expandedResults := q.expandSelectAsteriskResults(listener.results, fullSourceColumns)
+	// Unwrap EXPLAIN so the inner query's tables are visible: omni's span walker
+	// only descends into SELECT/set-op at the top level.
+	spanInput := single
+	if explain, ok := node.(*parser.ExplainStmt); ok && explain.Statement != nil {
+		if inner := nodeText(single, explain.Statement); inner != "" {
+			spanInput = inner
+		}
+	}
 
-	return &base.QuerySpan{
+	omniSpan, err := analysis.GetQuerySpan(spanInput)
+	if err != nil {
+		return nil, err
+	}
+
+	tables := q.toTableResources(omniSpan)
+
+	if !readsResults {
+		// DML/DDL/unknown: report accessed tables as source columns (table-level,
+		// no column expansion), no results — mirroring the legacy basic span.
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: tables,
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
+	// Expand each accessed table to its columns via metadata. If metadata is
+	// unavailable (e.g. tests without a getter), fall back to the table-level
+	// resource so callers still see what was read.
+	fullSourceColumns, notFound := q.expandTablesToColumns(tables)
+
+	results := q.buildResults(omniSpan, fullSourceColumns)
+	predicateColumns := q.mapPredicateColumns(omniSpan, fullSourceColumns)
+
+	span := &base.QuerySpan{
 		Type:             queryType,
 		SourceColumns:    fullSourceColumns,
-		PredicateColumns: fullPredicateColumns,
-		Results:          expandedResults,
-	}, nil
+		PredicateColumns: predicateColumns,
+		Results:          results,
+	}
+	if notFound != nil {
+		span.NotFoundError = notFound
+	}
+	return span, nil
 }
 
-// expandPredicateColumns expands predicate columns to their fully qualified forms.
-// This follows the TSQL pattern for consistent predicate handling.
-func (q *querySpanExtractor) expandPredicateColumns(fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
-	fullPredicateColumns := make(base.SourceColumnSet)
+// toTableResources converts omni AccessTables into table-level
+// base.ColumnResource keys (Column empty), applying default catalog/schema.
+func (q *querySpanExtractor) toTableResources(span *analysis.QuerySpan) base.SourceColumnSet {
+	out := base.SourceColumnSet{}
+	if span == nil {
+		return out
+	}
+	for _, t := range span.AccessTables {
+		db := t.Catalog
+		if db == "" {
+			db = q.defaultDatabase
+		}
+		schema := t.Schema
+		if schema == "" {
+			schema = q.defaultSchema
+			if schema == "" {
+				schema = defaultTrinoSchema
+			}
+		}
+		out[base.ColumnResource{
+			Database: db,
+			Schema:   schema,
+			Table:    t.Table,
+		}] = true
+	}
+	return out
+}
 
-	for col := range q.predicateColumns {
-		if col.Column != "" {
-			// Find all fully qualified versions in source columns
-			for sourceCol := range fullSourceColumns {
-				if sourceCol.Column == col.Column {
-					// Match table if specified, otherwise accept any table
-					if col.Table == "" || col.Table == sourceCol.Table {
-						fullPredicateColumns[sourceCol] = true
+// expandTablesToColumns replaces each table-level resource with one resource per
+// column from the table's metadata. Tables whose metadata can't be resolved are
+// kept as table-level resources. The first ResourceNotFoundError encountered is
+// returned (non-fatally) so the caller can attach it to the span, matching the
+// legacy listener behaviour.
+func (q *querySpanExtractor) expandTablesToColumns(tables base.SourceColumnSet) (base.SourceColumnSet, *base.ResourceNotFoundError) {
+	out := make(base.SourceColumnSet)
+	var firstNotFound *base.ResourceNotFoundError
+	for resource := range tables {
+		if resource.Column != "" {
+			out[resource] = true
+			continue
+		}
+		columns, err := q.tableColumns(resource.Database, resource.Schema, resource.Table)
+		if err != nil {
+			var notFound *base.ResourceNotFoundError
+			if errors.As(err, &notFound) {
+				if firstNotFound == nil {
+					firstNotFound = notFound
+				}
+				// Keep the table-level resource so the read is still recorded.
+				out[resource] = true
+				continue
+			}
+			// Unexpected error: keep the table-level resource and move on.
+			out[resource] = true
+			continue
+		}
+		if len(columns) == 0 {
+			out[resource] = true
+			continue
+		}
+		for _, col := range columns {
+			out[base.ColumnResource{
+				Database: resource.Database,
+				Schema:   resource.Schema,
+				Table:    resource.Table,
+				Column:   col,
+			}] = true
+		}
+	}
+	return out, firstNotFound
+}
+
+// buildResults maps omni's per-output-column results onto base.QuerySpanResult.
+// Each result's SourceColumns is the subset of the expanded source columns that
+// share the result's column name (best-effort; omni does not resolve a select
+// item back to its owning relation).
+func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
+	if span == nil {
+		return []base.QuerySpanResult{}
+	}
+	results := make([]base.QuerySpanResult, 0, len(span.Results))
+	for _, r := range span.Results {
+		if r.Name == "*" {
+			// SELECT * : expand to every source column, ordered arbitrarily.
+			for col := range fullSourceColumns {
+				results = append(results, base.QuerySpanResult{
+					Name:          col.Column,
+					SourceColumns: base.SourceColumnSet{col: true},
+					IsPlainField:  true,
+				})
+			}
+			continue
+		}
+		sourceColumns := base.SourceColumnSet{}
+		for _, ref := range r.SourceColumns {
+			for sc := range fullSourceColumns {
+				if strings.EqualFold(sc.Column, ref.Column) {
+					if ref.Table == "" || strings.EqualFold(sc.Table, ref.Table) {
+						sourceColumns[sc] = true
 					}
 				}
 			}
 		}
+		results = append(results, base.QuerySpanResult{
+			Name:          r.Name,
+			SourceColumns: sourceColumns,
+			IsPlainField:  len(r.SourceColumns) == 1,
+		})
 	}
-
-	return fullPredicateColumns
+	return results
 }
 
-// expandSelectAsteriskResults expands SELECT * results into individual column results
-// This is similar to how TSQL handles SELECT * queries
-func (q *querySpanExtractor) expandSelectAsteriskResults(results []base.QuerySpanResult, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
-	var expandedResults []base.QuerySpanResult
-
-	for _, result := range results {
-		if result.SelectAsterisk && result.Name == "*" {
-			// Use table sources to get columns in the correct order (same as TSQL approach)
-			for _, tableSource := range q.tableSourcesFrom {
-				tableColumns := tableSource.GetQuerySpanResult()
-
-				for _, columnResult := range tableColumns {
-					// Only include columns that are in our source columns set
-					columnIncluded := false
-					for sourceCol := range columnResult.SourceColumns {
-						if _, exists := fullSourceColumns[sourceCol]; exists {
-							columnIncluded = true
-							break
-						}
-					}
-
-					if columnIncluded {
-						expandedResults = append(expandedResults, columnResult)
-					}
+// mapPredicateColumns maps omni's predicate column refs onto the expanded source
+// columns (matching on column name, and table when the ref carries one).
+func (q *querySpanExtractor) mapPredicateColumns(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
+	out := make(base.SourceColumnSet)
+	if span == nil {
+		return out
+	}
+	for _, ref := range span.PredicateColumns {
+		for sc := range fullSourceColumns {
+			if strings.EqualFold(sc.Column, ref.Column) {
+				if ref.Table == "" || strings.EqualFold(sc.Table, ref.Table) {
+					out[sc] = true
 				}
 			}
-		} else {
-			// Keep non-asterisk results as-is
-			expandedResults = append(expandedResults, result)
 		}
 	}
-
-	return expandedResults
+	return out
 }
 
-// expandTableReferencesToColumns expands table references to individual columns
-func (q *querySpanExtractor) expandTableReferencesToColumns(accessTables base.SourceColumnSet) base.SourceColumnSet {
-	fullSourceColumns := make(base.SourceColumnSet)
-
-	// First, copy all explicitly collected source columns
-	for col := range q.sourceColumns {
-		fullSourceColumns[col] = true
-	}
-
-	// Expand table references to columns
-	for resource := range accessTables {
-		// Check if this is a table reference (has no column set)
-		if resource.Column == "" {
-			// Get the database metadata to find all columns for this table
-			db, schema, table := resource.Database, resource.Schema, resource.Table
-			tableMeta, err := q.findTableSchema(db, schema, table)
-			if err == nil && tableMeta != nil {
-				// Add each column from the table as a source column with full path
-				for _, col := range tableMeta.GetProto().GetColumns() {
-					colResource := base.ColumnResource{
-						Database: db,
-						Schema:   schema,
-						Table:    table,
-						Column:   col.Name,
-					}
-					fullSourceColumns[colResource] = true
-				}
-			}
-		} else {
-			// This is already a column reference, keep it
-			fullSourceColumns[resource] = true
-		}
-	}
-
-	return fullSourceColumns
-}
-
-// extractAccessedTables analyzes the parse tree to find all table resources accessed
-func (q *querySpanExtractor) extractAccessedTables(tree antlr.Tree) base.SourceColumnSet {
-	resources := make(base.SourceColumnSet)
-	tableListener := &tableExtractorListener{
-		extractor: q,
-		resources: resources,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(tableListener, tree)
-	return resources
-}
-
-// getDatabaseMetadata fetches metadata for the given database.
-func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
-	if database == "" {
-		database = q.defaultDatabase
-	}
-
-	// Return cached metadata if available
-	if meta, ok := q.metaCache[database]; ok {
-		return meta, nil
-	}
-
-	// Skip if metadata function not provided (for testing)
-	if q.gCtx.GetDatabaseMetadataFunc == nil {
-		return nil, &base.ResourceNotFoundError{Database: &database}
-	}
-
-	// Fetch metadata using the provided function
-	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
-	if err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(err, &resourceNotFound) {
-			return nil, err
-		}
-		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
-	}
-
-	if meta == nil {
-		// Return empty metadata for testing purposes
-		emptyMeta := &model.DatabaseMetadata{}
-		q.metaCache[database] = emptyMeta
-		return emptyMeta, nil
-	}
-
-	// Cache and return the metadata
-	q.metaCache[database] = meta
-	return meta, nil
-}
-
-// addSourceColumn adds a column to the tracked source columns.
-func (q *querySpanExtractor) addSourceColumn(col base.ColumnResource) {
-	q.sourceColumns[col] = true
-}
-
-// findTableSchema locates a table or view and returns its metadata.
-func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.TableMetadata, error) {
-	// Get database metadata
+// tableColumns returns the column names of the given table or view, honouring
+// the case-sensitivity flag for object lookup.
+func (q *querySpanExtractor) tableColumns(db, schema, table string) ([]string, error) {
 	metadata, err := q.getDatabaseMetadata(db)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get schema metadata
 	schemaMeta := metadata.GetSchemaMetadata(schema)
+	if schemaMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range metadata.ListSchemaNames() {
+			if strings.EqualFold(name, schema) {
+				schemaMeta = metadata.GetSchemaMetadata(name)
+				break
+			}
+		}
+	}
 	if schemaMeta == nil {
 		return nil, &base.ResourceNotFoundError{
 			Database: &db,
@@ -303,75 +311,83 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 		}
 	}
 
-	// Look for table
-	var tableMeta *model.TableMetadata
-	if q.ignoreCaseSensitive {
-		for _, tblName := range schemaMeta.ListTableNames() {
-			if strings.EqualFold(tblName, name) {
-				tableMeta = schemaMeta.GetTable(tblName)
+	// Table first.
+	tableMeta := schemaMeta.GetTable(table)
+	if tableMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range schemaMeta.ListTableNames() {
+			if strings.EqualFold(name, table) {
+				tableMeta = schemaMeta.GetTable(name)
 				break
 			}
 		}
-	} else {
-		tableMeta = schemaMeta.GetTable(name)
 	}
-
 	if tableMeta != nil {
-		return tableMeta, nil
+		var cols []string
+		for _, col := range tableMeta.GetProto().GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return cols, nil
 	}
 
-	// Look for view
-	var viewMeta *storepb.ViewMetadata
-	if q.ignoreCaseSensitive {
-		for _, viewName := range schemaMeta.ListViewNames() {
-			if strings.EqualFold(viewName, name) {
-				viewMeta = schemaMeta.GetView(viewName)
+	// Then view.
+	viewMeta := schemaMeta.GetView(table)
+	if viewMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range schemaMeta.ListViewNames() {
+			if strings.EqualFold(name, table) {
+				viewMeta = schemaMeta.GetView(name)
 				break
 			}
 		}
-	} else {
-		viewMeta = schemaMeta.GetView(name)
 	}
-
 	if viewMeta != nil {
-		// For views, return a table metadata with columns from the view
-		tableMeta := &model.TableMetadata{}
-		// In a more complete implementation, we would add columns from the view here
-		return tableMeta, nil
+		var cols []string
+		for _, col := range viewMeta.GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return cols, nil
 	}
 
-	// Not found
 	return nil, &base.ResourceNotFoundError{
 		Database: &db,
 		Schema:   &schema,
-		Table:    &name,
+		Table:    &table,
 	}
 }
 
-// tableExtractorListener extracts table resources from the parse tree
-type tableExtractorListener struct {
-	parser.BaseTrinoParserListener
-
-	extractor *querySpanExtractor
-	resources base.SourceColumnSet
+// getDatabaseMetadata fetches (and caches) metadata for the given database.
+func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
+	if database == "" {
+		database = q.defaultDatabase
+	}
+	if meta, ok := q.metaCache[database]; ok {
+		return meta, nil
+	}
+	if q.gCtx.GetDatabaseMetadataFunc == nil {
+		return nil, &base.ResourceNotFoundError{Database: &database}
+	}
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
+	if err != nil {
+		var notFound *base.ResourceNotFoundError
+		if errors.As(err, &notFound) {
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
+	}
+	if meta == nil {
+		empty := &model.DatabaseMetadata{}
+		q.metaCache[database] = empty
+		return empty, nil
+	}
+	q.metaCache[database] = meta
+	return meta, nil
 }
 
-// EnterTableName is called when the parser enters a table name
-func (l *tableExtractorListener) EnterTableName(ctx *parser.TableNameContext) {
-	if ctx.QualifiedName() == nil {
-		return
+// nodeText returns the source substring covered by node n within statement, or
+// "" when the node's location is unusable.
+func nodeText(statement string, n ast.Node) string {
+	loc := ast.NodeLoc(n)
+	if loc.Start < 0 || loc.End > len(statement) || loc.Start >= loc.End {
+		return ""
 	}
-
-	db, schema, table := ExtractDatabaseSchemaName(
-		ctx.QualifiedName(),
-		l.extractor.defaultDatabase,
-		l.extractor.defaultSchema,
-	)
-
-	// Add a resource for the table
-	l.resources[base.ColumnResource{
-		Database: db,
-		Schema:   schema,
-		Table:    table,
-	}] = true
+	return statement[loc.Start:loc.End]
 }

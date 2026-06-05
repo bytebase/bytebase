@@ -9,14 +9,19 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_TRINO, validateQuery)
 }
 
-// validateQuery validates if the given SQL statement is valid for SQL editor.
-// We only allow read-only queries in the SQL editor.
-// Returns (canRunInReadOnly, returnsData, error):
-// - canRunInReadOnly: whether all queries can run in read-only mode
-// - returnsData: whether all queries return data
-// - error: parsing error if the statement is invalid
+// validateQuery reports whether the given statement is valid for the SQL editor,
+// which only permits read-only queries.
+//
+// It returns (canRunInReadOnly, returnsData, error):
+//   - canRunInReadOnly: every statement can run in read-only mode;
+//   - returnsData: every statement returns data;
+//   - error: a syntax error if the statement is invalid.
+//
+// EXPLAIN ANALYZE is special-cased exactly as the legacy plugin did: because it
+// executes the inner query, it is only accepted when getQueryType reports it as
+// read-only (base.Select); it then counts as read-only and data-returning.
 func validateQuery(statement string) (bool, bool, error) {
-	parseResults, err := ParseTrino(statement)
+	parsed, err := parseTrinoSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
@@ -24,29 +29,22 @@ func validateQuery(statement string) (bool, bool, error) {
 	allReadOnly := true
 	allReturnData := true
 
-	// Validate each statement
-	for _, result := range parseResults {
-		queryType, isAnalyze := getQueryType(result.Tree)
+	for _, p := range parsed {
+		queryType, isAnalyze := getQueryType(p.Node())
 
-		// If it's an EXPLAIN ANALYZE, the query will be executed
 		if isAnalyze {
-			// Only allow EXPLAIN ANALYZE for SELECT statements
+			// EXPLAIN ANALYZE runs the query. Only allow it when the type is a
+			// read-only SELECT; in that case it is read-only and returns data.
 			if queryType != base.Select {
 				return false, false, nil
 			}
-			// EXPLAIN ANALYZE SELECT is read-only and returns data
 			continue
 		}
 
-		// Determine if the statement is read-only
 		readOnly := queryType == base.Select ||
 			queryType == base.Explain ||
 			queryType == base.SelectInfoSchema
-
-		// Determine if the statement returns data
-		returnsData := queryType == base.Select ||
-			queryType == base.Explain ||
-			queryType == base.SelectInfoSchema
+		returnsData := readOnly
 
 		if !readOnly {
 			allReadOnly = false
@@ -54,8 +52,6 @@ func validateQuery(statement string) (bool, bool, error) {
 		if !returnsData {
 			allReturnData = false
 		}
-
-		// If any statement fails validation, return immediately
 		if !allReadOnly {
 			break
 		}

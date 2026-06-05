@@ -42,9 +42,14 @@ func TestDiagnose(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			// DIVERGENCE: the legacy ANTLR path appended a ';' to empty input and
+			// reported a syntax error on the lone ';'. The omni parser correctly
+			// treats empty / whitespace-only input as zero statements with no
+			// error — an empty editor buffer is not a syntax error. So no
+			// diagnostic is expected here now.
 			name:      "Empty statement",
 			sql:       "",
-			expectErr: true,
+			expectErr: false,
 		},
 	}
 
@@ -90,7 +95,7 @@ func TestParseSyntaxError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := parseTrinoStatement(tt.sql)
+			_, err := parseTrinoSQL(tt.sql)
 			if tt.expectErr {
 				assert.NotNil(t, err, "Expected syntax error")
 			} else {
