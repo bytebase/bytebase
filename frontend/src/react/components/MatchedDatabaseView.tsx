@@ -1,15 +1,13 @@
+import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
+import { DatabaseTargetDisplay } from "@/react/components/DatabaseTargetDisplay";
 import { useAppStore } from "@/react/stores/app";
 import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import {
-  getDatabaseEnvironment,
-  getDefaultPagination,
-  getInstanceResource,
-} from "@/utils";
+import { getDefaultPagination } from "@/utils";
 
 interface MatchedDatabaseViewProps {
   project: string;
@@ -19,6 +17,7 @@ interface MatchedDatabaseViewProps {
 
 interface SectionState {
   databases: Database[];
+  error?: string;
   loading: boolean;
 }
 
@@ -71,7 +70,7 @@ export function MatchedDatabaseView({
       const slice = names.slice(currentToken, next);
       if (slice.length === 0) return;
 
-      setMatchedDbs((prev) => ({ ...prev, loading: true }));
+      setMatchedDbs((prev) => ({ ...prev, error: undefined, loading: true }));
       try {
         await useAppStore.getState().batchGetOrFetchDatabases(slice);
         const newDbs = slice
@@ -82,8 +81,12 @@ export function MatchedDatabaseView({
           loading: false,
         });
         setMatchedToken(next);
-      } catch {
-        setMatchedDbs((prev) => ({ ...prev, loading: false }));
+      } catch (error) {
+        setMatchedDbs((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : String(error),
+          loading: false,
+        }));
       }
     },
     [pageSize]
@@ -92,7 +95,11 @@ export function MatchedDatabaseView({
   const loadMoreUnmatched = useCallback(
     async (token: string, currentDbs: Database[]) => {
       const names = matchedNamesRef.current;
-      setUnmatchedDbs((prev) => ({ ...prev, loading: true }));
+      setUnmatchedDbs((prev) => ({
+        ...prev,
+        error: undefined,
+        loading: true,
+      }));
       try {
         let unmatched: Database[] = [];
         let pageToken = token;
@@ -117,8 +124,12 @@ export function MatchedDatabaseView({
           loading: false,
         });
         setUnmatchedToken(pageToken);
-      } catch {
-        setUnmatchedDbs((prev) => ({ ...prev, loading: false }));
+      } catch (error) {
+        setUnmatchedDbs((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : String(error),
+          loading: false,
+        }));
       }
     },
     [pageSize, project]
@@ -164,7 +175,11 @@ export function MatchedDatabaseView({
             .map((n) => useAppStore.getState().getDatabaseByName(n))
             .filter((db) => isValidDatabaseName(db.name));
         }
-        setMatchedDbs({ databases: newMatchedDbs, loading: false });
+        setMatchedDbs({
+          databases: newMatchedDbs,
+          error: undefined,
+          loading: false,
+        });
         setMatchedToken(matchedNext);
 
         // Load unmatched
@@ -188,7 +203,11 @@ export function MatchedDatabaseView({
         const validUnmatched = unmatchedList.filter((db) =>
           isValidDatabaseName(db.name)
         );
-        setUnmatchedDbs({ databases: validUnmatched, loading: false });
+        setUnmatchedDbs({
+          databases: validUnmatched,
+          error: undefined,
+          loading: false,
+        });
         setUnmatchedToken(pageToken);
 
         // Auto-expand sections that have data
@@ -214,21 +233,24 @@ export function MatchedDatabaseView({
     () => [
       {
         name: "matched",
-        title: t("database-group.matched-database"),
+        title: t("database-group.matched-databases"),
         databases: matchedDbs.databases,
+        error: matchedDbs.error,
         sectionLoading: matchedDbs.loading,
-        total: matchedNames.length,
-        showTotal: true,
+        totalLabel: String(matchedNames.length),
         hasMore: hasMoreMatched,
         onLoadMore: () => loadMoreMatched(matchedToken, matchedDbs.databases),
       },
       {
         name: "unmatched",
-        title: t("database-group.unmatched-database"),
+        title: t("database-group.unmatched-databases"),
         databases: unmatchedDbs.databases,
+        error: unmatchedDbs.error,
         sectionLoading: unmatchedDbs.loading,
         hasMore: hasMoreUnmatched,
-        showTotal: false,
+        totalLabel: hasMoreUnmatched
+          ? t("database-group.unmatched-databases-preview")
+          : String(unmatchedDbs.databases.length),
         onLoadMore: () =>
           loadMoreUnmatched(unmatchedToken, unmatchedDbs.databases),
       },
@@ -283,7 +305,7 @@ export function MatchedDatabaseView({
         </p>
       )}
 
-      <div className="border p-2 rounded-sm">
+      <div className="border rounded-sm overflow-hidden">
         {sections.map((section) => {
           const isExpanded = expandedSections.has(section.name);
           const isEmpty = section.databases.length === 0;
@@ -292,7 +314,7 @@ export function MatchedDatabaseView({
             <div key={section.name}>
               <button
                 type="button"
-                className={`w-full flex items-center justify-between py-2 px-1 text-left text-sm ${
+                className={`w-full flex items-center justify-between py-2 px-2 text-left text-sm border-b border-control-border/60 last:border-b-0 ${
                   isEmpty
                     ? "cursor-default text-control-placeholder"
                     : "cursor-pointer hover:bg-control-bg"
@@ -301,58 +323,46 @@ export function MatchedDatabaseView({
                 onClick={() => toggleSection(section.name)}
               >
                 <div className="flex items-center gap-x-1">
-                  <svg
+                  <ChevronRight
                     className={`size-4 transition-transform ${
                       isExpanded ? "rotate-90" : ""
                     } ${isEmpty ? "text-control-border" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  />
                   <span>{section.title}</span>
                 </div>
-                {section.showTotal && (
+                {section.totalLabel && (
                   <span className="text-control-light text-xs">
-                    {section.total}
+                    {section.totalLabel}
                   </span>
                 )}
               </button>
 
               {isExpanded && !isEmpty && (
-                <div className="flex flex-col gap-y-2 w-full max-h-48 overflow-y-auto">
-                  <div>
+                <div className="flex flex-col gap-y-2 w-full max-h-48 overflow-y-auto border-b border-control-border/60 last:border-b-0">
+                  <div className="p-1">
                     {section.databases.map((database) => {
-                      const instance = getInstanceResource(database);
-                      const env = getDatabaseEnvironment(database);
-                      const dbName = database.name.split("/").pop();
-
                       return (
                         <div
                           key={database.name}
-                          className="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+                          className="w-full min-w-0 rounded-xs px-2 py-1.5 hover:bg-control-bg"
                         >
-                          <span className="truncate">{dbName}</span>
-                          <div className="flex-1 flex flex-row justify-end items-center shrink-0">
-                            <span className="text-sm">{instance.title}</span>
-                            <span className="ml-1 text-sm text-control-placeholder max-w-31 truncate">
-                              {env.title}
-                            </span>
-                          </div>
+                          <DatabaseTargetDisplay
+                            showEnvironment
+                            target={database.name}
+                          />
                         </div>
                       );
                     })}
                   </div>
+                  {section.error && (
+                    <div className="mx-2 rounded-sm border border-error bg-error/10 px-2 py-1 text-sm text-error">
+                      {t("database-group.load-database-failed")}
+                    </div>
+                  )}
                   {section.hasMore && (
                     <button
                       type="button"
-                      className="self-start px-2 py-1 text-sm text-accent hover:text-accent/80 disabled:opacity-50"
+                      className="self-start px-2 pb-2 text-sm text-accent hover:text-accent/80 disabled:opacity-50"
                       disabled={section.sectionLoading}
                       onClick={section.onLoadMore}
                     >
