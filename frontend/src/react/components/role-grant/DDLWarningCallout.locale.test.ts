@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import enReact from "@/react/locales/en-US.json";
-import esReact from "@/react/locales/es-ES.json";
-import jaReact from "@/react/locales/ja-JP.json";
-import viReact from "@/react/locales/vi-VN.json";
-import zhReact from "@/react/locales/zh-CN.json";
+import enReact from "@/locales/en-US.json";
+import esReact from "@/locales/es-ES.json";
+import jaReact from "@/locales/ja-JP.json";
+import viReact from "@/locales/vi-VN.json";
+import zhReact from "@/locales/zh-CN.json";
 
 // Locale-format guard for the new role-grant warning strings. Component
 // tests use a mock t() that doesn't see the real locale strings, so a typo

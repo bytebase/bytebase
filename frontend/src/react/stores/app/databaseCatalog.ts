@@ -32,95 +32,108 @@ const UNKNOWN_DATABASE = `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`;
 
 export const createDatabaseCatalogSlice: AppSliceCreator<
   DatabaseCatalogSlice
-> = (set, get) => ({
-  catalogsByName: {},
-  catalogRequests: {},
+> = (set, get) => {
+  const emptyDatabaseCatalogsByName = new Map<string, DatabaseCatalog>();
 
-  getDatabaseCatalog: (database) => {
-    if (isUnknownDatabase(database)) {
-      return emptyDatabaseCatalog(UNKNOWN_DATABASE);
-    }
-    return (
-      get().catalogsByName[catalogResourceName(database)] ??
-      emptyDatabaseCatalog(database)
-    );
-  },
-
-  getOrFetchDatabaseCatalog: async ({
-    database,
-    skipCache = false,
-    silent = false,
-  }) => {
-    if (isUnknownDatabase(database)) {
-      return emptyDatabaseCatalog(UNKNOWN_DATABASE);
-    }
+  const getEmptyDatabaseCatalog = (database: string) => {
     const key = catalogResourceName(database);
-    if (!skipCache) {
-      const cached = get().catalogsByName[key];
-      if (cached) return cached;
-      const pending = get().catalogRequests[key];
-      if (pending) return pending;
-    }
-    const request = databaseCatalogServiceClientConnect
-      .getDatabaseCatalog(
-        createProto(GetDatabaseCatalogRequestSchema, { name: key }),
-        { contextValues: createContextValues().set(silentContextKey, silent) }
-      )
-      .then((res) => {
-        set((state) => {
-          const { [key]: _, ...catalogRequests } = state.catalogRequests;
-          return {
-            catalogsByName: { ...state.catalogsByName, [res.name]: res },
-            catalogRequests,
-          };
-        });
-        return res;
-      })
-      .catch((err) => {
-        set((state) => {
-          const { [key]: _, ...catalogRequests } = state.catalogRequests;
-          return { catalogRequests };
-        });
-        throw err;
-      });
-    set((state) => ({
-      catalogRequests: { ...state.catalogRequests, [key]: request },
-    }));
-    return request;
-  },
+    const existing = emptyDatabaseCatalogsByName.get(key);
+    if (existing) return existing;
+    const catalog = emptyDatabaseCatalog(database);
+    emptyDatabaseCatalogsByName.set(key, catalog);
+    return catalog;
+  };
 
-  updateDatabaseCatalog: async (catalog) => {
-    const database = extractDatabaseResourceName(catalog.name).database;
-    const validCatalog = createProto(DatabaseCatalogSchema, {
-      name: catalog.name,
-      schemas: [],
-    });
-    // Drop schemas that no longer exist in the database metadata, but keep
-    // them all if metadata can't be loaded (e.g. missing permission) —
-    // mirrors the legacy Pinia behavior.
-    let metadata;
-    try {
-      metadata = await get().getOrFetchDatabaseMetadata({ database });
-    } catch {
-      metadata = undefined;
-    }
-    for (const schema of catalog.schemas) {
-      if (!metadata || metadata.schemas.some((s) => s.name === schema.name)) {
-        validCatalog.schemas.push(schema);
-      }
-    }
-    const response =
-      await databaseCatalogServiceClientConnect.updateDatabaseCatalog(
-        createProto(UpdateDatabaseCatalogRequestSchema, {
-          catalog: validCatalog,
-        })
+  return {
+    catalogsByName: {},
+    catalogRequests: {},
+
+    getDatabaseCatalog: (database) => {
+      const fallbackDatabase = isUnknownDatabase(database)
+        ? UNKNOWN_DATABASE
+        : database;
+      return (
+        get().catalogsByName[catalogResourceName(fallbackDatabase)] ??
+        getEmptyDatabaseCatalog(fallbackDatabase)
       );
-    set((state) => ({
-      catalogsByName: { ...state.catalogsByName, [response.name]: response },
-    }));
-    return response;
-  },
-});
+    },
+
+    getOrFetchDatabaseCatalog: async ({
+      database,
+      skipCache = false,
+      silent = false,
+    }) => {
+      if (isUnknownDatabase(database)) {
+        return getEmptyDatabaseCatalog(UNKNOWN_DATABASE);
+      }
+      const key = catalogResourceName(database);
+      if (!skipCache) {
+        const cached = get().catalogsByName[key];
+        if (cached) return cached;
+        const pending = get().catalogRequests[key];
+        if (pending) return pending;
+      }
+      const request = databaseCatalogServiceClientConnect
+        .getDatabaseCatalog(
+          createProto(GetDatabaseCatalogRequestSchema, { name: key }),
+          { contextValues: createContextValues().set(silentContextKey, silent) }
+        )
+        .then((res) => {
+          set((state) => {
+            const { [key]: _, ...catalogRequests } = state.catalogRequests;
+            return {
+              catalogsByName: { ...state.catalogsByName, [res.name]: res },
+              catalogRequests,
+            };
+          });
+          return res;
+        })
+        .catch((err) => {
+          set((state) => {
+            const { [key]: _, ...catalogRequests } = state.catalogRequests;
+            return { catalogRequests };
+          });
+          throw err;
+        });
+      set((state) => ({
+        catalogRequests: { ...state.catalogRequests, [key]: request },
+      }));
+      return request;
+    },
+
+    updateDatabaseCatalog: async (catalog) => {
+      const database = extractDatabaseResourceName(catalog.name).database;
+      const validCatalog = createProto(DatabaseCatalogSchema, {
+        name: catalog.name,
+        schemas: [],
+      });
+      // Drop schemas that no longer exist in the database metadata, but keep
+      // them all if metadata can't be loaded (e.g. missing permission) —
+      // mirrors the legacy Pinia behavior.
+      let metadata;
+      try {
+        metadata = await get().getOrFetchDatabaseMetadata({ database });
+      } catch {
+        metadata = undefined;
+      }
+      for (const schema of catalog.schemas) {
+        if (!metadata || metadata.schemas.some((s) => s.name === schema.name)) {
+          validCatalog.schemas.push(schema);
+        }
+      }
+      const response =
+        await databaseCatalogServiceClientConnect.updateDatabaseCatalog(
+          createProto(UpdateDatabaseCatalogRequestSchema, {
+            catalog: validCatalog,
+          })
+        );
+      set((state) => ({
+        catalogsByName: { ...state.catalogsByName, [response.name]: response },
+      }));
+      return response;
+    },
+  };
+};
 
 export const getTableCatalog = (
   catalog: DatabaseCatalog,

@@ -173,6 +173,7 @@ const mocks = vi.hoisted(() => {
     },
     i18nPlugin: {
       install: vi.fn(),
+      t: (key: string) => key,
     },
     routeNames: {
       databaseDetail: "workspace.project.database.detail",
@@ -308,7 +309,7 @@ vi.mock("@/plugins/highlight", () => ({
   default: mocks.highlightPlugin,
 }));
 
-vi.mock("@/plugins/i18n", () => ({
+vi.mock("@/react/i18n", () => ({
   default: mocks.i18nPlugin,
 }));
 

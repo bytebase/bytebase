@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import {
   type SemanticTypeSetting_SemanticType,
@@ -19,10 +19,10 @@ export const getSemanticTemplateList =
         const key = buildInSemantic.id.split(".").join("-");
         return create(SemanticTypeSetting_SemanticTypeSchema, {
           id: buildInSemantic.id,
-          title: t(
+          title: i18n.t(
             `dynamic.settings.sensitive-data.semantic-types.template.${key}.title`
           ),
-          description: t(
+          description: i18n.t(
             `dynamic.settings.sensitive-data.semantic-types.template.${key}.description`
           ),
           algorithm: buildInSemantic.algorithm,

@@ -60,7 +60,6 @@ export function RequestExportButton({
       drawerHost.openAccessGrantDrawer({
         query: statement,
         targets,
-        unmask: true,
         export: true,
       });
     } else {
@@ -99,7 +98,6 @@ export function RequestExportButton({
         <AccessGrantRequestDrawer
           query={statement}
           targets={targets}
-          unmask={true}
           export={true}
           onClose={() => setShowDrawer(false)}
         />

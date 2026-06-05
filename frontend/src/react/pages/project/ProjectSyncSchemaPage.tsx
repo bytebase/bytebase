@@ -948,7 +948,7 @@ function RawSQLEditor({
   const [localStatement, setLocalStatement] = useState(statement || "");
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Monaco editor instance type
-  const editorRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const editorRef = useRef<any>(null);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const localEngineRef = useRef(localEngine);
@@ -1696,7 +1696,7 @@ function SchemaDiffViewer({
   );
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Monaco diff editor instance
-  const editorRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const editorRef = useRef<any>(null);
   const [showModal, setShowModal] = useState(false);
   const layoutFrameRef = useRef<number | null>(null);
 
@@ -1865,7 +1865,7 @@ function MonacoEditorPanel({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Monaco editor instance
-  const editorRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const editorRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const contentRef = useRef(content);

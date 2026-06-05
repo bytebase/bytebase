@@ -25,9 +25,7 @@ type AppRouterLike = {
 // keep the ported guard + auth lifecycle a faithful translation (they redirect
 // by name), we resolve names to concrete paths via a `name -> path pattern`
 // index. The index is BUILT from the route table on the React (.tsx) side and
-// REGISTERED here (`setRouteNameIndex`) — this module stays a pure `.ts` so the
-// app store (also `.ts`, checked by vue-tsc) can import it without pulling the
-// `.tsx` route/page graph across the type-check project boundary.
+// REGISTERED here (`setRouteNameIndex`) — this module stays a pure `.ts` helper.
 
 // vue-router accepted strings, numbers and arrays as query/param values.
 type NavParams = Record<string, string | string[] | undefined>;
@@ -79,7 +77,18 @@ export function resolvePath(
     for (const [key, value] of Object.entries(options.params)) {
       if (value === undefined) continue;
       const single = Array.isArray(value) ? (value[0] ?? "") : value;
-      path = path.replace(`:${key}`, encodeURIComponent(single));
+      // Match `:key` only when NOT followed by another identifier char,
+      // so `:project` doesn't substring-match inside `:projectId` and
+      // turn `/projects/:projectId/...` into `/projects/<v>Id/...`. The
+      // collision shows up when callers merge in inherited route params
+      // (e.g. the SQL editor's `:project` clobbers the issue route's
+      // `:projectId`). React-router param names are restricted to
+      // `[A-Za-z0-9_]+`, so the negative lookahead is safe — no regex
+      // escape needed.
+      path = path.replace(
+        new RegExp(`:${key}(?![A-Za-z0-9_])`),
+        encodeURIComponent(single)
+      );
     }
   }
   if (options.query) {

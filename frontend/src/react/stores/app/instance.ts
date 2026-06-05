@@ -24,9 +24,9 @@ import {
   unknownEnvironment,
 } from "@/types/v1/environment";
 import {
+  unknownInstance as createUnknownInstance,
   isValidInstanceName,
   UNKNOWN_INSTANCE_NAME,
-  unknownInstance,
 } from "@/types/v1/instance";
 import { isValidProjectName } from "@/types/v1/project";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
@@ -73,6 +73,8 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
   set,
   get
 ) => {
+  const unknownInstance = createUnknownInstance();
+
   // Immutable bulk upsert into the by-name cache.
   const upsertInstances = (instances: Instance[]): Instance[] => {
     set((state) => {
@@ -145,8 +147,7 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       return request;
     },
 
-    getInstanceByName: (name) =>
-      get().instancesByName[name] ?? unknownInstance(),
+    getInstanceByName: (name) => get().instancesByName[name] ?? unknownInstance,
 
     getOrFetchInstanceByName: async (name, silent = false) => {
       const cached = get().instancesByName[name];
@@ -155,7 +156,7 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
         !isValidInstanceName(name) ||
         !hasWorkspacePermissionV2("bb.instances.get")
       ) {
-        return unknownInstance();
+        return unknownInstance;
       }
       // Propagate fetch failures (e.g. NotFound) to the caller — callers such
       // as `validateInstanceId` rely on a rejection to mean "id is available".

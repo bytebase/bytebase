@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/react/stores/app";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { isDescendantOf } from "@/utils/dom";
 import { extractSQLRowValuePlain } from "@/utils/v1/sql";
@@ -22,7 +23,11 @@ import {
   getColumnKey,
 } from "./binary-format";
 import {
-  isSingleCellSelected,
+  type CopyFormatter,
+  type CopyScope,
+  formatAsText,
+} from "./copy-formats";
+import {
   type SelectionState,
   toggleCellInSelection,
   toggleColumnInSelection,
@@ -92,8 +97,14 @@ export interface SelectionContext {
   toggleSelectColumn: (column: number) => void;
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
-  copySelected: () => void;
-  copyAll: () => void;
+  // Copy the result to the clipboard. `scope` "selected" uses the current
+  // selection (falling back to all rows for row-oriented formats); "all"
+  // copies every row. `format` chooses the rendering — `formatAsText` (plain
+  // TSV, mirrors the grid selection), `formatAsCSV`, or `formatAsSQL`.
+  copy: (scope: CopyScope, format: CopyFormatter) => void;
+  // Whether "copy as SQL (INSERT)" is meaningful: copying is allowed and the
+  // engine has a SQL INSERT form. Callers use it to show/hide the SQL option.
+  canCopyAsInsert: boolean;
 }
 
 const SelectionCtx = createContext<SelectionContext | null>(null);
@@ -112,9 +123,21 @@ export function useSelectionContext(): SelectionContext {
 // Combined provider — mounts all three contexts in nested order.
 // =============================================================================
 
+// Non-SQL engines have no meaningful INSERT form — hide "copy as INSERT".
+const NON_SQL_ENGINES = new Set<Engine>([
+  Engine.MONGODB,
+  Engine.REDIS,
+  Engine.ELASTICSEARCH,
+  Engine.COSMOSDB,
+  Engine.DYNAMODB,
+]);
+
 interface SQLResultViewProviderProps {
   dark?: boolean;
   disallowCopyingData?: boolean;
+  engine: Engine;
+  // Connected schema, used to qualify the generated INSERT's table name.
+  schema?: string;
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
   children: ReactNode;
@@ -132,6 +155,8 @@ interface SQLResultViewProviderProps {
 export function SQLResultViewProvider({
   dark = false,
   disallowCopyingData = false,
+  engine,
+  schema,
   rows,
   columns,
   children,
@@ -228,13 +253,6 @@ export function SQLResultViewProvider({
   );
 
   // ----- copy helpers -----
-  const escapeTSVValue = (val: string): string => {
-    if (val.includes("\t") || val.includes("\n") || val.includes('"')) {
-      return `"${val.replaceAll('"', '""')}"`;
-    }
-    return val;
-  };
-
   const getFormattedValue = useCallback(
     ({
       value,
@@ -269,69 +287,9 @@ export function SQLResultViewProvider({
     [columns, getBinaryFormat]
   );
 
-  const buildClipboardPayload = useCallback(
-    (state: SelectionState): string => {
-      if (isSingleCellSelected(state)) {
-        const row = rows[state.rows[0]];
-        if (!row) return "";
-        const cell = row.item.values[state.columns[0]];
-        if (!cell) return "";
-        return getFormattedValue({
-          value: cell,
-          colIndex: state.columns[0],
-          rowIndex: state.rows[0],
-        });
-      }
-
-      if (state.rows.length > 0) {
-        const columnNames = ["index", ...columns.map((c) => c.name)];
-        const lines: string[] = [];
-        for (const rowIndex of state.rows) {
-          const queryRow = rows[rowIndex]?.item;
-          if (!queryRow) continue;
-          const cells = queryRow.values
-            .map((cell, colIdx) =>
-              escapeTSVValue(
-                getFormattedValue({ value: cell, colIndex: colIdx, rowIndex })
-              )
-            )
-            .join("\t");
-          lines.push(`${rowIndex}\t${cells}`);
-        }
-        if (lines.length === 0) return "";
-        return `${columnNames.join("\t")}\n${lines.join("\n")}`;
-      }
-
-      if (state.columns.length > 0) {
-        const columnNames = state.columns.map((i) => columns[i]?.name ?? "");
-        const lines: string[] = [];
-        for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-          const cells = state.columns.map((columnIndex, colIdx) => {
-            const cell = rows[rowIdx].item.values[columnIndex];
-            if (!cell) return "";
-            return escapeTSVValue(
-              getFormattedValue({
-                value: cell,
-                rowIndex: rowIdx,
-                colIndex: state.columns[colIdx],
-              })
-            );
-          });
-          lines.push(cells.join("\t"));
-        }
-        if (lines.length === 0) return "";
-        return `${columnNames.join("\t")}\n${lines.join("\n")}`;
-      }
-
-      return "";
-    },
-    [columns, rows, getFormattedValue]
-  );
-
-  const copyToClipboard = useCallback(
-    async (state: SelectionState) => {
+  const writeTextToClipboard = useCallback(
+    async (payload: string) => {
       if (selectionDisabled || copying) return;
-      const payload = buildClipboardPayload(state);
       if (!payload) return;
       setCopying(true);
       try {
@@ -355,19 +313,43 @@ export function SQLResultViewProvider({
         requestAnimationFrame(() => setCopying(false));
       }
     },
-    [selectionDisabled, copying, buildClipboardPayload, t]
+    [selectionDisabled, copying, t]
   );
 
-  const copySelected = useCallback(() => {
-    void copyToClipboard(selectionState);
-  }, [copyToClipboard, selectionState]);
+  const canCopyAsInsert = !selectionDisabled && !NON_SQL_ENGINES.has(engine);
 
-  const copyAll = useCallback(() => {
-    void copyToClipboard({
-      rows: rows.map((_, i) => i),
-      columns: [],
-    });
-  }, [copyToClipboard, rows]);
+  // Unified copy: resolve the cell-value accessor + payload context once, then
+  // delegate rendering to the chosen formatter (formatAsText / CSV / SQL).
+  const copy = useCallback(
+    (scope: CopyScope, format: CopyFormatter) => {
+      if (selectionDisabled) return;
+      const payload = format({
+        scope,
+        selection: selectionState,
+        rows,
+        columns,
+        engine,
+        schema,
+        getFormattedValue: (rowIndex, colIndex) => {
+          const cell = rows[rowIndex]?.item.values[colIndex];
+          return cell
+            ? getFormattedValue({ value: cell, rowIndex, colIndex })
+            : "";
+        },
+      });
+      void writeTextToClipboard(payload);
+    },
+    [
+      selectionDisabled,
+      selectionState,
+      rows,
+      columns,
+      engine,
+      schema,
+      getFormattedValue,
+      writeTextToClipboard,
+    ]
+  );
 
   // Click outside the result-scroll buttons → deselect (mirrors Vue
   // global click listener in `selection-logic.ts`).
@@ -399,12 +381,12 @@ export function SQLResultViewProvider({
       if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        copySelected();
+        copy("selected", formatAsText);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [selectionDisabled, selectionState, deselect, copySelected]);
+  }, [selectionDisabled, selectionState, deselect, copy]);
 
   const selection = useMemo<SelectionContext>(
     () => ({
@@ -414,8 +396,8 @@ export function SQLResultViewProvider({
       toggleSelectColumn,
       toggleSelectCell,
       deselect,
-      copySelected,
-      copyAll,
+      copy,
+      canCopyAsInsert,
     }),
     [
       selectionState,
@@ -424,8 +406,8 @@ export function SQLResultViewProvider({
       toggleSelectColumn,
       toggleSelectCell,
       deselect,
-      copySelected,
-      copyAll,
+      copy,
+      canCopyAsInsert,
     ]
   );
 

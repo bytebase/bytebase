@@ -2,11 +2,11 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import enUS from "@/react/locales/en-US.json";
-import esES from "@/react/locales/es-ES.json";
-import jaJP from "@/react/locales/ja-JP.json";
-import viVN from "@/react/locales/vi-VN.json";
-import zhCN from "@/react/locales/zh-CN.json";
+import enUS from "@/locales/en-US.json";
+import esES from "@/locales/es-ES.json";
+import jaJP from "@/locales/ja-JP.json";
+import viVN from "@/locales/vi-VN.json";
+import zhCN from "@/locales/zh-CN.json";
 import type { DomRefSuggestion } from "../dom";
 import { createAgentStore, useAgentStore } from "../store/agent";
 

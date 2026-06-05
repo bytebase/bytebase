@@ -7,27 +7,32 @@ export type LocaleMessageObject = {
   [key: string]: string | LocaleMessageObject;
 };
 
+const localeModules = import.meta.glob("../locales/**/*.json", { eager: true });
+const rootMessages: Record<string, Record<string, unknown>> = {};
+const sectionMessages: Record<string, Record<string, unknown>> = {};
+
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
-export const mergedLocalMessage = Object.entries(
-  import.meta.glob("../locales/**/*.json", { eager: true })
-).reduce<LocaleMessageObject>((map, [key, value]) => {
+for (const [key, value] of Object.entries(localeModules)) {
   const name = key.slice(localPathPrefix.length, -5);
   const sections = name.split("/");
+  const messages = (value as LocaleModule).default;
   if (sections.length === 1) {
-    map[name] = merge((value as LocaleModule).default, map[name] || {});
+    rootMessages[name] = messages;
   } else {
-    const file = sections.slice(-1)[0];
+    const file = sections.at(-1) ?? "";
     const sectionsName = sections[0];
-    const existed = (map[file] || {}) as LocaleMessageObject;
-    map[file] = {
-      ...existed,
-      [sectionsName]: merge(
-        (value as LocaleModule).default,
-        existed[sectionsName] || {}
-      ),
-    };
+    sectionMessages[file] = sectionMessages[file] ?? {};
+    sectionMessages[file][sectionsName] = merge(
+      sectionMessages[file][sectionsName] ?? {},
+      messages
+    );
   }
+}
 
-  return map;
-}, {});
+export const mergedLocalMessage = Object.fromEntries(
+  Object.keys({ ...sectionMessages, ...rootMessages }).map((locale) => [
+    locale,
+    merge({}, sectionMessages[locale] ?? {}, rootMessages[locale] ?? {}),
+  ])
+) as LocaleMessageObject;

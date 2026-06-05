@@ -393,6 +393,7 @@ export function AccessPane() {
         <AccessGrantRequestDrawer
           query={pendingCreate?.query}
           unmask={pendingCreate?.unmask}
+          export={pendingCreate?.export}
           targets={pendingCreate?.targets}
           onClose={handleDrawerClose}
         />

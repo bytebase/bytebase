@@ -1,17 +1,19 @@
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@/plugins/i18n", () => ({
-  locale: { value: "en-US" },
-  t: (key: string, params?: Record<string, unknown>) => {
-    const map: Record<string, string> = {
-      "database.all": "All databases",
-      "common.schema": "Schema",
-      "common.table": "Table",
-      "project.masking-exemption.level": "level",
-    };
-    if (key === "common.n-more" && params?.n !== undefined)
-      return `+${params.n} more`;
-    return map[key] ?? key;
+vi.mock("@/react/i18n", () => ({
+  default: {
+    language: "en-US",
+    t: (key: string, params?: Record<string, unknown>) => {
+      const map: Record<string, string> = {
+        "database.all": "All databases",
+        "common.schema": "Schema",
+        "common.table": "Table",
+        "project.masking-exemption.level": "level",
+      };
+      if (key === "common.n-more" && params?.n !== undefined)
+        return `+${params.n} more`;
+      return map[key] ?? key;
+    },
   },
 }));
 

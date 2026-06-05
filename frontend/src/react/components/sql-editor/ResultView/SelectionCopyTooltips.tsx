@@ -1,7 +1,14 @@
-import { CopyIcon, InfoIcon } from "lucide-react";
+import { ChevronDownIcon, CopyIcon, InfoIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { useSelectionContext } from "./context";
+import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 
 // react-i18next's `Trans` wipes children when placeholder tags are empty
 // (`<action></action>` calls `React.cloneElement(component, {}, ...[])`,
@@ -29,7 +36,8 @@ export function SelectionCopyTooltips() {
   const { t } = useTranslation();
   const {
     state: { rows, columns },
-    copySelected,
+    copy,
+    canCopyAsInsert,
     deselect,
   } = useSelectionContext();
 
@@ -79,17 +87,54 @@ export function SelectionCopyTooltips() {
             );
           }
           if (token === "button") {
+            // Single split button: click copies as plain text; hovering the
+            // caret reveals CSV and, for SQL engines, SQL.
             return (
-              <Button
-                key={i}
-                size="sm"
-                variant="default"
-                className="h-6 px-2 gap-x-1"
-                onClick={copySelected}
-              >
-                <CopyIcon className="size-3" />
-                {t("common.copy")}
-              </Button>
+              <span key={i} className="inline-flex items-center">
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-6 px-2 gap-x-1 rounded-r-none"
+                  onClick={() => copy("selected", formatAsText)}
+                >
+                  <CopyIcon className="size-3" />
+                  {t("common.copy")}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    openOnHover
+                    delay={100}
+                    render={
+                      <Button
+                        size="sm"
+                        variant="default"
+                        aria-label={t("common.copy")}
+                        className="h-6 w-5 px-0 rounded-l-none border-l border-white/30"
+                      >
+                        <ChevronDownIcon className="size-3" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="min-w-0">
+                    <DropdownMenuItem
+                      onClick={() => copy("selected", formatAsCSV)}
+                      className="px-2 py-1 text-xs gap-x-1.5"
+                    >
+                      <CopyIcon className="size-3" />
+                      {t("sql-editor.copy-selected-rows-as-csv")}
+                    </DropdownMenuItem>
+                    {canCopyAsInsert && (
+                      <DropdownMenuItem
+                        onClick={() => copy("selected", formatAsSQL)}
+                        className="px-2 py-1 text-xs gap-x-1.5"
+                      >
+                        <CopyIcon className="size-3" />
+                        {t("sql-editor.copy-selected-rows-as-sql")}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </span>
             );
           }
           return <span key={i}>{token}</span>;

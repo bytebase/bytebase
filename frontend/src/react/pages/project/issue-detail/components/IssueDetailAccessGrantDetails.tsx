@@ -1,9 +1,7 @@
-import { Loader2 } from "lucide-react";
+import { Download, EyeOff, Loader2, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { Alert } from "@/react/components/ui/alert";
-import { Badge } from "@/react/components/ui/badge";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -114,13 +112,6 @@ export function IssueDetailAccessGrantDetails() {
               <span className="text-sm text-control-light">
                 {t("common.statement")}
               </span>
-              {accessGrant.unmask && (
-                <Alert
-                  variant="warning"
-                  showIcon={false}
-                  description={t("sql-editor.unmask-warning")}
-                />
-              )}
               <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
                 <pre className="whitespace-pre-wrap font-mono text-sm">
                   {accessGrant.query}
@@ -134,18 +125,10 @@ export function IssueDetailAccessGrantDetails() {
               <span className="text-sm text-control-light">
                 {t("common.permissions")}
               </span>
-              <div className="flex flex-wrap gap-2">
-                {accessGrant.unmask && (
-                  <Badge variant="secondary">
-                    {t("sql-editor.access-type-unmask")}
-                  </Badge>
-                )}
-                {accessGrant.export && (
-                  <Badge variant="secondary">
-                    {t("sql-editor.access-type-export")}
-                  </Badge>
-                )}
-              </div>
+              <GrantScopeCard
+                unmask={accessGrant.unmask}
+                exportAllowed={accessGrant.export}
+              />
             </div>
           )}
 
@@ -206,6 +189,50 @@ function IssueDetailAccessGrantTarget({ target }: { target: string }) {
           <span className="mx-1 shrink-0 text-gray-500">&gt;</span>
           <span className="truncate text-gray-800">{databaseName}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "This grant allows" card: a neutral header bar and one row per
+ * granted capability. The risk signal lives in the rows, not the
+ * chrome — the unmask row goes warning-toned (text + icon) while
+ * everything else stays grey. Built from `warning` / `control-*`
+ * tokens only; kept local for now, can be lifted when the request
+ * drawer's confirmation step adopts the same shape.
+ */
+function GrantScopeCard({
+  unmask,
+  exportAllowed,
+}: {
+  unmask: boolean;
+  exportAllowed: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="overflow-hidden rounded-sm border border-control-border">
+      <div className="flex items-center gap-x-2 border-b border-control-border bg-control-bg px-3 py-2 text-sm font-medium text-control">
+        <Shield className="size-4 shrink-0" />
+        <span>{t("issue.access-grant.this-grant-allows")}</span>
+      </div>
+      <div className="flex flex-col">
+        {unmask && (
+          // Unmask carries the entire sensitive-access signal —
+          // warning-toned text + icon make the verdict live in the
+          // row itself. Export and any future Tier-1 capability stay
+          // neutral; the contrast is the warning.
+          <div className="flex items-center gap-x-2 px-3 py-2 text-sm text-warning-hover">
+            <EyeOff className="size-4 shrink-0" />
+            <span>{t("issue.access-grant.unmask-data-in-results")}</span>
+          </div>
+        )}
+        {exportAllowed && (
+          <div className="flex items-center gap-x-2 px-3 py-2 text-sm">
+            <Download className="size-4 shrink-0 text-control-light" />
+            <span>{t("issue.access-grant.export-results-to-file")}</span>
+          </div>
+        )}
       </div>
     </div>
   );

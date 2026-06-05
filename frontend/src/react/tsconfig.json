@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.react.json",
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["../../src/*"]
-    }
-  },
-  "include": ["./**/*.ts", "./**/*.tsx", "./react-env.d.ts"]
-}

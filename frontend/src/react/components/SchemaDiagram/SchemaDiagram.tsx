@@ -159,8 +159,7 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
   useEffect(() => {
     if (selectedSchemaNames.length === 0) return;
     void driveLayout();
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    selectedSchemas;
+    void selectedSchemas;
   }, [selectedSchemas, selectedSchemaNames, driveLayout]);
 
   // External `layout` trigger.

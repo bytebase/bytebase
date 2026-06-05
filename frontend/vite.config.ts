@@ -1,14 +1,10 @@
 import { fileURLToPath, URL } from "node:url";
 import { transform as esbuildTransform } from "esbuild";
-import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import tailwindcss from "@tailwindcss/vite";
 import legacy from "@vitejs/plugin-legacy";
-import vue from "@vitejs/plugin-vue";
-import vueJsx from "@vitejs/plugin-vue-jsx";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
 import { resolve } from "path";
-import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vite";
 import { exportCspHashes } from "./vite-plugin-export-csp-hashes";
 
@@ -32,12 +28,7 @@ export default defineConfig({
       async transform(code, id) {
         // Both the main React tree (`src/react/...`) and the AI plugin's
         // co-located React subtree (`src/plugins/ai/react/...`) compile
-        // with React's automatic JSX runtime. The latter has to be
-        // listed explicitly — otherwise its `.tsx` files fall through
-        // to the `vueJsx()` plugin below and get compiled with Vue's
-        // JSX transform, which produces Vue VNodes and dies at runtime
-        // with "Cannot add property _ctx, object is not extensible"
-        // when Vue tries to attach `_ctx` to a frozen value.
+        // with React's automatic JSX runtime.
         if (!/\/(src\/react|src\/plugins\/ai\/react)\/.+\.tsx$/.test(id)) {
           return undefined;
         }
@@ -52,20 +43,7 @@ export default defineConfig({
         return { code: result.code, map: result.map || null };
       },
     },
-    vue(),
-    vueJsx({
-      include: /\.tsx$/,
-      exclude: /src\/(react|plugins\/ai\/react)\//,
-    }),
-    // https://github.com/intlify/vite-plugin-vue-i18n
-    VueI18nPlugin({
-      include: [resolve(__dirname, "src/locales/**")],
-      strictMessage: false,
-    }),
     tailwindcss(),
-    Components({
-      allowOverrides: true,
-    }),
     yaml(),
     ...(process.env.VITEST
       ? []
@@ -87,6 +65,14 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
+          const normalizedId = id.replaceAll("\\", "/");
+          if (
+            normalizedId.includes("/node_modules/vue/") ||
+            normalizedId.includes("/node_modules/@vue/") ||
+            normalizedId.includes("/node_modules/pev2/")
+          ) {
+            return "explain-visualizer-vue";
+          }
           // Monaco Editor - separate chunk
           if (id.includes("monaco-editor") || id.includes("monaco-vscode")) {
             return "monaco-editor";

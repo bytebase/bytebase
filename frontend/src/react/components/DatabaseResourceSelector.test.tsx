@@ -39,13 +39,10 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/plugins/i18n", () => ({
+vi.mock("@/react/i18n", () => ({
   default: {
-    global: {
-      t: (key: string) => key,
-    },
+    t: (key: string) => key,
   },
-  t: (key: string) => key,
 }));
 
 vi.mock("@/react/components/AdvancedSearch", () => ({
