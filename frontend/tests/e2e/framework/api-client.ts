@@ -508,6 +508,102 @@ export class BytebaseApiClient {
     return this.request("GET", `/v1/${project}`);
   }
 
+  // Access grants (just-in-time). The body is the AccessGrant proto directly
+  // (CreateAccessGrant binds `body: "access_grant"`). `creator` is derived from
+  // the client's own credentials so SearchMyAccessGrants (which filters to the
+  // caller's grants) finds it — create the grant via the user's own client
+  // (BytebaseApiClient.asUser) when the grant must belong to that user.
+  //
+  // The server returns status=ACTIVE immediately when no WORKSPACE_APPROVAL rule
+  // matches the request, or status=PENDING (+ an `issue`) when an approval rule
+  // applies. Tests that need an ACTIVE grant must assert on the returned status.
+  async createAccessGrant(
+    project: string,
+    grant: {
+      targets: string[];
+      query: string;
+      reason: string;
+      unmask?: boolean;
+      export?: boolean;
+      ttlSeconds?: number; // mapped to the `ttl` Duration ("Ns"); default 4h
+      expireTime?: string; // RFC3339; alternative to ttlSeconds
+    },
+  ): Promise<{
+    name: string;
+    status: string;
+    issue: string;
+    unmask: boolean;
+    export: boolean;
+    query: string;
+    targets: string[];
+  }> {
+    const accessGrant: Record<string, unknown> = {
+      creator: `users/${this.credentials?.email ?? ""}`,
+      targets: grant.targets,
+      query: grant.query,
+      reason: grant.reason,
+      unmask: grant.unmask ?? false,
+      export: grant.export ?? false,
+    };
+    if (grant.expireTime) {
+      accessGrant.expireTime = grant.expireTime;
+    } else {
+      accessGrant.ttl = `${grant.ttlSeconds ?? 4 * 3600}s`;
+    }
+    return this.request("POST", `/v1/${project}/accessGrants`, accessGrant);
+  }
+
+  // Search the caller's own access grants. `filter` uses AIP-160 syntax —
+  // e.g. `status == "ACTIVE" && export == true` or
+  // `target == "instances/x/databases/y" && query == "SELECT 1"`.
+  async searchMyAccessGrants(
+    project: string,
+    filter?: string,
+    pageSize = 100,
+  ): Promise<{
+    accessGrants: {
+      name: string;
+      status: string;
+      unmask: boolean;
+      export: boolean;
+      query: string;
+      targets: string[];
+      issue: string;
+    }[];
+    nextPageToken: string;
+  }> {
+    return this.request("POST", `/v1/${project}/accessGrants:searchMy`, {
+      parent: project,
+      pageSize,
+      ...(filter ? { filter } : {}),
+    });
+  }
+
+  // Revoke a grant. The REST custom-verb route (`:revoke`) is NOT mapped by the
+  // gateway (returns 405) — the frontend revokes via the Connect RPC, so we hit
+  // the Connect endpoint directly with a bearer token + protocol header.
+  async revokeAccessGrant(name: string): Promise<void> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Connect-Protocol-Version": "1",
+    };
+    if (this.token) headers["Authorization"] = `Bearer ${this.token}`;
+    // fetch() only rejects on network failure, NOT on HTTP 4xx/5xx — so we MUST
+    // check resp.ok, or a failed revoke (wrong header, permission, etag) would be
+    // reported as success and a grant would silently stay ACTIVE (breaking the
+    // BYT-9656 bug-lock setup and leaking grants in afterAll). Throw on non-OK so
+    // setup failures surface loudly; afterAll callers wrap this in best-effort try.
+    const resp = await fetch(
+      `${this.baseURL}/bytebase.v1.AccessGrantService/RevokeAccessGrant`,
+      { method: "POST", headers, body: JSON.stringify({ name }) },
+    );
+    if (!resp.ok) {
+      throw new Error(
+        `revokeAccessGrant(${name}) failed (${resp.status}): ${await resp.text()}`,
+      );
+    }
+  }
+
   // Review config
   // Upsert (create-or-update) a ReviewConfig. Mirrors the UI's
   // updateReviewConfig(allowMissing=true) call from
