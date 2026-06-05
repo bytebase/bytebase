@@ -1,0 +1,94 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ProjectTable } from "./ProjectTable";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/react/components/ui/ellipsis-text", () => ({
+  EllipsisText: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+
+const project = {
+  name: "projects/sample",
+  title: "Sample Project",
+  labels: {},
+} as Project;
+
+describe("ProjectTable", () => {
+  let container: HTMLDivElement;
+  let root: ReturnType<typeof createRoot>;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+    vi.clearAllMocks();
+  });
+
+  test("renders project ID and title as links when a row href is provided", () => {
+    act(() => {
+      root.render(
+        <ProjectTable
+          projectList={[project]}
+          getRowHref={() => "/projects/sample/issues"}
+        />
+      );
+    });
+
+    const links = [...container.querySelectorAll("a")];
+    expect(links).toHaveLength(2);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/projects/sample/issues",
+      "/projects/sample/issues",
+    ]);
+    expect(links.map((link) => link.textContent)).toEqual([
+      "sample",
+      "Sample Project",
+    ]);
+  });
+
+  test("does not call the row click handler when clicking row links", () => {
+    const onRowClick = vi.fn();
+
+    act(() => {
+      root.render(
+        <ProjectTable
+          projectList={[project]}
+          getRowHref={() => "/projects/sample/issues"}
+          onRowClick={onRowClick}
+        />
+      );
+    });
+
+    const links = [...container.querySelectorAll("a")];
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      link.addEventListener("click", (event) => event.preventDefault(), {
+        once: true,
+      });
+      link.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    }
+
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+});

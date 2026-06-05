@@ -598,6 +598,10 @@ export function ProjectsPage() {
     []
   );
 
+  const getProjectHref = useCallback((project: Project) => {
+    return router.resolve(projectIssuesRoute(project)).fullPath;
+  }, []);
+
   const handleProjectAction = useCallback(() => {
     fetchProjects(true);
   }, [fetchProjects]);
@@ -640,6 +644,7 @@ export function ProjectsPage() {
               onAction={handleProjectAction}
             />
           )}
+          getRowHref={getProjectHref}
           selectedProjectNames={Array.from(selectedNames)}
           onSelectedChange={(names) => setSelectedNames(new Set(names))}
           sortKey={sortKey}

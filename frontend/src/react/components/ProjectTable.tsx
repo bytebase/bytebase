@@ -57,6 +57,8 @@ export interface ProjectTableProps {
    */
   readonly showActions?: boolean;
   readonly renderActions?: RenderActions;
+  /** Native link target for each row, used by title anchors. */
+  readonly getRowHref?: (project: Project) => string;
   /** Currently-checked rows (selection mode). */
   readonly selectedProjectNames?: readonly string[];
   /** Selection-change callback. */
@@ -100,6 +102,7 @@ export function ProjectTable({
   showLabels = true,
   showActions = false,
   renderActions,
+  getRowHref,
   selectedProjectNames = [],
   onSelectedChange,
   sortKey,
@@ -145,6 +148,8 @@ export function ProjectTable({
   onRowClickRef.current = onRowClick;
   const renderActionsRef = useRef(renderActions);
   renderActionsRef.current = renderActions;
+  const getRowHrefRef = useRef(getRowHref);
+  getRowHrefRef.current = getRowHref;
 
   const handleSelectAll = useCallback(() => {
     const cb = onSelectedChangeRef.current;
@@ -251,6 +256,7 @@ export function ProjectTable({
               showLabels={showLabels}
               showActions={showActions}
               clickable={!!onRowClick}
+              rowHref={getRowHrefRef.current?.(project)}
               keyword={keyword}
               onToggleRow={handleToggleRow}
               onRowClick={handleRowClick}
@@ -272,6 +278,7 @@ interface ProjectRowViewProps {
   showLabels: boolean;
   showActions: boolean;
   clickable: boolean;
+  rowHref?: string;
   keyword: string;
   onToggleRow: (name: string) => void;
   onRowClick: (
@@ -290,6 +297,7 @@ const ProjectRowView = memo(function ProjectRowView({
   showLabels,
   showActions,
   clickable,
+  rowHref,
   keyword,
   onToggleRow,
   onRowClick,
@@ -299,6 +307,16 @@ const ProjectRowView = memo(function ProjectRowView({
   const resourceId = getProjectName(project.name);
   const isDefault = resourceId === "default";
   const titleText = project.title || resourceId;
+  const titleContent = (
+    <EllipsisText text={titleText} className="min-w-0">
+      <HighlightLabelText text={titleText} keyword={keyword} />
+    </EllipsisText>
+  );
+  const resourceIdContent = (
+    <EllipsisText text={resourceId}>
+      <HighlightLabelText text={resourceId} keyword={keyword} />
+    </EllipsisText>
+  );
   return (
     <TableRow
       className={cn(clickable && "cursor-pointer")}
@@ -328,15 +346,31 @@ const ProjectRowView = memo(function ProjectRowView({
         </TableCell>
       ) : null}
       <TableCell>
-        <EllipsisText text={resourceId}>
-          <HighlightLabelText text={resourceId} keyword={keyword} />
-        </EllipsisText>
+        {rowHref ? (
+          <a
+            href={rowHref}
+            className="block hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {resourceIdContent}
+          </a>
+        ) : (
+          resourceIdContent
+        )}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-x-2 min-w-0">
-          <EllipsisText text={titleText} className="min-w-0">
-            <HighlightLabelText text={titleText} keyword={keyword} />
-          </EllipsisText>
+          {rowHref ? (
+            <a
+              href={rowHref}
+              className="min-w-0 block hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {titleContent}
+            </a>
+          ) : (
+            titleContent
+          )}
           {project.state === State.DELETED ? (
             <Badge variant="warning" className="text-xs shrink-0">
               {t("common.archived")}
