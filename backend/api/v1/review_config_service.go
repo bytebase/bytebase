@@ -191,13 +191,12 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to marshal tag policy"))
 		}
-		payloadString := string(payloadBytes)
 		updatedPolicy, err := s.store.UpdatePolicy(ctx, &store.UpdatePolicyMessage{
 			ResourceType: policy.ResourceType,
 			Type:         storepb.Policy_TAG,
 			Resource:     policy.Resource,
 			Workspace:    policy.Workspace,
-			Payload:      &payloadString,
+			Payload:      new(string(payloadBytes)),
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update tag policy"))
