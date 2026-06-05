@@ -114,8 +114,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// only descends into SELECT/set-op at the top level.
 	spanInput := single
 	if explain, ok := node.(*parser.ExplainStmt); ok && explain.Statement != nil {
-		if inner := nodeText(single, explain.Statement); inner != "" {
-			spanInput = inner
+		if loc, ok := nodeSpan(explain.Statement); ok && loc.Start >= 0 && loc.End <= len(single) && loc.Start < loc.End {
+			spanInput = single[loc.Start:loc.End]
 		}
 	}
 
@@ -232,7 +232,7 @@ func (q *querySpanExtractor) expandTablesToColumns(tables base.SourceColumnSet) 
 // Each result's SourceColumns is the subset of the expanded source columns that
 // share the result's column name (best-effort; omni does not resolve a select
 // item back to its owning relation).
-func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
+func (*querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
 	if span == nil {
 		return []base.QuerySpanResult{}
 	}
@@ -251,13 +251,7 @@ func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceCo
 		}
 		sourceColumns := base.SourceColumnSet{}
 		for _, ref := range r.SourceColumns {
-			for sc := range fullSourceColumns {
-				if strings.EqualFold(sc.Column, ref.Column) {
-					if ref.Table == "" || strings.EqualFold(sc.Table, ref.Table) {
-						sourceColumns[sc] = true
-					}
-				}
-			}
+			addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table)
 		}
 		results = append(results, base.QuerySpanResult{
 			Name:          r.Name,
@@ -270,21 +264,25 @@ func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceCo
 
 // mapPredicateColumns maps omni's predicate column refs onto the expanded source
 // columns (matching on column name, and table when the ref carries one).
-func (q *querySpanExtractor) mapPredicateColumns(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
+func (*querySpanExtractor) mapPredicateColumns(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
 	out := make(base.SourceColumnSet)
 	if span == nil {
 		return out
 	}
 	for _, ref := range span.PredicateColumns {
-		for sc := range fullSourceColumns {
-			if strings.EqualFold(sc.Column, ref.Column) {
-				if ref.Table == "" || strings.EqualFold(sc.Table, ref.Table) {
-					out[sc] = true
-				}
-			}
-		}
+		addMatchingColumns(out, fullSourceColumns, ref.Column, ref.Table)
 	}
 	return out
+}
+
+// addMatchingColumns adds every column in fullSourceColumns whose name matches
+// refColumn (case-insensitively, and refTable when it is non-empty) to dst.
+func addMatchingColumns(dst, fullSourceColumns base.SourceColumnSet, refColumn, refTable string) {
+	for sc := range fullSourceColumns {
+		if strings.EqualFold(sc.Column, refColumn) && (refTable == "" || strings.EqualFold(sc.Table, refTable)) {
+			dst[sc] = true
+		}
+	}
 }
 
 // tableColumns returns the column names of the given table or view, honouring
@@ -384,10 +382,17 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 
 // nodeText returns the source substring covered by node n within statement, or
 // "" when the node's location is unusable.
-func nodeText(statement string, n ast.Node) string {
-	loc := ast.NodeLoc(n)
-	if loc.Start < 0 || loc.End > len(statement) || loc.Start >= loc.End {
-		return ""
+// nodeSpan returns the source byte range of an omni statement node. Most omni
+// node types expose Span() ast.Loc; *parser.QueryStmt carries its range on a
+// plain Loc field. (ast.NodeLoc only knows ast-package nodes — File/Identifier/
+// QualifiedName — not the parser-package statement nodes, so it cannot be used
+// to unwrap an EXPLAIN's inner statement.)
+func nodeSpan(n ast.Node) (ast.Loc, bool) {
+	if qs, ok := n.(*parser.QueryStmt); ok {
+		return qs.Loc, true
 	}
-	return statement[loc.Start:loc.End]
+	if sp, ok := n.(interface{ Span() ast.Loc }); ok {
+		return sp.Span(), true
+	}
+	return ast.Loc{}, false
 }

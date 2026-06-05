@@ -4,7 +4,6 @@ package trino
 
 import (
 	"strings"
-	"unicode/utf8"
 
 	"github.com/bytebase/omni/trino/ast"
 	"github.com/bytebase/omni/trino/parser"
@@ -126,7 +125,8 @@ func parseTrinoSQL(statement string) ([]*omniAST, error) {
 // from parsing an isolated statement segment are reported in the coordinates of
 // the original multi-statement script.
 func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
-	line, col := byteOffsetToPosition(statement, pe.Loc.Start)
+	pos := base.NewByteOffsetPositionMapper(statement).Position(pe.Loc.Start)
+	line, col := int(pos.Line), int(pos.Column)
 	if basePos != nil {
 		if line == 1 {
 			col = int(basePos.Column) + col - 1
@@ -141,24 +141,6 @@ func convertParseError(statement string, pe *parser.ParseError, basePos *storepb
 		Message:    pe.Error(),
 		RawMessage: pe.Msg,
 	}
-}
-
-// byteOffsetToPosition converts a 0-based byte offset to a 1-based line and
-// 1-based column (in runes).
-func byteOffsetToPosition(s string, offset int) (line, col int) {
-	line = 1
-	col = 1
-	for i := 0; i < offset && i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == '\n' {
-			line++
-			col = 1
-		} else {
-			col++
-		}
-		i += size
-	}
-	return line, col
 }
 
 // NormalizeTrinoIdentifier normalizes a Trino identifier. Trino folds unquoted

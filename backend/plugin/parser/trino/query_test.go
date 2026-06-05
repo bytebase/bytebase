@@ -67,8 +67,8 @@ func TestValidateQuery(t *testing.T) {
 		{
 			name:         "EXPLAIN ANALYZE UPDATE",
 			sql:          "EXPLAIN ANALYZE UPDATE users SET name = 'John' WHERE id = 1",
-			wantReadOnly: true, // EXPLAIN ANALYZE is always treated as read-only
-			wantData:     true, // EXPLAIN ANALYZE always returns data
+			wantReadOnly: false, // EXPLAIN ANALYZE EXECUTES the inner UPDATE, so it is NOT read-only
+			wantData:     false,
 			wantErr:      false,
 		},
 		{

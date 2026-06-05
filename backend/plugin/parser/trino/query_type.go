@@ -32,13 +32,14 @@ func getQueryType(node ast.Node) (base.QueryType, bool) {
 		return base.Select, false
 	case *parser.ExplainStmt:
 		if n.Analyze {
-			// EXPLAIN ANALYZE runs the inner query; treat it as the inner
-			// statement's effect for read-only purposes. The legacy plugin
-			// reported base.Select for EXPLAIN ANALYZE of any inner statement
-			// (it does return data), so we keep that — but flag it so callers
-			// can apply the "only allow EXPLAIN ANALYZE of read-only queries"
-			// rule in validateQuery.
-			return base.Select, true
+			// EXPLAIN ANALYZE EXECUTES the inner statement (oracle-confirmed:
+			// Trino 481 runs it), so its read-only-ness is the inner statement's,
+			// not unconditionally read-only. Report the inner type and flag
+			// isAnalyze so validateQuery rejects EXPLAIN ANALYZE of a non-SELECT
+			// (e.g. EXPLAIN ANALYZE UPDATE, which would otherwise run a write
+			// through the read-only SQL-editor gate).
+			innerType, _ := getQueryType(n.Statement)
+			return innerType, true
 		}
 		return base.Explain, false
 	case *parser.ShowStmt,

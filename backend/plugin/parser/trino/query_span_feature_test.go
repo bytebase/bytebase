@@ -22,9 +22,9 @@ import (
 // withoutMetadata builds an extractor with no metadata getter, so source tables
 // stay at the table level (Column empty); useful for asserting which physical
 // tables a query reads.
-func tablesFromSpan(t *testing.T, sql, defaultDatabase, defaultSchema string) base.SourceColumnSet {
+func tablesFromSpan(t *testing.T, sql, defaultDatabase string) base.SourceColumnSet {
 	t.Helper()
-	extractor := newQuerySpanExtractor(defaultDatabase, defaultSchema, base.GetQuerySpanContext{}, false)
+	extractor := newQuerySpanExtractor(defaultDatabase, "public", base.GetQuerySpanContext{}, false)
 	span, err := extractor.getQuerySpan(context.Background(), sql)
 	require.NoError(t, err)
 	return span.SourceColumns
@@ -77,7 +77,7 @@ func TestQuerySpan_PredicateExtraction(t *testing.T) {
 func TestQuerySpan_CTEHandling(t *testing.T) {
 	// A CTE name is not reported as a source table; the physical table the CTE
 	// reads from is.
-	sources := tablesFromSpan(t, "WITH temp_cte AS (SELECT id FROM users) SELECT id FROM temp_cte", "catalog1", "public")
+	sources := tablesFromSpan(t, "WITH temp_cte AS (SELECT id FROM users) SELECT id FROM temp_cte", "catalog1")
 
 	assert.Equal(t, 1, len(sources), "expected exactly one physical source table")
 	_, hasUsers := sources[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users"}]
@@ -88,13 +88,13 @@ func TestQuerySpan_CTEHandling(t *testing.T) {
 
 func TestQuerySpan_UnnestAndLateral(t *testing.T) {
 	// UNNEST over a column of a base table still reports the base table.
-	unnest := tablesFromSpan(t, "SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name)", "catalog1", "public")
+	unnest := tablesFromSpan(t, "SELECT id, t.name FROM users CROSS JOIN UNNEST(names) AS t(name)", "catalog1")
 	_, hasUsers := unnest[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users"}]
 	assert.True(t, hasUsers, "UNNEST query should still report base table users; got %v", unnest)
 
 	// A LATERAL derived table that selects only computed expressions reports the
 	// outer base table.
-	lateral := tablesFromSpan(t, "SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t", "catalog1", "public")
+	lateral := tablesFromSpan(t, "SELECT u.id, t.x FROM users u, LATERAL (SELECT id + 1 AS x) t", "catalog1")
 	_, hasUsersLateral := lateral[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users"}]
 	assert.True(t, hasUsersLateral, "LATERAL query should report base table users; got %v", lateral)
 }
@@ -105,7 +105,7 @@ func TestQuerySpan_ThreePartNaming(t *testing.T) {
 	// qualified.
 	sources := tablesFromSpan(t,
 		"SELECT a.id, b.id FROM catalog1.public.users a JOIN catalog2.public.orders b ON a.id = b.user_id",
-		"catalog3", "public")
+		"catalog3")
 
 	_, hasUsers := sources[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users"}]
 	_, hasOrders := sources[base.ColumnResource{Database: "catalog2", Schema: "public", Table: "orders"}]

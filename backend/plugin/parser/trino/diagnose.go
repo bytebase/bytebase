@@ -3,7 +3,6 @@ package trino
 import (
 	"context"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/bytebase/omni/trino/parser"
 
@@ -31,17 +30,14 @@ func init() {
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diags := parser.Diagnose(statement)
 	out := make([]base.Diagnostic, 0, len(diags))
+	mapper := base.NewByteOffsetPositionMapper(statement)
 	for _, d := range diags {
 		if isValidButUnimplementedStub(d.Msg) {
 			continue
 		}
-		line, col := byteOffsetToLineCol(statement, d.Loc.Start)
 		syntaxErr := &base.SyntaxError{
-			Position: &storepb.Position{
-				Line:   int32(line),
-				Column: int32(col),
-			},
-			Message: d.Msg,
+			Position: mapper.Position(d.Loc.Start),
+			Message:  d.Msg,
 		}
 		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
@@ -56,29 +52,4 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 func isValidButUnimplementedStub(msg string) bool {
 	return strings.HasPrefix(msg, "DESCRIBE ") &&
 		strings.HasSuffix(msg, "statement parsing is not yet supported")
-}
-
-// byteOffsetToLineCol returns the 1-based line and 1-based column for a byte
-// offset within the statement. It counts \n as line breaks. The 1-based column
-// matches the storepb.Position convention that ConvertSyntaxErrorToDiagnostic
-// expects (it subtracts 1 internally to land on the 0-based LSP offset).
-func byteOffsetToLineCol(s string, offset int) (int, int) {
-	if offset < 0 {
-		return 1, 1
-	}
-	if offset > len(s) {
-		offset = len(s)
-	}
-	line, col := 1, 1
-	for i := 0; i < offset; {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == '\n' {
-			line++
-			col = 1
-		} else {
-			col++
-		}
-		i += size
-	}
-	return line, col
 }
