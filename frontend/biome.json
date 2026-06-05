@@ -33,35 +33,14 @@
         "noSelfAssign": "error",
         "noUnsafeOptionalChaining": "error",
         "noUnusedVariables": "error",
-        "noVueReservedKeys": "error",
-        "noVueReservedProps": "error",
-        "noVueSetupPropsReactivityLoss": "error",
         "useIsNan": "error",
         "useValidForDirection": "error"
       },
       "nursery": {
         "noForIn": "error",
-        "noVueArrowFuncInWatch": "error",
-        "noVueVIfWithVFor": "error",
         "useArraySortCompare": "error",
         "useFind": "error",
-        "useScopedStyles": "error",
-        "useSpread": "error",
-        "useVueConsistentVBindStyle": "error",
-        "useVueConsistentVOnStyle": "error",
-        "useVueHyphenatedAttributes": "error",
-        "useVueValidTemplateRoot": "error",
-        "useVueValidVBind": "error",
-        "useVueValidVCloak": "error",
-        "useVueValidVElse": "error",
-        "useVueValidVElseIf": "error",
-        "useVueValidVHtml": "error",
-        "useVueValidVIf": "error",
-        "useVueValidVOn": "error",
-        "useVueValidVOnce": "error",
-        "useVueValidVPre": "error",
-        "useVueValidVText": "error",
-        "useVueVForKey": "error"
+        "useSpread": "error"
       },
       "style": {
         "noCommonJs": "error",
@@ -76,12 +55,13 @@
         "noAsyncPromiseExecutor": "error",
         "noConsole": {
           "level": "error",
-          "options": { "allow": ["warn", "error", "debug", "assert", "log"] }
+          "options": { "allow": ["warn", "error", "debug", "assert"] }
         },
         "noDebugger": "error",
         "noDeprecatedImports": "error",
         "noDoubleEquals": "error",
         "noDuplicateCase": "error",
+        "noEmptyInterface": "error",
         "noExplicitAny": "error",
         "noExtraNonNullAssertion": "error",
         "noGlobalIsNan": "error",
@@ -265,17 +245,6 @@
             "noVar": "error",
             "noWith": "off",
             "useGetterReturn": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["*.vue", "**/*.vue"],
-      "javascript": { "globals": [] },
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedVariables": "off"
           }
         }
       }

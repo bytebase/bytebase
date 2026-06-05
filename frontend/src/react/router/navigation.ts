@@ -25,9 +25,7 @@ type AppRouterLike = {
 // keep the ported guard + auth lifecycle a faithful translation (they redirect
 // by name), we resolve names to concrete paths via a `name -> path pattern`
 // index. The index is BUILT from the route table on the React (.tsx) side and
-// REGISTERED here (`setRouteNameIndex`) — this module stays a pure `.ts` so the
-// app store (also `.ts`, checked by vue-tsc) can import it without pulling the
-// `.tsx` route/page graph across the type-check project boundary.
+// REGISTERED here (`setRouteNameIndex`) — this module stays a pure `.ts` helper.
 
 // vue-router accepted strings, numbers and arrays as query/param values.
 type NavParams = Record<string, string | string[] | undefined>;

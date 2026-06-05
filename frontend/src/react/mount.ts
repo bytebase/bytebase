@@ -1,7 +1,7 @@
-// biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
-export type ReactDeps = any; // eslint-disable-line @typescript-eslint/no-explicit-any
-// biome-ignore lint/suspicious/noExplicitAny: Component type checked by tsconfig.react.json
-export type ReactComponent = (props: any) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Runtime module shape varies by mount surface
+export type ReactDeps = any;
+// biome-ignore lint/suspicious/noExplicitAny: Props vary by mounted page
+export type ReactComponent = (props: any) => any;
 
 let cachedDeps: ReactDeps | null = null;
 
@@ -31,13 +31,11 @@ export async function loadCoreDeps() {
 }
 
 // Wraps a React component in the shared StrictMode + i18n provider tree.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore -- React createElement types conflict with Vue JSX in vue-tsc
 export function buildTree(
   deps: ReactDeps,
   Component: ReactComponent,
   // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page
-  props?: any // eslint-disable-line @typescript-eslint/no-explicit-any
+  props?: any
 ) {
   return deps.createElement(
     deps.StrictMode,

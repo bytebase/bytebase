@@ -1,7 +1,6 @@
 import { buildTree, loadCoreDeps, type ReactComponent } from "@/react/mount";
 
-// import.meta.glob keeps vue-tsc from following into the .tsx file (it stays in
-// the React tsconfig project). Vite resolves the glob at build time.
+// Vite resolves the glob at build time and produces a lazy chunk.
 const appRootLoaders = import.meta.glob("./AppRoot.tsx");
 
 // Mounts the single React-Router application root (replaces the Vue

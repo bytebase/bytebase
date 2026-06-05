@@ -1,5 +1,5 @@
 declare module "pev2" {
-  const Plan: unknown;
+  const Plan: import("vue").Component;
 
   export { Plan };
 }
