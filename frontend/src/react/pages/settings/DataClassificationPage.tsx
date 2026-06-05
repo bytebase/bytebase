@@ -71,7 +71,7 @@ function MonacoJSONEditor({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Monaco editor instance type
-  const editorRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const editorRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 

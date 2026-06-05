@@ -1,7 +1,6 @@
 import { buildTree, loadCoreDeps, type ReactComponent } from "@/react/mount";
 
-// import.meta.glob keeps vue-tsc from following into the .tsx file. Vite
-// resolves the glob at build time and produces a lazy chunk.
+// Vite resolves the glob at build time and produces a lazy chunk.
 const reactAppLoaders = import.meta.glob("./ReactApp.tsx");
 
 async function loadReactApp(): Promise<ReactComponent> {

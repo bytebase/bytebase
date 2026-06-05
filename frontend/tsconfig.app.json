@@ -1,44 +1,29 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
     "env.d.ts",
     "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue"
+    "src/**/*.tsx"
   ],
   "exclude": [
     "src/**/__tests__/*",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx",
-    "src/react/**/*.tsx",
-    "src/plugins/ai/react/**/*.ts",
-    "src/plugins/ai/react/**/*.tsx",
-    "src/react/components/MarkdownEditor/index.ts",
-    "src/react/components/task-run-log/index.ts",
-    "src/react/components/monaco/index.ts",
-    "src/react/components/revision/index.ts",
-    "src/react/components/SchemaDiagram/index.ts",
-    "src/react/components/SchemaDiagram/Canvas/index.ts",
-    "src/react/components/SchemaDiagram/Canvas/composables/index.ts",
-    "src/react/components/SchemaDiagram/ER/index.ts",
-    "src/react/components/SchemaDiagram/Navigator/index.ts",
-    "src/react/components/SchemaDiagram/Navigator/TreeNode/index.ts",
-    "src/react/components/SchemaDiagram/common/index.ts",
-    "src/react/components/SchemaEditorLite/index.ts",
-    "src/react/components/SchemaEditorLite/Aside/index.ts",
-    "src/react/components/SchemaEditorLite/Panels/TableColumnEditor/index.ts",
-    "src/react/components/SchemaEditorLite/Panels/IndexesEditor/index.ts",
-    "src/react/components/SchemaEditorLite/Panels/PartitionsEditor/index.ts",
-    "src/react/components/SchemaEditorLite/Panels/TableList/index.ts",
-    "src/react/components/sql-editor/ResultView/index.ts",
-    "src/react/pages/project/plan-detail/index.ts"
+    "src/**/*.test.tsx"
   ],
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": ["react", "react-dom", "vite/client"],
     "composite": true,
+    "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
+    "strict": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]
     },
