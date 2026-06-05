@@ -65,7 +65,7 @@ describe("ProjectTable", () => {
     ]);
   });
 
-  test("does not call the row click handler when clicking row links", () => {
+  test("routes plain clicks on row links through the row click handler", () => {
     const onRowClick = vi.fn();
 
     act(() => {
@@ -81,12 +81,45 @@ describe("ProjectTable", () => {
     const links = [...container.querySelectorAll("a")];
     expect(links).toHaveLength(2);
     for (const link of links) {
-      link.addEventListener("click", (event) => event.preventDefault(), {
-        once: true,
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
       });
-      link.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
+      const notPrevented = link.dispatchEvent(event);
+      expect(notPrevented).toBe(false);
+    }
+
+    expect(onRowClick).toHaveBeenCalledTimes(2);
+    expect(onRowClick.mock.calls.map((call) => call[0])).toEqual([
+      project,
+      project,
+    ]);
+  });
+
+  test("keeps modified clicks on row links native", () => {
+    const onRowClick = vi.fn();
+
+    act(() => {
+      root.render(
+        <ProjectTable
+          projectList={[project]}
+          getRowHref={() => "#sample"}
+          onRowClick={onRowClick}
+        />
       );
+    });
+
+    const links = [...container.querySelectorAll("a")];
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      const modifiedNotPrevented = link.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          metaKey: true,
+        })
+      );
+      expect(modifiedNotPrevented).toBe(true);
     }
 
     expect(onRowClick).not.toHaveBeenCalled();

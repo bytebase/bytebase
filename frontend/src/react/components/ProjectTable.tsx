@@ -27,6 +27,7 @@ export type ProjectTableSortKey = "title";
 export type ProjectTableSortDirection = "asc" | "desc";
 
 type RenderActions = (project: Project) => ReactNode;
+type ProjectRowClickEvent = ReactMouseEvent<HTMLElement>;
 
 export interface ProjectTableProps {
   /** Rows to render. */
@@ -71,10 +72,7 @@ export interface ProjectTableProps {
    * Click handler. Receives the original event so callers can detect
    * `ctrl`/`meta` modifiers for "open in new tab".
    */
-  readonly onRowClick?: (
-    project: Project,
-    event: ReactMouseEvent<HTMLTableRowElement>
-  ) => void;
+  readonly onRowClick?: (project: Project, event: ProjectRowClickEvent) => void;
   readonly className?: string;
 }
 
@@ -171,7 +169,7 @@ export function ProjectTable({
   }, []);
 
   const handleRowClick = useCallback(
-    (project: Project, event: ReactMouseEvent<HTMLTableRowElement>) => {
+    (project: Project, event: ProjectRowClickEvent) => {
       onRowClickRef.current?.(project, event);
     },
     []
@@ -281,10 +279,7 @@ interface ProjectRowViewProps {
   rowHref?: string;
   keyword: string;
   onToggleRow: (name: string) => void;
-  onRowClick: (
-    project: Project,
-    event: ReactMouseEvent<HTMLTableRowElement>
-  ) => void;
+  onRowClick: (project: Project, event: ProjectRowClickEvent) => void;
   renderActions: (project: Project) => ReactNode;
 }
 
@@ -317,6 +312,20 @@ const ProjectRowView = memo(function ProjectRowView({
       <HighlightLabelText text={resourceId} keyword={keyword} />
     </EllipsisText>
   );
+  const handleRowLinkClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    onRowClick(project, event);
+  };
   return (
     <TableRow
       className={cn(clickable && "cursor-pointer")}
@@ -350,7 +359,7 @@ const ProjectRowView = memo(function ProjectRowView({
           <a
             href={rowHref}
             className="block hover:underline"
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleRowLinkClick}
           >
             {resourceIdContent}
           </a>
@@ -364,7 +373,7 @@ const ProjectRowView = memo(function ProjectRowView({
             <a
               href={rowHref}
               className="min-w-0 block hover:underline"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleRowLinkClick}
             >
               {titleContent}
             </a>

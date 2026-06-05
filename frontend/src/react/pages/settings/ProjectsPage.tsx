@@ -587,7 +587,7 @@ export function ProjectsPage() {
   }, []);
 
   const handleRowClick = useCallback(
-    (project: Project, e: React.MouseEvent) => {
+    (project: Project, e: React.MouseEvent<HTMLElement>) => {
       const route = router.resolve(projectIssuesRoute(project));
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
