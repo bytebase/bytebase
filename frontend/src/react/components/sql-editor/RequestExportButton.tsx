@@ -60,7 +60,6 @@ export function RequestExportButton({
       drawerHost.openAccessGrantDrawer({
         query: statement,
         targets,
-        unmask: true,
         export: true,
       });
     } else {
