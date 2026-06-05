@@ -46,6 +46,7 @@ function LeaveGuardBlocker() {
         snapshotLocation(currentLocation),
         {
           historyAction,
+          reset: () => blockerRef.current?.reset?.(),
           retry: () => blockerRef.current?.proceed?.(),
         }
       );

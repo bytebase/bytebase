@@ -16,7 +16,11 @@ type CapturedBeforeEachGuard = (
   to: { fullPath: string },
   from: { fullPath: string },
   next: (target?: boolean) => void,
-  options?: { historyAction?: "POP" | "PUSH" | "REPLACE"; retry?: () => void }
+  options?: {
+    historyAction?: "POP" | "PUSH" | "REPLACE";
+    reset?: () => void;
+    retry?: () => void;
+  }
 ) => void;
 
 const mocks = vi.hoisted(() => ({
@@ -432,6 +436,61 @@ describe("GroupsPage create group sheet", () => {
     });
 
     expect(mocks.routerPush).toHaveBeenCalledWith("/settings/users");
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("resets blocked route navigation after canceling the discard dialog", async () => {
+    await renderPage();
+
+    const createButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+    });
+
+    const titleInput = container.querySelector(
+      "input[maxlength='200']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(titleInput, "Developers");
+      await Promise.resolve();
+    });
+
+    const reset = vi.fn();
+    let blocked = false;
+    await act(async () => {
+      mocks.beforeEachGuard?.(
+        { fullPath: "/settings/users" },
+        { fullPath: "/settings/groups" },
+        (target?: boolean) => {
+          blocked = target === false;
+        },
+        { historyAction: "PUSH", reset }
+      );
+      await Promise.resolve();
+    });
+
+    expect(blocked).toBe(true);
+    expect(
+      container.querySelector("[data-testid='alert-dialog']")
+    ).not.toBeNull();
+
+    const alertDialog = container.querySelector(
+      "[data-testid='alert-dialog']"
+    ) as HTMLDivElement;
+    const cancelButton = [...alertDialog.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.cancel"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      cancelButton.click();
+      await Promise.resolve();
+    });
+
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(container.querySelector("[data-testid='sheet']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='alert-dialog']")).toBeNull();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.routerReplace).not.toHaveBeenCalled();
   });
 

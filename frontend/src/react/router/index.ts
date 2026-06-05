@@ -256,6 +256,7 @@ type GuardNext = (target?: boolean | RouteTarget) => void;
 export type NavigationHistoryAction = "POP" | "PUSH" | "REPLACE";
 export type BeforeEachGuardOptions = {
   historyAction?: NavigationHistoryAction;
+  reset?: () => void;
   retry?: () => void;
 };
 type BeforeEachGuard = (

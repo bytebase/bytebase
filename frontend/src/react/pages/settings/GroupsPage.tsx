@@ -455,6 +455,7 @@ interface CreateGroupSheetProps {
 type PendingLeaveTarget = {
   fullPath: string;
   historyAction: NavigationHistoryAction;
+  reset?: () => void;
   retry?: () => void;
 };
 
@@ -478,6 +479,12 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
     setPendingLeaveConfirm(false);
     setPendingLeaveTarget(null);
   }, []);
+
+  const stayOnCurrentPage = useCallback(() => {
+    const target = pendingLeaveTarget;
+    clearPendingLeave();
+    target?.reset?.();
+  }, [clearPendingLeave, pendingLeaveTarget]);
 
   const closeWithoutConfirm = useCallback(() => {
     setHasUnsavedChanges(false);
@@ -533,6 +540,7 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
       setPendingLeaveTarget({
         fullPath: to.fullPath,
         historyAction: options?.historyAction ?? "PUSH",
+        reset: options?.reset,
         retry: options?.retry,
       });
       setPendingLeaveConfirm(true);
@@ -575,7 +583,7 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
             return;
           }
           if (!nextOpen) {
-            clearPendingLeave();
+            stayOnCurrentPage();
           }
         }}
       >
@@ -584,7 +592,7 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
             {t("common.leave-without-saving")}
           </AlertDialogTitle>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={clearPendingLeave}>
+            <Button variant="outline" onClick={stayOnCurrentPage}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={discardChanges}>
