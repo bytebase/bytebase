@@ -432,6 +432,12 @@ func getRequestResource(request any) string {
 		return r.GetName()
 	case *v1pb.UpdateSettingRequest:
 		return r.GetSetting().GetName()
+	case *v1pb.CreateReviewConfigRequest:
+		return r.GetReviewConfig().GetName()
+	case *v1pb.UpdateReviewConfigRequest:
+		return r.GetReviewConfig().GetName()
+	case *v1pb.DeleteReviewConfigRequest:
+		return r.GetName()
 	default:
 	}
 	return ""
