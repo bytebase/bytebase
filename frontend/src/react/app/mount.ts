@@ -1,5 +1,3 @@
-import { watch } from "vue";
-import { locale } from "@/plugins/i18n";
 import { buildTree, loadCoreDeps, type ReactComponent } from "@/react/mount";
 
 // import.meta.glob keeps vue-tsc from following into the .tsx file. Vite
@@ -25,20 +23,8 @@ export async function mountReactApp(selector: string) {
 
   const [deps, ReactApp] = await Promise.all([loadCoreDeps(), loadReactApp()]);
 
-  // Sync initial locale before first paint.
-  if (deps.i18n.language !== locale.value) {
-    await deps.i18n.changeLanguage(locale.value);
-  }
-
   const root = deps.createRoot(container);
   root.render(buildTree(deps, ReactApp));
-
-  // Ongoing Vue→React locale sync for the long-lived React app.
-  watch(locale, async (next) => {
-    if (deps.i18n.language !== next) {
-      await deps.i18n.changeLanguage(next);
-    }
-  });
 
   return root;
 }

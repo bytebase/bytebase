@@ -1,11 +1,5 @@
-import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
-import type { MaybeRef } from "@/types";
-import {
-  isValidInstanceName,
-  languageOfEngineV1,
-  unknownInstance,
-} from "@/types";
+import { isValidInstanceName, unknownInstance } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed
 import type {
@@ -406,14 +400,6 @@ export const hasIndexSizeProperty = (
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(engine);
-};
-
-export const useInstanceV1EditorLanguage = (
-  instance: MaybeRef<Instance | InstanceResource | undefined>
-) => {
-  return computed(() => {
-    return languageOfEngineV1(unref(instance)?.engine);
-  });
 };
 
 export const isValidSpannerHost = (host: string) => {

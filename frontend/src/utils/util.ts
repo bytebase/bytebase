@@ -7,7 +7,6 @@ import utc from "dayjs/plugin/utc";
 import DOMPurify from "dompurify";
 import { escape as escapeHtml, escapeRegExp, round } from "lodash-es";
 import semver from "semver";
-import { type Ref, watchEffect } from "vue";
 import {
   formatAbsoluteDate,
   formatRelativeTime,
@@ -251,22 +250,6 @@ export function defer<T = unknown>() {
 
 export const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
-/**
- * Wrap a Ref as a Promise, will be resolved when the Ref turns to expectedValue
- * first time
- */
-export const wrapRefAsPromise = <T>(r: Ref<T>, expectedValue: T) => {
-  return new Promise<void>((resolve) => {
-    watchEffect(() => {
-      if (r.value === expectedValue) {
-        // Need not to care about resolving more than once
-        // Since `Promise` will handle this
-        resolve();
-      }
-    });
-  });
 };
 
 // emitStorageChangedEvent is used to notify the storage changed event

@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined, omit, omitBy } from "lodash-es";
-import { computed, reactive } from "vue";
 import { extractWorksheetConnection } from "@/react/lib/sqlEditorConnection";
 import { useAppStore } from "@/react/stores/app";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
@@ -9,11 +8,7 @@ import {
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  defaultSQLEditorTab,
-  useDynamicLocalStorage,
-  WebStorageHelper,
-} from "@/utils";
+import { defaultSQLEditorTab, WebStorageHelper } from "@/utils";
 import { getCurrentUserV1 } from "../../migration-helpers";
 import { extractUserEmail } from "../../v1";
 import {
@@ -24,6 +19,40 @@ import {
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
+// Plain localStorage access mirroring the serialization the legacy data was
+// written with by `useDynamicLocalStorage` (vueuse `useStorage`): plain JSON
+// for objects/arrays, and entries-array JSON for `Map`. `read` also persists
+// the default when the key is absent — matching vueuse's `writeDefaults`, which
+// `storage-migrate.ts` relies on running first.
+const isMap = (v: unknown): v is Map<unknown, unknown> => v instanceof Map;
+
+const serializeLegacy = (value: unknown): string =>
+  isMap(value) ? JSON.stringify([...value.entries()]) : JSON.stringify(value);
+
+const readLegacyStorage = <T>(key: string, defaults: T): T => {
+  const raw = localStorage.getItem(key);
+  if (raw == null) {
+    if (defaults != null) {
+      localStorage.setItem(key, serializeLegacy(defaults));
+    }
+    return defaults;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return isMap(defaults) ? (new Map(parsed) as T) : (parsed as T);
+  } catch {
+    return defaults;
+  }
+};
+
+const writeLegacyStorage = <T>(key: string, value: T): void => {
+  if (value == null) {
+    localStorage.removeItem(key);
+    return;
+  }
+  localStorage.setItem(key, serializeLegacy(value));
+};
+
 type PersistentTab = Pick<
   SQLEditorTab,
   "id" | "title" | "connection" | "mode" | "worksheet" | "status"
@@ -32,18 +61,17 @@ type PersistentTab = Pick<
 type LegacyStoredTab = PersistentTab & { statement?: string };
 
 export const migrateLegacyCache = async () => {
-  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
+  const userUID = extractUserEmail(getCurrentUserV1().name);
 
-  const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
+  const keyNamespace = `${LOCAL_STORAGE_KEY_PREFIX}.${userUID}`;
+  const tabIdListKey = `${keyNamespace}.tab-id-list`;
+  const tabIdListMapByProject = readLegacyStorage<Record<string, string[]>>(
+    tabIdListKey,
+    {}
   );
-  const tabIdListKey = computed(() => `${keyNamespace.value}.tab-id-list`);
-  const tabIdListMapByProject = useDynamicLocalStorage<
-    Record<string, string[]>
-  >(tabIdListKey, {});
 
   const getStorage = () => {
-    return new WebStorageHelper(keyNamespace.value);
+    return new WebStorageHelper(keyNamespace);
   };
 
   const keyForTab = (id: string) => {
@@ -58,13 +86,13 @@ export const migrateLegacyCache = async () => {
     if (!stored) {
       return undefined;
     }
-    const tab = reactive<SQLEditorTab>({
+    const tab: SQLEditorTab = {
       ...defaultSQLEditorTab(),
       // Ignore extended fields stored in localStorage since they are migrated
       // to extendedTabStore.
       ...omit(stored, EXTENDED_TAB_FIELDS),
       id,
-    });
+    };
     if (tab.mode !== DEFAULT_SQL_EDITOR_TAB_MODE) {
       // Do not enter ADMIN mode initially
       tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
@@ -86,19 +114,13 @@ export const migrateLegacyCache = async () => {
     return tab;
   };
 
-  const entries = [...Object.entries(tabIdListMapByProject.value)];
+  const entries = [...Object.entries(tabIdListMapByProject)];
   for (const [project, tabIds] of entries) {
-    const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
-      computed(
-        () =>
-          `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}.draft-tab-list`
-      ),
-      [],
-      localStorage
-    );
+    const draftTabListKey = `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID}.draft-tab-list`;
+    const draftTabList = readLegacyStorage<SQLEditorTab[]>(draftTabListKey, []);
 
     for (const tabId of tabIds) {
-      const exist = draftTabList.value.find((draft) => draft.id === tabId);
+      const exist = draftTabList.find((draft) => draft.id === tabId);
       if (exist) {
         continue;
       }
@@ -107,43 +129,34 @@ export const migrateLegacyCache = async () => {
       if (!tab) {
         continue;
       }
-      draftTabList.value.push(tab);
+      draftTabList.push(tab);
     }
+    writeLegacyStorage(draftTabListKey, draftTabList);
 
-    delete tabIdListMapByProject.value[project];
+    delete tabIdListMapByProject[project];
+    writeLegacyStorage(tabIdListKey, tabIdListMapByProject);
   }
 };
 
 export const migrateDraftsFromCache = async (project: string) => {
-  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
+  const userUID = extractUserEmail(getCurrentUserV1().name);
 
-  const viewStateByTab = useDynamicLocalStorage<
+  const viewStateByTab = readLegacyStorage<
     Map</* tab.id */ string, EditorPanelViewState>
-  >(
-    computed(() => `bb.sql-editor-tab-state.${userUID.value}`),
-    new Map()
-  );
+  >(`bb.sql-editor-tab-state.${userUID}`, new Map());
 
-  const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`
-  );
+  const keyNamespace = `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID}`;
 
-  const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
-    computed(() => `${keyNamespace.value}.draft-tab-list`),
-    [],
-    localStorage,
-    {
-      listenToStorageChanges: true,
-    }
-  );
+  const draftTabListKey = `${keyNamespace}.draft-tab-list`;
+  const draftTabList = readLegacyStorage<SQLEditorTab[]>(draftTabListKey, []);
 
-  const drafts = [...draftTabList.value];
+  const drafts = [...draftTabList];
   for (const draft of drafts) {
     const tab = {
       ...defaultSQLEditorTab(),
       ...omitBy(draft, isUndefined),
     };
-    const viewState = viewStateByTab.value.get(tab.id);
+    const viewState = viewStateByTab.get(tab.id);
     if ((!viewState || viewState.view === "CODE") && tab.statement) {
       // only store the draft with content
       try {
@@ -161,41 +174,37 @@ export const migrateDraftsFromCache = async (project: string) => {
         );
       } catch {}
     }
-    const index = draftTabList.value.findIndex((d) => d.id === draft.id);
+    const index = draftTabList.findIndex((d) => d.id === draft.id);
     if (index >= 0) {
-      draftTabList.value.splice(index, 1);
+      draftTabList.splice(index, 1);
+      writeLegacyStorage(draftTabListKey, draftTabList);
     }
   }
 };
 
 export const migrateTabViewState = (project: string) => {
-  const userUID = computed(() => extractUserEmail(getCurrentUserV1().name));
+  const userUID = extractUserEmail(getCurrentUserV1().name);
 
-  const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`
-  );
+  const keyNamespace = `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID}`;
 
-  const viewStateByTab = useDynamicLocalStorage<
+  const viewStateKey = `bb.sql-editor-tab-state.${userUID}`;
+  const viewStateByTab = readLegacyStorage<
     Map</* tab.id */ string, EditorPanelViewState>
-  >(
-    computed(() => `bb.sql-editor-tab-state.${userUID.value}`),
-    new Map()
+  >(viewStateKey, new Map());
+
+  const openTmpTabListKey = `${keyNamespace}.opening-tab-list`;
+  const openTmpTabList = readLegacyStorage<PersistentTab[]>(
+    openTmpTabListKey,
+    []
   );
 
-  const openTmpTabList = useDynamicLocalStorage<PersistentTab[]>(
-    computed(() => `${keyNamespace.value}.opening-tab-list`),
-    [],
-    localStorage,
-    {
-      listenToStorageChanges: false,
-    }
-  );
-
-  for (const openedTab of openTmpTabList.value) {
-    const viewState = viewStateByTab.value.get(openedTab.id);
+  for (const openedTab of openTmpTabList) {
+    const viewState = viewStateByTab.get(openedTab.id);
     if (viewState) {
       Object.assign(openedTab, { viewState });
     }
-    viewStateByTab.value.delete(openedTab.id);
+    viewStateByTab.delete(openedTab.id);
   }
+  writeLegacyStorage(openTmpTabListKey, openTmpTabList);
+  writeLegacyStorage(viewStateKey, viewStateByTab);
 };
