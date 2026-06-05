@@ -879,6 +879,41 @@ describe("useAppStore", () => {
     ).toBeUndefined();
   });
 
+  test("reuses stable fallback resources on cache misses", () => {
+    const store = createAppStore();
+
+    // These getters are tempting to use inside Zustand selectors. Returning a
+    // fresh proto on every cache miss makes the selector snapshot unstable in
+    // Zustand v5 / React useSyncExternalStore and can render-loop.
+    expect(store.getState().getProjectByName("projects/missing")).toBe(
+      store.getState().getProjectByName("projects/missing")
+    );
+    expect(store.getState().getProjectByName("projects/-")).toBe(
+      store.getState().getProjectByName("projects/-")
+    );
+    expect(
+      store.getState().getDatabaseByName("instances/i/databases/miss")
+    ).toBe(store.getState().getDatabaseByName("instances/i/databases/miss"));
+    expect(store.getState().getInstanceByName("instances/missing")).toBe(
+      store.getState().getInstanceByName("instances/missing")
+    );
+    expect(
+      store.getState().getDBGroupByName("projects/p/databaseGroups/miss")
+    ).toBe(store.getState().getDBGroupByName("projects/p/databaseGroups/miss"));
+    expect(store.getState().getRolloutByName("projects/p/rollouts/miss")).toBe(
+      store.getState().getRolloutByName("projects/p/rollouts/miss")
+    );
+    expect(store.getState().getEnvironmentByName("environments/missing")).toBe(
+      store.getState().getEnvironmentByName("environments/missing")
+    );
+    expect(
+      store.getState().getDatabaseCatalog("instances/i/databases/miss")
+    ).toBe(store.getState().getDatabaseCatalog("instances/i/databases/miss"));
+    expect(
+      store.getState().getDatabaseMetadata("instances/i/databases/miss")
+    ).toBe(store.getState().getDatabaseMetadata("instances/i/databases/miss"));
+  });
+
   test("deduplicates release fetches and clears failed requests", async () => {
     mocks.getRelease.mockResolvedValueOnce(releaseA);
     const store = createAppStore();

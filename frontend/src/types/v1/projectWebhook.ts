@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { WebhookType } from "../proto-es/v1/common_pb";
 import {
   Activity_Type,
@@ -26,7 +26,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
   return [
     {
       type: WebhookType.SLACK,
-      name: t("common.slack"),
+      name: i18n.t("common.slack"),
       urlPrefix: "https://hooks.slack.com/",
       urlPlaceholder: "https://hooks.slack.com/services/...",
       docUrl: "https://api.slack.com/messaging/webhooks",
@@ -34,7 +34,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.DISCORD,
-      name: t("common.discord"),
+      name: i18n.t("common.discord"),
       urlPrefix: "https://discord.com/api/webhooks",
       urlPlaceholder: "https://discord.com/api/webhooks/...",
       docUrl:
@@ -43,7 +43,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.TEAMS,
-      name: t("common.teams"),
+      name: i18n.t("common.teams"),
       urlPrefix: "",
       urlPlaceholder:
         "https://xxx.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/...",
@@ -53,7 +53,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.GOOGLE_CHAT,
-      name: t("common.google-chat"),
+      name: i18n.t("common.google-chat"),
       urlPrefix: "https://chat.googleapis.com",
       urlPlaceholder:
         "https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=...",
@@ -63,7 +63,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.DINGTALK,
-      name: t("common.dingtalk"),
+      name: i18n.t("common.dingtalk"),
       urlPrefix: "https://oapi.dingtalk.com",
       urlPlaceholder: "https://oapi.dingtalk.com/robot/...",
       docUrl:
@@ -72,7 +72,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.FEISHU,
-      name: t("common.feishu"),
+      name: i18n.t("common.feishu"),
       urlPrefix: "https://open.feishu.cn",
       urlPlaceholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
       docUrl:
@@ -81,7 +81,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.LARK,
-      name: t("common.lark"),
+      name: i18n.t("common.lark"),
       urlPrefix: "https://open.larksuite.com",
       urlPlaceholder: "https://open.larksuite.com/open-apis/bot/v2/hook/...",
       docUrl:
@@ -90,7 +90,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
     },
     {
       type: WebhookType.WECOM,
-      name: t("common.wecom"),
+      name: i18n.t("common.wecom"),
       urlPrefix: "https://qyapi.weixin.qq.com",
       urlPlaceholder: "https://qyapi.weixin.qq.com/cgi-bin/webhook/...",
       docUrl: "https://open.work.weixin.qq.com/help2/pc/14931",
@@ -110,38 +110,42 @@ export const projectWebhookV1ActivityItemList =
   (): ProjectWebhookV1ActivityItem[] => {
     return [
       {
-        title: t("project.webhook.activity-item.issue-creation.title"),
-        label: t("project.webhook.activity-item.issue-creation.label"),
+        title: i18n.t("project.webhook.activity-item.issue-creation.title"),
+        label: i18n.t("project.webhook.activity-item.issue-creation.label"),
         activity: Activity_Type.ISSUE_CREATED,
         supportDirectMessage: false,
       },
       {
-        title: t("project.webhook.activity-item.issue-approval-notify.title"),
-        label: t("project.webhook.activity-item.issue-approval-notify.label"),
+        title: i18n.t(
+          "project.webhook.activity-item.issue-approval-notify.title"
+        ),
+        label: i18n.t(
+          "project.webhook.activity-item.issue-approval-notify.label"
+        ),
         activity: Activity_Type.ISSUE_APPROVAL_REQUESTED,
         supportDirectMessage: true,
       },
       {
-        title: t("project.webhook.activity-item.issue-sent-back.title"),
-        label: t("project.webhook.activity-item.issue-sent-back.label"),
+        title: i18n.t("project.webhook.activity-item.issue-sent-back.title"),
+        label: i18n.t("project.webhook.activity-item.issue-sent-back.label"),
         activity: Activity_Type.ISSUE_SENT_BACK,
         supportDirectMessage: true,
       },
       {
-        title: t("project.webhook.activity-item.issue-approved.title"),
-        label: t("project.webhook.activity-item.issue-approved.label"),
+        title: i18n.t("project.webhook.activity-item.issue-approved.title"),
+        label: i18n.t("project.webhook.activity-item.issue-approved.label"),
         activity: Activity_Type.ISSUE_APPROVED,
         supportDirectMessage: true,
       },
       {
-        title: t("project.webhook.activity-item.pipeline-failed.title"),
-        label: t("project.webhook.activity-item.pipeline-failed.label"),
+        title: i18n.t("project.webhook.activity-item.pipeline-failed.title"),
+        label: i18n.t("project.webhook.activity-item.pipeline-failed.label"),
         activity: Activity_Type.PIPELINE_FAILED,
         supportDirectMessage: false,
       },
       {
-        title: t("project.webhook.activity-item.pipeline-completed.title"),
-        label: t("project.webhook.activity-item.pipeline-completed.label"),
+        title: i18n.t("project.webhook.activity-item.pipeline-completed.title"),
+        label: i18n.t("project.webhook.activity-item.pipeline-completed.label"),
         activity: Activity_Type.PIPELINE_COMPLETED,
         supportDirectMessage: false,
       },

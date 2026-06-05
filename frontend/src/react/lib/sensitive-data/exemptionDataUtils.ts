@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import type {
   AccessUser,
   ClassificationLevel,
@@ -64,7 +64,7 @@ export const operatorDisplayMap: Record<string, string> = {
 function listItems(items: string[]): string {
   const shown = items.slice(0, 2).join(", ");
   const rest = items.length - 2;
-  return rest > 0 ? `${shown} ${t("common.n-more", { n: rest })}` : shown;
+  return rest > 0 ? `${shown} ${i18n.t("common.n-more", { n: rest })}` : shown;
 }
 
 export function generateGrantTitle(grant: ExemptionGrant): string {
@@ -72,7 +72,7 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   const level = grant.classificationLevel;
 
   const levelSuffix = level
-    ? `, ${t("project.masking-exemption.level")} ${operatorDisplayMap[level.operator] ?? level.operator} ${level.value}`
+    ? `, ${i18n.t("project.masking-exemption.level")} ${operatorDisplayMap[level.operator] ?? level.operator} ${level.value}`
     : "";
 
   const realResources = resources.filter((r) => {
@@ -82,7 +82,7 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
 
   // No specific databases
   if (realResources.length === 0) {
-    return `${t("database.all")}${levelSuffix}`;
+    return `${i18n.t("database.all")}${levelSuffix}`;
   }
 
   // Collect unique database names
@@ -135,7 +135,7 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
 
     // No tables — show schema keyword
     if (tables.length === 0) {
-      return `${dbName} (${t("common.schema").toLowerCase()} ${schema})${levelSuffix}`;
+      return `${dbName} (${i18n.t("common.schema").toLowerCase()} ${schema})${levelSuffix}`;
     }
 
     // Multiple tables under one schema — colon list and stop
@@ -162,7 +162,7 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   // No schema, single table — continue to columns
   const table = tables[0];
   if (columns.length === 0) {
-    return `${dbName} (${t("common.table").toLowerCase()} ${table})${levelSuffix}`;
+    return `${dbName} (${i18n.t("common.table").toLowerCase()} ${table})${levelSuffix}`;
   }
   if (columns.length === 1) {
     return `${dbName} (${table}.${columns[0]})${levelSuffix}`;

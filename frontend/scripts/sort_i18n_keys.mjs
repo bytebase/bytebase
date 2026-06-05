@@ -4,10 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const LOCALE_ROOTS = [
-  resolve(ROOT, "src/locales"),
-  resolve(ROOT, "src/react/locales"),
-];
+const LOCALE_ROOTS = [resolve(ROOT, "src/locales")];
 
 export function sortObjectKeys(value) {
   if (Array.isArray(value) || value === null || typeof value !== "object") {

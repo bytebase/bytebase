@@ -1,5 +1,6 @@
-import type { RouteObject } from "react-router-dom";
+import { matchRoutes, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import { WORKSPACE_ROUTE_404 } from "@/react/router/handles";
 import { routes } from "./routes";
 
 // Guardrail for the "blank body" route bug class. During the Vue→React router
@@ -68,5 +69,30 @@ function collectBareLeaves(
 describe("react route table reachability", () => {
   it("every leaf route renders something or redirects (no blank-body bare leaves)", () => {
     expect(collectBareLeaves(routes)).toEqual([]);
+  });
+
+  it.each([
+    "/projects/db333/rollouts/605",
+    "/sql-editor/does-not-exist",
+  ])("redirects unknown URL %s to the dedicated 404 route", async (path) => {
+    const matched = matchRoutes(routes, path);
+    const leafRoute = matched?.at(-1)?.route;
+    const leafHandle = leafRoute?.handle as { name?: string } | undefined;
+
+    expect(leafHandle?.name).toBe(WORKSPACE_ROUTE_404);
+    expect(leafRoute?.loader).toBeTypeOf("function");
+
+    const response = await (
+      leafRoute?.loader as (args: {
+        request: Request;
+        params: Record<string, string>;
+      }) => Promise<Response> | Response
+    )({
+      request: new Request(`http://localhost${path}`),
+      params: {},
+    });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/404");
   });
 });

@@ -5,7 +5,7 @@ import {
   type StreamRequest,
   type UnaryRequest,
 } from "@connectrpc/connect";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_403 } from "@/react/router/handles";
 import { buildPermissionDeniedRouteQuery } from "@/react/router/permissionDenied";
@@ -60,8 +60,8 @@ const handleUnauthenticatedFailure = ({
     pushNotification({
       module: "bytebase",
       style: "WARN",
-      title: t("auth.token-expired-title"),
-      description: t("auth.token-expired-description"),
+      title: i18n.t("auth.token-expired-title"),
+      description: i18n.t("auth.token-expired-description"),
     });
   }
 };

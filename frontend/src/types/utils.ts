@@ -1,6 +1,4 @@
-import type { Ref } from "vue";
-
-export type MaybeRef<T> = Ref<T> | T;
+export type MaybeRef<T> = { value: T } | T;
 
 export type ValidatedMessage = {
   type: "warning" | "error";
