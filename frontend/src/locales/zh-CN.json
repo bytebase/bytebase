@@ -776,10 +776,12 @@
       "self": "条件"
     },
     "delete-group": "删除数据库分组 {{name}}",
-    "matched-database": "匹配的数据库",
+    "load-database-failed": "加载数据库失败",
+    "matched-databases": "匹配的数据库",
     "no-matched-databases": "没有匹配的数据库",
     "select": "选择数据库分组",
-    "unmatched-database": "未匹配的数据库"
+    "unmatched-databases": "未匹配的数据库",
+    "unmatched-databases-preview": "预览"
   },
   "db": {
     "catalog": {

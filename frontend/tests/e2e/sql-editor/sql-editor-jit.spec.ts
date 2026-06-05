@@ -5,8 +5,9 @@
 //     access" when project.allowJustInTimeAccess is on AND the missing
 //     permission is exactly bb.sql.select (the JIT path).
 //   - L4 ACCESS pane shows the "Request access" CTA when JIT is enabled.
-//   - L5 AccessGrantRequestDrawer renders Databases / Statement / Expiration
-//     / Reason fields when opened from the pane.
+//   - L5 AccessGrantRequestDrawer renders Databases / Statement / Unmask /
+//     Export / Expiration / Reason fields when opened from the pane
+//     (Unmask + Export capability sections added by PRs #20491/#20487).
 //   - L6 ACCESS gutter tab appears only while JIT is on.
 //   - H1 Gutter tab count flips between 3 (no JIT) and 4 (with JIT).
 //
@@ -239,20 +240,55 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
       viewerPage.getByText("Request Data Access", { exact: true }).first(),
     ).toBeVisible({ timeout: 10_000 });
 
-    // L5: the four labelled regions inside the drawer. Each is a
-    // headline above its input — we match the label as a substring
-    // because the rendered text is `<label>Databases *</label>` and
-    // similar (the trailing `*` is the required-field marker, not a
-    // separate element). Anchoring to the start of the line via a
-    // regex keeps the match unambiguous (matches "Databases *" or
-    // "Databases" alone, not "Some Databases List").
-    for (const label of ["Databases", "Statement", "Expiration", "Reason"]) {
+    // L5: the labelled regions inside the drawer. Each is a headline
+    // above its input — we match the label as a substring because the
+    // rendered text is `<label>Databases *</label>` and similar (the
+    // trailing `*` is the required-field marker, not a separate element).
+    // Anchoring to the start of the line via a regex keeps the match
+    // unambiguous (matches "Databases *" or "Databases" alone, not
+    // "Some Databases List").
+    //
+    // PRs #20491/#20487 added the Unmask + Export capability sections
+    // (the drawer previously had only Databases/Statement/Expiration/Reason).
+    for (const label of [
+      "Databases",
+      "Statement",
+      "Unmask",
+      "Export",
+      "Expiration",
+      "Reason",
+    ]) {
       const re = new RegExp(`^${label}(\\s*\\*)?\\s*$`);
       await expect(
         viewerPage.getByText(re).first(),
         `drawer must contain a "${label}" section`,
       ).toBeVisible({ timeout: 5000 });
     }
+
+    // The two capability checkboxes are present AND default UNCHECKED when the
+    // drawer is opened from the generic "Request access" CTA (no pendingCreate).
+    // Asserting unchecked — not just visible — catches a regression that
+    // pre-checks either capability for a plain request. (The "Request export"
+    // entry point DOES pre-check both — covered in sql-editor-export.spec.ts.)
+    const unmaskCheckbox = viewerPage.getByRole("checkbox", {
+      name: "See unmasked sensitive data",
+    });
+    const exportCheckbox = viewerPage.getByRole("checkbox", {
+      name: "Export the query result",
+    });
+    await expect(
+      unmaskCheckbox,
+      "drawer must expose the Unmask capability checkbox",
+    ).toBeVisible({ timeout: 5000 });
+    await expect(exportCheckbox).toBeVisible();
+    await expect(
+      unmaskCheckbox,
+      "Unmask must default unchecked from the generic Request-access CTA",
+    ).not.toBeChecked();
+    await expect(
+      exportCheckbox,
+      "Export must default unchecked from the generic Request-access CTA",
+    ).not.toBeChecked();
 
     // Close the drawer so any follow-up test doesn't inherit it.
     // The drawer is dismissed by clicking outside (Base UI Sheet) or

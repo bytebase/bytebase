@@ -776,10 +776,12 @@
       "self": "Điều kiện"
     },
     "delete-group": "Xóa nhóm cơ sở dữ liệu {{name}}",
-    "matched-database": "Cơ sở dữ liệu khớp",
+    "load-database-failed": "Không tải được cơ sở dữ liệu",
+    "matched-databases": "Cơ sở dữ liệu khớp",
     "no-matched-databases": "Không có cơ sở dữ liệu khớp",
     "select": "Chọn nhóm cơ sở dữ liệu",
-    "unmatched-database": "Cơ sở dữ liệu không khớp"
+    "unmatched-databases": "Cơ sở dữ liệu không khớp",
+    "unmatched-databases-preview": "Xem trước"
   },
   "db": {
     "catalog": {
