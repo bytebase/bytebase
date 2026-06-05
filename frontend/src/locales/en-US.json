@@ -842,8 +842,14 @@
   "export-center": {
     "data-export": "Data Export",
     "deprecated": {
-      "description": "Export Center will be deprecated in a future release. For new data exports, consider using the SQL Editor's export action.",
+      "approval-flow-link-text": "request access approval flow",
+      "configure-approval-flow": "Make sure the <lnk>{{linkText}}</lnk> is configured.",
+      "enable-jit-first": "Enable <lnk>{{linkText}}</lnk> on the project so users can submit a Just-in-Time export request from the SQL Editor.",
+      "go-to-sql-editor-for-export": "Go to SQL Editor for data export.",
+      "intro": "Export Center will be deprecated in a future release.",
       "open-sql-editor": "Go to SQL Editor",
+      "project-jit-link-text": "Just-in-Time access",
+      "request-via-jit": "Users can submit a Just-in-Time export request from the SQL Editor.",
       "title": "Export Center will be deprecated"
     }
   },
