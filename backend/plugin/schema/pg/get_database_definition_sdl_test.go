@@ -1611,6 +1611,12 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 		fileMap[file.Name] = file.Content
 	}
 
+	// Verify schema-level file with schema comment
+	schemaFile, ok := fileMap["schemas/app_schema/schema.sql"]
+	require.True(t, ok, "schema.sql file should exist for non-public schema")
+	assert.Contains(t, schemaFile, `CREATE SCHEMA IF NOT EXISTS "app_schema";`)
+	assert.Contains(t, schemaFile, `COMMENT ON SCHEMA "app_schema" IS 'Application schema';`)
+
 	// Verify consolidated sequences file with comment (independent sequences go in sequences.sql)
 	sequenceFile, ok := fileMap["schemas/app_schema/sequences.sql"]
 	require.True(t, ok, "sequences.sql file should exist for independent sequences")
@@ -1650,6 +1656,47 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
+
+func TestGetMultiFileDatabaseDefinition_SchemaFileMakesCombinedSDLLoadable(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "metric_helpers",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "metrics",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+
+	fileMap := make(map[string]string)
+	var combined strings.Builder
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+		combined.WriteString(file.Content)
+		combined.WriteString("\n")
+	}
+
+	schemaFile, ok := fileMap["schemas/metric_helpers/schema.sql"]
+	assert.True(t, ok, "schema.sql file should exist for non-public schema")
+	assert.Contains(t, schemaFile, `CREATE SCHEMA IF NOT EXISTS "metric_helpers";`)
+
+	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", combined.String())
+	require.NoError(t, err)
+}
+
 func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
 	// This test reproduces the issue where a SERIAL column causes duplicate CREATE SEQUENCE statements
 	// SERIAL columns automatically create sequences, so we should NOT output separate CREATE SEQUENCE for them
