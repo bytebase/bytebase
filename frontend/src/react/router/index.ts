@@ -253,10 +253,16 @@ export function isSqlEditorRouteName(name: string | undefined): boolean {
 // vue-router `next()` callback: no-arg / `RouteTarget` proceeds, `false`
 // cancels.
 type GuardNext = (target?: boolean | RouteTarget) => void;
+export type NavigationHistoryAction = "POP" | "PUSH" | "REPLACE";
+export type BeforeEachGuardOptions = {
+  historyAction?: NavigationHistoryAction;
+  retry?: () => void;
+};
 type BeforeEachGuard = (
   to: ReactRoute,
   from: ReactRoute,
-  next: GuardNext
+  next: GuardNext,
+  options?: BeforeEachGuardOptions
 ) => void;
 
 const beforeEachGuards = new Set<BeforeEachGuard>();
@@ -266,12 +272,21 @@ const beforeEachGuards = new Set<BeforeEachGuard>();
 // root consults this from a single `useBlocker`, reproducing vue-router's
 // global guard semantics. Guards that redirect (`next(target)`) are treated as
 // "proceed" here — the existing leave guards only ever proceed or cancel.
-export function runBeforeEachGuards(to: ReactRoute, from: ReactRoute): boolean {
+export function runBeforeEachGuards(
+  to: ReactRoute,
+  from: ReactRoute,
+  options?: BeforeEachGuardOptions
+): boolean {
   for (const guard of beforeEachGuards) {
     let blocked = false;
-    guard(to, from, (target) => {
-      if (target === false) blocked = true;
-    });
+    guard(
+      to,
+      from,
+      (target) => {
+        if (target === false) blocked = true;
+      },
+      options
+    );
     if (blocked) return true;
   }
   return false;
