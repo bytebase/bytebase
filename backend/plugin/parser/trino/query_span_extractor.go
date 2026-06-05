@@ -290,20 +290,40 @@ func isSystemSchemaTable(catalog, schema string) bool {
 // column order) rather than ranging the source-column map: the masker applies
 // per-result maskers positionally against the executed result's column order, so
 // a nondeterministic order here could mask the wrong column and leak data.
-func (*querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, orderedColumns []base.ColumnResource, aliasMap map[string][]string) []base.QuerySpanResult {
+func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, orderedColumns []base.ColumnResource, aliasMap map[string][]string) []base.QuerySpanResult {
 	if span == nil {
 		return []base.QuerySpanResult{}
 	}
 	results := make([]base.QuerySpanResult, 0, len(span.Results))
 	for _, r := range span.Results {
+		// Unqualified star "*": expand to every source column, in result order.
+		//
+		// Best-effort boundary: omni records a star as a single "*" result over
+		// the flat AccessTables and does not expose the resolved output relation,
+		// so a star over a CTE or derived table that projects a subset/reordering
+		// (e.g. WITH c AS (SELECT email FROM users) SELECT * FROM c) is
+		// indistinguishable here from SELECT * over the base table and expands to
+		// the base table's columns. This matches the prior ANTLR plugin (which
+		// produced no columns for such stars) and is tracked as a follow-up; a
+		// correct fix needs omni's analysis to expose the star's output columns.
 		if r.Name == "*" {
-			for _, col := range orderedColumns {
-				results = append(results, base.QuerySpanResult{
-					Name:          col.Column,
-					SourceColumns: base.SourceColumnSet{col: true},
-					IsPlainField:  true,
-				})
-			}
+			results = appendStarColumns(results, orderedColumns, nil)
+			continue
+		}
+		// Qualified star "<rel>.*": omni names the result "<rel>.*" with a single
+		// source ref that is the relation itself. Without this branch it would
+		// fall through to the column-name match below, find no column literally
+		// named "<rel>.*", and leave SourceColumns empty — the masker would then
+		// treat those (possibly sensitive) columns as constants and return them
+		// unmasked. Resolve the ref to the specific relation(s) it names (by
+		// database/schema/table, so same-named tables in different schemas are
+		// distinguished) and expand only those columns, preserving order. The
+		// detection inspects the source-ref shape, not just the display name, so a
+		// column merely aliased to a name ending in ".*" is not mistaken for a
+		// star.
+		if isQualifiedStar(r) {
+			targets := q.qualifiedStarTargets(r.SourceColumns[0], span)
+			results = appendStarColumns(results, orderedColumns, targets)
 			continue
 		}
 		sourceColumns := base.SourceColumnSet{}
@@ -317,6 +337,117 @@ func (*querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColu
 		})
 	}
 	return results
+}
+
+// appendStarColumns appends one plain-field result per column in orderedColumns,
+// in order (the positional masker maps each result to the executed result column
+// at the same index). When targets is non-nil — a qualified star "<rel>.*" — only
+// columns whose (database, schema, table) key is in targets are appended; a nil
+// targets (unqualified "*") appends every column.
+func appendStarColumns(results []base.QuerySpanResult, orderedColumns []base.ColumnResource, targets map[base.ColumnResource]bool) []base.QuerySpanResult {
+	for _, col := range orderedColumns {
+		if targets != nil {
+			if !targets[base.ColumnResource{Database: col.Database, Schema: col.Schema, Table: col.Table}] {
+				continue
+			}
+		}
+		results = append(results, base.QuerySpanResult{
+			Name:          col.Column,
+			SourceColumns: base.SourceColumnSet{col: true},
+			IsPlainField:  true,
+		})
+	}
+	return results
+}
+
+// qualifiedStarResult reports whether r is a genuine qualified star "<rel>.*"
+// (returning the relation qualifier), as opposed to an ordinary column that
+// happens to be aliased to a name ending in ".*". omni represents a qualified
+// star as a result whose Name is "<rel>.*" and whose single source ref is the
+// relation name itself (Column == <rel>, no catalog/schema/table qualifier); a
+// real column aliased to e.g. "u.*" instead carries the underlying column name
+// in its source ref, so it is handled as a normal column and not star-expanded
+// (which would misalign the positional masker and could leak).
+func isQualifiedStar(r analysis.ColumnInfo) bool {
+	qualifier, ok := qualifiedStarQualifier(r.Name)
+	if !ok {
+		return false
+	}
+	// omni represents a qualified star "<...>.<rel>.*" as a single source ref
+	// whose Column is the relation name <rel> (any schema/catalog path written
+	// before it lands in the ref's Table/Schema fields). A real column aliased to
+	// a name ending in ".*" instead carries the underlying column name in Column,
+	// which will not equal the qualifier, so it is handled as a normal column and
+	// not star-expanded (avoiding a positional-masker misalignment/leak).
+	//
+	// Matching only on Column == qualifier (not on empty table/schema) is
+	// deliberate: it keeps genuine table/schema/catalog-qualified stars like
+	// public.users.* working. The sole residual ambiguity is the contrived case
+	// of a column literally named like the qualifier and aliased to
+	// "<qualifier>.*", which omni renders identically to a real star.
+	if len(r.SourceColumns) != 1 {
+		return false
+	}
+	return strings.EqualFold(r.SourceColumns[0].Column, qualifier)
+}
+
+// qualifiedStarTargets resolves the relation(s) named by a qualified-star source
+// ref into a set of (database, schema, table) keys, so the star expands to
+// exactly that relation's columns — distinguishing same-named tables in
+// different schemas or catalogs. omni encodes the written qualifier in the ref
+// with the parts shifted right: Column is the relation/alias, Table is the schema
+// part, and Schema is the catalog part.
+func (q *querySpanExtractor) qualifiedStarTargets(ref analysis.ColumnRef, span *analysis.QuerySpan) map[base.ColumnResource]bool {
+	targets := make(map[base.ColumnResource]bool)
+	// Alias-qualified star (u.*): collect every base table that carries the
+	// alias. A reused/shadowed alias yields several, which over-includes (the
+	// extra columns are ignored positionally) rather than risking a leak.
+	aliasMatched := false
+	for _, t := range span.AccessTables {
+		if t.Alias != "" && strings.EqualFold(t.Alias, ref.Column) {
+			db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+			targets[base.ColumnResource{Database: db, Schema: schema, Table: t.Table}] = true
+			aliasMatched = true
+		}
+	}
+	if aliasMatched {
+		return targets
+	}
+	// Table-name-qualified star (users.* / public.users.* / cat.sch.users.*):
+	// ref.Column is the table, ref.Table the schema part, ref.Schema the catalog.
+	// Only target a base table actually present in AccessTables, so a qualifier
+	// naming a CTE/derived relation (which omni omits from AccessTables) does not
+	// accidentally target an unrelated physical table of the same name. A
+	// qualified star over a CTE/derived relation thus yields no columns here —
+	// the same best-effort boundary as an unqualified star over such a relation
+	// (omni does not expose the resolved output projection; tracked as a
+	// follow-up).
+	wantDB, wantSchema := q.resolveCatalogSchema(ref.Schema, ref.Table)
+	for _, t := range span.AccessTables {
+		db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+		if strings.EqualFold(db, wantDB) && strings.EqualFold(schema, wantSchema) && strings.EqualFold(t.Table, ref.Column) {
+			targets[base.ColumnResource{Database: db, Schema: schema, Table: t.Table}] = true
+		}
+	}
+	return targets
+}
+
+// qualifiedStarQualifier returns the relation qualifier of a qualified-star
+// result name like "u.*" or "catalog.schema.t.*" (the rightmost component before
+// the trailing ".*"), and whether name is a qualified star. Column matching keys
+// on the table/alias, so only the last component is returned.
+func qualifiedStarQualifier(name string) (string, bool) {
+	if !strings.HasSuffix(name, ".*") {
+		return "", false
+	}
+	qualifier := strings.TrimSuffix(name, ".*")
+	if i := strings.LastIndex(qualifier, "."); i >= 0 {
+		qualifier = qualifier[i+1:]
+	}
+	if qualifier == "" {
+		return "", false
+	}
+	return qualifier, true
 }
 
 // mapPredicateColumns maps omni's predicate column refs onto the expanded source

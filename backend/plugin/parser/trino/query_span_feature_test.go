@@ -340,6 +340,149 @@ func TestQuerySpan_ShadowedAliasStillMasked(t *testing.T) {
 	assert.True(t, ok, "u.email must resolve to users.email despite the shadowing inner alias; got %v", span.Results[0].SourceColumns)
 }
 
+func TestQuerySpan_QualifiedStarSourceColumns(t *testing.T) {
+	// A qualified star (u.*) must expand to the aliased relation's columns, each
+	// carrying its physical source column so they stay maskable. omni names the
+	// result "u.*"; only u's table (users) is expanded, not the joined orders.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "amount", Type: "double"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	// Genuine qualified stars in several written forms must all expand to users'
+	// columns (id, email), each mapped to its physical source column, and never
+	// the joined orders. Covers alias (u.*), bare table (users.*) and
+	// schema-qualified (public.users.*) qualifiers.
+	for _, stmt := range []string{
+		"SELECT u.* FROM users u JOIN orders o ON u.id = o.id",
+		"SELECT users.* FROM users JOIN orders o ON users.id = o.id",
+		"SELECT public.users.* FROM users JOIN orders o ON users.id = o.id",
+	} {
+		extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+		span, err := extractor.getQuerySpan(context.Background(), stmt)
+		require.NoError(t, err, "stmt: %s", stmt)
+
+		require.Lenf(t, span.Results, 2, "qualified star must yield exactly 2 result columns; stmt: %s", stmt)
+		assert.Equalf(t, "id", span.Results[0].Name, "stmt: %s", stmt)
+		assert.Equalf(t, "email", span.Results[1].Name, "stmt: %s", stmt)
+		_, ok := span.Results[0].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "id"}]
+		assert.Truef(t, ok, "result id must map to users.id; stmt: %s got %v", stmt, span.Results[0].SourceColumns)
+		_, ok = span.Results[1].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "email"}]
+		assert.Truef(t, ok, "result email must map to users.email; stmt: %s got %v", stmt, span.Results[1].SourceColumns)
+		for _, r := range span.Results {
+			for sc := range r.SourceColumns {
+				assert.NotEqualf(t, "orders", sc.Table, "qualified star must not include orders columns; stmt: %s got %v", stmt, r.SourceColumns)
+			}
+		}
+	}
+}
+
+func TestQuerySpan_QualifiedStarDistinguishesSameNamedTables(t *testing.T) {
+	// Two tables named "users" in different schemas. A qualified star s1.users.*
+	// must expand to ONLY s1.users' columns, not s2.users' — matching on the full
+	// (database, schema, table), not just the table name. Otherwise the positional
+	// masker could apply s2's policies to s1's columns and leak.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "s1",
+				Tables: []*storepb.TableMetadata{
+					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "secret", Type: "varchar"}}},
+				},
+			},
+			{
+				Name: "s2",
+				Tables: []*storepb.TableMetadata{
+					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "name", Type: "varchar"}}},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "s1", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), "SELECT s1.users.* FROM s1.users JOIN s2.users ON s1.users.id = s2.users.id")
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 2, "s1.users.* must expand to exactly s1.users' two columns")
+	_, hasSecret := span.Results[1].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "s1", Table: "users", Column: "secret"}]
+	assert.True(t, hasSecret, "expected s1.users.secret; got %v", span.Results[1].SourceColumns)
+	// No column may resolve to schema s2.
+	for _, r := range span.Results {
+		for sc := range r.SourceColumns {
+			assert.NotEqual(t, "s2", sc.Schema, "s1.users.* must not include s2.users columns; got %v", r.SourceColumns)
+		}
+	}
+}
+
+func TestQuerySpan_AliasEndingInStarIsNotExpanded(t *testing.T) {
+	// A column aliased to a quoted identifier that ends in ".*" (SELECT email AS
+	// "u.*") must NOT be treated as a qualified star. It is one output column
+	// (email); star-expanding it would emit several results and misalign the
+	// positional masker, leaking the value. Detection keys on the source-ref
+	// shape, so this resolves to a single email result.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), `SELECT email AS "u.*" FROM users u`)
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 1, `SELECT email AS "u.*" is one column, not a star expansion`)
+	_, ok := span.Results[0].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "email"}]
+	assert.True(t, ok, "the aliased column must still resolve to users.email; got %v", span.Results[0].SourceColumns)
+}
+
 func TestQuerySpan_ThreePartNaming(t *testing.T) {
 	// Trino's catalog.schema.table maps onto Database/Schema/Table, and the
 	// default database/schema are NOT applied when the reference is fully
