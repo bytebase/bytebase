@@ -3672,6 +3672,17 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			schemaName = "public"
 		}
 
+		schemaContent, err := getMultiFileSchemaSDL(schemaName, schemaMetadata)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate schema SDL for %s", schemaName)
+		}
+		if schemaContent != "" {
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/schema.sql", schemaName),
+				Content: schemaContent,
+			})
+		}
+
 		// Collect independent sequences (no owner) for this schema
 		var independentSequences []*storepb.SequenceMetadata
 		for _, sequence := range schemaMetadata.Sequences {
@@ -4011,6 +4022,27 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	}
 
 	return &schema.MultiFileSchemaResult{Files: files}, nil
+}
+
+func getMultiFileSchemaSDL(schemaName string, schemaMetadata *storepb.SchemaMetadata) (string, error) {
+	var buf strings.Builder
+
+	if schemaName != "public" {
+		if err := writeSchema(&buf, &storepb.SchemaMetadata{Name: schemaName}); err != nil {
+			return "", err
+		}
+	}
+
+	if schemaMetadata.GetComment() != "" {
+		if err := writeSchemaCommentSDL(&buf, &storepb.SchemaMetadata{
+			Name:    schemaName,
+			Comment: schemaMetadata.GetComment(),
+		}); err != nil {
+			return "", err
+		}
+	}
+
+	return buf.String(), nil
 }
 
 // buildSkipSequencesMap builds a map of sequences that should be skipped (serial and identity sequences).
