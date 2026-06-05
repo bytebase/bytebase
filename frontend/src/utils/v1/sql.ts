@@ -234,6 +234,118 @@ export const generateSimpleInsertStatement = (
   return `INSERT INTO ${schemaAndTable} (${columnNames}) VALUES (${placeholders});`;
 };
 
+// MySQL-family engines use backtick identifiers, treat backslash as an escape
+// character inside string literals, and render booleans as 1/0.
+const MYSQL_FAMILY_ENGINES = new Set<Engine>([
+  Engine.MYSQL,
+  Engine.MARIADB,
+  Engine.TIDB,
+  Engine.OCEANBASE,
+  Engine.CLICKHOUSE,
+  Engine.STARROCKS,
+  Engine.DORIS,
+]);
+
+const isMySQLFamilyEngine = (engine: Engine): boolean =>
+  MYSQL_FAMILY_ENGINES.has(engine);
+
+const escapeSQLStringLiteral = (value: string, engine: Engine): string => {
+  let escaped = value;
+  // Escape backslashes first so the quote-doubling below isn't affected.
+  if (isMySQLFamilyEngine(engine)) {
+    escaped = escaped.replaceAll("\\", "\\\\");
+  }
+  escaped = escaped.replaceAll("'", "''");
+  return `'${escaped}'`;
+};
+
+const bytesToHex = (bytes: Uint8Array): string =>
+  Array.from(bytes)
+    .map((b) => b.toString(16).toUpperCase().padStart(2, "0"))
+    .join("");
+
+// rowValueToSQLLiteral renders a RowValue as an engine-aware SQL literal,
+// suitable for inlining into an INSERT statement. It is type-aware: numbers
+// stay bare, strings/JSON/timestamps are single-quoted and escaped, booleans
+// follow the engine convention, and NULL is emitted for null/unset cells.
+export const rowValueToSQLLiteral = (
+  value: RowValue | undefined,
+  engine: Engine
+): string => {
+  if (value === undefined || value.kind?.case === undefined) {
+    return "NULL";
+  }
+  const { kind } = value;
+  switch (kind.case) {
+    case "nullValue":
+      return "NULL";
+    case "boolValue":
+      if (isMySQLFamilyEngine(engine)) {
+        return kind.value ? "1" : "0";
+      }
+      return kind.value ? "TRUE" : "FALSE";
+    case "int32Value":
+    case "uint32Value":
+    case "doubleValue":
+    case "floatValue":
+      return String(kind.value);
+    case "int64Value":
+    case "uint64Value":
+      return kind.value.toString();
+    case "stringValue":
+      return escapeSQLStringLiteral(kind.value, engine);
+    case "bytesValue": {
+      const hex = bytesToHex(kind.value);
+      // Postgres-family bytea literal vs MySQL/MSSQL 0x literal.
+      if (
+        engine === Engine.POSTGRES ||
+        engine === Engine.COCKROACHDB ||
+        engine === Engine.REDSHIFT
+      ) {
+        return `'\\x${hex}'`;
+      }
+      return `0x${hex}`;
+    }
+    default: {
+      // valueValue (JSON / composite), timestamps, and anything else fall
+      // back to their plain display form, single-quoted.
+      const plain = extractSQLRowValuePlain(value);
+      if (plain === null || plain === undefined) {
+        return "NULL";
+      }
+      return escapeSQLStringLiteral(String(plain), engine);
+    }
+  }
+};
+
+// generateInsertStatementFromRows builds a single batched INSERT statement for
+// the given rows. Each `rows[i]` is the cell array of one result row, aligned
+// with `columns`.
+export const generateInsertStatementFromRows = (params: {
+  engine: Engine;
+  schema: string | undefined;
+  table: string;
+  columns: string[];
+  rows: RowValue[][];
+}): string => {
+  const { engine, schema, table, columns, rows } = params;
+  const schemaAndTable = generateSchemaAndTableNameInSQL(
+    engine,
+    schema ?? "",
+    table
+  );
+  const columnNames = columns
+    .map((column) => wrapSQLIdentifier(column, engine))
+    .join(", ");
+  const valueLines = rows
+    .map(
+      (row) =>
+        `  (${row.map((cell) => rowValueToSQLLiteral(cell, engine)).join(", ")})`
+    )
+    .join(",\n");
+  return `INSERT INTO ${schemaAndTable} (${columnNames}) VALUES\n${valueLines};`;
+};
+
 export const generateSimpleUpdateStatement = (
   engine: Engine,
   schema: string,
