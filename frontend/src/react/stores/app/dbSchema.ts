@@ -95,194 +95,209 @@ const isUnknownDatabase = (database: string): boolean => {
 export const createDBSchemaSlice: AppSliceCreator<DBSchemaSlice> = (
   set,
   get
-) => ({
-  metadataByName: {},
-  metadataRequests: {},
+) => {
+  const emptyDatabaseMetadataByName = new Map<string, DatabaseMetadata>();
 
-  getDatabaseMetadata: (database) => {
+  const getEmptyDatabaseMetadata = (database: string) => {
     const metadataName = ensureDatabaseMetadataResourceName(database);
-    const cached = get().metadataByName[cacheKey(metadataName, "", 0)];
-    return (
-      cached ?? createProto(DatabaseMetadataSchema, { name: metadataName })
-    );
-  },
-
-  getCachedDatabaseMetadata: (database) => {
-    const metadataName = ensureDatabaseMetadataResourceName(database);
-    return get().metadataByName[cacheKey(metadataName, "", 0)];
-  },
-
-  getSchemaList: (database) => {
-    return (
-      get().getCachedDatabaseMetadata(database)?.schemas ?? EMPTY_SCHEMA_LIST
-    );
-  },
-
-  getSchemaMetadata: ({ database, schema }) => {
-    const metadata = get().getDatabaseMetadata(database);
-    return metadata.schemas.find((s) => s.name === schema);
-  },
-
-  getTableList: ({ database, schema }) => {
-    const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
-    if (!schemas) return EMPTY_TABLE_LIST;
-    if (schema) {
-      return schemas.find((s) => s.name === schema)?.tables ?? EMPTY_TABLE_LIST;
-    }
-    return flattenTables(schemas);
-  },
-
-  getViewList: ({ database, schema }) => {
-    const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
-    if (!schemas) return EMPTY_VIEW_LIST;
-    if (schema) {
-      return schemas.find((s) => s.name === schema)?.views ?? EMPTY_VIEW_LIST;
-    }
-    return flattenViews(schemas);
-  },
-
-  getExternalTableList: ({ database, schema }) => {
-    const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
-    if (!schemas) return EMPTY_EXTERNAL_TABLE_LIST;
-    if (schema) {
-      return (
-        schemas.find((s) => s.name === schema)?.externalTables ??
-        EMPTY_EXTERNAL_TABLE_LIST
-      );
-    }
-    return flattenExternalTables(schemas);
-  },
-
-  getFunctionList: ({ database, schema }) => {
-    const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
-    if (!schemas) return EMPTY_FUNCTION_LIST;
-    if (schema) {
-      return (
-        schemas.find((s) => s.name === schema)?.functions ?? EMPTY_FUNCTION_LIST
-      );
-    }
-    return flattenFunctions(schemas);
-  },
-
-  getExtensionList: (database) => {
-    return (
-      get().getCachedDatabaseMetadata(database)?.extensions ??
-      EMPTY_EXTENSION_LIST
-    );
-  },
-
-  removeDatabaseMetadataCache: (database) => {
-    const metadataName = ensureDatabaseMetadataResourceName(database);
-    const prefix = `${metadataName}::`;
-    set((state) => {
-      const nextEntries: Record<string, DatabaseMetadata> = {};
-      for (const [key, value] of Object.entries(state.metadataByName)) {
-        if (!key.startsWith(prefix)) nextEntries[key] = value;
-      }
-      const nextRequests: Record<string, Promise<DatabaseMetadata>> = {};
-      for (const [key, value] of Object.entries(state.metadataRequests)) {
-        if (!key.startsWith(prefix)) nextRequests[key] = value;
-      }
-      return {
-        metadataByName: nextEntries,
-        metadataRequests: nextRequests,
-      };
+    const cached = emptyDatabaseMetadataByName.get(metadataName);
+    if (cached) return cached;
+    const metadata = createProto(DatabaseMetadataSchema, {
+      name: metadataName,
     });
-  },
+    emptyDatabaseMetadataByName.set(metadataName, metadata);
+    return metadata;
+  };
 
-  getTableMetadata: ({ database, schema, table }) => {
-    const metadata = get().getDatabaseMetadata(database);
-    const tables = schema
-      ? (metadata.schemas.find((s) => s.name === schema)?.tables ?? [])
-      : metadata.schemas.flatMap((s) => s.tables);
-    return tables.find((t) => t.name === table) ?? EMPTY_TABLE_METADATA;
-  },
+  return {
+    metadataByName: {},
+    metadataRequests: {},
 
-  getExternalTableMetadata: ({ database, schema, externalTable }) => {
-    const metadata = get().getDatabaseMetadata(database);
-    const externalTables = schema
-      ? (metadata.schemas.find((s) => s.name === schema)?.externalTables ?? [])
-      : metadata.schemas.flatMap((s) => s.externalTables);
-    return (
-      externalTables.find((t) => t.name === externalTable) ??
-      EMPTY_EXTERNAL_TABLE_METADATA
-    );
-  },
+    getDatabaseMetadata: (database) => {
+      const metadataName = ensureDatabaseMetadataResourceName(database);
+      const cached = get().metadataByName[cacheKey(metadataName, "", 0)];
+      return cached ?? getEmptyDatabaseMetadata(database);
+    },
 
-  getViewMetadata: ({ database, schema, view }) => {
-    const metadata = get().getDatabaseMetadata(database);
-    const views = schema
-      ? (metadata.schemas.find((s) => s.name === schema)?.views ?? [])
-      : metadata.schemas.flatMap((s) => s.views);
-    return views.find((v) => v.name === view) ?? EMPTY_VIEW_METADATA;
-  },
+    getCachedDatabaseMetadata: (database) => {
+      const metadataName = ensureDatabaseMetadataResourceName(database);
+      return get().metadataByName[cacheKey(metadataName, "", 0)];
+    },
 
-  getOrFetchDatabaseMetadata: async (params) => {
-    const {
-      database,
-      skipCache = false,
-      silent = false,
-      limit = 0,
-      filter = "",
-    } = params;
-    if (isUnknownDatabase(database)) {
-      return createProto(DatabaseMetadataSchema, {
-        name: ensureDatabaseMetadataResourceName(
-          `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
-        ),
-      });
-    }
+    getSchemaList: (database) => {
+      return (
+        get().getCachedDatabaseMetadata(database)?.schemas ?? EMPTY_SCHEMA_LIST
+      );
+    },
 
-    const metadataName = ensureDatabaseMetadataResourceName(database);
-    const key = cacheKey(metadataName, filter, limit);
+    getSchemaMetadata: ({ database, schema }) => {
+      const metadata = get().getDatabaseMetadata(database);
+      return metadata.schemas.find((s) => s.name === schema);
+    },
 
-    if (!skipCache) {
-      const existing = get().metadataByName[key];
-      if (existing) return existing;
-      const pending = get().metadataRequests[key];
-      if (pending) return pending;
-    }
+    getTableList: ({ database, schema }) => {
+      const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
+      if (!schemas) return EMPTY_TABLE_LIST;
+      if (schema) {
+        return (
+          schemas.find((s) => s.name === schema)?.tables ?? EMPTY_TABLE_LIST
+        );
+      }
+      return flattenTables(schemas);
+    },
 
-    const request = databaseServiceClientConnect
-      .getDatabaseMetadata(
-        createProto(GetDatabaseMetadataRequestSchema, {
-          name: metadataName,
-          limit,
-          filter,
-        }),
-        {
-          contextValues: createContextValues().set(silentContextKey, silent),
+    getViewList: ({ database, schema }) => {
+      const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
+      if (!schemas) return EMPTY_VIEW_LIST;
+      if (schema) {
+        return schemas.find((s) => s.name === schema)?.views ?? EMPTY_VIEW_LIST;
+      }
+      return flattenViews(schemas);
+    },
+
+    getExternalTableList: ({ database, schema }) => {
+      const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
+      if (!schemas) return EMPTY_EXTERNAL_TABLE_LIST;
+      if (schema) {
+        return (
+          schemas.find((s) => s.name === schema)?.externalTables ??
+          EMPTY_EXTERNAL_TABLE_LIST
+        );
+      }
+      return flattenExternalTables(schemas);
+    },
+
+    getFunctionList: ({ database, schema }) => {
+      const schemas = get().getCachedDatabaseMetadata(database)?.schemas;
+      if (!schemas) return EMPTY_FUNCTION_LIST;
+      if (schema) {
+        return (
+          schemas.find((s) => s.name === schema)?.functions ??
+          EMPTY_FUNCTION_LIST
+        );
+      }
+      return flattenFunctions(schemas);
+    },
+
+    getExtensionList: (database) => {
+      return (
+        get().getCachedDatabaseMetadata(database)?.extensions ??
+        EMPTY_EXTENSION_LIST
+      );
+    },
+
+    removeDatabaseMetadataCache: (database) => {
+      const metadataName = ensureDatabaseMetadataResourceName(database);
+      const prefix = `${metadataName}::`;
+      set((state) => {
+        const nextEntries: Record<string, DatabaseMetadata> = {};
+        for (const [key, value] of Object.entries(state.metadataByName)) {
+          if (!key.startsWith(prefix)) nextEntries[key] = value;
         }
-      )
-      .then((metadata: DatabaseMetadata) => {
-        set((state) => {
-          const { [key]: _, ...metadataRequests } = state.metadataRequests;
-          return {
-            metadataByName: {
-              ...state.metadataByName,
-              [key]: metadata,
-            },
-            metadataRequests,
-          };
-        });
-        return metadata;
-      })
-      .catch((error) => {
-        set((state) => {
-          const { [key]: _, ...metadataRequests } = state.metadataRequests;
-          return { metadataRequests };
-        });
-        throw error;
+        const nextRequests: Record<string, Promise<DatabaseMetadata>> = {};
+        for (const [key, value] of Object.entries(state.metadataRequests)) {
+          if (!key.startsWith(prefix)) nextRequests[key] = value;
+        }
+        return {
+          metadataByName: nextEntries,
+          metadataRequests: nextRequests,
+        };
       });
-    set((state) => ({
-      metadataRequests: {
-        ...state.metadataRequests,
-        [key]: request,
-      },
-    }));
-    return request;
-  },
-});
+    },
+
+    getTableMetadata: ({ database, schema, table }) => {
+      const metadata = get().getDatabaseMetadata(database);
+      const tables = schema
+        ? (metadata.schemas.find((s) => s.name === schema)?.tables ?? [])
+        : metadata.schemas.flatMap((s) => s.tables);
+      return tables.find((t) => t.name === table) ?? EMPTY_TABLE_METADATA;
+    },
+
+    getExternalTableMetadata: ({ database, schema, externalTable }) => {
+      const metadata = get().getDatabaseMetadata(database);
+      const externalTables = schema
+        ? (metadata.schemas.find((s) => s.name === schema)?.externalTables ??
+          [])
+        : metadata.schemas.flatMap((s) => s.externalTables);
+      return (
+        externalTables.find((t) => t.name === externalTable) ??
+        EMPTY_EXTERNAL_TABLE_METADATA
+      );
+    },
+
+    getViewMetadata: ({ database, schema, view }) => {
+      const metadata = get().getDatabaseMetadata(database);
+      const views = schema
+        ? (metadata.schemas.find((s) => s.name === schema)?.views ?? [])
+        : metadata.schemas.flatMap((s) => s.views);
+      return views.find((v) => v.name === view) ?? EMPTY_VIEW_METADATA;
+    },
+
+    getOrFetchDatabaseMetadata: async (params) => {
+      const {
+        database,
+        skipCache = false,
+        silent = false,
+        limit = 0,
+        filter = "",
+      } = params;
+      if (isUnknownDatabase(database)) {
+        return getEmptyDatabaseMetadata(
+          `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
+        );
+      }
+
+      const metadataName = ensureDatabaseMetadataResourceName(database);
+      const key = cacheKey(metadataName, filter, limit);
+
+      if (!skipCache) {
+        const existing = get().metadataByName[key];
+        if (existing) return existing;
+        const pending = get().metadataRequests[key];
+        if (pending) return pending;
+      }
+
+      const request = databaseServiceClientConnect
+        .getDatabaseMetadata(
+          createProto(GetDatabaseMetadataRequestSchema, {
+            name: metadataName,
+            limit,
+            filter,
+          }),
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
+        )
+        .then((metadata: DatabaseMetadata) => {
+          set((state) => {
+            const { [key]: _, ...metadataRequests } = state.metadataRequests;
+            return {
+              metadataByName: {
+                ...state.metadataByName,
+                [key]: metadata,
+              },
+              metadataRequests,
+            };
+          });
+          return metadata;
+        })
+        .catch((error) => {
+          set((state) => {
+            const { [key]: _, ...metadataRequests } = state.metadataRequests;
+            return { metadataRequests };
+          });
+          throw error;
+        });
+      set((state) => ({
+        metadataRequests: {
+          ...state.metadataRequests,
+          [key]: request,
+        },
+      }));
+      return request;
+    },
+  };
+};
 
 // Re-export types so consumers don't reach into `types.ts` for narrow
 // per-slice types.

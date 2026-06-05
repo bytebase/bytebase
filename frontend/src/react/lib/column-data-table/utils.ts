@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import type {
@@ -82,7 +82,7 @@ export const updateColumnCatalog = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(notification),
+    title: i18n.t(notification),
   });
 };
 
@@ -132,6 +132,6 @@ export const updateTableCatalog = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(notification),
+    title: i18n.t(notification),
   });
 };

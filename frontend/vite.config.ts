@@ -1,6 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
 import { transform as esbuildTransform } from "esbuild";
-import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import tailwindcss from "@tailwindcss/vite";
 import legacy from "@vitejs/plugin-legacy";
@@ -56,11 +55,6 @@ export default defineConfig({
     vueJsx({
       include: /\.tsx$/,
       exclude: /src\/(react|plugins\/ai\/react)\//,
-    }),
-    // https://github.com/intlify/vite-plugin-vue-i18n
-    VueI18nPlugin({
-      include: [resolve(__dirname, "src/locales/**")],
-      strictMessage: false,
     }),
     tailwindcss(),
     Components({

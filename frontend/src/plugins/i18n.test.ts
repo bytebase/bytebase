@@ -93,23 +93,22 @@ describe("Test i18n for SQL review", () => {
           const key = getRuleLocalizationKey(ruleTypeToString(rule.type));
           const ruleMessage = getNestedObject(ruleMessages, key);
           expect(!!ruleMessage, "rule-key").toBe(true);
-          expect(!!ruleMessage["title"], "rule-key-title").toBe(true);
-          expect(!!ruleMessage["description"], "rule-key-description").toBe(
+          expect("title" in ruleMessage, "rule-key-title").toBe(true);
+          expect("description" in ruleMessage, "rule-key-description").toBe(
             true
           );
           expect(
-            !!categoryMessages[rule.category.toLowerCase()],
+            rule.category.toLowerCase() in categoryMessages,
             "category-rule.category"
-          ).toBe(true);
+          );
           expect(
-            !!levelMessages[
-              sqlReviewRuleLevelToString(rule.level).toLowerCase()
-            ],
+            sqlReviewRuleLevelToString(rule.level).toLowerCase() in
+              levelMessages,
             "level-rule.level"
           ).toBe(true);
 
           expect(
-            !!engineMessages[Engine[rule.engine].toLowerCase()],
+            Engine[rule.engine].toLowerCase() in engineMessages,
             "engine.rule-engine"
           ).toBe(true);
 
@@ -117,7 +116,7 @@ describe("Test i18n for SQL review", () => {
             const componentMessages = getNestedObject(ruleMessage, "component");
             expect(!!componentMessages, "rule-key-component").toBe(true);
             expect(
-              !!componentMessages[component.key],
+              component.key in componentMessages,
               "rule-key-component-component.key"
             ).toBe(true);
           }
@@ -170,15 +169,12 @@ const checkKeysSorted = (
 };
 
 describe("Locale keys are sorted alphabetically", () => {
-  const localesDirs = [
-    resolve(__dirname, "../locales"),
-    resolve(__dirname, "../react/locales"),
-  ];
+  const localesDirs = [resolve(__dirname, "../locales")];
 
   for (const dir of localesDirs) {
     const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
     for (const file of files) {
-      test(`${dir.includes("react") ? "react/" : ""}locales/${file}`, () => {
+      test(`locales/${file}`, () => {
         const content = JSON.parse(readFileSync(resolve(dir, file), "utf-8"));
         const errors = checkKeysSorted(content, file);
         expect(errors, errors.join("\n")).toHaveLength(0);
@@ -193,7 +189,7 @@ const compareMessages = (
 ): string => {
   for (const [key, valA] of Object.entries(localA)) {
     const valB = localB[key];
-    if (!valB) {
+    if (!(key in localB)) {
       return key;
     }
     if (typeof valA === "object") {

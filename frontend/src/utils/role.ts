@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import type { Permission } from "@/types/iam";
 import { PresetRoleType } from "@/types/iam";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
@@ -23,25 +23,25 @@ export const extractRoleResourceName = (resourceId: string): string => {
 export const displayRoleTitle = (role: string): string => {
   switch (role) {
     case PresetRoleType.WORKSPACE_ADMIN:
-      return t("role.workspace-admin.self");
+      return i18n.t("role.workspace-admin.self");
     case PresetRoleType.WORKSPACE_DBA:
-      return t("role.workspace-dba.self");
+      return i18n.t("role.workspace-dba.self");
     case PresetRoleType.WORKSPACE_MEMBER:
-      return t("role.workspace-member.self");
+      return i18n.t("role.workspace-member.self");
     case PresetRoleType.PROJECT_OWNER:
-      return t("role.project-owner.self");
+      return i18n.t("role.project-owner.self");
     case PresetRoleType.PROJECT_DEVELOPER:
-      return t("role.project-developer.self");
+      return i18n.t("role.project-developer.self");
     case PresetRoleType.PROJECT_RELEASER:
-      return t("role.project-releaser.self");
+      return i18n.t("role.project-releaser.self");
     case PresetRoleType.SQL_EDITOR_USER:
-      return t("role.sql-editor-user.self");
+      return i18n.t("role.sql-editor-user.self");
     case PresetRoleType.SQL_EDITOR_READ_USER:
-      return t("role.sql-editor-read-user.self");
+      return i18n.t("role.sql-editor-read-user.self");
     case PresetRoleType.GITOPS_SERVICE_AGENT:
-      return t("role.gitops-service-agent.self");
+      return i18n.t("role.gitops-service-agent.self");
     case PresetRoleType.PROJECT_VIEWER:
-      return t("role.project-viewer.self");
+      return i18n.t("role.project-viewer.self");
   }
   // Use role.title if possible
   const item = appStoreUtilBridge()?.getRoleByName(role);
@@ -52,25 +52,25 @@ export const displayRoleTitle = (role: string): string => {
 export const displayRoleDescription = (role: string): string => {
   switch (role) {
     case PresetRoleType.WORKSPACE_ADMIN:
-      return t("role.workspace-admin.description");
+      return i18n.t("role.workspace-admin.description");
     case PresetRoleType.WORKSPACE_DBA:
-      return t("role.workspace-dba.description");
+      return i18n.t("role.workspace-dba.description");
     case PresetRoleType.WORKSPACE_MEMBER:
-      return t("role.workspace-member.description");
+      return i18n.t("role.workspace-member.description");
     case PresetRoleType.PROJECT_OWNER:
-      return t("role.project-owner.description");
+      return i18n.t("role.project-owner.description");
     case PresetRoleType.PROJECT_DEVELOPER:
-      return t("role.project-developer.description");
+      return i18n.t("role.project-developer.description");
     case PresetRoleType.PROJECT_RELEASER:
-      return t("role.project-releaser.description");
+      return i18n.t("role.project-releaser.description");
     case PresetRoleType.SQL_EDITOR_USER:
-      return t("role.sql-editor-user.description");
+      return i18n.t("role.sql-editor-user.description");
     case PresetRoleType.SQL_EDITOR_READ_USER:
-      return t("role.sql-editor-read-user.description");
+      return i18n.t("role.sql-editor-read-user.description");
     case PresetRoleType.GITOPS_SERVICE_AGENT:
-      return t("role.gitops-service-agent.description");
+      return i18n.t("role.gitops-service-agent.description");
     case PresetRoleType.PROJECT_VIEWER:
-      return t("role.project-viewer.description");
+      return i18n.t("role.project-viewer.description");
   }
   // Use role.description if possible
   const item = appStoreUtilBridge()?.getRoleByName(role);

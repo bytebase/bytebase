@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import {
   extractUserEmail,
   serviceAccountNamePrefix,
@@ -25,7 +25,7 @@ export const unknownUser = (name: string = ""): User => {
   const user = create(UserSchema, {
     name: UNKNOWN_USER_NAME,
     state: State.ACTIVE,
-    title: t("common.unknown"),
+    title: i18n.t("common.unknown"),
   });
   if (name) {
     user.name = name;
@@ -42,7 +42,7 @@ export const allUsersUser = (): User => {
   return create(UserSchema, {
     name: `users/${ALL_USERS_USER_EMAIL}`,
     state: State.ACTIVE,
-    title: t("settings.members.all-users"),
+    title: i18n.t("settings.members.all-users"),
     email: ALL_USERS_USER_EMAIL,
   });
 };

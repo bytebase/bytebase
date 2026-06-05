@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import {
   getDatabaseByName,
@@ -99,8 +99,8 @@ export const generatePlanTitle = (
 ): string => {
   const title =
     template === "bb.plan.change-database"
-      ? t("issue.title.change-database")
-      : t("issue.title.export-data");
+      ? i18n.t("issue.title.change-database")
+      : i18n.t("issue.title.export-data");
   return formatIssueTitle(title, databaseNameList);
 };
 

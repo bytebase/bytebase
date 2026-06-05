@@ -63,10 +63,10 @@ import {
 } from "@/types/timestamp";
 import type { Environment } from "@/types/v1/environment";
 import {
+  nullEnvironment as createNullEnvironment,
+  unknownEnvironment as createUnknownEnvironment,
   isValidEnvironmentName,
   NULL_ENVIRONMENT_NAME,
-  nullEnvironment,
-  unknownEnvironment,
 } from "@/types/v1/environment";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
@@ -151,6 +151,18 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => {
+  const unknownEnvironment = createUnknownEnvironment();
+  const nullEnvironment = createNullEnvironment();
+  const environmentFallbacksByName = new Map<string, Environment>();
+
+  const getEnvironmentFallback = (name: string, id: string) => {
+    const existing = environmentFallbacksByName.get(name);
+    if (existing) return existing;
+    const environment = { ...unknownEnvironment, id, name, title: id };
+    environmentFallbacksByName.set(name, environment);
+    return environment;
+  };
+
   // Persist the ENVIRONMENT setting and re-derive the cached environment list
   // from the server's response (mirrors the legacy Pinia env store).
   const writeEnvironmentSetting = async (
@@ -360,16 +372,16 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     // entry (id-as-title) for unknown names when `fallback` is set.
     getEnvironmentByName: (name, fallback = true) => {
       if (name === NULL_ENVIRONMENT_NAME) {
-        return nullEnvironment();
+        return nullEnvironment;
       }
       const id = getEnvironmentId(name);
       if (!id) {
-        return unknownEnvironment();
+        return unknownEnvironment;
       }
       const environment =
-        get().environmentList.find((e) => e.id === id) ?? unknownEnvironment();
+        get().environmentList.find((e) => e.id === id) ?? unknownEnvironment;
       if (!isValidEnvironmentName(environment.name) && fallback) {
-        return { ...environment, id, name, title: id };
+        return getEnvironmentFallback(name, id);
       }
       return environment;
     },

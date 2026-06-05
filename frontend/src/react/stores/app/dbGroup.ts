@@ -5,8 +5,8 @@ import { silentContextKey } from "@/connect/context-key";
 import { buildCELExpr } from "@/plugins/cel";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import {
+  unknownDatabaseGroup as createUnknownDatabaseGroup,
   isValidDatabaseGroupName,
-  unknownDatabaseGroup,
 } from "@/types/dbGroup";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -24,6 +24,8 @@ import type { AppSliceCreator, DBGroupSlice } from "./types";
 import { toError } from "./utils";
 
 export const createDBGroupSlice: AppSliceCreator<DBGroupSlice> = (set, get) => {
+  const unknownDatabaseGroup = createUnknownDatabaseGroup();
+
   // Immutable cache write. A name maps to a single group + the view it was
   // fetched with; overwriting is sufficient (no per-view keying needed). Also
   // clears any stale error so a successful (re)fetch doesn't leave a prior
@@ -146,7 +148,7 @@ export const createDBGroupSlice: AppSliceCreator<DBGroupSlice> = (set, get) => {
             : true; // BASIC/UNSPECIFIED requests accept any cached view
         if (satisfied) return group;
       }
-      return unknownDatabaseGroup();
+      return unknownDatabaseGroup;
     },
 
     getOrFetchDBGroupByName: async (name, options) => {

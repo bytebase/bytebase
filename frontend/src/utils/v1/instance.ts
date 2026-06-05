@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { isValidInstanceName, unknownInstance } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed
@@ -25,7 +25,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
     !instance.activation &&
     currentPlan !== PlanType.FREE
   ) {
-    name += ` (${t("common.no-license")})`;
+    name += ` (${i18n.t("common.no-license")})`;
   }
   return name;
 }
@@ -38,9 +38,9 @@ export const extractInstanceResourceName = (name: string) => {
 
 export const readableDataSourceType = (type: DataSourceType): string => {
   if (type === DataSourceType.ADMIN) {
-    return t("data-source.admin");
+    return i18n.t("data-source.admin");
   } else if (type === DataSourceType.READ_ONLY) {
-    return t("data-source.read-only");
+    return i18n.t("data-source.read-only");
   } else {
     return "Unknown";
   }

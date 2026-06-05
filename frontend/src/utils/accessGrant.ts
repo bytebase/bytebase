@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,
@@ -98,17 +98,17 @@ export const getAccessGrantDisplayStatusText = (
   const displayStatus = getAccessGrantDisplayStatus(grant, issue);
   switch (displayStatus) {
     case "ACTIVE":
-      return t("common.active");
+      return i18n.t("common.active");
     case "PENDING":
-      return t("common.pending");
+      return i18n.t("common.pending");
     case "EXPIRED":
-      return t("sql-editor.expired");
+      return i18n.t("sql-editor.expired");
     case "REVOKED":
-      return t("common.revoked");
+      return i18n.t("common.revoked");
     case "REJECTED":
-      return t("common.rejected");
+      return i18n.t("common.rejected");
     case "CANCELED":
-      return t("common.canceled");
+      return i18n.t("common.canceled");
     default:
       return displayStatus;
   }

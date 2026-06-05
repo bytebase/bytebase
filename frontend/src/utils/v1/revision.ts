@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { Revision_Type } from "@/types/proto-es/v1/revision_service_pb";
@@ -23,9 +23,9 @@ export const revisionLink = (revision: Revision): string => {
 export const getRevisionType = (type: Revision_Type): string => {
   switch (type) {
     case Revision_Type.VERSIONED:
-      return t("database.revision.type-versioned");
+      return i18n.t("database.revision.type-versioned");
     case Revision_Type.DECLARATIVE:
-      return t("database.revision.type-declarative");
+      return i18n.t("database.revision.type-declarative");
     default:
       return "-";
   }
