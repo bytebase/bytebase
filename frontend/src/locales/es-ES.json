@@ -840,8 +840,14 @@
   "export-center": {
     "data-export": "Exportación de datos",
     "deprecated": {
-      "description": "El Centro de Exportación será deprecado en una versión futura. Para nuevas exportaciones de datos, considere usar la acción de exportación del Editor SQL.",
+      "approval-flow-link-text": "flujo de aprobación de solicitudes de acceso",
+      "configure-approval-flow": "Asegúrate de que el <lnk>{{linkText}}</lnk> esté configurado.",
+      "enable-jit-first": "Habilita el <lnk>{{linkText}}</lnk> en el proyecto para que los usuarios puedan enviar una solicitud de exportación Just-in-Time desde el Editor SQL.",
+      "go-to-sql-editor-for-export": "Ve al Editor SQL para exportar datos.",
+      "intro": "El Centro de Exportación se desactivará en una próxima versión.",
       "open-sql-editor": "Ir al Editor SQL",
+      "project-jit-link-text": "acceso Just-in-Time",
+      "request-via-jit": "Los usuarios pueden enviar una solicitud de exportación Just-in-Time desde el Editor SQL.",
       "title": "El Centro de Exportación será deprecado"
     }
   },

@@ -840,8 +840,14 @@
   "export-center": {
     "data-export": "数据导出",
     "deprecated": {
-      "description": "导出中心将在未来版本中弃用。对于新的数据导出，建议使用 SQL 编辑器的导出功能。",
+      "approval-flow-link-text": "请求访问审批流程",
+      "configure-approval-flow": "请确保已配置<lnk>{{linkText}}</lnk>。",
+      "enable-jit-first": "在该项目上启用<lnk>{{linkText}}</lnk>后，用户即可在 SQL 编辑器中提交即时导出请求。",
+      "go-to-sql-editor-for-export": "请前往 SQL 编辑器进行数据导出。",
+      "intro": "导出中心将在未来版本中弃用。",
       "open-sql-editor": "前往 SQL 编辑器",
+      "project-jit-link-text": "即时访问",
+      "request-via-jit": "用户可以在 SQL 编辑器中提交即时导出请求。",
       "title": "导出中心即将弃用"
     }
   },

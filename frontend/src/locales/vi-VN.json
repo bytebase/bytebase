@@ -840,8 +840,14 @@
   "export-center": {
     "data-export": "Xuất dữ liệu",
     "deprecated": {
-      "description": "Trung tâm Xuất dữ liệu sẽ bị ngừng hỗ trợ trong bản phát hành tương lai. Đối với các yêu cầu xuất dữ liệu mới, vui lòng sử dụng chức năng xuất của SQL Editor.",
+      "approval-flow-link-text": "luồng phê duyệt yêu cầu truy cập",
+      "configure-approval-flow": "Hãy đảm bảo <lnk>{{linkText}}</lnk> đã được cấu hình.",
+      "enable-jit-first": "Bật <lnk>{{linkText}}</lnk> cho dự án để người dùng có thể gửi yêu cầu xuất dữ liệu Just-in-Time từ SQL Editor.",
+      "go-to-sql-editor-for-export": "Hãy vào SQL Editor để xuất dữ liệu.",
+      "intro": "Trung tâm Xuất dữ liệu sẽ bị ngừng hỗ trợ trong một bản phát hành tương lai.",
       "open-sql-editor": "Đi tới SQL Editor",
+      "project-jit-link-text": "Truy cập Just-in-Time",
+      "request-via-jit": "Người dùng có thể gửi yêu cầu xuất dữ liệu Just-in-Time từ SQL Editor.",
       "title": "Trung tâm Xuất dữ liệu sẽ bị ngừng hỗ trợ"
     }
   },

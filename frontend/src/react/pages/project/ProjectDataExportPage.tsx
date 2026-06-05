@@ -1,6 +1,6 @@
 import { Download, Loader2, SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -14,10 +14,13 @@ import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { router } from "@/react/router";
 import {
+  PROJECT_V1_ROUTE_SETTINGS,
   SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -54,6 +57,34 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useProjectByName(projectName);
+
+  // Drives the deprecation banner's conditional sentence. Mirrors the
+  // SQL editor's policy reader so the wording matches what users
+  // actually see in the editor (a banner that says "go to SQL Editor
+  // for export" would be misleading if export is in fact gated there).
+  const queryDataPolicy = useSQLEditorQueryDataPolicy(projectName);
+
+  // Resolved hrefs for the inline links in the deprecation banner.
+  // Memoized so render-time JSX stays cheap, and so SPA navigation
+  // works via the click handler while right-click / cmd-click still
+  // opens the real path in a new tab.
+  const projectSettingsHref = useMemo(
+    () =>
+      router.resolve({
+        name: PROJECT_V1_ROUTE_SETTINGS,
+        params: { projectId },
+      }).fullPath,
+    [projectId]
+  );
+  const customApprovalHref = useMemo(
+    () => router.resolve({ name: WORKSPACE_ROUTE_CUSTOM_APPROVAL }).fullPath,
+    []
+  );
+  // Workspace-level setting permission: gates the "configure your
+  // approval flow" sentence so non-admins don't see advice they can't
+  // act on. `bb.settings.set` is the same check the workspace settings
+  // page uses.
+  const canSetWorkspaceSettings = hasWorkspacePermissionV2("bb.settings.set");
 
   const [showDrawer, setShowDrawer] = useState(false);
 
@@ -220,7 +251,91 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
         <Alert
           variant="warning"
           title={t("export-center.deprecated.title")}
-          description={t("export-center.deprecated.description")}
+          description={
+            // Single paragraph: intro + one branch of line 2 (always
+            // present) + the optional approval-flow advice. Sentences
+            // flow inline separated by spaces, links are inline
+            // anchors styled with `text-accent-text underline` so they
+            // stand out on the warning-toned Alert background.
+            //
+            // Trans `values + components` shape matches the codebase
+            // convention (see `subscription.overuse-warning` in
+            // `BannersWrapper.tsx`): the locale embeds
+            // `<link>{{linkText}}</link>`, `values.linkText` provides
+            // the translated label, and `components.link` is the
+            // wrapping `<a>`. The text-inside-tag shorthand
+            // (`<link>label</link>` with no `values`) is harder to get
+            // right across `<Trans>` versions, so stick with what's
+            // proven.
+            <p>
+              {t("export-center.deprecated.intro")}{" "}
+              {!queryDataPolicy.disableExport
+                ? t("export-center.deprecated.go-to-sql-editor-for-export")
+                : project?.allowJustInTimeAccess
+                  ? t("export-center.deprecated.request-via-jit")
+                  : null}
+              {queryDataPolicy.disableExport &&
+                !project?.allowJustInTimeAccess && (
+                  <Trans
+                    t={t}
+                    i18nKey="export-center.deprecated.enable-jit-first"
+                    values={{
+                      linkText: t(
+                        "export-center.deprecated.project-jit-link-text"
+                      ),
+                    }}
+                    components={{
+                      // Tag name `lnk` (not `link`) — `<link>` is an
+                      // HTML void element, which the Trans HTML parser
+                      // self-closes, orphaning the inner text and the
+                      // closing tag so the wrapping `<a>` never gets
+                      // generated and the link silently vanishes.
+                      lnk: (
+                        <a
+                          className="text-accent underline hover:text-accent-hover"
+                          href={projectSettingsHref}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            router.push(projectSettingsHref);
+                          }}
+                        />
+                      ),
+                    }}
+                  />
+                )}
+              {/* Approval-flow advice only when the JIT path is in
+                  play (i.e. the policy disables direct export). When
+                  export is policy-allowed, no JIT request is needed,
+                  so the approval flow isn't part of the user's path
+                  and the line would be noise. */}
+              {canSetWorkspaceSettings && queryDataPolicy.disableExport && (
+                <>
+                  {" "}
+                  <Trans
+                    t={t}
+                    i18nKey="export-center.deprecated.configure-approval-flow"
+                    values={{
+                      linkText: t(
+                        "export-center.deprecated.approval-flow-link-text"
+                      ),
+                    }}
+                    components={{
+                      lnk: (
+                        <a
+                          className="text-accent underline hover:text-accent-hover"
+                          href={customApprovalHref}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            router.push(customApprovalHref);
+                          }}
+                        />
+                      ),
+                    }}
+                  />
+                </>
+              )}
+            </p>
+          }
         >
           <div className="mt-3 flex justify-end">
             <Button
@@ -250,7 +365,11 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
               : undefined
           }
         >
-          <Button disabled={!canCreate} onClick={() => setShowDrawer(true)}>
+          <Button
+            variant="outline"
+            disabled={!canCreate}
+            onClick={() => setShowDrawer(true)}
+          >
             <Download className="size-4 mr-1" />
             {t("quick-action.request-export-data")}
           </Button>
