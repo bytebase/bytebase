@@ -80,8 +80,13 @@ vi.mock("@/react/components/ui/popover", () => ({
       {renderProp}
     </div>
   ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
+  PopoverContent: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div data-testid="popover-content" {...props}>
+      {children}
+    </div>
   ),
 }));
 
@@ -200,6 +205,28 @@ describe("MaskingReasonPopover", () => {
 
     const content = container.querySelector("[data-testid='popover-content']");
     expect(content?.textContent).toContain("masking.reason.title");
+    unmount();
+  });
+
+  test("clicking popover content does not bubble to result table", () => {
+    const onTableClick = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <div onClick={onTableClick}>
+        <MaskingReasonPopover reason={makeReason()} />
+      </div>
+    );
+    render();
+
+    const content = container.querySelector(
+      "[data-testid='popover-content']"
+    ) as HTMLDivElement;
+    expect(content).not.toBeNull();
+
+    act(() => {
+      content.click();
+    });
+
+    expect(onTableClick).not.toHaveBeenCalled();
     unmount();
   });
 
