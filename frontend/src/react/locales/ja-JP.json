@@ -2796,7 +2796,6 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
-    "unmask-warning": "クエリ結果にマスク解除された機密データが含まれる場合があります。",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "vertical-display": "縦型表示",

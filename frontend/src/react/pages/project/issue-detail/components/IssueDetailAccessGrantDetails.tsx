@@ -195,20 +195,12 @@ function IssueDetailAccessGrantTarget({ target }: { target: string }) {
 }
 
 /**
- * Renders the "this grant allows" card: a header bar (the verdict + a
- * structural warning when any Tier-2 capability — currently unmask —
- * is present) plus one row per capability granted.
- *
- * Border + header tone flip to `warning` when `unmask` is true so risk
- * presence is encoded in the card chrome, not just in a per-row tag.
- * This replaces the previous floating unmask-warning banner above the
- * SQL block; the verdict and the warning live in one place attached
- * to the permissions list.
- *
- * No new color tokens — built from `warning`, `control-bg`, `control-
- * border`, `control-light`. Kept local for now; can be lifted to a
- * shared component when the request drawer's confirmation step adopts
- * the same shape.
+ * "This grant allows" card: a warning-toned header bar (the verdict
+ * plus a `· includes sensitive access` suffix when a Tier-2 capability
+ * — currently unmask — is present) and one row per granted capability.
+ * Built from `warning` / `control-*` tokens only; kept local for now,
+ * can be lifted when the request drawer's confirmation step adopts the
+ * same shape.
  */
 function GrantScopeCard({
   unmask,

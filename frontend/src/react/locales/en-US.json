@@ -2796,7 +2796,6 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
-    "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "vertical-display": "Vertical display",
