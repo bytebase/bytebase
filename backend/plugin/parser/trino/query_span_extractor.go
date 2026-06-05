@@ -4,17 +4,33 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/trino"
+	"github.com/bytebase/omni/trino/analysis"
+	"github.com/bytebase/omni/trino/ast"
+	"github.com/bytebase/omni/trino/parser"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// querySpanExtractor extracts query spans from Trino statements.
-// This follows the TSQL pattern for consistency.
+// defaultTrinoSchema is the schema assumed for a table reference that omits the
+// schema qualifier. The legacy plugin used "public" for the data-access-control
+// resource format, and the query-span fixtures encode catalog.public.table; we
+// keep that so the resource keys are unchanged across the cutover.
+const defaultTrinoSchema = "public"
+
+// querySpanExtractor analyses a single Trino statement and produces a
+// base.QuerySpan: the set of physical columns it reads (expanded against
+// catalog metadata when available), the predicate columns it filters on, and
+// its statement classification.
+//
+// The extractor delegates table/column lineage to omni's analysis.GetQuerySpan,
+// then applies bytebase-specific post-processing:
+//   - default catalog/schema fill-in for bare table references (Trino's
+//     catalog.schema.table → base.ColumnResource Database/Schema/Table),
+//   - EXPLAIN unwrap so an EXPLAIN <query> still reports the tables it reads,
+//   - expansion of each accessed table to its columns via the metadata getter,
+//   - mapping omni's PredicateColumns onto the expanded source columns.
 type querySpanExtractor struct {
 	ctx context.Context
 
@@ -24,25 +40,11 @@ type querySpanExtractor struct {
 
 	gCtx base.GetQuerySpanContext
 
-	// CTEs for handling WITH clauses - following TSQL pattern
-	ctes []*base.PseudoTable
-
-	// Table sources for resolving columns - following TSQL pattern
-	tableSourcesFrom []base.TableSource
-
-	// Parse results - following TSQL pattern
-	sourceColumns    base.SourceColumnSet
-	predicateColumns base.SourceColumnSet
-
-	// Outer table sources for correlated subqueries
-	outerTableSources []base.TableSource
-
-	// Metadata cache
+	// metaCache memoises database metadata lookups within a single span.
 	metaCache map[string]*model.DatabaseMetadata
 }
 
 // newQuerySpanExtractor creates a new Trino query span extractor.
-// This follows the TSQL constructor pattern.
 func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		defaultDatabase:     defaultDatabase,
@@ -50,252 +52,502 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		metaCache:           make(map[string]*model.DatabaseMetadata),
-		sourceColumns:       make(base.SourceColumnSet),
-		predicateColumns:    make(base.SourceColumnSet),
 	}
 }
 
-// getQuerySpan extracts the query span for a Trino statement.
-// This method follows the TSQL pattern for consistency.
+// getQuerySpan extracts the query span for a single Trino statement.
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	q.sourceColumns = make(base.SourceColumnSet)
-	q.predicateColumns = make(base.SourceColumnSet)
-	q.tableSourcesFrom = []base.TableSource{}
-	q.ctes = []*base.PseudoTable{}
 
-	// Parse the statement
-	parseResults, err := ParseTrino(statement)
+	// Split into top-level statements; query-span analysis expects exactly one
+	// non-empty statement (matching the legacy behaviour).
+	stmts, err := SplitSQL(statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse Trino statement")
+		return nil, err
 	}
-
-	// Query span extraction expects exactly one statement
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
-	}
-
-	result := parseResults[0]
-
-	if result.Tree == nil {
-		return nil, errors.New("failed to parse Trino statement, no parse tree found")
-	}
-
-	// Get accessed tables for basic query type determination
-	accessTables := q.extractAccessedTables(result.Tree)
-	queryType, isExplainAnalyze := getQueryType(result.Tree)
-
-	// For non-SELECT queries, return basic span following TSQL pattern
-	if queryType != base.Select && queryType != base.Explain && queryType != base.SelectInfoSchema {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessTables,
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// Special handling for EXPLAIN following TSQL pattern
-	if isExplainAnalyze || queryType == base.Explain {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessTables,
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// Use ANTLR listener to extract source columns and results
-	listener := newTrinoQuerySpanListener(q)
-	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
-
-	if listener.err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(listener.err, &resourceNotFound) {
-			return &base.QuerySpan{
-				Type:          queryType,
-				SourceColumns: accessTables,
-				Results:       []base.QuerySpanResult{},
-				NotFoundError: resourceNotFound,
-			}, nil
+	nonEmpty := 0
+	var single string
+	for _, s := range stmts {
+		if s.Empty || strings.TrimSpace(s.Text) == "" {
+			continue
 		}
-		return nil, listener.err
+		nonEmpty++
+		single = s.Text
+	}
+	if nonEmpty == 0 {
+		return &base.QuerySpan{
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+	if nonEmpty > 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", nonEmpty)
 	}
 
-	// Expand table references to columns following TSQL pattern
-	fullSourceColumns := q.expandTableReferencesToColumns(accessTables)
+	// Resolve the statement type up front so non-SELECT statements short-circuit
+	// the way the legacy plugin did. EXPLAIN ANALYZE classifies as base.Select.
+	file, errs := parser.Parse(single)
+	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		return nil, errors.Errorf("failed to parse Trino statement: %s", single)
+	}
+	node := file.Stmts[0]
+	queryType, _ := getQueryType(node)
+	// Promote a user SELECT/EXPLAIN that references a system schema, matching the
+	// legacy containsSystemSchema heuristic.
+	switch queryType {
+	case base.Select, base.Explain:
+		if containsSystemSchema(single) {
+			queryType = base.SelectInfoSchema
+		}
+	default:
+	}
 
-	// Process predicate columns following TSQL pattern
-	fullPredicateColumns := q.expandPredicateColumns(fullSourceColumns)
+	// For statements that don't read columns into a result set (DML, DDL), the
+	// legacy plugin returned a basic span: the accessed tables as source
+	// columns, no per-column results. CREATE VIEW / EXPLAIN over a query still
+	// report the underlying tables.
+	readsResults := queryType == base.Select ||
+		queryType == base.Explain ||
+		queryType == base.SelectInfoSchema
 
-	// Expand SELECT * results following TSQL pattern
-	expandedResults := q.expandSelectAsteriskResults(listener.results, fullSourceColumns)
+	// Unwrap EXPLAIN so the inner query's tables are visible: omni's span walker
+	// only descends into SELECT/set-op at the top level.
+	spanInput := single
+	if explain, ok := node.(*parser.ExplainStmt); ok && explain.Statement != nil {
+		if loc, ok := nodeSpan(explain.Statement); ok && loc.Start >= 0 && loc.End <= len(single) && loc.Start < loc.End {
+			spanInput = single[loc.Start:loc.End]
+		}
+	}
 
-	return &base.QuerySpan{
+	omniSpan, err := analysis.GetQuerySpan(spanInput)
+	if err != nil {
+		return nil, err
+	}
+
+	tables := q.toTableResources(omniSpan)
+
+	if !readsResults {
+		// DML/DDL/unknown: report accessed tables as source columns (table-level,
+		// no column expansion), no results — mirroring the legacy basic span.
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: tables,
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
+	// Resolve relation aliases (e.g. "u" in "FROM users u") back to physical
+	// table names so aliased column references match the expanded source
+	// columns.
+	aliasMap := q.buildAliasMap(omniSpan)
+
+	// Expand each accessed table to its columns via metadata. If metadata is
+	// unavailable (e.g. tests without a getter), fall back to the table-level
+	// resource so callers still see what was read. orderedColumns preserves
+	// FROM-table-then-metadata column order for positional SELECT * masking.
+	//
+	// Trino system pseudo-catalogs (system.*) and information_schema are
+	// detected and skipped per resolved table inside expandTablesToColumns (not
+	// via a query-text substring scan), so a real maskable table is still
+	// expanded even when the same statement mentions "system." in a literal.
+	orderedColumns, fullSourceColumns, notFound := q.expandTablesToColumns(omniSpan)
+
+	results := q.buildResults(omniSpan, fullSourceColumns, orderedColumns, aliasMap)
+	predicateColumns := q.mapPredicateColumns(omniSpan, fullSourceColumns, aliasMap)
+
+	span := &base.QuerySpan{
 		Type:             queryType,
 		SourceColumns:    fullSourceColumns,
-		PredicateColumns: fullPredicateColumns,
-		Results:          expandedResults,
-	}, nil
+		PredicateColumns: predicateColumns,
+		Results:          results,
+	}
+	if notFound != nil {
+		span.NotFoundError = notFound
+	}
+	return span, nil
 }
 
-// expandPredicateColumns expands predicate columns to their fully qualified forms.
-// This follows the TSQL pattern for consistent predicate handling.
-func (q *querySpanExtractor) expandPredicateColumns(fullSourceColumns base.SourceColumnSet) base.SourceColumnSet {
-	fullPredicateColumns := make(base.SourceColumnSet)
+// toTableResources converts omni AccessTables into table-level
+// base.ColumnResource keys (Column empty), applying default catalog/schema.
+func (q *querySpanExtractor) toTableResources(span *analysis.QuerySpan) base.SourceColumnSet {
+	out := base.SourceColumnSet{}
+	if span == nil {
+		return out
+	}
+	for _, t := range span.AccessTables {
+		db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+		out[base.ColumnResource{
+			Database: db,
+			Schema:   schema,
+			Table:    t.Table,
+		}] = true
+	}
+	return out
+}
 
-	for col := range q.predicateColumns {
-		if col.Column != "" {
-			// Find all fully qualified versions in source columns
-			for sourceCol := range fullSourceColumns {
-				if sourceCol.Column == col.Column {
-					// Match table if specified, otherwise accept any table
-					if col.Table == "" || col.Table == sourceCol.Table {
-						fullPredicateColumns[sourceCol] = true
-					}
-				}
+// resolveCatalogSchema fills in the default database (catalog) and schema for a
+// table reference that omitted them, mirroring Trino's session-qualified
+// resolution. The schema falls back to defaultTrinoSchema ("public") when no
+// default schema is configured, matching the legacy resource-key format.
+func (q *querySpanExtractor) resolveCatalogSchema(catalog, schema string) (string, string) {
+	db := catalog
+	if db == "" {
+		db = q.defaultDatabase
+	}
+	if schema == "" {
+		schema = q.defaultSchema
+		if schema == "" {
+			schema = defaultTrinoSchema
+		}
+	}
+	return db, schema
+}
+
+// expandTablesToColumns expands each accessed table into one resource per column
+// from the table's metadata. It returns the columns both as an ordered slice
+// (AccessTables/FROM order, then metadata column order) and as a set. The
+// ordered slice drives positional SELECT * masking, where the order must match
+// the executed result's column order; the set is used for membership tests.
+//
+// A table whose metadata can't be resolved is kept as a single table-level
+// resource so the read is still recorded. The first ResourceNotFoundError
+// encountered is returned (non-fatally) so the caller can attach it to the span,
+// matching the legacy listener behaviour.
+func (q *querySpanExtractor) expandTablesToColumns(span *analysis.QuerySpan) ([]base.ColumnResource, base.SourceColumnSet, *base.ResourceNotFoundError) {
+	ordered := make([]base.ColumnResource, 0)
+	set := make(base.SourceColumnSet)
+	var firstNotFound *base.ResourceNotFoundError
+	// add records a column both in the membership set (deduped, used for lineage
+	// matching) and in the ordered slice (NOT deduped, so a self-join such as
+	// "FROM users u1 JOIN users u2" contributes each instance's columns and the
+	// positional SELECT * masker stays aligned with Trino's 2N output columns).
+	add := func(res base.ColumnResource) {
+		set[res] = true
+		ordered = append(ordered, res)
+	}
+	if span == nil {
+		return ordered, set, nil
+	}
+	for _, t := range span.AccessTables {
+		db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+		if isSystemSchemaTable(db, schema) {
+			// Trino's "system" catalog (system.runtime/metadata/jdbc.*) and the
+			// per-catalog information_schema are pseudo-objects, not
+			// Bytebase-tracked databases. Resolving them via the metadata getter
+			// would yield a ResourceNotFoundError that sql_service turns into a
+			// hard "failed to mask data" rejection of an otherwise-successful
+			// result. System metadata is never masked, so keep the table-level
+			// resource and skip the lookup. Detection keys on the resolved
+			// catalog/schema (not a query-text substring), so a literal
+			// containing "system." cannot suppress masking of a real table.
+			//
+			// Best-effort boundary: a system table contributes one placeholder
+			// here but expands to several columns in a real `SELECT *`. For the
+			// rare `SELECT * FROM <system> JOIN <real>` shape the positional
+			// masker can therefore misalign the trailing real columns. Fully
+			// fixing it needs system-table column metadata (not available); such
+			// queries are already classified SelectInfoSchema. Tracked as a
+			// follow-up rather than blocking the cutover.
+			add(base.ColumnResource{Database: db, Schema: schema, Table: t.Table})
+			continue
+		}
+		columns, err := q.tableColumns(db, schema, t.Table)
+		if err != nil {
+			var notFound *base.ResourceNotFoundError
+			if errors.As(err, &notFound) && firstNotFound == nil {
+				firstNotFound = notFound
+			}
+			// Keep the table-level resource (NotFound or any other error).
+			add(base.ColumnResource{Database: db, Schema: schema, Table: t.Table})
+			continue
+		}
+		if len(columns) == 0 {
+			add(base.ColumnResource{Database: db, Schema: schema, Table: t.Table})
+			continue
+		}
+		for _, col := range columns {
+			add(base.ColumnResource{Database: db, Schema: schema, Table: t.Table, Column: col})
+		}
+	}
+	return ordered, set, firstNotFound
+}
+
+// isSystemSchemaTable reports whether a resolved table reference targets a Trino
+// system pseudo-object: the built-in "system" catalog (system.runtime.*,
+// system.metadata.*, system.jdbc.*) or the per-catalog "information_schema".
+// These are not Bytebase-tracked databases and their metadata is never masked.
+func isSystemSchemaTable(catalog, schema string) bool {
+	return strings.EqualFold(catalog, "system") || strings.EqualFold(schema, "information_schema")
+}
+
+// buildResults maps omni's per-output-column results onto base.QuerySpanResult.
+// Each result's SourceColumns is the subset of the expanded source columns that
+// share the result's column name (best-effort; omni does not resolve a select
+// item back to its owning relation, so aliasMap translates a relation alias on
+// the reference back to its physical table first).
+//
+// For SELECT *, the expansion uses orderedColumns (FROM-table then metadata
+// column order) rather than ranging the source-column map: the masker applies
+// per-result maskers positionally against the executed result's column order, so
+// a nondeterministic order here could mask the wrong column and leak data.
+func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, orderedColumns []base.ColumnResource, aliasMap map[string][]string) []base.QuerySpanResult {
+	if span == nil {
+		return []base.QuerySpanResult{}
+	}
+	results := make([]base.QuerySpanResult, 0, len(span.Results))
+	for _, r := range span.Results {
+		// Unqualified star "*": expand to every source column, in result order.
+		//
+		// Best-effort boundary: omni records a star as a single "*" result over
+		// the flat AccessTables and does not expose the resolved output relation,
+		// so a star over a CTE or derived table that projects a subset/reordering
+		// (e.g. WITH c AS (SELECT email FROM users) SELECT * FROM c) is
+		// indistinguishable here from SELECT * over the base table and expands to
+		// the base table's columns. This matches the prior ANTLR plugin (which
+		// produced no columns for such stars) and is tracked as a follow-up; a
+		// correct fix needs omni's analysis to expose the star's output columns.
+		if r.Name == "*" {
+			results = appendStarColumns(results, orderedColumns, nil)
+			continue
+		}
+		// Qualified star "<rel>.*": omni names the result "<rel>.*" with a single
+		// source ref that is the relation itself. Without this branch it would
+		// fall through to the column-name match below, find no column literally
+		// named "<rel>.*", and leave SourceColumns empty — the masker would then
+		// treat those (possibly sensitive) columns as constants and return them
+		// unmasked. Resolve the ref to the specific relation(s) it names (by
+		// database/schema/table, so same-named tables in different schemas are
+		// distinguished) and expand only those columns, preserving order. The
+		// detection inspects the source-ref shape, not just the display name, so a
+		// column merely aliased to a name ending in ".*" is not mistaken for a
+		// star.
+		if isQualifiedStar(r) {
+			targets := q.qualifiedStarTargets(r.SourceColumns[0], span)
+			results = appendStarColumns(results, orderedColumns, targets)
+			continue
+		}
+		sourceColumns := base.SourceColumnSet{}
+		for _, ref := range r.SourceColumns {
+			addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table, aliasMap)
+		}
+		results = append(results, base.QuerySpanResult{
+			Name:          r.Name,
+			SourceColumns: sourceColumns,
+			IsPlainField:  len(r.SourceColumns) == 1,
+		})
+	}
+	return results
+}
+
+// appendStarColumns appends one plain-field result per column in orderedColumns,
+// in order (the positional masker maps each result to the executed result column
+// at the same index). When targets is non-nil — a qualified star "<rel>.*" — only
+// columns whose (database, schema, table) key is in targets are appended; a nil
+// targets (unqualified "*") appends every column.
+func appendStarColumns(results []base.QuerySpanResult, orderedColumns []base.ColumnResource, targets map[base.ColumnResource]bool) []base.QuerySpanResult {
+	for _, col := range orderedColumns {
+		if targets != nil {
+			if !targets[base.ColumnResource{Database: col.Database, Schema: col.Schema, Table: col.Table}] {
+				continue
 			}
 		}
+		results = append(results, base.QuerySpanResult{
+			Name:          col.Column,
+			SourceColumns: base.SourceColumnSet{col: true},
+			IsPlainField:  true,
+		})
 	}
-
-	return fullPredicateColumns
+	return results
 }
 
-// expandSelectAsteriskResults expands SELECT * results into individual column results
-// This is similar to how TSQL handles SELECT * queries
-func (q *querySpanExtractor) expandSelectAsteriskResults(results []base.QuerySpanResult, fullSourceColumns base.SourceColumnSet) []base.QuerySpanResult {
-	var expandedResults []base.QuerySpanResult
+// qualifiedStarResult reports whether r is a genuine qualified star "<rel>.*"
+// (returning the relation qualifier), as opposed to an ordinary column that
+// happens to be aliased to a name ending in ".*". omni represents a qualified
+// star as a result whose Name is "<rel>.*" and whose single source ref is the
+// relation name itself (Column == <rel>, no catalog/schema/table qualifier); a
+// real column aliased to e.g. "u.*" instead carries the underlying column name
+// in its source ref, so it is handled as a normal column and not star-expanded
+// (which would misalign the positional masker and could leak).
+func isQualifiedStar(r analysis.ColumnInfo) bool {
+	qualifier, ok := qualifiedStarQualifier(r.Name)
+	if !ok {
+		return false
+	}
+	// omni represents a qualified star "<...>.<rel>.*" as a single source ref
+	// whose Column is the relation name <rel> (any schema/catalog path written
+	// before it lands in the ref's Table/Schema fields). A real column aliased to
+	// a name ending in ".*" instead carries the underlying column name in Column,
+	// which will not equal the qualifier, so it is handled as a normal column and
+	// not star-expanded (avoiding a positional-masker misalignment/leak).
+	//
+	// Matching only on Column == qualifier (not on empty table/schema) is
+	// deliberate: it keeps genuine table/schema/catalog-qualified stars like
+	// public.users.* working. The sole residual ambiguity is the contrived case
+	// of a column literally named like the qualifier and aliased to
+	// "<qualifier>.*", which omni renders identically to a real star.
+	if len(r.SourceColumns) != 1 {
+		return false
+	}
+	return strings.EqualFold(r.SourceColumns[0].Column, qualifier)
+}
 
-	for _, result := range results {
-		if result.SelectAsterisk && result.Name == "*" {
-			// Use table sources to get columns in the correct order (same as TSQL approach)
-			for _, tableSource := range q.tableSourcesFrom {
-				tableColumns := tableSource.GetQuerySpanResult()
-
-				for _, columnResult := range tableColumns {
-					// Only include columns that are in our source columns set
-					columnIncluded := false
-					for sourceCol := range columnResult.SourceColumns {
-						if _, exists := fullSourceColumns[sourceCol]; exists {
-							columnIncluded = true
-							break
-						}
-					}
-
-					if columnIncluded {
-						expandedResults = append(expandedResults, columnResult)
-					}
-				}
-			}
-		} else {
-			// Keep non-asterisk results as-is
-			expandedResults = append(expandedResults, result)
+// qualifiedStarTargets resolves the relation(s) named by a qualified-star source
+// ref into a set of (database, schema, table) keys, so the star expands to
+// exactly that relation's columns — distinguishing same-named tables in
+// different schemas or catalogs. omni encodes the written qualifier in the ref
+// with the parts shifted right: Column is the relation/alias, Table is the schema
+// part, and Schema is the catalog part.
+func (q *querySpanExtractor) qualifiedStarTargets(ref analysis.ColumnRef, span *analysis.QuerySpan) map[base.ColumnResource]bool {
+	targets := make(map[base.ColumnResource]bool)
+	// Alias-qualified star (u.*): collect every base table that carries the
+	// alias. A reused/shadowed alias yields several, which over-includes (the
+	// extra columns are ignored positionally) rather than risking a leak.
+	aliasMatched := false
+	for _, t := range span.AccessTables {
+		if t.Alias != "" && strings.EqualFold(t.Alias, ref.Column) {
+			db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+			targets[base.ColumnResource{Database: db, Schema: schema, Table: t.Table}] = true
+			aliasMatched = true
 		}
 	}
-
-	return expandedResults
-}
-
-// expandTableReferencesToColumns expands table references to individual columns
-func (q *querySpanExtractor) expandTableReferencesToColumns(accessTables base.SourceColumnSet) base.SourceColumnSet {
-	fullSourceColumns := make(base.SourceColumnSet)
-
-	// First, copy all explicitly collected source columns
-	for col := range q.sourceColumns {
-		fullSourceColumns[col] = true
+	if aliasMatched {
+		return targets
 	}
-
-	// Expand table references to columns
-	for resource := range accessTables {
-		// Check if this is a table reference (has no column set)
-		if resource.Column == "" {
-			// Get the database metadata to find all columns for this table
-			db, schema, table := resource.Database, resource.Schema, resource.Table
-			tableMeta, err := q.findTableSchema(db, schema, table)
-			if err == nil && tableMeta != nil {
-				// Add each column from the table as a source column with full path
-				for _, col := range tableMeta.GetProto().GetColumns() {
-					colResource := base.ColumnResource{
-						Database: db,
-						Schema:   schema,
-						Table:    table,
-						Column:   col.Name,
-					}
-					fullSourceColumns[colResource] = true
-				}
-			}
-		} else {
-			// This is already a column reference, keep it
-			fullSourceColumns[resource] = true
+	// Table-name-qualified star (users.* / public.users.* / cat.sch.users.*):
+	// ref.Column is the table, ref.Table the schema part, ref.Schema the catalog.
+	// Only target a base table actually present in AccessTables, so a qualifier
+	// naming a CTE/derived relation (which omni omits from AccessTables) does not
+	// accidentally target an unrelated physical table of the same name. A
+	// qualified star over a CTE/derived relation thus yields no columns here —
+	// the same best-effort boundary as an unqualified star over such a relation
+	// (omni does not expose the resolved output projection; tracked as a
+	// follow-up).
+	wantDB, wantSchema := q.resolveCatalogSchema(ref.Schema, ref.Table)
+	for _, t := range span.AccessTables {
+		db, schema := q.resolveCatalogSchema(t.Catalog, t.Schema)
+		if strings.EqualFold(db, wantDB) && strings.EqualFold(schema, wantSchema) && strings.EqualFold(t.Table, ref.Column) {
+			targets[base.ColumnResource{Database: db, Schema: schema, Table: t.Table}] = true
 		}
 	}
-
-	return fullSourceColumns
+	return targets
 }
 
-// extractAccessedTables analyzes the parse tree to find all table resources accessed
-func (q *querySpanExtractor) extractAccessedTables(tree antlr.Tree) base.SourceColumnSet {
-	resources := make(base.SourceColumnSet)
-	tableListener := &tableExtractorListener{
-		extractor: q,
-		resources: resources,
+// qualifiedStarQualifier returns the relation qualifier of a qualified-star
+// result name like "u.*" or "catalog.schema.t.*" (the rightmost component before
+// the trailing ".*"), and whether name is a qualified star. Column matching keys
+// on the table/alias, so only the last component is returned.
+func qualifiedStarQualifier(name string) (string, bool) {
+	if !strings.HasSuffix(name, ".*") {
+		return "", false
 	}
-
-	antlr.ParseTreeWalkerDefault.Walk(tableListener, tree)
-	return resources
+	qualifier := strings.TrimSuffix(name, ".*")
+	if i := strings.LastIndex(qualifier, "."); i >= 0 {
+		qualifier = qualifier[i+1:]
+	}
+	if qualifier == "" {
+		return "", false
+	}
+	return qualifier, true
 }
 
-// getDatabaseMetadata fetches metadata for the given database.
-func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
-	if database == "" {
-		database = q.defaultDatabase
+// mapPredicateColumns maps omni's predicate column refs onto the expanded source
+// columns (matching on column name, and table when the ref carries one; a
+// relation alias on the ref is resolved via aliasMap).
+func (*querySpanExtractor) mapPredicateColumns(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) base.SourceColumnSet {
+	out := make(base.SourceColumnSet)
+	if span == nil {
+		return out
 	}
-
-	// Return cached metadata if available
-	if meta, ok := q.metaCache[database]; ok {
-		return meta, nil
+	for _, ref := range span.PredicateColumns {
+		addMatchingColumns(out, fullSourceColumns, ref.Column, ref.Table, aliasMap)
 	}
+	return out
+}
 
-	// Skip if metadata function not provided (for testing)
-	if q.gCtx.GetDatabaseMetadataFunc == nil {
-		return nil, &base.ResourceNotFoundError{Database: &database}
-	}
-
-	// Fetch metadata using the provided function
-	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
-	if err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(err, &resourceNotFound) {
-			return nil, err
+// addMatchingColumns adds every column in fullSourceColumns whose name matches
+// refColumn (case-insensitively, and whose table matches refTable when refTable
+// is non-empty) to dst. refTable may be a relation alias; see tableMatches.
+func addMatchingColumns(dst, fullSourceColumns base.SourceColumnSet, refColumn, refTable string, aliasMap map[string][]string) {
+	for sc := range fullSourceColumns {
+		if !strings.EqualFold(sc.Column, refColumn) {
+			continue
 		}
-		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
+		if refTable == "" || tableMatches(sc.Table, refTable, aliasMap) {
+			dst[sc] = true
+		}
 	}
-
-	if meta == nil {
-		// Return empty metadata for testing purposes
-		emptyMeta := &model.DatabaseMetadata{}
-		q.metaCache[database] = emptyMeta
-		return emptyMeta, nil
-	}
-
-	// Cache and return the metadata
-	q.metaCache[database] = meta
-	return meta, nil
 }
 
-// addSourceColumn adds a column to the tracked source columns.
-func (q *querySpanExtractor) addSourceColumn(col base.ColumnResource) {
-	q.sourceColumns[col] = true
+// tableMatches reports whether the physical table scTable is named by refTable,
+// either directly (its own name) or as a relation alias for it. Alias resolution
+// is additive: the written refTable and every physical table the alias maps to
+// are all accepted. omni's AccessTables is a flat, scope-less list, so an alias
+// reused or shadowed across subqueries yields several candidates; accepting all
+// of them over-includes (conservatively masks more) rather than risk an
+// under-match that would leave a sensitive column unmasked.
+func tableMatches(scTable, refTable string, aliasMap map[string][]string) bool {
+	if strings.EqualFold(scTable, refTable) {
+		return true
+	}
+	for _, phys := range aliasMap[strings.ToLower(refTable)] {
+		if strings.EqualFold(scTable, phys) {
+			return true
+		}
+	}
+	return false
 }
 
-// findTableSchema locates a table or view and returns its metadata.
-func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.TableMetadata, error) {
-	// Get database metadata
+// buildAliasMap maps each relation alias (lower-cased) to the physical table
+// names it stands for, so aliased column references resolve back to base tables
+// during column matching. Because omni's AccessTables is flat (carries no SQL
+// scope), an alias reused in different scopes maps to several tables; all are
+// kept so matching can over-include rather than under-match. An alias equal to
+// its own table name carries no information and is skipped.
+func (*querySpanExtractor) buildAliasMap(span *analysis.QuerySpan) map[string][]string {
+	if span == nil {
+		return nil
+	}
+	out := make(map[string][]string)
+	for _, t := range span.AccessTables {
+		if t.Alias == "" || strings.EqualFold(t.Alias, t.Table) {
+			continue
+		}
+		key := strings.ToLower(t.Alias)
+		if !containsFold(out[key], t.Table) {
+			out[key] = append(out[key], t.Table)
+		}
+	}
+	return out
+}
+
+// containsFold reports whether list contains s under case-insensitive
+// comparison.
+func containsFold(list []string, s string) bool {
+	for _, e := range list {
+		if strings.EqualFold(e, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// tableColumns returns the column names of the given table or view, honouring
+// the case-sensitivity flag for object lookup.
+func (q *querySpanExtractor) tableColumns(db, schema, table string) ([]string, error) {
 	metadata, err := q.getDatabaseMetadata(db)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get schema metadata
 	schemaMeta := metadata.GetSchemaMetadata(schema)
+	if schemaMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range metadata.ListSchemaNames() {
+			if strings.EqualFold(name, schema) {
+				schemaMeta = metadata.GetSchemaMetadata(name)
+				break
+			}
+		}
+	}
 	if schemaMeta == nil {
 		return nil, &base.ResourceNotFoundError{
 			Database: &db,
@@ -303,75 +555,90 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 		}
 	}
 
-	// Look for table
-	var tableMeta *model.TableMetadata
-	if q.ignoreCaseSensitive {
-		for _, tblName := range schemaMeta.ListTableNames() {
-			if strings.EqualFold(tblName, name) {
-				tableMeta = schemaMeta.GetTable(tblName)
+	// Table first.
+	tableMeta := schemaMeta.GetTable(table)
+	if tableMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range schemaMeta.ListTableNames() {
+			if strings.EqualFold(name, table) {
+				tableMeta = schemaMeta.GetTable(name)
 				break
 			}
 		}
-	} else {
-		tableMeta = schemaMeta.GetTable(name)
 	}
-
 	if tableMeta != nil {
-		return tableMeta, nil
+		var cols []string
+		for _, col := range tableMeta.GetProto().GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return cols, nil
 	}
 
-	// Look for view
-	var viewMeta *storepb.ViewMetadata
-	if q.ignoreCaseSensitive {
-		for _, viewName := range schemaMeta.ListViewNames() {
-			if strings.EqualFold(viewName, name) {
-				viewMeta = schemaMeta.GetView(viewName)
+	// Then view.
+	viewMeta := schemaMeta.GetView(table)
+	if viewMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range schemaMeta.ListViewNames() {
+			if strings.EqualFold(name, table) {
+				viewMeta = schemaMeta.GetView(name)
 				break
 			}
 		}
-	} else {
-		viewMeta = schemaMeta.GetView(name)
 	}
-
 	if viewMeta != nil {
-		// For views, return a table metadata with columns from the view
-		tableMeta := &model.TableMetadata{}
-		// In a more complete implementation, we would add columns from the view here
-		return tableMeta, nil
+		var cols []string
+		for _, col := range viewMeta.GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return cols, nil
 	}
 
-	// Not found
 	return nil, &base.ResourceNotFoundError{
 		Database: &db,
 		Schema:   &schema,
-		Table:    &name,
+		Table:    &table,
 	}
 }
 
-// tableExtractorListener extracts table resources from the parse tree
-type tableExtractorListener struct {
-	parser.BaseTrinoParserListener
-
-	extractor *querySpanExtractor
-	resources base.SourceColumnSet
+// getDatabaseMetadata fetches (and caches) metadata for the given database.
+func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
+	if database == "" {
+		database = q.defaultDatabase
+	}
+	if meta, ok := q.metaCache[database]; ok {
+		return meta, nil
+	}
+	if q.gCtx.GetDatabaseMetadataFunc == nil {
+		return nil, &base.ResourceNotFoundError{Database: &database}
+	}
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
+	if err != nil {
+		var notFound *base.ResourceNotFoundError
+		if errors.As(err, &notFound) {
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
+	}
+	if meta == nil {
+		empty := &model.DatabaseMetadata{}
+		q.metaCache[database] = empty
+		return empty, nil
+	}
+	q.metaCache[database] = meta
+	return meta, nil
 }
 
-// EnterTableName is called when the parser enters a table name
-func (l *tableExtractorListener) EnterTableName(ctx *parser.TableNameContext) {
-	if ctx.QualifiedName() == nil {
-		return
+// nodeText returns the source substring covered by node n within statement, or
+// "" when the node's location is unusable.
+// nodeSpan returns the source byte range of an omni statement node. Most omni
+// node types expose Span() ast.Loc; *parser.QueryStmt carries its range on a
+// plain Loc field. (ast.NodeLoc only knows ast-package nodes — File/Identifier/
+// QualifiedName — not the parser-package statement nodes, so it cannot be used
+// to unwrap an EXPLAIN's inner statement.)
+func nodeSpan(n ast.Node) (ast.Loc, bool) {
+	if qs, ok := n.(*parser.QueryStmt); ok {
+		return qs.Loc, true
 	}
-
-	db, schema, table := ExtractDatabaseSchemaName(
-		ctx.QualifiedName(),
-		l.extractor.defaultDatabase,
-		l.extractor.defaultSchema,
-	)
-
-	// Add a resource for the table
-	l.resources[base.ColumnResource{
-		Database: db,
-		Schema:   schema,
-		Table:    table,
-	}] = true
+	if sp, ok := n.(interface{ Span() ast.Loc }); ok {
+		return sp.Span(), true
+	}
+	return ast.Loc{}, false
 }

@@ -13,8 +13,8 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_TRINO, GetQuerySpan)
 }
 
-// GetQuerySpan gets the query span for Trino.
-// This is the entry point registered with the base package.
+// GetQuerySpan gets the query span for a Trino statement. It is the entry point
+// registered with the base package.
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
 

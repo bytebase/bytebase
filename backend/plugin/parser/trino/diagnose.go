@@ -3,10 +3,8 @@ package trino
 import (
 	"context"
 	"strings"
-	"unicode"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/trino"
+	"github.com/bytebase/omni/trino/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -16,60 +14,42 @@ func init() {
 	base.RegisterDiagnoseFunc(storepb.Engine_TRINO, Diagnose)
 }
 
-// Diagnose diagnoses the SQL statement and returns any syntax errors.
+// Diagnose returns syntax diagnostics for the given Trino statement. It surfaces
+// genuine lex/parse errors from the omni parser.
+//
+// The omni Trino parser emits a "<NAME> statement parsing is not yet supported"
+// stub error from a handful of dispatch fallthroughs. Most of those fire only on
+// genuinely malformed input — every valid CREATE/DROP/ALTER object keyword is
+// implemented, so e.g. "CREATE TABLEE ..." (an unrecognized object) is a true
+// SYNTAX_ERROR (confirmed against the Trino 481 oracle) and we must keep it. The
+// only valid-Trino forms that still hit the stub are DESCRIBE INPUT / DESCRIBE
+// OUTPUT (oracle: NOT_FOUND, i.e. they parse). We suppress ONLY those so the
+// editor does not show a false positive on valid SQL; everything else passes
+// through. When omni implements DESCRIBE INPUT/OUTPUT the stub stops firing and
+// this filter becomes a no-op.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parseTrinoStatement(statement)
-	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
+	diags := parser.Diagnose(statement)
+	out := make([]base.Diagnostic, 0, len(diags))
+	mapper := base.NewByteOffsetPositionMapper(statement)
+	for _, d := range diags {
+		if isValidButUnimplementedStub(d.Msg) {
+			continue
+		}
+		syntaxErr := &base.SyntaxError{
+			Position: mapper.Position(d.Loc.Start),
+			Message:  d.Msg,
+		}
+		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-
-	return diagnostics, nil
+	return out, nil
 }
 
-// parseTrinoStatement parses the given SQL and returns any syntax errors.
-func parseTrinoStatement(statement string) *base.SyntaxError {
-	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
-	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
-		// Add a semicolon to the end of the statement to allow users to omit the semicolon
-		statement += ";"
-	}
-
-	// Create lexer and parser
-	lexer := parser.NewTrinoLexer(antlr.NewInputStream(statement))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewTrinoParser(stream)
-
-	// Set up error listeners
-	startPosition := &storepb.Position{Line: 1}
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	// No need to build parse trees for just syntax checking
-	p.BuildParseTrees = false
-
-	// Parse the statement
-	_ = p.SingleStatement()
-
-	// Return any errors
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
-	}
-
-	return nil
+// isValidButUnimplementedStub reports whether msg is an omni "not yet supported"
+// stub error for a statement form that is valid Trino (so it must not be flagged
+// as a syntax error). Today that is only DESCRIBE INPUT / DESCRIBE OUTPUT; the
+// CREATE/DROP/ALTER stubs fire exclusively on unrecognized object keywords,
+// which are genuine syntax errors, so they are intentionally NOT matched here.
+func isValidButUnimplementedStub(msg string) bool {
+	return strings.HasPrefix(msg, "DESCRIBE ") &&
+		strings.HasSuffix(msg, "statement parsing is not yet supported")
 }

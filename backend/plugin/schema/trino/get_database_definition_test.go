@@ -1,7 +1,6 @@
 package trino
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,6 +99,11 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	}
 }
 
+// TestWriteCreateTable exercises the single-table CREATE TABLE rendering through
+// the public GetDatabaseDefinition entry point (the omni deparser owns the
+// per-table writer internally now, so it is no longer a directly callable
+// helper). The emitted statement is followed by the standard inter-statement
+// "\n\n" separator the deparser appends.
 func TestWriteCreateTable(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -124,16 +128,26 @@ func TestWriteCreateTable(t *testing.T) {
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "schema"."table" (
     "col1" integer NOT NULL
-);`,
+);
+
+`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var buf strings.Builder
-			err := writeCreateTable(&buf, tt.schema, tt.table)
+			metadata := &storepb.DatabaseSchemaMetadata{
+				Name: tt.catalog,
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name:   tt.schema,
+						Tables: []*storepb.TableMetadata{tt.table},
+					},
+				},
+			}
+			result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

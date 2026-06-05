@@ -1,8 +1,10 @@
+// Package trino implements the bytebase schema.GetDatabaseDefinition contract
+// for the Trino engine, backed by the omni Trino deparser
+// (github.com/bytebase/omni/trino/deparse).
 package trino
 
 import (
-	"fmt"
-	"strings"
+	"github.com/bytebase/omni/trino/deparse"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -12,53 +14,54 @@ func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_TRINO, GetDatabaseDefinition)
 }
 
-// GetDatabaseDefinition generates the SQL definition for a Trino database schema
+// GetDatabaseDefinition renders the CREATE TABLE SDL for a Trino database
+// schema. It converts the storepb metadata into the omni deparser's metadata
+// model and delegates to deparse.GetDatabaseDefinition, which emits one CREATE
+// TABLE statement per table in schema-then-table snapshot order.
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
-	var buf strings.Builder
-
-	// Process each schema
-	for _, schema := range metadata.Schemas {
-		// Process tables in the schema
-		for _, table := range schema.Tables {
-			if err := writeCreateTable(&buf, schema.Name, table); err != nil {
-				return "", err
-			}
-			buf.WriteString("\n\n")
-		}
-	}
-
-	return buf.String(), nil
+	return deparse.GetDatabaseDefinition(convertDatabaseMetadata(metadata))
 }
 
-// writeCreateTable generates CREATE TABLE statement
-func writeCreateTable(buf *strings.Builder, schema string, table *storepb.TableMetadata) error {
-	// Begin CREATE TABLE statement
-	createTable := fmt.Sprintf("CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" (\n", schema, table.Name)
-
-	if _, err := buf.WriteString(createTable); err != nil {
-		return err
+// convertDatabaseMetadata maps storepb.DatabaseSchemaMetadata onto the omni
+// deparse metadata model one-to-one, copying only the fields the Trino SDL dump
+// consumes (schemas, tables, and column Name/Type/Nullable).
+func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *deparse.DatabaseSchemaMetadata {
+	if metadata == nil {
+		return nil
 	}
-
-	// Add column definitions
-	var columnDefs []string
-	for _, column := range table.Columns {
-		nullable := ""
-		if !column.Nullable {
-			nullable = " NOT NULL"
+	out := &deparse.DatabaseSchemaMetadata{
+		Name:    metadata.Name,
+		Schemas: make([]*deparse.SchemaMetadata, 0, len(metadata.Schemas)),
+	}
+	for _, s := range metadata.Schemas {
+		if s == nil {
+			continue
 		}
-		columnDefs = append(columnDefs, fmt.Sprintf("    \"%s\" %s%s", column.Name, column.Type, nullable))
-	}
-
-	if len(columnDefs) > 0 {
-		if _, err := buf.WriteString(strings.Join(columnDefs, ",\n")); err != nil {
-			return err
+		schemaMeta := &deparse.SchemaMetadata{
+			Name:   s.Name,
+			Tables: make([]*deparse.TableMetadata, 0, len(s.Tables)),
 		}
+		for _, t := range s.Tables {
+			if t == nil {
+				continue
+			}
+			tableMeta := &deparse.TableMetadata{
+				Name:    t.Name,
+				Columns: make([]*deparse.ColumnMetadata, 0, len(t.Columns)),
+			}
+			for _, c := range t.Columns {
+				if c == nil {
+					continue
+				}
+				tableMeta.Columns = append(tableMeta.Columns, &deparse.ColumnMetadata{
+					Name:     c.Name,
+					Type:     c.Type,
+					Nullable: c.Nullable,
+				})
+			}
+			schemaMeta.Tables = append(schemaMeta.Tables, tableMeta)
+		}
+		out.Schemas = append(out.Schemas, schemaMeta)
 	}
-
-	// Close the CREATE TABLE statement
-	if _, err := buf.WriteString("\n);"); err != nil {
-		return err
-	}
-
-	return nil
+	return out
 }
