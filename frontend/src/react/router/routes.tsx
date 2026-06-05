@@ -1,5 +1,6 @@
-import type { RouteObject } from "react-router-dom";
+import { type RouteObject, redirect } from "react-router-dom";
 import { RootLayout } from "@/react/app/RootLayout";
+import { WORKSPACE_ROUTE_404 } from "@/react/router/handles";
 import { authRoutes } from "@/react/router/routes/auth";
 import { dashboardRoutes } from "@/react/router/routes/dashboard";
 import { sqlEditorRoutes } from "@/react/router/routes/sqlEditor";
@@ -15,7 +16,16 @@ import { sqlEditorRoutes } from "@/react/router/routes/sqlEditor";
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
-    children: [...authRoutes, ...dashboardRoutes, ...sqlEditorRoutes],
+    children: [
+      ...authRoutes,
+      ...dashboardRoutes,
+      ...sqlEditorRoutes,
+      {
+        path: "*",
+        handle: { name: WORKSPACE_ROUTE_404 },
+        loader: () => redirect("/404"),
+      },
+    ],
   },
 ];
 
