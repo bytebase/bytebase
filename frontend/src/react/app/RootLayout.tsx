@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { Location } from "react-router-dom";
 import { matchRoutes, Outlet, useBlocker } from "react-router-dom";
 import { AuthGate } from "@/react/app/AuthGate";
@@ -31,18 +32,27 @@ function snapshotLocation(location: Location): ReactRoute {
 // `next(false)`. The guards run `window.confirm` synchronously and remember a
 // pending target themselves, so a blocked navigation simply stays put.
 function LeaveGuardBlocker() {
-  useBlocker(({ currentLocation, nextLocation }) => {
-    if (
-      currentLocation.pathname === nextLocation.pathname &&
-      currentLocation.search === nextLocation.search
-    ) {
-      return false;
+  const blockerRef = useRef<ReturnType<typeof useBlocker> | null>(null);
+  const blocker = useBlocker(
+    ({ currentLocation, historyAction, nextLocation }) => {
+      if (
+        currentLocation.pathname === nextLocation.pathname &&
+        currentLocation.search === nextLocation.search
+      ) {
+        return false;
+      }
+      return runBeforeEachGuards(
+        snapshotLocation(nextLocation),
+        snapshotLocation(currentLocation),
+        {
+          historyAction,
+          reset: () => blockerRef.current?.reset?.(),
+          retry: () => blockerRef.current?.proceed?.(),
+        }
+      );
     }
-    return runBeforeEachGuards(
-      snapshotLocation(nextLocation),
-      snapshotLocation(currentLocation)
-    );
-  });
+  );
+  blockerRef.current = blocker;
   return null;
 }
 

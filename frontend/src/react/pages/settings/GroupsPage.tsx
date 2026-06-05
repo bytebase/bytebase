@@ -16,6 +16,12 @@ import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { UserCell } from "@/react/components/UserCell";
 import { UserSelect } from "@/react/components/UserSelect";
 import { Alert } from "@/react/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -47,6 +53,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
+import type { NavigationHistoryAction } from "@/react/router";
 import { router } from "@/react/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -445,8 +452,21 @@ interface CreateGroupSheetProps {
   onRemoved: (group: Group) => void;
 }
 
+type PendingLeaveTarget = {
+  fullPath: string;
+  historyAction: NavigationHistoryAction;
+  reset?: () => void;
+  retry?: () => void;
+};
+
 function CreateGroupSheet(props: CreateGroupSheetProps) {
   const { open, group, onClose } = props;
+  const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingLeaveConfirm, setPendingLeaveConfirm] = useState(false);
+  const [pendingLeaveTarget, setPendingLeaveTarget] =
+    useState<PendingLeaveTarget | null>(null);
+  const bypassLeaveGuardRef = useRef(false);
   // Freeze the entity while open=false so the inner form stays visually
   // stable during the Sheet's close animation.
   const openEntityRef = useRef(group);
@@ -454,27 +474,148 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
     openEntityRef.current = group;
   }
   const stableGroup = openEntityRef.current;
+
+  const clearPendingLeave = useCallback(() => {
+    setPendingLeaveConfirm(false);
+    setPendingLeaveTarget(null);
+  }, []);
+
+  const stayOnCurrentPage = useCallback(() => {
+    const target = pendingLeaveTarget;
+    clearPendingLeave();
+    target?.reset?.();
+  }, [clearPendingLeave, pendingLeaveTarget]);
+
+  const closeWithoutConfirm = useCallback(() => {
+    setHasUnsavedChanges(false);
+    clearPendingLeave();
+    onClose();
+  }, [clearPendingLeave, onClose]);
+
+  const requestClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setPendingLeaveConfirm(true);
+      return;
+    }
+    closeWithoutConfirm();
+  }, [closeWithoutConfirm, hasUnsavedChanges]);
+
+  const discardChanges = useCallback(() => {
+    const target = pendingLeaveTarget;
+    closeWithoutConfirm();
+    if (target) {
+      if (target.historyAction === "POP" && target.retry) {
+        target.retry();
+        return;
+      }
+      bypassLeaveGuardRef.current = true;
+      const navigate =
+        target.historyAction === "REPLACE" ? router.replace : router.push;
+      void navigate(target.fullPath);
+    }
+  }, [closeWithoutConfirm, pendingLeaveTarget]);
+
+  useEffect(() => {
+    if (!open) {
+      setHasUnsavedChanges(false);
+      clearPendingLeave();
+    }
+  }, [clearPendingLeave, open]);
+
+  useEffect(() => {
+    if (!open || !hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const removeGuard = router.beforeEach((to, _from, next, options) => {
+      if (bypassLeaveGuardRef.current) {
+        bypassLeaveGuardRef.current = false;
+        next();
+        return;
+      }
+      setPendingLeaveTarget({
+        fullPath: to.fullPath,
+        historyAction: options?.historyAction ?? "PUSH",
+        reset: options?.reset,
+        retry: options?.retry,
+      });
+      setPendingLeaveConfirm(true);
+      next(false);
+    });
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      removeGuard();
+    };
+  }, [hasUnsavedChanges, open]);
+
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <GroupForm
-          key={stableGroup?.name ?? "new"}
-          group={stableGroup}
-          onClose={props.onClose}
-          onUpdated={props.onUpdated}
-          onRemoved={props.onRemoved}
-        />
-      </SheetContent>
-    </Sheet>
+    <>
+      <Sheet open={open} onOpenChange={(next) => !next && requestClose()}>
+        <SheetContent width="standard">
+          <GroupForm
+            key={stableGroup?.name ?? "new"}
+            group={stableGroup}
+            onClose={requestClose}
+            onCloseWithoutConfirm={closeWithoutConfirm}
+            onDirtyChange={setHasUnsavedChanges}
+            onUpdated={props.onUpdated}
+            onRemoved={props.onRemoved}
+          />
+        </SheetContent>
+      </Sheet>
+      <AlertDialog
+        open={pendingLeaveConfirm}
+        onOpenChange={(
+          nextOpen: boolean,
+          eventDetails?: { reason?: string; cancel?: () => void }
+        ) => {
+          if (
+            !nextOpen &&
+            (eventDetails?.reason === "escape-key" ||
+              eventDetails?.reason === "outside-press")
+          ) {
+            eventDetails.cancel?.();
+            return;
+          }
+          if (!nextOpen) {
+            stayOnCurrentPage();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {t("common.leave-without-saving")}
+          </AlertDialogTitle>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={stayOnCurrentPage}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={discardChanges}>
+              {t("common.discard-changes")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
 function GroupForm({
   group,
   onClose,
+  onCloseWithoutConfirm,
+  onDirtyChange,
   onUpdated,
   onRemoved,
-}: Omit<CreateGroupSheetProps, "open">) {
+}: Omit<CreateGroupSheetProps, "open"> & {
+  onCloseWithoutConfirm: () => void;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
@@ -575,6 +716,33 @@ function GroupForm({
     return false;
   }, [isEditMode, group, title, description, members]);
 
+  const hasUnsavedChanges = useMemo(() => {
+    if (isEditMode) return hasChanged;
+    if (email !== initialEmail) return true;
+    if (selectedDomain !== initialSelectedDomain) return true;
+    if (title !== initialTitle) return true;
+    if (description !== initialDescription) return true;
+    if (!isEqual(members, initialMembers)) return true;
+    return false;
+  }, [
+    description,
+    email,
+    hasChanged,
+    initialDescription,
+    initialEmail,
+    initialMembers,
+    initialSelectedDomain,
+    initialTitle,
+    isEditMode,
+    members,
+    selectedDomain,
+    title,
+  ]);
+
+  useEffect(() => {
+    onDirtyChange(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
+
   const allowConfirm = !errorMessage && hasChanged;
 
   const handleAddMember = () => {
@@ -671,7 +839,7 @@ function GroupForm({
           title: t("common.created"),
         });
       }
-      onClose();
+      onCloseWithoutConfirm();
     } catch {
       // error shown by store
     } finally {
@@ -690,7 +858,7 @@ function GroupForm({
         style: "SUCCESS",
         title: t("common.deleted"),
       });
-      onClose();
+      onCloseWithoutConfirm();
     } catch {
       // error shown by store
     } finally {
