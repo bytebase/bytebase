@@ -603,7 +603,7 @@ function SingleResultViewInner({
                     onClick={() => copy("all", formatAsText)}
                   >
                     <CopyIcon className="size-4" />
-                    {t("common.copy")}
+                    {t("common.copy-all")}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
