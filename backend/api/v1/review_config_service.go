@@ -191,13 +191,19 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to marshal tag policy"))
 		}
-		if _, err := s.store.UpdatePolicy(ctx, &store.UpdatePolicyMessage{
+		payloadString := string(payloadBytes)
+		updatedPolicy, err := s.store.UpdatePolicy(ctx, &store.UpdatePolicyMessage{
 			ResourceType: policy.ResourceType,
+			Type:         storepb.Policy_TAG,
 			Resource:     policy.Resource,
 			Workspace:    policy.Workspace,
-			Payload:      new(string(payloadBytes)),
-		}); err != nil {
+			Payload:      &payloadString,
+		})
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update tag policy"))
+		}
+		if updatedPolicy == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("tag policy %q not found", policy.Resource))
 		}
 	}
 
