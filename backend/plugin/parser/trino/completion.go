@@ -35,8 +35,8 @@ func init() {
 // in-scope FROM columns (resolved via query-span analysis) rather than the
 // legacy completer's "every column in the default schema, ranked by priority".
 // Those fields are therefore left empty here.
-func Completion(_ context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	cat := buildCompletionCatalog(cCtx, statement)
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	cat := buildCompletionCatalog(ctx, cCtx, statement)
 
 	byteOffset := caretToByteOffset(statement, caretLine, caretOffset)
 	cands := completion.Complete(statement, byteOffset, cat)
@@ -64,11 +64,10 @@ func Completion(_ context.Context, cCtx base.CompletionContext, statement string
 // named in the statement). Trino instances routinely federate many catalogs and
 // the LSP invokes completion on every keystroke, so eagerly loading all of them
 // would fan out into hundreds of metadata fetches and stall completion.
-func buildCompletionCatalog(cCtx base.CompletionContext, statement string) *catalog.Catalog {
+func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	if cCtx.Metadata == nil || cCtx.ListDatabaseNames == nil {
 		return nil
 	}
-	ctx := context.Background()
 	names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID)
 	if err != nil || len(names) == 0 {
 		return nil
