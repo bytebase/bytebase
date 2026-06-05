@@ -776,10 +776,12 @@
       "self": "Condition"
     },
     "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
+    "load-database-failed": "Failed to load databases",
+    "matched-databases": "Matched databases",
     "no-matched-databases": "No matched databases",
     "select": "Select database group",
-    "unmatched-database": "Unmatched database"
+    "unmatched-databases": "Unmatched databases",
+    "unmatched-databases-preview": "Preview"
   },
   "db": {
     "catalog": {
