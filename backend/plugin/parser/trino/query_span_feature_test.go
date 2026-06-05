@@ -99,6 +99,247 @@ func TestQuerySpan_UnnestAndLateral(t *testing.T) {
 	assert.True(t, hasUsersLateral, "LATERAL query should report base table users; got %v", lateral)
 }
 
+func TestQuerySpan_SelectStarColumnOrder(t *testing.T) {
+	// SELECT * must report result columns in the table's metadata column order,
+	// not Go map order. The masker applies per-result maskers positionally
+	// against the executed result's column order (query_result_masker.go), so a
+	// nondeterministic order here could apply a column's masker to a different
+	// column and leak sensitive data.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "accounts",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "secret", Type: "varchar"},
+							{Name: "name", Type: "varchar"},
+							{Name: "balance", Type: "double"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	want := []string{"id", "secret", "name", "balance"}
+
+	// Repeat to catch nondeterministic map iteration: a single pass can pass by
+	// luck, so assert a stable order across many runs.
+	for i := 0; i < 50; i++ {
+		extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+		span, err := extractor.getQuerySpan(context.Background(), "SELECT * FROM accounts")
+		require.NoError(t, err)
+		var got []string
+		for _, r := range span.Results {
+			got = append(got, r.Name)
+		}
+		assert.Equal(t, want, got, "SELECT * results must be in metadata column order (iteration %d)", i)
+	}
+}
+
+func TestQuerySpan_AliasedColumnSourceColumns(t *testing.T) {
+	// An aliased, alias-qualified select item (u.email over "users u") must
+	// resolve back to the physical column users.email. Otherwise the per-result
+	// SourceColumns are empty, the masker treats the column as a constant
+	// expression, and a sensitive aliased column is returned unmasked.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), "SELECT u.email FROM users u")
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 1)
+	res := span.Results[0]
+	assert.Equal(t, "email", res.Name)
+	_, ok := res.SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "email"}]
+	assert.True(t, ok, "aliased column u.email must resolve to physical users.email; got %v", res.SourceColumns)
+}
+
+func TestQuerySpan_SystemSchemaNoNotFoundError(t *testing.T) {
+	// A system / information_schema query must NOT surface a
+	// ResourceNotFoundError. sql_service turns a span's NotFoundError into a hard
+	// "failed to mask data" rejection of an otherwise-successful result, so
+	// resolving Trino's pseudo-catalogs (which are not Bytebase-tracked
+	// databases) as metadata would fail valid SQL-info queries after execution.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name:    "mydb",
+		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("mydb", "public", gCtx, false)
+
+	for _, stmt := range []string{
+		"SELECT * FROM system.runtime.nodes",
+		"SELECT table_name FROM information_schema.tables",
+	} {
+		span, err := extractor.getQuerySpan(context.Background(), stmt)
+		require.NoError(t, err, "stmt: %s", stmt)
+		assert.Equal(t, base.SelectInfoSchema, span.Type, "stmt %q should classify as SelectInfoSchema", stmt)
+		assert.Nil(t, span.NotFoundError, "system query %q must not set NotFoundError", stmt)
+	}
+}
+
+func TestQuerySpan_SystemSubstringDoesNotBypassMasking(t *testing.T) {
+	// A real, maskable table must still be column-expanded even when the
+	// statement text contains "system." in a string literal (which trips the
+	// coarse containsSystemSchema classifier). System detection is per resolved
+	// table, so the literal must not suppress lineage for users.email.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), "SELECT email FROM users WHERE 'system.' = 'system.'")
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 1)
+	_, ok := span.Results[0].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "email"}]
+	assert.True(t, ok, "users.email must stay masked despite the 'system.' literal; got %v", span.Results[0].SourceColumns)
+}
+
+func TestQuerySpan_SelfJoinStarColumnCount(t *testing.T) {
+	// SELECT * over a self-join returns one set of columns per table instance
+	// (2N for a 2-way self-join). The positional masker needs a span result per
+	// output column, so the expansion must NOT collapse the duplicate physical
+	// columns or the trailing instance's columns would get no masker.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), "SELECT * FROM users u1 JOIN users u2 ON u1.id = u2.id")
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 4, "self-join SELECT * must yield 2N=4 result columns")
+	var ids, emails int
+	for _, r := range span.Results {
+		switch r.Name {
+		case "id":
+			ids++
+		case "email":
+			emails++
+		default:
+		}
+	}
+	assert.Equal(t, 2, ids, "expected two 'id' result columns (one per instance)")
+	assert.Equal(t, 2, emails, "expected two 'email' result columns (one per instance)")
+}
+
+func TestQuerySpan_ShadowedAliasStillMasked(t *testing.T) {
+	// An alias reused across scopes ("u" for users outside, for orders inside an
+	// EXISTS subquery) must not drop lineage for the outer u.email. Additive
+	// alias resolution keeps users.email so the sensitive column stays masked.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "catalog1",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+							{Name: "email", Type: "varchar"},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+					},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_TRINO,
+	}
+	extractor := newQuerySpanExtractor("catalog1", "public", gCtx, false)
+	span, err := extractor.getQuerySpan(context.Background(), "SELECT u.email FROM users u WHERE EXISTS (SELECT 1 FROM orders u)")
+	require.NoError(t, err)
+
+	require.Len(t, span.Results, 1)
+	_, ok := span.Results[0].SourceColumns[base.ColumnResource{Database: "catalog1", Schema: "public", Table: "users", Column: "email"}]
+	assert.True(t, ok, "u.email must resolve to users.email despite the shadowing inner alias; got %v", span.Results[0].SourceColumns)
+}
+
 func TestQuerySpan_ThreePartNaming(t *testing.T) {
 	// Trino's catalog.schema.table maps onto Database/Schema/Table, and the
 	// default database/schema are NOT applied when the reference is fully
