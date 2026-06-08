@@ -1,8 +1,7 @@
 package redshift
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/redshift"
+	redshiftast "github.com/bytebase/omni/redshift/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -23,204 +22,98 @@ func init() {
 // - returnsData: whether all queries return data
 // - error: parsing error if the statement is invalid
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	// Parse the statement using the Redshift parser
-	parseResults, err := ParseRedshift(statement)
+	omniStmts, err := ParseRedshiftOmni(statement)
 	if err != nil {
-		return false, false, err
+		return false, false, convertOmniError(err, base.Statement{
+			Text:  statement,
+			Start: &storepb.Position{Line: 1, Column: 1},
+		})
 	}
 
-	// Create a validator listener to walk the parse tree
-	validator := &queryValidatorListener{
-		canRunInReadOnly: true,
-		returnsData:      true,
-	}
-
-	// Validate each statement
-	for _, parseResult := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(validator, parseResult.Tree)
-		// If any statement fails validation, return immediately
-		if !validator.canRunInReadOnly {
-			break
+	seen := false
+	returnsData := true
+	for _, stmt := range omniStmts {
+		if stmt.Empty() {
+			continue
+		}
+		seen = true
+		canRunInReadOnly, stmtReturnsData := validateOmniEditorStatement(stmt.AST)
+		if !canRunInReadOnly {
+			return false, false, nil
+		}
+		if !stmtReturnsData {
+			returnsData = false
 		}
 	}
-
-	return validator.canRunInReadOnly, validator.returnsData, nil
+	return seen, returnsData, nil
 }
 
-type queryValidatorListener struct {
-	*parser.BaseRedshiftParserListener
-
-	canRunInReadOnly bool
-	returnsData      bool
-}
-
-// EnterStmt is called when entering a statement
-func (l *queryValidatorListener) EnterStmt(ctx *parser.StmtContext) {
-	if ctx == nil {
-		return
-	}
-
-	// Check each statement type
-	switch {
-	case ctx.Selectstmt() != nil:
-		// SELECT is allowed
-		return
-
-	case ctx.Explainstmt() != nil:
-		// EXPLAIN is allowed, but check if it's EXPLAIN ANALYZE
-		if explainCtx, ok := ctx.Explainstmt().(*parser.ExplainstmtContext); ok {
-			l.handleExplainStmt(explainCtx)
+func validateOmniEditorStatement(node redshiftast.Node) (bool, bool) {
+	switch n := node.(type) {
+	case *redshiftast.SelectStmt:
+		if n.IntoClause != nil || hasOmniDMLInWithClause(n.WithClause) {
+			return false, false
 		}
-		return
-
-	// SHOW statements - different types of SHOW commands
-	case ctx.Variableshowstmt() != nil,
-		ctx.Showcolumnsstmt() != nil,
-		ctx.Showdatabasesstmt() != nil,
-		ctx.Showdatasharesstmt() != nil,
-		ctx.Showexternaltablestmt() != nil,
-		ctx.Showgrantsstmt() != nil,
-		ctx.Showmodelstmt() != nil,
-		ctx.Showprocedurestmt() != nil,
-		ctx.Showschemasstmt() != nil,
-		ctx.Showtablestmt() != nil,
-		ctx.Showtablesstmt() != nil,
-		ctx.Showviewstmt() != nil:
-		// All SHOW statements are allowed and return data
-		return
-
-	case ctx.Variablesetstmt() != nil:
-		// SET statements can run in read-only but don't return data
-		l.returnsData = false
-		return
-
-	// DML statements are not allowed in read-only mode
-	case ctx.Insertstmt() != nil,
-		ctx.Updatestmt() != nil,
-		ctx.Deletestmt() != nil,
-		ctx.Truncatestmt() != nil:
-		l.canRunInReadOnly = false
-		l.returnsData = false
-		return
-
-	// DDL statements are not allowed in read-only mode
-	case ctx.Createstmt() != nil,
-		ctx.Dropstmt() != nil,
-		ctx.Altertablestmt() != nil,
-		ctx.Indexstmt() != nil,
-		ctx.Createdbstmt() != nil,
-		ctx.Dropdbstmt() != nil,
-		ctx.Createfunctionstmt() != nil,
-		ctx.Createexternalfunctionstmt() != nil,
-		ctx.Createprocedurestmt() != nil,
-		ctx.Creatematviewstmt() != nil,
-		ctx.Createexternalviewstmt() != nil,
-		ctx.Createschemastmt() != nil,
-		ctx.Createuserstmt() != nil,
-		ctx.Createrolestmt() != nil,
-		ctx.Alteruserstmt() != nil,
-		ctx.Alterrolestmt() != nil,
-		ctx.Dropuserstmt() != nil,
-		ctx.Droprolestmt() != nil:
-		l.canRunInReadOnly = false
-		l.returnsData = false
-		return
-
-	// Administrative statements are not allowed in read-only mode
-	case ctx.Grantstmt() != nil,
-		ctx.Revokestmt() != nil,
-		ctx.Analyzestmt() != nil,
-		ctx.Vacuumstmt() != nil,
-		ctx.Copystmt() != nil,
-		ctx.Commentstmt() != nil,
-		ctx.Callstmt() != nil:
-		l.canRunInReadOnly = false
-		l.returnsData = false
-		return
-
-	// Transaction statements are not allowed in read-only mode
-	case ctx.Transactionstmt() != nil:
-		l.canRunInReadOnly = false
-		l.returnsData = false
-		return
-
-	default:
-		// For any unrecognized statement, be conservative and reject it
-		l.canRunInReadOnly = false
-		l.returnsData = false
-	}
-}
-
-// handleExplainStmt handles EXPLAIN statements
-func (l *queryValidatorListener) handleExplainStmt(ctx *parser.ExplainstmtContext) {
-	if ctx == nil {
-		return
-	}
-
-	// Check if it's EXPLAIN ANALYZE by looking for the Analyze_keyword
-	if ctx.Analyze_keyword() != nil {
-		// EXPLAIN ANALYZE actually executes the query
-		// Check what statement is being explained using AST
-		if explainableStmt := ctx.Explainablestmt(); explainableStmt != nil {
-			// Use type assertion to check the actual explainable statement
-			if explainableCtx, ok := explainableStmt.(*parser.ExplainablestmtContext); ok {
-				// Check if it's a SELECT statement using the AST
-				if explainableCtx.Selectstmt() != nil {
-					// EXPLAIN ANALYZE SELECT is allowed in read-only but doesn't return data
-					l.returnsData = false
-				} else {
-					// EXPLAIN ANALYZE of non-SELECT (INSERT/UPDATE/DELETE/DECLARE CURSOR) is not allowed
-					l.canRunInReadOnly = false
-					l.returnsData = false
-				}
+		return true, true
+	case *redshiftast.ExplainStmt:
+		if hasOmniExplainAnalyze(n) {
+			if selectStmt, ok := n.Query.(*redshiftast.SelectStmt); ok && selectStmt.IntoClause == nil && !hasOmniDMLInWithClause(selectStmt.WithClause) {
+				return true, false
 			}
+			return false, false
 		}
-	}
-	// Regular EXPLAIN (without ANALYZE) is always allowed and returns data
-}
-
-// EnterCommon_table_expr is called when entering a CTE
-func (l *queryValidatorListener) EnterCommon_table_expr(ctx *parser.Common_table_exprContext) {
-	if ctx != nil {
-		// Check if the CTE contains DML statements
-		if l.hasDMLInContext(ctx) {
-			l.canRunInReadOnly = false
-			l.returnsData = false
-		}
+		return true, true
+	case *redshiftast.RedshiftShowStmt, *redshiftast.VariableShowStmt:
+		return true, true
+	case *redshiftast.VariableSetStmt:
+		return true, false
+	default:
+		return false, false
 	}
 }
 
-// hasDMLInContext checks if the given context contains DML statements
-func (*queryValidatorListener) hasDMLInContext(ctx antlr.ParseTree) bool {
-	if ctx == nil {
+func hasOmniExplainAnalyze(stmt *redshiftast.ExplainStmt) bool {
+	if stmt == nil || stmt.Options == nil {
 		return false
 	}
-
-	// Create a DML detector listener
-	dmlDetector := &dmlDetectorListener{
-		hasDML: false,
+	for _, item := range stmt.Options.Items {
+		def, ok := item.(*redshiftast.DefElem)
+		if !ok {
+			continue
+		}
+		if def.Defname == "analyze" {
+			return true
+		}
 	}
-
-	antlr.ParseTreeWalkerDefault.Walk(dmlDetector, ctx)
-	return dmlDetector.hasDML
+	return false
 }
 
-type dmlDetectorListener struct {
-	*parser.BaseRedshiftParserListener
-	hasDML bool
+func hasOmniDMLInWithClause(withClause *redshiftast.WithClause) bool {
+	if withClause == nil || withClause.Ctes == nil {
+		return false
+	}
+	for _, item := range withClause.Ctes.Items {
+		cte, ok := item.(*redshiftast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if hasOmniDMLNode(cte.Ctequery) {
+			return true
+		}
+	}
+	return false
 }
 
-// Check for DELETE statement
-func (l *dmlDetectorListener) EnterDeletestmt(_ *parser.DeletestmtContext) {
-	l.hasDML = true
-}
-
-// Check for INSERT statement
-func (l *dmlDetectorListener) EnterInsertstmt(_ *parser.InsertstmtContext) {
-	l.hasDML = true
-}
-
-// Check for UPDATE statement
-func (l *dmlDetectorListener) EnterUpdatestmt(_ *parser.UpdatestmtContext) {
-	l.hasDML = true
+func hasOmniDMLNode(node redshiftast.Node) bool {
+	hasDML := false
+	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
+		switch n.(type) {
+		case *redshiftast.InsertStmt, *redshiftast.UpdateStmt, *redshiftast.DeleteStmt, *redshiftast.MergeStmt:
+			hasDML = true
+			return false
+		default:
+			return !hasDML
+		}
+	})
+	return hasDML
 }

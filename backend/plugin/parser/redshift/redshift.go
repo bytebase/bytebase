@@ -20,30 +20,35 @@ func init() {
 // parseRedshiftStatements is the ParseStatementsFunc for Redshift.
 // Returns []ParsedStatement with both text and AST populated.
 func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Then parse to get ASTs
-	parseResults, err := ParseRedshift(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		if stmt.Empty {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
 		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
-			astIndex++
+
+		omniStmts, err := ParseRedshiftOmni(stmt.Text)
+		if err != nil {
+			return nil, convertOmniError(err, stmt)
 		}
-		result = append(result, ps)
+		for _, omniStmt := range omniStmts {
+			if omniStmt.Empty() {
+				continue
+			}
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Node:          omniStmt.AST,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				},
+			})
+		}
 	}
 
 	return result, nil

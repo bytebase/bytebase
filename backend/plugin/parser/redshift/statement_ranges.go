@@ -2,10 +2,10 @@ package redshift
 
 import (
 	"context"
-	"strings"
-	"unicode"
+	"unicode/utf8"
 
 	lsp "github.com/bytebase/lsp-protocol"
+	omniredshift "github.com/bytebase/omni/redshift"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -16,78 +16,83 @@ func init() {
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	ranges := getSQLStatementRangesUTF16Position([]byte(statement))
+	omniRanges, err := omniredshift.StatementRanges(statement)
+	if err == nil {
+		ranges := make([]base.Range, 0, len(omniRanges))
+		for _, r := range omniRanges {
+			ranges = append(ranges, base.Range{
+				Start: lsp.Position{
+					Line:      uint32(r.Start.Line),
+					Character: uint32(r.Start.Character),
+				},
+				End: lsp.Position{
+					Line:      uint32(r.End.Line),
+					Character: uint32(r.End.Character),
+				},
+			})
+		}
+		return ranges, nil
+	}
+
+	return getLexicalStatementRanges(statement)
+}
+
+func getLexicalStatementRanges(statement string) ([]base.Range, error) {
+	statements, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(statements) == 0 {
+		return nil, nil
+	}
+
+	positions := buildUTF16PositionMap(statement)
+	ranges := make([]base.Range, 0, len(statements))
+	for _, stmt := range statements {
+		if stmt.Empty || stmt.Range == nil {
+			continue
+		}
+		start := int(stmt.Range.Start)
+		end := int(stmt.Range.End)
+		startPos, ok := positionAtByteOffset(positions, start)
+		if !ok {
+			continue
+		}
+		endPos, ok := positionAtByteOffset(positions, end)
+		if !ok {
+			continue
+		}
+		ranges = append(ranges, base.Range{
+			Start: startPos,
+			End:   endPos,
+		})
+	}
 	return ranges, nil
 }
 
-func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
-	s := strings.TrimRightFunc(string(content), unicode.IsSpace)
-	// Assuming the content is UTF-8 encoded.
-	statements := strings.Split(s, ";")
-
-	var ranges []lsp.Range
-	// 0-based UTF-16 encoded line and character.
-	line, character := 0, 0
-
-	for i, statement := range statements {
-		// Trim left space to provide more accurate range.
-		statement = strings.TrimLeftFunc(statement, func(r rune) bool {
-			if !unicode.IsSpace(r) {
-				return false
-			}
-			if r == '\n' {
-				line++
-				character = 0
-			} else {
-				// Check rune utf16 length by BMP.
-				if r <= 0xFFFF {
-					character++
-				} else {
-					character += 2
-				}
-			}
-			return true
-		})
-
-		// If the statement is empty, skip it.
-		if statement == "" {
-			continue
-		}
-
-		begin := lsp.Position{Line: uint32(line), Character: uint32(character)}
-		for _, r := range statement {
-			if r == '\n' {
-				line++
-				character = 0
-			} else {
-				// Check rune utf16 length by BMP.
-				if r <= 0xFFFF {
-					character++
-				} else {
-					character += 2
-				}
-			}
-		}
-
-		endLine, endCharacter := line, character
-		// End is exclusive, so we check the next byte.
-		if i == len(statements)-1 {
-			// End of the content.
-			endLine++
-			endCharacter = 0
+func buildUTF16PositionMap(sql string) []lsp.Position {
+	positions := make([]lsp.Position, len(sql)+1)
+	var line, character uint32
+	for i := 0; i < len(sql); {
+		positions[i] = lsp.Position{Line: line, Character: character}
+		r, size := utf8.DecodeRuneInString(sql[i:])
+		if r == '\n' {
+			line++
+			character = 0
+		} else if r > 0xFFFF {
+			character += 2
 		} else {
-			// Next byte is ';', include it.
 			character++
-			endCharacter++
-			if nextStatement := statements[i+1]; len(nextStatement) > 0 && nextStatement[0] == '\n' {
-				endLine++
-				endCharacter = 0
-			} else {
-				endCharacter++
-			}
 		}
-		end := lsp.Position{Line: uint32(endLine), Character: uint32(endCharacter)}
-		ranges = append(ranges, lsp.Range{Start: begin, End: end})
+		i += size
 	}
-	return ranges
+	positions[len(sql)] = lsp.Position{Line: line, Character: character}
+	return positions
+}
+
+func positionAtByteOffset(positions []lsp.Position, byteOffset int) (lsp.Position, bool) {
+	if byteOffset < 0 || byteOffset >= len(positions) {
+		return lsp.Position{}, false
+	}
+	return positions[byteOffset], true
 }

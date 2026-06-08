@@ -1,8 +1,9 @@
 package redshift
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/redshift"
+	"strings"
+
+	redshiftast "github.com/bytebase/omni/redshift/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -27,21 +28,30 @@ func GetStatementTypesWithPosition(asts []base.AST) ([]StatementTypeWithPosition
 
 	var allResults []StatementTypeWithPosition
 	for _, unifiedAST := range asts {
-		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
-			return nil, errors.New("expected ANTLR AST for Redshift")
+			return nil, errors.New("expected Redshift omni AST")
 		}
-		if antlrAST.Tree == nil {
-			return nil, errors.New("ANTLR tree is nil")
-		}
-
-		collector := &statementTypeCollectorWithPosition{
-			tokens:   antlrAST.Tokens,
-			baseLine: base.GetLineOffset(antlrAST.StartPosition),
+		if omniAST.Node == nil {
+			continue
 		}
 
-		antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)
-		allResults = append(allResults, collector.results...)
+		stmtType := classifyOmniStatementType(omniAST.Node)
+		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
+			continue
+		}
+
+		line := 0
+		if omniAST.StartPosition != nil {
+			line = int(omniAST.StartPosition.Line)
+		}
+		line += strings.Count(omniAST.Text, "\n")
+
+		allResults = append(allResults, StatementTypeWithPosition{
+			Type: stmtType,
+			Line: line,
+			Text: omniAST.Text,
+		})
 	}
 
 	return allResults, nil
@@ -61,278 +71,131 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return types, nil
 }
 
-// statementTypeCollectorWithPosition collects statement types with positions.
-type statementTypeCollectorWithPosition struct {
-	*parser.BaseRedshiftParserListener
-	tokens   *antlr.CommonTokenStream
-	baseLine int
-	results  []StatementTypeWithPosition
-}
-
-// Helper function to add statement with position.
-func (c *statementTypeCollectorWithPosition) addStatement(stmtType storepb.StatementType, ctx antlr.ParserRuleContext) {
-	if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-		return
-	}
-
-	// Get line number from the stop token
-	line := 0
-	if ctx.GetStop() != nil {
-		line = ctx.GetStop().GetLine() + c.baseLine
-	}
-
-	// Get statement text
-	text := ""
-	if c.tokens != nil && ctx.GetStart() != nil && ctx.GetStop() != nil {
-		text = c.tokens.GetTextFromInterval(antlr.NewInterval(
-			ctx.GetStart().GetTokenIndex(),
-			ctx.GetStop().GetTokenIndex(),
-		))
-	}
-
-	c.results = append(c.results, StatementTypeWithPosition{
-		Type: stmtType,
-		Line: line,
-		Text: text,
-	})
-}
-
-// isTopLevel checks if the context is at top level.
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-
-	switch ctx := ctx.(type) {
-	case *parser.RootContext, *parser.StmtblockContext:
-		return true
-	case *parser.StmtmultiContext, *parser.StmtContext:
-		return isTopLevel(ctx.GetParent())
+func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
+	switch n := node.(type) {
+	case *redshiftast.CreateStmt:
+		return storepb.StatementType_CREATE_TABLE
+	case *redshiftast.CreateTableAsStmt:
+		if n.Objtype == redshiftast.OBJECT_MATVIEW {
+			return storepb.StatementType_CREATE_VIEW
+		}
+		return storepb.StatementType_CREATE_TABLE
+	case *redshiftast.ViewStmt:
+		return storepb.StatementType_CREATE_VIEW
+	case *redshiftast.IndexStmt:
+		return storepb.StatementType_CREATE_INDEX
+	case *redshiftast.CreateSeqStmt:
+		return storepb.StatementType_CREATE_SEQUENCE
+	case *redshiftast.CreateSchemaStmt:
+		return storepb.StatementType_CREATE_SCHEMA
+	case *redshiftast.CreateFunctionStmt:
+		return storepb.StatementType_CREATE_FUNCTION
+	case *redshiftast.CreatedbStmt:
+		return storepb.StatementType_CREATE_DATABASE
+	case *redshiftast.DropdbStmt:
+		return storepb.StatementType_DROP_DATABASE
+	case *redshiftast.DropStmt:
+		return classifyOmniDropStatementType(redshiftast.ObjectType(n.RemoveType))
+	case *redshiftast.AlterTableStmt:
+		if redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_VIEW || redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_MATVIEW {
+			return storepb.StatementType_ALTER_VIEW
+		}
+		return storepb.StatementType_ALTER_TABLE
+	case *redshiftast.AlterSeqStmt:
+		return storepb.StatementType_ALTER_SEQUENCE
+	case *redshiftast.RenameStmt:
+		return classifyOmniRenameStatementType(n.RenameType)
+	case *redshiftast.CommentStmt:
+		return storepb.StatementType_COMMENT
+	case *redshiftast.TruncateStmt:
+		return storepb.StatementType_TRUNCATE
+	case *redshiftast.InsertStmt:
+		return storepb.StatementType_INSERT
+	case *redshiftast.UpdateStmt:
+		return storepb.StatementType_UPDATE
+	case *redshiftast.DeleteStmt:
+		return storepb.StatementType_DELETE
+	case *redshiftast.RedshiftObjectStmt:
+		return classifyOmniRedshiftObjectStatementType(n.Command, n.ObjectType)
 	default:
-		return false
-	}
-}
-
-// CREATE TABLE statements
-func (c *statementTypeCollectorWithPosition) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_TABLE, ctx)
-}
-
-// CREATE VIEW statements
-func (c *statementTypeCollectorWithPosition) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_VIEW, ctx)
-}
-
-// CREATE MATERIALIZED VIEW statements
-func (c *statementTypeCollectorWithPosition) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_VIEW, ctx)
-}
-
-// CREATE INDEX statements
-func (c *statementTypeCollectorWithPosition) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_INDEX, ctx)
-}
-
-// CREATE SEQUENCE statements
-func (c *statementTypeCollectorWithPosition) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_SEQUENCE, ctx)
-}
-
-// CREATE SCHEMA statements
-func (c *statementTypeCollectorWithPosition) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_SCHEMA, ctx)
-}
-
-// CREATE FUNCTION statements
-func (c *statementTypeCollectorWithPosition) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_FUNCTION, ctx)
-}
-
-// CREATE DATABASE statements
-func (c *statementTypeCollectorWithPosition) EnterCreatedbstmt(ctx *parser.CreatedbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_CREATE_DATABASE, ctx)
-}
-
-// DROP statements
-func (c *statementTypeCollectorWithPosition) EnterDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(getDropStatementType(ctx), ctx)
-}
-
-// ALTER statements
-func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_ALTER_TABLE, ctx)
-}
-
-// ALTER MATERIALIZED VIEW statements
-func (c *statementTypeCollectorWithPosition) EnterAltermaterializedviewstmt(ctx *parser.AltermaterializedviewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_ALTER_VIEW, ctx)
-}
-
-// ALTER EXTERNAL VIEW statements
-func (c *statementTypeCollectorWithPosition) EnterAlterexternalviewstmt(ctx *parser.AlterexternalviewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_ALTER_VIEW, ctx)
-}
-
-func (c *statementTypeCollectorWithPosition) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_ALTER_SEQUENCE, ctx)
-}
-
-// RENAME statements
-func (c *statementTypeCollectorWithPosition) EnterRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check for top-level RENAME operations
-	if ctx.INDEX() != nil {
-		c.addStatement(storepb.StatementType_RENAME_INDEX, ctx)
-		return
-	}
-	if ctx.SCHEMA() != nil {
-		c.addStatement(storepb.StatementType_RENAME_SCHEMA, ctx)
-		return
-	}
-	if ctx.SEQUENCE() != nil {
-		c.addStatement(storepb.StatementType_RENAME_SEQUENCE, ctx)
-		return
-	}
-
-	// All other RENAME operations
-	if ctx.VIEW() != nil {
-		c.addStatement(storepb.StatementType_ALTER_VIEW, ctx)
-	} else if ctx.TABLE() != nil {
-		c.addStatement(storepb.StatementType_ALTER_TABLE, ctx)
-	}
-}
-
-// COMMENT statements
-func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_COMMENT, ctx)
-}
-
-// DROP FUNCTION statements
-func (c *statementTypeCollectorWithPosition) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_DROP_FUNCTION, ctx)
-}
-
-// DROP DATABASE statements
-func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.DropdbstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_DROP_DATABASE, ctx)
-}
-
-func (c *statementTypeCollectorWithPosition) EnterTruncatestmt(ctx *parser.TruncatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_TRUNCATE, ctx)
-}
-
-// DROP SCHEMA statements
-func (c *statementTypeCollectorWithPosition) EnterDropschemastmt(ctx *parser.DropschemastmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_DROP_SCHEMA, ctx)
-}
-
-// DML statements
-func (c *statementTypeCollectorWithPosition) EnterInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_INSERT, ctx)
-}
-
-func (c *statementTypeCollectorWithPosition) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_UPDATE, ctx)
-}
-
-func (c *statementTypeCollectorWithPosition) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	c.addStatement(storepb.StatementType_DELETE, ctx)
-}
-
-// getDropStatementType determines the specific DROP statement type.
-func getDropStatementType(ctx *parser.DropstmtContext) storepb.StatementType {
-	if ctx == nil {
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
+}
 
-	// Check object_type_any_name (TABLE, SEQUENCE, VIEW, INDEX, etc.)
-	if ctx.Object_type_any_name() != nil {
-		objType := ctx.Object_type_any_name()
-		if objType.TABLE() != nil {
-			return storepb.StatementType_DROP_TABLE
-		}
-		if objType.VIEW() != nil {
-			if objType.MATERIALIZED() != nil {
-				// DROP MATERIALIZED VIEW holds data — treat as DROP_TABLE for risk assessment.
-				return storepb.StatementType_DROP_TABLE
-			}
-			return storepb.StatementType_DROP_VIEW
-		}
-		if objType.INDEX() != nil {
-			return storepb.StatementType_DROP_INDEX
-		}
-		if objType.SEQUENCE() != nil {
-			return storepb.StatementType_DROP_SEQUENCE
-		}
+func classifyOmniDropStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
+	switch objectType {
+	case redshiftast.OBJECT_TABLE:
+		return storepb.StatementType_DROP_TABLE
+	case redshiftast.OBJECT_VIEW:
+		return storepb.StatementType_DROP_VIEW
+	case redshiftast.OBJECT_MATVIEW:
+		return storepb.StatementType_DROP_TABLE
+	case redshiftast.OBJECT_SCHEMA:
+		return storepb.StatementType_DROP_SCHEMA
+	case redshiftast.OBJECT_INDEX:
+		return storepb.StatementType_DROP_INDEX
+	case redshiftast.OBJECT_SEQUENCE:
+		return storepb.StatementType_DROP_SEQUENCE
+	case redshiftast.OBJECT_FUNCTION:
+		return storepb.StatementType_DROP_FUNCTION
+	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
+}
 
-	// Note: DROP SCHEMA is handled by DropschemastmtContext, not DropstmtContext
-	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+func classifyOmniRenameStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
+	switch objectType {
+	case redshiftast.OBJECT_INDEX:
+		return storepb.StatementType_RENAME_INDEX
+	case redshiftast.OBJECT_SCHEMA:
+		return storepb.StatementType_RENAME_SCHEMA
+	case redshiftast.OBJECT_SEQUENCE:
+		return storepb.StatementType_RENAME_SEQUENCE
+	case redshiftast.OBJECT_VIEW, redshiftast.OBJECT_MATVIEW:
+		return storepb.StatementType_ALTER_VIEW
+	case redshiftast.OBJECT_TABLE:
+		return storepb.StatementType_ALTER_TABLE
+	default:
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+	}
+}
+
+func classifyOmniRedshiftObjectStatementType(command, objectType string) storepb.StatementType {
+	switch strings.ToLower(command) {
+	case "create":
+		switch strings.ToLower(objectType) {
+		case "database":
+			return storepb.StatementType_CREATE_DATABASE
+		case "schema", "external schema":
+			return storepb.StatementType_CREATE_SCHEMA
+		default:
+			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+		}
+	case "alter":
+		switch strings.ToLower(objectType) {
+		case "database":
+			return storepb.StatementType_ALTER_DATABASE
+		case "index":
+			return storepb.StatementType_ALTER_INDEX
+		case "sequence":
+			return storepb.StatementType_ALTER_SEQUENCE
+		case "table":
+			return storepb.StatementType_ALTER_TABLE
+		case "view", "external view", "materialized view":
+			return storepb.StatementType_ALTER_VIEW
+		default:
+			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+		}
+	case "drop":
+		switch strings.ToLower(objectType) {
+		case "database":
+			return storepb.StatementType_DROP_DATABASE
+		case "schema", "external schema":
+			return storepb.StatementType_DROP_SCHEMA
+		default:
+			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+		}
+	default:
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+	}
 }
