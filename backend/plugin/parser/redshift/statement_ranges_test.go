@@ -51,7 +51,13 @@ func TestGetStatementRanges(t *testing.T) {
 	}
 }
 
-func TestGetStatementRangesReturnsParseError(t *testing.T) {
-	_, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, "SELECT * FROM")
-	require.Error(t, err)
+func TestGetStatementRangesToleratesIncompleteSQL(t *testing.T) {
+	got, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, "SELECT * FROM")
+	require.NoError(t, err)
+	require.Equal(t, []base.Range{
+		{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 13},
+		},
+	}, got)
 }
