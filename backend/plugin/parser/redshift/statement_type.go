@@ -172,7 +172,20 @@ func classifyOmniRedshiftObjectStatementType(command, objectType string) storepb
 			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 		}
 	case "alter":
-		return storepb.StatementType_ALTER_TABLE
+		switch strings.ToLower(objectType) {
+		case "database":
+			return storepb.StatementType_ALTER_DATABASE
+		case "index":
+			return storepb.StatementType_ALTER_INDEX
+		case "sequence":
+			return storepb.StatementType_ALTER_SEQUENCE
+		case "table":
+			return storepb.StatementType_ALTER_TABLE
+		case "view", "external view", "materialized view":
+			return storepb.StatementType_ALTER_VIEW
+		default:
+			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+		}
 	case "drop":
 		switch strings.ToLower(objectType) {
 		case "database":

@@ -107,6 +107,11 @@ func TestGetStatementTypes(t *testing.T) {
 			},
 		},
 		{
+			name:      "alter datashare",
+			statement: "ALTER DATASHARE salesshare ADD SCHEMA public;",
+			want:      []storepb.StatementType{},
+		},
+		{
 			name:      "insert update delete",
 			statement: "INSERT INTO t1 VALUES (1); UPDATE t1 SET id = 2; DELETE FROM t1;",
 			want: []storepb.StatementType{
