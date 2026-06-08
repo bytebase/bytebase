@@ -1,7 +1,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Select, SelectContent } from "./select";
+import { Select, SelectContent, SelectTrigger } from "./select";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -14,8 +14,16 @@ const selectMocks = vi.hoisted(() => ({
 vi.mock("@base-ui/react/select", () => ({
   Select: {
     Root: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    Trigger: ({ children }: { children: ReactNode }) => (
-      <button type="button">{children}</button>
+    Trigger: ({
+      children,
+      ...props
+    }: {
+      children: ReactNode;
+      className?: string;
+    }) => (
+      <button type="button" {...props}>
+        {children}
+      </button>
     ),
     Icon: ({ children }: { children: ReactNode }) => <>{children}</>,
     Value: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -90,6 +98,34 @@ describe("SelectContent", () => {
         className: expect.stringContaining("custom-positioner"),
         sideOffset: 8,
       })
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+});
+
+describe("SelectTrigger", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  test("uses pointer cursor", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Select>
+          <SelectTrigger>Role</SelectTrigger>
+        </Select>
+      );
+    });
+
+    expect(container.querySelector("button")?.className).toContain(
+      "cursor-pointer"
     );
 
     await act(async () => {

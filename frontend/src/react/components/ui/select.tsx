@@ -12,6 +12,7 @@ const Select = BaseSelect.Root;
 const selectTriggerVariants = cva(
   cn(
     "inline-flex items-center justify-between gap-1 rounded-xs border border-control-border bg-background text-control whitespace-nowrap",
+    "cursor-pointer",
     "hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent",
     "disabled:pointer-events-none disabled:opacity-50"
   ),
