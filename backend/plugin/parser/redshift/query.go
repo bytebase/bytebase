@@ -24,7 +24,10 @@ func init() {
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	omniStmts, err := ParseRedshiftOmni(statement)
 	if err != nil {
-		return false, false, err
+		return false, false, convertOmniError(err, base.Statement{
+			Text:  statement,
+			Start: &storepb.Position{Line: 1, Column: 1},
+		})
 	}
 
 	seen := false

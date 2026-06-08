@@ -1,9 +1,12 @@
 package redshift
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestValidateSQLForEditor(t *testing.T) {
@@ -517,4 +520,14 @@ func TestValidateSQLForEditor(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSQLForEditorReturnsSyntaxError(t *testing.T) {
+	_, _, err := ValidateSQLForEditor("SELEC * FORM users")
+	require.Error(t, err)
+
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.NotNil(t, syntaxErr.Position)
+	require.Equal(t, int32(1), syntaxErr.Position.Line)
 }
