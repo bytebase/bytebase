@@ -10,10 +10,10 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/react/components/monaco";
+import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type Stage,
@@ -167,22 +167,19 @@ export function DeployTaskItem({
               <div className="flex min-w-0 items-center gap-x-2">
                 <PlanTargetDisplay size="md" target={task.target} />
                 {isExpanded && !readonly && (
-                  <button
-                    className="flex shrink-0 items-center gap-x-1 text-xs text-accent transition-opacity hover:opacity-80"
-                    onClick={() => {
-                      void router.push({
-                        query: {
-                          phase: "deploy",
-                          stageId,
-                          taskId: task.name.split("/").pop(),
-                        },
-                      });
+                  <RouterLink
+                    to={{
+                      query: {
+                        phase: "deploy",
+                        stageId,
+                        taskId: task.name.split("/").pop(),
+                      },
                     }}
-                    type="button"
+                    className="flex shrink-0 items-center gap-x-1 text-xs text-accent transition-opacity hover:opacity-80"
                   >
                     <ArrowUpRight className="h-4 w-4" />
                     <span>{t("common.view-details")}</span>
-                  </button>
+                  </RouterLink>
                 )}
                 {isExpanded && scheduledTime && (
                   <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
@@ -241,21 +238,18 @@ export function DeployTaskItem({
             )}
 
             {!readonly && (
-              <button
-                className={
-                  isExpanded
-                    ? "self-start rounded p-1 hover:bg-gray-100"
-                    : "rounded p-1 hover:bg-gray-100"
-                }
+              <Button
+                className={isExpanded ? "self-start" : undefined}
                 onClick={onToggleExpand}
-                type="button"
+                size="xs"
+                variant="ghost"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 ) : (
                   <ChevronRight className="h-4 w-4 text-gray-500" />
                 )}
-              </button>
+              </Button>
             )}
           </div>
 

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
+import { RouterLink } from "@/react/components/RouterLink";
 import { useRecentVisit, useWorkspace } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
@@ -48,17 +49,16 @@ export function BytebaseLogo({ className, redirect }: Props) {
       )}
     >
       {redirect ? (
-        <button
-          type="button"
+        <RouterLink
+          to={{ name: redirect }}
           className="h-full w-full cursor-pointer"
           onClick={() => {
             const route = navigate.resolve({ name: redirect });
             record(route.fullPath);
-            void navigate.push({ name: redirect });
           }}
         >
           {content}
-        </button>
+        </RouterLink>
       ) : (
         content
       )}

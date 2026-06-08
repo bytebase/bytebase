@@ -1,14 +1,12 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { RouterLink } from "@/react/components/RouterLink";
 import {
   useServerInfo,
   useSubscription,
   useWorkspacePermission,
 } from "@/react/hooks/useAppState";
-import {
-  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-  useNavigate,
-} from "@/react/router";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
@@ -16,7 +14,6 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
   const serverInfo = useServerInfo();
   const { subscription } = useSubscription();
   const canManageSettings = useWorkspacePermission("bb.settings.set");
-  const navigate = useNavigate();
 
   const version = serverInfo?.version ?? "";
   const gitCommitBE = serverInfo?.gitCommit || "unknown";
@@ -46,18 +43,13 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
       <div className="px-3 py-2">
         <div className="mb-2 flex items-center gap-x-2">
           {canManageSettings ? (
-            <button
-              type="button"
+            <RouterLink
+              to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
               className="cursor-pointer text-sm text-accent hover:underline"
-              onClick={() => {
-                void navigate.push({
-                  name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-                });
-                onCloseMenu();
-              }}
+              onClick={onCloseMenu}
             >
               {planLabel}
-            </button>
+            </RouterLink>
           ) : (
             <span className="text-sm text-control-light">{planLabel}</span>
           )}
