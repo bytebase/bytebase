@@ -57,7 +57,7 @@ export function MarkdownEditor({
     }
     const source = transform ? transform(content) : content;
     const rendered = markdown.render(source);
-    return DOMPurify.sanitize(rendered);
+    return sanitizePreviewHtml(rendered);
   }, [content, transform]);
 
   useEffect(() => {
@@ -222,6 +222,17 @@ export function MarkdownEditor({
       )}
     </div>
   );
+}
+
+function sanitizePreviewHtml(html: string) {
+  const sanitized = DOMPurify.sanitize(html);
+  const template = document.createElement("template");
+  template.innerHTML = sanitized;
+  for (const link of template.content.querySelectorAll("a")) {
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+  }
+  return template.innerHTML;
 }
 
 function PreviewBody({ className, html }: { className: string; html: string }) {
