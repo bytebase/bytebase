@@ -209,6 +209,60 @@ func TestApprovalFactorsIncludesRiskLevel(t *testing.T) {
 	a.Nil(issues)
 }
 
+func TestStringsExtensionEnabled(t *testing.T) {
+	a := require.New(t)
+
+	// ext.Strings() functions (split/join/trim) should be available in all
+	// user-authored condition environments.
+	envs := []struct {
+		name string
+		opts []cel.EnvOption
+	}{
+		{"approval", ApprovalFactors},
+		{"iam", IAMPolicyConditionCELAttributes},
+		{"maskingRule", MaskingRulePolicyCELAttributes},
+		{"maskingExemption", MaskingExemptionPolicyCELAttributes},
+		{"databaseGroup", DatabaseGroupCELAttributes},
+	}
+	for _, env := range envs {
+		e, err := cel.NewEnv(env.opts...)
+		a.NoError(err, env.name)
+
+		_, issues := e.Compile(`"a-b-c".split("-")[0] == "a"`)
+		a.Nil(issues, "%s: split should compile", env.name)
+
+		_, issues = e.Compile(`["a", "b"].join("-") == "a-b"`)
+		a.Nil(issues, "%s: join should compile", env.name)
+
+		_, issues = e.Compile(`"  x  ".trim() == "x"`)
+		a.Nil(issues, "%s: trim should compile", env.name)
+	}
+
+	// Evaluate a string-extension expression end to end.
+	e, err := cel.NewEnv(MaskingRulePolicyCELAttributes...)
+	a.NoError(err)
+	ast, issues := e.Compile(`"3-1-2".split("-")[0] == "3"`)
+	a.Nil(issues)
+	prg, err := e.Program(ast)
+	a.NoError(err)
+	out, _, err := prg.Eval(map[string]any{})
+	a.NoError(err)
+	a.Equal(true, out.Value())
+}
+
+func TestFallbackApprovalFactorsExcludeStringsExtension(t *testing.T) {
+	a := require.New(t)
+
+	// Fallback factors are deliberately restricted; ext.Strings() functions
+	// like split() must not be available there.
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	a.NoError(err)
+
+	_, issues := e.Compile(`resource.project_id.split("-")[0] == "proj"`)
+	a.NotNil(issues)
+	a.Error(issues.Err())
+}
+
 func TestFallbackFactorsDoNotIncludeRiskLevel(t *testing.T) {
 	a := require.New(t)
 
