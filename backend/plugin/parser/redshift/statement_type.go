@@ -130,6 +130,8 @@ func classifyOmniDropStatementType(objectType redshiftast.ObjectType) storepb.St
 		return storepb.StatementType_DROP_VIEW
 	case redshiftast.OBJECT_MATVIEW:
 		return storepb.StatementType_DROP_TABLE
+	case redshiftast.OBJECT_SCHEMA:
+		return storepb.StatementType_DROP_SCHEMA
 	case redshiftast.OBJECT_INDEX:
 		return storepb.StatementType_DROP_INDEX
 	case redshiftast.OBJECT_SEQUENCE:

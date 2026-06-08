@@ -93,6 +93,13 @@ func TestGetStatementTypes(t *testing.T) {
 			},
 		},
 		{
+			name:      "drop schema",
+			statement: "DROP SCHEMA s1;",
+			want: []storepb.StatementType{
+				storepb.StatementType_DROP_SCHEMA,
+			},
+		},
+		{
 			name:      "alter table",
 			statement: "ALTER TABLE t1 ADD COLUMN name TEXT;",
 			want: []storepb.StatementType{

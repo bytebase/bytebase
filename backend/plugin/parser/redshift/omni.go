@@ -53,7 +53,11 @@ func convertOmniError(err error, stmt base.Statement) error {
 
 	position := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
 	if stmt.Start != nil {
+		localLine := position.Line
 		position.Line += stmt.Start.Line - 1
+		if localLine == 1 {
+			position.Column += stmt.Start.Column - 1
+		}
 	}
 	return &base.SyntaxError{
 		Position:   position,

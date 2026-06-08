@@ -1,6 +1,7 @@
 package redshift
 
 import (
+	"errors"
 	"testing"
 
 	redshiftast "github.com/bytebase/omni/redshift/ast"
@@ -42,6 +43,16 @@ func TestParseStatementsUsesOmniASTForMultipleStatements(t *testing.T) {
 	require.Equal(t, "\nINSERT INTO t VALUES (1);", stmts[1].Text)
 	require.Equal(t, int32(1), stmts[1].Start.Line)
 	require.Equal(t, int32(10), stmts[1].Start.Column)
+}
+
+func TestParseStatementsOmniErrorUsesOriginalColumn(t *testing.T) {
+	_, err := base.ParseStatements(storepb.Engine_REDSHIFT, "SELECT 1; SELECT * FROM")
+	require.Error(t, err)
+
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.Equal(t, int32(1), syntaxErr.Position.Line)
+	require.Equal(t, int32(24), syntaxErr.Position.Column)
 }
 
 func TestRedshiftOmniASTWrapper(t *testing.T) {
