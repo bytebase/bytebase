@@ -1185,6 +1185,7 @@
         }
       },
       "details": "访问授权详情",
+      "duration-after-approval": "工单批准后 {{duration}}",
       "expired-at": "过期时间",
       "export-results-to-file": "将结果导出为文件",
       "this-grant-allows": "此授权允许",

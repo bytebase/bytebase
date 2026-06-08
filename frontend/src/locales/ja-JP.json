@@ -1185,6 +1185,7 @@
         }
       },
       "details": "アクセス付与の詳細",
+      "duration-after-approval": "Issue 承認後 {{duration}}",
       "expired-at": "有効期限",
       "export-results-to-file": "結果をファイルにエクスポート",
       "this-grant-allows": "このアクセス権限で許可される操作",

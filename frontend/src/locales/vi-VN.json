@@ -1185,6 +1185,7 @@
         }
       },
       "details": "Chi tiết cấp quyền truy cập",
+      "duration-after-approval": "{{duration}} sau khi yêu cầu được duyệt",
       "expired-at": "Hết hạn lúc",
       "export-results-to-file": "Xuất kết quả ra tệp",
       "this-grant-allows": "Cấp quyền này cho phép",
