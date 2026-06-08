@@ -161,6 +161,10 @@ func (r *whereDisallowFuncOmniRule) checkSelectInScope(sel *ast.SelectStmt, oute
 			r.checkSelect(cte.Select)
 		}
 	}
+	if inner := sel.ParenSource; inner != nil {
+		r.checkSelectInScope(inner, outer)
+		return
+	}
 	if sel.SetOp != ast.SetOpNone {
 		r.checkSelectInScope(sel.Left, outer)
 		r.checkSelectInScope(sel.Right, outer)

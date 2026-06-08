@@ -18,6 +18,18 @@
     SELECT id FROM book WHERE id > 0;
 - statement: |
     CREATE TABLE book(id INT);
+    (SELECT id FROM book);
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: '"(SELECT id FROM book);" requires WHERE clause'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE book(id INT);
     SELECT id
     FROM book
     WHERE id > (

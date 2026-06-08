@@ -71,6 +71,16 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			stmt:  "SELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers;",
 			count: 10,
 			want:  "SELECT firstName, lastName FROM employees UNION SELECT contactFirstName, contactLastName FROM customers LIMIT 10;",
+		},
+		{
+			stmt:  "(SELECT * FROM t LIMIT 100) LIMIT 20;",
+			count: 10,
+			want:  "(SELECT * FROM t LIMIT 100) LIMIT 10;",
+		},
+		{
+			stmt:  "(SELECT * FROM t) FOR UPDATE;",
+			count: 10,
+			want:  "(SELECT * FROM t) LIMIT 10 FOR UPDATE;",
 		}, {
 			stmt:  "SELECT customerNumber, checkNumber, amount FROM payments WHERE amount = (SELECT MAX(amount) FROM payments);",
 			count: 10,

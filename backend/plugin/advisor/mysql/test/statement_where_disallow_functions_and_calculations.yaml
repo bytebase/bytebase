@@ -10,6 +10,18 @@
         column: 0
       endposition: null
 
+# Test: Function on indexed column inside a parenthesized query expression should flag.
+- statement: (SELECT * FROM tech_book WHERE UPPER(name) = 'test');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
 # Test: Calculation on indexed column should flag
 - statement: SELECT * FROM tech_book WHERE id + 1 > 5;
   want:

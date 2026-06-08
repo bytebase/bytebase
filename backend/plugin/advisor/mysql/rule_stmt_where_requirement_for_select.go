@@ -72,6 +72,10 @@ func (r *whereRequirementForSelectOmniRule) checkSelectStmt(sel *ast.SelectStmt,
 			r.checkSelectStmt(cte.Select, text)
 		}
 	}
+	if inner := sel.ParenSource; inner != nil {
+		r.checkSelectStmt(inner, text)
+		return
+	}
 
 	// Check set operations (UNION left/right).
 	if sel.SetOp != ast.SetOpNone {
