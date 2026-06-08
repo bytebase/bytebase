@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/ext"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -241,6 +242,7 @@ func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes m
 	maskingExemptionPolicyEnv, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
 		cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
+		ext.Strings(),
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create CEL environment for masking exemption policy")

@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
 	celtypes "github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/ext"
 	"github.com/pkg/errors"
 	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -37,6 +38,8 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.Variable(CELAttributeRequestExport, cel.BoolType),
 	// Risk scope
 	cel.Variable(CELAttributeRiskLevel, cel.StringType),
+	// String extension functions (split, join, trim, etc.)
+	ext.Strings(),
 	// Size limit
 	cel.ParserExpressionSizeLimit(celLimit),
 }
@@ -77,6 +80,7 @@ var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
 	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
+	ext.Strings(),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -90,6 +94,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
 	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
 	cel.Variable(CELAttributeResourceClassificationLevel, cel.IntType),
+	ext.Strings(),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -102,6 +107,7 @@ var MaskingExemptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
 	cel.Variable(CELAttributeResourceClassificationLevel, cel.IntType),
 	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
+	ext.Strings(),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -111,6 +117,7 @@ var DatabaseGroupCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
 	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
 	cel.Variable(CELAttributeResourceDatabaseLabels, cel.MapType(cel.StringType, cel.StringType)),
+	ext.Strings(),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
