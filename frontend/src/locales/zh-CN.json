@@ -2605,6 +2605,8 @@
       "show-shared": "显示共享"
     },
     "hint-tips": {
+      "confirm-multi-delete-content": "选中的工作表和文件夹将被永久删除。",
+      "confirm-multi-delete-title": "删除选中的项目？",
       "confirm-to-delete-sheet-title": "确认删除此工作表？",
       "confirm-to-duplicate-sheet": "确定要复制这条工作表?",
       "delete-all-sheets": "删除所有文件",

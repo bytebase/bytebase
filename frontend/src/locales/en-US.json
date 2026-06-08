@@ -2605,6 +2605,8 @@
       "show-shared": "Show shared"
     },
     "hint-tips": {
+      "confirm-multi-delete-content": "The selected worksheets and folders will be permanently deleted.",
+      "confirm-multi-delete-title": "Delete selected items?",
       "confirm-to-delete-sheet-title": "Confirm to delete this worksheet?",
       "confirm-to-duplicate-sheet": "Confirm to duplicate this worksheet?",
       "delete-all-sheets": "Delete all files",

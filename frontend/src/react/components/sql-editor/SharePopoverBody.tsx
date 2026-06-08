@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/react/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -219,29 +220,34 @@ export function SharePopoverBody({ worksheet }: Props) {
         </Popover>
       </section>
 
-      {/* Link input + copy button */}
-      <div className="flex items-center gap-x-0">
-        {/* Link icon prefix */}
-        <div className="flex items-center justify-center px-2 py-1 border border-r-0 border-control-border bg-control-bg rounded-l-xs h-8">
+      {/* Link input + copy button — single bordered container with rounded
+          inner corners. No group-level focus ring; only the input shows a
+          focus highlight. */}
+      <div className="flex items-center h-8 rounded-xs border border-control-border overflow-hidden">
+        {/* Link icon prefix (gray addon) */}
+        <div className="flex items-center justify-center h-full px-2 bg-control-bg text-control-light border-r border-control-border">
           <Link2 className="size-5" />
         </div>
-        {/* URL input */}
+        {/* URL input — always read-only; the link itself is not editable. */}
         <input
           type="text"
           readOnly
           value={sharedTabLink}
-          className="flex-1 min-w-0 px-2 py-1 border border-control-border bg-control-bg text-control text-sm h-8 focus:outline-none"
+          className="flex-1 min-w-0 h-full px-2 bg-white text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
         />
-        {/* Copy button */}
-        <button
+        {/* Copy button — always available regardless of share status; only
+            disabled while the tab has unsaved changes. */}
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           data-copy-btn
           disabled={tabStatus !== "CLEAN"}
           onClick={handleCopyLink}
-          className="flex items-center justify-center px-2 py-1 border border-l-0 border-control-border bg-control-bg rounded-r-xs h-8 text-control-light hover:text-main disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-full rounded-none border-l border-control-border bg-white enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
         >
           <Copy className="size-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );
