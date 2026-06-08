@@ -20,6 +20,10 @@ const mocks = vi.hoisted(() => ({
     plan: 1,
   },
   push: vi.fn(),
+  resolve: vi.fn(() => ({
+    href: "/setting/subscription",
+    fullPath: "/setting/subscription",
+  })),
   closeMenu: vi.fn(),
 }));
 
@@ -47,6 +51,10 @@ vi.mock("@/react/hooks/useAppState", () => ({
 
 vi.mock("@/react/router", () => ({
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION: "setting.workspace.subscription",
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
   useNavigate: () => ({
     push: mocks.push,
   }),
@@ -133,12 +141,12 @@ describe("VersionMenuItem", () => {
     );
     render();
 
-    const planButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Team")
+    const planLink = Array.from(container.querySelectorAll("a")).find((link) =>
+      link.textContent?.includes("Team")
     );
-    expect(planButton).not.toBeUndefined();
+    expect(planLink).not.toBeUndefined();
     act(() => {
-      planButton?.click();
+      planLink?.click();
     });
 
     expect(mocks.push).toHaveBeenCalledWith({

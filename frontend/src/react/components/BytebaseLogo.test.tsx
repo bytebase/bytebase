@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   workspaceLogo: "",
   record: vi.fn(),
   push: vi.fn(),
-  resolve: vi.fn(() => ({ fullPath: "/landing" })),
+  resolve: vi.fn(() => ({ href: "/landing", fullPath: "/landing" })),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -33,6 +33,10 @@ vi.mock("@/react/hooks/useAppState", () => ({
 }));
 
 vi.mock("@/react/router", () => ({
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
   useNavigate: () => ({
     push: mocks.push,
     resolve: mocks.resolve,
@@ -101,15 +105,15 @@ describe("BytebaseLogo", () => {
     );
     render();
 
-    const button = container.querySelector("button");
-    expect(button).not.toBeNull();
+    const link = container.querySelector("a");
+    expect(link).not.toBeNull();
     act(() => {
-      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      link?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(mocks.resolve).toHaveBeenCalledWith({ name: "workspace.landing" });
     expect(mocks.record).toHaveBeenCalledWith("/landing");
-    expect(mocks.push).toHaveBeenCalled();
+    expect(mocks.push).toHaveBeenCalledWith({ name: "workspace.landing" });
     unmount();
   });
 });
