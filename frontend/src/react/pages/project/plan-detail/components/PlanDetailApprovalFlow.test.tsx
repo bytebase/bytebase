@@ -23,6 +23,10 @@ const mocks = vi.hoisted(() => ({
   listIssueComments: vi.fn(async () => ({ issueComments: mocks.comments })),
   requestIssue: vi.fn(async () => ({})),
   routerPush: vi.fn(),
+  routerResolve: vi.fn(() => ({
+    fullPath: "/projects/p1/issues/123",
+    href: "/projects/p1/issues/123",
+  })),
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
@@ -64,6 +68,7 @@ vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
     push: mocks.routerPush,
+    resolve: mocks.routerResolve,
   },
 }));
 
@@ -226,6 +231,7 @@ beforeEach(() => {
   mocks.issueCommentStore.listIssueComments.mockClear();
   mocks.requestIssue.mockClear();
   mocks.routerPush.mockClear();
+  mocks.routerResolve.mockClear();
   mocks.pushNotification.mockClear();
   mocks.batchGetOrFetchGroups.mockClear();
   mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy.mockClear();
@@ -303,14 +309,14 @@ describe("PlanDetailApprovalFlow", () => {
       "common.issue #123 · plan.view-discussion"
     );
 
-    const footerButton = [...container.querySelectorAll("button")].find(
-      (button) =>
-        button.textContent?.includes("common.issue #123 · plan.view-discussion")
+    const footerLink = [...container.querySelectorAll("a")].find((link) =>
+      link.textContent?.includes("common.issue #123 · plan.view-discussion")
     );
-    expect(footerButton).toBeTruthy();
+    expect(footerLink).toBeTruthy();
+    expect(footerLink?.getAttribute("href")).toBe("/projects/p1/issues/123");
 
     act(() => {
-      footerButton?.dispatchEvent(
+      footerLink?.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true })
       );
     });

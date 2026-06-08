@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { RouterLink } from "@/react/components/RouterLink";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -18,7 +19,6 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
@@ -321,21 +321,18 @@ function PlanDetailApprovalFlowContent({
         {riskLevelText && ruleText && <span>·</span>}
         {ruleText && <span className="min-w-0 truncate">{ruleText}</span>}
         <div className="flex-1" />
-        <button
-          className="text-accent hover:underline"
-          onClick={() =>
-            void router.push({
-              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-              params: {
-                issueId: issueUID,
-                projectId: page.projectId,
-              },
-            })
-          }
-          type="button"
+        <RouterLink
+          className="text-accent"
+          to={{
+            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+            params: {
+              issueId: issueUID,
+              projectId: page.projectId,
+            },
+          }}
         >
           {t("common.issue")} #{issueUID} · {t("plan.view-discussion")} →
-        </button>
+        </RouterLink>
       </div>
     </div>
   );
