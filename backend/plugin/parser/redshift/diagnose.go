@@ -2,11 +2,6 @@ package redshift
 
 import (
 	"context"
-	"strings"
-	"unicode"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/redshift"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -27,40 +22,20 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 }
 
 // parseRedshiftStatement parses the given SQL and returns syntax errors if any.
-// Use the Redshift parser based on antlr4.
 func parseRedshiftStatement(statement string) *base.SyntaxError {
-	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
-	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
-		// Add a semicolon to the end of the statement to allow users to omit the semicolon
-		// for the last statement in the script.
-		statement += ";"
+	stmt := base.Statement{
+		Text:  statement,
+		Start: &store.Position{Line: 1, Column: 1},
 	}
-	lexer := parser.NewRedshiftLexer(antlr.NewInputStream(statement))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewRedshiftParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+	if _, err := ParseRedshiftOmni(statement); err != nil {
+		syntaxErr, ok := convertOmniError(err, stmt).(*base.SyntaxError)
+		if !ok {
+			return &base.SyntaxError{
+				Position: &store.Position{Line: 1, Column: 1},
+				Message:  err.Error(),
+			}
+		}
+		return syntaxErr
 	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = true
-
-	p.Root()
-
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
-	}
-
 	return nil
 }
