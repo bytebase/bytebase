@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { usePagedData } from "./usePagedData";
+import { PagedTableFooter, usePagedData } from "./usePagedData";
 
 vi.mock("@/react/hooks/useSessionPageSize", () => ({
   getPageSizeOptions: () => [50, 100],
@@ -87,5 +87,39 @@ describe("usePagedData", () => {
     expect(container.querySelector("[data-state]")?.textContent).toBe(
       "items/1"
     );
+  });
+});
+
+describe("PagedTableFooter", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  test("uses the shared select trigger for page size", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <PagedTableFooter
+          pageSize={10}
+          pageSizeOptions={[10, 20]}
+          onPageSizeChange={vi.fn()}
+          hasMore={false}
+          isFetchingMore={false}
+          onLoadMore={vi.fn()}
+        />
+      );
+    });
+
+    expect(container.querySelector("select")).toBeNull();
+    expect(container.querySelector("button")?.className).toContain(
+      "cursor-pointer"
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 });
