@@ -2605,6 +2605,8 @@
       "show-shared": "共有を表示"
     },
     "hint-tips": {
+      "confirm-multi-delete-content": "選択したワークシートとフォルダーは完全に削除されます。",
+      "confirm-multi-delete-title": "選択した項目を削除しますか?",
       "confirm-to-delete-sheet-title": "このワークシートを削除しますか?",
       "confirm-to-duplicate-sheet": "このワークシートをコピーしてもよろしいですか?",
       "delete-all-sheets": "すべてのファイルを削除する",

@@ -2605,6 +2605,8 @@
       "show-shared": "Hiển thị chia sẻ"
     },
     "hint-tips": {
+      "confirm-multi-delete-content": "Các bảng tính và thư mục đã chọn sẽ bị xóa vĩnh viễn.",
+      "confirm-multi-delete-title": "Xóa các mục đã chọn?",
       "confirm-to-delete-sheet-title": "Xác nhận xóa bảng tính này?",
       "confirm-to-duplicate-sheet": "Xác nhận nhân bản trang tính này?",
       "delete-all-sheets": "Xóa tất cả các tập tin",

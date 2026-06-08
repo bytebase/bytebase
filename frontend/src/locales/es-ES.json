@@ -2605,6 +2605,8 @@
       "show-shared": "Mostrar compartido"
     },
     "hint-tips": {
+      "confirm-multi-delete-content": "Las hojas de cálculo y carpetas seleccionadas se eliminarán permanentemente.",
+      "confirm-multi-delete-title": "¿Eliminar los elementos seleccionados?",
       "confirm-to-delete-sheet-title": "¿Confirmar la eliminación de esta hoja de cálculo?",
       "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?",
       "delete-all-sheets": "Eliminar todos los archivos",

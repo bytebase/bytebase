@@ -235,7 +235,11 @@ describe("SharePopoverBody", () => {
 
   test("copy button writes to clipboard and pushes notification", async () => {
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody
+        worksheet={
+          { ...mockWorksheet, visibility: 1 /* PROJECT_READ */ } as never
+        }
+      />
     );
     render();
 
@@ -266,6 +270,22 @@ describe("SharePopoverBody", () => {
     ) as HTMLButtonElement;
     expect(copyBtn).not.toBeNull();
     expect(copyBtn.disabled).toBe(true);
+    unmount();
+  });
+
+  test("copy button enabled for a private worksheet (share status ignored)", () => {
+    // mockWorksheet is PRIVATE; the copy button stays enabled regardless of
+    // share status, gated only by the tab's saved state.
+    const { container, render, unmount } = renderIntoContainer(
+      <SharePopoverBody worksheet={mockWorksheet as never} />
+    );
+    render();
+
+    const copyBtn = container.querySelector(
+      "[data-copy-btn]"
+    ) as HTMLButtonElement;
+    expect(copyBtn).not.toBeNull();
+    expect(copyBtn.disabled).toBe(false);
     unmount();
   });
 });
