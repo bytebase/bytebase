@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/redshift"
+	redshiftast "github.com/bytebase/omni/redshift/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	parserredshift "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 )
 
 var (
@@ -30,11 +28,6 @@ type TableDropNamingConventionAdvisor struct {
 
 // Check checks for table drop with naming convention.
 func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	tree, err := getANTLRTree(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -50,87 +43,75 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	listener := &tableDropNamingConventionListener{
+	checker := &tableDropNamingConventionChecker{
 		level:      level,
 		title:      checkCtx.Rule.Type.String(),
 		format:     format,
 		adviceList: []*storepb.Advice{},
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		node, ok := parserredshift.GetOmniNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		checker.checkStmt(node, stmt.Start)
+	}
 
-	return listener.adviceList, nil
+	return checker.adviceList, nil
 }
 
-type tableDropNamingConventionListener struct {
-	*parser.BaseRedshiftParserListener
-
+type tableDropNamingConventionChecker struct {
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
 	format     *regexp.Regexp
 }
 
-// EnterDropstmt is called when entering a dropstmt rule.
-func (l *tableDropNamingConventionListener) EnterDropstmt(ctx *parser.DropstmtContext) {
-	if ctx.DROP() == nil {
+func (c *tableDropNamingConventionChecker) checkStmt(node redshiftast.Node, startPosition *storepb.Position) {
+	dropStmt, ok := node.(*redshiftast.DropStmt)
+	if !ok {
 		return
 	}
+	if redshiftast.ObjectType(dropStmt.RemoveType) != redshiftast.OBJECT_TABLE {
+		return
+	}
+	for _, tableName := range omniDropTableNames(dropStmt) {
+		if tableName == "" || c.format.MatchString(tableName) {
+			continue
+		}
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
+			Code:          code.TableDropNamingConventionMismatch.Int32(),
+			Title:         c.title,
+			Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, c.format),
+			StartPosition: startPosition,
+		})
+	}
+}
 
-	// Check if this is a DROP TABLE statement
-	if ctx.Object_type_any_name() != nil && ctx.Object_type_any_name().TABLE() != nil {
-		// Extract table names from the drop statement
-		if ctx.Any_name_list() != nil {
-			for _, anyName := range ctx.Any_name_list().AllAny_name() {
-				tableName := getTableNameFromAnyName(anyName)
-				if tableName != "" && !l.format.MatchString(tableName) {
-					l.adviceList = append(l.adviceList, &storepb.Advice{
-						Status:  l.level,
-						Code:    code.TableDropNamingConventionMismatch.Int32(),
-						Title:   l.title,
-						Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, l.format),
-						StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-							Line:   int32(ctx.GetStart().GetLine()),
-							Column: int32(ctx.GetStart().GetColumn()),
-						}, ctx.GetText()),
-					})
+func omniDropTableNames(dropStmt *redshiftast.DropStmt) []string {
+	if dropStmt.Objects == nil {
+		return nil
+	}
+
+	var result []string
+	for _, item := range dropStmt.Objects.Items {
+		var parts []string
+		switch n := item.(type) {
+		case *redshiftast.List:
+			for _, nameItem := range n.Items {
+				if s, ok := nameItem.(*redshiftast.String); ok {
+					parts = append(parts, s.Str)
 				}
 			}
+		case *redshiftast.RangeVar:
+			parts = append(parts, n.Relname)
+		default:
+		}
+		if len(parts) > 0 {
+			result = append(result, parts[len(parts)-1])
 		}
 	}
-}
-
-func getTableNameFromAnyName(ctx parser.IAny_nameContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	parts := []string{}
-
-	// First part (could be schema or table)
-	if ctx.Colid() != nil {
-		parts = append(parts, normalizeRedshiftIdentifier(ctx.Colid().GetText()))
-	}
-
-	// Additional parts from attrs (qualified names like schema.table)
-	if ctx.Attrs() != nil {
-		for _, attr := range ctx.Attrs().AllAttr_name() {
-			parts = append(parts, normalizeRedshiftIdentifier(attr.GetText()))
-		}
-	}
-
-	// Return the last part as the table name
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-
-	return ""
-}
-
-func normalizeRedshiftIdentifier(name string) string {
-	// Remove quotes if present
-	if len(name) >= 2 && name[0] == '"' && name[len(name)-1] == '"' {
-		return name[1 : len(name)-1]
-	}
-	return name
+	return result
 }
