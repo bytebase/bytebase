@@ -18,6 +18,14 @@
   limit: 10
   want: SELECT TOP 10 id FROM t1;
 - stmt: |
+    SELECT TOP (3) PERCENT id FROM t1;
+  limit: 10
+  want: SELECT TOP 10 id FROM t1;
+- stmt: |
+    SELECT TOP (3) WITH TIES id FROM t1 ORDER BY id;
+  limit: 10
+  want: SELECT TOP 10 id FROM t1 ORDER BY id;
+- stmt: |
     SELECT id FROM t1 ORDER BY price;
   limit: 10
   want: SELECT id FROM t1 ORDER BY price OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
