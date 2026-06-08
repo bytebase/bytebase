@@ -32,6 +32,7 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
@@ -58,6 +59,29 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
+
+// Column descriptor for the access-grants table. The column array is
+// built inside the component (so titles resolve via `t()` and react
+// to language switches); only the shape lives at module scope.
+//
+// Position in the array is the `<colgroup>` order — keep this in sync
+// with the cell order inside `<AccessGrantRow>` (`useColumnWidths`
+// indexes positionally).
+//
+// - `title`        — header label; omit for a blank header (actions col).
+// - `defaultWidth` — initial render width; user-resizable from there.
+// - `minWidth`     — drag floor so a column can't collapse to a sliver.
+// - `sortKey`      — present iff the column participates in server sort.
+// - `resizable`    — defaults true; set false for purely action columns
+//                    where a too-narrow width clips the button row.
+type GrantColumn = {
+  key: string;
+  title?: string;
+  defaultWidth: number;
+  minWidth: number;
+  sortKey?: SortKey;
+  resizable?: boolean;
+};
 
 function hashCode(str: string): number {
   let hash = 0;
@@ -396,6 +420,66 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     enabled: canList,
   });
 
+  // Translated column descriptors. Built inside the component (not at
+  // module scope) so `title` strings resolve via `t()` and update
+  // automatically on language switches. Memoized on `t` so the
+  // descriptor array identity is stable between renders within the
+  // same language — which matters because `useColumnWidths` reads the
+  // initial widths from this array on first render.
+  const columns = useMemo<GrantColumn[]>(
+    () => [
+      {
+        key: "status",
+        title: t("common.status"),
+        defaultWidth: 112,
+        minWidth: 80,
+      },
+      {
+        key: "creator",
+        title: t("common.creator"),
+        defaultWidth: 200,
+        minWidth: 140,
+        sortKey: "creator",
+      },
+      {
+        key: "created",
+        title: t("common.created-at"),
+        defaultWidth: 200,
+        minWidth: 160,
+        sortKey: "create_time",
+      },
+      {
+        key: "expiration",
+        title: t("common.expiration"),
+        defaultWidth: 200,
+        minWidth: 160,
+        sortKey: "expire_time",
+      },
+      {
+        key: "statement",
+        title: t("common.statement"),
+        defaultWidth: 400,
+        minWidth: 200,
+      },
+      {
+        key: "databases",
+        title: t("common.databases"),
+        defaultWidth: 240,
+        minWidth: 160,
+      },
+      // Trailing actions column — no title (blank header), fixed
+      // width sized for two ghost buttons + "View issue".
+      { key: "actions", defaultWidth: 180, minWidth: 120, resizable: false },
+    ],
+    [t]
+  );
+
+  // User-controlled column widths so long statements / databases /
+  // expiration values aren't permanently truncated by the table's
+  // fixed-width layout. The hook owns the per-column width state and
+  // the mousedown→mousemove→mouseup drag pipeline.
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+
   const handleConfirm = useCallback(async () => {
     if (!confirmAction) return;
     const { type, grant } = confirmAction;
@@ -457,45 +541,54 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </div>
           ) : (
             <div className="px-4">
-              <div className="border rounded-sm overflow-hidden">
-                <Table className="table-fixed">
+              {/*
+                `overflow-x-auto` lets users drag a column past the
+                container width without clipping the trailing columns.
+                The previous `overflow-hidden` would have swallowed
+                the resized overflow.
+              */}
+              <div className="border rounded-sm overflow-x-auto">
+                <Table
+                  className="table-fixed"
+                  style={{ minWidth: `${totalWidth}px` }}
+                >
+                  {/*
+                    `<colgroup>` order mirrors `columns`, which in turn
+                    mirrors the cell order inside `<AccessGrantRow>` —
+                    `useColumnWidths` indexes positionally, not by key.
+                  */}
+                  <colgroup>
+                    {widths.map((w, i) => (
+                      <col key={columns[i].key} style={{ width: `${w}px` }} />
+                    ))}
+                  </colgroup>
                   <TableHeader>
                     <TableRow className="bg-control-bg">
-                      <TableHead className="w-28">
-                        {t("common.status")}
-                      </TableHead>
-                      <TableHead
-                        sortable
-                        sortActive={sortKey === "creator"}
-                        sortDir={sortDir}
-                        onSort={() => handleSort("creator")}
-                        className="w-44"
-                      >
-                        {t("common.creator")}
-                      </TableHead>
-                      <TableHead
-                        sortable
-                        sortActive={sortKey === "create_time"}
-                        sortDir={sortDir}
-                        onSort={() => handleSort("create_time")}
-                        className="w-44 hidden xl:table-cell"
-                      >
-                        {t("common.created-at")}
-                      </TableHead>
-                      <TableHead
-                        sortable
-                        sortActive={sortKey === "expire_time"}
-                        sortDir={sortDir}
-                        onSort={() => handleSort("expire_time")}
-                        className="w-44 hidden xl:table-cell"
-                      >
-                        {t("common.expiration")}
-                      </TableHead>
-                      <TableHead>{t("common.statement")}</TableHead>
-                      <TableHead className="w-48">
-                        {t("common.databases")}
-                      </TableHead>
-                      <TableHead className="w-40" />
+                      {columns.map((col, colIdx) => {
+                        const isSortable = col.sortKey !== undefined;
+                        const isResizable = col.resizable !== false;
+                        return (
+                          <TableHead
+                            key={col.key}
+                            sortable={isSortable}
+                            sortActive={isSortable && sortKey === col.sortKey}
+                            sortDir={sortDir}
+                            onSort={
+                              isSortable
+                                ? () => handleSort(col.sortKey!)
+                                : undefined
+                            }
+                            resizable={isResizable}
+                            onResizeStart={
+                              isResizable
+                                ? (e) => onResizeStart(colIdx, e)
+                                : undefined
+                            }
+                          >
+                            {col.title ?? null}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -609,10 +702,10 @@ function AccessGrantRow({
       <TableCell>
         <EllipsisText text={extractUserEmail(grant.creator)} />
       </TableCell>
-      <TableCell className="hidden xl:table-cell">
+      <TableCell>
         <EllipsisText text={createdAt} />
       </TableCell>
-      <TableCell className="hidden xl:table-cell">
+      <TableCell>
         <EllipsisText text={expiration} />
       </TableCell>
       <TableCell>

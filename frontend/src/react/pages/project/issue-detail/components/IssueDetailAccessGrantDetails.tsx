@@ -134,14 +134,27 @@ export function IssueDetailAccessGrantDetails() {
 
           <div className="flex flex-col gap-y-1">
             <span className="text-sm text-control-light">
-              {expirationInfo.type === "duration"
-                ? t("common.duration")
-                : t("issue.access-grant.expired-at")}
+              {t("common.expiration")}
             </span>
             <div className="text-base">
               {expirationInfo.type === "never"
                 ? t("project.members.never-expires")
-                : expirationInfo.value}
+                : expirationInfo.type === "duration"
+                  ? t("issue.access-grant.duration-after-approval", {
+                      duration: expirationInfo.duration,
+                    })
+                  : expirationInfo.duration
+                    ? // Active grant — show the recovered configured
+                      // duration alongside the absolute expire datetime
+                      // for full context. The duration is best-effort
+                      // (`expireTime - createTime`), so when it's not
+                      // available we silently fall back to just the
+                      // datetime.
+                      t("issue.access-grant.duration-with-datetime", {
+                        duration: expirationInfo.duration,
+                        datetime: expirationInfo.datetime,
+                      })
+                    : expirationInfo.datetime}
             </div>
           </div>
         </div>
