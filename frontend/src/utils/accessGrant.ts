@@ -34,56 +34,37 @@ export const getAccessGrantExpireTimeMs = (
   return undefined;
 };
 
-// Days/hours/minutes formatter for grant durations. Extracted so the
-// same shape ("4h", "2d3h", "30m") applies to both the input TTL (on
-// pending grants) and the recovered original duration on active grants
-// (`expireTime - createTime`, see `getAccessGrantExpirationText`).
-const formatGrantDurationFromSeconds = (totalSeconds: number): string => {
-  const dur = dayjs.duration(totalSeconds, "seconds");
-  const days = Math.floor(dur.asDays());
-  const hours = dur.hours();
-  const minutes = dur.minutes();
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  return parts.join("") || "<1m";
-};
-
 export const getAccessGrantExpirationText = (
   grant: AccessGrant
 ):
-  | { type: "datetime"; value: string; datetime: string; duration?: string }
-  | { type: "duration"; value: string; duration: string }
+  | { type: "datetime"; value: string }
+  | { type: "duration"; value: string }
   | { type: "never" } => {
   if (grant.expiration.case === "expireTime") {
-    const expireMs = getTimeForPbTimestampProtoEs(grant.expiration.value);
-    const datetime = formatAbsoluteDateTime(expireMs);
-    // Recover the originally-configured duration from
-    // (expireTime - createTime). This is exact when the grant was
-    // activated immediately on creation (auto-approval / no-approval
-    // flow); for slow approvals it drifts upward by the approval
-    // latency. We expose it as a hint, not a contract — UIs should
-    // treat it as best-effort and fall back to just `datetime` when
-    // `createTime` is missing.
-    let duration: string | undefined;
-    if (grant.createTime) {
-      const createMs = getTimeForPbTimestampProtoEs(grant.createTime);
-      if (createMs > 0 && expireMs > createMs) {
-        duration = formatGrantDurationFromSeconds(
-          Math.floor((expireMs - createMs) / 1000)
-        );
-      }
-    }
-    // `value` retained for backward-compat callers that only need the
-    // absolute datetime (e.g. `AccessGrantItem`, the project access
-    // grants table).
-    return { type: "datetime", value: datetime, datetime, duration };
+    // Active grants only carry `expireTime` — the originally-requested
+    // TTL is `Input only` on the proto and is gone after activation.
+    // We deliberately do NOT derive a "duration" from
+    // `expireTime - createTime`: `createTime` is when the request was
+    // opened, not when the grant was activated, so the subtraction
+    // double-counts the approval-wait time. A 4h grant approved a day
+    // later would render as "1d4h", which misleads reviewers about
+    // the actual granted window. Show the absolute expire datetime
+    // alone instead. Bot review #3370767734.
+    const ms = getTimeForPbTimestampProtoEs(grant.expiration.value);
+    return { type: "datetime", value: formatAbsoluteDateTime(ms) };
   }
   if (grant.expiration.case === "ttl") {
+    // Pending grants still carry the requested TTL — safe to format.
     const totalSeconds = Number(grant.expiration.value.seconds);
-    const duration = formatGrantDurationFromSeconds(totalSeconds);
-    return { type: "duration", value: duration, duration };
+    const dur = dayjs.duration(totalSeconds, "seconds");
+    const days = Math.floor(dur.asDays());
+    const hours = dur.hours();
+    const minutes = dur.minutes();
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return { type: "duration", value: parts.join("") || "<1m" };
   }
   return { type: "never" };
 };

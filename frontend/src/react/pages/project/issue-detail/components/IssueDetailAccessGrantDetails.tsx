@@ -140,21 +140,17 @@ export function IssueDetailAccessGrantDetails() {
               {expirationInfo.type === "never"
                 ? t("project.members.never-expires")
                 : expirationInfo.type === "duration"
-                  ? t("issue.access-grant.duration-after-approval", {
-                      duration: expirationInfo.duration,
+                  ? // Pending grant — TTL is still on the proto, safe
+                    // to surface as "{{duration}} after issue approved".
+                    t("issue.access-grant.duration-after-approval", {
+                      duration: expirationInfo.value,
                     })
-                  : expirationInfo.duration
-                    ? // Active grant — show the recovered configured
-                      // duration alongside the absolute expire datetime
-                      // for full context. The duration is best-effort
-                      // (`expireTime - createTime`), so when it's not
-                      // available we silently fall back to just the
-                      // datetime.
-                      t("issue.access-grant.duration-with-datetime", {
-                        duration: expirationInfo.duration,
-                        datetime: expirationInfo.datetime,
-                      })
-                    : expirationInfo.datetime}
+                  : // Active grant — show the absolute expire datetime
+                    // only. The original requested duration is gone
+                    // post-activation (input-only proto field); we
+                    // can't recover it without double-counting the
+                    // approval wait. Bot review #3370767734.
+                    expirationInfo.value}
             </div>
           </div>
         </div>
