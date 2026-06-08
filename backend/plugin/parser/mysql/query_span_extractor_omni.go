@@ -125,6 +125,15 @@ func (q *omniQuerySpanExtractor) extractOmniSelectStmt(stmt *ast.SelectStmt) (*b
 	if err := q.processOmniCTEs(stmt.CTEs); err != nil {
 		return nil, err
 	}
+	if inner := stmt.ParenSource; inner != nil {
+		return q.extractOmniSelectStmt(inner)
+	}
+	if tableStmt := stmt.TableSource; tableStmt != nil {
+		return q.extractOmniTableStmt(tableStmt)
+	}
+	if valuesStmt := stmt.ValuesSource; valuesStmt != nil {
+		return q.extractOmniValuesStmt(valuesStmt)
+	}
 	if stmt.SetOp != ast.SetOpNone {
 		return q.extractOmniSetOp(stmt)
 	}
@@ -243,10 +252,11 @@ func (q *omniQuerySpanExtractor) extractOmniNonRecursiveCTE(cte *ast.CommonTable
 }
 
 func (q *omniQuerySpanExtractor) extractOmniRecursiveCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
-	if cte.Select == nil || cte.Select.SetOp == ast.SetOpNone {
+	selectStmt := ast.UnwrapParenSource(cte.Select)
+	if selectStmt == nil || selectStmt.SetOp == ast.SetOpNone {
 		return q.extractOmniNonRecursiveCTE(cte)
 	}
-	initialTable, err := q.extractOmniRecursiveCTEAnchor(cte.Select)
+	initialTable, err := q.extractOmniRecursiveCTEAnchor(selectStmt)
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +299,7 @@ func (q *omniQuerySpanExtractor) extractOmniRecursiveCTE(cte *ast.CommonTableExp
 }
 
 func (q *omniQuerySpanExtractor) extractOmniRecursiveCTEAnchor(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+	stmt = ast.UnwrapParenSource(stmt)
 	if stmt == nil || stmt.SetOp == ast.SetOpNone {
 		return q.extractOmniSelectStmt(stmt)
 	}
@@ -1106,6 +1117,15 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		}
 		if n.Right != nil {
 			collectOmniAccessTablesFromNode(result, n.Right, defaultDatabase, normalizeStarRocksCluster)
+		}
+		if inner := n.ParenSource; inner != nil {
+			collectOmniAccessTablesFromNode(result, inner, defaultDatabase, normalizeStarRocksCluster)
+		}
+		if tableStmt := n.TableSource; tableStmt != nil {
+			collectOmniAccessTablesFromNode(result, tableStmt, defaultDatabase, normalizeStarRocksCluster)
+		}
+		if valuesStmt := n.ValuesSource; valuesStmt != nil {
+			collectOmniAccessTablesFromNode(result, valuesStmt, defaultDatabase, normalizeStarRocksCluster)
 		}
 		for _, target := range n.TargetList {
 			collectOmniAccessTablesFromExpr(result, target, defaultDatabase, normalizeStarRocksCluster)

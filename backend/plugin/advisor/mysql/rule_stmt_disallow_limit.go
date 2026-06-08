@@ -75,11 +75,20 @@ func (r *disallowLimitOmniRule) checkSelectLimit(sel *ast.SelectStmt, text strin
 	if sel == nil {
 		return
 	}
+	if inner := sel.ParenSource; inner != nil {
+		if sel.Limit != nil {
+			r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
+		}
+		r.checkSelectLimit(inner, text)
+		return
+	}
 	if sel.SetOp != ast.SetOpNone {
 		// Check set operation top-level limit.
 		if sel.Limit != nil {
 			r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
 		}
+		r.checkSelectLimit(sel.Left, text)
+		r.checkSelectLimit(sel.Right, text)
 		return
 	}
 	if sel.Limit != nil {

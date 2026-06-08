@@ -97,6 +97,10 @@ func (r *maxLogicalOperatorOmniRule) checkSelect(sel *ast.SelectStmt, text strin
 	if sel == nil {
 		return
 	}
+	if inner := sel.ParenSource; inner != nil {
+		r.checkSelect(inner, text)
+		return
+	}
 	if sel.SetOp != ast.SetOpNone {
 		r.checkSelect(sel.Left, text)
 		r.checkSelect(sel.Right, text)

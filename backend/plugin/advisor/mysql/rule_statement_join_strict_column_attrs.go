@@ -80,6 +80,10 @@ func (r *joinStrictColumnAttrsOmniRule) checkSelect(sel *ast.SelectStmt) {
 	if sel == nil {
 		return
 	}
+	if inner := sel.ParenSource; inner != nil {
+		r.checkSelect(inner)
+		return
+	}
 	if sel.SetOp != ast.SetOpNone {
 		r.checkSelect(sel.Left)
 		r.checkSelect(sel.Right)

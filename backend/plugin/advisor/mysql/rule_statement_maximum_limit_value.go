@@ -70,6 +70,13 @@ func (r *maxLimitValueOmniRule) checkSelectLimit(sel *ast.SelectStmt, _ string) 
 	if sel == nil {
 		return
 	}
+	if inner := sel.ParenSource; inner != nil {
+		if sel.Limit != nil {
+			r.checkLimit(sel.Limit)
+		}
+		r.checkSelectLimit(inner, "")
+		return
+	}
 	if sel.SetOp != ast.SetOpNone {
 		r.checkSelectLimit(sel.Left, "")
 		r.checkSelectLimit(sel.Right, "")

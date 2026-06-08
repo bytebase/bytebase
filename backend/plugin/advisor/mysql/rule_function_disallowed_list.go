@@ -134,6 +134,18 @@ func (r *functionDisallowedListOmniRule) checkSelectStmt(n *ast.SelectStmt) {
 	if n == nil {
 		return
 	}
+	for _, cte := range n.CTEs {
+		if cte != nil {
+			r.checkSelectStmt(cte.Select)
+		}
+	}
+	if inner := n.ParenSource; inner != nil {
+		r.checkSelectStmt(inner)
+	}
+	if n.SetOp != ast.SetOpNone {
+		r.checkSelectStmt(n.Left)
+		r.checkSelectStmt(n.Right)
+	}
 	for _, expr := range n.TargetList {
 		r.checkExpr(expr)
 	}

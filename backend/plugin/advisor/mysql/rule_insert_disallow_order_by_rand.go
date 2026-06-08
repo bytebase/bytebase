@@ -74,6 +74,9 @@ func (r *insertDisallowOrderByRandOmniRule) checkSelectForRandOrderBy(sel *ast.S
 	if sel == nil {
 		return
 	}
+	if inner := sel.ParenSource; inner != nil {
+		r.checkSelectForRandOrderBy(inner, text)
+	}
 
 	for _, item := range sel.OrderBy {
 		if r.isRandFunc(item.Expr) {
