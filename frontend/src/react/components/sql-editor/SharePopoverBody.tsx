@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/react/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -236,15 +237,17 @@ export function SharePopoverBody({ worksheet }: Props) {
         />
         {/* Copy button — always available regardless of share status; only
             disabled while the tab has unsaved changes. */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           data-copy-btn
           disabled={tabStatus !== "CLEAN"}
           onClick={handleCopyLink}
-          className="flex items-center justify-center h-full px-2 border-l border-control-border bg-white text-control enabled:cursor-pointer enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-full rounded-none border-l border-control-border bg-white enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
         >
           <Copy className="size-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );
