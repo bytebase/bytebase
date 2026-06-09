@@ -2690,6 +2690,7 @@
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "copy-all-rows-as-csv": "Copiar todas las filas como CSV",
     "copy-all-rows-as-sql": "Copiar todas las filas como SQL",
+    "copy-history-link": "Copiar enlace del historial",
     "copy-name": "Copiar nombre",
     "copy-selected-results": "Copiar datos seleccionados por <action></action> o <button></button>",
     "copy-selected-rows-as-csv": "Copiar las filas seleccionadas como CSV",
@@ -2743,6 +2744,7 @@
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "open-in-new-tab": "Abrir en nueva pestaña",
+    "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
     "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
@@ -2755,8 +2757,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
+    "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
     "query-time": "Tiempo de consulta",
     "re-request": "Volver a solicitar",
+    "recent": "Reciente",
     "redis-command": {
       "all-nodes": "Todos los nodos",
       "only-for-cluster": "Sólo disponible para conexión de clúster",
@@ -2813,6 +2817,7 @@
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Vista de tabla",
     "text-format": "Formato de texto",
+    "unable-to-connect-database": "No se puede conectar a la base de datos {{name}}",
     "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "vertical-display": "Pantalla vertical",

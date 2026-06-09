@@ -10,6 +10,7 @@ export * from "./instance";
 export * from "./sql";
 export * from "./sheet";
 export * from "./worksheet";
+export * from "./queryHistory";
 export * from "./issue";
 export * from "./changelog";
 export * from "./revision";

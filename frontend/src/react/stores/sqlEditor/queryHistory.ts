@@ -1,7 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { sqlServiceClientConnect } from "@/connect";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
-import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  GetQueryHistoryRequestSchema,
+  SearchQueryHistoriesRequestSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
 import type {
@@ -129,6 +132,12 @@ export const createQueryHistorySlice: SQLEditorSliceCreator<
       };
     });
     return resp;
+  },
+
+  fetchQueryHistory: async (name) => {
+    return await sqlServiceClientConnect.getQueryHistory(
+      create(GetQueryHistoryRequestSchema, { name })
+    );
   },
 });
 

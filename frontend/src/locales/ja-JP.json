@@ -2690,6 +2690,7 @@
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-all-rows-as-csv": "すべての行を CSV としてコピー",
     "copy-all-rows-as-sql": "すべての行を SQL としてコピー",
+    "copy-history-link": "履歴リンクをコピー",
     "copy-name": "名前をコピーする",
     "copy-selected-results": "選択したデータを<action></action>または<button></button>でコピーします",
     "copy-selected-rows-as-csv": "選択した行を CSV としてコピー",
@@ -2743,6 +2744,7 @@
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
+    "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
     "preview-table-data": "テーブルデータのプレビュー",
     "previous-row": "前の行",
@@ -2755,8 +2757,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
+    "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
     "query-time": "クエリ時間",
     "re-request": "再申請",
+    "recent": "最近",
     "redis-command": {
       "all-nodes": "すべてのノード",
       "only-for-cluster": "クラスタ接続のみ使用可能",
@@ -2813,6 +2817,7 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
+    "unable-to-connect-database": "データベース {{name}} に接続できません",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "vertical-display": "縦型表示",

@@ -38,6 +38,7 @@ const stubQueryHistorySlice = (): QueryHistorySlice => ({
   fetchQueryHistoryList: vi.fn().mockResolvedValue(undefined),
   resetPageToken: vi.fn(),
   mergeLatest: vi.fn().mockResolvedValue(undefined),
+  fetchQueryHistory: vi.fn().mockResolvedValue(undefined),
 });
 
 const stubTreeSlice = (): TreeSlice => ({
