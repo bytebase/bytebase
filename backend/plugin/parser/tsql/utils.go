@@ -489,8 +489,7 @@ var tsqlReservedKeywordsMap = map[string]bool{
 	"ANY":                              true,
 }
 
-// tsqlBuiltinFunctionsMap is the map of all TSQL builtin functions, it is copy from https://sourcegraph.com/github.com/bytebase/parser/tsql/-/blob/TSqlParser.g4?L4183.
-// https://sourcegraph.com/github.com/bytebase/parser/tsql/-/blob/TSqlParser.g4?L4183.
+// tsqlBuiltinFunctionsMap is the map of all TSQL builtin functions.
 var tsqlBuiltinFunctionsMap = map[string]bool{
 	"APP_NAME":                           true,
 	"APPLOCK_MODE":                       true,
