@@ -16,25 +16,43 @@ func init() {
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	omniRanges, err := omniredshift.StatementRanges(statement)
-	if err == nil {
-		ranges := make([]base.Range, 0, len(omniRanges))
-		for _, r := range omniRanges {
-			ranges = append(ranges, base.Range{
-				Start: lsp.Position{
-					Line:      uint32(r.Start.Line),
-					Character: uint32(r.Start.Character),
-				},
-				End: lsp.Position{
-					Line:      uint32(r.End.Line),
-					Character: uint32(r.End.Character),
-				},
-			})
-		}
-		return ranges, nil
+	if _, err := omniredshift.Parse(statement); err != nil {
+		return getLexicalStatementRanges(statement)
 	}
 
-	return getLexicalStatementRanges(statement)
+	// Keep UTF-16 position mapping local and one-pass. omniredshift.StatementRanges
+	// validates the script, but maps each range offset by rescanning from the start.
+	return getParsedStatementRanges(statement), nil
+}
+
+func getParsedStatementRanges(statement string) []base.Range {
+	segments := omniredshift.Split(statement)
+	if len(segments) == 0 {
+		return nil
+	}
+
+	positions := buildUTF16PositionMap(statement)
+	ranges := make([]base.Range, 0, len(segments))
+	for _, segment := range segments {
+		if segment.Empty() {
+			continue
+		}
+		start := segment.ByteStart + leadingTriviaLen(segment.Text)
+		end := segment.ByteEnd
+		startPos, ok := positionAtByteOffset(positions, start)
+		if !ok {
+			continue
+		}
+		endPos, ok := positionAtByteOffset(positions, end)
+		if !ok {
+			continue
+		}
+		ranges = append(ranges, base.Range{
+			Start: startPos,
+			End:   endPos,
+		})
+	}
+	return ranges
 }
 
 func getLexicalStatementRanges(statement string) ([]base.Range, error) {
@@ -95,4 +113,40 @@ func positionAtByteOffset(positions []lsp.Position, byteOffset int) (lsp.Positio
 		return lsp.Position{}, false
 	}
 	return positions[byteOffset], true
+}
+
+func leadingTriviaLen(statement string) int {
+	i := 0
+	for i < len(statement) {
+		switch {
+		case isLeadingTriviaSpace(statement[i]) || statement[i] == ';':
+			i++
+		case statement[i] == '-' && i+1 < len(statement) && statement[i+1] == '-':
+			i += 2
+			for i < len(statement) && statement[i] != '\n' {
+				i++
+			}
+		case statement[i] == '/' && i+1 < len(statement) && statement[i+1] == '*':
+			i += 2
+			depth := 1
+			for i < len(statement) && depth > 0 {
+				if statement[i] == '/' && i+1 < len(statement) && statement[i+1] == '*' {
+					depth++
+					i += 2
+				} else if statement[i] == '*' && i+1 < len(statement) && statement[i+1] == '/' {
+					depth--
+					i += 2
+				} else {
+					i++
+				}
+			}
+		default:
+			return i
+		}
+	}
+	return i
+}
+
+func isLeadingTriviaSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
