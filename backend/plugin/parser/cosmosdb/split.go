@@ -29,9 +29,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	}
 
 	var result []base.Statement
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, stmt := range stmts {
-		startPos := byteOffsetToRunePosition(statement, stmt.ByteStart)
-		endPos := byteOffsetToRunePosition(statement, stmt.ByteEnd)
+		startPos := positionMapper.Position(stmt.ByteStart)
+		endPos := positionMapper.Position(stmt.ByteEnd)
 
 		result = append(result, base.Statement{
 			Text: stmt.Text,
