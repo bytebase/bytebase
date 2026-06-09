@@ -204,6 +204,13 @@ func (q *querySpanExtractor) resolveViewLineage(ctx context.Context, span *base.
 	}
 	for i := range span.Results {
 		span.Results[i].SourceColumns = q.expandViewColumns(ctx, span.Results[i].SourceColumns)
+		// A result whose view column expanded to multiple base columns (e.g. a
+		// view column defined as phone || name) is no longer a plain field;
+		// downgrade so the masker treats it as composed. Defensive: Trino is not
+		// currently in EngineSupportQuerySpanPlainField, but keep the flag honest.
+		if len(span.Results[i].SourceColumns) > 1 {
+			span.Results[i].IsPlainField = false
+		}
 	}
 	span.SourceColumns = q.expandViewColumns(ctx, span.SourceColumns)
 	span.PredicateColumns = q.expandViewColumns(ctx, span.PredicateColumns)
@@ -293,13 +300,24 @@ func (q *querySpanExtractor) viewProjection(ctx context.Context, database, schem
 		return nil
 	}
 
+	// Key the projection by the VIEW's metadata column names — what the outer
+	// query references — mapped POSITIONALLY to the definition's analysed output
+	// columns. SQL view columns correspond to the definition's select list by
+	// position, so this is correct even when the view renames them via an
+	// explicit column list (CREATE VIEW v (ph) AS SELECT phone ...), where the
+	// definition's output name (phone) differs from the view column name (ph).
+	viewCols := view.GetColumns()
 	proj := make(map[string][]base.ColumnResource, len(viewSpan.Results))
-	for _, res := range viewSpan.Results {
+	for i, res := range viewSpan.Results {
+		name := res.Name
+		if i < len(viewCols) {
+			name = viewCols[i].GetName()
+		}
 		cols := make([]base.ColumnResource, 0, len(res.SourceColumns))
 		for c := range res.SourceColumns {
 			cols = append(cols, c)
 		}
-		proj[res.Name] = cols
+		proj[name] = cols
 	}
 	q.viewProjCache[vk] = proj
 	return proj

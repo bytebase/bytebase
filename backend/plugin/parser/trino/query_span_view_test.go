@@ -47,6 +47,19 @@ func viewLineageMetadata() *storepb.DatabaseSchemaMetadata {
 						Definition: "SELECT phone FROM customer_v",
 						Columns:    []*storepb.ColumnMetadata{{Name: "phone"}},
 					},
+					{
+						// Explicit view column list renames the projection: the
+						// definition outputs "phone" but the view column is "ph".
+						Name:       "renamed_v",
+						Definition: "SELECT phone FROM customer",
+						Columns:    []*storepb.ColumnMetadata{{Name: "ph"}},
+					},
+					{
+						// A composed view column derives from two base columns.
+						Name:       "comp_v",
+						Definition: "SELECT phone || name AS token FROM customer",
+						Columns:    []*storepb.ColumnMetadata{{Name: "token"}},
+					},
 				},
 			},
 		},
@@ -116,6 +129,32 @@ func TestQuerySpan_ViewOverViewResolvesToBase(t *testing.T) {
 	span := viewLineageSpan(t, "SELECT phone FROM v2")
 	srcs := resultSources(t, span, "phone")
 	require.True(t, srcs[customerCol("phone")], "phone should resolve through v2 -> customer_v -> customer.phone; got %+v", srcs)
+}
+
+// TestQuerySpan_ViewExplicitColumnListResolvesToBase covers a view whose column
+// list renames the projection (CREATE VIEW renamed_v (ph) AS SELECT phone ...):
+// the outer ph must map positionally to base customer.phone even though the
+// definition's output name is "phone".
+func TestQuerySpan_ViewExplicitColumnListResolvesToBase(t *testing.T) {
+	span := viewLineageSpan(t, "SELECT ph FROM renamed_v")
+	srcs := resultSources(t, span, "ph")
+	require.True(t, srcs[customerCol("phone")], "ph should resolve positionally to base customer.phone; got %+v", srcs)
+}
+
+// TestQuerySpan_ComposedViewColumnNotPlain covers a view column composed from two
+// base columns: it must resolve to both, and must not stay a plain field.
+func TestQuerySpan_ComposedViewColumnNotPlain(t *testing.T) {
+	span := viewLineageSpan(t, "SELECT token FROM comp_v")
+	for _, r := range span.Results {
+		if r.Name != "token" {
+			continue
+		}
+		require.True(t, r.SourceColumns[customerCol("phone")], "token should include customer.phone; got %+v", r.SourceColumns)
+		require.True(t, r.SourceColumns[customerCol("name")], "token should include customer.name; got %+v", r.SourceColumns)
+		require.False(t, r.IsPlainField, "a composed view column must not be a plain field")
+		return
+	}
+	t.Fatalf("no result column named token in %+v", span.Results)
 }
 
 // TestQuerySpan_BaseTableUnaffectedByViewResolution guards that a plain base
