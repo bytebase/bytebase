@@ -42,6 +42,21 @@ type querySpanExtractor struct {
 
 	// metaCache memoises database metadata lookups within a single span.
 	metaCache map[string]*model.DatabaseMetadata
+
+	// viewsInProgress guards against view-definition cycles (malformed metadata):
+	// a view currently being analysed is not re-entered. Propagated to the
+	// sub-extractor used to analyse a view's definition.
+	viewsInProgress map[viewKey]bool
+	// viewProjCache memoises each view's output-column -> base-column projection
+	// (nil value cached for a non-view or unresolvable reference).
+	viewProjCache map[viewKey]map[string][]base.ColumnResource
+}
+
+// viewKey identifies a view by its resolved database/schema/name.
+type viewKey struct {
+	database string
+	schema   string
+	view     string
 }
 
 // newQuerySpanExtractor creates a new Trino query span extractor.
@@ -52,6 +67,7 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		metaCache:           make(map[string]*model.DatabaseMetadata),
+		viewProjCache:       make(map[viewKey]map[string][]base.ColumnResource),
 	}
 }
 
@@ -164,7 +180,139 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if notFound != nil {
 		span.NotFoundError = notFound
 	}
+
+	// Rewrite any lineage that resolves to a VIEW column into the underlying
+	// base-table columns the view projects. Masking config (semantic types) can
+	// only be attached to table columns — there is no view catalog — so without
+	// this a sensitive column surfaced through a view is left unmasked.
+	q.resolveViewLineage(ctx, span)
 	return span, nil
+}
+
+// resolveViewLineage rewrites every source column in the span that points at a
+// VIEW into the base-table columns the view projects. Bytebase can only attach
+// masking configuration (semantic types) to table columns — SchemaCatalog
+// carries no views — so a column surfaced through a view must be resolved to its
+// underlying table column for masking to apply. The projection is computed by
+// recursively analysing the view's definition (the same resolution the pg
+// extractor performs via its view loader), so a view over a view resolves
+// transitively; a definition cycle in malformed metadata is broken by
+// viewsInProgress. Non-view columns are left untouched.
+func (q *querySpanExtractor) resolveViewLineage(ctx context.Context, span *base.QuerySpan) {
+	if span == nil {
+		return
+	}
+	for i := range span.Results {
+		span.Results[i].SourceColumns = q.expandViewColumns(ctx, span.Results[i].SourceColumns)
+	}
+	span.SourceColumns = q.expandViewColumns(ctx, span.SourceColumns)
+	span.PredicateColumns = q.expandViewColumns(ctx, span.PredicateColumns)
+}
+
+// expandViewColumns returns set with each view column replaced by the view's
+// projected base columns. A non-view column — and a view column the projection
+// cannot resolve — is kept unchanged, so this only ever deepens lineage and
+// never drops a source column.
+func (q *querySpanExtractor) expandViewColumns(ctx context.Context, set base.SourceColumnSet) base.SourceColumnSet {
+	out := make(base.SourceColumnSet, len(set))
+	for col := range set {
+		proj := q.viewProjection(ctx, col.Database, col.Schema, col.Table)
+		if proj == nil {
+			out[col] = true
+			continue
+		}
+		bases, ok := proj[col.Column]
+		if !ok || len(bases) == 0 {
+			out[col] = true
+			continue
+		}
+		for _, b := range bases {
+			out[b] = true
+		}
+	}
+	return out
+}
+
+// viewProjection returns the (output column name -> base columns) projection of
+// the view identified by database/schema/table, or nil when the reference is not
+// a resolvable view. The view's definition is analysed with the view's own
+// catalog/schema as defaults; because the recursive getQuerySpan itself resolves
+// nested views, the returned base columns are fully resolved. Results (including
+// the nil "not a view" result) are memoised.
+func (q *querySpanExtractor) viewProjection(ctx context.Context, database, schema, table string) map[string][]base.ColumnResource {
+	vk := viewKey{database: database, schema: schema, view: table}
+	if cached, ok := q.viewProjCache[vk]; ok {
+		return cached
+	}
+	// Cache "not a view / unresolvable" up front; overwritten on success. This
+	// also short-circuits the (cheap but repeated) lookups of plain tables and
+	// guards re-entrancy for the same view.
+	q.viewProjCache[vk] = nil
+	if q.viewsInProgress[vk] {
+		return nil
+	}
+
+	metadata, err := q.getDatabaseMetadata(database)
+	if err != nil || metadata == nil {
+		return nil
+	}
+	schemaMeta := metadata.GetSchemaMetadata(schema)
+	if schemaMeta == nil && q.ignoreCaseSensitive {
+		for _, name := range metadata.ListSchemaNames() {
+			if strings.EqualFold(name, schema) {
+				schemaMeta = metadata.GetSchemaMetadata(name)
+				break
+			}
+		}
+	}
+	if schemaMeta == nil {
+		return nil
+	}
+	view := schemaMeta.GetView(table)
+	if view == nil && q.ignoreCaseSensitive {
+		for _, name := range schemaMeta.ListViewNames() {
+			if strings.EqualFold(name, table) {
+				view = schemaMeta.GetView(name)
+				break
+			}
+		}
+	}
+	if view == nil || view.GetDefinition() == "" {
+		return nil
+	}
+
+	// Analyse the view body with the view's own catalog/schema as defaults so its
+	// unqualified table references resolve correctly. The sub-extractor inherits
+	// the in-progress set (plus this view) so a cyclic definition terminates.
+	sub := newQuerySpanExtractor(database, schema, q.gCtx, q.ignoreCaseSensitive)
+	sub.metaCache = q.metaCache
+	sub.viewsInProgress = copyViewSet(q.viewsInProgress)
+	sub.viewsInProgress[vk] = true
+	viewSpan, err := sub.getQuerySpan(ctx, view.GetDefinition())
+	if err != nil || viewSpan == nil {
+		return nil
+	}
+
+	proj := make(map[string][]base.ColumnResource, len(viewSpan.Results))
+	for _, res := range viewSpan.Results {
+		cols := make([]base.ColumnResource, 0, len(res.SourceColumns))
+		for c := range res.SourceColumns {
+			cols = append(cols, c)
+		}
+		proj[res.Name] = cols
+	}
+	q.viewProjCache[vk] = proj
+	return proj
+}
+
+// copyViewSet returns a shallow copy of a viewKey set (nil-safe), with capacity
+// for one more entry.
+func copyViewSet(in map[viewKey]bool) map[viewKey]bool {
+	out := make(map[viewKey]bool, len(in)+1)
+	for k := range in {
+		out[k] = true
+	}
+	return out
 }
 
 // toTableResources converts omni AccessTables into table-level
