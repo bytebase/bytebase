@@ -524,12 +524,36 @@ func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 		return base.SelectInfoSchema
 	case *redshiftast.VariableSetStmt:
 		return base.Select
-	case *redshiftast.InsertStmt, *redshiftast.UpdateStmt, *redshiftast.DeleteStmt, *redshiftast.MergeStmt, *redshiftast.CopyStmt, *redshiftast.RefreshMatViewStmt:
+	case *redshiftast.InsertStmt, *redshiftast.UpdateStmt, *redshiftast.DeleteStmt, *redshiftast.MergeStmt,
+		*redshiftast.CopyStmt, *redshiftast.RefreshMatViewStmt, *redshiftast.CallStmt:
 		return base.DML
 	case *redshiftast.CreateStmt, *redshiftast.CreateTableAsStmt, *redshiftast.ViewStmt, *redshiftast.IndexStmt, *redshiftast.CreateSeqStmt,
-		*redshiftast.CreateSchemaStmt, *redshiftast.CreateFunctionStmt, *redshiftast.CreatedbStmt, *redshiftast.DropStmt,
-		*redshiftast.DropdbStmt, *redshiftast.AlterTableStmt, *redshiftast.AlterSeqStmt, *redshiftast.RenameStmt,
-		*redshiftast.TruncateStmt, *redshiftast.VacuumStmt, *redshiftast.GrantStmt, *redshiftast.CommentStmt,
+		*redshiftast.CreateSchemaStmt, *redshiftast.CreateFunctionStmt, *redshiftast.CreatedbStmt, *redshiftast.CreateTrigStmt,
+		*redshiftast.CreateEnumStmt, *redshiftast.CreateDomainStmt, *redshiftast.CreateEventTrigStmt, *redshiftast.CreatePLangStmt,
+		*redshiftast.CreateFdwStmt, *redshiftast.CreateForeignServerStmt, *redshiftast.CreateForeignTableStmt,
+		*redshiftast.CreateUserMappingStmt, *redshiftast.CreateExtensionStmt, *redshiftast.CreateTableSpaceStmt,
+		*redshiftast.CreateAmStmt, *redshiftast.CreatePolicyStmt, *redshiftast.CreatePublicationStmt,
+		*redshiftast.CreateSubscriptionStmt, *redshiftast.CreateStatsStmt, *redshiftast.CreateOpClassStmt,
+		*redshiftast.CreateOpFamilyStmt, *redshiftast.CreateCastStmt, *redshiftast.CreateTransformStmt,
+		*redshiftast.CreateConversionStmt, *redshiftast.CreateRangeStmt, *redshiftast.CreateRoleStmt,
+		*redshiftast.DropStmt, *redshiftast.DropdbStmt, *redshiftast.DropRoleStmt, *redshiftast.DropUserMappingStmt,
+		*redshiftast.DropSubscriptionStmt, *redshiftast.DropTableSpaceStmt, *redshiftast.DropOwnedStmt,
+		*redshiftast.AlterTableStmt, *redshiftast.AlterTableMoveAllStmt, *redshiftast.AlterSeqStmt,
+		*redshiftast.AlterEnumStmt, *redshiftast.AlterDomainStmt, *redshiftast.AlterObjectSchemaStmt,
+		*redshiftast.AlterOwnerStmt, *redshiftast.AlterDatabaseStmt, *redshiftast.AlterDatabaseSetStmt,
+		*redshiftast.AlterDatabaseRefreshCollStmt, *redshiftast.AlterSystemStmt, *redshiftast.AlterCollationStmt,
+		*redshiftast.AlterFunctionStmt, *redshiftast.AlterEventTrigStmt, *redshiftast.AlterFdwStmt,
+		*redshiftast.AlterForeignServerStmt, *redshiftast.AlterUserMappingStmt, *redshiftast.AlterExtensionStmt,
+		*redshiftast.AlterExtensionContentsStmt, *redshiftast.AlterTableSpaceOptionsStmt, *redshiftast.AlterPolicyStmt,
+		*redshiftast.AlterPublicationStmt, *redshiftast.AlterSubscriptionStmt, *redshiftast.AlterObjectDependsStmt,
+		*redshiftast.AlterOperatorStmt, *redshiftast.AlterTypeStmt, *redshiftast.AlterDefaultPrivilegesStmt,
+		*redshiftast.AlterTSDictionaryStmt, *redshiftast.AlterTSConfigurationStmt, *redshiftast.AlterStatsStmt,
+		*redshiftast.AlterOpFamilyStmt, *redshiftast.AlterRoleStmt, *redshiftast.AlterRoleSetStmt,
+		*redshiftast.RenameStmt, *redshiftast.TruncateStmt, *redshiftast.VacuumStmt, *redshiftast.GrantStmt,
+		*redshiftast.GrantRoleStmt, *redshiftast.CommentStmt, *redshiftast.LockStmt, *redshiftast.ClusterStmt,
+		*redshiftast.ReindexStmt, *redshiftast.RuleStmt, *redshiftast.CheckPointStmt, *redshiftast.DiscardStmt,
+		*redshiftast.LoadStmt, *redshiftast.ConstraintsSetStmt, *redshiftast.FetchStmt, *redshiftast.SecLabelStmt,
+		*redshiftast.DoStmt, *redshiftast.ImportForeignSchemaStmt, *redshiftast.ReassignOwnedStmt,
 		*redshiftast.RedshiftObjectStmt:
 		return base.DDL
 	default:

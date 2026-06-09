@@ -122,6 +122,11 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			want:      base.DML,
 		},
 		{
+			name:      "call is dml",
+			statement: "CALL refresh_orders();",
+			want:      base.DML,
+		},
+		{
 			name:      "create table is ddl",
 			statement: "CREATE TABLE created_orders(id int);",
 			want:      base.DDL,
@@ -129,6 +134,36 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 		{
 			name:      "comment is ddl",
 			statement: "COMMENT ON TABLE orders IS 'hello';",
+			want:      base.DDL,
+		},
+		{
+			name:      "create user is ddl",
+			statement: "CREATE USER report_user PASSWORD 'Password1';",
+			want:      base.DDL,
+		},
+		{
+			name:      "alter user is ddl",
+			statement: "ALTER USER report_user RENAME TO report_user2;",
+			want:      base.DDL,
+		},
+		{
+			name:      "alter user options is ddl",
+			statement: "ALTER USER report_user PASSWORD 'Password2';",
+			want:      base.DDL,
+		},
+		{
+			name:      "alter user set is ddl",
+			statement: "ALTER USER report_user SET search_path TO public;",
+			want:      base.DDL,
+		},
+		{
+			name:      "drop user is ddl",
+			statement: "DROP USER report_user;",
+			want:      base.DDL,
+		},
+		{
+			name:      "grant role is ddl",
+			statement: "GRANT report_role TO report_user;",
 			want:      base.DDL,
 		},
 		{
