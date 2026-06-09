@@ -1,9 +1,18 @@
 import { describe, expect, test } from "vitest";
-import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  SQLReviewRule_Level,
+  SQLReviewRule_Type,
+} from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewSchema from "./sql-review-schema.yaml";
+import {
+  convertRuleMapToPolicyRuleList,
+  type RuleTemplateV2,
+  validateRuleMapByEngine,
+} from "./sqlReview";
 
 // Type for template rule data loaded from YAML
 interface TemplateRule {
@@ -201,5 +210,92 @@ describe("SQL Review YAML Templates Validation", () => {
       // This test just verifies we can check consistency, not that it's perfect
       expect(schemaRuleTypes.size).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("convertRuleMapToPolicyRuleList", () => {
+  const stringArrayRule = (
+    type: SQLReviewRule_Type,
+    list: string[]
+  ): RuleTemplateV2 => ({
+    type,
+    category: "TABLE",
+    engine: Engine.MYSQL,
+    level: SQLReviewRule_Level.ERROR,
+    componentList: [
+      {
+        key: "list",
+        payload: {
+          type: "STRING_ARRAY",
+          default: [],
+          value: list,
+        },
+      },
+    ],
+  });
+
+  const requiredStringArrayRuleTypes = [
+    SQLReviewRule_Type.COLUMN_REQUIRED,
+    SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST,
+    SQLReviewRule_Type.INDEX_PRIMARY_KEY_TYPE_ALLOWLIST,
+    SQLReviewRule_Type.INDEX_TYPE_ALLOW_LIST,
+    SQLReviewRule_Type.SYSTEM_CHARSET_ALLOWLIST,
+    SQLReviewRule_Type.SYSTEM_COLLATION_ALLOWLIST,
+    SQLReviewRule_Type.SYSTEM_FUNCTION_DISALLOWED_LIST,
+    SQLReviewRule_Type.TABLE_DISALLOW_DDL,
+    SQLReviewRule_Type.TABLE_DISALLOW_DML,
+  ];
+
+  test.each(
+    requiredStringArrayRuleTypes
+  )("reports empty string-array rule %s", (type) => {
+    const ruleMap = new Map([
+      [Engine.MYSQL, new Map([[type, stringArrayRule(type, [])]])],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+      type: "EMPTY_STRING_ARRAY",
+      rule: { type },
+    });
+  });
+
+  test("reports empty rule maps", () => {
+    expect(validateRuleMapByEngine(new Map())).toEqual({
+      type: "EMPTY_RULE_LIST",
+    });
+  });
+
+  test("keeps configured table DDL and DML deny-list rules valid", () => {
+    const ruleMap = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.TABLE_DISALLOW_DDL,
+            stringArrayRule(SQLReviewRule_Type.TABLE_DISALLOW_DDL, [
+              "audit_log",
+            ]),
+          ],
+          [
+            SQLReviewRule_Type.TABLE_DISALLOW_DML,
+            stringArrayRule(SQLReviewRule_Type.TABLE_DISALLOW_DML, ["user"]),
+          ],
+        ]),
+      ],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toBeUndefined();
+
+    const rules = convertRuleMapToPolicyRuleList(ruleMap);
+    const getStringArrayList = (rule: (typeof rules)[number] | undefined) => {
+      expect(rule?.payload.case).toBe("stringArrayPayload");
+      return rule?.payload.case === "stringArrayPayload"
+        ? rule.payload.value.list
+        : [];
+    };
+
+    expect(rules).toHaveLength(2);
+    expect(getStringArrayList(rules[0])).toEqual(["audit_log"]);
+    expect(getStringArrayList(rules[1])).toEqual(["user"]);
   });
 });

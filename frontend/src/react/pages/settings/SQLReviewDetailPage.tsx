@@ -17,7 +17,10 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
-import { rulesToTemplate } from "@/react/lib/sql-review/utils";
+import {
+  getRuleMapValidationErrorTitle,
+  rulesToTemplate,
+} from "@/react/lib/sql-review/utils";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/react/router/handles";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
@@ -28,6 +31,7 @@ import {
   getRuleMapByEngine,
   isBuiltinRule,
   UNKNOWN_ID,
+  validateRuleMapByEngine,
   withBuiltinRules,
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
@@ -176,6 +180,16 @@ export function SQLReviewDetailPage({
   }, [ruleListOfPolicy]);
 
   const onApplyChanges = useCallback(async () => {
+    const validationError = validateRuleMapByEngine(ruleMapByEngine);
+    if (validationError) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: getRuleMapValidationErrorTitle(validationError),
+      });
+      return;
+    }
+
     await store.upsertReviewPolicy({
       id: reviewPolicy.id,
       title: reviewPolicy.name,
