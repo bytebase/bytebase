@@ -508,7 +508,7 @@ func (q *omniQuerySpanExtractor) convertOmniColumnList(columns []redshiftanalysi
 func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 	switch n := node.(type) {
 	case *redshiftast.SelectStmt:
-		if n.IntoClause != nil {
+		if hasOmniSelectIntoClause(n) {
 			return base.DDL
 		}
 		if allSystems {
@@ -559,6 +559,22 @@ func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 	default:
 		return base.QueryTypeUnknown
 	}
+}
+
+func hasOmniSelectIntoClause(n *redshiftast.SelectStmt) bool {
+	if n == nil {
+		return false
+	}
+	if n.IntoClause != nil {
+		return true
+	}
+	if hasOmniSelectIntoClause(n.Larg) {
+		return true
+	}
+	if hasOmniSelectIntoClause(n.Rarg) {
+		return true
+	}
+	return false
 }
 
 func isOmniQuerySpanNotFound(err error) bool {

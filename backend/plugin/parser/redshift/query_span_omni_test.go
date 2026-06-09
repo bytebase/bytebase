@@ -245,6 +245,7 @@ func TestRedshiftOmniQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
 	}{
 		{name: "set is select", statement: "SET search_path TO public;", want: base.Select},
 		{name: "select into is ddl", statement: "SELECT id INTO new_orders FROM orders;", want: base.DDL},
+		{name: "set operation select into is ddl", statement: "SELECT id INTO new_orders FROM orders UNION SELECT id FROM orders;", want: base.DDL},
 		{name: "create table as is ddl", statement: "CREATE TABLE copied_orders AS SELECT id FROM orders;", want: base.DDL},
 		{name: "drop table is ddl", statement: "DROP TABLE orders;", want: base.DDL},
 		{name: "alter table is ddl", statement: "ALTER TABLE orders ADD COLUMN note varchar(100);", want: base.DDL},
