@@ -55,6 +55,7 @@ func toBaseStatements(sql string, omniStmts []omnimssql.Statement) []base.Statem
 		return nil
 	}
 	result := make([]base.Statement, 0, len(omniStmts))
+	positionMapper := base.NewByteOffsetPositionMapper(sql)
 	prevEnd := &storepb.Position{Line: 1, Column: 1}
 	prevByte := 0
 	for _, os := range omniStmts {
@@ -64,11 +65,7 @@ func toBaseStatements(sql string, omniStmts []omnimssql.Statement) []base.Statem
 			endByte = startByte
 		}
 		text := sql[startByte:endByte]
-		endLine, endCol := base.CalculateLineAndColumn(sql, endByte)
-		endPos := &storepb.Position{
-			Line:   int32(endLine + 1),
-			Column: int32(endCol + 1),
-		}
+		endPos := positionMapper.Position(endByte)
 
 		_, isGo := os.AST.(*ast.GoStmt)
 		empty := isGo || os.Empty() || strings.TrimSpace(text) == ""

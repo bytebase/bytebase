@@ -37,10 +37,16 @@ func (m *ByteOffsetPositionMapper) Position(byteOffset int) *storepb.Position {
 
 	for m.byteOffset < byteOffset {
 		r, size := utf8.DecodeRuneInString(m.sql[m.byteOffset:])
-		if r == '\n' {
+		switch r {
+		case '\r':
 			m.line++
 			m.runeCol = 0
-		} else {
+		case '\n':
+			if m.byteOffset == 0 || m.sql[m.byteOffset-1] != '\r' {
+				m.line++
+				m.runeCol = 0
+			}
+		default:
 			m.runeCol++
 		}
 		m.byteOffset += size
@@ -58,10 +64,16 @@ func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	i := 0
 	for i < byteOffset {
 		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
+		switch r {
+		case '\r':
 			line++
 			runeCol = 0
-		} else {
+		case '\n':
+			if i == 0 || sql[i-1] != '\r' {
+				line++
+				runeCol = 0
+			}
+		default:
 			runeCol++
 		}
 		i += size

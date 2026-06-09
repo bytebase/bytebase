@@ -1,8 +1,6 @@
 package mongodb
 
 import (
-	"unicode/utf8"
-
 	"github.com/bytebase/omni/mongo"
 	"github.com/bytebase/omni/mongo/ast"
 	omniparser "github.com/bytebase/omni/mongo/parser"
@@ -63,12 +61,13 @@ func ParseMongoShellBestEffort(statement string) ([]base.ParsedStatement, []*omn
 
 func convertStatements(input string, stmts []mongo.Statement) []base.ParsedStatement {
 	var result []base.ParsedStatement
+	positionMapper := base.NewByteOffsetPositionMapper(input)
 	for _, stmt := range stmts {
 		if stmt.Empty() {
 			continue
 		}
-		startPos := byteOffsetToPosition(input, stmt.ByteStart)
-		endPos := byteOffsetToPosition(input, stmt.ByteEnd)
+		startPos := positionMapper.Position(stmt.ByteStart)
+		endPos := positionMapper.Position(stmt.ByteEnd)
 		result = append(result, base.ParsedStatement{
 			Statement: base.Statement{
 				Text:  stmt.Text,
@@ -86,31 +85,4 @@ func convertStatements(input string, stmts []mongo.Statement) []base.ParsedState
 		})
 	}
 	return result
-}
-
-// byteOffsetToPosition converts a byte offset to a 1-based line:column position
-// where column is measured in Unicode code points.
-func byteOffsetToPosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0)
-	i := 0
-	for i < byteOffset {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1,
-	}
 }
