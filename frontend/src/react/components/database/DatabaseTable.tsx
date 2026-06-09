@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -36,6 +36,23 @@ export interface DatabaseTableProps {
   refreshToken?: number;
 }
 
+function databaseFilterKey(filter: DatabaseFilter | string | undefined) {
+  if (!filter) return "";
+  if (typeof filter === "string") return filter;
+  return JSON.stringify({
+    project: filter.project ?? "",
+    instance: filter.instance ?? "",
+    environment: filter.environment ?? "",
+    query: filter.query ?? "",
+    showDeleted: filter.showDeleted ?? false,
+    excludeUnassigned: filter.excludeUnassigned ?? false,
+    labels: filter.labels ?? [],
+    engines: filter.engines ?? [],
+    excludeEngines: filter.excludeEngines ?? [],
+    table: filter.table ?? "",
+  });
+}
+
 /**
  * Server-fetching wrapper around `DatabaseTableView`. Owns paging,
  * filter, sort, and the workspace-resource scope; renders the pure view
@@ -62,6 +79,9 @@ export function DatabaseTable({
 
   const [sort, setSort] = useState<DatabaseTableSort | null>(null);
   const orderBy = sort ? `${sort.key} ${sort.order}` : "";
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+  const filterKey = useMemo(() => databaseFilterKey(filter), [filter]);
 
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
 
@@ -81,7 +101,7 @@ export function DatabaseTable({
           pageToken: token,
           pageSize,
           parent: parent || workspaceResourceName,
-          filter,
+          filter: filterRef.current,
           orderBy,
           skipCacheRemoval: !isRefresh,
         });
@@ -105,7 +125,7 @@ export function DatabaseTable({
         }
       }
     },
-    [pageSize, filter, orderBy, parent, workspaceResourceName]
+    [pageSize, filterKey, orderBy, parent, workspaceResourceName]
   );
 
   const isFirstLoad = useRef(true);

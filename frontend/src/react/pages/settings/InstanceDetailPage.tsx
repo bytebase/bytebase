@@ -296,9 +296,11 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const selectedProject = projectVal
     ? `${projectNamePrefix}${projectVal}`
     : undefined;
-  const selectedLabels = searchParams.scopes
-    .filter((s) => s.id === "label")
-    .map((s) => s.value);
+  const selectedLabels = useMemo(
+    () =>
+      searchParams.scopes.filter((s) => s.id === "label").map((s) => s.value),
+    [searchParams]
+  );
 
   const filter: DatabaseFilter = useMemo(
     () => ({
