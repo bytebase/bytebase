@@ -5,7 +5,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -53,9 +55,48 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, conf db.ConnectionC
 		return nil, errors.Wrapf(err, "failed to load AWS config")
 	}
 	d.awsConfig = cfg
-	client := dynamodb.NewFromConfig(cfg)
-	d.client = client
+
+	var optFns []func(*dynamodb.Options)
+	// Honor a custom endpoint (e.g. DynamoDB Local) when the data source
+	// specifies a host. Without this the AWS SDK resolves the real AWS endpoint
+	// for the region and the configured host:port is silently ignored, routing
+	// queries intended for a local/compatible endpoint to real AWS.
+	if endpoint := dynamoDBEndpoint(conf.DataSource); endpoint != "" {
+		optFns = append(optFns, func(o *dynamodb.Options) {
+			o.BaseEndpoint = aws.String(endpoint)
+		})
+	}
+	d.client = dynamodb.NewFromConfig(cfg, optFns...)
 	return d, nil
+}
+
+// dynamoDBEndpoint returns a custom DynamoDB endpoint URL derived from the data
+// source host/port, or "" to fall back to the AWS SDK's default (real AWS)
+// endpoint resolution. A custom endpoint lets bytebase target DynamoDB Local —
+// or any DynamoDB-compatible service — instead of real AWS.
+func dynamoDBEndpoint(ds *storepb.DataSource) string {
+	host := ds.GetHost()
+	if host == "" {
+		// No host configured: use the AWS SDK's default endpoint for the region.
+		return ""
+	}
+	port := ds.GetPort()
+	// If the host already carries a scheme, treat it as a full base URL and
+	// only append the port when one isn't already present.
+	if strings.Contains(host, "://") {
+		if port != "" && !strings.Contains(host[strings.Index(host, "://")+len("://"):], ":") {
+			return host + ":" + port
+		}
+		return host
+	}
+	scheme := "http"
+	if ds.GetUseSsl() {
+		scheme = "https"
+	}
+	if port != "" {
+		return fmt.Sprintf("%s://%s:%s", scheme, host, port)
+	}
+	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
 // Close closes the driver.
