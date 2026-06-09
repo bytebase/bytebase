@@ -7,6 +7,7 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
+import { escapeCELStringLiteral } from "@/utils/v1/cel";
 import type {
   QueryHistoryEntry,
   QueryHistoryFilter,
@@ -26,7 +27,9 @@ const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
     params.push(`database == "${filter.database}"`);
   }
   if (filter.statement) {
-    params.push(`statement.contains("${filter.statement}")`);
+    params.push(
+      `statement.contains("${escapeCELStringLiteral(filter.statement)}")`
+    );
   }
   return params.join(" && ");
 };

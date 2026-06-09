@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -288,7 +289,13 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				if !ok {
 					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
-				return parseToSQL("statement", "%"+strValue+"%")
+				// Normalize whitespace on both sides so a single-line search
+				// like "SELECT * FROM t" matches a stored multi-line statement
+				// "SELECT\n  *\nFROM t", and match case-insensitively. Mirrors
+				// the access-grant `query.contains` search in
+				// GetListAccessGrantFilter.
+				normalizedValue := strings.Join(strings.Fields(strValue), " ")
+				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
