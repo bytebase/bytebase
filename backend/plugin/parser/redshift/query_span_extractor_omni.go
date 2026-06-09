@@ -23,9 +23,22 @@ type omniQuerySpanExtractor struct {
 func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *omniQuerySpanExtractor {
 	return &omniQuerySpanExtractor{
 		defaultDatabase: defaultDatabase,
-		searchPath:      searchPath,
+		searchPath:      normalizeOmniSearchPath(searchPath),
 		gCtx:            gCtx,
 	}
+}
+
+func normalizeOmniSearchPath(searchPath []string) []string {
+	result := make([]string, 0, len(searchPath))
+	for _, schema := range searchPath {
+		if schema != "" {
+			result = append(result, schema)
+		}
+	}
+	if len(result) == 0 {
+		return []string{"public"}
+	}
+	return result
 }
 
 func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
@@ -48,6 +61,9 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 
 	node := stmts[0].AST
 	queryType := omniQuerySpanType(node, false /* allSystems */)
+	if explain, ok := node.(*redshiftast.ExplainStmt); ok && hasOmniExplainAnalyze(explain) {
+		return q.getOmniExplainAnalyzeQuerySpan(explain.Query, queryType)
+	}
 	if _, ok := node.(*redshiftast.VariableSetStmt); ok {
 		return &base.QuerySpan{
 			Type:          queryType,
@@ -132,6 +148,50 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		SourceColumns:    accessTables,
 		PredicateColumns: q.convertOmniColumnList(omniSpan.PredicateColumns),
 		Results:          results,
+	}, nil
+}
+
+func (q *omniQuerySpanExtractor) getOmniExplainAnalyzeQuerySpan(query redshiftast.Node, queryType base.QueryType) (*base.QuerySpan, error) {
+	if queryType != base.Select {
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
+	accessTables, err := q.collectOmniAccessTables(query)
+	if err != nil {
+		var resourceNotFound *base.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return &base.QuerySpan{
+				Type: base.Select,
+				SourceColumns: base.SourceColumnSet{
+					{Database: q.defaultDatabase}: true,
+				},
+				PredicateColumns: base.SourceColumnSet{},
+				Results:          []base.QuerySpanResult{},
+				NotFoundError:    resourceNotFound,
+			}, nil
+		}
+		return nil, err
+	}
+	allSystems, mixed := isMixedQuery(accessTables)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
+	}
+	if allSystems {
+		return &base.QuerySpan{
+			Type:          base.SelectInfoSchema,
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+	return &base.QuerySpan{
+		Type:             base.Select,
+		SourceColumns:    accessTables,
+		PredicateColumns: base.SourceColumnSet{},
+		Results:          []base.QuerySpanResult{},
 	}, nil
 }
 
@@ -220,17 +280,36 @@ func createQuerySpanViewDDL(kind, schemaName, viewName, definition string) strin
 
 func (q *omniQuerySpanExtractor) collectOmniAccessTables(node redshiftast.Node) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
-	ctes := collectOmniCTENames(node)
+	if err := q.collectOmniAccessTablesFromNode(node, map[string]bool{}, result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromNode(node redshiftast.Node, ctes map[string]bool, result base.SourceColumnSet) error {
+	if node == nil {
+		return nil
+	}
+	if selectStmt, ok := node.(*redshiftast.SelectStmt); ok {
+		return q.collectOmniAccessTablesFromSelect(selectStmt, ctes, result)
+	}
+
 	var err error
 	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
 		if err != nil {
 			return false
 		}
+		if n != node {
+			if selectStmt, ok := n.(*redshiftast.SelectStmt); ok {
+				err = q.collectOmniAccessTablesFromSelect(selectStmt, ctes, result)
+				return false
+			}
+		}
 		rangeVar, ok := n.(*redshiftast.RangeVar)
 		if !ok || rangeVar == nil || rangeVar.Relname == "" {
 			return true
 		}
-		if rangeVar.Schemaname == "" && rangeVar.Catalogname == "" && ctes[strings.ToLower(rangeVar.Relname)] {
+		if isOmniCTEReference(rangeVar, ctes) {
 			return true
 		}
 
@@ -245,21 +324,106 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTables(node redshiftast.Node) 
 		return true
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return result, nil
+	return nil
 }
 
-func collectOmniCTENames(node redshiftast.Node) map[string]bool {
-	result := make(map[string]bool)
-	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
-		cte, ok := n.(*redshiftast.CommonTableExpr)
-		if ok && cte.Ctename != "" {
-			result[strings.ToLower(cte.Ctename)] = true
+func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromSelect(selectStmt *redshiftast.SelectStmt, ctes map[string]bool, result base.SourceColumnSet) error {
+	localCTEs := cloneOmniCTENameSet(ctes)
+	if selectStmt.WithClause != nil && selectStmt.WithClause.Ctes != nil {
+		cteScope := cloneOmniCTENameSet(ctes)
+		if selectStmt.WithClause.Recursive {
+			for _, item := range selectStmt.WithClause.Ctes.Items {
+				cte, ok := item.(*redshiftast.CommonTableExpr)
+				if ok && cte.Ctename != "" {
+					cteScope[strings.ToLower(cte.Ctename)] = true
+				}
+			}
 		}
-		return true
-	})
+		for _, item := range selectStmt.WithClause.Ctes.Items {
+			cte, ok := item.(*redshiftast.CommonTableExpr)
+			if !ok || cte.Ctename == "" {
+				continue
+			}
+			if err := q.collectOmniAccessTablesFromNode(cte.Ctequery, cteScope, result); err != nil {
+				return err
+			}
+			name := strings.ToLower(cte.Ctename)
+			cteScope[name] = true
+			localCTEs[name] = true
+		}
+	}
+
+	for _, node := range []redshiftast.Node{
+		selectStmt.WhereClause,
+		selectStmt.HavingClause,
+		selectStmt.QualifyClause,
+		selectStmt.LimitOffset,
+		selectStmt.LimitCount,
+	} {
+		if err := q.collectOmniAccessTablesFromNode(node, localCTEs, result); err != nil {
+			return err
+		}
+	}
+	if selectStmt.IntoClause != nil {
+		if err := q.collectOmniAccessTablesFromNode(selectStmt.IntoClause, localCTEs, result); err != nil {
+			return err
+		}
+	}
+	if selectStmt.Larg != nil {
+		if err := q.collectOmniAccessTablesFromNode(selectStmt.Larg, localCTEs, result); err != nil {
+			return err
+		}
+	}
+	if selectStmt.Rarg != nil {
+		if err := q.collectOmniAccessTablesFromNode(selectStmt.Rarg, localCTEs, result); err != nil {
+			return err
+		}
+	}
+	for _, list := range []*redshiftast.List{
+		selectStmt.DistinctClause,
+		selectStmt.TargetList,
+		selectStmt.FromClause,
+		selectStmt.GroupClause,
+		selectStmt.WindowClause,
+		selectStmt.ExcludeList,
+		selectStmt.ValuesLists,
+		selectStmt.SortClause,
+		selectStmt.LockingClause,
+	} {
+		if err := q.collectOmniAccessTablesFromList(list, localCTEs, result); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromList(list *redshiftast.List, ctes map[string]bool, result base.SourceColumnSet) error {
+	if list == nil {
+		return nil
+	}
+	for _, item := range list.Items {
+		if err := q.collectOmniAccessTablesFromNode(item, ctes, result); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cloneOmniCTENameSet(ctes map[string]bool) map[string]bool {
+	result := make(map[string]bool, len(ctes))
+	for name, ok := range ctes {
+		result[name] = ok
+	}
 	return result
+}
+
+func isOmniCTEReference(rangeVar *redshiftast.RangeVar, ctes map[string]bool) bool {
+	if rangeVar == nil || rangeVar.Schemaname != "" || rangeVar.Catalogname != "" {
+		return false
+	}
+	return ctes[strings.ToLower(rangeVar.Relname)]
 }
 
 func hasResultWithoutSource(results []base.QuerySpanResult) bool {

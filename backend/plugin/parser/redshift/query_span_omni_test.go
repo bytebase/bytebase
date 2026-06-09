@@ -141,6 +141,11 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			statement: "EXPLAIN SELECT id FROM orders;",
 			want:      base.Explain,
 		},
+		{
+			name:      "explain analyze select has sources but no result columns",
+			statement: "EXPLAIN ANALYZE SELECT id FROM orders;",
+			want:      base.Select,
+		},
 	}
 
 	for _, test := range tests {
@@ -150,7 +155,11 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Type)
 			require.Empty(t, span.Results)
-			require.Empty(t, span.SourceColumns)
+			if test.name == "explain analyze select has sources but no result columns" {
+				require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}}), span.SourceColumns)
+			} else {
+				require.Empty(t, span.SourceColumns)
+			}
 		})
 	}
 }
@@ -162,6 +171,15 @@ func TestRedshiftQuerySpanUsesOmniPath(t *testing.T) {
 	require.Equal(t, []base.QuerySpanResult{
 		{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
 	}, span.Results)
+}
+
+func TestRedshiftOmniQuerySpanDefaultSearchPath(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", nil, redshiftOmniQuerySpanContext(t)).getOmniQuerySpan(context.Background(), "SELECT id FROM orders")
+	require.NoError(t, err)
+	require.Equal(t, []base.QuerySpanResult{
+		{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+	}, span.Results)
+	require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}}), span.SourceColumns)
 }
 
 func TestRedshiftOmniQuerySpanRootAndQueryTypeCoverage(t *testing.T) {
@@ -413,6 +431,14 @@ func TestRedshiftOmniQuerySpanSubqueryAndCTECoverage(t *testing.T) {
 				{Database: "db", Schema: "public", Table: "orders"},
 				{Database: "db", Schema: "public", Table: "customers"},
 			},
+		},
+		{
+			name:      "nested cte shadow does not hide outer physical table",
+			statement: "SELECT id FROM orders WHERE EXISTS (WITH orders AS (SELECT 1) SELECT 1 FROM orders)",
+			want: []base.QuerySpanResult{
+				{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+			},
+			wantSource: []base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}},
 		},
 	}
 
