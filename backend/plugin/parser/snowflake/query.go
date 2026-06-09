@@ -48,8 +48,12 @@ func validateQuery(statement string) (bool, bool, error) {
 
 		// EXPLAIN: read-only and data-returning, regardless of the inner
 		// statement. Matches the legacy other_command.explain branch, which never
-		// recursed into the explained statement. omni cannot parse EXPLAIN, so we
-		// must short-circuit before parser.Parse.
+		// recursed into the explained statement. We detect EXPLAIN lexically and
+		// short-circuit BEFORE parser.Parse so that "EXPLAIN <anything>" is accepted
+		// exactly as legacy did — including an EXPLAIN whose inner statement omni
+		// doesn't model (which would otherwise surface as a parse error here).
+		// (omni DOES parse EXPLAIN; the lexical short-circuit is for legacy parity,
+		// not a parser limitation.)
 		if isExplainStatement(stmt.Text) {
 			continue
 		}
