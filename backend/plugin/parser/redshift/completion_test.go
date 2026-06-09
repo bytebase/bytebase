@@ -446,9 +446,7 @@ func TestCompletionMySQLPGScaleCoverageMatrix(t *testing.T) {
 		{name: "cte alias", input: "WITH x(a, b) AS (SELECT id, amount FROM orders) SELECT x.| FROM x", want: []completionWant{{"a", base.CandidateTypeColumn}, {"b", base.CandidateTypeColumn}}},
 		{name: "unknown qualifier", input: "SELECT nope.| FROM orders", absentText: []string{"id", "amount", "event_id"}},
 	}
-	for _, tc := range qualifierCases {
-		tests = append(tests, tc)
-	}
+	tests = append(tests, qualifierCases...)
 
 	prefixCases := []completionCase{
 		{name: "relation prefix ord", input: "SELECT * FROM ord|", want: []completionWant{{"orders", base.CandidateTypeTable}, {"orders_summary", base.CandidateTypeMaterializedView}}, absentText: []string{"events"}},
