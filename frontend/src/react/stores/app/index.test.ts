@@ -863,6 +863,35 @@ describe("useAppStore", () => {
     expect(store.getState().roleList).toEqual([roleA, roleB]);
   });
 
+  test("prefetches user members referenced by the workspace policy", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({ roles: [roleA] });
+    mocks.getIamPolicy.mockResolvedValue(
+      createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: roleA.name,
+            members: [`user:${userA.email}`],
+          }),
+        ],
+      })
+    );
+    mocks.batchGetUsers.mockResolvedValue({ users: [userA] });
+    const store = createAppStore();
+
+    await store.getState().loadWorkspacePermissionState();
+
+    expect(mocks.batchGetUsers).toHaveBeenCalledWith(
+      expect.objectContaining({ names: [userA.name] }),
+      expect.anything()
+    );
+    expect(store.getState().usersByName[userA.name]).toBe(userA);
+  });
+
   test("lists releases and marks cached release deleted", async () => {
     mocks.listReleases.mockResolvedValue({
       releases: [releaseA, releaseB],
