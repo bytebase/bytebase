@@ -725,7 +725,9 @@ export function AdvancedSearch({
             visibleTags.length > 0 ? "min-w-[40px]" : "min-w-[120px]"
           )}
           value={inputText}
-          placeholder={visibleTags.length > 0 ? "" : placeholder}
+          placeholder={
+            visibleTags.length > 0 ? "" : (placeholder ?? t("common.filter"))
+          }
           onClick={handleInputClick}
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -861,11 +863,11 @@ export function AdvancedSearch({
               ) : !(currentScopeOption.options ?? []).length &&
                 !isAsyncScope ? (
                 <div className="px-3 py-2 text-xs text-control-light border-t border-block-border">
-                  Type a value and press Enter
+                  {t("common.input-value-press-enter")}
                 </div>
               ) : (
                 <div className="py-4 text-center text-sm text-control-placeholder">
-                  —
+                  {t("common.search-no-result")}
                 </div>
               )}
               {valueMenuFade.showStart && (
