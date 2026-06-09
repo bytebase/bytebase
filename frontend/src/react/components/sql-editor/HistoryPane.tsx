@@ -167,8 +167,10 @@ export function HistoryPane() {
         queryHistory: extractQueryHistoryUID(history.name),
       },
     });
-    return new URL(route.href, workspaceExternalURL || window.location.origin)
-      .href;
+    return new URL(
+      route.href,
+      workspaceExternalURL || globalThis.location.origin
+    ).href;
   };
 
   const handleCopyLink = async (history: QueryHistory) => {

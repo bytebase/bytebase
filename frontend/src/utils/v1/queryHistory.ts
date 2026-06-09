@@ -4,6 +4,6 @@ import { UNKNOWN_ID } from "@/types";
 // `projects/{project}/queryHistories/{id}`.
 export const extractQueryHistoryUID = (name: string) => {
   const pattern = /(?:^|\/)queryHistories\/([^/]+)(?:$|\/)/;
-  const matches = name.match(pattern);
+  const matches = pattern.exec(name);
   return matches?.[1] ?? `${UNKNOWN_ID}`;
 };
