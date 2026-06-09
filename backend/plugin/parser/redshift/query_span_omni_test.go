@@ -127,6 +127,11 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			want:      base.DDL,
 		},
 		{
+			name:      "comment is ddl",
+			statement: "COMMENT ON TABLE orders IS 'hello';",
+			want:      base.DDL,
+		},
+		{
 			name:      "show tables is information schema",
 			statement: "SHOW TABLES;",
 			want:      base.SelectInfoSchema,

@@ -49,11 +49,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		return nil, err
 	}
 	if len(stmts) == 0 || stmts[0].Empty() {
-		return &base.QuerySpan{
-			Type:          base.Select,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+		return emptyOmniQuerySpan(base.Select), nil
 	}
 	if len(stmts) != 1 {
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
@@ -65,46 +61,18 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		return q.getOmniExplainAnalyzeQuerySpan(explain.Query, queryType)
 	}
 	if _, ok := node.(*redshiftast.VariableSetStmt); ok {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+		return emptyOmniQuerySpan(queryType), nil
 	}
 	if queryType != base.Select {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+		return emptyOmniQuerySpan(queryType), nil
 	}
 
-	accessTables, err := q.collectOmniAccessTables(node)
+	accessTables, earlySpan, err := q.collectOmniSelectAccessTables(node)
 	if err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(err, &resourceNotFound) {
-			return &base.QuerySpan{
-				Type: base.Select,
-				SourceColumns: base.SourceColumnSet{
-					{Database: q.defaultDatabase}: true,
-				},
-				PredicateColumns: base.SourceColumnSet{},
-				Results:          []base.QuerySpanResult{},
-				NotFoundError:    resourceNotFound,
-			}, nil
-		}
 		return nil, err
 	}
-	allSystems, mixed := isMixedQuery(accessTables)
-	if mixed {
-		return nil, base.MixUserSystemTablesError
-	}
-	if allSystems {
-		return &base.QuerySpan{
-			Type:          base.SelectInfoSchema,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+	if earlySpan != nil {
+		return earlySpan, nil
 	}
 
 	cat, err := q.buildOmniQuerySpanCatalog(ctx)
@@ -114,33 +82,14 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	omniSpan, err := redshiftanalysis.GetQuerySpan(cat, statement)
 	if err != nil {
 		if isOmniQuerySpanNotFound(err) {
-			return &base.QuerySpan{
-				Type: base.Select,
-				SourceColumns: base.SourceColumnSet{
-					{Database: q.defaultDatabase}: true,
-				},
-				PredicateColumns: base.SourceColumnSet{},
-				Results:          []base.QuerySpanResult{},
-				NotFoundError:    err,
-			}, nil
+			return q.notFoundOmniQuerySpan(err), nil
 		}
 		return nil, err
 	}
 
 	results := q.convertOmniResults(omniSpan.Results)
 	if hasOmniRangeVar(node) && hasResultWithoutSource(results) && !q.allOmniAccessTablesExist(accessTables) {
-		notFound := &base.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-		}
-		return &base.QuerySpan{
-			Type: base.Select,
-			SourceColumns: base.SourceColumnSet{
-				{Database: q.defaultDatabase}: true,
-			},
-			PredicateColumns: base.SourceColumnSet{},
-			Results:          []base.QuerySpanResult{},
-			NotFoundError:    notFound,
-		}, nil
+		return q.notFoundOmniQuerySpan(&base.ResourceNotFoundError{Database: &q.defaultDatabase}), nil
 	}
 
 	return &base.QuerySpan{
@@ -153,39 +102,15 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 
 func (q *omniQuerySpanExtractor) getOmniExplainAnalyzeQuerySpan(query redshiftast.Node, queryType base.QueryType) (*base.QuerySpan, error) {
 	if queryType != base.Select {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+		return emptyOmniQuerySpan(queryType), nil
 	}
 
-	accessTables, err := q.collectOmniAccessTables(query)
+	accessTables, earlySpan, err := q.collectOmniSelectAccessTables(query)
 	if err != nil {
-		var resourceNotFound *base.ResourceNotFoundError
-		if errors.As(err, &resourceNotFound) {
-			return &base.QuerySpan{
-				Type: base.Select,
-				SourceColumns: base.SourceColumnSet{
-					{Database: q.defaultDatabase}: true,
-				},
-				PredicateColumns: base.SourceColumnSet{},
-				Results:          []base.QuerySpanResult{},
-				NotFoundError:    resourceNotFound,
-			}, nil
-		}
 		return nil, err
 	}
-	allSystems, mixed := isMixedQuery(accessTables)
-	if mixed {
-		return nil, base.MixUserSystemTablesError
-	}
-	if allSystems {
-		return &base.QuerySpan{
-			Type:          base.SelectInfoSchema,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
+	if earlySpan != nil {
+		return earlySpan, nil
 	}
 	return &base.QuerySpan{
 		Type:             base.Select,
@@ -193,6 +118,45 @@ func (q *omniQuerySpanExtractor) getOmniExplainAnalyzeQuerySpan(query redshiftas
 		PredicateColumns: base.SourceColumnSet{},
 		Results:          []base.QuerySpanResult{},
 	}, nil
+}
+
+func (q *omniQuerySpanExtractor) collectOmniSelectAccessTables(node redshiftast.Node) (base.SourceColumnSet, *base.QuerySpan, error) {
+	accessTables, err := q.collectOmniAccessTables(node)
+	if err != nil {
+		var resourceNotFound *base.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return nil, q.notFoundOmniQuerySpan(resourceNotFound), nil
+		}
+		return nil, nil, err
+	}
+	allSystems, mixed := isMixedQuery(accessTables)
+	if mixed {
+		return nil, nil, base.MixUserSystemTablesError
+	}
+	if allSystems {
+		return nil, emptyOmniQuerySpan(base.SelectInfoSchema), nil
+	}
+	return accessTables, nil, nil
+}
+
+func (q *omniQuerySpanExtractor) notFoundOmniQuerySpan(err error) *base.QuerySpan {
+	return &base.QuerySpan{
+		Type: base.Select,
+		SourceColumns: base.SourceColumnSet{
+			{Database: q.defaultDatabase}: true,
+		},
+		PredicateColumns: base.SourceColumnSet{},
+		Results:          []base.QuerySpanResult{},
+		NotFoundError:    err,
+	}
+}
+
+func emptyOmniQuerySpan(queryType base.QueryType) *base.QuerySpan {
+	return &base.QuerySpan{
+		Type:          queryType,
+		SourceColumns: base.SourceColumnSet{},
+		Results:       []base.QuerySpanResult{},
+	}
 }
 
 func (q *omniQuerySpanExtractor) buildOmniQuerySpanCatalog(ctx context.Context) (*redshiftcatalog.Catalog, error) {
@@ -568,7 +532,8 @@ func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 	case *redshiftast.CreateStmt, *redshiftast.CreateTableAsStmt, *redshiftast.ViewStmt, *redshiftast.IndexStmt, *redshiftast.CreateSeqStmt,
 		*redshiftast.CreateSchemaStmt, *redshiftast.CreateFunctionStmt, *redshiftast.CreatedbStmt, *redshiftast.DropStmt,
 		*redshiftast.DropdbStmt, *redshiftast.AlterTableStmt, *redshiftast.AlterSeqStmt, *redshiftast.RenameStmt,
-		*redshiftast.TruncateStmt, *redshiftast.VacuumStmt, *redshiftast.GrantStmt, *redshiftast.RedshiftObjectStmt:
+		*redshiftast.TruncateStmt, *redshiftast.VacuumStmt, *redshiftast.GrantStmt, *redshiftast.CommentStmt,
+		*redshiftast.RedshiftObjectStmt:
 		return base.DDL
 	default:
 		return base.QueryTypeUnknown
