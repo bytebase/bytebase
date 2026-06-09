@@ -8,15 +8,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -50,21 +47,17 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.baseLine = stmt.BaseLine()
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.checkStatement(stmt.Text, stmt.BaseLine(), node)
 	}
 
 	return checker.adviceList, nil
 }
 
 type disallowOfflineDdlChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
@@ -72,101 +65,86 @@ type disallowOfflineDdlChecker struct {
 	currentDB  string
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *disallowOfflineDdlChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-
-	if ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
-		checker.advice(ctx, "Modifying partitions")
-		return
-	}
-
-	if ctx.AlterTableActions().AlterCommandList() == nil || ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		switch {
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			// add one column
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				if columnType := checker.getSpecialColumnType(item.FieldDefinition()); len(columnType) != 0 {
-					checker.advice(ctx, fmt.Sprintf("Adding %s columns", columnType))
-				}
-			// add multiple columns
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil {
-						continue
-					}
-					if tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					if columnType := checker.getSpecialColumnType(item.FieldDefinition()); len(columnType) != 0 {
-						checker.advice(ctx, fmt.Sprintf("Adding %s columns", columnType))
-					}
-				}
-			// add primary key
-			case item.TableConstraintDef() != nil:
-				if item.TableConstraintDef().PRIMARY_SYMBOL() != nil && item.TableConstraintDef().KEY_SYMBOL() != nil {
-					checker.advice(ctx, "Adding primary keys")
-				}
-			default:
-				// Skip other ADD operations
-			}
-		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			if columnType := checker.getSpecialColumnType(item.FieldDefinition()); len(columnType) != 0 {
-				checker.advice(ctx, fmt.Sprintf("Modifying columns to %s", columnType))
-			}
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			if columnType := checker.getSpecialColumnType(item.FieldDefinition()); len(columnType) != 0 {
-				checker.advice(ctx, fmt.Sprintf("Changing columns to %s", columnType))
-			}
-		case item.DROP_SYMBOL() != nil:
-			switch {
-			// drop column
-			case item.ColumnInternalRef() != nil:
-				if len(databaseName) == 0 {
-					databaseName = checker.currentDB
-				}
-				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-				if checker.isStoredColumn(databaseName, tableName, columnName) {
-					checker.advice(ctx, "Dropping stored generated columns")
-				}
-			// drop primary key
-			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
-				checker.advice(ctx, "Dropping primary keys")
-			default:
-				// Skip other DROP operations
-			}
-		// change charset or collate
-		case item.Charset() != nil || item.Collate() != nil:
-			checker.advice(ctx, "Changing charset or collate")
-		default:
-			// Skip other ALTER TABLE operations
-		}
+func (checker *disallowOfflineDdlChecker) checkStatement(text string, baseLine int, node ast.Node) {
+	switch n := node.(type) {
+	case *ast.AlterTableStmt:
+		checker.checkAlterTable(text, baseLine, n)
+	case *ast.DropTableStmt:
+		checker.advice(omniLine(baseLine, text, n.Loc), "Dropping tables")
+	case *ast.TruncateStmt:
+		checker.advice(omniLine(baseLine, text, n.Loc), "Truncating tables")
+	default:
 	}
 }
 
+func (checker *disallowOfflineDdlChecker) checkAlterTable(text string, baseLine int, stmt *ast.AlterTableStmt) {
+	databaseName, tableName := omniTableName(stmt.Table)
+	if databaseName == "" {
+		databaseName = checker.currentDB
+	}
+	for _, cmd := range stmt.Commands {
+		if cmd == nil {
+			continue
+		}
+		line := omniLine(baseLine, text, cmd.Loc)
+		checker.checkAlterTableCmd(line, databaseName, tableName, cmd)
+	}
+}
+
+func (checker *disallowOfflineDdlChecker) checkAlterTableCmd(line int, databaseName, tableName string, cmd *ast.AlterTableCmd) {
+	switch cmd.Type {
+	case ast.ATAddColumn:
+		if columnType := checker.getSpecialColumnType(cmd.Column); columnType != "" {
+			checker.advice(line, fmt.Sprintf("Adding %s columns", columnType))
+		}
+		for _, column := range cmd.Columns {
+			if columnType := checker.getSpecialColumnType(column); columnType != "" {
+				checker.advice(line, fmt.Sprintf("Adding %s columns", columnType))
+			}
+		}
+	case ast.ATAddConstraint:
+		if cmd.Constraint != nil && cmd.Constraint.Type == ast.ConstrPrimaryKey {
+			checker.advice(line, "Adding primary keys")
+		}
+	case ast.ATModifyColumn:
+		if columnType := checker.getSpecialColumnType(cmd.Column); columnType != "" {
+			checker.advice(line, fmt.Sprintf("Modifying columns to %s", columnType))
+		}
+	case ast.ATChangeColumn:
+		if columnType := checker.getSpecialColumnType(cmd.Column); columnType != "" {
+			checker.advice(line, fmt.Sprintf("Changing columns to %s", columnType))
+		}
+	case ast.ATDropColumn:
+		if checker.isStoredColumn(databaseName, tableName, cmd.Name) {
+			checker.advice(line, "Dropping stored generated columns")
+		}
+	case ast.ATDropConstraint:
+		if strings.EqualFold(cmd.Name, "PRIMARY") {
+			checker.advice(line, "Dropping primary keys")
+		}
+	case ast.ATDropPartition:
+		checker.advice(line, "Dropping partitions")
+	case ast.ATTruncatePartition:
+		checker.advice(line, "Truncating partitions")
+	case ast.ATAddPartition, ast.ATCoalescePartition, ast.ATReorganizePartition, ast.ATExchangePartition, ast.ATAnalyzePartition, ast.ATCheckPartition, ast.ATOptimizePartition, ast.ATRebuildPartition, ast.ATRepairPartition, ast.ATDiscardPartitionTablespace, ast.ATImportPartitionTablespace, ast.ATRemovePartitioning, ast.ATPartitionBy:
+		checker.advice(line, "Modifying partitions")
+	case ast.ATConvertCharset:
+		checker.advice(line, "Changing charset or collate")
+	case ast.ATTableOption:
+		if cmd.Option != nil && isCharsetOrCollationOption(cmd.Option) {
+			checker.advice(line, "Changing charset or collate")
+		}
+	default:
+	}
+}
+
+func isCharsetOrCollationOption(option *ast.TableOption) bool {
+	name := strings.ToLower(option.Name)
+	return strings.Contains(name, "charset") || strings.Contains(name, "character set") || strings.Contains(name, "collate") || strings.Contains(name, "collation")
+}
+
 func (checker *disallowOfflineDdlChecker) isStoredColumn(databaseName, tableName, columnName string) bool {
-	if len(databaseName) == 0 || len(tableName) == 0 || len(columnName) == 0 {
+	if checker.driver == nil || len(databaseName) == 0 || len(tableName) == 0 || len(columnName) == 0 {
 		return false
 	}
 
@@ -182,82 +160,28 @@ func (checker *disallowOfflineDdlChecker) isStoredColumn(databaseName, tableName
 	return false
 }
 
-// EnterAlterPartition is called when entering the alterPartition production.
-func (checker *disallowOfflineDdlChecker) EnterAlterPartition(ctx *mysql.AlterPartitionContext) {
-	if ctx.PARTITION_SYMBOL() == nil {
-		return
-	}
-
-	switch {
-	case ctx.DROP_SYMBOL() != nil:
-		checker.advice(ctx, "Dropping partitions")
-	case ctx.TRUNCATE_SYMBOL() != nil:
-		checker.advice(ctx, "Truncating partitions")
-	default:
-		// Skip other partition operations
-	}
-}
-
-// EnterDropStatement is called when entering the dropStatement production.
-func (checker *disallowOfflineDdlChecker) EnterDropStatement(ctx *mysql.DropStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.DropTable() != nil {
-		checker.advice(ctx, "Dropping tables")
-	}
-}
-
-// EnterTruncateTableStatement is called when entering the truncateTableStatement production.
-func (checker *disallowOfflineDdlChecker) EnterTruncateTableStatement(ctx *mysql.TruncateTableStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRef() != nil {
-		checker.advice(ctx, "Truncating tables")
-	}
-}
-
-func (checker *disallowOfflineDdlChecker) getSpecialColumnType(ctx mysql.IFieldDefinitionContext) string {
-	if ctx == nil {
+func (*disallowOfflineDdlChecker) getSpecialColumnType(column *ast.ColumnDef) string {
+	if column == nil {
 		return ""
 	}
 	switch {
-	case ctx.STORED_SYMBOL() != nil:
+	case column.Generated != nil && column.Generated.Stored:
 		return "stored generated"
-	case checker.isAutoIncrementColumn(ctx):
+	case column.AutoIncrement:
 		return "auto increment"
-	case checker.isPrimaryKeyColumn(ctx):
+	case omniColumnHasPrimaryKey(column):
 		return "primary key"
 	default:
 		return ""
 	}
 }
 
-func (*disallowOfflineDdlChecker) isAutoIncrementColumn(ctx mysql.IFieldDefinitionContext) bool {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (*disallowOfflineDdlChecker) isPrimaryKeyColumn(ctx mysql.IFieldDefinitionContext) bool {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.PRIMARY_SYMBOL() != nil && attr.KEY_SYMBOL() != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (checker *disallowOfflineDdlChecker) advice(ctx antlr.ParserRuleContext, operation string) {
+func (checker *disallowOfflineDdlChecker) advice(line int, operation string) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
 		Status:        checker.level,
 		Code:          code.StatementOfflineDDL.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("%s is an offline DDL operation.", operation),
-		StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+		StartPosition: common.ConvertANTLRLineToPosition(line),
 	})
 }

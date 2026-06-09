@@ -13,9 +13,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -42,7 +42,6 @@ func TestWalkThrough(t *testing.T) {
 	require.NoError(t, err)
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err)
-	sm := sheet.NewManager()
 
 	for _, test := range tests {
 		// Make a deep copy to avoid mutation across tests
@@ -52,8 +51,12 @@ func TestWalkThrough(t *testing.T) {
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_MYSQL, !test.IgnoreCaseSensitive)
 
-		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
-		asts := base.ExtractASTs(stmts)
+		antlrASTs, err := mysqlparser.ParseMySQL(test.Statement)
+		require.NoError(t, err)
+		asts := make([]base.AST, 0, len(antlrASTs))
+		for _, antlrAST := range antlrASTs {
+			asts = append(asts, antlrAST)
+		}
 		advice := WalkThrough(state, asts)
 		if advice != nil {
 			// Compare the advice fields
@@ -68,7 +71,7 @@ func TestWalkThrough(t *testing.T) {
 		}
 
 		want := &storepb.DatabaseSchemaMetadata{}
-		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
