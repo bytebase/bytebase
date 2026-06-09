@@ -134,7 +134,10 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext) *r
 			if viewMeta == nil {
 				continue
 			}
-			execCompletionDDL(cat, createViewDDL("MATERIALIZED VIEW", schemaName, viewName, nil))
+			cat.SetSearchPath([]string{schemaName, "public"})
+			if viewMeta.GetDefinition() == "" || !execCompletionDDL(cat, createMaterializedViewDDL(schemaName, viewName, viewMeta.GetDefinition())) {
+				execCompletionDDL(cat, createViewDDL("MATERIALIZED VIEW", schemaName, viewName, nil))
+			}
 		}
 		for _, sequenceName := range schemaMeta.ListSequenceNames() {
 			execCompletionDDL(cat, fmt.Sprintf("CREATE SEQUENCE %s.%s;", quoteIdent(schemaName), quoteIdent(sequenceName)))
@@ -149,8 +152,9 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext) *r
 	return cat
 }
 
-func execCompletionDDL(cat *redshiftcatalog.Catalog, sql string) {
-	_, _ = cat.Exec(sql, nil)
+func execCompletionDDL(cat *redshiftcatalog.Catalog, sql string) bool {
+	_, err := cat.Exec(sql, nil)
+	return err == nil
 }
 
 func createTableDDL(schemaName, tableName string, columns []*storepb.ColumnMetadata) string {
@@ -183,6 +187,20 @@ func createViewDDL(kind, schemaName, viewName string, columns []*storepb.ColumnM
 		quoteIdent(schemaName),
 		quoteIdent(viewName),
 		strings.Join(selectItems, ", "),
+	)
+}
+
+func createMaterializedViewDDL(schemaName, viewName, definition string) string {
+	definition = strings.TrimSpace(definition)
+	definition = strings.TrimSuffix(definition, ";")
+	if strings.HasPrefix(strings.ToUpper(definition), "CREATE ") {
+		return definition + ";"
+	}
+	return fmt.Sprintf(
+		"CREATE MATERIALIZED VIEW %s.%s AS %s;",
+		quoteIdent(schemaName),
+		quoteIdent(viewName),
+		definition,
 	)
 }
 

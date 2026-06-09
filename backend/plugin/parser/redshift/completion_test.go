@@ -264,6 +264,14 @@ func TestCompletionMetadataCoverageMatrix(t *testing.T) {
 			},
 		},
 		{
+			name:  "materialized view columns are available",
+			input: "SELECT | FROM orders_summary",
+			want: []completionWant{
+				{"id", base.CandidateTypeColumn},
+				{"amount", base.CandidateTypeColumn},
+			},
+		},
+		{
 			name:  "external table columns are available",
 			input: "SELECT | FROM spectrum_orders",
 			want: []completionWant{
@@ -610,7 +618,7 @@ func redshiftCompletionContextForTest() base.CompletionContext {
 					},
 				},
 				MaterializedViews: []*storepb.MaterializedViewMetadata{
-					{Name: "orders_summary"},
+					{Name: "orders_summary", Definition: "SELECT id, amount FROM orders"},
 				},
 				Sequences: []*storepb.SequenceMetadata{
 					{Name: "order_seq"},
