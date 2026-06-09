@@ -1587,3 +1587,82 @@ func (l *accessTablesListener) EnterObject_ref(ctx *parser.Object_refContext) {
 		Column:   "",
 	}] = true
 }
+
+// queryTypeListener is the legacy ANTLR-based statement classifier used by the
+// query-span extractor above (it walks the same ANTLR parse tree the extractor
+// already builds). It was relocated here verbatim from query_type.go when that
+// file was migrated to the omni parser: the extractor is still on the legacy
+// ANTLR stack (a separate migration step), so it keeps this legacy listener
+// while query_type.go's omni getQueryType serves the SQL-editor validator. When
+// the extractor is migrated to omni it will call getQueryType(ast.Node) and this
+// listener can be deleted.
+type queryTypeListener struct {
+	*parser.BaseSnowflakeParserListener
+
+	allSystems bool
+	result     base.QueryType
+	err        error
+}
+
+func (l *queryTypeListener) EnterBatch(ctx *parser.BatchContext) {
+	if l.err != nil {
+		return
+	}
+
+	l.result, l.err = l.getQueryTypeForBatch(ctx)
+}
+
+func (l *queryTypeListener) getQueryTypeForBatch(batch parser.IBatchContext) (base.QueryType, error) {
+	sqlCommands := batch.AllSql_command()
+	if len(sqlCommands) == 0 {
+		return base.QueryTypeUnknown, nil
+	}
+	sqlCommand := sqlCommands[0]
+	switch {
+	case sqlCommand.Ddl_command() != nil:
+		return base.DDL, nil
+	case sqlCommand.Dml_command() != nil:
+		return l.getQueryTypeForDmlCommand(sqlCommand.Dml_command())
+	case sqlCommand.Show_command() != nil:
+		return base.SelectInfoSchema, nil
+	case sqlCommand.Use_command() != nil:
+		return base.Select, nil
+	case sqlCommand.Describe_command() != nil:
+		return base.SelectInfoSchema, nil
+	case sqlCommand.Other_command() != nil:
+		return l.getQueryTypeForOtherCommand(sqlCommand.Other_command())
+	default:
+		return base.QueryTypeUnknown, nil
+	}
+}
+
+func (l *queryTypeListener) getQueryTypeForDmlCommand(dmlCommand parser.IDml_commandContext) (base.QueryType, error) {
+	switch {
+	case dmlCommand.Query_statement() != nil:
+		if l.allSystems {
+			return base.SelectInfoSchema, nil
+		}
+		return base.Select, nil
+	default:
+		return base.DML, nil
+	}
+}
+
+func (*queryTypeListener) getQueryTypeForOtherCommand(otherCommand parser.IOther_commandContext) (base.QueryType, error) {
+	switch {
+	case otherCommand.Copy_into_table() != nil:
+		return base.DML, nil
+	case otherCommand.Comment() != nil:
+		return base.DDL, nil
+	case otherCommand.Set() != nil:
+		return base.Select, nil
+	case otherCommand.Call() != nil:
+		return base.DML, nil
+	case otherCommand.Execute_immediate() != nil:
+		return base.DML, nil
+	case otherCommand.Execute_task() != nil:
+		return base.DML, nil
+	default:
+		return base.QueryTypeUnknown, nil
+	}
+}
