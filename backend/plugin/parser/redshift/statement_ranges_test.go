@@ -2,7 +2,10 @@ package redshift
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/stretchr/testify/require"
@@ -51,6 +54,13 @@ func TestGetStatementRanges(t *testing.T) {
 	}
 }
 
+func TestGetStatementRangesScalesLinearlyForLargeScript(t *testing.T) {
+	smallDuration := timeGetStatementRanges(t, redshiftStatementRangeScript(1000))
+	largeDuration := timeGetStatementRanges(t, redshiftStatementRangeScript(10000))
+
+	require.Lessf(t, largeDuration, smallDuration*40, "10x more statements should not take %s vs %s", largeDuration, smallDuration)
+}
+
 func TestGetStatementRangesToleratesIncompleteSQL(t *testing.T) {
 	got, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, "SELECT * FROM")
 	require.NoError(t, err)
@@ -60,4 +70,35 @@ func TestGetStatementRangesToleratesIncompleteSQL(t *testing.T) {
 			End:   lsp.Position{Line: 0, Character: 13},
 		},
 	}, got)
+}
+
+func redshiftStatementRangeScript(count int) string {
+	var builder strings.Builder
+	for i := range count {
+		if i > 0 {
+			builder.WriteByte('\n')
+		}
+		table := fmt.Sprintf("perf_redshift_%d", i)
+		switch i % 4 {
+		case 0:
+			fmt.Fprintf(&builder, "CREATE TABLE %s (id INT, payload VARCHAR(255))", table)
+		case 1:
+			fmt.Fprintf(&builder, "INSERT INTO %s (id, payload) VALUES (%d, 'payload-%d')", table, i, i)
+		case 2:
+			fmt.Fprintf(&builder, "UPDATE %s SET payload = 'updated-%d' WHERE id = %d", table, i, i)
+		default:
+			fmt.Fprintf(&builder, "DROP TABLE IF EXISTS %s", table)
+		}
+		builder.WriteByte(';')
+	}
+	return builder.String()
+}
+
+func timeGetStatementRanges(t *testing.T, statement string) time.Duration {
+	t.Helper()
+	start := time.Now()
+	ranges, err := GetStatementRanges(context.Background(), base.StatementRangeContext{}, statement)
+	require.NoError(t, err)
+	require.NotEmpty(t, ranges)
+	return time.Since(start)
 }
