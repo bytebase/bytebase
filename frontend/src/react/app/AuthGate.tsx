@@ -1,10 +1,18 @@
 import { Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMatches, useNavigate } from "react-router-dom";
+import { useLocation, useMatches, useNavigate } from "react-router-dom";
 import { InactiveRemindModal } from "@/react/components/auth/InactiveRemindModal";
-import { isAuthRelatedRoute } from "@/react/router/guard";
-import { WORKSPACE_ROOT_MODULE } from "@/react/router/handles";
+import {
+  buildSigninRedirectQuery,
+  isAuthRelatedRoute,
+} from "@/react/router/guard";
+import {
+  AUTH_SIGNIN_MODULE,
+  WORKSPACE_ROOT_MODULE,
+  WORKSPACE_ROUTE_403,
+  WORKSPACE_ROUTE_404,
+} from "@/react/router/handles";
 import { resolvePath } from "@/react/router/navigation";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -26,6 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const matches = useMatches();
   const currentRouteName = (
     matches.at(-1)?.handle as { name?: string } | undefined
@@ -33,10 +42,27 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const isAuthRoute = Boolean(
     currentRouteName && isAuthRelatedRoute(currentRouteName)
   );
+  const isPublicRoute =
+    currentRouteName === WORKSPACE_ROUTE_403 ||
+    currentRouteName === WORKSPACE_ROUTE_404;
   const currentUserWorkspace = currentUser?.workspace ?? "";
   const currentUserGroupsKey = (currentUser?.groups ?? []).join("\0");
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const shouldRedirectToSignin = !isLoggedIn && !isAuthRoute && !isPublicRoute;
 
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!shouldRedirectToSignin) return;
+    navigate(
+      resolvePath(AUTH_SIGNIN_MODULE, {
+        query: buildSigninRedirectQuery(
+          new URL(currentPath, window.location.origin)
+        ),
+      }),
+      { replace: true }
+    );
+  }, [currentPath, navigate, shouldRedirectToSignin]);
 
   // Load workspace-scoped data once authenticated, then reveal the app.
   useEffect(() => {
@@ -108,7 +134,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {ready ? (
+      {ready && !shouldRedirectToSignin ? (
         children
       ) : (
         <div className="flex items-center justify-center h-screen">
