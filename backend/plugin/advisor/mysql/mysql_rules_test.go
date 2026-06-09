@@ -9,6 +9,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestMySQLRules(t *testing.T) {
@@ -108,4 +110,36 @@ func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 	require.NotEmpty(t, adviceList)
 	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
 	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
+}
+
+func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
+	sm := sheet.NewManager()
+	finalMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Name: "test",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "user",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "int"},
+						},
+					},
+				},
+			},
+		},
+	}, nil, nil, storepb.Engine_MYSQL, true)
+
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE user(id INT);", []*storepb.SQLReviewRule{
+		{Type: storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK, Level: storepb.SQLReviewRule_WARNING},
+	}, advisor.Context{
+		DBType:        storepb.Engine_MYSQL,
+		FinalMetadata: finalMetadata,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, adviceList, 1)
+	require.Equal(t, storepb.Advice_WARNING, adviceList[0].Status)
+	require.Equal(t, code.TableExists.Int32(), adviceList[0].Code)
+	require.Equal(t, "Table `user` already exists", adviceList[0].Content)
 }
