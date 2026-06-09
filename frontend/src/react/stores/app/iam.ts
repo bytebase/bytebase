@@ -94,18 +94,28 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         )
         .then(async (workspacePolicy) => {
           set({ workspacePolicy, workspacePolicyRequest: undefined });
-          // Prefetch groups referenced by the policy so derived role/user
-          // maps (and any UI that resolves group display names) read from
-          // a populated cache. Without this every page that reads the
-          // policy had to hedge with its own fetchWorkspaceIamPolicy().
-          const groupMembers = workspacePolicy.bindings
-            .flatMap((binding) => binding.members)
-            .filter((member) => member.startsWith(groupBindingPrefix));
-          if (groupMembers.length > 0) {
-            await get()
-              .batchGetOrFetchGroups(groupMembers)
-              .catch(() => []);
+          // Prefetch the group / user members referenced by the policy so
+          // derived role maps and any UI that resolves member display names
+          // (e.g. the workspace members table's `getMemberBindings`) read
+          // from a populated cache. Without the user prefetch every member
+          // failed the `getUserByIdentifier` lookup and was flagged pending,
+          // rendering an "Invited" badge for everyone in SaaS mode. Mirrors
+          // the project IAM path in `loadProjectIamPolicy`.
+          const groupMembers: string[] = [];
+          const userMembers: string[] = [];
+          for (const binding of workspacePolicy.bindings) {
+            for (const member of binding.members) {
+              if (member.startsWith(groupBindingPrefix)) {
+                groupMembers.push(member);
+              } else {
+                userMembers.push(member);
+              }
+            }
           }
+          await Promise.allSettled([
+            get().batchGetOrFetchGroups(groupMembers),
+            get().batchGetOrFetchUsers(userMembers),
+          ]);
           return workspacePolicy;
         })
         .catch(() => {
