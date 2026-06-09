@@ -63,6 +63,21 @@ function stripSigninQueryParams(fullPath: string): string {
   return url.pathname + url.search + url.hash;
 }
 
+export function buildSigninRedirectQuery(url: URL): Record<string, string> {
+  const query: Record<string, string> = {};
+  // Forward signin-only query params (consumed by the signin page).
+  for (const param of SIGNIN_QUERY_PARAMS) {
+    const value = url.searchParams.get(param);
+    if (value) query[param] = value;
+  }
+  const fullPath = url.pathname + url.search + url.hash;
+  // Set redirect if not root and not already set; strip signin-only params.
+  if (fullPath !== "/" && !url.searchParams.get("redirect")) {
+    query["redirect"] = stripSigninQueryParams(fullPath);
+  }
+  return query;
+}
+
 // Route-name prefixes that an authenticated user may always access.
 const ALLOWED_ROUTE_PATTERNS = [
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -217,18 +232,11 @@ export function rootGuard({
 
   // Require authentication for all other pages.
   if (!isLoggedIn) {
-    const query: Record<string, string> = {};
-    // Forward signin-only query params (consumed by the signin page).
-    for (const param of SIGNIN_QUERY_PARAMS) {
-      const value = url.searchParams.get(param);
-      if (value) query[param] = value;
-    }
-    const fullPath = url.pathname + url.search + url.hash;
-    // Set redirect if not root and not already set; strip signin-only params.
-    if (fullPath !== "/" && !url.searchParams.get("redirect")) {
-      query["redirect"] = stripSigninQueryParams(fullPath);
-    }
-    return redirect(resolvePath(AUTH_SIGNIN_MODULE, { query }));
+    return redirect(
+      resolvePath(AUTH_SIGNIN_MODULE, {
+        query: buildSigninRedirectQuery(url),
+      })
+    );
   }
 
   // Enforce 2FA setup if required.

@@ -35,7 +35,7 @@ vi.mock("@/plugins/ai/store", () => ({
   useConversationStore: { getState: () => ({ reset: vi.fn() }) },
 }));
 
-import { rootGuard } from "./guard";
+import { buildSigninRedirectQuery, rootGuard } from "./guard";
 import {
   AUTH_2FA_SETUP_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
@@ -111,6 +111,21 @@ describe("rootGuard", () => {
   test("not-logged-in user is redirected to signin with a redirect query", () => {
     const target = location(run(PROJECT_V1_ROUTE_DASHBOARD, "/projects/p1"));
     expect(target).toBe("/auth?redirect=%2Fprojects%2Fp1");
+  });
+
+  test("builds signin query while stripping signin-only params from redirect", () => {
+    expect(
+      buildSigninRedirectQuery(
+        new URL(
+          "https://app.example.com/projects?idp=idp-1&email=alice%40example.com&foo=bar&invitation=invite-1#section"
+        )
+      )
+    ).toEqual({
+      idp: "idp-1",
+      email: "alice@example.com",
+      invitation: "invite-1",
+      redirect: "/projects?foo=bar#section",
+    });
   });
 
   test("enforces 2FA setup when required", () => {

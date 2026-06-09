@@ -418,6 +418,37 @@ describe("useAppStore", () => {
     expect(state.removeRecentVisit).toBeTypeOf("function");
   });
 
+  test("keeps the signed-in identity when marking the session expired", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      currentUserName: user.name,
+    });
+
+    store.getState().setUnauthenticatedOccurred(true);
+
+    expect(store.getState().unauthenticatedOccurred).toBe(true);
+    expect(store.getState().currentUser).toBe(user);
+    expect(store.getState().currentUserName).toBe(user.name);
+    expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
+  test("keeps the signed-in identity when current-user refresh has a transient failure", async () => {
+    mocks.getCurrentUser.mockRejectedValue(new Error("network unavailable"));
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      currentUserName: user.name,
+    });
+
+    const result = await store.getState().fetchCurrentUser();
+
+    expect(result).toBeUndefined();
+    expect(store.getState().currentUser).toBe(user);
+    expect(store.getState().currentUserName).toBe(user.name);
+    expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
   test("lists groups and populates the group cache", async () => {
     mocks.listGroups.mockResolvedValue({
       groups: [groupA, groupB],

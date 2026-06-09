@@ -7,7 +7,46 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  session: {
+    isLoggedIn: true,
+  },
   navigate: vi.fn(),
+  location: {
+    pathname: "/projects",
+    search: "",
+    hash: "",
+  },
+  routeName: "workspace.dashboard",
+  resolvePath: vi.fn(
+    (
+      _name: string,
+      options?: { query?: Record<string, string | undefined> }
+    ) => {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(options?.query ?? {})) {
+        if (value) query.set(key, value);
+      }
+      const serialized = query.toString();
+      return serialized ? `/auth?${serialized}` : "/auth";
+    }
+  ),
+  buildSigninRedirectQuery: vi.fn((url: URL) => {
+    const query: Record<string, string> = {};
+    for (const param of ["idp", "workspace", "email", "token", "invitation"]) {
+      const value = url.searchParams.get(param);
+      if (value) query[param] = value;
+    }
+    const redirectURL = new URL(url.toString());
+    for (const param of ["idp", "workspace", "email", "token", "invitation"]) {
+      redirectURL.searchParams.delete(param);
+    }
+    const redirectPath =
+      redirectURL.pathname + redirectURL.search + redirectURL.hash;
+    if (redirectPath !== "/" && !url.searchParams.get("redirect")) {
+      query.redirect = redirectPath;
+    }
+    return query;
+  }),
   loadSubscription: vi.fn(async () => undefined),
   fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
   loadWorkspaceList: vi.fn(async () => undefined),
@@ -22,7 +61,8 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("react-router-dom", () => ({
-  useMatches: () => [{ handle: { name: "workspace.dashboard" } }],
+  useLocation: () => mocks.location,
+  useMatches: () => [{ handle: { name: mocks.routeName } }],
   useNavigate: () => mocks.navigate,
 }));
 
@@ -31,15 +71,19 @@ vi.mock("@/react/components/auth/InactiveRemindModal", () => ({
 }));
 
 vi.mock("@/react/router/guard", () => ({
+  buildSigninRedirectQuery: mocks.buildSigninRedirectQuery,
   isAuthRelatedRoute: () => false,
 }));
 
 vi.mock("@/react/router/handles", () => ({
+  AUTH_SIGNIN_MODULE: "auth.signin",
+  WORKSPACE_ROUTE_403: "error.403",
+  WORKSPACE_ROUTE_404: "error.404",
   WORKSPACE_ROOT_MODULE: "workspace.root",
 }));
 
 vi.mock("@/react/router/navigation", () => ({
-  resolvePath: () => "/",
+  resolvePath: mocks.resolvePath,
 }));
 
 vi.mock("@/store", () => ({
@@ -64,7 +108,7 @@ vi.mock("@/react/stores/app", async () => {
     currentUserName: initialUser.name,
     unauthenticatedOccurred: false,
     isSelfEmailUpdate: false,
-    isLoggedIn: () => true,
+    isLoggedIn: () => mocks.session.isLoggedIn,
     loadSubscription: mocks.loadSubscription,
     fetchWorkspaceIamPolicy: mocks.fetchWorkspaceIamPolicy,
     loadWorkspaceList: mocks.loadWorkspaceList,
@@ -85,6 +129,11 @@ describe("AuthGate", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    mocks.session.isLoggedIn = true;
+    mocks.routeName = "workspace.dashboard";
+    mocks.location.pathname = "/projects";
+    mocks.location.search = "";
+    mocks.location.hash = "";
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -122,6 +171,69 @@ describe("AuthGate", () => {
 
     expect(container.querySelector("[data-testid='page']")).not.toBeNull();
     expect(container.querySelector("[role='status']")).toBeNull();
+  });
+
+  test("redirects protected routes to signin when the session is logged out", async () => {
+    mocks.session.isLoggedIn = false;
+
+    await act(async () => {
+      root.render(
+        <AuthGate>
+          <div data-testid="page">Page</div>
+        </AuthGate>
+      );
+    });
+
+    expect(mocks.navigate).toHaveBeenCalledWith("/auth?redirect=%2Fprojects", {
+      replace: true,
+    });
+    expect(container.querySelector("[data-testid='page']")).toBeNull();
+    expect(container.querySelector("[role='status']")).not.toBeNull();
+  });
+
+  test("preserves signin query params outside the redirect target", async () => {
+    mocks.session.isLoggedIn = false;
+    mocks.location.search =
+      "?idp=idp-1&email=alice%40example.com&foo=bar&invitation=invite-1";
+    mocks.location.hash = "#section";
+
+    await act(async () => {
+      root.render(
+        <AuthGate>
+          <div data-testid="page">Page</div>
+        </AuthGate>
+      );
+    });
+
+    expect(mocks.resolvePath).toHaveBeenCalledWith("auth.signin", {
+      query: {
+        idp: "idp-1",
+        email: "alice@example.com",
+        invitation: "invite-1",
+        redirect: "/projects?foo=bar#section",
+      },
+    });
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      "/auth?idp=idp-1&email=alice%40example.com&invitation=invite-1&redirect=%2Fprojects%3Ffoo%3Dbar%23section",
+      { replace: true }
+    );
+  });
+
+  test("keeps public error routes visible when the session is logged out", async () => {
+    mocks.session.isLoggedIn = false;
+    mocks.routeName = "error.404";
+    mocks.location.pathname = "/404";
+
+    await act(async () => {
+      root.render(
+        <AuthGate>
+          <div data-testid="page">Page</div>
+        </AuthGate>
+      );
+    });
+
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-testid='page']")).not.toBeNull();
   });
 
   test("refreshes permission data in the background during session polling", async () => {
