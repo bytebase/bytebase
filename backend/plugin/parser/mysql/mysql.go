@@ -211,22 +211,6 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	return tree, stream, nil
 }
 
-// parseSingleStatementLenient parses a single MySQL statement with ANTLR in error-recovery mode
-// (no error listeners). Used by OmniAST.AsANTLRAST() for backward-compatible tree walking.
-func parseSingleStatementLenient(statement string) (antlr.Tree, *antlr.CommonTokenStream) {
-	statement = mysqlAddSemicolonIfNeeded(statement)
-	input := antlr.NewInputStream(statement)
-	lexer := parser.NewMySQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	p := parser.NewMySQLParser(stream)
-	p.RemoveErrorListeners()
-	p.BuildParseTrees = true
-
-	tree := p.Script()
-	return tree, stream
-}
-
 func mysqlAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
 	lexerErrorListener := &base.ParseErrorListener{
