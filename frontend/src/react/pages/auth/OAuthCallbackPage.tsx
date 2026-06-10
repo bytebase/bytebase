@@ -12,57 +12,90 @@ import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { clearOAuthState, retrieveOAuthState } from "@/utils/sso";
 
+type ProcessedOutcome = {
+  hasError: boolean;
+  messageKey: string;
+  oAuthState: OAuthState | undefined;
+};
+
+// The OAuth `state` token is single-use: processing consumes it from
+// localStorage (`clearOAuthState`). The page component, however, can mount
+// more than once per callback navigation — StrictMode double-invokes effects,
+// and the app shell can remount routed content while the kicked-off `login()`
+// is still running. Re-processing would find the token already consumed and
+// misreport a fatal-looking "session expired" error mid-login. Memoizing the
+// outcome at module scope makes processing once-per-page-load (the standard
+// redirect-callback contract): later mounts replay the outcome render-only,
+// leaving the side effects (opener dispatch / login) to the run that computed
+// it.
+const processedOutcomes = new Map<string, ProcessedOutcome>();
+
 export function OAuthCallbackPage() {
   const { t } = useTranslation();
-  const [message, setMessage] = useState("");
+  const [messageKey, setMessageKey] = useState("");
   const [hasError, setHasError] = useState(false);
   const [oAuthState, setOAuthState] = useState<OAuthState | undefined>(
     undefined
   );
   const [showCloseButton, setShowCloseButton] = useState(false);
   const payloadRef = useRef<OAuthWindowEventPayload>({ error: "", code: "" });
-  // StrictMode double-invokes effects; the OAuth state token is single-use
-  // (consumed via `clearOAuthState`). Without this guard the second invocation
-  // would fail to retrieve the already-cleared token and flash a
-  // "session expired" error before the login completes.
-  const initRef = useRef(false);
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
     const query = router.currentRoute.value.query;
-    const stateToken = query.state as string | undefined;
+    const stateToken = typeof query.state === "string" ? query.state : "";
 
-    if (
-      !stateToken ||
-      typeof stateToken !== "string" ||
-      stateToken.length === 0
-    ) {
-      setHasError(true);
-      setMessage(t("auth.oauth-callback.invalid-state"));
+    const replayed = processedOutcomes.get(stateToken);
+    if (replayed) {
+      setHasError(replayed.hasError);
+      setMessageKey(replayed.messageKey);
+      setOAuthState(replayed.oAuthState);
+      return;
+    }
+
+    const apply = (outcome: ProcessedOutcome) => {
+      processedOutcomes.set(stateToken, outcome);
+      setHasError(outcome.hasError);
+      setMessageKey(outcome.messageKey);
+      setOAuthState(outcome.oAuthState);
+    };
+
+    if (stateToken.length === 0) {
+      apply({
+        hasError: true,
+        messageKey: "auth.oauth-callback.invalid-state",
+        oAuthState: undefined,
+      });
       triggerAuthCallback(undefined, true);
       return;
     }
 
     const storedState = retrieveOAuthState(stateToken);
     if (!storedState) {
-      setHasError(true);
-      setMessage(t("auth.oauth-callback.session-expired"));
+      apply({
+        hasError: true,
+        messageKey: "auth.oauth-callback.session-expired",
+        oAuthState: undefined,
+      });
       triggerAuthCallback(undefined, true);
       return;
     }
 
     if (storedState.token !== stateToken) {
-      setHasError(true);
-      setMessage(t("auth.oauth-callback.security-failed"));
+      apply({
+        hasError: true,
+        messageKey: "auth.oauth-callback.security-failed",
+        oAuthState: undefined,
+      });
       clearOAuthState(stateToken);
       triggerAuthCallback(undefined, true);
       return;
     }
 
-    setOAuthState(storedState);
-    setHasError(false);
-    setMessage(t("auth.oauth-callback.success-redirecting"));
+    apply({
+      hasError: false,
+      messageKey: "auth.oauth-callback.success-redirecting",
+      oAuthState: storedState,
+    });
     payloadRef.current.code = (query.code as string) || "";
     clearOAuthState(storedState.token);
     triggerAuthCallback(storedState, false);
@@ -76,7 +109,7 @@ export function OAuthCallbackPage() {
       try {
         if (!window.opener || window.opener.closed) {
           setHasError(true);
-          setMessage(t("auth.oauth-callback.opener-unavailable"));
+          setMessageKey("auth.oauth-callback.opener-unavailable");
           setShowCloseButton(true);
           return;
         }
@@ -94,20 +127,20 @@ export function OAuthCallbackPage() {
             if (!window.closed) {
               setShowCloseButton(true);
               if (!isError) {
-                setMessage(t("auth.oauth-callback.success-close"));
+                setMessageKey("auth.oauth-callback.success-close");
               }
             }
           }, 500);
         } catch {
           setShowCloseButton(true);
           if (!isError) {
-            setMessage(t("auth.oauth-callback.please-close"));
+            setMessageKey("auth.oauth-callback.please-close");
           }
         }
       } catch (error) {
         console.error("Failed to communicate with opener window:", error);
         setHasError(true);
-        setMessage(t("auth.oauth-callback.opener-failed"));
+        setMessageKey("auth.oauth-callback.opener-failed");
         setShowCloseButton(true);
       }
       return;
@@ -152,7 +185,7 @@ export function OAuthCallbackPage() {
     <div className="p-4">
       {hasError ? (
         <div className="mt-2">
-          <div>{message}</div>
+          <div>{messageKey && t(messageKey)}</div>
           {oAuthState?.popup ? (
             <Button onClick={() => window.close()}>{t("common.close")}</Button>
           ) : (
@@ -165,7 +198,7 @@ export function OAuthCallbackPage() {
         <div className="mt-2">
           <div className="flex items-center gap-x-2">
             <Loader2 className="size-4 animate-spin" />
-            <span>{message || t("auth.oauth-callback.processing")}</span>
+            <span>{t(messageKey || "auth.oauth-callback.processing")}</span>
           </div>
           {oAuthState?.popup && showCloseButton && (
             <Button className="mt-4" onClick={() => window.close()}>
