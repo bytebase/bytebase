@@ -8,7 +8,6 @@ import (
 )
 
 func init() {
-	base.RegisterQueryValidator(storepb.Engine_STARROCKS, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_DORIS, validateQuery)
 }
 

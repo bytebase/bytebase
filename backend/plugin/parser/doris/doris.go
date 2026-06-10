@@ -13,7 +13,6 @@ import (
 
 func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_DORIS, parseDorisStatements)
-	base.RegisterParseStatementsFunc(storepb.Engine_STARROCKS, parseDorisStatements)
 }
 
 // omniAST wraps an omni AST node to implement the base.AST interface.
