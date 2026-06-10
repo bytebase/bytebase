@@ -32,6 +32,10 @@ const DYNAMIC_PREFIXES = [
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",
+  // Stored as messageKey string literals and translated via t(messageKey) at
+  // render, not as literal t("…") calls. See
+  // frontend/src/react/pages/auth/OAuthCallbackPage.tsx.
+  "auth.oauth-callback.",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
   "common.bypassed",
