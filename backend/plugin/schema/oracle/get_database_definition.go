@@ -187,13 +187,20 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 	if _, err := buf.WriteString("\" (\n"); err != nil {
 		return err
 	}
-	for i, column := range table.Columns {
-		if i > 0 {
+	itemCount := 0
+	writeSeparator := func() error {
+		if itemCount > 0 {
 			if _, err := buf.WriteString(",\n"); err != nil {
 				return err
 			}
 		}
-		if _, err := buf.WriteString(`  `); err != nil {
+		itemCount++
+		_, err := buf.WriteString(`  `)
+		return err
+	}
+
+	for _, column := range table.Columns {
+		if err := writeSeparator(); err != nil {
 			return err
 		}
 		if err := writeColumn(buf, column); err != nil {
@@ -201,20 +208,11 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	constraints := []*storepb.IndexMetadata{}
 	for _, constraint := range table.Indexes {
-		if constraint.IsConstraint {
-			constraints = append(constraints, constraint)
+		if !constraint.IsConstraint {
+			continue
 		}
-	}
-
-	for i, constraint := range constraints {
-		if i+len(table.Indexes) > 0 {
-			if _, err := buf.WriteString(",\n"); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(`  `); err != nil {
+		if err := writeSeparator(); err != nil {
 			return err
 		}
 		if err := writeConstraint(buf, constraint); err != nil {
@@ -222,13 +220,8 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	for i, check := range table.CheckConstraints {
-		if i+len(table.Indexes)+len(constraints) > 0 {
-			if _, err := buf.WriteString(",\n"); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(`  `); err != nil {
+	for _, check := range table.CheckConstraints {
+		if err := writeSeparator(); err != nil {
 			return err
 		}
 		if err := writeCheckConstraint(buf, check); err != nil {
@@ -236,13 +229,8 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	for i, fk := range table.ForeignKeys {
-		if i+len(table.Indexes)+len(constraints)+len(table.CheckConstraints) > 0 {
-			if _, err := buf.WriteString(",\n"); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(`  `); err != nil {
+	for _, fk := range table.ForeignKeys {
+		if err := writeSeparator(); err != nil {
 			return err
 		}
 		if err := writeForeignKey(buf, fk); err != nil {
