@@ -4,16 +4,14 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -36,125 +34,124 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &namingIdentifierNoKeywordChecker{
+		level:      level,
+		title:      checkCtx.Rule.Type.String(),
+		adviceList: []*storepb.Advice{},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.text = stmt.Text
+		checker.baseLine = stmt.BaseLine()
+		checker.checkStmt(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// NamingIdentifierNoKeywordRule checks for identifier naming without keywords.
-type NamingIdentifierNoKeywordRule struct {
-	BaseRule
-	// currentOriginalTableName is the original table name in the statement.
-	currentOriginalTableName string
+type namingIdentifierNoKeywordChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	// text is the SQL text of the statement currently being checked.
+	text string
+	// baseLine is the 0-based line of the current statement in the whole script.
+	baseLine int
 }
 
-// NewNamingIdentifierNoKeywordRule creates a new NamingIdentifierNoKeywordRule.
-func NewNamingIdentifierNoKeywordRule(level storepb.Advice_Status, title string) *NamingIdentifierNoKeywordRule {
-	return &NamingIdentifierNoKeywordRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
-
-// Name returns the rule name.
-func (*NamingIdentifierNoKeywordRule) Name() string {
-	return "NamingIdentifierNoKeywordRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.currentOriginalTableName = ctx.(*parser.Create_tableContext).Object_name().GetText()
-	case "Create_table_as_select":
-		r.currentOriginalTableName = ctx.(*parser.Create_table_as_selectContext).Object_name().GetText()
-	case NodeTypeColumnDeclItemList:
-		r.enterColumnDeclItemList(ctx.(*parser.Column_decl_item_listContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+func (c *namingIdentifierNoKeywordChecker) checkStmt(node snowflakeast.Node) {
+	switch n := node.(type) {
+	case *snowflakeast.CreateTableStmt:
+		c.checkCreateTable(n)
+	case *snowflakeast.AlterTableStmt:
+		c.checkAlterTable(n)
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (r *NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable, "Create_table_as_select":
-		r.currentOriginalTableName = ""
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-func (r *NamingIdentifierNoKeywordRule) enterColumnDeclItemList(ctx *parser.Column_decl_item_listContext) {
-	if r.currentOriginalTableName == "" {
+// checkCreateTable checks the declared column names of CREATE TABLE and
+// CREATE TABLE ... AS SELECT: a column whose canonical (folded) name is a
+// Snowflake keyword is reported. Mirroring the legacy listener, the advice
+// content carries the identifier as written in the source (quotes preserved)
+// and every advice is anchored on the start of the column declaration list.
+func (c *namingIdentifierNoKeywordChecker) checkCreateTable(stmt *snowflakeast.CreateTableStmt) {
+	if len(stmt.Columns) == 0 {
 		return
 	}
 
-	allItems := ctx.AllColumn_decl_item()
-	if len(allItems) == 0 {
-		return
-	}
-
-	for _, item := range allItems {
-		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
-			allIDs := fullColDecl.Col_decl().Column_name().AllId_()
-			if len(allIDs) == 0 {
-				continue
-			}
-			originalID := allIDs[len(allIDs)-1]
-			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
-			if snowsqlparser.IsSnowflakeKeyword(originalColName, false) {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.NameIsKeywordIdentifier.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", originalID.GetText()),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
+	listPosition := c.columnDeclListPosition(stmt)
+	for _, column := range stmt.Columns {
+		originalColName := column.Name.Normalize()
+		if snowsqlparser.IsSnowflakeKeyword(originalColName, false) {
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
+				Code:          code.NameIsKeywordIdentifier.Int32(),
+				Title:         c.title,
+				Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", column.Name.String()),
+				StartPosition: listPosition,
+			})
 		}
 	}
 }
 
-func (r *NamingIdentifierNoKeywordRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	if ctx.Table_column_action() == nil || ctx.Table_column_action().RENAME() == nil {
-		return
+// checkAlterTable checks ALTER TABLE ... RENAME COLUMN old TO new: the new
+// column name must not be a Snowflake keyword. Other ALTER TABLE actions are
+// not checked, matching the legacy listener.
+func (c *namingIdentifierNoKeywordChecker) checkAlterTable(stmt *snowflakeast.AlterTableStmt) {
+	for _, action := range stmt.Actions {
+		if action.Kind != snowflakeast.AlterTableRenameColumn {
+			continue
+		}
+		renameToColName := action.NewColName.Normalize()
+		if snowsqlparser.IsSnowflakeKeyword(renameToColName, false) {
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
+				Code:          code.NameIsKeywordIdentifier.Int32(),
+				Title:         c.title,
+				Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", action.NewColName.String()),
+				StartPosition: c.positionAtOffset(action.NewColName.Loc.Start),
+			})
+		}
 	}
-	r.currentOriginalTableName = ctx.Object_name(0).GetText()
-	renameColumnName := ctx.Table_column_action().Column_name(1)
-	allIDs := renameColumnName.AllId_()
-	if len(allIDs) == 0 {
-		return
+}
+
+// columnDeclListPosition returns the position of the first item of the column
+// declaration list — columns, out-of-line constraints and inline indexes in
+// source order — mirroring the legacy rule's anchor on the ANTLR
+// Column_decl_item_list start token.
+func (c *namingIdentifierNoKeywordChecker) columnDeclListPosition(stmt *snowflakeast.CreateTableStmt) *storepb.Position {
+	start := -1
+	merge := func(loc snowflakeast.Loc) {
+		if loc.Start >= 0 && (start < 0 || loc.Start < start) {
+			start = loc.Start
+		}
 	}
-	renameToID := allIDs[len(allIDs)-1]
-	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
-	if snowsqlparser.IsSnowflakeKeyword(renameToColName, false) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NameIsKeywordIdentifier.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Identifier %s is a keyword and should be avoided", renameToID.GetText()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + renameToID.GetStart().GetLine()),
-		})
+	for _, column := range stmt.Columns {
+		merge(column.Loc)
 	}
+	for _, constraint := range stmt.Constraints {
+		merge(constraint.Loc)
+	}
+	for _, index := range stmt.Indexes {
+		merge(index.Loc)
+	}
+	return c.positionAtOffset(start)
+}
+
+// positionAtOffset converts a byte offset within the current statement text to
+// an advice position, reproducing the legacy baseLine + ANTLR-line arithmetic.
+// A negative (unknown) offset degrades to the statement's first line.
+func (c *namingIdentifierNoKeywordChecker) positionAtOffset(offset int) *storepb.Position {
+	line := 1
+	if offset > 0 {
+		if offset > len(c.text) {
+			offset = len(c.text)
+		}
+		line += strings.Count(c.text[:offset], "\n")
+	}
+	return common.ConvertANTLRLineToPosition(c.baseLine + line)
 }

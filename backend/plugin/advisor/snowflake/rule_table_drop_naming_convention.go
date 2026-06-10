@@ -5,16 +5,15 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -47,70 +46,69 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &tableDropNamingConventionChecker{
+		level:      level,
+		title:      checkCtx.Rule.Type.String(),
+		format:     format,
+		adviceList: []*storepb.Advice{},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.text = stmt.Text
+		checker.baseLine = stmt.BaseLine()
+		checker.checkStmt(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// TableDropNamingConventionRule checks for table drop naming convention.
-type TableDropNamingConventionRule struct {
-	BaseRule
-	format *regexp.Regexp
+type tableDropNamingConventionChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	format     *regexp.Regexp
+	// text is the SQL text of the statement currently being checked.
+	text string
+	// baseLine is the 0-based line of the current statement in the whole script.
+	baseLine int
 }
 
-// NewTableDropNamingConventionRule creates a new TableDropNamingConventionRule.
-func NewTableDropNamingConventionRule(level storepb.Advice_Status, title string, format *regexp.Regexp) *TableDropNamingConventionRule {
-	return &TableDropNamingConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		format: format,
+// checkStmt checks DROP TABLE statements: the canonical (folded) table name
+// must match the configured naming format. Other DROP kinds (VIEW, DYNAMIC
+// TABLE, ...) are not checked, matching the legacy listener which only
+// subscribed to the plain DROP TABLE grammar rule.
+func (c *tableDropNamingConventionChecker) checkStmt(node snowflakeast.Node) {
+	dropStmt, ok := node.(*snowflakeast.DropStmt)
+	if !ok || dropStmt.Kind != snowflakeast.DropTable || dropStmt.Name == nil {
+		return
 	}
-}
 
-// Name returns the rule name.
-func (*TableDropNamingConventionRule) Name() string {
-	return "TableDropNamingConventionRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *TableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeDropTable {
-		r.enterDropTable(ctx.(*parser.Drop_tableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDropNamingConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *TableDropNamingConventionRule) enterDropTable(ctx *parser.Drop_tableContext) {
-	normalizedObjectName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
-	if !r.format.MatchString(normalizedObjectName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	normalizedObjectName := dropStmt.Name.Name.Normalize()
+	if !c.format.MatchString(normalizedObjectName) {
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
 			Code:          code.TableDropNamingConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.Object_name().GetO().GetStart().GetLine()),
+			Title:         c.title,
+			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, c.format),
+			StartPosition: c.positionAtOffset(dropStmt.Name.Name.Loc.Start),
 		})
 	}
+}
+
+// positionAtOffset converts a byte offset within the current statement text to
+// an advice position, reproducing the legacy baseLine + ANTLR-line arithmetic.
+// A negative (unknown) offset degrades to the statement's first line.
+func (c *tableDropNamingConventionChecker) positionAtOffset(offset int) *storepb.Position {
+	line := 1
+	if offset > 0 {
+		if offset > len(c.text) {
+			offset = len(c.text)
+		}
+		line += strings.Count(c.text[:offset], "\n")
+	}
+	return common.ConvertANTLRLineToPosition(c.baseLine + line)
 }
