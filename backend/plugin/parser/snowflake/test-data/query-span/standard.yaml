@@ -871,3 +871,97 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+- description: Positional column references $1 and qualified T.$2 resolve to the FROM scope (legacy DOLLAR/Column_position parity)
+  statement: SELECT $1, T.$2 FROM T1 T;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: Positional $1 inside a compound expression contributes the first FROM column's lineage
+  statement: SELECT TO_DATE($1) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: ""
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []

@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/omni/snowflake/ast"
@@ -451,6 +452,19 @@ func (q *querySpanExtractor) extractQuerySpanResultFromTargetExpr(expr ast.Node)
 		return querySpanResult.Name, querySpanResult, nil
 	}
 
+	// Positional column reference $N (optionally qualified, d.$1): the legacy
+	// extractor resolved it to the N-th column of the FROM scope (or of the
+	// qualified relation), erroring on out-of-range positions. Session
+	// variables ($var, Positional=false) fall through to the generic path like
+	// any other opaque expression.
+	if dollar, ok := expr.(*ast.DollarRef); ok && dollar.Positional {
+		querySpanResult, err := q.resolvePositionalRef(dollar)
+		if err != nil {
+			return "", base.QuerySpanResult{}, err
+		}
+		return querySpanResult.Name, querySpanResult, nil
+	}
+
 	name := exprDisplayName(expr)
 	sourceColumns, err := q.collectSourceColumnsFromExpr(expr)
 	if err != nil {
@@ -488,6 +502,19 @@ func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.S
 			return false
 		}
 		switch n := node.(type) {
+		case *ast.DollarRef:
+			// Positional $N inside a compound expression (e.g. TO_DATE($1),
+			// $1 + 1) contributes the N-th FROM-scope column's lineage. Session
+			// variables ($var) carry no column lineage.
+			if !n.Positional {
+				return true
+			}
+			querySpanResult, err := q.resolvePositionalRef(n)
+			if err != nil {
+				walkErr = err
+				return false
+			}
+			result, _ = base.MergeSourceColumnSet(result, querySpanResult.SourceColumns)
 		case *ast.ColumnRef:
 			normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizeColumnRef(n)
 			querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
@@ -1184,4 +1211,30 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool)
 func isSystemResource(base.ColumnResource, bool) bool {
 	// TODO(zp): fix me.
 	return false
+}
+
+// resolvePositionalRef resolves a positional column reference $N (optionally
+// qualified, d.$1) to the N-th column of the FROM scope (or of the qualified
+// relation), mirroring the legacy DOLLAR/Column_position branch: errors on a
+// non-numeric, < 1, or out-of-range position.
+func (q *querySpanExtractor) resolvePositionalRef(dollar *ast.DollarRef) (base.QuerySpanResult, error) {
+	position, err := strconv.Atoi(dollar.Name)
+	if err != nil {
+		return base.QuerySpanResult{}, errors.Wrapf(err, "failed to parse column position %q to integer", dollar.Name)
+	}
+	if position < 1 {
+		return base.QuerySpanResult{}, errors.Errorf("column position %d is invalid because it is less than 1", position)
+	}
+	var normalizedDatabaseName, normalizedSchemaName, normalizedTableName string
+	if dollar.Qualifier != nil {
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeSnowflakeObjectName(dollar.Qualifier, "", "")
+	}
+	left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+	if err != nil {
+		return base.QuerySpanResult{}, errors.Wrapf(err, "failed to resolve positional column reference $%s", dollar.Name)
+	}
+	if position > len(left) {
+		return base.QuerySpanResult{}, errors.Errorf("column position $%d is invalid: the FROM clause only returns %d columns", position, len(left))
+	}
+	return left[position-1], nil
 }
