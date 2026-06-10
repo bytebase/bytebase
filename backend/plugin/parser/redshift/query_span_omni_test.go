@@ -108,6 +108,17 @@ func TestRedshiftQuerySpanEntrypointDoesNotDependOnANTLR(t *testing.T) {
 	}
 }
 
+func TestRedshiftOmniQuerySpanUsesLazyRelationResolver(t *testing.T) {
+	content, err := os.ReadFile("query_span_extractor_omni.go")
+	require.NoError(t, err)
+	source := string(content)
+	require.Contains(t, source, "SetRelationResolver")
+	require.NotContains(t, source, "pendingOmniCatalogView")
+	require.NotContains(t, source, "buildOmniQuerySpanCatalog")
+	require.NotContains(t, source, "orderPendingOmniCatalogViews")
+	require.NotContains(t, source, "createQuerySpanViewDDL")
+}
+
 func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 	q := newOmniQuerySpanExtractor("db", []string{"public"}, redshiftOmniQuerySpanContext(t))
 
@@ -172,6 +183,11 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			want:      base.SelectInfoSchema,
 		},
 		{
+			name:      "desc table is information schema",
+			statement: "DESC TABLE orders;",
+			want:      base.SelectInfoSchema,
+		},
+		{
 			name:      "system table query is information schema",
 			statement: "SELECT oid FROM pg_class;",
 			want:      base.SelectInfoSchema,
@@ -202,6 +218,16 @@ func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("unload is dml export with inner sources", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "UNLOAD ('SELECT id FROM orders WHERE status = ''open''') TO 's3://bucket/out' IAM_ROLE DEFAULT;")
+		require.NoError(t, err)
+		require.NotNil(t, span)
+		require.Equal(t, base.DML, span.Type)
+		require.Empty(t, span.Results)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}}), span.SourceColumns)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "status"}}), span.PredicateColumns)
+	})
 }
 
 func TestRedshiftQuerySpanUsesOmniPath(t *testing.T) {
@@ -515,6 +541,135 @@ func TestRedshiftOmniQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "a_view"}}), span.SourceColumns)
 	})
 
+	t.Run("view definition resolves unqualified dependencies from view schema", func(t *testing.T) {
+		metadata := &storepb.DatabaseSchemaMetadata{
+			Name:       "db",
+			SearchPath: "analytics, public",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name:    "orders",
+							Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "int"}},
+						},
+					},
+					Views: []*storepb.ViewMetadata{
+						{
+							Name:       "unqualified_orders_view",
+							Definition: "CREATE VIEW public.unqualified_orders_view AS SELECT id FROM orders;",
+							Columns:    []*storepb.ColumnMetadata{{Name: "id", Type: "int"}},
+						},
+					},
+				},
+				{
+					Name: "analytics",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name: "orders",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "int"},
+								{Name: "event_id", Type: "int"},
+							},
+						},
+					},
+				},
+			},
+		}
+		getter, lister := redshiftMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+		localQ := newOmniQuerySpanExtractor("db", []string{"analytics", "public"}, base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+		})
+		span, err := localQ.getOmniQuerySpan(context.Background(), "SELECT id FROM unqualified_orders_view")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "unqualified_orders_view"}}), span.SourceColumns)
+	})
+
+	t.Run("full create view definition applies column aliases", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT order_id FROM aliased_orders")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "order_id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "aliased_orders"}}), span.SourceColumns)
+	})
+
+	t.Run("full create materialized view definition applies column aliases", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT order_id FROM aliased_orders_mv")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "order_id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "aliased_orders_mv"}}), span.SourceColumns)
+	})
+
+	t.Run("sql udf body contributes source columns", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT reporting_fn()")
+		require.NoError(t, err)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders"}}), span.SourceColumns)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "reporting_fn", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}})},
+		}, span.Results)
+	})
+
+	t.Run("schema qualified sql udf body contributes source columns", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT analytics.reporting_fn()")
+		require.NoError(t, err)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "analytics", Table: "events"}}), span.SourceColumns)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "reporting_fn", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "analytics", Table: "events", Column: "event_id"}})},
+		}, span.Results)
+	})
+
+	t.Run("sql udf body result sources propagate through cte", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "WITH c AS (SELECT reporting_fn() AS x) SELECT x FROM c")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "x", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+	})
+
+	t.Run("sql udf body result sources propagate through subquery", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT c.x FROM (SELECT reporting_fn() AS x) AS c")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "x", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+	})
+
+	t.Run("sql udf body missing relation returns not found span", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT stale_reporting_fn()")
+		require.NoError(t, err)
+		require.Error(t, span.NotFoundError)
+		require.ErrorContains(t, span.NotFoundError, "missing_orders")
+		require.Equal(t, base.Select, span.Type)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db"}}), span.SourceColumns)
+	})
+
+	t.Run("unsupported sql udf body returns function not supported span", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT unsupported_reporting_fn()")
+		require.NoError(t, err)
+		require.Error(t, span.FunctionNotSupportedError)
+		require.ErrorContains(t, span.FunctionNotSupportedError, "public.unsupported_reporting_fn")
+		require.Equal(t, base.Select, span.Type)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db"}}), span.SourceColumns)
+	})
+
+	t.Run("sequence read uses default sequence columns", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT last_value, log_cnt, is_called FROM order_id_seq")
+		require.NoError(t, err)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_id_seq"}}), span.SourceColumns)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "last_value", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_id_seq", Column: "last_value"}}), IsPlainField: true},
+			{Name: "log_cnt", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_id_seq", Column: "log_cnt"}}), IsPlainField: true},
+			{Name: "is_called", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_id_seq", Column: "is_called"}}), IsPlainField: true},
+		}, span.Results)
+	})
+
 	t.Run("view fallback uses declared columns when definition is missing", func(t *testing.T) {
 		span, err := q.getOmniQuerySpan(context.Background(), "SELECT id, amount FROM fallback_view")
 		require.NoError(t, err)
@@ -631,11 +786,44 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 							{Name: "id", Type: "int"},
 						},
 					},
+					{
+						Name:       "aliased_orders",
+						Definition: "CREATE VIEW public.aliased_orders(order_id) AS SELECT id FROM public.orders;",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "order_id", Type: "int"},
+						},
+					},
 				},
 				MaterializedViews: []*storepb.MaterializedViewMetadata{
 					{
 						Name:       "order_totals_mv",
 						Definition: "CREATE MATERIALIZED VIEW public.order_totals_mv AS SELECT customer_id, SUM(amount) AS total_amount FROM public.orders GROUP BY customer_id;",
+					},
+					{
+						Name:       "aliased_orders_mv",
+						Definition: "CREATE MATERIALIZED VIEW public.aliased_orders_mv(order_id) AS SELECT id FROM public.orders;",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "reporting_fn",
+						Definition: "CREATE FUNCTION public.reporting_fn() RETURNS int STABLE AS $$ SELECT id FROM public.orders $$ LANGUAGE SQL;",
+						Signature:  "reporting_fn()",
+					},
+					{
+						Name:       "stale_reporting_fn",
+						Definition: "CREATE FUNCTION public.stale_reporting_fn() RETURNS int STABLE AS $$ SELECT id FROM public.missing_orders $$ LANGUAGE SQL;",
+						Signature:  "stale_reporting_fn()",
+					},
+					{
+						Name:       "unsupported_reporting_fn",
+						Definition: "CREATE FUNCTION public.unsupported_reporting_fn() RETURNS int STABLE AS $$ BEGIN RETURN 1; END; $$ LANGUAGE plpgsql;",
+						Signature:  "unsupported_reporting_fn()",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "order_id_seq",
 					},
 				},
 			},
@@ -648,6 +836,13 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 							{Name: "event_id", Type: "int"},
 							{Name: "order_id", Type: "int"},
 						},
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "reporting_fn",
+						Definition: "CREATE FUNCTION analytics.reporting_fn() RETURNS int STABLE AS $$ SELECT event_id FROM analytics.events $$ LANGUAGE SQL;",
+						Signature:  "reporting_fn()",
 					},
 				},
 			},
