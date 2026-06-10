@@ -4,15 +4,14 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -36,32 +35,25 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	rule := NewTableRequirePkRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.checkStatement(node, stmt.Text)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // TableRequirePkRule checks for table require primary key.
 type TableRequirePkRule struct {
 	BaseRule
-	currentConstraintAction currentConstraintAction
-	// currentNormalizedTableName is the current table name, and it is normalized.
-	// It should be set then entering create_table, alter_table and so on,
-	// and should be reset then exiting them.
-	currentNormalizedTableName string
 
 	// tableHasPrimaryKey is a map of normalized table name to whether the table has primary key.
 	tableHasPrimaryKey map[string]bool
@@ -71,6 +63,10 @@ type TableRequirePkRule struct {
 	// tableLine is a map of normalized table name to the line number of the table.
 	// The key of the tableLine is the superset of the key of the tableHasPrimaryKey.
 	tableLine map[string]int
+
+	// stmtText is the SQL text of the statement currently being checked; node
+	// Loc offsets are relative to it.
+	stmtText string
 }
 
 // NewTableRequirePkRule creates a new TableRequirePkRule.
@@ -80,11 +76,9 @@ func NewTableRequirePkRule(level storepb.Advice_Status, title string) *TableRequ
 			level: level,
 			title: title,
 		},
-		currentConstraintAction:    currentConstraintActionNone,
-		currentNormalizedTableName: "",
-		tableHasPrimaryKey:         make(map[string]bool),
-		tableOriginalName:          make(map[string]string),
-		tableLine:                  make(map[string]int),
+		tableHasPrimaryKey: make(map[string]bool),
+		tableOriginalName:  make(map[string]string),
+		tableLine:          make(map[string]int),
 	}
 }
 
@@ -93,47 +87,12 @@ func (*TableRequirePkRule) Name() string {
 	return "TableRequirePkRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableRequirePkRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeDropTable:
-		r.enterDropTable(ctx.(*parser.Drop_tableContext))
-	case NodeTypeInlineConstraint:
-		r.enterInlineConstraint(ctx.(*parser.Inline_constraintContext))
-	case NodeTypeOutOfLineConstraint:
-		r.enterOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
-	case "Constraint_action":
-		r.enterConstraintAction(ctx.(*parser.Constraint_actionContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *TableRequirePkRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable()
-	case NodeTypeAlterTable:
-		r.exitAlterTable()
-	default:
-		// Other node types
-	}
-	return nil
-}
-
 // GetAdviceList returns the accumulated advice list, generating final advice for tables without PK.
 func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 	for tableName, has := range r.tableHasPrimaryKey {
 		if !has {
-			// Directly append to adviceList instead of using AddAdvice because
-			// tableLine already stores absolute line numbers (baseLine + line at time of encounter).
-			// Using AddAdvice would incorrectly add the current baseLine again.
+			// tableLine already stores absolute line numbers (baseLine + line at
+			// time of encounter), so append directly without re-adding baseLine.
 			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:        r.level,
 				Code:          code.TableNoPK.Int32(),
@@ -146,82 +105,129 @@ func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 	return r.adviceList
 }
 
-func (r *TableRequirePkRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeSnowSQLObjectName(originalTableName, "", "PUBLIC")
-
-	r.tableHasPrimaryKey[normalizedTableName] = false
-	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
-	r.tableLine[normalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
-	r.currentNormalizedTableName = normalizedTableName
-	r.currentConstraintAction = currentConstraintActionAdd
+// checkStatement checks one statement's omni AST node.
+func (r *TableRequirePkRule) checkStatement(node omniast.Node, stmtText string) {
+	r.stmtText = stmtText
+	switch n := node.(type) {
+	case *omniast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *omniast.DropStmt:
+		r.checkDropStmt(n)
+	case *omniast.AlterTableStmt:
+		r.checkAlterTable(n)
+	default:
+	}
 }
 
-func (r *TableRequirePkRule) enterDropTable(ctx *parser.Drop_tableContext) {
-	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeSnowSQLObjectName(originalTableName, "", "PUBLIC")
+func (r *TableRequirePkRule) checkCreateTable(stmt *omniast.CreateTableStmt) {
+	// The legacy advisor only fired on plain CREATE TABLE (the Create_table
+	// context); CREATE TABLE ... AS SELECT / LIKE / CLONE parsed as different
+	// contexts and were never checked.
+	if stmt.AsSelect != nil || stmt.Like != nil || stmt.Clone != nil {
+		return
+	}
+
+	normalizedTableName := r.normalizedTableName(stmt.Name)
+
+	r.tableHasPrimaryKey[normalizedTableName] = false
+	r.tableOriginalName[normalizedTableName] = stmt.Name.String()
+	r.tableLine[normalizedTableName] = r.baseLine + r.line(stmt.Loc.Start)
+
+	for _, column := range stmt.Columns {
+		if column.InlineConstraint != nil && column.InlineConstraint.Type == omniast.ConstrPrimaryKey {
+			r.tableHasPrimaryKey[normalizedTableName] = true
+		}
+	}
+	for _, constraint := range stmt.Constraints {
+		if constraint.Type == omniast.ConstrPrimaryKey {
+			r.tableHasPrimaryKey[normalizedTableName] = true
+		}
+	}
+}
+
+func (r *TableRequirePkRule) checkDropStmt(stmt *omniast.DropStmt) {
+	if stmt.Kind != omniast.DropTable {
+		return
+	}
+	normalizedTableName := r.normalizedTableName(stmt.Name)
 
 	delete(r.tableHasPrimaryKey, normalizedTableName)
 	delete(r.tableOriginalName, normalizedTableName)
 	delete(r.tableLine, normalizedTableName)
 }
 
-func (r *TableRequirePkRule) exitCreateTable() {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
-}
-
-func (r *TableRequirePkRule) enterInlineConstraint(ctx *parser.Inline_constraintContext) {
-	if ctx.Primary_key() == nil || r.currentNormalizedTableName == "" {
+func (r *TableRequirePkRule) checkAlterTable(stmt *omniast.AlterTableStmt) {
+	// The legacy advisor only tracked ALTER TABLE statements with a constraint
+	// action (ADD/DROP/RENAME CONSTRAINT); column actions were ignored.
+	if !alterTableHasConstraintActionForPk(stmt) {
 		return
 	}
-	r.tableHasPrimaryKey[r.currentNormalizedTableName] = true
-}
 
-func (r *TableRequirePkRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	if ctx.Primary_key() == nil || r.currentNormalizedTableName == "" || r.currentConstraintAction == currentConstraintActionNone {
-		return
-	}
-	switch r.currentConstraintAction {
-	case currentConstraintActionAdd:
-		r.tableHasPrimaryKey[r.currentNormalizedTableName] = true
-	case currentConstraintActionDrop:
-		r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
-		r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
-	default:
-		// No action for other constraint actions
-	}
-}
+	normalizedTableName := r.normalizedTableName(stmt.Name)
+	r.tableOriginalName[normalizedTableName] = stmt.Name.String()
 
-func (r *TableRequirePkRule) enterConstraintAction(ctx *parser.Constraint_actionContext) {
-	if r.currentNormalizedTableName == "" {
-		return
-	}
-	if ctx.DROP() != nil && (ctx.Primary_key() != nil || ctx.PRIMARY() != nil) {
-		if _, ok := r.tableHasPrimaryKey[r.currentNormalizedTableName]; ok {
-			r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
-			r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
+	for _, action := range stmt.Actions {
+		switch action.Kind {
+		case omniast.AlterTableAddConstraint:
+			if action.Constraint != nil && action.Constraint.Type == omniast.ConstrPrimaryKey {
+				r.tableHasPrimaryKey[normalizedTableName] = true
+			}
+		case omniast.AlterTableDropConstraint:
+			// Only an explicit DROP PRIMARY KEY flips the flag; DROP CONSTRAINT
+			// <name> does not reveal the constraint type, matching the legacy
+			// advisor.
+			if action.IsPrimaryKey {
+				if _, ok := r.tableHasPrimaryKey[normalizedTableName]; ok {
+					r.tableHasPrimaryKey[normalizedTableName] = false
+					r.tableLine[normalizedTableName] = r.baseLine + r.line(action.Loc.Start)
+				}
+			}
+		default:
 		}
-		return
-	}
-	if ctx.ADD() != nil {
-		r.currentConstraintAction = currentConstraintActionAdd
-		return
 	}
 }
 
-func (r *TableRequirePkRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	if ctx.Constraint_action() == nil {
-		return
+func alterTableHasConstraintActionForPk(stmt *omniast.AlterTableStmt) bool {
+	for _, action := range stmt.Actions {
+		switch action.Kind {
+		case omniast.AlterTableAddConstraint, omniast.AlterTableDropConstraint, omniast.AlterTableRenameConstraint:
+			return true
+		default:
+		}
 	}
-	originalTableName := ctx.Object_name(0)
-	normalizedTableName := snowsqlparser.NormalizeSnowSQLObjectName(originalTableName, "", "PUBLIC")
-
-	r.currentNormalizedTableName = normalizedTableName
-	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
+	return false
 }
 
-func (r *TableRequirePkRule) exitAlterTable() {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
+// normalizedTableName normalizes an object name into the same
+// "database.schema.table" key the legacy advisor produced via
+// NormalizeSnowSQLObjectName(name, "", "PUBLIC").
+func (*TableRequirePkRule) normalizedTableName(name *omniast.ObjectName) string {
+	if name == nil {
+		return ""
+	}
+	database := ""
+	if d := name.Database.Normalize(); d != "" {
+		database = d
+	}
+	schema := "PUBLIC"
+	if s := name.Schema.Normalize(); s != "" {
+		schema = s
+	}
+	parts := []string{database, schema}
+	if o := name.Name.Normalize(); o != "" {
+		parts = append(parts, o)
+	}
+	return strings.Join(parts, ".")
+}
+
+// line converts a byte offset within the current statement text to a 1-based
+// line number, mirroring the ANTLR token line the legacy advisor reported.
+func (r *TableRequirePkRule) line(offset int) int {
+	if offset < 0 {
+		return 1
+	}
+	if offset > len(r.stmtText) {
+		offset = len(r.stmtText)
+	}
+	return 1 + strings.Count(r.stmtText[:offset], "\n")
 }

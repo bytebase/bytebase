@@ -4,15 +4,14 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -36,41 +35,38 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.checkStatement(node, stmt.Text)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // TableNoForeignKeyRule checks for table disallow foreign key.
 type TableNoForeignKeyRule struct {
 	BaseRule
-	currentConstraintAction currentConstraintAction
-	// currentNormalizedTableName is the current table name, and it is normalized.
-	// It should be set then entering create_table, alter_table and so on,
-	// and should be reset then exiting them.
-	currentNormalizedTableName string
 
 	// tableForeignKeyTimes is a map of normalized table name to the times of FOREIGN KEY.
 	tableForeignKeyTimes map[string]int
 	// tableOriginalName is a map of normalized table name to original table name.
-	// The key of the tableOriginalName is the superset of the key of the tableHasForeignKey.
+	// The key of the tableOriginalName is the superset of the key of the tableForeignKeyTimes.
 	tableOriginalName map[string]string
 	// tableLine is a map of normalized table name to the line number of the table.
-	// The key of the tableLine is the superset of the key of the tableHasForeignKey.
+	// The key of the tableLine is the superset of the key of the tableForeignKeyTimes.
 	tableLine map[string]int
+
+	// stmtText is the SQL text of the statement currently being checked; node
+	// Loc offsets are relative to it.
+	stmtText string
 }
 
 // NewTableNoForeignKeyRule creates a new TableNoForeignKeyRule.
@@ -80,49 +76,15 @@ func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string) *TableN
 			level: level,
 			title: title,
 		},
-		currentConstraintAction:    currentConstraintActionNone,
-		currentNormalizedTableName: "",
-		tableForeignKeyTimes:       make(map[string]int),
-		tableOriginalName:          make(map[string]string),
-		tableLine:                  make(map[string]int),
+		tableForeignKeyTimes: make(map[string]int),
+		tableOriginalName:    make(map[string]string),
+		tableLine:            make(map[string]int),
 	}
 }
 
 // Name returns the rule name.
 func (*TableNoForeignKeyRule) Name() string {
 	return "TableNoForeignKeyRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeInlineConstraint:
-		r.enterInlineConstraint(ctx.(*parser.Inline_constraintContext))
-	case NodeTypeOutOfLineConstraint:
-		r.enterOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
-	case "Constraint_action":
-		r.enterConstraintAction(ctx.(*parser.Constraint_actionContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *TableNoForeignKeyRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable()
-	case NodeTypeAlterTable:
-		r.exitAlterTable()
-	default:
-		// Ignore other node types
-	}
-	return nil
 }
 
 // GetAdviceList returns the accumulated advice list, generating final advice for tables with FK.
@@ -141,74 +103,120 @@ func (r *TableNoForeignKeyRule) GetAdviceList() []*storepb.Advice {
 	return r.adviceList
 }
 
-func (r *TableNoForeignKeyRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	originalTableName := ctx.Object_name()
-	normalizedTableName := snowsqlparser.NormalizeSnowSQLObjectName(originalTableName, "", "PUBLIC")
+// checkStatement checks one statement's omni AST node.
+func (r *TableNoForeignKeyRule) checkStatement(node omniast.Node, stmtText string) {
+	r.stmtText = stmtText
+	switch n := node.(type) {
+	case *omniast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *omniast.AlterTableStmt:
+		r.checkAlterTable(n)
+	default:
+	}
+}
+
+func (r *TableNoForeignKeyRule) checkCreateTable(stmt *omniast.CreateTableStmt) {
+	// The legacy advisor only fired on plain CREATE TABLE (the Create_table
+	// context); CREATE TABLE ... AS SELECT / LIKE / CLONE parsed as different
+	// contexts and were never checked.
+	if stmt.AsSelect != nil || stmt.Like != nil || stmt.Clone != nil {
+		return
+	}
+
+	normalizedTableName := r.normalizedTableName(stmt.Name)
 
 	r.tableForeignKeyTimes[normalizedTableName] = 0
-	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
-	r.tableLine[normalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
-	r.currentNormalizedTableName = normalizedTableName
-	r.currentConstraintAction = currentConstraintActionAdd
-}
+	r.tableOriginalName[normalizedTableName] = stmt.Name.String()
+	r.tableLine[normalizedTableName] = r.baseLine + r.line(stmt.Loc.Start)
 
-func (r *TableNoForeignKeyRule) exitCreateTable() {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
-}
-
-func (r *TableNoForeignKeyRule) enterInlineConstraint(ctx *parser.Inline_constraintContext) {
-	if ctx.REFERENCES() == nil || r.currentNormalizedTableName == "" {
-		return
-	}
-	r.tableForeignKeyTimes[r.currentNormalizedTableName]++
-}
-
-func (r *TableNoForeignKeyRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	if ctx.REFERENCES() == nil || r.currentNormalizedTableName == "" || r.currentConstraintAction == currentConstraintActionNone {
-		return
-	}
-	switch r.currentConstraintAction {
-	case currentConstraintActionAdd:
-		r.tableForeignKeyTimes[r.currentNormalizedTableName]++
-		r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
-	case currentConstraintActionDrop:
-		if times, ok := r.tableForeignKeyTimes[r.currentNormalizedTableName]; ok && times > 0 {
-			r.tableForeignKeyTimes[r.currentNormalizedTableName]--
+	// Inline REFERENCES constraints count but keep the table line.
+	for _, column := range stmt.Columns {
+		if column.InlineConstraint != nil && column.InlineConstraint.Type == omniast.ConstrForeignKey {
+			r.tableForeignKeyTimes[normalizedTableName]++
 		}
-	default:
-		// Other constraint actions
 	}
-}
-
-func (r *TableNoForeignKeyRule) enterConstraintAction(ctx *parser.Constraint_actionContext) {
-	if r.currentNormalizedTableName == "" {
-		return
-	}
-	if ctx.DROP() != nil && ctx.Foreign_key() != nil {
-		if times, ok := r.tableForeignKeyTimes[r.currentNormalizedTableName]; ok && times > 0 {
-			r.tableForeignKeyTimes[r.currentNormalizedTableName]--
+	// Out-of-line FOREIGN KEY constraints count and move the line to the
+	// constraint, matching the legacy advisor.
+	for _, constraint := range stmt.Constraints {
+		if constraint.Type == omniast.ConstrForeignKey {
+			r.tableForeignKeyTimes[normalizedTableName]++
+			r.tableLine[normalizedTableName] = r.baseLine + r.line(constraint.Loc.Start)
 		}
-		return
-	}
-	if ctx.ADD() != nil {
-		r.currentConstraintAction = currentConstraintActionAdd
-		return
 	}
 }
 
-func (r *TableNoForeignKeyRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	if ctx.Constraint_action() == nil {
+func (r *TableNoForeignKeyRule) checkAlterTable(stmt *omniast.AlterTableStmt) {
+	// The legacy advisor only tracked ALTER TABLE statements with a constraint
+	// action (ADD/DROP/RENAME CONSTRAINT); column actions were ignored.
+	if !alterTableHasConstraintActionForFk(stmt) {
 		return
 	}
-	originalTableName := ctx.Object_name(0)
-	normalizedTableName := snowsqlparser.NormalizeSnowSQLObjectName(originalTableName, "", "PUBLIC")
 
-	r.currentNormalizedTableName = normalizedTableName
-	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
+	normalizedTableName := r.normalizedTableName(stmt.Name)
+	r.tableOriginalName[normalizedTableName] = stmt.Name.String()
+
+	for _, action := range stmt.Actions {
+		switch action.Kind {
+		case omniast.AlterTableAddConstraint:
+			if action.Constraint != nil && action.Constraint.Type == omniast.ConstrForeignKey {
+				r.tableForeignKeyTimes[normalizedTableName]++
+				r.tableLine[normalizedTableName] = r.baseLine + r.line(action.Constraint.Loc.Start)
+			}
+		case omniast.AlterTableDropConstraint:
+			// Only an explicit DROP FOREIGN KEY decrements; DROP CONSTRAINT
+			// <name> does not reveal the constraint type, matching the legacy
+			// advisor.
+			if action.DropForeignKey {
+				if times, ok := r.tableForeignKeyTimes[normalizedTableName]; ok && times > 0 {
+					r.tableForeignKeyTimes[normalizedTableName]--
+				}
+			}
+		default:
+		}
+	}
 }
 
-func (r *TableNoForeignKeyRule) exitAlterTable() {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
+func alterTableHasConstraintActionForFk(stmt *omniast.AlterTableStmt) bool {
+	for _, action := range stmt.Actions {
+		switch action.Kind {
+		case omniast.AlterTableAddConstraint, omniast.AlterTableDropConstraint, omniast.AlterTableRenameConstraint:
+			return true
+		default:
+		}
+	}
+	return false
+}
+
+// normalizedTableName normalizes an object name into the same
+// "database.schema.table" key the legacy advisor produced via
+// NormalizeSnowSQLObjectName(name, "", "PUBLIC").
+func (*TableNoForeignKeyRule) normalizedTableName(name *omniast.ObjectName) string {
+	if name == nil {
+		return ""
+	}
+	database := ""
+	if d := name.Database.Normalize(); d != "" {
+		database = d
+	}
+	schema := "PUBLIC"
+	if s := name.Schema.Normalize(); s != "" {
+		schema = s
+	}
+	parts := []string{database, schema}
+	if o := name.Name.Normalize(); o != "" {
+		parts = append(parts, o)
+	}
+	return strings.Join(parts, ".")
+}
+
+// line converts a byte offset within the current statement text to a 1-based
+// line number, mirroring the ANTLR token line the legacy advisor reported.
+func (r *TableNoForeignKeyRule) line(offset int) int {
+	if offset < 0 {
+		return 1
+	}
+	if offset > len(r.stmtText) {
+		offset = len(r.stmtText)
+	}
+	return 1 + strings.Count(r.stmtText[:offset], "\n")
 }
