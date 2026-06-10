@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
 import { authServiceClientConnect } from "@/connect";
+import { AuthDivider } from "@/react/components/auth/AuthDivider";
 import { UserPasswordFields } from "@/react/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/react/components/auth/userPasswordValidation";
 import { RouterLink } from "@/react/components/RouterLink";
@@ -244,22 +245,14 @@ export function PasswordResetPage() {
       </div>
 
       {codeMode && (
-        <div className="mt-6 relative">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 flex items-center"
+        <AuthDivider className="mt-6">
+          <RouterLink
+            to={{ name: AUTH_SIGNIN_MODULE }}
+            className="accent-link bg-white px-2"
           >
-            <div className="w-full border-t border-control-border" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <RouterLink
-              to={{ name: AUTH_SIGNIN_MODULE }}
-              className="accent-link bg-white px-2"
-            >
-              {t("auth.password-forget.return-to-sign-in")}
-            </RouterLink>
-          </div>
-        </div>
+            {t("auth.password-forget.return-to-sign-in")}
+          </RouterLink>
+        </AuthDivider>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
 import { authServiceClientConnect } from "@/connect";
+import { AuthDivider } from "@/react/components/auth/AuthDivider";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -121,22 +122,17 @@ export function PasswordForgotPage() {
         </div>
       </div>
 
-      <div className="mt-6 relative">
-        <div aria-hidden="true" className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-control-border" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <RouterLink
-            to={{
-              name: AUTH_SIGNIN_MODULE,
-              query: router.currentRoute.value.query,
-            }}
-            className="accent-link bg-white px-2"
-          >
-            {t("auth.password-forget.return-to-sign-in")}
-          </RouterLink>
-        </div>
-      </div>
+      <AuthDivider className="mt-6">
+        <RouterLink
+          to={{
+            name: AUTH_SIGNIN_MODULE,
+            query: router.currentRoute.value.query,
+          }}
+          className="accent-link bg-white px-2"
+        >
+          {t("auth.password-forget.return-to-sign-in")}
+        </RouterLink>
+      </AuthDivider>
     </div>
   );
 }

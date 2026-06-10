@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { AuthDivider } from "@/react/components/auth/AuthDivider";
 import { AuthFooter } from "@/react/components/auth/AuthFooter";
 import { EmailCodeSigninForm } from "@/react/components/auth/EmailCodeSigninForm";
+import { IdpBrandIcon } from "@/react/components/auth/IdpBrandIcon";
 import { PasswordSigninForm } from "@/react/components/auth/PasswordSigninForm";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { RouterLink } from "@/react/components/RouterLink";
@@ -62,11 +64,6 @@ export function SigninPage(props: SigninPageProps) {
   const groupedIdps = identityProviders.filter(
     (idp) => idp.type === IdentityProviderType.LDAP
   );
-
-  const showSignInForm =
-    !serverInfo?.restriction?.disallowPasswordSignin ||
-    groupedIdps.length > 0 ||
-    serverInfo?.restriction?.allowEmailCodeSignin;
 
   const defaultTab = (() => {
     if (serverInfo?.restriction?.allowEmailCodeSignin) return "email-code";
@@ -163,116 +160,163 @@ export function SigninPage(props: SigninPageProps) {
     );
   }
 
+  const methods: {
+    value: string;
+    label: string;
+    panel: React.ReactNode;
+  }[] = [];
+  if (!serverInfo?.restriction?.disallowPasswordSignin) {
+    methods.push({
+      value: "standard",
+      label: t("auth.sign-in.standard-tab"),
+      panel: (
+        <>
+          <PasswordSigninForm loading={isLoading} onSignin={trySignin} />
+          {!disallowSignup && (
+            <div className="mt-3 flex justify-center items-center text-sm text-control gap-x-2">
+              <span>{t("auth.sign-in.new-user")}</span>
+              <RouterLink
+                to={{
+                  name: AUTH_SIGNUP_MODULE,
+                  query,
+                }}
+                className="accent-link"
+              >
+                {t("common.sign-up")}
+              </RouterLink>
+            </div>
+          )}
+        </>
+      ),
+    });
+  }
+  if (serverInfo?.restriction?.allowEmailCodeSignin) {
+    methods.push({
+      value: "email-code",
+      label: t("auth.sign-in.email-code-tab"),
+      panel: <EmailCodeSigninForm loading={isLoading} onSignin={trySignin} />,
+    });
+  }
+  for (const idp of groupedIdps) {
+    methods.push({
+      value: idp.name,
+      label: idp.title,
+      panel: (
+        <PasswordSigninForm
+          loading={isLoading}
+          showForgotPassword={false}
+          credentialLabel={t("common.username")}
+          credentialPlaceholder="jim"
+          credentialInputType="text"
+          credentialAutocomplete="username"
+          onSignin={(req) => trySignin({ ...req, idpName: idp.name })}
+        />
+      ),
+    });
+  }
+
+  // The email-code flow signs an unknown email up on the spot, so the page
+  // doubles as the signup surface — the copy and the terms line reflect that.
+  // On SaaS the restriction reports disallowSignup=true, but that flag only
+  // gates the password Signup RPC, not email-code onboarding.
+  const combinedSignupSurface =
+    methods.length === 1 &&
+    methods[0].value === "email-code" &&
+    allowSignupProp &&
+    (isSaaSMode || !serverInfo?.restriction?.disallowSignup);
+
   return (
     <>
       <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
-        <BytebaseLogo className="mx-auto mb-8" />
+        <BytebaseLogo className="mx-auto mb-2" />
+        <p className="mb-8 text-center text-sm text-control">
+          {combinedSignupSurface
+            ? t("auth.sign-in.sign-in-or-create")
+            : t("auth.sign-in.sign-in-to-account")}
+        </p>
 
         {invitedEmail && (
           <Alert
             variant="info"
-            className="mb-4 mt-4"
+            className="mb-4"
             description={t("auth.sign-in.invited-email", {
               email: invitedEmail,
             })}
           />
         )}
 
-        {showSignInForm && (
+        {separatedIdps.length > 0 && (
+          <div className="flex flex-col gap-y-2">
+            {separatedIdps.map((idp) => (
+              <Button
+                key={idp.name}
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={() => trySigninWithIdp(idp)}
+              >
+                <IdpBrandIcon idp={idp} className="size-4 shrink-0" />
+                {t("auth.sign-in.continue-with-idp", { idp: idp.title })}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {separatedIdps.length > 0 && methods.length > 0 && (
+          <AuthDivider className="my-4">
+            <span className="px-2 bg-white text-control">{t("common.or")}</span>
+          </AuthDivider>
+        )}
+
+        {methods.length === 1 ? (
+          methods[0].panel
+        ) : methods.length > 1 ? (
           <div className="rounded-sm border border-control-border bg-white p-4">
             <Tabs defaultValue={defaultTab}>
               <TabsList>
-                {!serverInfo?.restriction?.disallowPasswordSignin && (
-                  <TabsTrigger value="standard">Standard</TabsTrigger>
-                )}
-                {serverInfo?.restriction?.allowEmailCodeSignin && (
-                  <TabsTrigger value="email-code">
-                    {t("auth.sign-in.email-code-tab")}
-                  </TabsTrigger>
-                )}
-                {groupedIdps.map((idp) => (
-                  <TabsTrigger key={idp.name} value={idp.name}>
-                    {idp.title}
+                {methods.map((method) => (
+                  <TabsTrigger key={method.value} value={method.value}>
+                    {method.label}
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {!serverInfo?.restriction?.disallowPasswordSignin && (
-                <TabsPanel value="standard" className="pt-3">
-                  <PasswordSigninForm
-                    loading={isLoading}
-                    onSignin={trySignin}
-                  />
-                  {!disallowSignup && (
-                    <div className="mt-3 flex justify-center items-center text-sm text-control gap-x-2">
-                      <span>{t("auth.sign-in.new-user")}</span>
-                      <RouterLink
-                        to={{
-                          name: AUTH_SIGNUP_MODULE,
-                          query,
-                        }}
-                        className="accent-link"
-                      >
-                        {t("common.sign-up")}
-                      </RouterLink>
-                    </div>
-                  )}
-                </TabsPanel>
-              )}
-              {serverInfo?.restriction?.allowEmailCodeSignin && (
-                <TabsPanel value="email-code" className="pt-3">
-                  <EmailCodeSigninForm
-                    loading={isLoading}
-                    onSignin={trySignin}
-                  />
-                </TabsPanel>
-              )}
-              {groupedIdps.map((idp) => (
-                <TabsPanel key={idp.name} value={idp.name} className="pt-3">
-                  <PasswordSigninForm
-                    loading={isLoading}
-                    showForgotPassword={false}
-                    credentialLabel={t("common.username")}
-                    credentialPlaceholder="jim"
-                    credentialInputType="text"
-                    credentialAutocomplete="username"
-                    onSignin={(req) => trySignin({ ...req, idpName: idp.name })}
-                  />
+              {methods.map((method) => (
+                <TabsPanel
+                  key={method.value}
+                  value={method.value}
+                  className="pt-3"
+                >
+                  {method.panel}
                 </TabsPanel>
               ))}
             </Tabs>
           </div>
-        )}
+        ) : null}
 
-        {separatedIdps.length > 0 && (
-          <div className="mb-3 px-1">
-            {showSignInForm && (
-              <div className="relative my-4">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 flex items-center"
-                >
-                  <div className="w-full border-t border-control-border" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-control">
-                    {t("common.or")}
-                  </span>
-                </div>
-              </div>
-            )}
-            {separatedIdps.map((idp) => (
-              <div key={idp.name} className="w-full mb-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full"
-                  onClick={() => trySigninWithIdp(idp)}
-                >
-                  {t("auth.sign-in.sign-in-with-idp", { idp: idp.title })}
-                </Button>
-              </div>
-            ))}
-          </div>
+        {isSaaSMode && combinedSignupSurface && (
+          <p className="mt-6 text-center text-xs text-control-light leading-5">
+            <Trans
+              i18nKey="auth.sign-in.tos"
+              components={{
+                terms: (
+                  <a
+                    href="https://www.bytebase.com/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-control"
+                  />
+                ),
+                privacy: (
+                  <a
+                    href="https://www.bytebase.com/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-control"
+                  />
+                ),
+              }}
+            />
+          </p>
         )}
       </div>
 

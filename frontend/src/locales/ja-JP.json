@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "{{email}} に認証コードを送信しました。",
+      "continue-with-email": "メールで続行",
+      "continue-with-idp": "{{idp}} で続行",
       "email-code-tab": "メール認証コード",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
@@ -150,8 +152,10 @@
       "new-user": "Bytebase を初めて使用しますか?",
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",
-      "send-code": "コードを送信",
-      "sign-in-with-idp": "{{idp}} 経由でログイン",
+      "sign-in-or-create": "ログインまたはアカウントを作成",
+      "sign-in-to-account": "アカウントにログイン",
+      "standard-tab": "標準",
+      "tos": "続行すると、<terms>利用規約</terms>および<privacy>プライバシーポリシー</privacy>に同意したものとみなされます。",
       "verification-code": "認証コード"
     },
     "sign-up": {

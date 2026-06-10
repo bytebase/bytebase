@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
+      "continue-with-email": "Tiếp tục bằng email",
+      "continue-with-idp": "Tiếp tục bằng {{idp}}",
       "email-code-tab": "Mã qua email",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
@@ -150,8 +152,10 @@
       "new-user": "Mới sử dụng Bytebase?",
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",
-      "send-code": "Gửi mã",
-      "sign-in-with-idp": "Đăng nhập bằng {{idp}}",
+      "sign-in-or-create": "Đăng nhập hoặc tạo tài khoản của bạn",
+      "sign-in-to-account": "Đăng nhập vào tài khoản của bạn",
+      "standard-tab": "Tiêu chuẩn",
+      "tos": "Bằng cách tiếp tục, bạn đồng ý với <terms>Điều khoản dịch vụ</terms> và <privacy>Chính sách quyền riêng tư</privacy> của chúng tôi.",
       "verification-code": "Mã xác minh"
     },
     "sign-up": {
