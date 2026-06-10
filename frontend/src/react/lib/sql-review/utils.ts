@@ -1,9 +1,16 @@
+import i18n from "@/react/i18n";
 import type {
   RuleConfigComponent,
+  RuleMapValidationError,
   RuleTemplateV2,
   SQLReviewPolicy,
 } from "@/types";
-import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
+import {
+  convertPolicyRuleToRuleTemplate,
+  getRuleLocalization,
+  ruleTemplateMapV2,
+  ruleTypeToString,
+} from "@/types";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import type { PayloadValueType } from "./rule-config-types";
 
@@ -86,4 +93,20 @@ export const payloadValueListToComponentList = (
     },
     []
   );
+};
+
+export const getRuleMapValidationErrorTitle = (
+  error: RuleMapValidationError
+): string => {
+  if (error.type === "EMPTY_RULE_LIST") {
+    return i18n.t("sql-review.validation.rule-required");
+  }
+
+  const ruleTitle = getRuleLocalization(
+    ruleTypeToString(error.rule.type),
+    error.rule.engine
+  ).title;
+  return i18n.t("sql-review.validation.string-array-required", {
+    rule: ruleTitle,
+  });
 };

@@ -156,21 +156,25 @@ export function AttachResourcesPanel({
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const projectsByName = useAppStore((s) => s.projectsByName);
+  const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
 
   const environments = useAppStore((s) => s.environmentList) ?? [];
   const projects = useMemo(
     () =>
       Object.values(projectsByName).filter(
-        (project) => project.state === State.ACTIVE
+        (project) =>
+          project.state === State.ACTIVE && project.name !== defaultProject
       ),
-    [projectsByName]
+    [defaultProject, projectsByName]
   );
 
   const [resources, setResources] = useState<string[]>([]);
 
   // Fetch projects on mount so the checkbox list is populated
   useEffect(() => {
-    useAppStore.getState().fetchProjectList({});
+    useAppStore
+      .getState()
+      .fetchProjectList({ cache: true, filter: { excludeDefault: true } });
   }, []);
 
   useEffect(() => {

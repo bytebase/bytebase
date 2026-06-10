@@ -1,5 +1,5 @@
 import { CircleHelpIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -26,6 +26,7 @@ import {
   getRuleLocalization,
   getRuleLocalizationKey,
   ruleTypeToString,
+  validateRuleMapByEngine,
 } from "@/types/sqlReview";
 
 // ---- Types ----
@@ -124,6 +125,7 @@ interface RuleConfigProps {
   disabled: boolean;
   size: "small" | "medium";
   payloadRef?: React.MutableRefObject<PayloadValueType[]>;
+  onPayloadChange?: (payload: PayloadValueType[]) => void;
 }
 
 function configTitle(
@@ -147,6 +149,7 @@ export function RuleConfig({
   disabled,
   size,
   payloadRef,
+  onPayloadChange,
 }: RuleConfigProps) {
   const [payload, setPayload] = useState<PayloadValueType[]>(() =>
     getRulePayload(rule)
@@ -156,12 +159,13 @@ export function RuleConfig({
     setPayload(getRulePayload(rule));
   }, [rule.componentList]);
 
-  // Expose payload to parent via ref
+  // Expose payload to parent consumers that need to validate or submit it.
   useEffect(() => {
     if (payloadRef) {
       payloadRef.current = payload;
     }
-  }, [payload, payloadRef]);
+    onPayloadChange?.(payload);
+  }, [payload, payloadRef, onPayloadChange]);
 
   const updatePayload = (index: number, value: PayloadValueType) => {
     setPayload((prev) => {
@@ -373,17 +377,22 @@ export function RuleEditDialog({
 }: RuleEditDialogProps) {
   const { t } = useTranslation();
   const [level, setLevel] = useState(rule.level);
-  const payloadRef = useRef<PayloadValueType[]>(getRulePayload(rule));
+  const [payload, setPayload] = useState<PayloadValueType[]>(() =>
+    getRulePayload(rule)
+  );
   const localization = useMemo(
     () => getRuleLocalization(ruleTypeToString(rule.type), rule.engine),
     [rule.type, rule.engine]
   );
+  const componentList = useMemo(
+    () => payloadValueListToComponentList(rule, payload),
+    [rule, payload]
+  );
+  const validationError = validateRuleMapByEngine(
+    new Map([[rule.engine, new Map([[rule.type, { ...rule, componentList }]])]])
+  );
 
   const handleConfirm = () => {
-    const componentList = payloadValueListToComponentList(
-      rule,
-      payloadRef.current
-    );
     onUpdateRule({ level, componentList });
     onCancel();
   };
@@ -417,7 +426,7 @@ export function RuleEditDialog({
               rule={rule}
               disabled={disabled}
               size="medium"
-              payloadRef={payloadRef}
+              onPayloadChange={setPayload}
             />
           )}
 
@@ -425,7 +434,10 @@ export function RuleEditDialog({
             <Button variant="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
-            <Button disabled={disabled} onClick={handleConfirm}>
+            <Button
+              disabled={disabled || !!validationError}
+              onClick={handleConfirm}
+            >
               {t("common.update")}
             </Button>
           </div>

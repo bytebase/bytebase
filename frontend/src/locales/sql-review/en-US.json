@@ -712,5 +712,9 @@
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-sample": "Sample Template",
     "bb-sql-review-sample-desc": "A minimum template with DROP protection and disallow column nullable."
+  },
+  "validation": {
+    "rule-required": "Select at least one rule.",
+    "string-array-required": "Add at least one value for {{rule}}."
   }
 }
