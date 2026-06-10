@@ -70,8 +70,11 @@ the data-driven mechanism anyway, on top of two diverging sources of truth.
   localStorage via `safeRead`/`safeWrite`, workspace-scoped through
   `frontend/src/utils/storage-keys.ts`.
 - **Root container.** `<div className="sqleditor--wrapper …">` in
-  `SQLEditorHomePage.tsx:187` wraps the entire SQL Editor — the attach point for
-  scoped CSS-variable overrides.
+  `SQLEditorHomePage.tsx:187` wraps the editor body, but **not** everything: portaled
+  overlays (FAB/sidebar → `getLayerRoot("overlay")`) and `RequestDrawerHost`
+  (`SQLEditorLayout.tsx:62`, a sibling above the wrapper) render outside it. The scoped
+  CSS-variable attach point is therefore the **layout** (`SQLEditorLayout`), with
+  per-portal re-application (see Architecture §4 → Portals & sibling hosts).
 - **Admin (terminal) mode is a nested dark subtree, not whole-editor dark.** A tab's
   `mode` (`"WORKSHEET"` | `"ADMIN"`, in the tab store) drives `Panels.tsx:162` to swap
   the code panel between `StandardPanel` and `TerminalPanel`. Only `<TerminalPanel>`
@@ -196,10 +199,35 @@ A `<SQLEditorThemeScope theme={…}>` component does two things for whatever it 
    element. Because every SQL Editor component uses the semantic Tailwind classes,
    the subtree re-themes via CSS cascade.
 
-**Root scope.** Wrap `sqleditor--wrapper` (`SQLEditorHomePage.tsx:187`) in a
-`SQLEditorThemeScope` whose theme is the selected preset (from
-`useSQLEditorEditorStore.themeId`). The rest of Bytebase keeps the global `:root`
-values; only the SQL Editor subtree is re-themed.
+**Root scope.** Wrap the SQL Editor at the **layout level** — `SQLEditorLayout`,
+around both the route content (`SQLEditorRouteShell` → `SQLEditorHomePage`) **and**
+`RequestDrawerHost` (`SQLEditorLayout.tsx:62`) — in a `SQLEditorThemeScope` whose theme
+is the selected preset (from `useSQLEditorEditorStore.themeId`). The rest of Bytebase
+keeps the global `:root` values; only the SQL Editor subtree is re-themed. (An earlier
+draft scoped only `.sqleditor--wrapper`; that misses SQL-Editor UI rendered outside that
+subtree — see **Portals & sibling hosts** below.)
+
+**Portals & sibling hosts.** Scoped CSS variables re-theme via **DOM cascade**, but
+React portals mount their DOM elsewhere: **React context still propagates through a
+portal, CSS custom properties do not.** Several SQL-Editor surfaces render outside the
+chrome DOM subtree and would otherwise keep the global (light) `:root` tokens under a
+dark/named theme:
+
+- `SQLEditorHomePage` portals the mobile FAB and the sidebar overlay to
+  `getLayerRoot("overlay")` (`SQLEditorHomePage.tsx:160-182, 191-208`).
+- `AccessGrantRequestDrawer` (rendered by `RequestDrawerHost`, `RequestDrawerHost.tsx:74`)
+  is a `Sheet` that portals to the overlay layer **and** hosts its own `MonacoEditor`
+  (`AccessGrantRequestDrawer.tsx:262`).
+
+The layer roots are **app-global** (shared with the rest of Bytebase), so we cannot wrap
+them in a SQL-Editor-only scope. Instead, each portaled SQL-Editor surface re-applies the
+theme on its own container: wrap the portal's children in a nested `SQLEditorThemeScope`
+whose theme comes from `useSQLEditorTheme()` (read through the context that the portal
+preserves) so it re-writes the `--color-*` vars onto the portaled DOM. The request
+drawer, now under the layout-level root scope, reads the theme from context: its chrome
+re-applies vars via a scope on the `Sheet` content, and its Monaco reads the scope theme
+(`monacoThemeName(useSQLEditorTheme())`) like every other editor. No new global theming —
+only the specific SQL-Editor portal subtrees re-apply vars.
 
 **Nested admin scope.** Wrap `<TerminalPanel>`'s root div (`TerminalPanel.tsx:206`) in a
 nested `SQLEditorThemeScope` whose theme is the **resolved admin theme**:
@@ -318,11 +346,18 @@ change). Each label uses the preset's `name` i18n key; add a section label
 localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by──▶ QueryContextSettingPopover (Select)
                               │
                               ▼
-              Root SQLEditorThemeScope (selected preset)
-              · inline --color-* on .sqleditor--wrapper  → CSS cascade re-themes chrome
-              · provides theme via context
+              Root SQLEditorThemeScope at SQLEditorLayout (selected preset)
+              · inline --color-* on the layout container → CSS cascade re-themes chrome
+              · provides theme via context (reaches RequestDrawerHost + portals)
                               │
-        ┌─────────────────────┴───────────────────────────┐
+        ┌──────────────┬──────┴───────────────┬───────────────┐
+        ▼ (worksheet)  ▼ (admin tab)           ▼ (overlay portals / request drawer)
+                       │                       Nested SQLEditorThemeScope per portal
+                       │                       · context read via useSQLEditorTheme()
+                       │                       · re-applies --color-* on portaled DOM
+                       │                         (CSS vars don't cross portals)
+                       │                       · drawer Monaco → setTheme(bb-<selected>)
+        ┌──────────────┴───────────────────────────────────┐
         ▼ (worksheet tab)                                  ▼ (admin tab)
  StandardPanel Monaco                          Nested SQLEditorThemeScope
  reads context → setTheme(bb-<selected>)       theme = resolveAdminTheme(selected)
@@ -349,7 +384,10 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
   other five renders chrome + result grid + Monaco coherently (no un-themed islands,
   syntax colors match the named theme's identity). Admin mode: with a light theme
   selected, the terminal subtree is dark while chrome stays light; with a dark theme
-  selected, the terminal matches it. Checked through `pnpm --dir frontend dev`.
+  selected, the terminal matches it. With a non-light theme selected, also confirm the
+  **portaled** surfaces theme correctly: the mobile FAB + sidebar overlay, and the
+  access-request drawer (`AccessGrantRequestDrawer`) chrome **and** its Monaco editor —
+  none should fall back to light. Checked through `pnpm --dir frontend dev`.
 - Gates: `pnpm --dir frontend fix`, `check`, `type-check`, `test`.
 
 ## Risks
@@ -359,6 +397,13 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
   `dark:`, `-gray-`, `-zinc-`, `-slate-`, `bg-white`, `bg-black` under the SQL Editor
   tree after migration and confirming zero remain (excluding the admin terminal and
   the documented dynamic/animation cases).
+- **Portals break CSS-variable cascade.** Surfaces portaled to the app-global layer
+  roots (mobile FAB / sidebar overlay) and the `RequestDrawerHost` sibling (incl. its
+  Monaco) do not inherit the chrome scope's `--color-*` by DOM cascade. Mitigate by
+  raising the root scope to `SQLEditorLayout` (context reaches the drawer) and wrapping
+  each portal's children in a nested `SQLEditorThemeScope` that re-applies the vars (it
+  reads the theme via the context the portal preserves). Verify each portaled surface
+  under a dark/named theme; a missed portal renders light-on-dark.
 - **Removing the `dark` prop / nested admin scope.** `ResultView` is shared between
   worksheet and terminal; after dropping the prop it must read the theme from context.
   Verify: (a) worksheet result grid follows the selected theme, (b) terminal result grid
