@@ -107,6 +107,9 @@ beforeEach(async () => {
   mocks.login.mockResolvedValue(undefined);
   mocks.retrieveOAuthState.mockReset();
   mocks.clearOAuthState.mockReset();
+  // The module memoizes processed callbacks by state token for the lifetime of
+  // the page load (the module instance is cached across tests here), so every
+  // test must use a token unique to that test.
   ({ OAuthCallbackPage } = await import("./OAuthCallbackPage"));
 });
 
@@ -133,7 +136,7 @@ describe("OAuthCallbackPage", () => {
   });
 
   test("renders error when stored state not found", async () => {
-    mocks.currentRoute.value.query = { state: "xyz" };
+    mocks.currentRoute.value.query = { state: "expired-token" };
     mocks.retrieveOAuthState.mockReturnValue(null);
     const { container, render, unmount } = renderIntoContainer(
       <OAuthCallbackPage />
@@ -147,7 +150,7 @@ describe("OAuthCallbackPage", () => {
   });
 
   test("renders security-validation error and clears state when token mismatches", async () => {
-    mocks.currentRoute.value.query = { state: "xyz" };
+    mocks.currentRoute.value.query = { state: "mismatch-token" };
     mocks.retrieveOAuthState.mockReturnValue({
       token: "OTHER",
       event: "bb.oauth.signin.gh",
@@ -162,14 +165,14 @@ describe("OAuthCallbackPage", () => {
     expect(container.textContent).toContain(
       "auth.oauth-callback.security-failed"
     );
-    expect(mocks.clearOAuthState).toHaveBeenCalledWith("xyz");
+    expect(mocks.clearOAuthState).toHaveBeenCalledWith("mismatch-token");
     unmount();
   });
 
   test("redirect mode: valid signin event calls authStore.login with oauth2Context", async () => {
-    mocks.currentRoute.value.query = { state: "xyz", code: "abc" };
+    mocks.currentRoute.value.query = { state: "signin-token", code: "abc" };
     mocks.retrieveOAuthState.mockReturnValue({
-      token: "xyz",
+      token: "signin-token",
       event: "bb.oauth.signin.gh",
       idpType: IdentityProviderType.OAUTH2,
       popup: false,
@@ -199,9 +202,9 @@ describe("OAuthCallbackPage", () => {
   });
 
   test("redirect mode: OIDC event uses oidcContext", async () => {
-    mocks.currentRoute.value.query = { state: "xyz", code: "abc" };
+    mocks.currentRoute.value.query = { state: "oidc-token", code: "abc" };
     mocks.retrieveOAuthState.mockReturnValue({
-      token: "xyz",
+      token: "oidc-token",
       event: "bb.oauth.signin.okta",
       idpType: IdentityProviderType.OIDC,
       popup: false,
@@ -222,10 +225,46 @@ describe("OAuthCallbackPage", () => {
     unmount();
   });
 
+  test("remount replays the processed outcome instead of re-processing the consumed token", async () => {
+    mocks.currentRoute.value.query = { state: "remount-token", code: "abc" };
+    // Single-use token: consumed (cleared) by the first mount, gone afterwards.
+    mocks.retrieveOAuthState
+      .mockReturnValueOnce({
+        token: "remount-token",
+        event: "bb.oauth.signin.gh",
+        idpType: IdentityProviderType.OAUTH2,
+        popup: false,
+        redirect: "/home",
+        timestamp: Date.now(),
+      })
+      .mockReturnValue(null);
+
+    const first = renderIntoContainer(<OAuthCallbackPage />);
+    first.render();
+    await flushPromises();
+    expect(mocks.login).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    // The app shell may remount routed content while login() is still running
+    // (e.g. AuthGate reloading workspace data when the session flips).
+    const second = renderIntoContainer(<OAuthCallbackPage />);
+    second.render();
+    await flushPromises();
+    expect(second.container.textContent).toContain(
+      "auth.oauth-callback.success-redirecting"
+    );
+    expect(second.container.textContent).not.toContain(
+      "auth.oauth-callback.session-expired"
+    );
+    // The in-flight login from the first mount must not be re-issued.
+    expect(mocks.login).toHaveBeenCalledTimes(1);
+    second.unmount();
+  });
+
   test("popup mode: dispatches CustomEvent on window.opener with payload", async () => {
-    mocks.currentRoute.value.query = { state: "xyz", code: "abc" };
+    mocks.currentRoute.value.query = { state: "popup-token", code: "abc" };
     mocks.retrieveOAuthState.mockReturnValue({
-      token: "xyz",
+      token: "popup-token",
       event: "bb.oauth.signin.gh",
       idpType: IdentityProviderType.OAUTH2,
       popup: true,
