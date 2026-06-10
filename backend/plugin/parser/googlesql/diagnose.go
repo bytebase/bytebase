@@ -1,31 +1,25 @@
-package bigquery
+package googlesql
 
 import (
-	"context"
 	"strings"
 
 	"github.com/bytebase/omni/googlesql/diagnostics"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func init() {
-	base.RegisterDiagnoseFunc(storepb.Engine_BIGQUERY, Diagnose)
-}
-
-// Diagnose returns syntax diagnostics for the given GoogleSQL (BigQuery)
-// statement, surfacing lex/parse errors from the omni parser via the omni
-// diagnostics analyzer. Mirrors the Trino cutover (#20517).
+// Diagnose returns syntax diagnostics for the given GoogleSQL statement,
+// surfacing lex/parse errors from the omni parser via the omni diagnostics
+// analyzer. Mirrors the Trino cutover (#20517).
 //
 // omni's Analyze emits a "<X> statement parsing is not yet supported" stub
 // diagnostic for the handful of valid-but-not-yet-modeled statement forms (e.g.
-// IMPORT MODULE, EXPORT METADATA) — those are recognized statement-leading
-// keywords whose body the omni parser doesn't build yet. The legacy ANTLR
-// parser parsed them without error, so flagging them now would be a false
-// positive on valid SQL; we suppress only those stubs and pass every genuine
-// lex/parse error (including "unknown or unsupported statement …") through.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+// IMPORT MODULE, EXPORT METADATA) — recognized statement-leading keywords whose
+// body the omni parser doesn't build yet. The legacy ANTLR parser parsed them
+// without error, so flagging them would be a false positive on valid SQL; only
+// those stubs are suppressed and every genuine lex/parse error (including
+// "unknown or unsupported statement …") passes through.
+func Diagnose(statement string) []base.Diagnostic {
 	diags := diagnostics.Analyze(statement)
 	out := make([]base.Diagnostic, 0, len(diags))
 	mapper := base.NewByteOffsetPositionMapper(statement)
@@ -39,7 +33,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 		}
 		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-	return out, nil
+	return out
 }
 
 // isValidButUnimplementedStub reports whether msg is an omni "not yet supported"
