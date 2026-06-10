@@ -685,6 +685,11 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 
 	// Columns.
 	for _, col := range t.Columns {
+		if col.Hidden == catalog.ColumnHiddenSystem {
+			// System-hidden columns (e.g. backing columns of functional
+			// indexes) are not reported by information_schema.
+			continue
+		}
 		colMeta := &storepb.ColumnMetadata{
 			Name:         col.Name,
 			Position:     int32(col.Position),
@@ -694,8 +699,18 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			Collation:    col.Collation,
 			Comment:      col.Comment,
 		}
-		if col.Default != nil {
-			colMeta.Default = *col.Default
+		switch {
+		case col.AutoIncrement:
+			// Match the driver convention: AUTO_INCREMENT columns report
+			// "AUTO_INCREMENT" as the default (see backend/plugin/db/mysql/sync.go).
+			colMeta.Default = "AUTO_INCREMENT"
+		case col.Default != nil:
+			colMeta.Default = normalizeOmniDefault(*col.Default, col.DefaultKind)
+		case col.Nullable:
+			// Match the driver convention: a nullable column without an explicit
+			// default has an implicit default of NULL.
+			colMeta.Default = "NULL"
+		default:
 		}
 		if col.OnUpdate != "" {
 			colMeta.OnUpdate = col.OnUpdate
@@ -733,7 +748,16 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			} else {
 				idxMeta.Expressions = append(idxMeta.Expressions, col.Name)
 			}
-			idxMeta.KeyLength = append(idxMeta.KeyLength, int64(col.Length))
+			keyLength := int64(col.Length)
+			if keyLength == 0 {
+				// Match the driver convention: -1 means no prefix length specified.
+				keyLength = -1
+			}
+			if keyLength == -1 && indexType == "SPATIAL" {
+				// MySQL reports a key length of 32 for spatial index columns.
+				keyLength = 32
+			}
+			idxMeta.KeyLength = append(idxMeta.KeyLength, keyLength)
 			idxMeta.Descending = append(idxMeta.Descending, col.Descending)
 		}
 		table.Indexes = append(table.Indexes, idxMeta)
@@ -773,13 +797,40 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 	return table
 }
 
+// normalizeOmniDefault converts an omni catalog default value to the driver
+// representation produced by SyncDBSchema (see backend/plugin/db/mysql/sync.go):
+// static defaults are kept single-quoted for mysqldump compatibility and
+// expression defaults are wrapped in parentheses.
+func normalizeOmniDefault(value string, kind catalog.ColumnDefaultKind) string {
+	switch kind {
+	case catalog.ColumnDefaultConstant:
+		if strings.EqualFold(value, "NULL") {
+			return "NULL"
+		}
+		if len(value) >= 2 && strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+			return value
+		}
+		return fmt.Sprintf("'%s'", value)
+	case catalog.ColumnDefaultExpression:
+		return fmt.Sprintf("(%s)", value)
+	default:
+		return value
+	}
+}
+
 func partitionsToProto(p *catalog.PartitionInfo) []*storepb.TablePartitionMetadata {
+	expr := p.Expr
+	if expr == "" && len(p.Columns) > 0 {
+		// RANGE COLUMNS / LIST COLUMNS / KEY partitioning carries a column
+		// list instead of an expression; the driver reports the joined list.
+		expr = strings.Join(p.Columns, ",")
+	}
 	var result []*storepb.TablePartitionMetadata
 	for _, pd := range p.Partitions {
 		result = append(result, &storepb.TablePartitionMetadata{
 			Name:       pd.Name,
 			Type:       partitionTypeToProto(p.Type),
-			Expression: p.Expr,
+			Expression: expr,
 			Value:      pd.ValueExpr,
 		})
 	}

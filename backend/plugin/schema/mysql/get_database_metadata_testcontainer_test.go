@@ -531,8 +531,9 @@ CREATE TABLE json_features (
 			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
-			// Get metadata from parser
-			parsedMetadata, err := GetDatabaseMetadata(tc.ddl)
+			// Get metadata from the omni parser, the function registered for
+			// the production diff path (see get_database_metadata_omni.go).
+			parsedMetadata, err := GetDatabaseMetadataOmni(tc.ddl)
 			require.NoError(t, err)
 
 			// Compare metadata
