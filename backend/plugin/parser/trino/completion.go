@@ -107,7 +107,11 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 				if viewMeta == nil {
 					continue
 				}
-				sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
+				v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
+				// The defining query lets omni's analysis resolve lineage
+				// through the view (GetQuerySpanWithCatalog); empty leaves the
+				// view opaque.
+				v.Definition = viewMeta.GetDefinition()
 			}
 		}
 	}

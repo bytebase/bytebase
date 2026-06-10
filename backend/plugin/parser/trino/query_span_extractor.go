@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytebase/omni/trino/analysis"
 	"github.com/bytebase/omni/trino/ast"
+	"github.com/bytebase/omni/trino/catalog"
 	"github.com/bytebase/omni/trino/parser"
 	"github.com/pkg/errors"
 
@@ -119,7 +120,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}
 	}
 
-	omniSpan, err := analysis.GetQuerySpan(spanInput)
+	omniSpan, err := analysis.GetQuerySpanWithCatalog(spanInput, q.buildSpanCatalog(ctx, spanInput))
 	if err != nil {
 		return nil, err
 	}
@@ -165,6 +166,101 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		span.NotFoundError = notFound
 	}
 	return span, nil
+}
+
+// buildSpanCatalog constructs the omni Trino catalog the query-span analysis
+// resolves against: views carry their defining query (so lineage through a view
+// reaches the underlying base-table columns — masking config only attaches to
+// table columns), and tables carry their column lists (so omni expands
+// SELECT * to the exact projection). The session context is the extractor's
+// default catalog/schema (with the same "public" fallback as
+// resolveCatalogSchema, so view resolution and resource keys agree).
+//
+// Like the completion catalog, every catalog name is registered cheaply but
+// full metadata is loaded only for the catalogs the statement needs (the
+// default one and any named in the statement). Metadata fetches go through the
+// extractor's cache, so the later expandTablesToColumns lookups reuse them.
+// Returns nil — omni then behaves exactly catalog-less — when metadata is
+// unavailable (e.g. tests without a getter).
+func (q *querySpanExtractor) buildSpanCatalog(ctx context.Context, statement string) *catalog.Catalog {
+	q.ctx = ctx
+	if q.gCtx.GetDatabaseMetadataFunc == nil || q.gCtx.ListDatabaseNamesFunc == nil {
+		return nil
+	}
+	names, err := q.gCtx.ListDatabaseNamesFunc(ctx, q.gCtx.InstanceID)
+	if err != nil || len(names) == 0 {
+		return nil
+	}
+
+	defaultDB := catalog.Normalize(q.defaultDatabase)
+	cat := catalog.New()
+	for _, dbName := range names {
+		cat.EnsureCatalog(catalog.Normalize(dbName))
+	}
+
+	// Load catalogs transitively: the statement names some catalogs; the view
+	// definitions loaded with them may name FURTHER catalogs (a view in the
+	// default catalog defined over another catalog's table), which omni needs
+	// loaded to resolve lineage through the view. Each round scans the text
+	// corpus (statement + every loaded view definition) and loads any
+	// newly-referenced catalog; it terminates because each catalog loads at
+	// most once.
+	corpus := strings.ToLower(statement)
+	loaded := make(map[string]bool, len(names))
+	for {
+		progressed := false
+		for _, dbName := range names {
+			norm := catalog.Normalize(dbName)
+			if loaded[norm] || !catalogNeeded(norm, defaultDB, corpus) {
+				continue
+			}
+			loaded[norm] = true
+			progressed = true
+			meta, err := q.getDatabaseMetadata(dbName)
+			if err != nil || meta == nil {
+				continue
+			}
+			database := cat.EnsureCatalog(norm)
+			for _, schemaName := range meta.ListSchemaNames() {
+				schemaMeta := meta.GetSchemaMetadata(schemaName)
+				if schemaMeta == nil {
+					continue
+				}
+				sc := database.EnsureSchema(catalog.Normalize(schemaName))
+				for _, tableName := range schemaMeta.ListTableNames() {
+					tableMeta := schemaMeta.GetTable(tableName)
+					if tableMeta == nil {
+						continue
+					}
+					sc.AddTable(catalog.Normalize(tableName), columnsOf(tableMeta.GetProto().GetColumns())...)
+				}
+				for _, viewName := range schemaMeta.ListViewNames() {
+					viewMeta := schemaMeta.GetView(viewName)
+					if viewMeta == nil {
+						continue
+					}
+					v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
+					v.Definition = viewMeta.GetDefinition()
+					if def := viewMeta.GetDefinition(); def != "" {
+						corpus += "\n" + strings.ToLower(def)
+					}
+				}
+			}
+		}
+		if !progressed {
+			break
+		}
+	}
+
+	if q.defaultDatabase != "" {
+		cat.SetCurrentCatalog(defaultDB)
+	}
+	schema := q.defaultSchema
+	if schema == "" {
+		schema = defaultTrinoSchema
+	}
+	cat.SetCurrentSchema(catalog.Normalize(schema))
+	return cat
 }
 
 // toTableResources converts omni AccessTables into table-level
@@ -333,7 +429,15 @@ func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceCo
 		results = append(results, base.QuerySpanResult{
 			Name:          r.Name,
 			SourceColumns: sourceColumns,
-			IsPlainField:  len(r.SourceColumns) == 1,
+			// Plainness keys on the MAPPED physical set, not omni's raw ref
+			// count: the catalog-aware resolver additively restates a plain
+			// column as written + catalog-qualified refs, which dedupe back to
+			// the one physical column here. Known drift: an expression over one
+			// column repeated (phone || phone) also maps to a single physical
+			// column and reads as plain — omni's resolver dedups refs, so the
+			// distinction is unrecoverable here; inert for Trino, which is not
+			// in EngineSupportQuerySpanPlainField.
+			IsPlainField: len(sourceColumns) == 1,
 		})
 	}
 	return results
