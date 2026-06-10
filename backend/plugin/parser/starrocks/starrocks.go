@@ -1,18 +1,18 @@
-package doris
+package starrocks
 
 import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/bytebase/omni/doris/ast"
-	"github.com/bytebase/omni/doris/parser"
+	"github.com/bytebase/omni/starrocks/ast"
+	"github.com/bytebase/omni/starrocks/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_DORIS, parseDorisStatements)
+	base.RegisterParseStatementsFunc(storepb.Engine_STARROCKS, parseStarRocksStatements)
 }
 
 // omniAST wraps an omni AST node to implement the base.AST interface.
@@ -32,13 +32,13 @@ func (a *omniAST) Node() ast.Node {
 	return a.node
 }
 
-// parseDorisStatements is the ParseStatementsFunc for Doris.
+// parseStarRocksStatements is the ParseStatementsFunc for StarRocks.
 // Returns []ParsedStatement with both text and AST populated.
 //
 // For non-empty segments, the AST is an *omniAST wrapping the omni AST node.
 // The first parse error encountered (per-segment) is returned to the caller,
 // matching the prior behaviour of bailing out on the first syntax error.
-func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
+func parseStarRocksStatements(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -75,14 +75,14 @@ func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// parseDorisSQL parses the given SQL statement using the omni Doris parser.
+// parseStarRocksSQL parses the given SQL statement using the omni Doris parser.
 // Returns one *omniAST per non-empty segment (empty / comment-only segments
 // are skipped).
 //
 // This retains the historical signature shape used by other doris package
 // files; on the first parse error it returns a *base.SyntaxError with the
 // position translated into the coordinates of the original input.
-func parseDorisSQL(statement string) ([]*omniAST, error) {
+func parseStarRocksSQL(statement string) ([]*omniAST, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err

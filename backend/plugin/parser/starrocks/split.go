@@ -1,16 +1,16 @@
-package doris
+package starrocks
 
 import (
 	"unicode/utf8"
 
-	"github.com/bytebase/omni/doris/parser"
+	"github.com/bytebase/omni/starrocks/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterSplitterFunc(storepb.Engine_DORIS, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_STARROCKS, SplitSQL)
 }
 
 // SplitSQL splits the input into multiple SQL statements using the omni

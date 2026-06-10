@@ -1,0 +1,141 @@
+- description: simple single statement
+  input: SELECT 1;
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+- description: multiple statements on one line
+  input: SELECT 1; SELECT 2;
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: ' SELECT 2;'
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 1
+        column: 20
+      range:
+        start: 9
+        end: 19
+      empty: false
+- description: multiple statements on multiple lines
+  input: "SELECT 1;\nSELECT 2;"
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: "\nSELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 2
+        column: 10
+      range:
+        start: 9
+        end: 19
+      empty: false
+- description: multi-line statement
+  input: "SELECT\n  1;"
+  result:
+    - text: "SELECT\n  1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 5
+      range:
+        start: 0
+        end: 11
+      empty: false
+- description: 'position semantic: leading newlines'
+  input: "\n\nSELECT 1;"
+  result:
+    - text: "\n\nSELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 10
+      range:
+        start: 0
+        end: 11
+      empty: false
+- description: 'position semantic: leading spaces and newlines'
+  input: "\n  \n  SELECT 1;"
+  result:
+    - text: "\n  \n  SELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 0
+        end: 15
+      empty: false
+- description: 'position semantic: multi-statement with leading whitespace'
+  input: "SELECT 1;\n\n  SELECT 2;"
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: "\n\n  SELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 9
+        end: 22
+      empty: false

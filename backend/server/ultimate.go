@@ -41,6 +41,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"

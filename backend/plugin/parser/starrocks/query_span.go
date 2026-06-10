@@ -1,4 +1,4 @@
-package doris
+package starrocks
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	base.RegisterGetQuerySpan(storepb.Engine_DORIS, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_STARROCKS, GetQuerySpan)
 }
 
 func GetQuerySpan(

@@ -1,14 +1,14 @@
-package doris
+package starrocks
 
 import (
-	"github.com/bytebase/omni/doris/ast"
+	"github.com/bytebase/omni/starrocks/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterQueryValidator(storepb.Engine_DORIS, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_STARROCKS, validateQuery)
 }
 
 // validateQuery reports whether the given statement is a read-only query
@@ -25,7 +25,7 @@ func init() {
 // The (bool, bool, error) return shape matches the bytebase QueryValidator
 // contract: (isReadOnly, isExplicitReadOnly, syntaxError).
 func validateQuery(statement string) (bool, bool, error) {
-	parsed, err := parseDorisSQL(statement)
+	parsed, err := parseStarRocksSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
@@ -49,7 +49,7 @@ func validateQuery(statement string) (bool, bool, error) {
 //
 // Nil nodes are conservatively rejected — they indicate a parse path that
 // produced no concrete statement, which shouldn't happen for valid read-only
-// SQL after parseDorisSQL succeeds.
+// SQL after parseStarRocksSQL succeeds.
 func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:

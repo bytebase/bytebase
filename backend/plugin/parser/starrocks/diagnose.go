@@ -1,18 +1,18 @@
-package doris
+package starrocks
 
 import (
 	"context"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/bytebase/omni/doris/parser"
+	"github.com/bytebase/omni/starrocks/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(storepb.Engine_DORIS, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_STARROCKS, Diagnose)
 }
 
 // Diagnose returns syntax diagnostics for the given Doris statement.

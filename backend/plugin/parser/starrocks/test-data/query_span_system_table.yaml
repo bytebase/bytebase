@@ -1,0 +1,107 @@
+- description: Query information_schema.tables
+  statement: SELECT * FROM information_schema.tables
+  defaultDatabase: testdb
+  metadata: '{}'
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: information_schema
+          schema: ""
+          table: tables
+          column: ""
+    predicatecolumns: []
+- description: Query information_schema.columns with WHERE clause
+  statement: SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'testdb'
+  defaultDatabase: testdb
+  metadata: '{}'
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: information_schema
+          schema: ""
+          table: columns
+          column: ""
+    predicatecolumns: []
+- description: Query _statistics_ database
+  statement: SELECT * FROM _statistics_.table_statistics
+  defaultDatabase: testdb
+  metadata: '{}'
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: _statistics_
+          schema: ""
+          table: table_statistics
+          column: ""
+    predicatecolumns: []
+- description: Query mysql database
+  statement: SELECT * FROM mysql.user
+  defaultDatabase: testdb
+  metadata: '{}'
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: mysql
+          schema: ""
+          table: user
+          column: ""
+    predicatecolumns: []
+- description: Query __internal_schema database
+  statement: SELECT * FROM __internal_schema.audit_log
+  defaultDatabase: testdb
+  metadata: '{}'
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: __internal_schema
+          schema: ""
+          table: audit_log
+          column: ""
+    predicatecolumns: []
+- description: Query user table
+  statement: SELECT * FROM users
+  defaultDatabase: testdb
+  metadata: |-
+    {
+      "name": "testdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1
+                },
+                {
+                  "name": "name",
+                  "position": 2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: testdb
+          schema: ""
+          table: users
+          column: ""
+    predicatecolumns: []

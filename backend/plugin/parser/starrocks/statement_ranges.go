@@ -1,4 +1,4 @@
-package doris
+package starrocks
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"unicode/utf8"
 
 	protocol "github.com/bytebase/lsp-protocol"
-	"github.com/bytebase/omni/doris/parser"
+	"github.com/bytebase/omni/starrocks/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterStatementRangesFunc(storepb.Engine_DORIS, GetStatementRanges)
+	base.RegisterStatementRangesFunc(storepb.Engine_STARROCKS, GetStatementRanges)
 }
 
 // GetStatementRanges returns the UTF-16 line/character ranges of statements
