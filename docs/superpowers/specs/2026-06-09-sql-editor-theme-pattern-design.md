@@ -127,6 +127,65 @@ interface SQLEditorTheme {
   language-agnostic, keeps each preset to a single small palette rather than per-grammar
   rule lists.
 
+**Supporting types** (the keys each layer must fill — `validateTheme` enforces them):
+
+```ts
+// chrome layer — the SQL-Editor subset of existing --color-* names
+type SQLEditorThemeToken =
+  | "--color-control" | "--color-control-hover"
+  | "--color-control-light" | "--color-control-light-hover"
+  | "--color-control-bg" | "--color-control-bg-hover"
+  | "--color-control-placeholder" | "--color-control-border"
+  | "--color-accent" | "--color-accent-hover" | "--color-accent-disabled" | "--color-accent-text"
+  | "--color-main" | "--color-main-hover" | "--color-main-text"
+  | "--color-background" | "--color-block-border" | "--color-link-hover"
+  | "--color-info" | "--color-info-hover" | "--color-warning" | "--color-warning-hover"
+  | "--color-error" | "--color-error-hover" | "--color-success" | "--color-success-hover"
+  | "--color-matrix-green" | "--color-matrix-green-hover" | "--color-dark-bg";
+
+// Monaco surface (canvas — not reachable by CSS vars)
+interface EditorChromeColors {
+  background: Hex; selectionBackground: Hex; cursor: Hex; lineHighlight: Hex;
+  gutterBackground: Hex; lineNumber: Hex; activeLineNumber: Hex;
+}
+
+// Monaco token colors, normalized & language-agnostic
+interface SyntaxPalette {
+  comment: Hex; keyword: Hex; string: Hex; number: Hex; type: Hex;
+  function: Hex; variable: Hex; operator: Hex; delimiter: Hex; predefined: Hex;
+}
+```
+
+**Derivation functions** — the single `SQLEditorTheme` object is the source; both layers
+are *computed* from it (this is the whole point of Approach A: presets and future custom
+themes flow through the exact same functions):
+
+```ts
+// theme/derive.ts
+
+// CHROME: tokens → inline CSS custom properties, spread onto a container's `style` prop.
+//   { "--color-control": "82 82 91", … }  →  <div style={vars}>
+function themeToCssVars(tokens: SQLEditorTheme["tokens"]): CSSProperties;
+
+// MONACO: whole theme → registered standalone theme data.
+//   maps `editor` → IStandaloneThemeData.colors, `syntax` → .rules (incl. SQL scopes).
+function buildMonacoTheme(theme: SQLEditorTheme): monaco.editor.IStandaloneThemeData;
+
+// MONACO name used by defineTheme(name, …) and the global setTheme controller.
+function monacoThemeName(theme: SQLEditorTheme): string;          // `bb-${theme.id}`
+
+// ADMIN: foreground-panel resolution for the nested terminal scope + Monaco controller.
+function resolveAdminTheme(selected: SQLEditorTheme): SQLEditorTheme; // selected.isDark ? selected : presets.dark
+
+// VALIDATION: throws if any chrome token / editor key / syntax key is missing.
+//   Unit-tested across every entry in PRESETS so no theme can ship with holes.
+function validateTheme(theme: SQLEditorTheme): void;
+```
+
+`<SQLEditorThemeScope>` (§4) is the only consumer of `themeToCssVars` (for the chrome) and
+context; `monaco/core.ts` calls `buildMonacoTheme` once per preset at init, and the single
+Monaco controller (§4 → Monaco) is the only caller of `setTheme(monacoThemeName(active))`.
+
 ### 2. Presets
 
 One file per theme under `frontend/src/react/components/sql-editor/theme/presets/`
@@ -221,13 +280,13 @@ dark/named theme:
 
 The layer roots are **app-global** (shared with the rest of Bytebase), so we cannot wrap
 them in a SQL-Editor-only scope. Instead, each portaled SQL-Editor surface re-applies the
-theme on its own container: wrap the portal's children in a nested `SQLEditorThemeScope`
-whose theme comes from `useSQLEditorTheme()` (read through the context that the portal
-preserves) so it re-writes the `--color-*` vars onto the portaled DOM. The request
-drawer, now under the layout-level root scope, reads the theme from context: its chrome
-re-applies vars via a scope on the `Sheet` content, and its Monaco reads the scope theme
-(`monacoThemeName(useSQLEditorTheme())`) like every other editor. No new global theming —
-only the specific SQL-Editor portal subtrees re-apply vars.
+**chrome** theme on its own container: wrap the portal's children in a nested
+`SQLEditorThemeScope` whose theme comes from `useSQLEditorTheme()` (read through the
+context that the portal preserves) so it re-writes the `--color-*` vars onto the portaled
+DOM. For the request drawer this re-themes its `Sheet` chrome (form controls, labels).
+Its embedded **Monaco**, however, cannot have its own theme — Monaco's theme is global
+(see **Monaco** below); the drawer's editor shares the one active Monaco theme. No new
+global *chrome* theming — only the specific SQL-Editor portal subtrees re-apply vars.
 
 **Nested admin scope.** Wrap `<TerminalPanel>`'s root div (`TerminalPanel.tsx:206`) in a
 nested `SQLEditorThemeScope` whose theme is the **resolved admin theme**:
@@ -256,21 +315,36 @@ canvas-rendered and cannot see container-scoped CSS overrides, and because named
 carry their own syntax colors rather than tinting `vs`/`vs-dark`. All six themes are
 defined at init (`monaco.editor.defineTheme(\`bb-${id}\`, …)`).
 
-Each Monaco editor picks its theme from the **nearest theme scope**: it reads
-`useSQLEditorTheme()` and applies `bb-${theme.id}`. The normal editor resolves to the
-selected theme; the terminal's `CompactSQLEditor` (currently hardcoded `vs-dark` at
-`CompactSQLEditor.tsx:323`) resolves to the admin theme. A `useEffect` calls
-`monaco.editor.setTheme` whenever the scope's effective theme changes (today set once at
-`MonacoEditor.tsx:346`).
+**The Monaco theme is a single global value — it cannot be per-scope.**
+`monaco.editor.setTheme` applies to **all** standalone editors at once; Monaco has no
+per-instance theme. So unlike the chrome (which is genuinely per-scope via CSS cascade),
+every visible Monaco editor shares **one** theme. Concretely, more than one Monaco can be
+on screen simultaneously: the access-request drawer hosts its own editor
+(`AccessGrantRequestDrawer.tsx:262`) and can be open **over** an admin terminal — so a
+"one code panel at a time" assumption does **not** hold.
 
-> **Monaco constraint:** `monaco.editor.setTheme` is **global** — Monaco cannot paint
-> two different themes on screen at the same time. This is acceptable because
-> `Panels.tsx:162` renders only one code panel per active tab — worksheet **or**
-> terminal, never both — and the chrome contains no standalone Monaco editor. So at any
-> moment a single global theme (the active scope's) is correct. The terminal panel's
-> several `CompactSQLEditor` instances all share that one admin theme. If a future
-> layout ever shows worksheet and terminal Monaco simultaneously, this assumption must
-> be revisited.
+The SQL Editor therefore maintains **one active Monaco theme**, derived from the
+**foreground code surface** and applied by a single controller (driven by the current
+tab `mode` + selected `themeId`) that calls `monaco.editor.setTheme(\`bb-${active.id}\`)`
+whenever either changes (today set once at `MonacoEditor.tsx:346`):
+
+- worksheet tab → the **selected** theme;
+- admin tab → `resolveAdminTheme(selected)`.
+
+When the access drawer is open, its Monaco **adopts this same active theme** (the
+reviewer's "use the effective active Monaco theme") — it does **not** request a
+competing one. This is the deliberate resolution to the global-`setTheme` conflict: the
+drawer's *chrome* still re-themes via its own CSS-var scope (so its form controls match
+the selected theme), but its code surface shares the one global Monaco theme rather than
+fighting the terminal for it. Consequence: opening the drawer over a light-selected admin
+tab shows a dark statement editor (matching the visible terminal) — acceptable, since
+per-editor Monaco themes are impossible. If product later wants the drawer's editor to
+always track the *selected* (not admin) theme, defer to either swapping the global theme
+to the drawer's while it is focused and restoring on close, or suppressing the terminal
+editor behind the drawer scrim — both out of scope here.
+
+`CompactSQLEditor.tsx:323` drops its hardcoded `theme: "vs-dark"` and lets this
+controller drive the theme.
 
 ### 5. Color migration (prerequisite)
 
@@ -318,8 +392,8 @@ and must be migrated. Two rules:
   `bg-dark-bg` (208) become `bg-background`; wrap the root div in the nested
   `SQLEditorThemeScope` (resolved admin theme). Overlays at 246 (`bg-black/20`), 251
   (`text-gray-400`) route through tokens.
-- `CompactSQLEditor.tsx:323` — drop hardcoded `theme: "vs-dark"`; read the scope's
-  Monaco theme.
+- `CompactSQLEditor.tsx:323` — drop hardcoded `theme: "vs-dark"`; let the global Monaco
+  controller (§4 → Monaco) drive the theme.
 - The result-view `dark:` variants listed above are removed here too — in admin mode
   they now get dark token *values* from the nested scope. The admin terminal is no
   longer a special-cased aesthetic; it is just the resolved admin theme applied to a
@@ -342,6 +416,7 @@ change). Each label uses the preset's `name` i18n key; add a section label
 
 ## Data flow
 
+CHROME (per-scope, CSS cascade):
 ```
 localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by──▶ QueryContextSettingPopover (Select)
                               │
@@ -350,22 +425,27 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
               · inline --color-* on the layout container → CSS cascade re-themes chrome
               · provides theme via context (reaches RequestDrawerHost + portals)
                               │
-        ┌──────────────┬──────┴───────────────┬───────────────┐
-        ▼ (worksheet)  ▼ (admin tab)           ▼ (overlay portals / request drawer)
-                       │                       Nested SQLEditorThemeScope per portal
-                       │                       · context read via useSQLEditorTheme()
-                       │                       · re-applies --color-* on portaled DOM
-                       │                         (CSS vars don't cross portals)
-                       │                       · drawer Monaco → setTheme(bb-<selected>)
-        ┌──────────────┴───────────────────────────────────┐
-        ▼ (worksheet tab)                                  ▼ (admin tab)
- StandardPanel Monaco                          Nested SQLEditorThemeScope
- reads context → setTheme(bb-<selected>)       theme = resolveAdminTheme(selected)
-                                               · inline --color-* on TerminalPanel root
-                                                 (overrides parent for the subtree)
-                                               · CompactSQLEditor + ResultView read
-                                                 context → dark tokens + Monaco
-                                                 setTheme(bb-<adminTheme>)
+   ┌──────────────────┬───────┴───────────────────┬───────────────────────────┐
+   ▼ (worksheet tab)  ▼ (admin tab)                ▼ (overlay portals + request drawer)
+ root scope only      Nested SQLEditorThemeScope   Nested SQLEditorThemeScope per portal
+ (selected tokens)    theme=resolveAdminTheme(sel) · context read via useSQLEditorTheme()
+                      · --color-* on TerminalPanel   (portals preserve context, not CSS)
+                        root (overrides parent)     · re-applies --color-* on portaled DOM
+                      · ResultView reads isDark       (drawer Sheet chrome, FAB, sidebar)
+                        from context
+```
+
+MONACO (single global, driven by foreground panel — cannot be per-scope):
+```
+{ tab mode, selected themeId } ──▶ active = mode==="ADMIN" ? resolveAdminTheme(sel) : sel
+                                          │
+                                          ▼
+                         monaco.editor.setTheme(`bb-${active.id}`)   // one global theme
+                                          │
+                ┌─────────────────────────┼─────────────────────────┐
+                ▼                         ▼                          ▼
+        worksheet/terminal editor   drawer's Monaco (if open)   any other Monaco
+        ── all share the one active theme ──
 ```
 
 ## Testing
@@ -386,8 +466,11 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
   selected, the terminal subtree is dark while chrome stays light; with a dark theme
   selected, the terminal matches it. With a non-light theme selected, also confirm the
   **portaled** surfaces theme correctly: the mobile FAB + sidebar overlay, and the
-  access-request drawer (`AccessGrantRequestDrawer`) chrome **and** its Monaco editor —
-  none should fall back to light. Checked through `pnpm --dir frontend dev`.
+  access-request drawer (`AccessGrantRequestDrawer`) **chrome** — none should fall back to
+  light. Drawer-Monaco conflict: open the drawer over an admin terminal and confirm
+  neither editor flickers/ends on the wrong theme — both share the one active global
+  Monaco theme (the documented trade-off), not a fight that leaves one wrong.
+  Checked through `pnpm --dir frontend dev`.
 - Gates: `pnpm --dir frontend fix`, `check`, `type-check`, `test`.
 
 ## Risks
@@ -412,6 +495,13 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
   the root scope for the whole terminal subtree (no leaked light tokens).
 - **Monaco theme generation** replaces `callCssVariable` reads; confirm the generated
   `bb`-equivalent matches the current editor look pixel-for-pixel on light.
+- **Monaco's theme is global, not per-instance.** Multiple editors can be visible at once
+  (terminal + access-drawer Monaco), but `setTheme` repaints all of them. The design
+  resolves this by driving one global theme from the foreground panel and having the
+  drawer adopt it (§4 → Monaco), rather than per-editor themes (impossible in Monaco).
+  Risk if implemented naively as "each editor sets its own theme": last-writer-wins
+  flicker / wrong theme. The single-controller approach must own every `setTheme` call;
+  no component should call `setTheme` independently.
 - **Named-theme authoring fidelity.** Six palettes (incl. four named themes with full
   syntax sets) must be derived from published references and checked against contrast
   needs for both chrome text and result-grid readability. This is real per-theme design
