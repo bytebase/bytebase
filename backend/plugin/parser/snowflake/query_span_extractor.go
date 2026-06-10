@@ -2,21 +2,28 @@ package snowflake
 
 import (
 	"context"
-	"strconv"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	"github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// querySpanExtractor walks an omni Snowflake AST and produces a base.QuerySpan
+// describing the column-level lineage of a single SELECT/set-operation query.
+//
+// It is the omni-AST port of the legacy ANTLR listener-based extractor: the
+// bytebase-side machinery (base.PseudoTable / base.PhysicalTable / getField /
+// findTableSchema, which resolve a column reference back to its physical source
+// column via the database metadata getter) is preserved unchanged; only the
+// tree-walking was rewritten from ANTLR parse-tree contexts onto omni's
+// hand-written ast.Node type-switches.
 type querySpanExtractor struct {
 	ctx context.Context
 
 	defaultDatbase string
 	defaultSchema  string
-	// https://docs.com/en/sql-reference/identifiers-syntax
+	// https://docs.snowflake.com/en/sql-reference/identifiers-syntax
 	ignoreCaseSensitive bool
 
 	gCtx base.GetQuerySpanContext
@@ -46,22 +53,20 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	parseResults, err := ParseSnowSQL(statement)
+	file, err := parseSnowflakeAST(statement)
 	if err != nil {
 		return nil, err
 	}
-
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
-	}
-
-	parseResult := parseResults[0]
-	tree := parseResult.Tree
-	if tree == nil {
+	if file == nil || len(file.Stmts) == 0 {
 		return nil, nil
 	}
+	if len(file.Stmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(file.Stmts))
+	}
 
-	accessTables := getAccessTables(q.defaultDatbase, q.defaultSchema, tree)
+	node := file.Stmts[0]
+
+	accessTables := getAccessTables(q.defaultDatbase, q.defaultSchema, node)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -70,31 +75,23 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
-	queryTypeListener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
+
+	queryType := getQueryType(node)
+	// A SELECT/set-op that touches only system tables is reclassified as
+	// SelectInfoSchema, matching the legacy queryTypeListener.allSystems branch.
+	if queryType == base.Select && allSystems {
+		queryType = base.SelectInfoSchema
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
-	if queryTypeListener.err != nil {
-		return nil, queryTypeListener.err
-	}
-	if queryTypeListener.result != base.Select {
+
+	if queryType != base.Select {
 		return &base.QuerySpan{
-			Type:          queryTypeListener.result,
+			Type:          queryType,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
-	// We assumes the caller had handled the statement type case,
-	// so we only need to handle the determined statement type here.
-	// In order to decrease the maintenance cost, we use listener
-	// to handlet the select statement precisely.
-	listener := &selectOnlyListener{
-		q: q,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	err = listener.err
+	result, err := q.extractPseudoTableFromQueryNode(node)
 	if err != nil {
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
@@ -104,139 +101,133 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 				NotFoundError: resourceNotFound,
 			}, nil
 		}
-
 		return nil, err
 	}
 
 	return &base.QuerySpan{
-		Type:          queryTypeListener.result,
+		Type:          queryType,
 		SourceColumns: accessTables,
-		Results:       listener.result,
+		Results:       result.GetQuerySpanResult(),
 	}, nil
 }
 
-type selectOnlyListener struct {
-	*parser.BaseSnowflakeParserListener
-
-	q      *querySpanExtractor
-	result []base.QuerySpanResult
-	err    error
-}
-
-func (l *selectOnlyListener) EnterDml_command(ctx *parser.Dml_commandContext) {
-	if l.err != nil {
-		return
-	}
-
-	if ctx.Query_statement() == nil {
-		return
-	}
-
-	parent := ctx.GetParent()
-	if parent == nil {
-		return
-	}
-
-	if _, ok := parent.(*parser.Sql_commandContext); !ok {
-		return
-	}
-
-	result, err := l.q.extractPseudoTableFromQueryStatement(ctx.Query_statement())
-	if err != nil {
-		l.err = err
-		l.result = make([]base.QuerySpanResult, 0)
-		return
-	}
-	l.result = result.GetQuerySpanResult()
-}
-
-func (q *querySpanExtractor) extractPseudoTableFromQueryStatement(ctx parser.IQuery_statementContext) (*base.PseudoTable, error) {
-	if err := q.extractCTEFromWithExpression(ctx.With_expression()); err != nil {
-		return nil, err
-	}
-
-	selectStatementInParentheses := ctx.Select_statement_in_parentheses()
-	result, err := q.extractPseudoTableFromSelectStatementInParentheses(selectStatementInParentheses)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatementInParentheses.GetStart().GetLine())
-	}
-
-	allSetOperators := ctx.AllSet_operators()
-	for i, setOperator := range allSetOperators {
-		// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
-		// So we only need to extract the sensitive fields of the right part.
-		right, err := q.extractPseudoTableFromSetOperator(setOperator)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
+// extractPseudoTableFromQueryNode extracts the result columns of a query
+// expression node: a *ast.SelectStmt (optionally carrying a WITH clause) or a
+// *ast.SetOperationStmt.
+func (q *querySpanExtractor) extractPseudoTableFromQueryNode(node ast.Node) (*base.PseudoTable, error) {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		// A WITH clause on this SELECT introduces CTEs visible to the SELECT body
+		// and to later CTEs; push them, then pop on the way out so sibling scopes
+		// don't see them. The legacy extractor handled WITH at the
+		// query_statement level; omni hangs WITH off the SelectStmt itself.
+		if len(n.With) > 0 {
+			originalCTECount := len(q.ctes)
+			if err := q.extractCTEFromWith(n.With, isRecursiveWith(n.With)); err != nil {
+				return nil, err
+			}
+			defer func() {
+				q.ctes = q.ctes[:originalCTECount]
+			}()
 		}
-		if err := mergeSetOperatorColumns(result, right, selectStatementInParentheses.GetStart().GetLine(), i+1, setOperator.GetStart().GetLine()); err != nil {
-			return nil, err
+		return q.extractPseudoTableFromSelectStmt(n)
+	case *ast.SetOperationStmt:
+		return q.extractPseudoTableFromSetOperation(n)
+	default:
+		return nil, errors.Errorf("unsupported query node type %T", node)
+	}
+}
+
+// isRecursiveWith reports whether any CTE in the WITH list carries the RECURSIVE
+// flag. Snowflake applies RECURSIVE to the whole WITH list, so a single
+// recursive CTE makes the list recursive (mirroring the legacy
+// withExpression.RECURSIVE() check).
+func isRecursiveWith(ctes []*ast.CTE) bool {
+	for _, cte := range ctes {
+		if cte.Recursive {
+			return true
 		}
 	}
-	return result, nil
+	return false
 }
 
-func (q *querySpanExtractor) extractCTEFromWithExpression(withExpression parser.IWith_expressionContext) error {
-	if withExpression == nil {
-		return nil
-	}
-
-	for _, commonTableExpression := range withExpression.AllCommon_table_expression() {
-		normalizedCTEName := NormalizeSnowSQLObjectNamePart(commonTableExpression.Id_())
-		isRecursiveCTE := withExpression.RECURSIVE() != nil || hasSetOperatorInSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+func (q *querySpanExtractor) extractCTEFromWith(ctes []*ast.CTE, recursiveWith bool) error {
+	for _, cte := range ctes {
+		normalizedCTEName := normalizeSnowflakeIdentifier(cte.Name)
+		isRecursiveCTE := recursiveWith || cte.Recursive || queryNodeHasSetOperation(cte.Query)
 		if isRecursiveCTE {
-			if err := q.extractRecursiveCTE(normalizedCTEName, commonTableExpression); err != nil {
+			if err := q.extractRecursiveCTE(normalizedCTEName, cte); err != nil {
 				return err
 			}
 			continue
 		}
 
-		pseudoTable, err := q.extractPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+		pseudoTable, err := q.extractPseudoTableFromQueryNode(cte.Query)
 		if err != nil {
-			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
+			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q", normalizedCTEName)
 		}
-		pseudoTable, err = applyCTEColumnList(normalizedCTEName, pseudoTable, commonTableExpression.Column_list())
+		pseudoTable, err = applyCTEColumnList(normalizedCTEName, pseudoTable, cte.Columns)
 		if err != nil {
-			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
+			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q", normalizedCTEName)
 		}
 		q.ctes = append(q.ctes, pseudoTable)
 	}
 	return nil
 }
 
-func hasSetOperatorInSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) bool {
-	if ctx == nil {
-		return false
-	}
-	if ctx.Set_operators() != nil {
-		return true
-	}
-	return hasSetOperatorInSelectStatementInParentheses(ctx.Select_statement_in_parentheses())
+// queryNodeHasSetOperation reports whether a CTE body is (or wraps) a
+// set-operation, which Snowflake treats as recursive-capable. omni nests
+// set-ops as *ast.SetOperationStmt; a leading WITH-bearing SELECT whose body is
+// a set-op is not representable here (omni hangs WITH on the SelectStmt), so a
+// plain check of the top node suffices.
+func queryNodeHasSetOperation(node ast.Node) bool {
+	_, ok := node.(*ast.SetOperationStmt)
+	return ok
 }
 
-func (q *querySpanExtractor) extractRecursiveCTE(cteName string, commonTableExpression parser.ICommon_table_expressionContext) error {
-	anchorTableSource, err := q.extractAnchorPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
-	if err != nil {
-		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+func (q *querySpanExtractor) extractRecursiveCTE(cteName string, cte *ast.CTE) error {
+	setOp, ok := cte.Query.(*ast.SetOperationStmt)
+	if !ok {
+		// A recursive CTE whose body is not a set-operation has no recursive term
+		// to iterate; treat it as a plain CTE (extract its single SELECT body).
+		pseudoTable, err := q.extractPseudoTableFromQueryNode(cte.Query)
+		if err != nil {
+			return errors.Wrapf(err, "failed to extract sensitive fields of recursive CTE %q", cteName)
+		}
+		pseudoTable, err = applyCTEColumnList(cteName, pseudoTable, cte.Columns)
+		if err != nil {
+			return err
+		}
+		q.ctes = append(q.ctes, pseudoTable)
+		return nil
 	}
-	anchorTableSource, err = applyCTEColumnList(cteName, anchorTableSource, commonTableExpression.Column_list())
+
+	// Anchor term: the left branch of the set-operation. It must be resolvable
+	// without the CTE itself being visible yet.
+	anchorTableSource, err := q.extractPseudoTableFromQueryNode(setOp.Left)
 	if err != nil {
-		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q", cteName)
+	}
+	anchorTableSource, err = applyCTEColumnList(cteName, anchorTableSource, cte.Columns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q", cteName)
 	}
 
 	q.ctes = append(q.ctes, anchorTableSource)
+	// Iterate the recursive term (the right branch) until the lineage of the CTE
+	// columns reaches a fixed point, mirroring the legacy loop.
 	for {
-		recursivePartTableSource, err := q.extractPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+		recursivePartTableSource, err := q.extractPseudoTableFromQueryNode(setOp.Right)
 		if err != nil {
-			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q", cteName)
 		}
-		recursivePartTableSource, err = applyCTEColumnList(cteName, recursivePartTableSource, commonTableExpression.Column_list())
+		recursivePartTableSource, err = applyCTEColumnList(cteName, recursivePartTableSource, cte.Columns)
 		if err != nil {
-			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q", cteName)
 		}
 
 		currentCTE := q.ctes[len(q.ctes)-1]
-		mergedColumns, changed, err := mergeQuerySpanResults(currentCTE.GetQuerySpanResult(), recursivePartTableSource.GetQuerySpanResult(), cteName, commonTableExpression.GetStart().GetLine())
+		mergedColumns, changed, err := mergeQuerySpanResults(currentCTE.GetQuerySpanResult(), recursivePartTableSource.GetQuerySpanResult(), cteName)
 		if err != nil {
 			return err
 		}
@@ -251,33 +242,7 @@ func (q *querySpanExtractor) extractRecursiveCTE(cteName string, commonTableExpr
 	return nil
 }
 
-func (q *querySpanExtractor) extractAnchorPseudoTableFromSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) (*base.PseudoTable, error) {
-	if ctx == nil {
-		return nil, errors.Errorf("empty select statement in parentheses")
-	}
-	if nested := ctx.Select_statement_in_parentheses(); nested != nil {
-		return q.extractAnchorPseudoTableFromSelectStatementInParentheses(nested)
-	}
-	if selectStatement := ctx.Select_statement(); selectStatement != nil {
-		return q.extractPseudoTableFromSelectStatement(selectStatement)
-	}
-	if withExpression := ctx.With_expression(); withExpression != nil {
-		originalCTECount := len(q.ctes)
-		if err := q.extractCTEFromWithExpression(withExpression); err != nil {
-			return nil, err
-		}
-		defer func() {
-			q.ctes = q.ctes[:originalCTECount]
-		}()
-		if setOperator := ctx.Set_operators(); setOperator != nil {
-			return q.extractPseudoTableFromSetOperator(setOperator)
-		}
-		return nil, errors.Errorf("failed to extract anchor statement near line %d", ctx.GetStart().GetLine())
-	}
-	return nil, errors.Errorf("failed to extract anchor statement near line %d", ctx.GetStart().GetLine())
-}
-
-func applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columnList parser.IColumn_listContext) (*base.PseudoTable, error) {
+func applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columns []ast.Ident) (*base.PseudoTable, error) {
 	if pseudoTable == nil {
 		pseudoTable = &base.PseudoTable{
 			Name:    cteName,
@@ -291,21 +256,21 @@ func applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columnLis
 	}
 	copy(result.Columns, pseudoTable.GetQuerySpanResult())
 
-	if columnList == nil {
+	if len(columns) == 0 {
 		return result, nil
 	}
-	if len(columnList.AllColumn_name()) != len(result.GetQuerySpanResult()) {
-		return nil, errors.Errorf("the number of columns in the CTE %q near line %d returns %d fields, but the column list returns %d fields", cteName, columnList.GetStart().GetLine(), len(result.GetQuerySpanResult()), len(columnList.AllColumn_name()))
+	if len(columns) != len(result.GetQuerySpanResult()) {
+		return nil, errors.Errorf("the number of columns in the CTE %q returns %d fields, but the column list returns %d fields", cteName, len(result.GetQuerySpanResult()), len(columns))
 	}
-	for i, columnName := range columnList.AllColumn_name() {
-		result.Columns[i].Name = normalizeSnowSQLColumnName(columnName)
+	for i, columnName := range columns {
+		result.Columns[i].Name = normalizeSnowflakeIdentifier(columnName)
 	}
 	return result, nil
 }
 
-func mergeQuerySpanResults(currentColumns, newColumns []base.QuerySpanResult, cteName string, line int) ([]base.QuerySpanResult, bool, error) {
+func mergeQuerySpanResults(currentColumns, newColumns []base.QuerySpanResult, cteName string) ([]base.QuerySpanResult, bool, error) {
 	if len(currentColumns) != len(newColumns) {
-		return nil, false, errors.Errorf("recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(newColumns), len(currentColumns), cteName, line)
+		return nil, false, errors.Errorf("recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q", len(newColumns), len(currentColumns), cteName)
 	}
 
 	mergedColumns := make([]base.QuerySpanResult, len(currentColumns))
@@ -319,14 +284,41 @@ func mergeQuerySpanResults(currentColumns, newColumns []base.QuerySpanResult, ct
 	return mergedColumns, changed, nil
 }
 
-func mergeSetOperatorColumns(left, right *base.PseudoTable, leftLine, setOperatorIndex, rightLine int) error {
+// extractPseudoTableFromSetOperation extracts result columns from a
+// set-operation query (UNION/INTERSECT/EXCEPT). omni nests chained set-ops
+// left-associatively, so the left branch may itself be a *ast.SetOperationStmt.
+// The left branch's column names are kept; each right branch is merged
+// positionally into the left's columns (the executor requires matching column
+// counts), mirroring the legacy mergeSetOperatorColumns logic.
+func (q *querySpanExtractor) extractPseudoTableFromSetOperation(setOp *ast.SetOperationStmt) (*base.PseudoTable, error) {
+	left, err := q.extractPseudoTableFromQueryNode(setOp.Left)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract the left part of the set operation")
+	}
+	right, err := q.extractPseudoTableFromQueryNode(setOp.Right)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract the right part of the set operation")
+	}
+	if left == nil {
+		return right, nil
+	}
+	if right == nil {
+		return left, nil
+	}
+	if err := mergeSetOperatorColumns(left, right); err != nil {
+		return nil, err
+	}
+	return left, nil
+}
+
+func mergeSetOperatorColumns(left, right *base.PseudoTable) error {
 	if left == nil || right == nil {
 		return nil
 	}
 	leftColumns := left.GetQuerySpanResult()
 	rightColumns := right.GetQuerySpanResult()
 	if len(leftColumns) != len(rightColumns) {
-		return errors.Errorf("the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", leftLine, len(leftColumns), setOperatorIndex, rightLine, len(rightColumns))
+		return errors.Errorf("the number of columns in the left part of the set operation returns %d fields, but the right part returns %d fields", len(leftColumns), len(rightColumns))
 	}
 	for i := range rightColumns {
 		left.Columns[i].SourceColumns, _ = base.MergeSourceColumnSet(leftColumns[i].SourceColumns, rightColumns[i].SourceColumns)
@@ -334,71 +326,23 @@ func mergeSetOperatorColumns(left, right *base.PseudoTable, leftLine, setOperato
 	return nil
 }
 
-func (q *querySpanExtractor) extractPseudoTableFromSetOperator(ctx parser.ISet_operatorsContext) (*base.PseudoTable, error) {
-	return q.extractPseudoTableFromSelectStatementInParentheses(ctx.Select_statement_in_parentheses())
-}
-
-func (q *querySpanExtractor) extractPseudoTableFromSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStmt) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
-	var result *base.PseudoTable
-	var err error
-	if selectStatement := ctx.Select_statement(); selectStatement != nil {
-		result, err = q.extractPseudoTableFromSelectStatement(selectStatement)
+	if len(ctx.From) > 0 {
+		tableSourceFrom, err := q.extractTableSourceFromFrom(ctx.From)
 		if err != nil {
 			return nil, err
 		}
-	} else if nested := ctx.Select_statement_in_parentheses(); nested != nil {
-		result, err = q.extractPseudoTableFromSelectStatementInParentheses(nested)
-		if err != nil {
-			return nil, err
+		if tableSourceFrom != nil {
+			originalFromFieldsLength := len(q.tableSourcesFrom)
+			q.tableSourcesFrom = append(q.tableSourcesFrom, tableSourceFrom)
+			defer func() {
+				q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldsLength]
+			}()
 		}
-	} else if withExpression := ctx.With_expression(); withExpression != nil {
-		originalCTECount := len(q.ctes)
-		if err := q.extractCTEFromWithExpression(withExpression); err != nil {
-			return nil, err
-		}
-		defer func() {
-			q.ctes = q.ctes[:originalCTECount]
-		}()
-	}
-
-	if setOperator := ctx.Set_operators(); setOperator != nil {
-		right, err := q.extractPseudoTableFromSetOperator(setOperator)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract set operator near line %d", setOperator.GetStart().GetLine())
-		}
-		if result == nil {
-			return right, nil
-		}
-		if err := mergeSetOperatorColumns(result, right, ctx.GetStart().GetLine(), 1, setOperator.GetStart().GetLine()); err != nil {
-			return nil, err
-		}
-	}
-
-	if result == nil {
-		return nil, errors.Errorf("failed to extract select statement near line %d", ctx.GetStart().GetLine())
-	}
-	return result, nil
-}
-
-func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.ISelect_statementContext) (*base.PseudoTable, error) {
-	if ctx == nil {
-		return nil, nil
-	}
-
-	if ctx.Select_optional_clauses() != nil && ctx.Select_optional_clauses().From_clause() != nil {
-		tableSourcesFrom, err := q.extractTableSourceFromFromClause(ctx.Select_optional_clauses().From_clause())
-		if err != nil {
-			return nil, err
-		}
-		originalFromFieldsLength := len(q.tableSourcesFrom)
-		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSourcesFrom)
-		defer func() {
-			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldsLength]
-		}()
 	}
 
 	result := &base.PseudoTable{
@@ -406,132 +350,186 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 		Columns: make([]base.QuerySpanResult, 0),
 	}
 
-	var selectList parser.ISelect_listContext
-	if ctx.Select_clause() != nil {
-		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
-	} else if ctx.Select_top_clause() != nil {
-		selectList = ctx.Select_top_clause().Select_list_top().Select_list()
-	}
-	if selectList == nil {
-		return result, nil
-	}
-	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
-		if columnElemStar := iSelectListElem.Column_elem_star(); columnElemStar != nil {
-			normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectNameOrAlias(columnElemStar.Object_name_or_alias())
+	for _, target := range ctx.Targets {
+		if target == nil {
+			continue
+		}
+		if target.Star {
+			// SELECT * or SELECT t.* [EXCLUDE (cols)].
+			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName string
+			if star, ok := target.Expr.(*ast.StarExpr); ok && star != nil && star.Qualifier != nil {
+				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeSnowflakeObjectName(star.Qualifier, "", "")
+			}
 			left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
+				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement")
 			}
-			left = filterExcludedColumns(left, iSelectListElem.Exclude_clause())
+			left = filterExcludedColumns(left, target.Exclude)
 			result.Columns = append(result.Columns, left...)
-		} else if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
-			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
-			if v := columnElem.Object_name_or_alias(); v != nil {
-				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectNameOrAlias(v)
-			}
-			if columnName := columnElem.Column_name(); columnName != nil {
-				ids := columnName.AllId_()
-				if normalizedTableName == "" && len(ids) == 2 {
-					normalizedTableName = NormalizeSnowSQLObjectNamePart(ids[0])
-				}
-				normalizedColumnName = normalizeSnowSQLColumnName(columnName)
-				querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnName.GetStart().GetLine())
-				}
-				result.Columns = append(result.Columns, querySpanResult)
-			} else if columnElem.DOLLAR() != nil {
-				columnPosition, err := strconv.Atoi(columnElem.Column_position().Num().GetText())
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse column position %q to integer near line %d", columnElem.Column_position().Num().GetText(), columnElem.Column_position().Num().GetStart().GetLine())
-				}
-				if columnPosition < 1 {
-					return nil, errors.Errorf("column position %d is invalid because it is less than 1 near line %d", columnPosition, columnElem.Column_position().Num().GetStart().GetLine())
-				}
-				left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
-				}
-				if columnPosition > len(left) {
-					return nil, errors.Errorf("column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns for %q.%q.%q", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(left), normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-				}
-				result.Columns = append(result.Columns, left[columnPosition-1])
-			}
-			if asAlias := iSelectListElem.As_alias(); asAlias != nil && len(result.Columns) > 0 {
-				result.Columns[len(result.Columns)-1].Name = NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
-			}
-		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
-			if v := expressionElem.Expr(); v != nil {
-				columnName, querySpanResult, err := q.extractQuerySpanResultResultFromExpr(v)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-				}
-				result.Columns = append(result.Columns, base.QuerySpanResult{
-					Name:          columnName,
-					SourceColumns: querySpanResult.SourceColumns,
-				})
-			} else if v := expressionElem.Predicate(); v != nil {
-				columnName, querySpanResult, err := q.extractQuerySpanResultResultFromExpr(v)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-				}
-				result.Columns = append(result.Columns, base.QuerySpanResult{
-					Name:          columnName,
-					SourceColumns: querySpanResult.SourceColumns,
-				})
-			}
-
-			if asAlias := iSelectListElem.As_alias(); asAlias != nil && len(result.Columns) > 0 {
-				result.Columns[len(result.Columns)-1].Name = NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
-			}
+			continue
 		}
+
+		// Non-star target: a column reference resolves to a single source column;
+		// any other expression collects every column it references.
+		columnName, querySpanResult, err := q.extractQuerySpanResultFromTargetExpr(target.Expr)
+		if err != nil {
+			return nil, err
+		}
+		if !target.Alias.IsEmpty() {
+			columnName = normalizeSnowflakeIdentifier(target.Alias)
+		}
+		result.Columns = append(result.Columns, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: querySpanResult.SourceColumns,
+			IsPlainField:  querySpanResult.IsPlainField,
+		})
 	}
 
 	return result, nil
 }
 
-func normalizedObjectNameOrAlias(ctx parser.IObject_name_or_aliasContext) (string, string, string) {
-	if ctx == nil {
-		return "", "", ""
-	}
-	if objectName := ctx.Object_name(); objectName != nil {
-		return normalizedObjectName(objectName, "", "")
-	}
-	if alias := ctx.Alias(); alias != nil {
-		return "", "", NormalizeSnowSQLObjectNamePart(alias.Id_())
-	}
-	return "", "", ""
-}
-
-func normalizeSnowSQLColumnName(columnName parser.IColumn_nameContext) string {
-	if columnName == nil {
-		return ""
-	}
-	ids := columnName.AllId_()
-	if len(ids) == 0 {
-		return ""
-	}
-	return NormalizeSnowSQLObjectNamePart(ids[len(ids)-1])
-}
-
-func filterExcludedColumns(columns []base.QuerySpanResult, excludeClause parser.IExclude_clauseContext) []base.QuerySpanResult {
-	if excludeClause == nil {
-		return columns
-	}
-
-	excludedColumns := make(map[string]bool)
-	if columnName := excludeClause.Column_name(); columnName != nil {
-		excludedColumns[normalizeSnowSQLColumnName(columnName)] = true
-	}
-	if columnList := excludeClause.Column_list_in_parentheses(); columnList != nil {
-		if list := columnList.Column_list(); list != nil {
-			for _, columnName := range list.AllColumn_name() {
-				excludedColumns[normalizeSnowSQLColumnName(columnName)] = true
-			}
+// extractQuerySpanResultFromTargetExpr resolves one non-star SELECT-list
+// expression into its output name and source columns. A bare column reference
+// (the IsPlainField case) is resolved against the FROM scope back to its
+// physical source column; any compound expression instead unions the source
+// columns of every column reference inside it (IsPlainField=false).
+func (q *querySpanExtractor) extractQuerySpanResultFromTargetExpr(expr ast.Node) (string, base.QuerySpanResult, error) {
+	if colRef, ok := expr.(*ast.ColumnRef); ok {
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizeColumnRef(colRef)
+		querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+		if err != nil {
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the column %q is sensitive", normalizedColumnName)
 		}
+		return querySpanResult.Name, querySpanResult, nil
 	}
-	if len(excludedColumns) == 0 {
+
+	name := exprDisplayName(expr)
+	sourceColumns, err := q.collectSourceColumnsFromExpr(expr)
+	if err != nil {
+		return "", base.QuerySpanResult{}, err
+	}
+	return name, base.QuerySpanResult{
+		Name:          name,
+		SourceColumns: sourceColumns,
+		IsPlainField:  false,
+	}, nil
+}
+
+// collectSourceColumnsFromExpr walks an arbitrary SELECT-list / predicate
+// expression and unions the source columns of every column reference it
+// contains. Column references are resolved against the current FROM scope;
+// subqueries nested in the expression contribute their own source columns. This
+// is the omni-AST replacement for the legacy extractQuerySpanResultResultFromExpr
+// type-switch over the dozens of ANTLR expression contexts.
+func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.SourceColumnSet, error) {
+	result := make(base.SourceColumnSet)
+	if expr == nil {
+		return result, nil
+	}
+
+	var walkErr error
+	ast.Inspect(expr, func(node ast.Node) bool {
+		if node == nil || walkErr != nil {
+			return false
+		}
+		switch n := node.(type) {
+		case *ast.ColumnRef:
+			normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizeColumnRef(n)
+			querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+			if err != nil {
+				walkErr = errors.Wrapf(err, "failed to check whether the column %q is sensitive", normalizedColumnName)
+				return false
+			}
+			result, _ = base.MergeSourceColumnSet(result, querySpanResult.SourceColumns)
+			return false
+		case *ast.SubqueryExpr:
+			sub, err := q.extractPseudoTableFromQueryNode(n.Query)
+			if err != nil {
+				walkErr = err
+				return false
+			}
+			for _, field := range sub.GetQuerySpanResult() {
+				result, _ = base.MergeSourceColumnSet(result, field.SourceColumns)
+			}
+			return false
+		case *ast.ExistsExpr:
+			sub, err := q.extractPseudoTableFromQueryNode(n.Query)
+			if err != nil {
+				walkErr = err
+				return false
+			}
+			for _, field := range sub.GetQuerySpanResult() {
+				result, _ = base.MergeSourceColumnSet(result, field.SourceColumns)
+			}
+			return false
+		case *ast.StarExpr:
+			// COUNT(*) and similar: a star with no resolvable column contributes no
+			// specific source column (matching the legacy aggregate STAR branch).
+			return false
+		}
+		return true
+	})
+	if walkErr != nil {
+		return nil, walkErr
+	}
+	return result, nil
+}
+
+// exprDisplayName picks the output column name for an unaliased non-star target,
+// matching the legacy behavior where the result name fell back to the
+// expression's source text. For a bare column reference the trailing part is
+// used; for anything else omni's source range is unavailable here, so the name
+// is left empty (callers that have an AS alias override it anyway).
+func exprDisplayName(expr ast.Node) string {
+	switch e := expr.(type) {
+	case *ast.ColumnRef:
+		if len(e.Parts) > 0 {
+			return normalizeSnowflakeIdentifier(e.Parts[len(e.Parts)-1])
+		}
+	case *ast.ParenExpr:
+		return exprDisplayName(e.Expr)
+	case *ast.CastExpr:
+		return exprDisplayName(e.Expr)
+	case *ast.CollateExpr:
+		return exprDisplayName(e.Expr)
+	}
+	return ""
+}
+
+// normalizeColumnRef splits an omni ColumnRef (1-4 parts) into its normalized
+// (database, schema, table, column) components. A 1-part ref is a bare column;
+// 2-part is table.column; 3-part is schema.table.column; 4-part is
+// database.schema.table.column.
+func normalizeColumnRef(ref *ast.ColumnRef) (database, schema, table, column string) {
+	if ref == nil {
+		return "", "", "", ""
+	}
+	parts := ref.Parts
+	switch len(parts) {
+	case 1:
+		return "", "", "", normalizeSnowflakeIdentifier(parts[0])
+	case 2:
+		return "", "", normalizeSnowflakeIdentifier(parts[0]), normalizeSnowflakeIdentifier(parts[1])
+	case 3:
+		return "", normalizeSnowflakeIdentifier(parts[0]), normalizeSnowflakeIdentifier(parts[1]), normalizeSnowflakeIdentifier(parts[2])
+	case 4:
+		return normalizeSnowflakeIdentifier(parts[0]), normalizeSnowflakeIdentifier(parts[1]), normalizeSnowflakeIdentifier(parts[2]), normalizeSnowflakeIdentifier(parts[3])
+	default:
+		if len(parts) == 0 {
+			return "", "", "", ""
+		}
+		return "", "", "", normalizeSnowflakeIdentifier(parts[len(parts)-1])
+	}
+}
+
+func filterExcludedColumns(columns []base.QuerySpanResult, exclude []ast.Ident) []base.QuerySpanResult {
+	if len(exclude) == 0 {
 		return columns
+	}
+
+	excludedColumns := make(map[string]bool, len(exclude))
+	for _, columnName := range exclude {
+		excludedColumns[normalizeSnowflakeIdentifier(columnName)] = true
 	}
 
 	var result []base.QuerySpanResult
@@ -543,574 +541,81 @@ func filterExcludedColumns(columns []base.QuerySpanResult, excludeClause parser.
 	return result
 }
 
-// The closure of the IExprContext.
-func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.RuleContext) (string, base.QuerySpanResult, error) {
-	switch ctx := ctx.(type) {
-	case *parser.ExprContext:
-		if v := ctx.Primitive_expression(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Function_call(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		for _, expr := range ctx.AllExpr() {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		if v := ctx.Subquery(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-
-		if v := ctx.Case_expression(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Iff_expr(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Bracket_expression(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Arr_literal(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Json_literal(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-
-		if v := ctx.Try_cast_expr(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Object_name(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Trim_expression(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Expr_list(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.Full_column_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
-		querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
-		}
-		return querySpanResult.Name, querySpanResult, nil
-	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, q.defaultSchema)
-		fieldInfo, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
-		}
-		return fieldInfo.Name, fieldInfo, nil
-	case *parser.Trim_expressionContext:
-		if v := ctx.Expr(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Try_cast_exprContext:
-		if v := ctx.Expr(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Json_literalContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.AllKv_pair(); len(v) > 0 {
-			for _, kvPair := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(kvPair)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.Kv_pairContext:
-		if v := ctx.Value(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Arr_literalContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.AllValue(); len(v) > 0 {
-			for _, value := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(value)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.ValueContext:
-		return q.extractQuerySpanResultResultFromExpr(ctx.Expr())
-	case *parser.Bracket_expressionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.Expr_list(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		if v := ctx.Subquery(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Iff_exprContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.Search_condition(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(ctx.Search_condition())
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			for _, expr := range ctx.AllExpr() {
-				_, finalAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, finalAttributes.SourceColumns)
-			}
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Case_expressionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		for _, expr := range ctx.AllExpr() {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		if v := ctx.AllSwitch_section(); len(v) > 0 {
-			for _, switchSection := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(switchSection)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-			return ctx.GetText(), querySpanResult, nil
-		}
-		if v := ctx.AllSwitch_search_condition_section(); len(v) > 0 {
-			for _, switchSearchConditionSection := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(switchSearchConditionSection)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Switch_sectionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.AllExpr(); len(v) > 0 {
-			for _, expr := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Switch_search_condition_sectionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.Search_condition(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			_, maskingAttributes, err = q.extractQuerySpanResultResultFromExpr(ctx.Expr())
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Search_conditionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.Predicate(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Predicate().GetText(), ctx.Predicate().GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		if v := ctx.AllSearch_condition(); len(v) > 0 {
-			for _, searchCondition := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(searchCondition)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.PredicateContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.AllExpr(); len(v) > 0 {
-			for _, expr := range v {
-				_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-				if err != nil {
-					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-				}
-				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			}
-		}
-		if v := ctx.Subquery(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		if v := ctx.Expr_list(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.SubqueryContext:
-		fields, err := q.extractPseudoTableFromQueryStatement(ctx.Query_statement())
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
-		}
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		for _, querySpanResult := range fields.GetQuerySpanResult() {
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, querySpanResult.SourceColumns)
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.Primitive_expressionContext:
-		if v := ctx.AllId_(); len(v) > 0 {
-			return q.extractQuerySpanResultResultFromExpr(v[0])
-		}
-		return ctx.GetText(), base.QuerySpanResult{
-			Name: ctx.GetText(),
-		}, nil
-	case *parser.Function_callContext:
-		if v := ctx.Ranking_windowed_function(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Aggregate_function(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Object_name(); v != nil {
-			return v.GetText(), base.QuerySpanResult{
-				Name: ctx.GetText(),
-			}, nil
-		}
-		if v := ctx.Expr_list(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		if v := ctx.AllExpr(); len(v) > 0 {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v[0])
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v[0].GetText(), v[0].GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Aggregate_functionContext:
-		if v := ctx.Expr_list(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			return ctx.GetText(), maskingAttributes, nil
-		}
-		if ctx.STAR() != nil {
-			return ctx.GetText(), base.QuerySpanResult{}, nil
-		}
-		if v := ctx.Expr(); v != nil {
-			querySpanResult := base.QuerySpanResult{
-				Name:          ctx.GetText(),
-				SourceColumns: make(base.SourceColumnSet),
-			}
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			_, maskingAttributes, err = q.extractQuerySpanResultResultFromExpr(ctx.Order_by_clause())
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Ranking_windowed_functionContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.AllExpr(); len(v) > 0 {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v[0])
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v[0].GetText(), v[0].GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		if v := ctx.Over_clause(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Over_clauseContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		if v := ctx.Partition_by(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		if v := ctx.Order_by_expr(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-			return ctx.GetText(), querySpanResult, nil
-		}
-		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-	case *parser.Partition_byContext:
-		_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(ctx.Expr_list())
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
-		}
-		return ctx.GetText(), maskingAttributes, nil
-	case *parser.Order_by_exprContext:
-		_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(ctx.Expr_list_sorted())
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
-		}
-		return ctx.GetText(), maskingAttributes, nil
-	case *parser.Expr_listContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		allExpr := ctx.AllExpr()
-		for _, expr := range allExpr {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.Expr_list_sortedContext:
-		querySpanResult := base.QuerySpanResult{
-			Name:          ctx.GetText(),
-			SourceColumns: make(base.SourceColumnSet),
-		}
-		allExpr := ctx.AllExpr()
-		for _, expr := range allExpr {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(expr)
-			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
-			}
-			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
-		}
-		return ctx.GetText(), querySpanResult, nil
-	case *parser.Id_Context:
-		normalizedColumnName := NormalizeSnowSQLObjectNamePart(ctx)
-		fieldInfo, err := q.getField("", "", "", normalizedColumnName)
-		if err != nil {
-			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
-		}
-		return fieldInfo.Name, fieldInfo, nil
-	}
-	return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
-}
-
-func (q *querySpanExtractor) extractTableSourceFromFromClause(ctx parser.IFrom_clauseContext) (base.TableSource, error) {
-	if ctx == nil {
-		return nil, nil
-	}
-
-	return q.extractTableSourceFromTableSources(ctx.Table_sources())
-}
-
-func (q *querySpanExtractor) extractTableSourceFromTableSources(ctx parser.ITable_sourcesContext) (base.TableSource, error) {
-	if ctx == nil {
-		return nil, nil
-	}
-	allTableSources := ctx.AllTable_source()
-
+// extractTableSourceFromFrom resolves a FROM clause (a list of *ast.TableRef and
+// *ast.JoinExpr items) into a single combined table source exposing every column
+// it provides. Multiple top-level FROM items are an implicit CROSS JOIN, so
+// their columns are concatenated into one pseudo-table (matching the legacy
+// extractTableSourceFromTableSources). A single FROM item is returned as-is so
+// its alias/name is preserved for qualified column resolution; two or more items
+// collapse into an unnamed pseudo-table.
+func (q *querySpanExtractor) extractTableSourceFromFrom(froms []ast.Node) (base.TableSource, error) {
 	var result base.TableSource
-	// If there are multiple table sources, the default join type is CROSS JOIN.
-	for _, tableSource := range allTableSources {
-		candidatesTableSource, err := q.extractTableSourceFromTableSource(tableSource)
+	for _, item := range froms {
+		tableSource, err := q.extractTableSourceFromItem(item)
 		if err != nil {
 			return nil, err
 		}
+		if tableSource == nil {
+			continue
+		}
 		if result == nil {
-			result = candidatesTableSource
-		} else {
-			pseudoTable := &base.PseudoTable{
-				Name:    "",
-				Columns: append(result.GetQuerySpanResult(), candidatesTableSource.GetQuerySpanResult()...),
-			}
-			result = pseudoTable
+			result = tableSource
+			continue
+		}
+		result = &base.PseudoTable{
+			Name:    "",
+			Columns: append(result.GetQuerySpanResult(), tableSource.GetQuerySpanResult()...),
 		}
 	}
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromTableSource(ctx parser.ITable_sourceContext) (base.TableSource, error) {
-	if ctx == nil {
+func (q *querySpanExtractor) extractTableSourceFromItem(item ast.Node) (base.TableSource, error) {
+	switch n := item.(type) {
+	case *ast.TableRef:
+		return q.extractTableSourceFromTableRef(n)
+	case *ast.JoinExpr:
+		return q.extractTableSourceFromJoin(n)
+	default:
 		return nil, nil
 	}
-	return q.extractTableSOurceFromTableSourceItemJoined(ctx.Table_source_item_joined())
 }
 
-func (q *querySpanExtractor) extractTableSOurceFromTableSourceItemJoined(ctx parser.ITable_source_item_joinedContext) (base.TableSource, error) {
-	if ctx == nil {
+func (q *querySpanExtractor) extractTableSourceFromJoin(join *ast.JoinExpr) (base.TableSource, error) {
+	if join == nil {
 		return nil, nil
 	}
-
-	var left base.TableSource
-	var err error
-	if ctx.Object_ref() != nil {
-		left, err = q.extractTableSourceFromObjectRef(ctx.Object_ref())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the object ref near line %d", ctx.Object_ref().GetStart().GetLine())
-		}
-	}
-
-	if ctx.Table_source_item_joined() != nil {
-		left, err = q.extractTableSOurceFromTableSourceItemJoined(ctx.Table_source_item_joined())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the table source item joined near line %d", ctx.Table_source_item_joined().GetStart().GetLine())
-		}
-	}
-
-	for i, joinClause := range ctx.AllJoin_clause() {
-		left, err = q.extractPseudoTableFromJoinClause(joinClause, left)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the #%d join clause near line %d", i+1, joinClause.GetStart().GetLine())
-		}
-	}
-
-	return left, nil
-}
-
-func (q *querySpanExtractor) extractPseudoTableFromJoinClause(ctx parser.IJoin_clauseContext, left base.TableSource) (*base.PseudoTable, error) {
-	if ctx == nil {
-		return nil, nil
-	}
-
-	// Snowflake has 6 types of join:
-	// INNER JOIN, LEFT OUTER JOIN, RIGHT OUTER JOIN, FULL OUTER JOIN, CROSS JOIN, and NATURAL JOIN.
-	// Only the result(column num) of NATURAL JOIN may be reduced.
-	right, err := q.extractTableSourceFromObjectRef(ctx.Object_ref())
+	left, err := q.extractTableSourceFromItem(join.Left)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the right part of the JOIN near line %d", ctx.Object_ref().GetStart().GetLine())
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the join")
 	}
-	if ctx.NATURAL() != nil {
-		// We should remove all the duplicate columns in the result set.
-		// For example, if the left part has columns [a, b, c], and the right part has columns [a, b, d],
-		// then the result set of NATURAL JOIN should be [a, b, c, d].
+	right, err := q.extractTableSourceFromItem(join.Right)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the right part of the join")
+	}
+
+	var leftColumns, rightColumns []base.QuerySpanResult
+	if left != nil {
+		leftColumns = left.GetQuerySpanResult()
+	}
+	if right != nil {
+		rightColumns = right.GetQuerySpanResult()
+	}
+
+	// Snowflake has 6 join types: INNER, LEFT OUTER, RIGHT OUTER, FULL OUTER,
+	// CROSS, and NATURAL. Only NATURAL JOIN collapses the duplicated join keys.
+	if join.Natural {
 		rightMap := make(map[string]bool)
-		for _, rightColumn := range right.GetQuerySpanResult() {
+		for _, rightColumn := range rightColumns {
 			rightMap[rightColumn.Name] = true
 		}
 		var result []base.QuerySpanResult
-		for _, leftColumn := range left.GetQuerySpanResult() {
+		for _, leftColumn := range leftColumns {
 			delete(rightMap, leftColumn.Name)
 			result = append(result, leftColumn)
 		}
-		for _, rightColumn := range right.GetQuerySpanResult() {
-			if _, ok := rightMap[rightColumn.Name]; ok {
+		for _, rightColumn := range rightColumns {
+			if rightMap[rightColumn.Name] {
 				result = append(result, rightColumn)
 			}
 		}
@@ -1120,148 +625,49 @@ func (q *querySpanExtractor) extractPseudoTableFromJoinClause(ctx parser.IJoin_c
 		}, nil
 	}
 
-	// For other types of join, we should keep all the columns for the left part and the right part.
 	var result []base.QuerySpanResult
-	result = append(result, left.GetQuerySpanResult()...)
-	result = append(result, right.GetQuerySpanResult()...)
+	result = append(result, leftColumns...)
+	result = append(result, rightColumns...)
 	return &base.PseudoTable{
 		Name:    "",
 		Columns: result,
 	}, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_refContext) (base.TableSource, error) {
-	if ctx == nil {
+func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (base.TableSource, error) {
+	if ref == nil {
 		return nil, nil
 	}
 
 	var result []base.QuerySpanResult
 
-	if objectName := ctx.Object_name(); objectName != nil {
-		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, q.defaultSchema)
+	switch {
+	case ref.Name != nil:
+		_, tableSource, err := q.findTableSchema(ref.Name, q.defaultDatbase, q.defaultSchema)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, tableSource.GetQuerySpanResult()...)
-	}
-
-	// TODO(zp): Handle the value clause.
-	if ctx.Values_table() != nil {
-		return nil, nil
-	}
-
-	// TODO(zp): In data-warehouse, define a function to return multiple rows is widespread, we should parse the
-	// function definition to extract the sensitive fields.
-	if ctx.TABLE() != nil {
-		return nil, nil
-	}
-
-	if ctx.Subquery() != nil {
-		tableSource, err := q.extractPseudoTableFromQueryStatement(ctx.Subquery().Query_statement())
+	case ref.Subquery != nil:
+		tableSource, err := q.extractPseudoTableFromQueryNode(ref.Subquery)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery near line %d", ctx.Subquery().GetStart().GetLine())
+			return nil, errors.Wrapf(err, "failed to extract sensitive fields of subquery in FROM")
 		}
 		result = append(result, tableSource.GetQuerySpanResult()...)
+	case ref.FuncCall != nil:
+		// TODO(zp): In data-warehouse, defining a table function that returns
+		// multiple rows is widespread; we should parse the function definition to
+		// extract the sensitive fields. For now, a table function exposes no known
+		// columns (mirroring the legacy TABLE()/flatten handling).
+		result = nil
+	default:
+		result = nil
 	}
 
-	// TODO(zp): Handle the flatten table.
-	if ctx.Flatten_table() != nil {
-		return nil, nil
-	}
-
-	if v := ctx.Pivot_unpivot(); v != nil {
-		if v.PIVOT() != nil {
-			pivotColumnName := v.AllId_()[1]
-			normalizedPivotColumnName := NormalizeSnowSQLObjectNamePart(pivotColumnName)
-			pivotColumnIndex := -1
-			for i, field := range result {
-				if field.Name == normalizedPivotColumnName {
-					pivotColumnIndex = i
-					break
-				}
-			}
-			if pivotColumnIndex == -1 {
-				return nil, errors.Errorf(`pivot column %s is not found from field list %+v`, normalizedPivotColumnName, result)
-			}
-			pivotColumnInOriginalResult := result[pivotColumnIndex]
-			result = append(result[:pivotColumnIndex], result[pivotColumnIndex+1:]...)
-
-			valueColumnName := v.AllId_()[2]
-			normalizedValueColumnName := NormalizeSnowSQLObjectNamePart(valueColumnName)
-			valueColumnIndex := -1
-			for i, field := range result {
-				if field.Name == normalizedValueColumnName {
-					valueColumnIndex = i
-					break
-				}
-			}
-			if valueColumnIndex == -1 {
-				return nil, errors.Errorf(`value column %s is not found from field list %+v`, normalizedValueColumnName, result)
-			}
-			result = append(result[:valueColumnIndex], result[valueColumnIndex+1:]...)
-
-			if v.Pivot_in_clause() == nil {
-				return nil, errors.Errorf("pivot in clause is missing near line %d", v.GetStart().GetLine())
-			}
-			for _, literal := range v.Pivot_in_clause().AllLiteral() {
-				result = append(result, base.QuerySpanResult{
-					Name:          literal.GetText(),
-					SourceColumns: pivotColumnInOriginalResult.SourceColumns,
-				})
-			}
-		} else if v.UNPIVOT() != nil {
-			var strippedColumnIndices []int
-			var strippedColumnInOriginalResult []base.QuerySpanResult
-			if v.Aliased_column_list() == nil {
-				return nil, errors.Errorf("aliased column list is missing for unpivot near line %d", v.GetStart().GetLine())
-			}
-			for idx, columnName := range v.Aliased_column_list().AllColumn_name() {
-				normalizedColumnName := normalizeSnowSQLColumnName(columnName)
-				for i, field := range result {
-					if field.Name == normalizedColumnName {
-						strippedColumnIndices = append(strippedColumnIndices, i)
-						strippedColumnInOriginalResult = append(strippedColumnInOriginalResult, field)
-						break
-					}
-				}
-				if len(strippedColumnIndices) != idx+1 {
-					return nil, errors.Errorf(`column %s is not found from field list %+v`, normalizedColumnName, result)
-				}
-				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
-			}
-
-			sourceColumns := make(base.SourceColumnSet)
-			for _, field := range strippedColumnInOriginalResult {
-				sourceColumns, _ = base.MergeSourceColumnSet(sourceColumns, field.SourceColumns)
-			}
-
-			valueColumnName := v.Id_(0)
-			normalizedValueColumnName := NormalizeSnowSQLObjectNamePart(valueColumnName)
-
-			nameColumnName := normalizeSnowSQLColumnName(v.Column_name())
-
-			result = append(result, base.QuerySpanResult{
-				Name:          nameColumnName,
-				SourceColumns: make(base.SourceColumnSet),
-			}, base.QuerySpanResult{
-				Name:          normalizedValueColumnName,
-				SourceColumns: sourceColumns,
-			})
-		}
-	}
-
-	// If the as alias is not nil, we should use the alias name to replace the original table name.
-	if ctx.Pivot_unpivot() != nil && ctx.Pivot_unpivot().As_alias() != nil {
-		id := ctx.Pivot_unpivot().As_alias().Alias().Id_()
-		aliasName := NormalizeSnowSQLObjectNamePart(id)
-		return &base.PseudoTable{
-			Name:    aliasName,
-			Columns: result,
-		}, nil
-	}
-	if ctx.As_alias() != nil {
-		id := ctx.As_alias().Alias().Id_()
-		aliasName := NormalizeSnowSQLObjectNamePart(id)
+	// If the table reference carries an alias, expose its columns under the alias
+	// name so qualified column references (alias.column) resolve to it.
+	if !ref.Alias.IsEmpty() {
+		aliasName := normalizeSnowflakeIdentifier(ref.Alias)
 		return &base.PseudoTable{
 			Name:    aliasName,
 			Columns: result,
@@ -1274,8 +680,8 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	}, nil
 }
 
-func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSource, error) {
-	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(objectName, "", "")
+func (q *querySpanExtractor) findTableSchema(objectName *ast.ObjectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSource, error) {
+	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeSnowflakeObjectName(objectName, "", "")
 	// For snowflake, we should find the table schema in ctes by ascending order.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
 		for _, cte := range q.ctes {
@@ -1284,7 +690,7 @@ func (q *querySpanExtractor) findTableSchema(objectName parser.IObject_nameConte
 			}
 		}
 	}
-	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
+	normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeSnowflakeObjectName(objectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName)
 	allDatabases, err := q.gCtx.ListDatabaseNamesFunc(q.ctx, q.gCtx.InstanceID)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to get all databases")
@@ -1459,63 +865,111 @@ func (q *querySpanExtractor) getField(normalizedDatabaseName, normalizedSchemaNa
 	return base.QuerySpanResult{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func normalizedFullColumnName(ctx parser.IFull_column_nameContext) (normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string) {
-	if ctx.GetDb_name() != nil {
-		normalizedDatabaseName = NormalizeSnowSQLObjectNamePart(ctx.GetDb_name())
-	}
-	if ctx.GetSchema() != nil {
-		normalizedSchemaName = NormalizeSnowSQLObjectNamePart(ctx.GetSchema())
-	}
-	if ctx.GetTab_name() != nil {
-		normalizedTableName = NormalizeSnowSQLObjectNamePart(ctx.GetTab_name())
-	}
-	if ctx.GetCol_name() != nil {
-		normalizedColumnName = NormalizeSnowSQLObjectNamePart(ctx.GetCol_name())
-	}
-	return normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName
+// getAccessTables extracts the list of resources from the SELECT statement, and
+// normalizes the object names with the NON-EMPTY currentNormalizedDatabase and
+// currentNormalizedSchema. It collects every *ast.TableRef with a table name —
+// including CTE references and subquery tables — mirroring the legacy
+// accessTablesListener, which added every object_ref it visited.
+//
+// It uses a hand-written recursion rather than ast.Inspect because omni's
+// generated AST walker does NOT descend into a SelectStmt's WITH clause, SELECT
+// targets, GROUP BY, ORDER BY, or FETCH; those sub-trees can carry table
+// references (CTE bodies, scalar subqueries) that the legacy listener — which
+// walked the full ANTLR parse tree — would have recorded.
+func getAccessTables(currentNormalizedDatabase, currentNormalizedSchema string, node ast.Node) base.SourceColumnSet {
+	resourceMap := make(base.SourceColumnSet)
+	collectAccessTables(node, currentNormalizedDatabase, currentNormalizedSchema, resourceMap)
+	return resourceMap
 }
 
-func normalizedObjectName(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string) {
-	// TODO(zp): unify here with NormalizeObjectName in backend/plugin/parser/sql/snowsql.go
-	var parts []string
-	if objectName == nil {
-		return "", "", ""
+// collectAccessTables recursively records every table reference reachable from
+// node into resourceMap. It explicitly descends into the SelectStmt sub-parts
+// that omni's generated walker skips; for everything else it falls back to
+// ast.Inspect, which reaches the remaining FROM/WHERE/JOIN/subquery table refs.
+func collectAccessTables(node ast.Node, defaultDatabase, defaultSchema string, resourceMap base.SourceColumnSet) {
+	if node == nil {
+		return
 	}
-	database := normalizedFallbackDatabaseName
-	if d := objectName.GetD(); d != nil {
-		normalizedD := NormalizeSnowSQLObjectNamePart(d)
-		if normalizedD != "" {
-			database = normalizedD
+	switch n := node.(type) {
+	case *ast.File:
+		for _, stmt := range n.Stmts {
+			collectAccessTables(stmt, defaultDatabase, defaultSchema, resourceMap)
 		}
-	}
-	parts = append(parts, database)
-
-	schema := normalizedFallbackSchemaName
-	if s := objectName.GetS(); s != nil {
-		normalizedS := NormalizeSnowSQLObjectNamePart(s)
-		if normalizedS != "" {
-			schema = normalizedS
+		return
+	case *ast.SetOperationStmt:
+		collectAccessTables(n.Left, defaultDatabase, defaultSchema, resourceMap)
+		collectAccessTables(n.Right, defaultDatabase, defaultSchema, resourceMap)
+		return
+	case *ast.SelectStmt:
+		for _, cte := range n.With {
+			collectAccessTables(cte.Query, defaultDatabase, defaultSchema, resourceMap)
 		}
+		for _, item := range n.From {
+			collectAccessTables(item, defaultDatabase, defaultSchema, resourceMap)
+		}
+		for _, target := range n.Targets {
+			if target != nil {
+				collectAccessTables(target.Expr, defaultDatabase, defaultSchema, resourceMap)
+			}
+		}
+		collectAccessTables(n.Where, defaultDatabase, defaultSchema, resourceMap)
+		if n.GroupBy != nil {
+			for _, item := range n.GroupBy.Items {
+				collectAccessTables(item, defaultDatabase, defaultSchema, resourceMap)
+			}
+		}
+		collectAccessTables(n.Having, defaultDatabase, defaultSchema, resourceMap)
+		collectAccessTables(n.Qualify, defaultDatabase, defaultSchema, resourceMap)
+		for _, item := range n.OrderBy {
+			if item != nil {
+				collectAccessTables(item.Expr, defaultDatabase, defaultSchema, resourceMap)
+			}
+		}
+		return
+	case *ast.JoinExpr:
+		collectAccessTables(n.Left, defaultDatabase, defaultSchema, resourceMap)
+		collectAccessTables(n.Right, defaultDatabase, defaultSchema, resourceMap)
+		collectAccessTables(n.On, defaultDatabase, defaultSchema, resourceMap)
+		return
+	case *ast.TableRef:
+		if n.Name != nil {
+			database, schema, table := normalizeSnowflakeObjectName(n.Name, defaultDatabase, defaultSchema)
+			resourceMap[base.ColumnResource{
+				Database: database,
+				Schema:   schema,
+				Table:    table,
+			}] = true
+		}
+		if n.Subquery != nil {
+			collectAccessTables(n.Subquery, defaultDatabase, defaultSchema, resourceMap)
+		}
+		if n.FuncCall != nil {
+			collectAccessTables(n.FuncCall, defaultDatabase, defaultSchema, resourceMap)
+		}
+		return
+	case *ast.SubqueryExpr:
+		collectAccessTables(n.Query, defaultDatabase, defaultSchema, resourceMap)
+		return
+	case *ast.ExistsExpr:
+		collectAccessTables(n.Query, defaultDatabase, defaultSchema, resourceMap)
+		return
 	}
-	parts = append(parts, schema)
 
-	normalizedO := NormalizeSnowSQLObjectNamePart(objectName.GetO())
-	parts = append(parts, normalizedO)
-
-	return parts[0], parts[1], parts[2]
-}
-
-// getAccessTables extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema string, tree antlr.Tree) base.SourceColumnSet {
-	l := &accessTablesListener{
-		currentDatabase: currentNormalizedDatabase,
-		currentSchema:   currentNormalizedSchema,
-		resourceMap:     make(base.SourceColumnSet),
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-
-	return l.resourceMap
+	// For any other expression node, walk its children with ast.Inspect (which
+	// fully traverses non-SelectStmt sub-trees) and recurse into the
+	// query-bearing nodes it surfaces. This catches table refs nested inside
+	// arbitrary expressions (e.g. a scalar subquery inside a CASE in WHERE).
+	ast.Inspect(node, func(child ast.Node) bool {
+		if child == nil || child == node {
+			return true
+		}
+		switch child.(type) {
+		case *ast.SelectStmt, *ast.SetOperationStmt, *ast.TableRef, *ast.JoinExpr, *ast.SubqueryExpr, *ast.ExistsExpr:
+			collectAccessTables(child, defaultDatabase, defaultSchema, resourceMap)
+			return false
+		}
+		return true
+	})
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
@@ -1539,130 +993,4 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool)
 func isSystemResource(base.ColumnResource, bool) bool {
 	// TODO(zp): fix me.
 	return false
-}
-
-type accessTablesListener struct {
-	*parser.BaseSnowflakeParserListener
-
-	currentDatabase string
-	currentSchema   string
-	resourceMap     base.SourceColumnSet
-}
-
-func (l *accessTablesListener) EnterObject_ref(ctx *parser.Object_refContext) {
-	objectName := ctx.Object_name()
-	if objectName == nil {
-		return
-	}
-
-	database := l.currentDatabase
-	if d := objectName.GetD(); d != nil {
-		normalizedD := NormalizeSnowSQLObjectNamePart(d)
-		if normalizedD != "" {
-			database = normalizedD
-		}
-	}
-
-	schema := l.currentSchema
-	if s := objectName.GetS(); s != nil {
-		normalizedS := NormalizeSnowSQLObjectNamePart(s)
-		if normalizedS != "" {
-			schema = normalizedS
-		}
-	}
-
-	var table string
-	if o := objectName.GetO(); o != nil {
-		normalizedO := NormalizeSnowSQLObjectNamePart(o)
-		if normalizedO != "" {
-			table = normalizedO
-		}
-	}
-
-	l.resourceMap[base.ColumnResource{
-		Server:   "",
-		Database: database,
-		Schema:   schema,
-		Table:    table,
-		Column:   "",
-	}] = true
-}
-
-// queryTypeListener is the legacy ANTLR-based statement classifier used by the
-// query-span extractor above (it walks the same ANTLR parse tree the extractor
-// already builds). It was relocated here verbatim from query_type.go when that
-// file was migrated to the omni parser: the extractor is still on the legacy
-// ANTLR stack (a separate migration step), so it keeps this legacy listener
-// while query_type.go's omni getQueryType serves the SQL-editor validator. When
-// the extractor is migrated to omni it will call getQueryType(ast.Node) and this
-// listener can be deleted.
-type queryTypeListener struct {
-	*parser.BaseSnowflakeParserListener
-
-	allSystems bool
-	result     base.QueryType
-	err        error
-}
-
-func (l *queryTypeListener) EnterBatch(ctx *parser.BatchContext) {
-	if l.err != nil {
-		return
-	}
-
-	l.result, l.err = l.getQueryTypeForBatch(ctx)
-}
-
-func (l *queryTypeListener) getQueryTypeForBatch(batch parser.IBatchContext) (base.QueryType, error) {
-	sqlCommands := batch.AllSql_command()
-	if len(sqlCommands) == 0 {
-		return base.QueryTypeUnknown, nil
-	}
-	sqlCommand := sqlCommands[0]
-	switch {
-	case sqlCommand.Ddl_command() != nil:
-		return base.DDL, nil
-	case sqlCommand.Dml_command() != nil:
-		return l.getQueryTypeForDmlCommand(sqlCommand.Dml_command())
-	case sqlCommand.Show_command() != nil:
-		return base.SelectInfoSchema, nil
-	case sqlCommand.Use_command() != nil:
-		return base.Select, nil
-	case sqlCommand.Describe_command() != nil:
-		return base.SelectInfoSchema, nil
-	case sqlCommand.Other_command() != nil:
-		return l.getQueryTypeForOtherCommand(sqlCommand.Other_command())
-	default:
-		return base.QueryTypeUnknown, nil
-	}
-}
-
-func (l *queryTypeListener) getQueryTypeForDmlCommand(dmlCommand parser.IDml_commandContext) (base.QueryType, error) {
-	switch {
-	case dmlCommand.Query_statement() != nil:
-		if l.allSystems {
-			return base.SelectInfoSchema, nil
-		}
-		return base.Select, nil
-	default:
-		return base.DML, nil
-	}
-}
-
-func (*queryTypeListener) getQueryTypeForOtherCommand(otherCommand parser.IOther_commandContext) (base.QueryType, error) {
-	switch {
-	case otherCommand.Copy_into_table() != nil:
-		return base.DML, nil
-	case otherCommand.Comment() != nil:
-		return base.DDL, nil
-	case otherCommand.Set() != nil:
-		return base.Select, nil
-	case otherCommand.Call() != nil:
-		return base.DML, nil
-	case otherCommand.Execute_immediate() != nil:
-		return base.DML, nil
-	case otherCommand.Execute_task() != nil:
-		return base.DML, nil
-	default:
-		return base.QueryTypeUnknown, nil
-	}
 }

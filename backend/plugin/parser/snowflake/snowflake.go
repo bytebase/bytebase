@@ -5,6 +5,8 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
+	omniast "github.com/bytebase/omni/snowflake/ast"
+	omniparser "github.com/bytebase/omni/snowflake/parser"
 	parser "github.com/bytebase/parser/snowflake"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -220,4 +222,80 @@ func IsSnowflakeKeyword(s string, caseSensitive bool) bool {
 		s = strings.ToUpper(s)
 	}
 	return snowflakeKeyword[s]
+}
+
+// ---------------------------------------------------------------------------
+// omni-AST-based normalization helpers
+//
+// These mirror the legacy ANTLR helpers (NormalizeSnowSQLObjectName /
+// NormalizeSnowSQLObjectNamePart / NormalizeSnowSQLSchemaName) but operate on
+// omni's hand-written AST nodes (*omniast.ObjectName, omniast.Ident) instead of
+// ANTLR contexts, applying the SAME Snowflake identifier-folding rules
+// (unquoted → uppercase, quoted → verbatim). They are the shared base the
+// query-span extractor and (next) the advisors build on once they move onto the
+// omni parser. The legacy ANTLR helpers above are kept ADDITIVELY because the
+// not-yet-migrated advisors still consume them.
+// ---------------------------------------------------------------------------
+
+// parseSnowflakeAST parses a single Snowflake statement with the omni parser and
+// returns the resulting *ast.File. It mirrors trino.parseTrinoSQL: a thin
+// wrapper over omniparser.Parse so call sites share one parse entry point.
+func parseSnowflakeAST(statement string) (*omniast.File, error) {
+	return omniparser.Parse(statement)
+}
+
+// normalizeSnowflakeIdentifier returns the canonical (folded) form of an omni
+// Ident, applying the Snowflake identifier-folding rules: an unquoted identifier
+// is upper-cased; a quoted identifier is returned verbatim (case preserved, the
+// surrounding quotes already stripped by the lexer). This is the omni-AST analog
+// of ExtractSnowSQLOrdinaryIdentifier and delegates to omni's own Ident.Normalize
+// so the folding stays in lock-step with the parser.
+func normalizeSnowflakeIdentifier(id omniast.Ident) string {
+	if id.IsEmpty() {
+		return ""
+	}
+	return id.Normalize()
+}
+
+// normalizeSnowflakeObjectName splits an omni *ObjectName into its normalized
+// (database, schema, table) parts, filling in the supplied fallbacks for any
+// part the name omits. It is the omni-AST analog of the extractor's
+// normalizedObjectName helper (which took parser.IObject_nameContext). An empty
+// part in the source leaves the corresponding fallback in place.
+func normalizeSnowflakeObjectName(objectName *omniast.ObjectName, fallbackDatabaseName, fallbackSchemaName string) (database, schema, table string) {
+	if objectName == nil {
+		return "", "", ""
+	}
+
+	database = fallbackDatabaseName
+	if d := normalizeSnowflakeIdentifier(objectName.Database); d != "" {
+		database = d
+	}
+
+	schema = fallbackSchemaName
+	if s := normalizeSnowflakeIdentifier(objectName.Schema); s != "" {
+		schema = s
+	}
+
+	table = normalizeSnowflakeIdentifier(objectName.Name)
+	return database, schema, table
+}
+
+// normalizeSnowflakeSchemaName normalizes an omni *ObjectName that names a schema
+// (a 1- or 2-part name: [database.]schema), returning the "database.schema"
+// resource key with the fallback database filled in when the name is 1-part.
+// It is the omni-AST analog of NormalizeSnowSQLSchemaName.
+func normalizeSnowflakeSchemaName(schemaName *omniast.ObjectName, fallbackDatabaseName string) string {
+	if schemaName == nil {
+		return fallbackDatabaseName + "."
+	}
+	database := fallbackDatabaseName
+	// A 2-part schema name parses as Schema.Name (database.schema); a 1-part
+	// schema name parses as just Name (schema). Prefer the explicit database part
+	// when present.
+	if d := normalizeSnowflakeIdentifier(schemaName.Schema); d != "" {
+		database = d
+	}
+	schema := normalizeSnowflakeIdentifier(schemaName.Name)
+	return strings.Join([]string{database, schema}, ".")
 }
