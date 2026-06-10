@@ -22,19 +22,17 @@ const (
 	autoIncrementSymbol = "AUTO_INCREMENT"
 )
 
-var (
-	systemDatabases = map[string]bool{
-		"information_schema": true,
-		"_statistics_":       true,
+// systemDatabaseExclusion returns the quoted, comma-joined system databases to
+// exclude from instance discovery, per the driver's engine. StarRocks adds its
+// read-only `sys` metadatabase (Doris has no sys), matching the parser-side
+// system-database classification.
+func (d *Driver) systemDatabaseExclusion() string {
+	dbs := []string{"'information_schema'", "'_statistics_'"}
+	if d.dbType == storepb.Engine_STARROCKS {
+		dbs = append(dbs, "'sys'")
 	}
-	systemDatabaseClause = func() string {
-		var l []string
-		for k := range systemDatabases {
-			l = append(l, fmt.Sprintf("'%s'", k))
-		}
-		return strings.Join(l, ", ")
-	}()
-)
+	return strings.Join(dbs, ", ")
+}
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -57,7 +55,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", d.systemDatabaseExclusion())
 	query := `
 		SELECT
 			SCHEMA_NAME,
@@ -81,7 +79,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		); err != nil {
 			return nil, err
 		}
-		if d.dbType == storepb.Engine_DORIS {
+		if d.dbType == storepb.Engine_DORIS || d.dbType == storepb.Engine_STARROCKS {
 			database.CharacterSet = ""
 			database.Collation = ""
 		}
@@ -375,7 +373,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	// "characterSet":"utf8\u0000", "collation":"utf8_general_ci\u0000".
 	// ERROR: unsupported Unicode escape sequence (SQLSTATE 22P05).
-	if d.dbType == storepb.Engine_DORIS {
+	if d.dbType == storepb.Engine_DORIS || d.dbType == storepb.Engine_STARROCKS {
 		databaseMetadata.CharacterSet = ""
 		databaseMetadata.Collation = ""
 	}

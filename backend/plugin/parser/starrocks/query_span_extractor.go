@@ -167,13 +167,14 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool)
 	return !hasUser && hasSystem, false
 }
 
-// systemDatabases contains Doris system databases
-// Reference: https://doris.apache.org/docs/3.x/admin-manual/system-tables/overview
+// systemDatabases contains StarRocks system databases. StarRocks exposes a
+// read-only `sys` metadatabase and does not have Doris's `mysql` /
+// `__internal_schema`.
+// Reference: https://docs.starrocks.io/docs/administration/management/system_catalogs/sys/
 var systemDatabases = map[string]bool{
 	"information_schema": true,
-	"mysql":              true,
-	"__internal_schema":  true,
 	"_statistics_":       true,
+	"sys":                true,
 }
 
 func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
