@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-const stmtErrFmt = stmtErrFmt
+const stmtErrFmt = "statement: %s"
 
 func getStatementWithResultLimit(statement string, limit int) string {
 	stmt, err := getStatementWithResultLimitInline(statement, limit)
