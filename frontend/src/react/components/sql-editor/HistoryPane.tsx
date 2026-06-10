@@ -11,7 +11,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Button } from "@/react/components/ui/button";
-import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/react/router/handles";
@@ -30,6 +29,7 @@ import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
+import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
  * React migration of frontend/src/views/sql-editor/AsidePanel/HistoryPane/HistoryPane.vue.
@@ -259,11 +259,10 @@ export function HistoryPane() {
   return (
     <div className="relative w-full h-full flex flex-col justify-start items-start">
       <div className="w-full px-1">
-        <SearchInput
+        <HistorySearchInput
           value={searchText}
-          onChange={(e) => onSearchUpdate(e.target.value)}
+          onChange={onSearchUpdate}
           placeholder={t("sql-editor.search-history-by-statement")}
-          className="h-8"
         />
       </div>
 
