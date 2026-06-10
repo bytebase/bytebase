@@ -1,8 +1,6 @@
 package cosmosdb
 
 import (
-	"unicode/utf8"
-
 	omnicosmosdb "github.com/bytebase/omni/cosmosdb"
 	"github.com/bytebase/omni/cosmosdb/ast"
 
@@ -42,6 +40,7 @@ func ParseCosmosDB(statement string) ([]*OmniAST, error) {
 	}
 
 	var result []*OmniAST
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, stmt := range stmts {
 		if stmt.Empty() {
 			continue
@@ -49,35 +48,8 @@ func ParseCosmosDB(statement string) ([]*OmniAST, error) {
 		result = append(result, &OmniAST{
 			Node:          stmt.AST,
 			Text:          stmt.Text,
-			StartPosition: byteOffsetToRunePosition(statement, stmt.ByteStart),
+			StartPosition: positionMapper.Position(stmt.ByteStart),
 		})
 	}
 	return result, nil
-}
-
-// byteOffsetToRunePosition converts a byte offset to a 1-based line:column position
-// where column is measured in Unicode code points.
-func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
-	if byteOffset > len(sql) {
-		byteOffset = len(sql)
-	}
-
-	line := int32(1)
-	runeCol := int32(0)
-	i := 0
-	for i < byteOffset {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if r == '\n' {
-			line++
-			runeCol = 0
-		} else {
-			runeCol++
-		}
-		i += size
-	}
-
-	return &storepb.Position{
-		Line:   line,
-		Column: runeCol + 1,
-	}
 }

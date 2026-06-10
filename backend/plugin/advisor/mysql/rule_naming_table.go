@@ -80,8 +80,8 @@ func (r *namingTableOmniRule) OnStatement(node ast.Node) {
 		}
 	case *ast.AlterTableStmt:
 		for _, cmd := range n.Commands {
-			if cmd.Type == ast.ATRenameTable && cmd.NewName != "" {
-				r.handleTableName(cmd.NewName, r.LocToLine(n.Loc))
+			if newTableName := omniRenameTableName(cmd); newTableName != "" {
+				r.handleTableName(newTableName, r.LocToLine(n.Loc))
 			}
 		}
 	case *ast.RenameTableStmt:

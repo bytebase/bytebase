@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {{email}}.",
+      "continue-with-email": "Continue with email",
+      "continue-with-idp": "Continue with {{idp}}",
       "email-code-tab": "Email Code",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
@@ -150,8 +152,10 @@
       "new-user": "New to Bytebase?",
       "resend-code": "Resend code",
       "resend-in": "Resend in {{seconds}}s",
-      "send-code": "Send code",
-      "sign-in-with-idp": "Sign in with {{idp}}",
+      "sign-in-or-create": "Sign in or create your account",
+      "sign-in-to-account": "Sign in to your account",
+      "standard-tab": "Standard",
+      "tos": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "verification-code": "Verification code"
     },
     "sign-up": {

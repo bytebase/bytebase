@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { AuthDivider } from "@/react/components/auth/AuthDivider";
 import { AuthFooter } from "@/react/components/auth/AuthFooter";
 import { UserPasswordFields } from "@/react/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/react/components/auth/userPasswordValidation";
@@ -222,25 +223,17 @@ export function SignupPage() {
         </div>
 
         {!needAdminSetup && (
-          <div className="mt-6 relative">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 flex items-center"
+          <AuthDivider className="mt-6">
+            <span className="pl-2 bg-white text-control">
+              {t("auth.sign-up.existing-user")}
+            </span>
+            <RouterLink
+              to={{ name: AUTH_SIGNIN_MODULE, query }}
+              className="accent-link px-2 bg-white"
             >
-              <div className="w-full border-t border-control-border" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="pl-2 bg-white text-control">
-                {t("auth.sign-up.existing-user")}
-              </span>
-              <RouterLink
-                to={{ name: AUTH_SIGNIN_MODULE, query }}
-                className="accent-link px-2 bg-white"
-              >
-                {t("common.sign-in")}
-              </RouterLink>
-            </div>
-          </div>
+              {t("common.sign-in")}
+            </RouterLink>
+          </AuthDivider>
         )}
       </div>
 

@@ -13,7 +13,6 @@ import (
 
 func init() {
 	base.RegisterDiagnoseFunc(storepb.Engine_DORIS, Diagnose)
-	base.RegisterDiagnoseFunc(storepb.Engine_STARROCKS, Diagnose)
 }
 
 // Diagnose returns syntax diagnostics for the given Doris statement.

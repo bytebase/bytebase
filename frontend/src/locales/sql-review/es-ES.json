@@ -712,5 +712,9 @@
     "bb-sql-review-prod-desc": "Política completa donde se tiene protección total y mejores prácticas para sus bases de datos.",
     "bb-sql-review-sample": "Plantilla de Muestra",
     "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables."
+  },
+  "validation": {
+    "rule-required": "Seleccione al menos una regla.",
+    "string-array-required": "Agregue al menos un valor para {{rule}}."
   }
 }

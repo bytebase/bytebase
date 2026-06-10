@@ -10,7 +10,6 @@ import (
 )
 
 func init() {
-	base.RegisterSplitterFunc(storepb.Engine_STARROCKS, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_DORIS, SplitSQL)
 }
 

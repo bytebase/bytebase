@@ -289,6 +289,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 
 	searchPath := metadata.GetSearchPath()
 	var dmls []statementInfo
+	// Node locations ascend across statements, so a single incremental mapper
+	// converts all offsets in one pass instead of rescanning from byte 0.
+	posMapper := base.NewByteOffsetPositionMapper(statement)
 
 	for i, stmt := range stmts {
 		if stmt.Empty() {
@@ -320,9 +323,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 			}
 			table.StatementType = StatementTypeUpdate
 			nodeLoc := n.Loc
-			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := posMapper.Position(nodeLoc.Start)
 			startPos.Column-- // 0-based column to match existing convention
-			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := posMapper.Position(nodeLoc.End)
 			dmls = append(dmls, statementInfo{
 				offset:    i,
 				statement: stmt.Text,
@@ -342,9 +345,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 			}
 			table.StatementType = StatementTypeDelete
 			nodeLoc := n.Loc
-			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := posMapper.Position(nodeLoc.Start)
 			startPos.Column--
-			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := posMapper.Position(nodeLoc.End)
 			dmls = append(dmls, statementInfo{
 				offset:    i,
 				statement: stmt.Text,

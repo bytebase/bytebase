@@ -712,5 +712,9 @@
     "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
     "bb-sql-review-sample": "サンプルテンプレート",
     "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
+  },
+  "validation": {
+    "rule-required": "少なくとも 1 つのルールを選択してください。",
+    "string-array-required": "{{rule}} に少なくとも 1 つの値を追加してください。"
   }
 }

@@ -15,7 +15,6 @@ import (
 
 func init() {
 	base.RegisterStatementRangesFunc(storepb.Engine_DORIS, GetStatementRanges)
-	base.RegisterStatementRangesFunc(storepb.Engine_STARROCKS, GetStatementRanges)
 }
 
 // GetStatementRanges returns the UTF-16 line/character ranges of statements
