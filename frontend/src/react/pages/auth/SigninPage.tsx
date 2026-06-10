@@ -268,9 +268,8 @@ export function SigninPage(props: SigninPageProps) {
           </AuthDivider>
         )}
 
-        {methods.length === 1 ? (
-          methods[0].panel
-        ) : methods.length > 1 ? (
+        {methods.length === 1 && methods[0].panel}
+        {methods.length > 1 && (
           <div className="rounded-sm border border-control-border bg-white p-4">
             <Tabs defaultValue={defaultTab}>
               <TabsList>
@@ -291,20 +290,24 @@ export function SigninPage(props: SigninPageProps) {
               ))}
             </Tabs>
           </div>
-        ) : null}
+        )}
 
         {isSaaSMode && combinedSignupSurface && (
           <p className="mt-6 text-center text-xs text-control-light leading-5">
             <Trans
               i18nKey="auth.sign-in.tos"
               components={{
+                // The anchor children are fallbacks — Trans replaces them
+                // with the localized text inside <terms>/<privacy> tags.
                 terms: (
                   <a
                     href="https://www.bytebase.com/terms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-control"
-                  />
+                  >
+                    Terms of Service
+                  </a>
                 ),
                 privacy: (
                   <a
@@ -312,7 +315,9 @@ export function SigninPage(props: SigninPageProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-control"
-                  />
+                  >
+                    Privacy Policy
+                  </a>
                 ),
               }}
             />

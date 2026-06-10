@@ -30,17 +30,18 @@ function brandFromTitle(title: string): Brand | undefined {
   return undefined;
 }
 
+function configUrlOf(idp: IdentityProvider): string {
+  const config = idp.config?.config;
+  if (config?.case === "oauth2Config") return config.value.authUrl;
+  if (config?.case === "oidcConfig") return config.value.issuer;
+  return "";
+}
+
 // The config URL identifies where the user actually authenticates, so it is
 // authoritative: when present, a non-brand host renders no icon rather than
 // falling back to the admin-editable title (which could claim another brand).
 function resolveBrand(idp: IdentityProvider): Brand | undefined {
-  const config = idp.config?.config;
-  const configUrl =
-    config?.case === "oauth2Config"
-      ? config.value.authUrl
-      : config?.case === "oidcConfig"
-        ? config.value.issuer
-        : "";
+  const configUrl = configUrlOf(idp);
   if (configUrl) {
     return brandFromHost(hostnameOf(configUrl));
   }
