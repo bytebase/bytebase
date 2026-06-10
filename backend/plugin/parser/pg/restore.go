@@ -63,6 +63,7 @@ func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDe
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
+	posMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, stmt := range stmts {
 		if stmt.Empty() {
 			continue
@@ -70,9 +71,9 @@ func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDe
 		switch stmt.AST.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			nodeLoc := ast.NodeLoc(stmt.AST)
-			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := posMapper.Position(nodeLoc.Start)
 			startPos.Column-- // 0-based to match backup convention
-			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := posMapper.Position(nodeLoc.End)
 			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
 				return stmt.AST, nil
 			}
@@ -262,6 +263,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 	}
 
 	var sqls []string
+	posMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, stmt := range stmts {
 		if stmt.Empty() {
 			continue
@@ -269,9 +271,9 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		switch stmt.AST.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			nodeLoc := ast.NodeLoc(stmt.AST)
-			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := posMapper.Position(nodeLoc.Start)
 			startPos.Column-- // 0-based
-			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := posMapper.Position(nodeLoc.End)
 			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
 				// Extract statement text without trailing semicolon/whitespace.
 				text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";")
