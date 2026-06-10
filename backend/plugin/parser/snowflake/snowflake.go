@@ -20,6 +20,14 @@ func init() {
 
 // parseSnowflakeStatements is the ParseStatementsFunc for Snowflake.
 // Returns []ParsedStatement with both text and AST populated.
+//
+// Dual-AST transition (advisor migration, mirrors the redshift omni cutover):
+// each statement is parsed BOTH ways — by the legacy ANTLR parser (a legacy
+// parse failure keeps failing the whole batch, exactly as before) AND by the
+// omni parser (best-effort: a statement omni cannot parse gets a nil omni
+// node). Both trees ride on one OmniAST per statement, so migrated advisors
+// read the omni node via GetOmniNode while the un-migrated ANTLR advisors
+// keep reading the ANTLR tree via base.GetANTLRAST.
 func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) {
 	// First split to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
@@ -27,13 +35,19 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 		return nil, err
 	}
 
-	// Then parse to get ASTs
+	// Then parse to get the legacy ANTLR ASTs. ParseSnowSQL re-splits with the
+	// same (omni-based) SplitSQL — which drops empty/comment-only segments —
+	// and returns one ANTLRAST per non-empty statement, so parseResults pairs
+	// with the non-empty stmts in order via astIndex below.
 	parseResults, err := ParseSnowSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
+	// Combine: Statement provides text/positions, OmniAST carries both trees.
+	// The omni side is parsed PER STATEMENT (stmt.Text) rather than from the
+	// whole input, so an omni failure on one statement cannot shift the
+	// pairing of the others.
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
@@ -41,8 +55,14 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
+			legacyAST := parseResults[astIndex]
 			astIndex++
+			ps.AST = &OmniAST{
+				Node:          parseOmniStatementNode(stmt.Text),
+				Text:          stmt.Text,
+				StartPosition: legacyAST.StartPosition,
+				LegacyAST:     legacyAST,
+			}
 		}
 		result = append(result, ps)
 	}
