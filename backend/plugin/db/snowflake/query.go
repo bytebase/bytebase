@@ -15,6 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
+const stmtErrFmt = stmtErrFmt
+
 func getStatementWithResultLimit(statement string, limit int) string {
 	stmt, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
@@ -47,7 +49,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 
 	file, err := omniparser.Parse(trimmed)
 	if err != nil {
-		return "", errors.Wrapf(err, "statement: %s", singleStatement)
+		return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 	}
 	if len(file.Stmts) != 1 {
 		return "", errors.Errorf("expected exactly 1 statement, got %d", len(file.Stmts))
@@ -63,7 +65,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Limit != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Limit), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, "statement: %s", singleStatement)
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 		}
 		return spliced + "\n;", nil
 	}
@@ -72,7 +74,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Fetch != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Fetch.Count), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, "statement: %s", singleStatement)
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 		}
 		return spliced + "\n;", nil
 	}
@@ -88,7 +90,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Top != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Top), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, "statement: %s", singleStatement)
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 		}
 		return spliced + "\n;", nil
 	}

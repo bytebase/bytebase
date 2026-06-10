@@ -89,6 +89,8 @@ func getQueryType(node ast.Node) base.QueryType {
 //
 // The check skips leading whitespace and a leading line/block comment, then
 // matches a leading EXPLAIN keyword on a word boundary, case-insensitively.
+const sqlWhitespaceCutset = " \t\r\n\f\v"
+
 func isExplainStatement(text string) bool {
 	return strings.EqualFold(leadingKeyword(text), "EXPLAIN")
 }
@@ -98,18 +100,18 @@ func isExplainStatement(text string) bool {
 // single leading -- line comment or /* */ block comment. It is intentionally
 // minimal: it only needs to recognize the leading EXPLAIN keyword.
 func leadingKeyword(text string) string {
-	s := strings.TrimLeft(text, " \t\r\n\f\v")
+	s := strings.TrimLeft(text, sqlWhitespaceCutset)
 	for {
 		switch {
 		case strings.HasPrefix(s, "--"):
 			if idx := strings.IndexByte(s, '\n'); idx >= 0 {
-				s = strings.TrimLeft(s[idx+1:], " \t\r\n\f\v")
+				s = strings.TrimLeft(s[idx+1:], sqlWhitespaceCutset)
 				continue
 			}
 			return ""
 		case strings.HasPrefix(s, "/*"):
 			if idx := strings.Index(s, "*/"); idx >= 0 {
-				s = strings.TrimLeft(s[idx+2:], " \t\r\n\f\v")
+				s = strings.TrimLeft(s[idx+2:], sqlWhitespaceCutset)
 				continue
 			}
 			return ""

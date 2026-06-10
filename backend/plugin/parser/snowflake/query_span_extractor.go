@@ -844,7 +844,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 		}
 		result = append(result, tableSource.GetQuerySpanResult()...)
 	case ref.FuncCall != nil:
-		// TODO(zp): In data-warehouse, defining a table function that returns
+		// NOTE(zp): In data-warehouse, defining a table function that returns
 		// multiple rows is widespread; we should parse the function definition to
 		// extract the sensitive fields. For now, a table function exposes no known
 		// columns (mirroring the legacy TABLE()/flatten handling).
