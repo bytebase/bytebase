@@ -69,7 +69,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "unix"
 	}
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if dbType == storepb.Engine_DORIS {
+	if dbType == storepb.Engine_DORIS || dbType == storepb.Engine_STARROCKS {
 		params = append(params, "interpolateParams=true")
 	}
 	if connCfg.DataSource.GetSshHost() != "" {
