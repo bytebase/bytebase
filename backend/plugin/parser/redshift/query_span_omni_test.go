@@ -506,6 +506,15 @@ func TestRedshiftOmniQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "order_totals_mv"}}), span.SourceColumns)
 	})
 
+	t.Run("view definition waits for later dependency", func(t *testing.T) {
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT id FROM a_view")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "id", SourceColumns: redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "orders", Column: "id"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, redshiftSourceColumnSetFromList([]base.ColumnResource{{Database: "db", Schema: "public", Table: "a_view"}}), span.SourceColumns)
+	})
+
 	t.Run("view fallback uses declared columns when definition is missing", func(t *testing.T) {
 		span, err := q.getOmniQuerySpan(context.Background(), "SELECT id, amount FROM fallback_view")
 		require.NoError(t, err)
@@ -602,10 +611,24 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 						},
 					},
 					{
+						Name:       "a_view",
+						Definition: "CREATE VIEW public.a_view AS SELECT id FROM public.z_view;",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "int"},
+						},
+					},
+					{
 						Name: "fallback_view",
 						Columns: []*storepb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "amount", Type: "numeric"},
+						},
+					},
+					{
+						Name:       "z_view",
+						Definition: "CREATE VIEW public.z_view AS SELECT id FROM public.orders;",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "int"},
 						},
 					},
 				},

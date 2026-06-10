@@ -156,6 +156,14 @@ func emptyOmniQuerySpan(queryType base.QueryType) *base.QuerySpan {
 	}
 }
 
+type pendingOmniCatalogView struct {
+	kind       string
+	schemaName string
+	viewName   string
+	definition string
+	fallback   func()
+}
+
 func (q *omniQuerySpanExtractor) buildOmniQuerySpanCatalog(ctx context.Context) (*redshiftcatalog.Catalog, error) {
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return nil, errors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
@@ -169,6 +177,7 @@ func (q *omniQuerySpanExtractor) buildOmniQuerySpanCatalog(ctx context.Context) 
 	}
 
 	cat := redshiftcatalog.New()
+	var pendingViews []pendingOmniCatalogView
 	for _, schemaName := range metadata.ListSchemaNames() {
 		schemaMeta := metadata.GetSchemaMetadata(schemaName)
 		if schemaMeta == nil {
@@ -190,33 +199,146 @@ func (q *omniQuerySpanExtractor) buildOmniQuerySpanCatalog(ctx context.Context) 
 			}
 			execOmniQuerySpanDDL(cat, createTableDDL(schemaName, tableName, tableMeta.GetProto().GetColumns()))
 		}
+		for _, sequenceName := range schemaMeta.ListSequenceNames() {
+			execOmniQuerySpanDDL(cat, fmt.Sprintf("CREATE SEQUENCE %s.%s;", quoteIdent(schemaName), quoteIdent(sequenceName)))
+		}
 		for _, viewName := range schemaMeta.ListViewNames() {
 			viewMeta := schemaMeta.GetView(viewName)
 			if viewMeta == nil {
 				continue
 			}
-			cat.SetSearchPath([]string{schemaName, "public"})
-			if viewMeta.GetDefinition() == "" || !execOmniQuerySpanDDL(cat, createQuerySpanViewDDL("VIEW", schemaName, viewName, viewMeta.GetDefinition())) {
-				execOmniQuerySpanDDL(cat, createTableDDL(schemaName, viewName, viewMeta.GetColumns()))
-			}
+			pendingViews = append(pendingViews, pendingOmniCatalogView{
+				kind:       "VIEW",
+				schemaName: schemaName,
+				viewName:   viewName,
+				definition: viewMeta.GetDefinition(),
+				fallback: func() {
+					execOmniQuerySpanDDL(cat, createTableDDL(schemaName, viewName, viewMeta.GetColumns()))
+				},
+			})
 		}
 		for _, viewName := range schemaMeta.ListMaterializedViewNames() {
 			viewMeta := schemaMeta.GetMaterializedView(viewName)
 			if viewMeta == nil {
 				continue
 			}
-			cat.SetSearchPath([]string{schemaName, "public"})
-			if viewMeta.GetDefinition() == "" || !execOmniQuerySpanDDL(cat, createQuerySpanViewDDL("MATERIALIZED VIEW", schemaName, viewName, viewMeta.GetDefinition())) {
-				execOmniQuerySpanDDL(cat, createViewDDL("MATERIALIZED VIEW", schemaName, viewName, nil))
-			}
-		}
-		for _, sequenceName := range schemaMeta.ListSequenceNames() {
-			execOmniQuerySpanDDL(cat, fmt.Sprintf("CREATE SEQUENCE %s.%s;", quoteIdent(schemaName), quoteIdent(sequenceName)))
+			pendingViews = append(pendingViews, pendingOmniCatalogView{
+				kind:       "MATERIALIZED VIEW",
+				schemaName: schemaName,
+				viewName:   viewName,
+				definition: viewMeta.GetDefinition(),
+				fallback: func() {
+					execOmniQuerySpanDDL(cat, createViewDDL("MATERIALIZED VIEW", schemaName, viewName, nil))
+				},
+			})
 		}
 	}
 
+	loadPendingOmniCatalogViews(cat, q.orderPendingOmniCatalogViews(ctx, pendingViews))
 	cat.SetSearchPath(q.searchPath)
 	return cat, nil
+}
+
+func (q *omniQuerySpanExtractor) orderPendingOmniCatalogViews(ctx context.Context, views []pendingOmniCatalogView) []pendingOmniCatalogView {
+	if len(views) == 0 {
+		return nil
+	}
+
+	viewByKey := make(map[string]bool, len(views))
+	for _, view := range views {
+		viewByKey[omniCatalogViewKey(view.schemaName, view.viewName)] = true
+	}
+	deps := make(map[string][]string, len(views))
+	for _, view := range views {
+		query := extractOmniCatalogViewQuery(view)
+		if query == nil {
+			continue
+		}
+		viewExtractor := *q
+		viewExtractor.searchPath = normalizeOmniSearchPath([]string{view.schemaName, "public"})
+		accessTables, err := viewExtractor.collectOmniAccessTables(ctx, query)
+		if err != nil {
+			continue
+		}
+		viewKey := omniCatalogViewKey(view.schemaName, view.viewName)
+		for resource := range accessTables {
+			depSchema := resource.Schema
+			if depSchema == "" {
+				depSchema = view.schemaName
+			}
+			depKey := omniCatalogViewKey(depSchema, resource.Table)
+			if viewByKey[depKey] && depKey != viewKey {
+				deps[viewKey] = append(deps[viewKey], depKey)
+			}
+		}
+	}
+
+	loaded := make(map[string]bool, len(views))
+	remaining := append([]pendingOmniCatalogView(nil), views...)
+	ordered := make([]pendingOmniCatalogView, 0, len(views))
+	for len(remaining) > 0 {
+		var retry []pendingOmniCatalogView
+		progressed := false
+		for _, view := range remaining {
+			viewKey := omniCatalogViewKey(view.schemaName, view.viewName)
+			if allOmniCatalogViewDepsLoaded(deps[viewKey], loaded) {
+				ordered = append(ordered, view)
+				loaded[viewKey] = true
+				progressed = true
+				continue
+			}
+			retry = append(retry, view)
+		}
+		if !progressed {
+			ordered = append(ordered, retry...)
+			break
+		}
+		remaining = retry
+	}
+	return ordered
+}
+
+func loadPendingOmniCatalogViews(cat *redshiftcatalog.Catalog, views []pendingOmniCatalogView) {
+	for _, view := range views {
+		if view.definition != "" {
+			cat.SetSearchPath([]string{view.schemaName, "public"})
+			if execOmniQuerySpanDDL(cat, createQuerySpanViewDDL(view.kind, view.schemaName, view.viewName, view.definition)) {
+				continue
+			}
+		}
+		view.fallback()
+	}
+}
+
+func extractOmniCatalogViewQuery(view pendingOmniCatalogView) redshiftast.Node {
+	if view.definition == "" {
+		return nil
+	}
+	stmts, err := ParseRedshiftOmni(createQuerySpanViewDDL(view.kind, view.schemaName, view.viewName, view.definition))
+	if err != nil || len(stmts) != 1 {
+		return nil
+	}
+	switch stmt := stmts[0].AST.(type) {
+	case *redshiftast.ViewStmt:
+		return stmt.Query
+	case *redshiftast.CreateTableAsStmt:
+		return stmt.Query
+	default:
+		return nil
+	}
+}
+
+func allOmniCatalogViewDepsLoaded(deps []string, loaded map[string]bool) bool {
+	for _, dep := range deps {
+		if !loaded[dep] {
+			return false
+		}
+	}
+	return true
+}
+
+func omniCatalogViewKey(schemaName, viewName string) string {
+	return strings.ToLower(schemaName) + "." + strings.ToLower(viewName)
 }
 
 func execOmniQuerySpanDDL(cat *redshiftcatalog.Catalog, sql string) bool {
