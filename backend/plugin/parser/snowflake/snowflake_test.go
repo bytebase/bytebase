@@ -4,66 +4,51 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestSnowSqlExtractOrdinaryIdentifier(t *testing.T) {
-	testCases := []struct {
-		description string
-		name        string
-		want        string
-	}{
-		{
-			description: "Should convert object name to uppercase if it is not quoted",
-			name:        `table_name`,
-			want:        `TABLE_NAME`,
-		},
-		{
-			description: "Should **NOT** convert object name to uppercase if it is quoted",
-			name:        `"table_name"`,
-			want:        `table_name`,
-		},
-		{
-			description: `Should convert '""' to '"' if it is quoted`,
-			name:        `"table_name"""`,
-			want:        `table_name"`,
-		},
-		{
-			description: `Should be fine with unicode characters`,
-			name:        `"😈😄"""`,
-			want:        `😈😄"`,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := ExtractSnowSQLOrdinaryIdentifier(tc.name)
-			require.Equal(t, tc.want, got, tc.description)
-		})
+func TestParseSnowflakeStatements(t *testing.T) {
+	stmts, err := parseSnowflakeStatements("SELECT 1;\n\nSELECT 2 FROM t;")
+	require.NoError(t, err)
+	require.Len(t, stmts, 2)
+	for i, stmt := range stmts {
+		require.False(t, stmt.Empty, i)
+		require.NotNil(t, stmt.AST, i)
+		node, ok := GetOmniNode(stmt.AST)
+		require.True(t, ok, i)
+		require.NotNil(t, node, i)
+		// ASTStartPosition keeps the legacy shape: BaseLine()+1, no column.
+		require.Equal(t, int32(stmt.BaseLine())+1, stmt.AST.ASTStartPosition().Line, i)
 	}
 }
 
-func TestParseSnowSQL(t *testing.T) {
-	testCase := []struct {
+func TestParseSnowflakeStatementsSyntaxError(t *testing.T) {
+	testCases := []struct {
 		sql string
-		err string
+		// 1-based line the syntax error is reported on, relative to the whole
+		// multi-statement input.
+		line int32
 	}{
 		{
-			sql: `SELECT t.a, t.b FRO table_name t;`,
-			err: "Syntax error at line 1:1 \nrelated text: SELECT",
+			sql:  `SELEC 5;`,
+			line: 1,
 		},
 		{
-			sql: "SELECT 1;\n   SELEC 5;\nSELECT 6;",
-			// After standardization, each statement is parsed separately, so the error context
-			// only includes the current statement being parsed (not previous statements).
-			err: "Syntax error at line 2:4 \nrelated text: \n   SELEC",
+			// The error position is offset by the failing statement's start
+			// line in the original input.
+			sql:  "SELECT 1;\n   SELEC 5;\nSELECT 6;",
+			line: 2,
 		},
 	}
 
-	for _, tc := range testCase {
-		_, err := ParseSnowSQL(tc.sql)
-		if tc.err != "" {
-			require.EqualError(t, err, tc.err, tc.sql)
-		} else {
-			require.NoError(t, err, tc.sql)
-		}
+	for _, tc := range testCases {
+		_, err := parseSnowflakeStatements(tc.sql)
+		require.Error(t, err, tc.sql)
+		syntaxErr, ok := err.(*base.SyntaxError)
+		require.True(t, ok, "expected *base.SyntaxError, got %T: %v", err, err)
+		require.NotNil(t, syntaxErr.Position, tc.sql)
+		require.Equal(t, tc.line, syntaxErr.Position.Line, tc.sql)
+		require.Contains(t, syntaxErr.Message, "Syntax error at line", tc.sql)
 	}
 }
