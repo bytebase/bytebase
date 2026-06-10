@@ -2,7 +2,7 @@ package googlesql
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/googlesql/analysis"
@@ -31,8 +31,6 @@ import (
 // FROM the legacy ANTLR resolvers) plus their leak-pin unit tests for shapes
 // the legacy resolvers could not record.
 type QuerySpanExtractor struct {
-	ctx context.Context
-
 	cfg             Config
 	defaultDatabase string
 
@@ -58,32 +56,21 @@ func NewQuerySpanExtractor(cfg Config, defaultDatabase string, gCtx base.GetQuer
 
 // GetQuerySpan extracts the query span for a single GoogleSQL statement.
 func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
-	q.ctx = ctx
-
 	// query-span analysis expects exactly one non-empty statement (matching the
 	// legacy behaviour, which parsed via the engine Parse wrapper and rejected
 	// anything but exactly one).
-	stmts, err := SplitSQL(statement, q.cfg)
+	single, count, err := q.singleNonEmptyStatement(statement)
 	if err != nil {
 		return nil, err
 	}
-	nonEmpty := 0
-	var single string
-	for _, s := range stmts {
-		if s.Empty || strings.TrimSpace(s.Text) == "" {
-			continue
-		}
-		nonEmpty++
-		single = s.Text
-	}
-	if nonEmpty == 0 {
+	switch {
+	case count == 0:
 		return &base.QuerySpan{
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
-	}
-	if nonEmpty > 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", nonEmpty)
+	case count > 1:
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", count)
 	}
 
 	omniSpan, err := analysis.GetQuerySpan(single, q.cfg.Dialect)
@@ -147,18 +134,16 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 
 	// Resolve relation aliases (e.g. "g" in "FROM galleries g") back to physical
 	// table names so aliased column references match the expanded source columns.
-	aliasMap := q.buildAliasMap(omniSpan)
+	aliasMap := q.buildAliasMap(ctx, omniSpan)
 
-	// Expand each accessed table to its columns via metadata. orderedColumns
-	// preserves AccessTables(FROM)-then-metadata column order for positional
-	// SELECT * masking; fullSourceColumns is the membership set used for lineage
-	// matching. The per-column resources use the METADATA-canonical table name,
-	// matching the legacy findTableSchema/PhysicalTable, which is why result
-	// lineage carries metadata casing while the table-level SourceColumns above
-	// carry the written casing.
-	orderedColumns, fullSourceColumns, notFound := q.expandTablesToColumns(omniSpan)
+	// Expand each accessed table to its columns via metadata: the membership set
+	// used for lineage matching. The per-column resources use the
+	// METADATA-canonical table name, matching the legacy findTableSchema/
+	// PhysicalTable, which is why result lineage carries metadata casing while
+	// the table-level SourceColumns above carry the written casing.
+	fullSourceColumns, notFound := q.expandTablesToColumns(ctx, omniSpan)
 
-	results := q.buildResults(omniSpan, fullSourceColumns, orderedColumns, aliasMap)
+	results := q.expandColumnInfos(ctx, omniSpan.Results, fullSourceColumns, aliasMap)
 
 	span := &base.QuerySpan{
 		Type:          queryType,
@@ -174,6 +159,23 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 		span.NotFoundError = notFound
 	}
 	return span, nil
+}
+
+// singleNonEmptyStatement splits the input and returns its single non-empty
+// statement's text together with the non-empty count.
+func (q *QuerySpanExtractor) singleNonEmptyStatement(statement string) (string, int, error) {
+	stmts, err := SplitSQL(statement, q.cfg)
+	if err != nil {
+		return "", 0, err
+	}
+	single, count := "", 0
+	for _, s := range stmts {
+		if !s.Empty && strings.TrimSpace(s.Text) != "" {
+			single = s.Text
+			count++
+		}
+	}
+	return single, count, nil
 }
 
 // classifyAccess reports (allSystems, mixed) over the span's access tables,
@@ -220,31 +222,24 @@ func (q *QuerySpanExtractor) toTableResources(span *analysis.QuerySpan) base.Sou
 	if span == nil {
 		return out
 	}
-	for _, t := range span.AccessTables {
-		out[base.ColumnResource{
-			Database: q.resourceDatabase(t.Database),
-			Schema:   t.Schema,
-			Table:    t.Table,
-		}] = true
-	}
 	// CTE references are not physical tables, but the legacy access-table
 	// listeners recorded every FROM table path — CTE references included — so
 	// union them into the table-level SourceColumns.
-	for _, t := range span.CTEReferences {
-		out[base.ColumnResource{
-			Database: q.resourceDatabase(t.Database),
-			Schema:   t.Schema,
-			Table:    t.Table,
-		}] = true
+	for _, group := range [][]analysis.TableAccess{span.AccessTables, span.CTEReferences} {
+		for _, t := range group {
+			out[base.ColumnResource{
+				Database: q.resourceDatabase(t.Database),
+				Schema:   t.Schema,
+				Table:    t.Table,
+			}] = true
+		}
 	}
 	return out
 }
 
 // expandTablesToColumns expands each accessed table into one resource per column
-// from the table's metadata. It returns the columns both as an ordered slice
-// (AccessTables/FROM order, then metadata column order) and as a set. The ordered
-// slice drives positional SELECT * masking, where the order must match the
-// executed result's column order; the set is used for membership tests.
+// from the table's metadata, returning the membership set used for lineage
+// matching.
 //
 // A table whose metadata can't be resolved is kept as a single table-level
 // resource so the read is still recorded, and the first ResourceNotFoundError
@@ -252,20 +247,11 @@ func (q *QuerySpanExtractor) toTableResources(span *analysis.QuerySpan) base.Sou
 // Each per-column resource uses the METADATA-canonical table/column names (the
 // legacy findTableSchema returned a PhysicalTable keyed on the proto name), so
 // result lineage carries metadata casing.
-func (q *QuerySpanExtractor) expandTablesToColumns(span *analysis.QuerySpan) ([]base.ColumnResource, base.SourceColumnSet, *base.ResourceNotFoundError) {
-	ordered := make([]base.ColumnResource, 0)
+func (q *QuerySpanExtractor) expandTablesToColumns(ctx context.Context, span *analysis.QuerySpan) (base.SourceColumnSet, *base.ResourceNotFoundError) {
 	set := make(base.SourceColumnSet)
 	var firstNotFound *base.ResourceNotFoundError
-	// add records a column both in the membership set (deduped, used for lineage
-	// matching) and in the ordered slice (NOT deduped, so a self-join contributes
-	// each instance's columns and the positional SELECT * masker stays aligned
-	// with the executed output columns).
-	add := func(res base.ColumnResource) {
-		set[res] = true
-		ordered = append(ordered, res)
-	}
 	if span == nil {
-		return ordered, set, nil
+		return set, nil
 	}
 	for _, t := range span.AccessTables {
 		db := q.resourceDatabase(t.Database)
@@ -277,39 +263,28 @@ func (q *QuerySpanExtractor) expandTablesToColumns(span *analysis.QuerySpan) ([]
 			// so keep the table-level resource and skip the lookup. (A system-only
 			// query already early-returned under SystemOnlyEmptySpan, and a mixed
 			// user/system query was rejected.)
-			add(base.ColumnResource{Database: db, Schema: t.Schema, Table: t.Table})
+			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: t.Table}] = true
 			continue
 		}
-		canonicalTable, columns, err := q.tableColumns(t.Database, t.Schema, t.Table)
+		canonicalTable, columns, err := q.tableColumns(ctx, t.Database, t.Schema, t.Table)
 		if err != nil {
 			var notFound *base.ResourceNotFoundError
 			if errors.As(err, &notFound) && firstNotFound == nil {
 				firstNotFound = notFound
 			}
 			// Keep the table-level resource (NotFound or any other error).
-			add(base.ColumnResource{Database: db, Schema: t.Schema, Table: t.Table})
+			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: t.Table}] = true
 			continue
 		}
 		if len(columns) == 0 {
-			add(base.ColumnResource{Database: db, Schema: t.Schema, Table: canonicalTable})
+			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: canonicalTable}] = true
 			continue
 		}
 		for _, col := range columns {
-			add(base.ColumnResource{Database: db, Schema: t.Schema, Table: canonicalTable, Column: col})
+			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: canonicalTable, Column: col}] = true
 		}
 	}
-	return ordered, set, firstNotFound
-}
-
-// buildResults maps omni's per-output columns onto base.QuerySpanResult. Each
-// result's SourceColumns is the subset of the expanded source columns that share
-// the result's referenced column name (aliasMap translates a relation alias on
-// the reference back to its physical table first).
-func (q *QuerySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, orderedColumns []base.ColumnResource, aliasMap map[string][]string) []base.QuerySpanResult {
-	if span == nil {
-		return []base.QuerySpanResult{}
-	}
-	return q.expandColumnInfos(span.Results, fullSourceColumns, aliasMap)
+	return set, firstNotFound
 }
 
 // expandColumnInfos expands a list of omni ColumnInfo (one query body's resolved
@@ -319,7 +294,7 @@ func (q *QuerySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceCo
 // EXCEPT/REPLACE applied), a per-position base-star set-op merge (StarMerge), a
 // whole deferred set-op merge (SetOpMerge, both arms expanded then position-
 // merged), or a concrete output column.
-func (q *QuerySpanExtractor) expandColumnInfos(infos []analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+func (q *QuerySpanExtractor) expandColumnInfos(ctx context.Context, infos []analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
 	results := make([]base.QuerySpanResult, 0, len(infos))
 	for _, r := range infos {
 		switch {
@@ -328,16 +303,16 @@ func (q *QuerySpanExtractor) expandColumnInfos(infos []analysis.ColumnInfo, full
 			// expansion into segments (a base table to enumerate, or an
 			// already-resolved concrete column). Expand them, then apply the star's
 			// EXCEPT/REPLACE modifiers with the legacy name-collision last-wins dedup.
-			results = append(results, q.expandStarSegments(r, fullSourceColumns, aliasMap)...)
+			results = append(results, q.expandStarSegments(ctx, r, fullSourceColumns, aliasMap)...)
 		case r.SetOpMerge != nil:
 			// A whole deferred set-operation merge whose arms carry un-enumerable
 			// stars: expand each arm fully (recursively) and merge them, reproducing
 			// the legacy "fully resolve each arm, then zip".
-			results = append(results, q.buildSetOpMergeResults(r.SetOpMerge, fullSourceColumns, aliasMap)...)
+			results = append(results, q.buildSetOpMergeResults(ctx, r.SetOpMerge, fullSourceColumns, aliasMap)...)
 		case r.StarMerge != nil:
 			// A set-operation merge position whose other arm is a base-table star:
 			// union the concrete arm's lineage with that table's Index-th column.
-			results = append(results, q.buildStarMergeResult(r, fullSourceColumns, aliasMap))
+			results = append(results, q.buildStarMergeResult(ctx, r, fullSourceColumns, aliasMap))
 		default:
 			sourceColumns := base.SourceColumnSet{}
 			for _, ref := range r.SourceColumns {
@@ -349,7 +324,7 @@ func (q *QuerySpanExtractor) expandColumnInfos(infos []analysis.ColumnInfo, full
 			// legacy resolver named it after the left PhysicalTable's field, not
 			// the written/upper-cased token.
 			if q.cfg.CanonicalBaseFieldName && r.BaseFieldName && len(r.SourceColumns) > 0 {
-				if canon := q.canonicalColumnCase(r.SourceColumns[0], r.Name); canon != "" {
+				if canon := q.canonicalColumnCase(ctx, r.SourceColumns[0], r.Name); canon != "" {
 					name = canon
 				}
 			}
@@ -385,9 +360,9 @@ func (q *QuerySpanExtractor) expandColumnInfos(infos []analysis.ColumnInfo, full
 // to the LONGER arm so no arm's column is dropped (a dropped sensitive column
 // would under-attribute). The shorter arm simply contributes nothing past its
 // length. Equal-width arms (the only valid set operations) merge exactly.
-func (q *QuerySpanExtractor) buildSetOpMergeResults(m *analysis.SetOpMergeInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
-	left := q.expandColumnInfos(m.Left, fullSourceColumns, aliasMap)
-	right := q.expandColumnInfos(m.Right, fullSourceColumns, aliasMap)
+func (q *QuerySpanExtractor) buildSetOpMergeResults(ctx context.Context, m *analysis.SetOpMergeInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+	left := q.expandColumnInfos(ctx, m.Left, fullSourceColumns, aliasMap)
+	right := q.expandColumnInfos(ctx, m.Right, fullSourceColumns, aliasMap)
 	if m.ByName {
 		// BY NAME / CORRESPONDING aligns the arms by output column NAME, not
 		// ordinal — an ordinal merge here mis-attributes whenever the arms'
@@ -492,11 +467,11 @@ func containsResultName(list []base.QuerySpanResult, name string) bool {
 // output name with last-wins on a name collision — the legacy starModify
 // semantics (two FROM relations contributing a like-named column keep the later
 // one before EXCEPT removes a name).
-func (q *QuerySpanExtractor) expandStarSegments(r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+func (q *QuerySpanExtractor) expandStarSegments(ctx context.Context, r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
 	var expanded []base.QuerySpanResult
 	for _, seg := range r.StarSegments {
 		if seg.BaseTable != nil {
-			expanded = append(expanded, q.expandBaseTableColumns(*seg.BaseTable, seg.Plain, seg.ExceptColumns)...)
+			expanded = append(expanded, q.expandBaseTableColumns(ctx, *seg.BaseTable, seg.Plain, seg.ExceptColumns)...)
 			continue
 		}
 		// A concrete segment (a CTE/derived/explicit column resolved by omni).
@@ -509,7 +484,7 @@ func (q *QuerySpanExtractor) expandStarSegments(r analysis.ColumnInfo, fullSourc
 		// naming model.
 		name := seg.Name
 		if q.cfg.CanonicalBaseFieldName && seg.BaseFieldName && len(seg.Sources) > 0 {
-			if canon := q.canonicalColumnCase(seg.Sources[0], name); canon != "" {
+			if canon := q.canonicalColumnCase(ctx, seg.Sources[0], name); canon != "" {
 				name = canon
 			}
 		}
@@ -519,7 +494,7 @@ func (q *QuerySpanExtractor) expandStarSegments(r analysis.ColumnInfo, fullSourc
 			IsPlainField:  seg.Plain,
 		})
 	}
-	return q.applyStarModifiers(expanded, r, fullSourceColumns, aliasMap)
+	return applyStarModifiers(expanded, r, fullSourceColumns, aliasMap)
 }
 
 // expandBaseTableColumns enumerates a physical base table's columns from metadata
@@ -531,8 +506,8 @@ func (q *QuerySpanExtractor) expandStarSegments(r analysis.ColumnInfo, fullSourc
 // concrete segment ahead of the side stars, so each side's star must not expand
 // it again — re-expanding would shift every later position and misalign the
 // positional masker.
-func (q *QuerySpanExtractor) expandBaseTableColumns(rel analysis.ColumnRef, plain bool, except []string) []base.QuerySpanResult {
-	canonicalTable, columns, err := q.tableColumns(rel.Database, rel.Schema, rel.Table)
+func (q *QuerySpanExtractor) expandBaseTableColumns(ctx context.Context, rel analysis.ColumnRef, plain bool, except []string) []base.QuerySpanResult {
+	canonicalTable, columns, err := q.tableColumns(ctx, rel.Database, rel.Schema, rel.Table)
 	if err != nil || len(columns) == 0 {
 		return nil
 	}
@@ -555,8 +530,8 @@ func (q *QuerySpanExtractor) expandBaseTableColumns(rel analysis.ColumnRef, plai
 // canonicalColumnCase returns the metadata-canonical spelling of column in the
 // table named by ref (case-folded match), or "" when the table or column cannot
 // be resolved.
-func (q *QuerySpanExtractor) canonicalColumnCase(ref analysis.ColumnRef, column string) string {
-	_, columns, err := q.tableColumns(ref.Database, ref.Schema, ref.Table)
+func (q *QuerySpanExtractor) canonicalColumnCase(ctx context.Context, ref analysis.ColumnRef, column string) string {
+	_, columns, err := q.tableColumns(ctx, ref.Database, ref.Schema, ref.Table)
 	if err != nil {
 		return ""
 	}
@@ -575,7 +550,7 @@ func (q *QuerySpanExtractor) canonicalColumnCase(ref analysis.ColumnRef, column 
 // lineage to the replacement expression's sources and clears its plain-field
 // flag. Original order is preserved. When the star has no modifiers the expanded
 // list is returned unchanged.
-func (q *QuerySpanExtractor) applyStarModifiers(expanded []base.QuerySpanResult, r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+func applyStarModifiers(expanded []base.QuerySpanResult, r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
 	if len(r.StarExcept) == 0 && len(r.StarReplace) == 0 {
 		return expanded
 	}
@@ -618,7 +593,7 @@ func (q *QuerySpanExtractor) applyStarModifiers(expanded []base.QuerySpanResult,
 	for _, it := range byName {
 		items = append(items, it)
 	}
-	sort.Slice(items, func(i, j int) bool { return items[i].id < items[j].id })
+	slices.SortFunc(items, func(a, b item) int { return a.id - b.id })
 	out := make([]base.QuerySpanResult, 0, len(items))
 	for _, it := range items {
 		out = append(out, it.field)
@@ -638,7 +613,7 @@ func (q *QuerySpanExtractor) applyStarModifiers(expanded []base.QuerySpanResult,
 // BigQuery model but keeps the star column's metadata case under the spanner
 // model (the legacy spanner first-arm rule passed the PhysicalTable field name
 // through unchanged).
-func (q *QuerySpanExtractor) buildStarMergeResult(r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) base.QuerySpanResult {
+func (q *QuerySpanExtractor) buildStarMergeResult(ctx context.Context, r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) base.QuerySpanResult {
 	sourceColumns := base.SourceColumnSet{}
 	for _, ref := range r.SourceColumns {
 		addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table, aliasMap)
@@ -647,7 +622,7 @@ func (q *QuerySpanExtractor) buildStarMergeResult(r analysis.ColumnInfo, fullSou
 	// A StarMerge always carries a bare single-base-table star (a USING-coalesced
 	// or otherwise multi-segment star arm defers to SetOpMerge instead), so there
 	// are no except columns to apply here.
-	starCols := q.expandBaseTableColumns(r.StarMerge.Table, false, nil)
+	starCols := q.expandBaseTableColumns(ctx, r.StarMerge.Table, false, nil)
 	if idx := r.StarMerge.Index; idx >= 0 && idx < len(starCols) {
 		for sc := range starCols[idx].SourceColumns {
 			sourceColumns[sc] = true
@@ -722,7 +697,7 @@ func tableMatches(scTable, refTable string, aliasMap map[string][]string) bool {
 // different scopes maps to several tables; all are kept so matching can
 // over-include rather than under-match. An alias equal to its own table name
 // carries no information and is skipped.
-func (q *QuerySpanExtractor) buildAliasMap(span *analysis.QuerySpan) map[string][]string {
+func (q *QuerySpanExtractor) buildAliasMap(ctx context.Context, span *analysis.QuerySpan) map[string][]string {
 	if span == nil {
 		return nil
 	}
@@ -733,7 +708,7 @@ func (q *QuerySpanExtractor) buildAliasMap(span *analysis.QuerySpan) map[string]
 		}
 		table := t.Table
 		if !t.IsSystem {
-			if canonical, _, err := q.tableColumns(t.Database, t.Schema, t.Table); err == nil && canonical != "" {
+			if canonical, _, err := q.tableColumns(ctx, t.Database, t.Schema, t.Table); err == nil && canonical != "" {
 				table = canonical
 			}
 		}
@@ -747,12 +722,14 @@ func (q *QuerySpanExtractor) buildAliasMap(span *analysis.QuerySpan) map[string]
 
 // containsFold reports whether list contains s under case-insensitive comparison.
 func containsFold(list []string, s string) bool {
-	for _, e := range list {
-		if strings.EqualFold(e, s) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(list, func(e string) bool { return strings.EqualFold(e, s) })
+}
+
+// namedColumns is the table-or-view subset of the metadata model the column
+// lookup needs: both expose a canonical name and an ordered column-name list.
+type namedColumns struct {
+	canonical string
+	columns   []string
 }
 
 // tableColumns returns the metadata-canonical table name and the column names of
@@ -763,15 +740,16 @@ func containsFold(list []string, s string) bool {
 //     with its single unnamed schema.
 //
 // Table names fall back to a case-folded match in both models — exactly the
-// legacy findTableSchema behavior.
-func (q *QuerySpanExtractor) tableColumns(writtenDatabase, schema, table string) (string, []string, error) {
+// legacy findTableSchema behavior. Tables shadow views on a name collision (the
+// legacy lookup tried tables first).
+func (q *QuerySpanExtractor) tableColumns(ctx context.Context, writtenDatabase, schema, table string) (string, []string, error) {
 	lookupDatabase := q.defaultDatabase
 	lookupSchema := schema
 	if !q.cfg.SchemaScopedMetadata {
 		lookupDatabase = q.resourceDatabase(writtenDatabase)
 		lookupSchema = ""
 	}
-	metadata, err := q.getDatabaseMetadata(lookupDatabase)
+	metadata, err := q.getDatabaseMetadata(ctx, lookupDatabase)
 	if err != nil {
 		return "", nil, err
 	}
@@ -784,42 +762,45 @@ func (q *QuerySpanExtractor) tableColumns(writtenDatabase, schema, table string)
 		}
 	}
 
-	// Table first.
-	tableMeta := schemaMeta.GetTable(table)
-	if tableMeta == nil {
-		for _, name := range schemaMeta.ListTableNames() {
-			if strings.EqualFold(name, table) {
-				tableMeta = schemaMeta.GetTable(name)
-				break
+	for _, lookup := range []func(string) *namedColumns{
+		func(name string) *namedColumns {
+			meta := schemaMeta.GetTable(name)
+			if meta == nil {
+				return nil
+			}
+			out := &namedColumns{canonical: meta.GetProto().GetName()}
+			for _, col := range meta.GetProto().GetColumns() {
+				out.columns = append(out.columns, col.Name)
+			}
+			return out
+		},
+		func(name string) *namedColumns {
+			meta := schemaMeta.GetView(name)
+			if meta == nil {
+				return nil
+			}
+			out := &namedColumns{canonical: meta.GetName()}
+			for _, col := range meta.GetColumns() {
+				out.columns = append(out.columns, col.Name)
+			}
+			return out
+		},
+	} {
+		found := lookup(table)
+		if found == nil {
+			// Case-folded fallback over the object names (the legacy behavior for
+			// table identifiers, which resolve case-insensitively).
+			for _, name := range append(schemaMeta.ListTableNames(), schemaMeta.ListViewNames()...) {
+				if strings.EqualFold(name, table) {
+					if found = lookup(name); found != nil {
+						break
+					}
+				}
 			}
 		}
-	}
-	if tableMeta != nil {
-		canonical := tableMeta.GetProto().GetName()
-		var cols []string
-		for _, col := range tableMeta.GetProto().GetColumns() {
-			cols = append(cols, col.Name)
+		if found != nil {
+			return found.canonical, found.columns, nil
 		}
-		return canonical, cols, nil
-	}
-
-	// Then view.
-	viewMeta := schemaMeta.GetView(table)
-	if viewMeta == nil {
-		for _, name := range schemaMeta.ListViewNames() {
-			if strings.EqualFold(name, table) {
-				viewMeta = schemaMeta.GetView(name)
-				break
-			}
-		}
-	}
-	if viewMeta != nil {
-		canonical := viewMeta.GetName()
-		var cols []string
-		for _, col := range viewMeta.GetColumns() {
-			cols = append(cols, col.Name)
-		}
-		return canonical, cols, nil
 	}
 
 	return "", nil, &base.ResourceNotFoundError{
@@ -830,7 +811,7 @@ func (q *QuerySpanExtractor) tableColumns(writtenDatabase, schema, table string)
 }
 
 // getDatabaseMetadata fetches (and caches) metadata for the given database.
-func (q *QuerySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
+func (q *QuerySpanExtractor) getDatabaseMetadata(ctx context.Context, database string) (*model.DatabaseMetadata, error) {
 	if database == "" {
 		database = q.defaultDatabase
 	}
@@ -840,19 +821,19 @@ func (q *QuerySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return nil, &base.ResourceNotFoundError{Database: &database}
 	}
-	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
-	if err != nil {
+	switch _, meta, err := q.gCtx.GetDatabaseMetadataFunc(ctx, q.gCtx.InstanceID, database); {
+	case err != nil:
 		var notFound *base.ResourceNotFoundError
 		if errors.As(err, &notFound) {
 			return nil, err
 		}
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
-	}
-	if meta == nil {
+	case meta == nil:
 		empty := &model.DatabaseMetadata{}
 		q.metaCache[database] = empty
 		return empty, nil
+	default:
+		q.metaCache[database] = meta
+		return meta, nil
 	}
-	q.metaCache[database] = meta
-	return meta, nil
 }

@@ -7,12 +7,9 @@
 package spanner
 
 import (
-	"context"
-
 	"github.com/bytebase/omni/googlesql/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/googlesql"
 )
 
@@ -33,29 +30,6 @@ var config = googlesql.Config{
 	ContiguousSplitText:    true,
 }
 
-func init() {
-	base.RegisterSplitterFunc(storepb.Engine_SPANNER, SplitSQL)
-	base.RegisterDiagnoseFunc(storepb.Engine_SPANNER, Diagnose)
-	base.RegisterGetQuerySpan(storepb.Engine_SPANNER, GetQuerySpan)
-}
-
-// SplitSQL splits the input into multiple SQL statements.
-func SplitSQL(statement string) ([]base.Statement, error) {
-	return googlesql.SplitSQL(statement, config)
-}
-
-// Diagnose returns syntax diagnostics for the given statement.
-func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	return googlesql.Diagnose(statement), nil
-}
-
-// GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(
-	ctx context.Context,
-	gCtx base.GetQuerySpanContext,
-	stmt base.Statement,
-	database, _ string,
-	_ bool,
-) (*base.QuerySpan, error) {
-	return googlesql.NewQuerySpanExtractor(config, database, gCtx).GetQuerySpan(ctx, stmt.Text)
-}
+// SplitSQL and GetQuerySpan are the registered handlers, re-exported for the
+// tests in this package.
+var SplitSQL, GetQuerySpan = googlesql.Register(storepb.Engine_SPANNER, config)

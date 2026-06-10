@@ -9,7 +9,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -23,14 +23,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// GetQuerySpanFunc is the engine GetQuerySpan registration signature.
-type GetQuerySpanFunc func(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, ignoreCaseSensitive bool) (*base.QuerySpan, error)
-
 // RunQuerySpanCorpus runs the legacy-recorded query-span differential corpus at
 // testDataPath against getQuerySpan. With record=true it re-records the corpus
 // from the CURRENT implementation — only ever do that from a legacy worktree;
 // the goldens are the legacy resolvers' outputs and are the masking-parity bar.
-func RunQuerySpanCorpus(t *testing.T, engine storepb.Engine, getQuerySpan GetQuerySpanFunc, testDataPath string, record bool) {
+func RunQuerySpanCorpus(t *testing.T, engine storepb.Engine, getQuerySpan base.GetQuerySpanFunc, testDataPath string, record bool) {
 	type testCase struct {
 		Description        string `yaml:"description,omitempty"`
 		Statement          string `yaml:"statement,omitempty"`
@@ -98,7 +95,7 @@ func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*
 
 // GetSpan evaluates one statement's query span against the given metadata —
 // the leak-pin tests' entry point.
-func GetSpan(t *testing.T, engine storepb.Engine, getQuerySpan GetQuerySpanFunc, statement, defaultDatabase string, schemas []*storepb.SchemaMetadata) (*base.QuerySpan, error) {
+func GetSpan(t *testing.T, engine storepb.Engine, getQuerySpan base.GetQuerySpanFunc, statement, defaultDatabase string, schemas []*storepb.SchemaMetadata) (*base.QuerySpan, error) {
 	t.Helper()
 	meta := &storepb.DatabaseSchemaMetadata{Name: defaultDatabase, Schemas: schemas}
 	getter, lister := BuildMockDatabaseMetadataGetter(engine, []*storepb.DatabaseSchemaMetadata{meta})
@@ -124,6 +121,6 @@ func SourcesOf(r base.QuerySpanResult) []string {
 		}
 		out = append(out, name)
 	}
-	sort.Strings(out)
+	slices.Sort(out)
 	return out
 }
