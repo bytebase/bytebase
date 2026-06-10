@@ -9,6 +9,18 @@ import {
   BatchParseRequestSchema,
 } from "@/types/proto-es/v1/cel_service_pb";
 
+// Escapes a value for embedding inside a double-quoted CEL string literal,
+// e.g. `statement.contains("<escaped>")`. Without this, free text containing a
+// double quote (such as a SQL identifier like `"public"`) breaks the filter
+// the backend parses. Backslash must be escaped first.
+export const escapeCELStringLiteral = (value: string): string =>
+  value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t");
+
 export const batchConvertCELStringToParsedExpr = async (
   celList: string[]
 ): Promise<Expr[]> => {

@@ -2694,6 +2694,7 @@
     "copy-all-column-names": "Copy all column names",
     "copy-all-rows-as-csv": "Copy all rows as CSV",
     "copy-all-rows-as-sql": "Copy all rows as SQL",
+    "copy-history-link": "Copy history link",
     "copy-name": "Copy name",
     "copy-selected-results": "Copy selected data by <action></action> or <button></button>",
     "copy-selected-rows-as-csv": "Copy selected rows as CSV",
@@ -2747,6 +2748,7 @@
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
+    "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
     "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
@@ -2759,8 +2761,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
+    "query-history-not-found": "Query history not found or no longer accessible",
     "query-time": "Query time",
     "re-request": "Re-request",
+    "recent": "Recent",
     "redis-command": {
       "all-nodes": "All nodes",
       "only-for-cluster": "Only available for cluster connection",
@@ -2817,6 +2821,7 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
+    "unable-to-connect-database": "Unable to connect to database {{name}}",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "vertical-display": "Vertical display",

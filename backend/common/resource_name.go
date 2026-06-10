@@ -52,6 +52,7 @@ const (
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
 	AccessGrantNamePrefix      = "accessGrants/"
+	QueryHistoryNamePrefix     = "queryHistories/"
 	ServiceAccountNamePrefix   = "serviceAccounts/"
 	WorkloadIdentityNamePrefix = "workloadIdentities/"
 
@@ -97,6 +98,15 @@ func GetProjectIDWebhookID(name string) (string, string, error) {
 // GetProjectIDAccessGrantID returns the project ID and access grant ID from a resource name.
 func GetProjectIDAccessGrantID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, AccessGrantNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+// GetProjectIDQueryHistoryID returns the project ID and query history ID from a resource name.
+func GetProjectIDQueryHistoryID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, QueryHistoryNamePrefix)
 	if err != nil {
 		return "", "", err
 	}

@@ -60,7 +60,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "statement contains operator",
 			filter:   `statement.contains("SELECT")`,
-			wantSQL:  "(query_history.statement LIKE $1)",
+			wantSQL:  "(regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE $1)",
 			wantArgs: []any{"%SELECT%"},
 			wantErr:  false,
 		},
@@ -102,7 +102,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "complex nested with statement contains",
 			filter:   `project == "projects/test" && statement.contains("SELECT") && type == "QUERY"`,
-			wantSQL:  "(((query_history.project = $1 AND query_history.statement LIKE $2) AND query_history.type = $3))",
+			wantSQL:  "(((query_history.project = $1 AND regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE $2) AND query_history.type = $3))",
 			wantArgs: []any{"test", "%SELECT%", QueryHistoryType("QUERY")},
 			wantErr:  false,
 		},
@@ -195,7 +195,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			name:        "statement contains punctuation literally",
 			filter:      `statement.contains("SELECT.*FROM")`,
 			description: "contains should treat punctuation as plain substring content",
-			wantSQL:     "(query_history.statement LIKE $1)",
+			wantSQL:     "(regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE $1)",
 			wantArgs:    []any{"%SELECT.*FROM%"},
 			wantErr:     false,
 		},
@@ -227,7 +227,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			name:        "complex filter with all supported fields",
 			filter:      `project == "projects/test" && database == "instances/i1/databases/db1" && type == "EXPORT" && statement.contains("INSERT")`,
 			description: "combination of all supported filter types",
-			wantSQL:     "(((query_history.project = $1 AND query_history.database = $2) AND (query_history.type = $3 AND query_history.statement LIKE $4)))",
+			wantSQL:     "(((query_history.project = $1 AND query_history.database = $2) AND (query_history.type = $3 AND regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE $4)))",
 			wantArgs:    []any{"test", "instances/i1/databases/db1", QueryHistoryType("EXPORT"), "%INSERT%"},
 			wantErr:     false,
 		},
@@ -282,7 +282,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 		{
 			name:               "statement contains",
 			filter:             `statement.contains("SELECT")`,
-			expectedConditions: []string{"query_history.statement LIKE $1"},
+			expectedConditions: []string{"regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE $1"},
 		},
 		{
 			name:               "OR condition",

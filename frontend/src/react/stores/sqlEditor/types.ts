@@ -27,8 +27,21 @@ export interface UIStateSlice {
   // Persisted fraction of the editor width given to the AI side pane when it
   // is shown. Stored in localStorage and re-read on store creation.
   aiPanelSize: number;
+  // The query history opened from a deep link this session. Surfaced as the
+  // "Opened from link" section atop the history pane until dismissed or until
+  // its draft tab is edited.
+  linkedQueryHistory: QueryHistory | undefined;
+  // The id of the draft tab seeded from `linkedQueryHistory`, and a fingerprint
+  // of its seeded statement + connection. Used to dismiss the "Opened from
+  // link" section once the draft diverges (edit, connection change, or close).
+  linkedQueryHistoryTabId: string | undefined;
+  linkedQueryHistoryBaseline: string | undefined;
 
   setAsidePanelTab: (tab: AsidePanelTab) => void;
+  setLinkedQueryHistory: (
+    value: QueryHistory | undefined,
+    meta?: { tabId: string; baseline: string }
+  ) => void;
   setShowConnectionPanel: (value: boolean) => void;
   setShowAIPanel: (value: boolean) => void;
   setPendingInsertAtCaret: (value: string | undefined) => void;
@@ -57,6 +70,9 @@ export interface QueryHistorySlice {
   mergeLatest: (
     filter: QueryHistoryFilter
   ) => Promise<SearchQueryHistoriesResponse>;
+  // Fetches a single query history by its resource name
+  // (`projects/{project}/queryHistories/{id}`). Used to hydrate a deep link.
+  fetchQueryHistory: (name: string) => Promise<QueryHistory>;
 }
 
 export interface TreeSlice {

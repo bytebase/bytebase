@@ -33,6 +33,7 @@ import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain, nextAnimationFrame } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { useAIActions } from "../Panels/common/useAIActions";
+import { computeAppendedSelection } from "./appendSelection";
 import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
 
@@ -390,11 +391,12 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
           .join("\n\n");
         editor.setValue(newStatement);
         if (select) {
+          const range = computeAppendedSelection(oldStatement, appended);
           const selection = new monaco.Selection(
-            oldStatement.split("\n").length + 1,
-            0,
-            newStatement.split("\n").length + 1,
-            0
+            range.startLineNumber,
+            range.startColumn,
+            range.endLineNumber,
+            range.endColumn
           );
           requestAnimationFrame(() => {
             void sqlEditorEvents.emit("set-editor-selection", selection);

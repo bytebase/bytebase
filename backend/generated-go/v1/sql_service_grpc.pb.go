@@ -22,6 +22,7 @@ const (
 	SQLService_Query_FullMethodName                = "/bytebase.v1.SQLService/Query"
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
+	SQLService_GetQueryHistory_FullMethodName      = "/bytebase.v1.SQLService/GetQueryHistory"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
 	SQLService_AICompletion_FullMethodName         = "/bytebase.v1.SQLService/AICompletion"
@@ -42,6 +43,9 @@ type SQLServiceClient interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
+	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
@@ -94,6 +98,16 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQ
 	return out, nil
 }
 
+func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryHistory)
+	err := c.cc.Invoke(ctx, SQLService_GetQueryHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExportResponse)
@@ -139,6 +153,9 @@ type SQLServiceServer interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
+	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
@@ -166,6 +183,9 @@ func (UnimplementedSQLServiceServer) AdminExecute(grpc.BidiStreamingServer[Admin
 }
 func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchQueryHistories not implemented")
+}
+func (UnimplementedSQLServiceServer) GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetQueryHistory not implemented")
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
@@ -240,6 +260,24 @@ func _SQLService_SearchQueryHistories_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_GetQueryHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQueryHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).GetQueryHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_GetQueryHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).GetQueryHistory(ctx, req.(*GetQueryHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExportRequest)
 	if err := dec(in); err != nil {
@@ -308,6 +346,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchQueryHistories",
 			Handler:    _SQLService_SearchQueryHistories_Handler,
+		},
+		{
+			MethodName: "GetQueryHistory",
+			Handler:    _SQLService_GetQueryHistory_Handler,
 		},
 		{
 			MethodName: "Export",

@@ -10652,6 +10652,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Policy'
+  /v1/projects/{project}/queryHistories/{queryHistory}:
+    get:
+      tags:
+        - SQLService
+      summary: GetQueryHistory
+      description: |-
+        GetQueryHistory gets a single query history for the caller.
+         Permissions required: None (only returns the caller's own query history)
+      operationId: SQLService_GetQueryHistory
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: queryHistory
+          in: path
+          description: The queryHistory id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.QueryHistory'
   /v1/projects/{project}/releases:
     get:
       tags:
@@ -21026,6 +21055,19 @@ components:
             The name of the project to retrieve.
              Format: projects/{project}
       title: GetProjectRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.GetQueryHistoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the query history to retrieve.
+             Format: projects/{project}/queryHistories/{id}
+      title: GetQueryHistoryRequest
       required:
         - name
       additionalProperties: false
