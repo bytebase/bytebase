@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"strings"
 
 	"github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
@@ -89,6 +90,22 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
+	}
+
+	// USE and SET are session commands that getQueryType classifies as
+	// base.Select (legacy queryTypeListener parity), but they are not query
+	// expressions and produce no result columns. The legacy selectOnlyListener
+	// simply never fired for them, so the legacy extractor returned a span with
+	// empty results and no error; mirror that here instead of falling into
+	// extractPseudoTableFromQueryNode's "unsupported query node type" error.
+	switch node.(type) {
+	case *ast.UseStmt, *ast.SetStmt:
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: accessTables,
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	default:
 	}
 
 	result, err := q.extractPseudoTableFromQueryNode(node)
@@ -287,9 +304,9 @@ func mergeQuerySpanResults(currentColumns, newColumns []base.QuerySpanResult, ct
 // extractPseudoTableFromSetOperation extracts result columns from a
 // set-operation query (UNION/INTERSECT/EXCEPT). omni nests chained set-ops
 // left-associatively, so the left branch may itself be a *ast.SetOperationStmt.
-// The left branch's column names are kept; each right branch is merged
-// positionally into the left's columns (the executor requires matching column
-// counts), mirroring the legacy mergeSetOperatorColumns logic.
+// The left branch's column names are kept; each right branch is merged into the
+// left's columns — positionally for plain set operators (the executor requires
+// matching column counts), or by column name for UNION [ALL] BY NAME.
 func (q *querySpanExtractor) extractPseudoTableFromSetOperation(setOp *ast.SetOperationStmt) (*base.PseudoTable, error) {
 	left, err := q.extractPseudoTableFromQueryNode(setOp.Left)
 	if err != nil {
@@ -305,18 +322,49 @@ func (q *querySpanExtractor) extractPseudoTableFromSetOperation(setOp *ast.SetOp
 	if right == nil {
 		return left, nil
 	}
-	if err := mergeSetOperatorColumns(left, right); err != nil {
+	if err := mergeSetOperatorColumns(left, right, setOp.ByName); err != nil {
 		return nil, err
 	}
 	return left, nil
 }
 
-func mergeSetOperatorColumns(left, right *base.PseudoTable) error {
+func mergeSetOperatorColumns(left, right *base.PseudoTable, byName bool) error {
 	if left == nil || right == nil {
 		return nil
 	}
 	leftColumns := left.GetQuerySpanResult()
 	rightColumns := right.GetQuerySpanResult()
+
+	if byName {
+		// UNION [ALL] BY NAME (Snowflake-specific) aligns the branches by
+		// case-insensitive column name instead of by position, and the column
+		// counts may differ (columns missing on one side are NULL-filled by the
+		// engine). Mirror omni's own snowflake/analysis by-name merge: keep the
+		// left columns in order, merging in the lineage of the same-named right
+		// column, then append the right-only columns.
+		rightByName := make(map[string]base.QuerySpanResult, len(rightColumns))
+		for _, rightColumn := range rightColumns {
+			rightByName[strings.ToUpper(rightColumn.Name)] = rightColumn
+		}
+		seen := make(map[string]bool, len(leftColumns))
+		merged := make([]base.QuerySpanResult, 0, len(leftColumns))
+		for _, leftColumn := range leftColumns {
+			key := strings.ToUpper(leftColumn.Name)
+			seen[key] = true
+			if rightColumn, ok := rightByName[key]; ok {
+				leftColumn.SourceColumns, _ = base.MergeSourceColumnSet(leftColumn.SourceColumns, rightColumn.SourceColumns)
+			}
+			merged = append(merged, leftColumn)
+		}
+		for _, rightColumn := range rightColumns {
+			if !seen[strings.ToUpper(rightColumn.Name)] {
+				merged = append(merged, rightColumn)
+			}
+		}
+		left.Columns = merged
+		return nil
+	}
+
 	if len(leftColumns) != len(rightColumns) {
 		return errors.Errorf("the number of columns in the left part of the set operation returns %d fields, but the right part returns %d fields", len(leftColumns), len(rightColumns))
 	}
@@ -428,7 +476,14 @@ func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.S
 	}
 
 	var walkErr error
-	ast.Inspect(expr, func(node ast.Node) bool {
+	// walk is the ast.Inspect callback. It is a named closure so the manual
+	// recursions below — for sub-trees that omni's GENERATED walker does not
+	// descend into because they are non-Node embedded structs — can re-enter
+	// the same traversal. Collecting into a set keeps the manual recursion
+	// idempotent: it stays correct (merely redundant) if the upstream walker
+	// later learns to visit these children itself.
+	var walk func(node ast.Node) bool
+	walk = func(node ast.Node) bool {
 		if node == nil || walkErr != nil {
 			return false
 		}
@@ -466,9 +521,51 @@ func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.S
 			// COUNT(*) and similar: a star with no resolvable column contributes no
 			// specific source column (matching the legacy aggregate STAR branch).
 			return false
+		case *ast.CaseExpr:
+			// omni's generated walker only visits CaseExpr.Operand and
+			// CaseExpr.Else; the WHEN branches are []*WhenClause — a non-Node
+			// embedded struct — so without this manual recursion
+			// `CASE WHEN A > 0 THEN B END` would contribute no lineage at all.
+			for _, when := range n.Whens {
+				if when == nil {
+					continue
+				}
+				ast.Inspect(when.Cond, walk)
+				ast.Inspect(when.Result, walk)
+			}
+			// Continue the normal traversal for Operand and Else.
+			return true
+		case *ast.FuncCallExpr:
+			// omni's generated walker only visits FuncCallExpr.Args; the
+			// WITHIN GROUP (ORDER BY ...) items and the OVER (...) window
+			// specification are non-Node embedded structs, so
+			// `ROW_NUMBER() OVER (ORDER BY A)` would otherwise contribute no
+			// lineage at all.
+			for _, item := range n.OrderBy {
+				if item != nil {
+					ast.Inspect(item.Expr, walk)
+				}
+			}
+			if n.Over != nil {
+				for _, partition := range n.Over.PartitionBy {
+					ast.Inspect(partition, walk)
+				}
+				for _, item := range n.Over.OrderBy {
+					if item != nil {
+						ast.Inspect(item.Expr, walk)
+					}
+				}
+				if n.Over.Frame != nil {
+					ast.Inspect(n.Over.Frame.Start.Offset, walk)
+					ast.Inspect(n.Over.Frame.End.Offset, walk)
+				}
+			}
+			// Continue the normal traversal for Args.
+			return true
 		}
 		return true
-	})
+	}
+	ast.Inspect(expr, walk)
 	if walkErr != nil {
 		return nil, walkErr
 	}
@@ -603,19 +700,102 @@ func (q *querySpanExtractor) extractTableSourceFromJoin(join *ast.JoinExpr) (bas
 	}
 
 	// Snowflake has 6 join types: INNER, LEFT OUTER, RIGHT OUTER, FULL OUTER,
-	// CROSS, and NATURAL. Only NATURAL JOIN collapses the duplicated join keys.
+	// CROSS, and NATURAL. NATURAL JOIN and JOIN ... USING collapse the shared
+	// join keys to a single output column; getting the collapse wrong is worse
+	// than wrong lineage, because a duplicated shared column shifts every later
+	// positional mask by one.
+
 	if join.Natural {
-		rightMap := make(map[string]bool)
-		for _, rightColumn := range rightColumns {
-			rightMap[rightColumn.Name] = true
+		// NATURAL JOIN: each shared column appears once, carrying the lineage of
+		// BOTH sides (the legacy extractor collapsed but kept only the left
+		// side's lineage). Left columns keep their order, then the right-only
+		// columns follow.
+		rightIndexByName := make(map[string]int, len(rightColumns))
+		for i, rightColumn := range rightColumns {
+			if _, ok := rightIndexByName[rightColumn.Name]; !ok {
+				rightIndexByName[rightColumn.Name] = i
+			}
 		}
+		sharedNames := make(map[string]bool)
 		var result []base.QuerySpanResult
 		for _, leftColumn := range leftColumns {
-			delete(rightMap, leftColumn.Name)
+			if i, ok := rightIndexByName[leftColumn.Name]; ok {
+				sharedNames[leftColumn.Name] = true
+				leftColumn.SourceColumns, _ = base.MergeSourceColumnSet(leftColumn.SourceColumns, rightColumns[i].SourceColumns)
+			}
 			result = append(result, leftColumn)
 		}
 		for _, rightColumn := range rightColumns {
-			if rightMap[rightColumn.Name] {
+			if !sharedNames[rightColumn.Name] {
+				result = append(result, rightColumn)
+			}
+		}
+		return &base.PseudoTable{
+			Name:    "",
+			Columns: result,
+		}, nil
+	}
+
+	if len(join.Using) > 0 {
+		// JOIN ... USING (cols): per
+		// https://docs.snowflake.com/en/sql-reference/constructs/join the output
+		// contains the USING columns first (in the order specified, each ONCE,
+		// carrying the merged lineage of both sides), then the left table
+		// columns not in USING, then the right table columns not in USING.
+		// The legacy extractor had no USING handling at all and duplicated the
+		// shared columns.
+		usingNames := make([]string, 0, len(join.Using))
+		usingSet := make(map[string]bool, len(join.Using))
+		for _, col := range join.Using {
+			name := normalizeSnowflakeIdentifier(col)
+			if usingSet[name] {
+				// Defensive: a duplicated USING column is invalid SQL; keep one.
+				continue
+			}
+			usingSet[name] = true
+			usingNames = append(usingNames, name)
+		}
+
+		var result []base.QuerySpanResult
+		for _, name := range usingNames {
+			var merged *base.QuerySpanResult
+			for _, leftColumn := range leftColumns {
+				if leftColumn.Name == name {
+					columnCopy := leftColumn
+					merged = &columnCopy
+					break
+				}
+			}
+			for _, rightColumn := range rightColumns {
+				if rightColumn.Name == name {
+					if merged == nil {
+						columnCopy := rightColumn
+						merged = &columnCopy
+					} else {
+						merged.SourceColumns, _ = base.MergeSourceColumnSet(merged.SourceColumns, rightColumn.SourceColumns)
+					}
+					break
+				}
+			}
+			if merged == nil {
+				// The USING column resolves on neither side (invalid SQL or an
+				// unresolvable source); emit an empty-lineage column to keep the
+				// positional column count stable.
+				merged = &base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: make(base.SourceColumnSet),
+					IsPlainField:  false,
+				}
+			}
+			result = append(result, *merged)
+		}
+		for _, leftColumn := range leftColumns {
+			if !usingSet[leftColumn.Name] {
+				result = append(result, leftColumn)
+			}
+		}
+		for _, rightColumn := range rightColumns {
+			if !usingSet[rightColumn.Name] {
 				result = append(result, rightColumn)
 			}
 		}
