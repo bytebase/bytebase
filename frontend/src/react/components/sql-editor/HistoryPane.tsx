@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
@@ -27,11 +28,7 @@ import {
 } from "@/react/stores/sqlEditor/tab";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  extractProjectResourceName,
-  extractQueryHistoryUID,
-  getHighlightHTMLByKeyWords,
-} from "@/utils";
+import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 
 /**
@@ -196,6 +193,14 @@ export function HistoryPane() {
     (h) => !(showLinkedHistory && h.name === linkedQueryHistory?.name)
   );
 
+  // Highlight each whitespace-separated search term independently, so matches
+  // show even when the stored statement differs in whitespace/case from the
+  // query — mirroring the server's normalized, case-insensitive search.
+  const searchKeywords = useMemo(
+    () => searchText.trim().split(/\s+/).filter(Boolean),
+    [searchText]
+  );
+
   const renderHistoryRow = (history: QueryHistory, highlighted = false) => (
     <div
       key={history.name}
@@ -243,11 +248,10 @@ export function HistoryPane() {
           </Button>
         </div>
       </div>
-      <p
+      <HighlightLabelText
+        text={history.statement}
+        keyword={searchKeywords}
         className="max-w-full text-xs wrap-break-word font-mono line-clamp-3"
-        dangerouslySetInnerHTML={{
-          __html: getHighlightHTMLByKeyWords(history.statement, searchText),
-        }}
       />
     </div>
   );

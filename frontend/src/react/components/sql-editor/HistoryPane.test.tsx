@@ -151,13 +151,22 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  getHighlightHTMLByKeyWords: vi.fn((s: string, _k: string) =>
-    s.replace(/</g, "&lt;").replace(/>/g, "&gt;")
-  ),
   extractProjectResourceName: (name: string) =>
     name.match(/(?:^|\/)projects\/([^/]+)(?:$|\/)/)?.[1] ?? "",
   extractQueryHistoryUID: (name: string) =>
     name.match(/(?:^|\/)queryHistories\/([^/]+)(?:$|\/)/)?.[1] ?? "-1",
+}));
+
+// The real HighlightLabelText pulls in `@/utils/util` (DOMPurify + i18n init);
+// stub it to render the text so textContent assertions still hold.
+vi.mock("@/react/components/HighlightLabelText", () => ({
+  HighlightLabelText: ({
+    text,
+    className,
+  }: {
+    text: string;
+    className?: string;
+  }) => <span className={className}>{text}</span>,
 }));
 
 vi.mock("dayjs", () => {

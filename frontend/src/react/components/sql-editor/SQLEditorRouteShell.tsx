@@ -526,6 +526,19 @@ export function SQLEditorRouteShell() {
     }
   }, [linkedQueryHistory, linkedQueryHistoryBaseline, linkedTabFingerprint]);
 
+  // Running a query consumes the deep-link context — drop the "Opened from
+  // link" banner on the first execution (worksheet or terminal).
+  useEffect(() => {
+    const off = sqlEditorEvents.on("query-executed", () => {
+      if (useSQLEditorStore.getState().linkedQueryHistory) {
+        useSQLEditorStore.getState().setLinkedQueryHistory(undefined);
+      }
+    });
+    return () => {
+      off();
+    };
+  }, []);
+
   // ---- sidebar tab restore (after project context ready) ----------------
 
   useEffect(() => {
