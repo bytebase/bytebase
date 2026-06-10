@@ -30,6 +30,11 @@ var config = googlesql.Config{
 	ContiguousSplitText:    true,
 }
 
-// SplitSQL and GetQuerySpan are the registered handlers, re-exported for the
-// tests in this package.
-var SplitSQL, GetQuerySpan = googlesql.Register(storepb.Engine_SPANNER, config)
+var handlers = googlesql.Register(storepb.Engine_SPANNER, config)
+
+// SplitSQL is the registered splitter, re-exported for the tests in this package.
+var SplitSQL = handlers.SplitSQL
+
+// GetQuerySpan is the registered query-span handler, re-exported for the tests
+// in this package.
+var GetQuerySpan = handlers.GetQuerySpan

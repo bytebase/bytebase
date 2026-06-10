@@ -43,8 +43,10 @@ type Config struct {
 	// instead keeps the system tables as table-level resources.
 	SystemOnlyEmptySpan bool
 
-	// SetStatementIsSelect classifies a SET statement as base.Select — the
-	// legacy spanner queryTypeListener's "treat SAFE SET as select" case.
+	// SetStatementIsSelect classifies a SET statement as base.Select — BOTH
+	// legacy queryTypeListeners' "treat SAFE SET as select" case (omni
+	// classifies SET as Unknown, which the new-ACL access check would reject as
+	// a disallowed query type).
 	SetStatementIsSelect bool
 
 	// UppercaseStarMergeName upper-cases a set-operation star-merge output name

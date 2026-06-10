@@ -141,7 +141,10 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 	// METADATA-canonical table name, matching the legacy findTableSchema/
 	// PhysicalTable, which is why result lineage carries metadata casing while
 	// the table-level SourceColumns above carry the written casing.
-	fullSourceColumns, notFound := q.expandTablesToColumns(ctx, omniSpan)
+	fullSourceColumns, notFound, err := q.expandTablesToColumns(ctx, omniSpan)
+	if err != nil {
+		return nil, err
+	}
 
 	results := q.expandColumnInfos(ctx, omniSpan.Results, fullSourceColumns, aliasMap)
 
@@ -241,17 +244,22 @@ func (q *QuerySpanExtractor) toTableResources(span *analysis.QuerySpan) base.Sou
 // from the table's metadata, returning the membership set used for lineage
 // matching.
 //
-// A table whose metadata can't be resolved is kept as a single table-level
+// A table whose metadata does not EXIST is kept as a single table-level
 // resource so the read is still recorded, and the first ResourceNotFoundError
-// encountered is returned (non-fatally) for the caller to attach to the span.
+// encountered is returned (non-fatally) for the caller to attach to the span —
+// the masking layer rejects spans carrying NotFoundError. Any OTHER metadata
+// error (a store outage, a canceled context) is returned FATALLY: falling
+// through would leave result columns with silently-empty lineage and no
+// NotFoundError, and the fail-open positional masker would return sensitive
+// data unmasked after a transient infrastructure failure.
 // Each per-column resource uses the METADATA-canonical table/column names (the
 // legacy findTableSchema returned a PhysicalTable keyed on the proto name), so
 // result lineage carries metadata casing.
-func (q *QuerySpanExtractor) expandTablesToColumns(ctx context.Context, span *analysis.QuerySpan) (base.SourceColumnSet, *base.ResourceNotFoundError) {
+func (q *QuerySpanExtractor) expandTablesToColumns(ctx context.Context, span *analysis.QuerySpan) (base.SourceColumnSet, *base.ResourceNotFoundError, error) {
 	set := make(base.SourceColumnSet)
 	var firstNotFound *base.ResourceNotFoundError
 	if span == nil {
-		return set, nil
+		return set, nil, nil
 	}
 	for _, t := range span.AccessTables {
 		db := q.resourceDatabase(t.Database)
@@ -269,10 +277,13 @@ func (q *QuerySpanExtractor) expandTablesToColumns(ctx context.Context, span *an
 		canonicalTable, columns, err := q.tableColumns(ctx, t.Database, t.Schema, t.Table)
 		if err != nil {
 			var notFound *base.ResourceNotFoundError
-			if errors.As(err, &notFound) && firstNotFound == nil {
+			if !errors.As(err, &notFound) {
+				return nil, nil, err
+			}
+			if firstNotFound == nil {
 				firstNotFound = notFound
 			}
-			// Keep the table-level resource (NotFound or any other error).
+			// Keep the table-level resource for the missing object.
 			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: t.Table}] = true
 			continue
 		}
@@ -284,7 +295,7 @@ func (q *QuerySpanExtractor) expandTablesToColumns(ctx context.Context, span *an
 			set[base.ColumnResource{Database: db, Schema: t.Schema, Table: canonicalTable, Column: col}] = true
 		}
 	}
-	return set, firstNotFound
+	return set, firstNotFound, nil
 }
 
 // expandColumnInfos expands a list of omni ColumnInfo (one query body's resolved

@@ -15,13 +15,20 @@ import (
 
 // config carries the BigQuery dialect deltas: the written dataset is the
 // DATABASE (default fill-in, single unnamed metadata schema), system queries
-// keep their table-level resources, and set-operation star-merge names are
-// upper-cased (the legacy BigQuery extractor's rendering).
+// keep their table-level resources, SET classifies as Select (the legacy
+// listener's "treat SAFE SET as select"), and set-operation star-merge names
+// are upper-cased (the legacy BigQuery extractor's rendering).
 var config = googlesql.Config{
 	Dialect:                analysis.DialectBigQuery,
+	SetStatementIsSelect:   true,
 	UppercaseStarMergeName: true,
 }
 
-// SplitSQL and GetQuerySpan are the registered handlers, re-exported for the
-// tests in this package.
-var SplitSQL, GetQuerySpan = googlesql.Register(storepb.Engine_BIGQUERY, config)
+var handlers = googlesql.Register(storepb.Engine_BIGQUERY, config)
+
+// SplitSQL is the registered splitter, re-exported for the tests in this package.
+var SplitSQL = handlers.SplitSQL
+
+// GetQuerySpan is the registered query-span handler, re-exported for the tests
+// in this package.
+var GetQuerySpan = handlers.GetQuerySpan
