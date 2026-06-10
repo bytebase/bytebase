@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "验证码已发送至 {{email}}。",
+      "continue-with-email": "使用邮箱继续",
+      "continue-with-idp": "使用 {{idp}} 继续",
       "email-code-tab": "邮箱验证码",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
@@ -150,8 +152,10 @@
       "new-user": "第一次使用 Bytebase?",
       "resend-code": "重新发送验证码",
       "resend-in": "{{seconds}} 秒后重新发送",
-      "send-code": "发送验证码",
-      "sign-in-with-idp": "通过 {{idp}} 登录",
+      "sign-in-or-create": "登录或创建您的账户",
+      "sign-in-to-account": "登录您的账户",
+      "standard-tab": "标准",
+      "tos": "继续即表示您同意我们的<terms>服务条款</terms>和<privacy>隐私政策</privacy>。",
       "verification-code": "验证码"
     },
     "sign-up": {
