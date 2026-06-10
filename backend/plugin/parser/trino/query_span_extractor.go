@@ -220,31 +220,8 @@ func (q *querySpanExtractor) buildSpanCatalog(ctx context.Context, statement str
 			if err != nil || meta == nil {
 				continue
 			}
-			database := cat.EnsureCatalog(norm)
-			for _, schemaName := range meta.ListSchemaNames() {
-				schemaMeta := meta.GetSchemaMetadata(schemaName)
-				if schemaMeta == nil {
-					continue
-				}
-				sc := database.EnsureSchema(catalog.Normalize(schemaName))
-				for _, tableName := range schemaMeta.ListTableNames() {
-					tableMeta := schemaMeta.GetTable(tableName)
-					if tableMeta == nil {
-						continue
-					}
-					sc.AddTable(catalog.Normalize(tableName), columnsOf(tableMeta.GetProto().GetColumns())...)
-				}
-				for _, viewName := range schemaMeta.ListViewNames() {
-					viewMeta := schemaMeta.GetView(viewName)
-					if viewMeta == nil {
-						continue
-					}
-					v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
-					v.Definition = viewMeta.GetDefinition()
-					if def := viewMeta.GetDefinition(); def != "" {
-						corpus += "\n" + strings.ToLower(def)
-					}
-				}
+			for _, def := range loadCatalogMetadata(cat, norm, meta) {
+				corpus += "\n" + strings.ToLower(def)
 			}
 		}
 		if !progressed {

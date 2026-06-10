@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -88,32 +89,7 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 		if err != nil || meta == nil {
 			continue
 		}
-		database := cat.EnsureCatalog(norm)
-		for _, schemaName := range meta.ListSchemaNames() {
-			schemaMeta := meta.GetSchemaMetadata(schemaName)
-			if schemaMeta == nil {
-				continue
-			}
-			sc := database.EnsureSchema(catalog.Normalize(schemaName))
-			for _, tableName := range schemaMeta.ListTableNames() {
-				tableMeta := schemaMeta.GetTable(tableName)
-				if tableMeta == nil {
-					continue
-				}
-				sc.AddTable(catalog.Normalize(tableName), columnsOf(tableMeta.GetProto().GetColumns())...)
-			}
-			for _, viewName := range schemaMeta.ListViewNames() {
-				viewMeta := schemaMeta.GetView(viewName)
-				if viewMeta == nil {
-					continue
-				}
-				v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
-				// The defining query lets omni's analysis resolve lineage
-				// through the view (GetQuerySpanWithCatalog); empty leaves the
-				// view opaque.
-				v.Definition = viewMeta.GetDefinition()
-			}
-		}
+		loadCatalogMetadata(cat, norm, meta)
 	}
 
 	if cCtx.DefaultDatabase != "" {
@@ -123,6 +99,43 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 		cat.SetCurrentSchema(catalog.Normalize(cCtx.DefaultSchema))
 	}
 	return cat
+}
+
+// loadCatalogMetadata copies one database's schemas, tables and views (with
+// their column lists and view definitions) into the omni catalog under the
+// given normalized catalog name, returning the view definitions it loaded.
+// Views carry their defining query so omni's analysis can resolve lineage
+// through them (GetQuerySpanWithCatalog); an empty definition leaves the view
+// opaque. Shared by the completion and query-span catalog builders.
+func loadCatalogMetadata(cat *catalog.Catalog, norm string, meta *model.DatabaseMetadata) []string {
+	var definitions []string
+	database := cat.EnsureCatalog(norm)
+	for _, schemaName := range meta.ListSchemaNames() {
+		schemaMeta := meta.GetSchemaMetadata(schemaName)
+		if schemaMeta == nil {
+			continue
+		}
+		sc := database.EnsureSchema(catalog.Normalize(schemaName))
+		for _, tableName := range schemaMeta.ListTableNames() {
+			tableMeta := schemaMeta.GetTable(tableName)
+			if tableMeta == nil {
+				continue
+			}
+			sc.AddTable(catalog.Normalize(tableName), columnsOf(tableMeta.GetProto().GetColumns())...)
+		}
+		for _, viewName := range schemaMeta.ListViewNames() {
+			viewMeta := schemaMeta.GetView(viewName)
+			if viewMeta == nil {
+				continue
+			}
+			v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
+			v.Definition = viewMeta.GetDefinition()
+			if def := viewMeta.GetDefinition(); def != "" {
+				definitions = append(definitions, def)
+			}
+		}
+	}
+	return definitions
 }
 
 // catalogNeeded reports whether the current completion statement needs this
