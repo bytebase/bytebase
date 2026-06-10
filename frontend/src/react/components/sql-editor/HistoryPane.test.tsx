@@ -124,20 +124,22 @@ vi.mock("@/views/sql-editor/events", () => ({
   },
 }));
 
-vi.mock("@/react/components/ui/search-input", () => ({
-  SearchInput: ({
+// HistorySearchInput is exercised in its own test; here it's stubbed to a
+// plain input wired to the string-based onChange.
+vi.mock("./HistorySearchInput", () => ({
+  HistorySearchInput: ({
     value,
     onChange,
     placeholder,
   }: {
     value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange: (value: string) => void;
     placeholder?: string;
   }) => (
     <input
       data-testid="search-input"
       value={value}
-      onChange={onChange}
+      onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
     />
   ),
