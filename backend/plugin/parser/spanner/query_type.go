@@ -1,51 +1,58 @@
 package spanner
 
 import (
-	parser "github.com/bytebase/parser/googlesql"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/googlesql/analysis"
+	"github.com/bytebase/omni/googlesql/ast"
+	"github.com/bytebase/omni/googlesql/parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type queryTypeListener struct {
-	*parser.BaseGoogleSQLParserListener
-
-	allSystems bool
-	result     base.QueryType
-	err        error
-}
-
-func (l *queryTypeListener) EnterStmts(ctx *parser.StmtsContext) {
-	// Assume that the stmts contains only one unterminated statement.
-	if len(ctx.AllUnterminated_sql_statement()) != 1 {
-		l.err = errors.Errorf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement()))
-		return
+// classifyStatement classifies a single Spanner (GoogleSQL) statement via the
+// omni analysis classifier and maps the result onto bytebase's base.QueryType.
+//
+// omni's analysis.ClassifySQL reproduces the legacy queryTypeListener's rules
+// for the Spanner dialect (system schemas = INFORMATION_SCHEMA and SPANNER_SYS),
+// with one legacy-spanner special case re-applied here: the legacy listener
+// classified a SET statement as base.Select ("treat SAFE SET as select") while
+// omni classifies it Unknown.
+func classifyStatement(statement string) base.QueryType {
+	qt := mapQueryType(analysis.ClassifySQL(statement, analysis.DialectSpanner))
+	if qt == base.QueryTypeUnknown && isSetStatement(statement) {
+		return base.Select
 	}
-	unterminatedStatement := ctx.AllUnterminated_sql_statement()[0]
-	l.result = l.getQueryTypeForUnterminatedSQLStatement(unterminatedStatement)
+	return qt
 }
 
-func (l *queryTypeListener) getQueryTypeForUnterminatedSQLStatement(u parser.IUnterminated_sql_statementContext) base.QueryType {
-	body := u.Sql_statement_body()
-	switch {
-	case body.Query_statement() != nil:
-		if l.allSystems {
-			return base.SelectInfoSchema
-		}
+// isSetStatement reports whether the statement parses to a single SET statement
+// (the legacy spanner queryTypeListener's Set_statement → Select case).
+func isSetStatement(statement string) bool {
+	file, errs := parser.Parse(statement)
+	if len(errs) > 0 || file == nil || len(file.Stmts) != 1 {
+		return false
+	}
+	_, ok := file.Stmts[0].(*ast.SetStmt)
+	return ok
+}
+
+// mapQueryType maps an omni analysis.QueryType onto bytebase's base.QueryType.
+// The two enums are defined to correspond 1:1 (omni's QueryType doc states the
+// values mirror base.QueryType so this switch is total); an unexpected value
+// falls back to QueryTypeUnknown.
+func mapQueryType(t analysis.QueryType) base.QueryType {
+	switch t {
+	case analysis.Select:
 		return base.Select
-	case body.Alter_statement() != nil, body.Create_constant_statement() != nil, body.Create_connection_statement() != nil, body.Create_database_statement() != nil,
-		body.Create_function_statement() != nil, body.Create_procedure_statement() != nil, body.Create_index_statement() != nil, body.Create_privilege_restriction_statement() != nil, body.Create_row_access_policy_statement() != nil,
-		body.Create_external_table_statement() != nil, body.Create_external_table_function_statement() != nil, body.Create_model_statement() != nil, body.Create_property_graph_statement() != nil,
-		body.Create_schema_statement() != nil, body.Create_external_schema_statement() != nil, body.Create_snapshot_statement() != nil, body.Create_table_function_statement() != nil, body.Create_table_statement() != nil,
-		body.Create_view_statement() != nil, body.Create_entity_statement() != nil, body.Rename_statement() != nil, body.Drop_all_row_access_policies_statement() != nil, body.Drop_statement() != nil, body.Undrop_statement() != nil:
-		return base.DDL
-	case body.Dml_statement() != nil, body.Merge_statement() != nil, body.Call_statement() != nil:
-		return base.DML
-	case body.Explain_statement() != nil:
+	case analysis.Explain:
 		return base.Explain
-	// Treat SAFE SET as select statement.
-	case body.Set_statement() != nil:
-		return base.Select
+	case analysis.SelectInfoSchema:
+		return base.SelectInfoSchema
+	case analysis.DDL:
+		return base.DDL
+	case analysis.DML:
+		return base.DML
+	case analysis.Unknown:
+		return base.QueryTypeUnknown
 	default:
 		return base.QueryTypeUnknown
 	}

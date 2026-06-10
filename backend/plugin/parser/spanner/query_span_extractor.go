@@ -2,1256 +2,837 @@ package spanner
 
 import (
 	"context"
-	"slices"
+	"sort"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/googlesql"
-
+	"github.com/bytebase/omni/googlesql/analysis"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// querySpanExtractor analyses a single Spanner (GoogleSQL) statement and
+// produces a base.QuerySpan: the set of base tables it accesses, the per-output
+// column lineage (expanded against catalog metadata when available), and its
+// statement classification.
+//
+// The extractor delegates structural lineage to omni's analysis.GetQuerySpan
+// (DialectSpanner), then applies the bytebase-specific post-processing the
+// legacy plugin performed:
+//   - the Spanner name model: named schemas under ONE database (a 2-part sch.t
+//     is Schema=sch, Table=t; the db part of a 3-part db.sch.t is IGNORED — the
+//     legacy resolver always used the session database), mapped onto
+//     base.ColumnResource with Database always the default database;
+//   - the user/system handling: a query reading ONLY system tables
+//     (INFORMATION_SCHEMA / SPANNER_SYS) early-returns an EMPTY
+//     SelectInfoSchema span without touching metadata, and a mixed user+system
+//     query is rejected (base.MixUserSystemTablesError) — both exactly the
+//     legacy extractor's behavior;
+//   - expansion of each accessed table to its columns via the metadata getter so
+//     SELECT * and bare column references resolve to physical columns.
+//
+// This mirrors the BigQuery cutover (and the proven Trino #20517) structurally;
+// the deltas are the schema-model mapping, the SPANNER_SYS system set, and the
+// system-only early return.
 type querySpanExtractor struct {
-	ctx             context.Context
+	ctx context.Context
+
 	defaultDatabase string
 
 	gCtx base.GetQuerySpanContext
 
-	ctes []*base.PseudoTable
-
-	// outerTableSources is the table sources from the outer query span.
-	// it's used to resolve the column name in the correlated sub-query.
-	outerTableSources []base.TableSource
-
-	// tableSourceFrom is the table sources from the from clause.
-	tableSourceFrom []base.TableSource
+	// metaCache memoises database metadata lookups within a single span.
+	metaCache map[string]*model.DatabaseMetadata
 }
 
+// newQuerySpanExtractor creates a new Spanner query span extractor. Its
+// signature matches the legacy 3-arg form. The ignoreCaseSensitive flag is
+// accepted for signature parity but unused — the legacy extractor ignored it
+// too (its constructor took `_ bool`); schema names match case-sensitively and
+// table names fall back to a case-folded match, exactly the legacy
+// findTableSchema behavior.
 func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, _ bool) *querySpanExtractor {
 	return &querySpanExtractor{
 		defaultDatabase: defaultDatabase,
 		gCtx:            gCtx,
+		metaCache:       make(map[string]*model.DatabaseMetadata),
 	}
 }
 
-func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
-	parseResults, err := ParseSpannerGoogleSQL(stmt)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
-	}
-
-	parseResult := parseResults[0]
-	tree := parseResult.Tree
+// getQuerySpan extracts the query span for a single Spanner statement.
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	accessTables, err := getAccessTables(q.defaultDatabase, tree)
+
+	// query-span analysis expects exactly one non-empty statement (matching the
+	// legacy behaviour, which parsed via ParseSpannerGoogleSQL and rejected != 1).
+	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	allSystems, mixed := isMixedQuery(accessTables)
+	nonEmpty := 0
+	var single string
+	for _, s := range stmts {
+		if s.Empty || strings.TrimSpace(s.Text) == "" {
+			continue
+		}
+		nonEmpty++
+		single = s.Text
+	}
+	if nonEmpty == 0 {
+		return &base.QuerySpan{
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+	if nonEmpty > 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", nonEmpty)
+	}
+
+	omniSpan, err := analysis.GetQuerySpan(single, analysis.DialectSpanner)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reject a statement that reads from both user and system
+	// (INFORMATION_SCHEMA / SPANNER_SYS) tables, matching the legacy
+	// isMixedQuery → MixUserSystemTablesError.
+	allSystems, mixed := classifyAccess(omniSpan)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
-
-	queryTypeListener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
-	if queryTypeListener.err != nil {
-		return nil, queryTypeListener.err
-	}
-	if queryTypeListener.result != base.Select {
+	// A query reading exclusively from system tables EARLY-RETURNS an EMPTY
+	// SelectInfoSchema span — no source columns, no results, no metadata access.
+	// This is the legacy spanner extractor's exact behavior (it returned
+	// base.QuerySpan{Type: SelectInfoSchema} before resolving anything); system
+	// metadata is never masked, and resolving these pseudo-tables would only risk
+	// a spurious ResourceNotFoundError.
+	if allSystems {
 		return &base.QuerySpan{
-			Type:          queryTypeListener.result,
+			Type:          base.SelectInfoSchema,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
-	// TODO(zp): statement type check.
-	querySpanResult, err := q.getQuerySpanResult(tree.(*parser.RootContext).Stmts().AllUnterminated_sql_statement()[0].Sql_statement_body())
-	if err != nil {
-		return nil, err
-	}
-
-	return &base.QuerySpan{
-		Type:          base.Select,
-		Results:       querySpanResult,
-		SourceColumns: accessTables,
-	}, nil
-}
-
-func (q *querySpanExtractor) getQuerySpanResult(tree parser.ISql_statement_bodyContext) ([]base.QuerySpanResult, error) {
-	if tree.Query_statement() == nil {
-		return nil, errors.Errorf("unsupported non-query statement")
-	}
-
-	tableSource, err := q.extractTableSourceFromQuery(tree.Query_statement().Query())
-	if err != nil {
-		return nil, err
-	}
-
-	return tableSource.GetQuerySpanResult(), nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryContext) (base.TableSource, error) {
-	queryWithoutPipe := query.Query_without_pipe_operators()
-	if queryWithoutPipe == nil {
-		return nil, errors.Errorf("unsupported query with pipe operators")
-	}
-	return q.extractTableSourceFromQueryWithoutPipe(queryWithoutPipe)
-}
-
-func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
-	originalCTELength := len(q.ctes)
-	defer func() {
-		q.ctes = q.ctes[:originalCTELength]
-	}()
-	if queryWithoutPipe.With_clause() != nil {
-		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
-			return nil, err
-		}
-	}
-	return q.extractTableSourceFromQueryPrimaryOrSetOperation(queryWithoutPipe.Query_primary_or_set_operation())
-}
-
-func (q *querySpanExtractor) recordRecursiveCTE(aliasedQuery parser.IAliased_queryContext) error {
-	cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
-	query := aliasedQuery.Parenthesized_query().Query().Query_without_pipe_operators()
-	if query.With_clause() != nil {
-		return errors.Errorf("WITH is not allowed inside WITH RECURSIVE")
-	}
-	if query.Query_primary_or_set_operation().Query_set_operation() == nil {
-		return q.recordNonRecursiveCTE(aliasedQuery)
-	}
-	prefix := query.Query_primary_or_set_operation().Query_set_operation().Query_set_operation_prefix()
-	anchor, err := q.extractTableSourceFromQueryPrimary(prefix.Query_primary())
-	if err != nil {
-		return err
-	}
-	// XXX(zp): How about two union?
-	recursiveItem := prefix.AllQuery_set_operation_item()[0]
-	tempCte := &base.PseudoTable{
-		Name:    cteName,
-		Columns: anchor.GetQuerySpanResult(),
-	}
-	q.ctes = append(q.ctes, tempCte)
-	originalSize := len(q.ctes)
-	for {
-		originalSize := len(q.ctes)
-		recursivePartTableSource, err := q.extractTableSourceFromQueryPrimary(recursiveItem.Query_primary())
-		if err != nil {
-			return err
-		}
-		anchorQuerySpanResults := q.ctes[originalSize-1].GetQuerySpanResult()
-		recursivePartQuerySpanResults := recursivePartTableSource.GetQuerySpanResult()
-		if len(anchorQuerySpanResults) != len(recursivePartQuerySpanResults) {
-			return errors.Errorf("recursive cte %s clause returns %d fields, but anchor clause returns %d fields", cteName, len(anchorQuerySpanResults), len(recursivePartQuerySpanResults))
-		}
-		changed := false
-		for i := range anchorQuerySpanResults {
-			var hasChange bool
-			anchorQuerySpanResults[i].SourceColumns, hasChange = base.MergeSourceColumnSet(anchorQuerySpanResults[i].SourceColumns, recursivePartQuerySpanResults[i].SourceColumns)
-			changed = changed || hasChange
-		}
-		tempCte := &base.PseudoTable{
-			Name:    cteName,
-			Columns: anchorQuerySpanResults,
-		}
-		q.ctes = q.ctes[:originalSize-1]
-		if !changed {
-			break
-		}
-		q.ctes = append(q.ctes, tempCte)
-	}
-	q.ctes = q.ctes[:originalSize-1]
-	q.ctes = append(q.ctes, tempCte)
-	return nil
-}
-
-func (q *querySpanExtractor) recordNonRecursiveCTE(aliasedQuery parser.IAliased_queryContext) error {
-	cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
-	query := aliasedQuery.Parenthesized_query().Query()
-	tableSource, err := q.extractNormalCTE(query)
-	if err != nil {
-		return err
-	}
-	q.ctes = append(q.ctes, &base.PseudoTable{
-		Name:    cteName,
-		Columns: tableSource.GetQuerySpanResult(),
-	})
-	return nil
-}
-
-func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) error {
-	allAliasedQuery := withClause.AllAliased_query()
-	recursive := withClause.RECURSIVE_SYMBOL() != nil
-	for _, aliasedQuery := range allAliasedQuery {
-		// TODO(zp): Actually, Spanner do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
-		// by the reference of the CTE itself in the CTE body. Also, check other engines.
-		if recursive {
-			if err := q.recordRecursiveCTE(aliasedQuery); err != nil {
-				return err
-			}
-		} else {
-			if err := q.recordNonRecursiveCTE(aliasedQuery); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (q *querySpanExtractor) extractNormalCTE(query parser.IQueryContext) (base.TableSource, error) {
-	querySpanExtractor := &querySpanExtractor{
-		ctx:             q.ctx,
-		defaultDatabase: q.defaultDatabase,
-		gCtx:            q.gCtx,
-		ctes:            q.ctes,
-	}
-	tableSource, err := querySpanExtractor.extractTableSourceFromQuery(query)
-	if err != nil {
-		return nil, err
-	}
-	return tableSource, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromQueryPrimaryOrSetOperation(queryPrimaryOrSetOperation parser.IQuery_primary_or_set_operationContext) (base.TableSource, error) {
-	if queryPrimaryOrSetOperation.Query_primary() != nil {
-		return q.extractTableSourceFromQueryPrimary(queryPrimaryOrSetOperation.Query_primary())
-	}
-	if queryPrimaryOrSetOperation.Query_set_operation() != nil {
-		return q.extractTableSourceFromQuerySetOperation(queryPrimaryOrSetOperation.Query_set_operation())
-	}
-	return nil, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromQuerySetOperation(querySetOperation parser.IQuery_set_operationContext) (base.TableSource, error) {
-	tableSource, err := q.extractTableSourceFromQueryPrimary(querySetOperation.Query_set_operation_prefix().Query_primary())
-	if err != nil {
-		return nil, err
-	}
-	leftSpanResults := tableSource
-	for _, item := range querySetOperation.Query_set_operation_prefix().AllQuery_set_operation_item() {
-		newQ := &querySpanExtractor{
-			ctx:             q.ctx,
-			defaultDatabase: q.defaultDatabase,
-			gCtx:            q.gCtx,
-			ctes:            q.ctes,
-		}
-		rightSpanResults, err := newQ.extractTableSourceFromQueryPrimary(item.Query_primary())
-		if err != nil {
-			return nil, err
-		}
-		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
-		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
-			return nil, errors.Errorf("left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(rightQuerySpanResult))
-		}
-		var result []base.QuerySpanResult
-		for i, leftSpanResult := range leftQuerySpanResult {
-			rightSpanResult := rightQuerySpanResult[i]
-			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
-			result = append(result, base.QuerySpanResult{
-				Name:          leftSpanResult.Name,
-				SourceColumns: newResourceColumns,
-			})
-		}
-		leftSpanResults = &base.PseudoTable{
-			Name:    "",
-			Columns: result,
-		}
-		// FIXME(zp): Consider UNION alias.
-	}
-	return leftSpanResults, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary parser.IQuery_primaryContext) (base.TableSource, error) {
-	if queryPrimary.Select_() != nil {
-		return q.extractTableSourceFromSelect(queryPrimary.Select_())
-	}
-	if parenthesizedQuery := queryPrimary.Parenthesized_query(); parenthesizedQuery != nil {
-		// Table subquery shares the ctes of outer query. On the contrary,
-		// the subquery should not effect the outer query.
-		// https://cloud.google.com/bigquery/docs/reference/standard-sql/subqueries#correlated_subquery_concepts
-		originalCtesLength := len(q.ctes)
-		originalTableSourceFrom := len(q.tableSourceFrom)
-		defer func() {
-			q.ctes = q.ctes[:originalCtesLength]
-			q.tableSourceFrom = q.tableSourceFrom[:originalTableSourceFrom]
-		}()
-		subqueryExtractor := &querySpanExtractor{
-			ctx:               q.ctx,
-			gCtx:              q.gCtx,
-			defaultDatabase:   q.defaultDatabase,
-			ctes:              q.ctes,
-			outerTableSources: q.outerTableSources,
-			tableSourceFrom:   q.tableSourceFrom,
-		}
-		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(parenthesizedQuery)
-		if err != nil {
-			return nil, err
-		}
-
-		var alias string
-		if v := queryPrimary.Opt_as_alias_with_required_as(); v != nil {
-			if v.Identifier() != nil {
-				alias = unquoteIdentifierByRule(v.Identifier())
-			}
-		}
-		if alias != "" {
-			return &base.PseudoTable{
-				Name:    alias,
-				Columns: tableSource.GetQuerySpanResult(),
-			}, nil
-		}
-
-		return tableSource, nil
-	}
-	return nil, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISelectContext) (base.TableSource, error) {
-	var fromFields []base.QuerySpanResult
-	var resultFields []base.QuerySpanResult
-	if selectCtx.From_clause() != nil {
-		tableSource, err := q.extractTableSourceFromFromClause(selectCtx.From_clause())
-		if err != nil {
-			return nil, err
-		}
-		fromFields = tableSource.GetQuerySpanResult()
-	}
-
-	itemList := selectCtx.Select_clause().Select_list().AllSelect_list_item()
-	for _, item := range itemList {
-		switch {
-		case item.Select_column_star() != nil:
-			fields := append([]base.QuerySpanResult{}, fromFields...)
-			fields, err := q.starModify(fields, item.Select_column_star().Star_modifiers())
-			if err != nil {
-				return nil, err
-			}
-			resultFields = append(resultFields, fields...)
-		case item.Select_column_dot_star() != nil:
-			v := item.Select_column_dot_star()
-			wildFields, err := q.extractWildFromExpr(v.Expression_higher_prec_than_and())
-			if err != nil {
-				return nil, err
-			}
-			fields, err := q.starModify(wildFields, item.Select_column_dot_star().Star_modifiers())
-			if err != nil {
-				return nil, err
-			}
-			resultFields = append(resultFields, fields...)
-		case item.Select_column_expr() != nil:
-			v := item.Select_column_expr()
-			var expression parser.IExpressionContext
-			if v.Expression() != nil {
-				expression = v.Expression()
-			} else if v.Select_column_expr_with_as_alias() != nil {
-				expression = v.Select_column_expr_with_as_alias().Expression()
-			}
-
-			var alias parser.IIdentifierContext
-			if v.Select_column_expr_with_as_alias() != nil {
-				alias = v.Select_column_expr_with_as_alias().Identifier()
-			} else if v.Identifier() != nil {
-				alias = v.Identifier()
-			}
-
-			name, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(expression)
-			if err != nil {
-				return nil, err
-			}
-			aliasName := strings.ToUpper(name)
-			if alias != nil {
-				aliasName = strings.ToUpper(unquoteIdentifierByRule(alias))
-			}
-			resultFields = append(resultFields, base.QuerySpanResult{
-				Name:          aliasName,
-				SourceColumns: sourceColumnSet,
-			})
-		default:
-			// Ignore other select list item types
-		}
-	}
-	return &base.PseudoTable{
-		Name:    "",
-		Columns: resultFields,
-	}, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromParenthesizedQuery(parenthesizedQuery parser.IParenthesized_queryContext) (base.TableSource, error) {
-	return q.extractTableSourceFromQuery(parenthesizedQuery.Query())
-}
-
-func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, error) {
-	if ctx == nil {
-		return "", make(base.SourceColumnSet), nil
-	}
-
-	// BigQuery support project the field from json, for example, SELECT a.b.c FROM ..., the AST looks like:
-	// /
-	// └── expression
-	//     └── expression_higher_prec_than_and
-	//         ├── expression_higher_prec_than_and
-	//         │   ├── expression_higher_prec_than_and
-	//         │   │   ├── expression_higher_prec_than_and
-	//         │   │   ├── DOT_SYMBOL
-	//         │   │   └── identifier(a)
-	//         │   ├── DOT_SYMBOL
-	//         │   └── identifier(b)
-	//         ├── DOT_SYMBOL
-	//         └── identifier(c)
-	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
-	// treat it as identifier.
-	var name string
-	switch ctx := ctx.(type) {
-	case *parser.Parenthesized_queryContext:
-		baseSet := make(base.SourceColumnSet)
-		subqueryExtractor := &querySpanExtractor{
-			ctx:               q.ctx,
-			defaultDatabase:   q.defaultDatabase,
-			gCtx:              q.gCtx,
-			ctes:              q.ctes,
-			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
-			tableSourceFrom:   []base.TableSource{},
-		}
-		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(ctx)
-		if err != nil {
-			return "", nil, err
-		}
-		spanResult := tableSource.GetQuerySpanResult()
-		for _, field := range spanResult {
-			baseSet, _ = base.MergeSourceColumnSet(field.SourceColumns, field.SourceColumns)
-		}
-		return "", baseSet, nil
-	case *parser.Expression_higher_prec_than_andContext:
-		baseSet := make(base.SourceColumnSet)
-		possibleColumnResources := getPossibleColumnResources(ctx)
-		for _, columnResources := range possibleColumnResources {
-			l := len(columnResources)
-			if l == 1 {
-				sourceColumnSet, err := q.getFieldColumnSource("", columnResources[0])
-				if err != nil {
-					return "", nil, err
-				}
-				baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
-				name = columnResources[0]
-			}
-			if l >= 2 {
-				// a.b, a can be the table name or the field name.
-				sourceColumnSet, err := q.getFieldColumnSource("", columnResources[0])
-				if err != nil {
-					sourceColumnSet, err = q.getFieldColumnSource(columnResources[0], columnResources[1])
-					if err != nil {
-						return "", nil, err
-					}
-					baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
-					name = columnResources[1]
-				} else {
-					baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
-					name = columnResources[0]
-				}
-			}
-		}
-		return name, baseSet, nil
-	default:
-	}
-
-	baseSet := make(base.SourceColumnSet)
-	children := ctx.GetChildren()
-	for _, child := range children {
-		child, ok := child.(antlr.ParserRuleContext)
-		if !ok {
-			continue
-		}
-		fieldName, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(child)
-		if err != nil {
-			return "", nil, err
-		}
-		name = fieldName
-		baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
-	}
-	if len(children) > 1 {
-		name = ""
-	}
-
-	return name, baseSet, nil
-}
-
-func (q *querySpanExtractor) starModify(fields []base.QuerySpanResult, starModifier parser.IStar_modifiersContext) ([]base.QuerySpanResult, error) {
-	if starModifier == nil {
-		return fields, nil
-	}
-
-	type fieldItem struct {
-		id    int
-		field base.QuerySpanResult
-	}
-	var fieldItems []fieldItem
-	for i, field := range fields {
-		fieldItems = append(fieldItems, fieldItem{
-			id:    i,
-			field: field,
-		})
-	}
-	fieldItemMap := make(map[string]fieldItem)
-	for _, fieldItem := range fieldItems {
-		fieldItemMap[fieldItem.field.Name] = fieldItem
-	}
-
-	if except := starModifier.Star_except_list(); except != nil {
-		allIdentifiers := except.AllIdentifier()
-		for _, identifier := range allIdentifiers {
-			identifierNormalized := unquoteIdentifierByRule(identifier)
-			if _, ok := fieldItemMap[identifierNormalized]; !ok {
-				return nil, errors.Errorf("field %s does not exist in the select clause", identifierNormalized)
-			}
-			delete(fieldItemMap, identifierNormalized)
-		}
-	}
-
-	if replace := starModifier.Star_replace_list(); replace != nil {
-		allReplaceItems := replace.AllStar_replace_item()
-		for _, replaceItem := range allReplaceItems {
-			_, set, err := q.extractSourceColumnSetFromExpr(replaceItem.Expression())
-			if err != nil {
-				return nil, err
-			}
-			asIdentifier := unquoteIdentifierByRule(replaceItem.Identifier())
-			querySpanResult := base.QuerySpanResult{
-				Name:          asIdentifier,
-				SourceColumns: set,
-			}
-			if _, ok := fieldItemMap[asIdentifier]; !ok {
-				return nil, errors.Errorf("field %s does not exist in the select clause", asIdentifier)
-			}
-			fieldItemMap[asIdentifier] = fieldItem{
-				id:    fieldItemMap[asIdentifier].id,
-				field: querySpanResult,
-			}
-		}
-	}
-
-	fieldItems = nil
-	for _, fieldItem := range fieldItemMap {
-		fieldItems = append(fieldItems, fieldItem)
-	}
-	slices.SortFunc(fieldItems, func(x, y fieldItem) int {
-		if x.id < y.id {
-			return -1
-		} else if x.id > y.id {
-			return 1
-		}
-		return 0
-	})
-
-	var result []base.QuerySpanResult
-	for _, fieldItem := range fieldItems {
-		result = append(result, fieldItem.field)
-	}
-	return result, nil
-}
-
-func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([]base.QuerySpanResult, error) {
-	if ctx == nil {
-		return []base.QuerySpanResult{}, nil
-	}
-
-	// BigQuery support project the field from json, for example, SELECT a.b.c FROM ..., the AST looks like:
-	// /
-	// └── expression
-	//     └── expression_higher_prec_than_and
-	//         ├── expression_higher_prec_than_and
-	//         │   ├── expression_higher_prec_than_and
-	//         │   │   ├── expression_higher_prec_than_and
-	//         │   │   ├── DOT_SYMBOL
-	//         │   │   └── identifier(a)
-	//         │   ├── DOT_SYMBOL
-	//         │   └── identifier(b)
-	//         ├── DOT_SYMBOL
-	//         └── identifier(c)
-	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
-	// treat it as identifier.
-	switch ctx := ctx.(type) {
-	case *parser.Parenthesized_queryContext:
-		subqueryExtractor := &querySpanExtractor{
-			ctx:               q.ctx,
-			defaultDatabase:   q.defaultDatabase,
-			gCtx:              q.gCtx,
-			ctes:              q.ctes,
-			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
-			tableSourceFrom:   []base.TableSource{},
-		}
-		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(ctx)
-		if err != nil {
-			return nil, err
-		}
-		spanResult := tableSource.GetQuerySpanResult()
-		return spanResult, nil
-	case *parser.Expression_higher_prec_than_andContext:
-		possibleColumnResources := getPossibleColumnResources(ctx)
-		for _, columnResources := range possibleColumnResources {
-			l := len(columnResources)
-			if l == 1 {
-				// a.*, a can be the table name or the field name.
-				results, ok := q.getAllTableColumnSources("", columnResources[0])
-				if !ok {
-					results, err := q.getFieldColumnSource("", columnResources[0])
-					if err != nil {
-						return nil, err
-					}
-					return []base.QuerySpanResult{
-						{
-							Name:          columnResources[0],
-							SourceColumns: results,
-						},
-					}, nil
-				}
-				return results, nil
-			}
-			if l >= 2 {
-				// a.b.*, can be resolved as
-				// 1. a is the table name, b is the field name.
-				// 2. a is the field name, b is the field name.
-				results, err := q.getFieldColumnSource(columnResources[0], columnResources[1])
-				if err != nil {
-					results, err := q.getFieldColumnSource("", columnResources[0])
-					if err != nil {
-						return nil, err
-					}
-					return []base.QuerySpanResult{
-						{
-							Name:          columnResources[0],
-							SourceColumns: results,
-						},
-					}, nil
-				}
-				return []base.QuerySpanResult{
-					{
-						Name:          columnResources[1],
-						SourceColumns: results,
-					},
-				}, nil
-			}
-		}
-		return nil, nil
-	default:
-		return nil, errors.Errorf("unsupported type in wild expr: %T", ctx)
-	}
-}
-
-func (q *querySpanExtractor) getAllTableColumnSources(datasetName, tableName string) ([]base.QuerySpanResult, bool) {
-	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if datasetName != "" && !strings.EqualFold(datasetName, tableSource.GetDatabaseName()) {
-			return nil, false
-		}
-		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
-			return nil, false
-		}
-
-		// If the table name is empty, we should check if there are ambiguous fields,
-		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
-
-		return tableSource.GetQuerySpanResult(), true
-	}
-
-	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
-	//
-	//  select (
-	//    select (
-	//      select max(a) > x1.a from t
-	//    )
-	//    from t1 as x1
-	//    limit 1
-	//  )
-	//  from t as x1;
-	//
-	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
-	// This is the reason we loop the slice in reversed order.
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if querySpanResult, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return querySpanResult, true
-		}
-	}
-
-	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
-		if querySpanResult, ok := findInTableSource(q.tableSourceFrom[i]); ok {
-			return querySpanResult, true
-		}
-	}
-
-	return nil, false
-}
-
-func (q *querySpanExtractor) getFieldColumnSource(tableName, fieldName string) (base.SourceColumnSet, error) {
-	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
-			return nil, false
-		}
-		// If the table name is empty, we should check if there are ambiguous fields,
-		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
-
-		querySpanResult := tableSource.GetQuerySpanResult()
-		for _, field := range querySpanResult {
-			if strings.EqualFold(field.Name, fieldName) {
-				return field.SourceColumns, true
-			}
-		}
-		return nil, false
-	}
-
-	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
-	//
-	//  select (
-	//    select (
-	//      select max(a) > x1.a from t
-	//    )
-	//    from t1 as x1
-	//    limit 1
-	//  )
-	//  from t as x1;
-	//
-	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
-	// This is the reason we loop the slice in reversed order.
-
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return sourceColumnSet, nil
-		}
-	}
-
-	for _, tableSource := range q.tableSourceFrom {
-		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet, nil
-		}
-	}
-
-	return nil, &base.ResourceNotFoundError{
-		Schema: nil,
-		Table:  &tableName,
-		Column: &fieldName,
-	}
-}
-
-func isValidExpressionHigherPrecThanAnd(ctx antlr.ParserRuleContext) bool {
-	if _, ok := ctx.(*parser.Expression_higher_prec_than_andContext); !ok {
-		return false
-	}
-
-	terminalNodes := getAllChildTerminalNode(ctx)
-	if len(terminalNodes) == 1 && terminalNodes[0].GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
-		return true
-	}
-	child := ctx.GetChildren()
-	if len(child) == 3 {
-		first := child[0]
-		_, ok := first.(*parser.Expression_higher_prec_than_andContext)
-		if !ok {
-			return false
-		}
-		if !isValidExpressionHigherPrecThanAnd(first.(*parser.Expression_higher_prec_than_andContext)) {
-			return false
-		}
-		second := child[1]
-		_, ok = second.(*antlr.TerminalNodeImpl)
-		if !ok {
-			return false
-		}
-		if second.(*antlr.TerminalNodeImpl).GetSymbol().GetTokenType() != parser.GoogleSQLParserDOT_SYMBOL {
-			return false
-		}
-		third := child[2]
-		_, ok = third.(*parser.IdentifierContext)
-		return ok
-	}
-	return false
-}
-
-func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
-	// Traverse the tree to find the tallest subtree which matches the pattern:
-	// [expression_higher_prec_than_and DOT_SYMBOL identifier]
-	// The result is the possible column resources.
-	var path []antlr.Tree
-	path = append(path, ctx)
-
-	var result [][]string
-	for len(path) > 0 {
-		element := path[len(path)-1]
-		path = path[:len(path)-1]
-		if _, ok := element.(*parser.Parenthesized_queryContext); ok {
-			// NOTE: while adding the case in extractSourceColumnSetFromExpr, we should skip the case here.
-			continue
-		}
-		appendChild := true
-		if element, ok := element.(antlr.ParserRuleContext); ok {
-			valid := isValidExpressionHigherPrecThanAnd(element)
-			if valid {
-				appendChild = false
-				allTerminalNodes := getAllChildTerminalNode(element)
-				var columnResources []string
-				for _, terminalNode := range allTerminalNodes {
-					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
-						columnResources = append(columnResources, unquoteIdentifierByText(terminalNode.GetText()))
-					}
-				}
-				result = append(result, columnResources)
-			}
-		}
-
-		if appendChild {
-			for _, child := range element.GetChildren() {
-				if child, ok := child.(antlr.ParserRuleContext); ok {
-					path = append(path, child)
-				}
-			}
-		}
-	}
-	return result
-}
-
-func getAllChildTerminalNode(ctx antlr.ParserRuleContext) []antlr.TerminalNode {
-	allChilds := ctx.GetChildren()
-	var result []antlr.TerminalNode
-	for _, child := range allChilds {
-		if childTerminal, ok := child.(antlr.TerminalNode); ok {
-			result = append(result, childTerminal)
-			continue
-		}
-		if childRuleCtx, ok := child.(antlr.ParserRuleContext); ok {
-			subResult := getAllChildTerminalNode(childRuleCtx)
-			result = append(result, subResult...)
-		}
-	}
-	return result
-}
-
-type joinType int
-
-const (
-	crossJoin = iota
-	innerJoin
-	fullOuterJoin
-	leftOuterJoin
-	rightOuterJoin
-)
-
-func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
-	contents := fromClause.From_clause_contents()
-	tableSource, err := q.extractTableSourceFromTablePrimary(contents.Table_primary())
-	q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
-	if err != nil {
-		return nil, err
-	}
-	var anchor base.TableSource
-	anchor = &base.PseudoTable{
-		Name:    "",
-		Columns: tableSource.GetQuerySpanResult(),
-	}
-	allSuffixes := contents.AllFrom_clause_contents_suffix()
-	for _, suffix := range allSuffixes {
-		joinType := getJoinTypeFromFromClauseContentsSuffix(suffix)
-		tableSource, err = q.extractTableSourceFromTablePrimary(suffix.Table_primary())
-		if err != nil {
-			return nil, err
-		}
-		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
-		var usingColumns []string
-		if suffix.On_or_using_clause_list() != nil {
-			allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
-			for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
-				if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
-					identifiers := usingClause.AllIdentifier()
-					for _, identifier := range identifiers {
-						usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
-					}
-				}
-			}
-		}
-		anchor = joinTable(anchor, joinType, usingColumns, tableSource)
-	}
-	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
-	return anchor, nil
-}
-
-func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) base.TableSource {
-	var resultField []base.QuerySpanResult
-	switch tp {
-	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
-		using := make(map[string]bool)
-		for _, usingColumn := range usingColumns {
-			using[usingColumn] = true
-		}
-		var lFields []base.QuerySpanResult
-		var rFields []base.QuerySpanResult
-		usingMerge := make(map[string][]base.QuerySpanResult)
-		for _, rField := range tableSource.GetQuerySpanResult() {
-			if _, ok := using[strings.ToUpper(rField.Name)]; ok {
-				usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
-			} else {
-				rFields = append(rFields, rField)
-			}
-		}
-		lFields = append(lFields, anchor.GetQuerySpanResult()...)
-
-		for _, lField := range lFields {
-			columnSet := lField.SourceColumns
-			if _, ok := using[strings.ToUpper(lField.Name)]; ok {
-				mergeItems := usingMerge[strings.ToUpper(lField.Name)]
-				for _, mergeItem := range mergeItems {
-					columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
-				}
-			}
-			resultField = append(resultField, base.QuerySpanResult{
-				Name:          lField.Name,
-				SourceColumns: columnSet,
-			})
-		}
-
-		resultField = append(resultField, rFields...)
-	default:
-		// No special handling for other join types
-	}
-	return &base.PseudoTable{
-		Name:    "",
-		Columns: resultField,
-	}
-}
-
-func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
-	if joinType == nil {
-		return innerJoin
-	}
-	switch {
-	case joinType.CROSS_SYMBOL() != nil:
-		return crossJoin
-	case joinType.INNER_SYMBOL() != nil:
-		return innerJoin
-	case joinType.LEFT_SYMBOL() != nil:
-		return leftOuterJoin
-	case joinType.RIGHT_SYMBOL() != nil:
-		return rightOuterJoin
-	default:
-		return innerJoin
-	}
-}
-
-func getJoinTypeFromJoinItem(joinItem parser.IJoin_itemContext) joinType {
-	return getJoinTypeFromJoinType(joinItem.Join_type())
-}
-
-func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
-	if fromClauseContentsSuffix.COMMA_SYMBOL() != nil {
-		return crossJoin
-	}
-	if fromClauseContentsSuffix.JOIN_SYMBOL() != nil {
-		return getJoinTypeFromJoinType(fromClauseContentsSuffix.Join_type())
-	}
-	return crossJoin
-}
-
-func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary parser.ITable_primaryContext) (base.TableSource, error) {
-	if tablePrimary.Tvf_with_suffixes() != nil {
-		// We do not support table value function because we do not have the returnning columns information.
-		return nil, errors.Errorf("unsupported table value function: %s", tablePrimary.GetText())
-	}
-	if tablePrimary.Table_path_expression() != nil {
-		return q.extractTableSourceFromTablePathExpression(tablePrimary.Table_path_expression())
-	}
-	if subquery := tablePrimary.Table_subquery(); subquery != nil {
-		return q.extractTableSourceFromTableSubquery(subquery)
-	}
-	if join := tablePrimary.Join(); join != nil {
-		anchor, err := q.extractTableSourceFromTablePrimary(join.Table_primary())
-		if err != nil {
-			return nil, err
-		}
-		q.tableSourceFrom = append(q.tableSourceFrom, anchor)
-		for _, item := range join.AllJoin_item() {
-			joinType := getJoinTypeFromJoinItem(item)
-			tableSource, err := q.extractTableSourceFromTablePrimary(item.Table_primary())
-			if err != nil {
-				return nil, err
-			}
-			q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
-			var usingColumns []string
-			if item.On_or_using_clause_list() != nil {
-				allJoinOnOrUsingClause := item.On_or_using_clause_list().AllOn_or_using_clause()
-				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
-					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
-						identifiers := usingClause.AllIdentifier()
-						for _, identifier := range identifiers {
-							usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
-						}
-					}
-				}
-			}
-			anchor = joinTable(anchor, joinType, usingColumns, tableSource)
-		}
-		return anchor, nil
-	}
-	if tablePrimary.Table_primary() != nil {
-		return q.extractTableSourceFromTablePrimary(tablePrimary.Table_primary())
-	}
-
-	return nil, nil
-}
-
-func (q *querySpanExtractor) extractTableSourceFromTableSubquery(subquery parser.ITable_subqueryContext) (base.TableSource, error) {
-	parenthesizedQuery := subquery.Parenthesized_query()
-
-	// Table subquery shares the ctes of outer query. On the contrary,
-	// the subquery should not effect the outer query.
-	// https://cloud.google.com/bigquery/docs/reference/standard-sql/subqueries#correlated_subquery_concepts
-	originalCtesLength := len(q.ctes)
-	originalTableSourceFrom := len(q.tableSourceFrom)
-	defer func() {
-		q.ctes = q.ctes[:originalCtesLength]
-		q.tableSourceFrom = q.tableSourceFrom[:originalTableSourceFrom]
-	}()
-	subqueryExtractor := &querySpanExtractor{
-		ctx:               q.ctx,
-		defaultDatabase:   q.defaultDatabase,
-		gCtx:              q.gCtx,
-		ctes:              q.ctes,
-		outerTableSources: q.outerTableSources,
-		tableSourceFrom:   q.tableSourceFrom,
-	}
-	tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(parenthesizedQuery)
-	if err != nil {
-		return nil, err
-	}
-
-	var alias string
-	if v := subquery.Opt_pivot_or_unpivot_clause_and_alias(); v != nil {
-		if v.Identifier() != nil {
-			alias = unquoteIdentifierByRule(v.Identifier())
-		}
-	}
-	if alias != "" {
-		return &base.PseudoTable{
-			Name:    alias,
-			Columns: tableSource.GetQuerySpanResult(),
+	queryType := mapQueryType(omniSpan.Type)
+	// Legacy-spanner special case: a SET statement classifies as Select ("treat
+	// SAFE SET as select"); omni classifies it Unknown.
+	if queryType == base.QueryTypeUnknown && isSetStatement(single) {
+		queryType = base.Select
+	}
+
+	// Top-level SourceColumns is the set of accessed tables at the TABLE level
+	// (Column empty) — BigQuery's legacy span reports accessed tables, not
+	// column-expanded source columns (unlike Trino). Uses the table name AS
+	// WRITTEN in the query (the legacy accessTableListener recorded the written
+	// identifier, e.g. lowercase `people`), with the default dataset filled in.
+	accessTables := q.toTableResources(omniSpan)
+
+	// Only a read-only query produces per-column results; DML/DDL/Explain/Unknown
+	// return the accessed tables with no per-column lineage — exactly the legacy
+	// behaviour (it returned an empty span for any non-Select). SelectInfoSchema is
+	// a read so it is treated like Select here.
+	if queryType != base.Select && queryType != base.SelectInfoSchema {
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
-	return tableSource, nil
+	// Resolve relation aliases (e.g. "g" in "FROM galleries g") back to physical
+	// table names so aliased column references match the expanded source columns.
+	aliasMap := q.buildAliasMap(omniSpan)
+
+	// Expand each accessed table to its columns via metadata. orderedColumns
+	// preserves AccessTables(FROM)-then-metadata column order for positional
+	// SELECT * masking; fullSourceColumns is the membership set used for lineage
+	// matching. The per-column resources use the METADATA-canonical table name
+	// (e.g. `PEOPLE`), matching the legacy findTableSchema/PhysicalTable, which is
+	// why result lineage carries metadata casing while the table-level
+	// SourceColumns above carry the written casing.
+	orderedColumns, fullSourceColumns, notFound := q.expandTablesToColumns(omniSpan)
+
+	results := q.buildResults(omniSpan, fullSourceColumns, orderedColumns, aliasMap)
+
+	span := &base.QuerySpan{
+		Type:          queryType,
+		SourceColumns: accessTables,
+		// PredicateColumns is intentionally left empty: the legacy Spanner
+		// extractor never populated predicate-column lineage (the recorded corpus
+		// has predicatecolumns: [] on every case). omni DOES collect predicate
+		// columns, but surfacing them would diverge from the legacy contract the
+		// masking layer was calibrated against.
+		Results: results,
+	}
+	if notFound != nil {
+		span.NotFoundError = notFound
+	}
+	return span, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePathExpression parser.ITable_path_expressionContext) (base.TableSource, error) {
-	tablePathExprBase := tablePathExpression.Table_path_expression_base()
-	if tablePathExprBase.Unnest_expression() != nil {
-		// We do not support unnest expression because we do not have the returnning columns information.
-		return nil, errors.Errorf("unsupported unnest expression: %s", tablePathExprBase.GetText())
+// classifyAccess reports (allSystems, mixed) over the span's access tables,
+// using omni's per-table IsSystem flag (BigQuery: Schema == INFORMATION_SCHEMA).
+// It reproduces the legacy isMixedQuery: mixed when both a system and a user
+// table are present; allSystems when at least one system table is present and no
+// user table is (the legacy `!hasUser && hasSystem`).
+func classifyAccess(span *analysis.QuerySpan) (allSystems, mixed bool) {
+	if span == nil {
+		return false, false
 	}
-	var tableName string
-	var datasetName string
-
-	if slashedOrDashedPathExpression := tablePathExprBase.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
-		if slashedOrDashedPathExpression.Maybe_dashed_path_expression() != nil {
-			if maybeDashedPathExpr := slashedOrDashedPathExpression.Maybe_dashed_path_expression(); maybeDashedPathExpr != nil {
-				// TODO(zp): support dashed path expression, for example, REGION-us
-				if maybeDashedPathExpr.Dashed_path_expression() != nil {
-					return nil, errors.Errorf("unsupported dashed path expression: %s", tablePathExprBase.GetText())
-				}
-				// REFACTOR(zp): refactor the code to extract table name and dataset name.
-				allIdentifiers := maybeDashedPathExpr.Path_expression().AllIdentifier()
-				if len(allIdentifiers) > 0 {
-					tableName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-1])
-					if len(allIdentifiers) > 1 {
-						datasetName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
-					}
-				}
-			}
-			if slashedOrDashedPathExpression.Slashed_path_expression() != nil {
-				return nil, errors.Errorf("unsupported slashed path expression: %s", tablePathExprBase.GetText())
-			}
-		}
-	}
-
-	tableSource, err := q.findTableSchema(datasetName, tableName)
-	if err != nil {
-		return nil, err
-	}
-
-	if o := tablePathExpression.Opt_pivot_or_unpivot_clause_and_alias(); o != nil {
-		if o.Identifier() != nil {
-			tableSource = &base.PseudoTable{
-				Name:    unquoteIdentifierByRule(o.Identifier()),
-				Columns: tableSource.GetQuerySpanResult(),
-			}
-		}
-	}
-	return tableSource, nil
-}
-
-func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
-	// https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
-	// Dataset and table names are case-sensitive unless the is_case_insensitive option is set to TRUE.
-	if schemaName == "" {
-		for i := len(q.ctes) - 1; i >= 0; i-- {
-			table := q.ctes[i]
-			if strings.EqualFold(table.Name, tableName) {
-				return table, nil
-			}
-		}
-	}
-
-	_, databaseMetadata, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, q.defaultDatabase)
-	if err != nil {
-		return nil, err
-	}
-	if databaseMetadata == nil {
-		return nil, errors.Errorf("database %q not found", q.defaultDatabase)
-	}
-
-	schema := databaseMetadata.GetSchemaMetadata(schemaName)
-	if schema == nil {
-		return nil, &base.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-			Schema:   &schemaName,
-		}
-	}
-	tables := schema.ListTableNames()
-	var originalTableName string
-	for _, t := range tables {
-		if strings.EqualFold(t, tableName) {
-			originalTableName = t
-			break
-		}
-	}
-	if originalTableName == "" {
-		return nil, errors.Errorf("table %q not found", tableName)
-	}
-	table := schema.GetTable(originalTableName)
-	if table == nil {
-		return nil, errors.Errorf("table %q not found", tableName)
-	}
-
-	var columns []string
-	for _, column := range table.GetProto().GetColumns() {
-		columns = append(columns, column.Name)
-	}
-	return &base.PhysicalTable{
-		Server:   "",
-		Database: q.defaultDatabase,
-		Schema:   schemaName,
-		Name:     table.GetProto().Name,
-		Columns:  columns,
-	}, nil
-}
-
-func getAccessTables(defaultDatabase string, tree antlr.Tree) (base.SourceColumnSet, error) {
-	l := newAccessTableListener(defaultDatabase)
-	result := make(base.SourceColumnSet)
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
-	if l.err != nil {
-		return nil, l.err
-	}
-	result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
-	return result, nil
-}
-
-type accessTableListener struct {
-	*parser.BaseGoogleSQLParserListener
-
-	currentDatabase string
-	sourceColumnSet base.SourceColumnSet
-	err             error
-}
-
-func newAccessTableListener(currentDatabase string) *accessTableListener {
-	return &accessTableListener{
-		currentDatabase: currentDatabase,
-		sourceColumnSet: make(base.SourceColumnSet),
-	}
-}
-
-func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_expressionContext) {
-	if l.err != nil {
-		return
-	}
-	// TODO(zp): Handle other unusual table path expression.
-	exprBase := ctx.Table_path_expression_base()
-	slashedOrDashedPathExpr := exprBase.Maybe_slashed_or_dashed_path_expression()
-	if slashedOrDashedPathExpr == nil {
-		l.err = errors.Errorf("unsupported table path expression: %s", ctx.GetText())
-		return
-	}
-
-	dashedPathExpr := slashedOrDashedPathExpr.Maybe_dashed_path_expression()
-	if dashedPathExpr == nil {
-		l.err = errors.Errorf("unsupported slashed table path expression: %s", ctx.GetText())
-		return
-	}
-
-	pathExpr := dashedPathExpr.Path_expression()
-	if pathExpr == nil {
-		l.err = errors.Errorf("unsupported dashed table path expression: %s", ctx.GetText())
-	}
-
-	// Table name syntax: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical
-	// Most of the time, the syntax can be [project_id.][dataset_id.]table_id.
-	// One difference is that the user access INFORMATION_SCHEMA in dataset,
-	// the syntax would be [project_id.]([region_id.]|[dataset_id.])INFORMATION_SCHEMA.VIEW_NAME.
-	// In this case, we treat the INFORMATION_SCHEMA as schema name.
-	allIdentifiers := pathExpr.AllIdentifier()
-	if len(allIdentifiers) == 0 {
-		return
-	}
-
-	columnSource := base.ColumnResource{
-		Database: l.currentDatabase,
-	}
-	lastIdentifier := allIdentifiers[len(allIdentifiers)-1]
-	tableName := unquoteIdentifierByRule(lastIdentifier)
-	columnSource.Table = tableName
-
-	if len(allIdentifiers) >= 2 {
-		identifier := unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
-		columnSource.Schema = identifier
-	}
-
-	l.sourceColumnSet[columnSource] = true
-}
-
-func unquoteIdentifierByRule(identifier parser.IIdentifierContext) string {
-	if len(identifier.GetText()) >= 3 && strings.HasPrefix(identifier.GetText(), "`") && strings.HasSuffix(identifier.GetText(), "`") {
-		return identifier.GetText()[1 : len(identifier.GetText())-1]
-	}
-	return identifier.GetText()
-}
-
-func unquoteIdentifierByText(identifier string) string {
-	if len(identifier) >= 3 && strings.HasPrefix(identifier, "`") && strings.HasSuffix(identifier, "`") {
-		return identifier[1 : len(identifier)-1]
-	}
-	return identifier
-}
-
-func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
 	hasSystem, hasUser := false, false
-	for table := range m {
-		if isSystemResource(table) {
+	for _, t := range span.AccessTables {
+		if t.IsSystem {
 			hasSystem = true
 		} else {
 			hasUser = true
 		}
 	}
-
 	if hasSystem && hasUser {
 		return false, true
 	}
-
-	return !hasUser && hasSystem, false
+	return hasSystem && !hasUser, false
 }
 
-func isSystemResource(resource base.ColumnResource) bool {
-	return strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA") || strings.EqualFold(resource.Schema, "SPANNER_SYS")
+// toTableResources converts omni AccessTables into table-level
+// base.ColumnResource keys (Column empty). The table and schema names are kept
+// AS WRITTEN (matching the legacy accessTableListener); Database is ALWAYS the
+// default database — the legacy spanner resolver silently ignored the db part
+// of a 3-part db.schema.table reference and recorded the session database.
+func (q *querySpanExtractor) toTableResources(span *analysis.QuerySpan) base.SourceColumnSet {
+	out := base.SourceColumnSet{}
+	if span == nil {
+		return out
+	}
+	for _, t := range span.AccessTables {
+		out[base.ColumnResource{
+			Database: q.defaultDatabase,
+			Schema:   t.Schema,
+			Table:    t.Table,
+		}] = true
+	}
+	// CTE references are not physical tables, but the legacy access-table listener
+	// recorded every FROM table path — CTE references included — so union them into
+	// the table-level SourceColumns.
+	for _, t := range span.CTEReferences {
+		out[base.ColumnResource{
+			Database: q.defaultDatabase,
+			Schema:   t.Schema,
+			Table:    t.Table,
+		}] = true
+	}
+	return out
+}
+
+// expandTablesToColumns expands each accessed table into one resource per column
+// from the table's metadata. It returns the columns both as an ordered slice
+// (AccessTables/FROM order, then metadata column order) and as a set. The ordered
+// slice drives positional SELECT * masking, where the order must match the
+// executed result's column order; the set is used for membership tests.
+//
+// A table whose metadata can't be resolved is kept as a single table-level
+// resource so the read is still recorded, and the first ResourceNotFoundError
+// encountered is returned (non-fatally) for the caller to attach to the span.
+// Each per-column resource uses the METADATA-canonical dataset/table/column
+// names (the legacy findTableSchema returned a PhysicalTable keyed on the proto
+// name), so result lineage carries metadata casing.
+func (q *querySpanExtractor) expandTablesToColumns(span *analysis.QuerySpan) ([]base.ColumnResource, base.SourceColumnSet, *base.ResourceNotFoundError) {
+	ordered := make([]base.ColumnResource, 0)
+	set := make(base.SourceColumnSet)
+	var firstNotFound *base.ResourceNotFoundError
+	// add records a column both in the membership set (deduped, used for lineage
+	// matching) and in the ordered slice (NOT deduped, so a self-join contributes
+	// each instance's columns and the positional SELECT * masker stays aligned with
+	// the executed output columns).
+	add := func(res base.ColumnResource) {
+		set[res] = true
+		ordered = append(ordered, res)
+	}
+	if span == nil {
+		return ordered, set, nil
+	}
+	for _, t := range span.AccessTables {
+		if t.IsSystem {
+			// Unreachable in practice: a system-only query early-returned in
+			// getQuerySpan and a mixed user/system query was rejected. Kept as a
+			// belt-and-braces guard — a system pseudo-table is never expanded
+			// against metadata.
+			add(base.ColumnResource{Database: q.defaultDatabase, Schema: t.Schema, Table: t.Table})
+			continue
+		}
+		canonicalTable, columns, err := q.tableColumns(t.Schema, t.Table)
+		if err != nil {
+			var notFound *base.ResourceNotFoundError
+			if errors.As(err, &notFound) && firstNotFound == nil {
+				firstNotFound = notFound
+			}
+			// Keep the table-level resource (NotFound or any other error).
+			add(base.ColumnResource{Database: q.defaultDatabase, Schema: t.Schema, Table: t.Table})
+			continue
+		}
+		if len(columns) == 0 {
+			add(base.ColumnResource{Database: q.defaultDatabase, Schema: t.Schema, Table: canonicalTable})
+			continue
+		}
+		for _, col := range columns {
+			add(base.ColumnResource{Database: q.defaultDatabase, Schema: t.Schema, Table: canonicalTable, Column: col})
+		}
+	}
+	return ordered, set, firstNotFound
+}
+
+// buildResults maps omni's per-output columns onto base.QuerySpanResult. Each
+// result's SourceColumns is the subset of the expanded source columns that share
+// the result's referenced column name (best-effort; omni does not resolve a
+// select item back to its owning relation, so aliasMap translates a relation
+// alias on the reference back to its physical table first).
+//
+// For an unqualified "*" the expansion uses orderedColumns (FROM-table then
+// metadata column order) rather than ranging the source-column map, so the
+// per-result maskers, applied positionally against the executed result's column
+// order, line up.
+//
+// omni's analysis resolves relation projections (CTE/derived/recursive bodies,
+// set-operation merges with star markers, SELECT * EXCEPT/REPLACE, JOIN USING
+// coalescing, UNNEST element lineage) before handing over; the one piece left
+// to this metadata-aware consumer is enumerating a PHYSICAL table's columns
+// (StarSegment.BaseTable), which omni cannot do catalog-free. Validated against
+// the legacy-resolver differential corpus (test-data/query-span/standard.yaml,
+// recorded from the legacy ANTLR resolver) plus the leak-pin unit tests for
+// shapes the legacy resolver could not record.
+func (q *querySpanExtractor) buildResults(span *analysis.QuerySpan, fullSourceColumns base.SourceColumnSet, orderedColumns []base.ColumnResource, aliasMap map[string][]string) []base.QuerySpanResult {
+	if span == nil {
+		return []base.QuerySpanResult{}
+	}
+	return q.expandColumnInfos(span.Results, fullSourceColumns, aliasMap)
+}
+
+// expandColumnInfos expands a list of omni ColumnInfo (one query body's resolved
+// projection) into base.QuerySpanResult. It is called for the top-level results
+// and RECURSIVELY by buildSetOpMergeResults for each arm of a deferred set-op
+// merge. Each ColumnInfo is one of: a star item (StarSegments, expanded + its
+// EXCEPT/REPLACE applied), a per-position base-star set-op merge (StarMerge), a
+// whole deferred set-op merge (SetOpMerge, both arms expanded then position-
+// merged), or a concrete output column.
+func (q *querySpanExtractor) expandColumnInfos(infos []analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+	results := make([]base.QuerySpanResult, 0, len(infos))
+	for _, r := range infos {
+		switch {
+		case r.StarSegments != nil:
+			// A `*` / `rel.*` / CTE-or-derived star: omni resolved its ordered
+			// expansion into segments (a base table to enumerate, or an
+			// already-resolved concrete column). Expand them, then apply the star's
+			// EXCEPT/REPLACE modifiers with the legacy name-collision last-wins dedup.
+			results = append(results, q.expandStarSegments(r, fullSourceColumns, aliasMap)...)
+		case r.SetOpMerge != nil:
+			// A whole deferred set-operation merge whose arms carry un-enumerable
+			// stars: expand each arm fully (recursively) and position-merge them,
+			// reproducing the legacy "fully resolve each arm, then zip".
+			results = append(results, q.buildSetOpMergeResults(r.SetOpMerge, fullSourceColumns, aliasMap)...)
+		case r.StarMerge != nil:
+			// A set-operation merge position whose other arm is a base-table star:
+			// union the concrete arm's lineage with that table's Index-th column.
+			results = append(results, q.buildStarMergeResult(r, fullSourceColumns, aliasMap))
+		default:
+			sourceColumns := base.SourceColumnSet{}
+			for _, ref := range r.SourceColumns {
+				addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table, aliasMap)
+			}
+			name := resultName(r)
+			// A base-table FIELD passthrough (the JOIN ... USING coalesced key)
+			// keeps the field's METADATA case — the legacy resolver named it after
+			// the left PhysicalTable's field, not the written/upper-cased token.
+			if r.BaseFieldName && len(r.SourceColumns) > 0 {
+				if canon := q.canonicalColumnCase(r.SourceColumns[0], r.Name); canon != "" {
+					name = canon
+				}
+			}
+			results = append(results, base.QuerySpanResult{
+				Name:          name,
+				SourceColumns: sourceColumns,
+				// IsPlainField is carried from omni: a `SELECT *` / `rel.*` expansion
+				// column over a base table is plain; an explicit select-list item, a
+				// set-op merge, and a join-left column are not (omni already applied
+				// these rules), matching base.PhysicalTable.GetQuerySpanResult vs the
+				// rewrapped PseudoTable columns.
+				IsPlainField: r.IsPlain,
+			})
+		}
+	}
+	return results
+}
+
+// buildSetOpMergeResults expands a deferred set-operation merge: each arm is
+// expanded fully (a base-table star against metadata, an EXCEPT/REPLACE star with
+// its modifiers, a nested merge — recursively via expandColumnInfos), then the
+// two expanded column lists are position-merged. This reproduces the legacy
+// extractTableSourceFromQuerySetOperation: output NAME comes from the LEFT arm
+// (the first-select-name rule), SourceColumns are the union of both arms at that
+// position, and the merged column is never a plain field. omni emits this only
+// when a per-position StarMerge cannot express the merge (a base-star UNION
+// base-star, or an EXCEPT/REPLACE star arm in a set operation) — the arity is
+// known only here, after metadata expansion.
+//
+// Width handling mirrors masking safety, not the legacy hard error: legacy
+// rejects an unequal-width set operation outright (so the query never masks),
+// while omni — best-effort over a possibly-already-rejected statement — merges up
+// to the LONGER arm so no arm's column is dropped (a dropped sensitive column
+// would under-attribute). The shorter arm simply contributes nothing past its
+// length. Equal-width arms (the only valid set operations) merge exactly.
+func (q *querySpanExtractor) buildSetOpMergeResults(m *analysis.SetOpMergeInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+	left := q.expandColumnInfos(m.Left, fullSourceColumns, aliasMap)
+	right := q.expandColumnInfos(m.Right, fullSourceColumns, aliasMap)
+	if m.ByName {
+		// BY NAME / CORRESPONDING aligns the arms by output column NAME, not
+		// ordinal — an ordinal merge here mis-attributes whenever the arms'
+		// column orders differ, and ignoring MatchColumns emits the wrong arity
+		// (BY NAME ON (cols) outputs ONLY the listed columns), shifting the
+		// positional masker off every real output column.
+		return mergeExpandedByName(left, right, m.MatchColumns)
+	}
+	n := len(left)
+	if len(right) > n {
+		n = len(right)
+	}
+	merged := make([]base.QuerySpanResult, 0, n)
+	for i := 0; i < n; i++ {
+		sourceColumns := base.SourceColumnSet{}
+		name := ""
+		if i < len(left) {
+			name = left[i].Name
+			for sc := range left[i].SourceColumns {
+				sourceColumns[sc] = true
+			}
+		}
+		if i < len(right) {
+			if name == "" {
+				name = right[i].Name
+			}
+			for sc := range right[i].SourceColumns {
+				sourceColumns[sc] = true
+			}
+		}
+		merged = append(merged, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: sourceColumns,
+			IsPlainField:  false,
+		})
+	}
+	return merged
+}
+
+// mergeExpandedByName merges two expanded set-operation arms by output column
+// NAME (case-insensitive — BigQuery column names are), mirroring the resolver's
+// mergeProjectionsByName for arms that needed metadata expansion first. With
+// matchColumns (BY NAME ON (cols)) the output is EXACTLY those columns in list
+// order; otherwise the left arm's names in order plus right-only names appended
+// (over-inclusion is masking-safe: a trailing extra never shifts earlier
+// positions). Each output column's lineage is the union of BOTH arms'
+// same-named columns.
+func mergeExpandedByName(left, right []base.QuerySpanResult, matchColumns []string) []base.QuerySpanResult {
+	namedSources := func(arm []base.QuerySpanResult, name string) base.SourceColumnSet {
+		out := base.SourceColumnSet{}
+		for _, r := range arm {
+			if strings.EqualFold(r.Name, name) {
+				for sc := range r.SourceColumns {
+					out[sc] = true
+				}
+			}
+		}
+		return out
+	}
+	mergedFor := func(name string) base.QuerySpanResult {
+		sources := namedSources(left, name)
+		for sc := range namedSources(right, name) {
+			sources[sc] = true
+		}
+		return base.QuerySpanResult{Name: name, SourceColumns: sources, IsPlainField: false}
+	}
+	if len(matchColumns) > 0 {
+		out := make([]base.QuerySpanResult, 0, len(matchColumns))
+		for _, name := range matchColumns {
+			out = append(out, mergedFor(name))
+		}
+		return out
+	}
+	out := make([]base.QuerySpanResult, 0, len(left)+len(right))
+	for _, l := range left {
+		out = append(out, mergedFor(l.Name))
+	}
+	for _, r := range right {
+		if !containsResultName(left, r.Name) {
+			out = append(out, mergedFor(r.Name))
+		}
+	}
+	return out
+}
+
+// containsResultName reports whether any result in list has the given output
+// name under case-insensitive comparison.
+func containsResultName(list []base.QuerySpanResult, name string) bool {
+	for _, r := range list {
+		if strings.EqualFold(r.Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// expandStarSegments expands one star item's resolved segments (in order) into
+// per-column results, then applies the star's EXCEPT/REPLACE modifiers. A base
+// segment enumerates its physical table's columns via metadata (each a plain
+// field per the segment's Plain); a concrete segment is emitted directly with its
+// resolved lineage. EXCEPT/REPLACE then act on the expanded column list keyed by
+// output name with last-wins on a name collision — the legacy starModify
+// semantics (two FROM relations contributing a like-named column keep the later
+// one before EXCEPT removes a name).
+func (q *querySpanExtractor) expandStarSegments(r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+	var expanded []base.QuerySpanResult
+	for _, seg := range r.StarSegments {
+		if seg.BaseTable != nil {
+			expanded = append(expanded, q.expandBaseTableColumns(*seg.BaseTable, seg.Plain, seg.ExceptColumns)...)
+			continue
+		}
+		// A concrete segment (a CTE/derived/explicit column resolved by omni).
+		sourceColumns := base.SourceColumnSet{}
+		for _, ref := range seg.Sources {
+			addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table, aliasMap)
+		}
+		// Spanner legacy renders a base-table FIELD passthrough (the JOIN ...
+		// USING coalesced key) in the field's METADATA case — the legacy resolver
+		// named it after the left table's field, not the written USING token.
+		name := seg.Name
+		if seg.BaseFieldName && len(seg.Sources) > 0 {
+			if canon := q.canonicalColumnCase(seg.Sources[0], name); canon != "" {
+				name = canon
+			}
+		}
+		expanded = append(expanded, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: sourceColumns,
+			IsPlainField:  seg.Plain,
+		})
+	}
+	return q.applyStarModifiers(expanded, r, fullSourceColumns, aliasMap)
+}
+
+// expandBaseTableColumns enumerates a physical base table's columns from metadata
+// into per-column plain-field results, each lineage'd to that column. A table
+// whose metadata cannot be resolved yields no columns (the access is still
+// recorded at the table level by expandTablesToColumns / toTableResources, and a
+// ResourceNotFoundError is surfaced there). except lists column names to SKIP
+// (case-insensitive): a JOIN ... USING key is projected once as a coalesced
+// concrete segment ahead of the side stars, so each side's star must not expand
+// it again — re-expanding would shift every later position and misalign the
+// positional masker.
+func (q *querySpanExtractor) expandBaseTableColumns(rel analysis.ColumnRef, plain bool, except []string) []base.QuerySpanResult {
+	canonicalTable, columns, err := q.tableColumns(rel.Schema, rel.Table)
+	if err != nil || len(columns) == 0 {
+		return nil
+	}
+	out := make([]base.QuerySpanResult, 0, len(columns))
+	for _, col := range columns {
+		if containsFold(except, col) {
+			continue
+		}
+		res := base.ColumnResource{Database: q.defaultDatabase, Schema: rel.Schema, Table: canonicalTable, Column: col}
+		out = append(out, base.QuerySpanResult{
+			Name:          col,
+			SourceColumns: base.SourceColumnSet{res: true},
+			IsPlainField:  plain,
+		})
+	}
+	return out
+}
+
+// canonicalColumnCase returns the metadata-canonical spelling of column in the
+// table named by ref (case-folded match), or "" when the table or column cannot
+// be resolved.
+func (q *querySpanExtractor) canonicalColumnCase(ref analysis.ColumnRef, column string) string {
+	_, columns, err := q.tableColumns(ref.Schema, ref.Table)
+	if err != nil {
+		return ""
+	}
+	for _, col := range columns {
+		if strings.EqualFold(col, column) {
+			return col
+		}
+	}
+	return ""
+}
+
+// applyStarModifiers applies a star item's EXCEPT/REPLACE modifiers to its
+// expanded column list, reproducing the legacy starModify: results are keyed by
+// output name (case-insensitive — BigQuery column names are), last-wins on a
+// collision; an EXCEPT name drops its column entirely; a REPLACE (expr AS name)
+// re-points the named column's lineage to the replacement expression's sources
+// and clears its plain-field flag. Original order is preserved. When the star has
+// no modifiers the expanded list is returned unchanged.
+func (q *querySpanExtractor) applyStarModifiers(expanded []base.QuerySpanResult, r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) []base.QuerySpanResult {
+	if len(r.StarExcept) == 0 && len(r.StarReplace) == 0 {
+		return expanded
+	}
+	type item struct {
+		id    int
+		field base.QuerySpanResult
+	}
+	// Key by output name; a name collision keeps the LAST occurrence (legacy
+	// fieldItemMap overwrite), but the surviving entry keeps its FIRST ordinal so
+	// the output order is stable.
+	order := map[string]int{}
+	byName := map[string]item{}
+	next := 0
+	for _, f := range expanded {
+		key := strings.ToLower(f.Name)
+		if _, ok := order[key]; !ok {
+			order[key] = next
+			next++
+		}
+		byName[key] = item{id: order[key], field: f}
+	}
+	for _, name := range r.StarExcept {
+		delete(byName, strings.ToLower(name))
+	}
+	for _, rep := range r.StarReplace {
+		key := strings.ToLower(rep.Name)
+		if _, ok := byName[key]; !ok {
+			continue
+		}
+		set := base.SourceColumnSet{}
+		for _, ref := range rep.Sources {
+			addMatchingColumns(set, fullSourceColumns, ref.Column, ref.Table, aliasMap)
+		}
+		byName[key] = item{
+			id:    byName[key].id,
+			field: base.QuerySpanResult{Name: rep.Name, SourceColumns: set, IsPlainField: false},
+		}
+	}
+	items := make([]item, 0, len(byName))
+	for _, it := range byName {
+		items = append(items, it)
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].id < items[j].id })
+	out := make([]base.QuerySpanResult, 0, len(items))
+	for _, it := range items {
+		out = append(out, it.field)
+	}
+	return out
+}
+
+// buildStarMergeResult builds a set-operation merge position whose other arm is a
+// base-table star: the concrete arm's lineage (r.SourceColumns) is unioned with
+// the star table's Index-th column (expanded from metadata). When the star arm is
+// the LEFT one (StarMerge.LeftStar) the output name comes from that column (the
+// legacy first-select-name rule); otherwise the concrete arm's name is kept. The
+// merged column is never a plain field.
+func (q *querySpanExtractor) buildStarMergeResult(r analysis.ColumnInfo, fullSourceColumns base.SourceColumnSet, aliasMap map[string][]string) base.QuerySpanResult {
+	sourceColumns := base.SourceColumnSet{}
+	for _, ref := range r.SourceColumns {
+		addMatchingColumns(sourceColumns, fullSourceColumns, ref.Column, ref.Table, aliasMap)
+	}
+	// Spanner legacy naming: a concrete-arm output name is uppercased (the
+	// legacy expression-name rendering), but a LEFT-star-derived name keeps the
+	// star column's metadata case verbatim (the legacy first-arm rule passed the
+	// PhysicalTable field name through unchanged — unlike the BigQuery legacy
+	// extractor, which uppercased both).
+	name := strings.ToUpper(r.Name)
+	// A StarMerge always carries a bare single-base-table star (a USING-coalesced
+	// or otherwise multi-segment star arm defers to SetOpMerge instead), so there
+	// are no except columns to apply here.
+	starCols := q.expandBaseTableColumns(r.StarMerge.Table, false, nil)
+	if idx := r.StarMerge.Index; idx >= 0 && idx < len(starCols) {
+		for sc := range starCols[idx].SourceColumns {
+			sourceColumns[sc] = true
+		}
+		if r.StarMerge.LeftStar {
+			name = starCols[idx].Name
+		}
+	}
+	return base.QuerySpanResult{
+		Name:          name,
+		SourceColumns: sourceColumns,
+		IsPlainField:  false,
+	}
+}
+
+// resultName renders an explicit select-item's output column name to match the
+// legacy extractor (extractTableSourceFromSelect): the name is UPPER-CASED, and
+// for an expression that has no written name of its own omni leaves Name empty —
+// in that case the legacy code used the name of the single bare column the
+// expression's DFS surfaced (e.g. `ID+1` → "ID", `foo(bar(ID), NAME)` → "ID"),
+// which is omni's first source column. A name-less expression with no column
+// reference (e.g. a literal, or an opaque scalar subquery) stays "".
+func resultName(r analysis.ColumnInfo) string {
+	name := r.Name
+	if name == "" && len(r.SourceColumns) > 0 {
+		name = r.SourceColumns[0].Column
+	}
+	return strings.ToUpper(name)
+}
+
+// addMatchingColumns adds every column in fullSourceColumns whose name matches
+// refColumn (case-insensitively — BigQuery column names are case-insensitive —
+// and whose table matches refTable when refTable is non-empty) to dst. refTable
+// may be a relation alias; see tableMatches.
+func addMatchingColumns(dst, fullSourceColumns base.SourceColumnSet, refColumn, refTable string, aliasMap map[string][]string) {
+	for sc := range fullSourceColumns {
+		if !strings.EqualFold(sc.Column, refColumn) {
+			continue
+		}
+		if refTable == "" || tableMatches(sc.Table, refTable, aliasMap) {
+			dst[sc] = true
+		}
+	}
+}
+
+// tableMatches reports whether the physical table scTable is named by refTable,
+// either directly (its own name) or as a relation alias for it. Alias resolution
+// is additive: the written refTable and every physical table the alias maps to
+// are all accepted. omni's AccessTables is a flat, scope-less list, so an alias
+// reused or shadowed across subqueries yields several candidates; accepting all
+// of them over-includes (conservatively masks more) rather than risk an
+// under-match that would leave a sensitive column unmasked.
+func tableMatches(scTable, refTable string, aliasMap map[string][]string) bool {
+	if strings.EqualFold(scTable, refTable) {
+		return true
+	}
+	for _, phys := range aliasMap[strings.ToLower(refTable)] {
+		if strings.EqualFold(scTable, phys) {
+			return true
+		}
+	}
+	return false
+}
+
+// buildAliasMap maps each relation alias (lower-cased) to the metadata-canonical
+// physical table names it stands for, so aliased column references resolve back to
+// the expanded (metadata-cased) source columns during column matching. Because
+// omni's AccessTables is flat (carries no SQL scope), an alias reused in different
+// scopes maps to several tables; all are kept so matching can over-include rather
+// than under-match. An alias equal to its own table name carries no information
+// and is skipped.
+func (q *querySpanExtractor) buildAliasMap(span *analysis.QuerySpan) map[string][]string {
+	if span == nil {
+		return nil
+	}
+	out := make(map[string][]string)
+	for _, t := range span.AccessTables {
+		if t.Alias == "" || strings.EqualFold(t.Alias, t.Table) {
+			continue
+		}
+		table := t.Table
+		if !t.IsSystem {
+			if canonical, _, err := q.tableColumns(t.Schema, t.Table); err == nil && canonical != "" {
+				table = canonical
+			}
+		}
+		key := strings.ToLower(t.Alias)
+		if !containsFold(out[key], table) {
+			out[key] = append(out[key], table)
+		}
+	}
+	return out
+}
+
+// containsFold reports whether list contains s under case-insensitive comparison.
+func containsFold(list []string, s string) bool {
+	for _, e := range list {
+		if strings.EqualFold(e, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// tableColumns returns the metadata-canonical table name and the column names of
+// the given table or view in the given schema of the default database. Schema
+// names match CASE-SENSITIVELY (the legacy findTableSchema looked the schema up
+// by its written name; "" is the default schema) while table names fall back to
+// a case-folded match — both exactly the legacy behavior.
+func (q *querySpanExtractor) tableColumns(schema, table string) (string, []string, error) {
+	metadata, err := q.getDatabaseMetadata(q.defaultDatabase)
+	if err != nil {
+		return "", nil, err
+	}
+
+	schemaMeta := metadata.GetSchemaMetadata(schema)
+	if schemaMeta == nil {
+		return "", nil, &base.ResourceNotFoundError{
+			Database: &q.defaultDatabase,
+			Schema:   &schema,
+		}
+	}
+
+	// Table first.
+	tableMeta := schemaMeta.GetTable(table)
+	if tableMeta == nil {
+		for _, name := range schemaMeta.ListTableNames() {
+			if strings.EqualFold(name, table) {
+				tableMeta = schemaMeta.GetTable(name)
+				break
+			}
+		}
+	}
+	if tableMeta != nil {
+		canonical := tableMeta.GetProto().GetName()
+		var cols []string
+		for _, col := range tableMeta.GetProto().GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return canonical, cols, nil
+	}
+
+	// Then view.
+	viewMeta := schemaMeta.GetView(table)
+	if viewMeta == nil {
+		for _, name := range schemaMeta.ListViewNames() {
+			if strings.EqualFold(name, table) {
+				viewMeta = schemaMeta.GetView(name)
+				break
+			}
+		}
+	}
+	if viewMeta != nil {
+		canonical := viewMeta.GetName()
+		var cols []string
+		for _, col := range viewMeta.GetColumns() {
+			cols = append(cols, col.Name)
+		}
+		return canonical, cols, nil
+	}
+
+	return "", nil, &base.ResourceNotFoundError{
+		Database: &q.defaultDatabase,
+		Schema:   &schema,
+		Table:    &table,
+	}
+}
+
+// getDatabaseMetadata fetches (and caches) metadata for the given database.
+func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
+	if database == "" {
+		database = q.defaultDatabase
+	}
+	if meta, ok := q.metaCache[database]; ok {
+		return meta, nil
+	}
+	if q.gCtx.GetDatabaseMetadataFunc == nil {
+		return nil, &base.ResourceNotFoundError{Database: &database}
+	}
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
+	if err != nil {
+		var notFound *base.ResourceNotFoundError
+		if errors.As(err, &notFound) {
+			return nil, err
+		}
+		return nil, errors.Wrapf(err, "failed to get database metadata for dataset: %s", database)
+	}
+	if meta == nil {
+		empty := &model.DatabaseMetadata{}
+		q.metaCache[database] = empty
+		return empty, nil
+	}
+	q.metaCache[database] = meta
+	return meta, nil
 }
