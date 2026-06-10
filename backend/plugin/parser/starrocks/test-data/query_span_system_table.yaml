@@ -40,8 +40,8 @@
           table: table_statistics
           column: ""
     predicatecolumns: []
-- description: Query mysql database
-  statement: SELECT * FROM mysql.user
+- description: Query sys metadatabase (StarRocks system db; Doris has no sys, and StarRocks has no mysql/__internal_schema)
+  statement: SELECT * FROM sys.grants_to_roles
   defaultDatabase: testdb
   metadata: '{}'
   querySpan:
@@ -49,23 +49,9 @@
     results: []
     sourcecolumns:
         - server: ""
-          database: mysql
+          database: sys
           schema: ""
-          table: user
-          column: ""
-    predicatecolumns: []
-- description: Query __internal_schema database
-  statement: SELECT * FROM __internal_schema.audit_log
-  defaultDatabase: testdb
-  metadata: '{}'
-  querySpan:
-    type: 3
-    results: []
-    sourcecolumns:
-        - server: ""
-          database: __internal_schema
-          schema: ""
-          table: audit_log
+          table: grants_to_roles
           column: ""
     predicatecolumns: []
 - description: Query user table
