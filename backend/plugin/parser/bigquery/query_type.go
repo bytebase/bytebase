@@ -1,51 +1,47 @@
 package bigquery
 
 import (
-	parser "github.com/bytebase/parser/googlesql"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/googlesql/analysis"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type queryTypeListener struct {
-	*parser.BaseGoogleSQLParserListener
-
-	allSystems bool
-	result     base.QueryType
-	err        error
+// classifyStatement classifies a single BigQuery (GoogleSQL) statement via the
+// omni analysis classifier and maps the result onto bytebase's base.QueryType.
+//
+// omni's analysis.ClassifySQL reproduces the legacy queryTypeListener's rules
+// for the BigQuery dialect:
+//   - a query_statement is Select, promoted to SelectInfoSchema when it reads
+//     exclusively from INFORMATION_SCHEMA (the legacy allSystems case);
+//   - INSERT/UPDATE/DELETE/MERGE/TRUNCATE (and, in the legacy listener, CALL) are
+//     DML;
+//   - every CREATE/ALTER/DROP/GRANT/REVOKE form is DDL;
+//   - EXPLAIN is Explain;
+//   - everything unrecognized is Unknown.
+//
+// The omni QueryType values map 1:1 to base.QueryType (see mapQueryType).
+func classifyStatement(statement string) base.QueryType {
+	return mapQueryType(analysis.ClassifySQL(statement, analysis.DialectBigQuery))
 }
 
-func (l *queryTypeListener) EnterStmts(ctx *parser.StmtsContext) {
-	// Assume that the stmts contains only one unterminated statement.
-	if len(ctx.AllUnterminated_sql_statement()) != 1 {
-		l.err = errors.Errorf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement()))
-		return
-	}
-	unterminatedStatement := ctx.AllUnterminated_sql_statement()[0]
-	l.result = l.getQueryTypeForUnterminatedSQLStatement(unterminatedStatement)
-}
-
-func (l *queryTypeListener) getQueryTypeForUnterminatedSQLStatement(u parser.IUnterminated_sql_statementContext) base.QueryType {
-	body := u.Sql_statement_body()
-	switch {
-	case body.Query_statement() != nil:
-		if l.allSystems {
-			return base.SelectInfoSchema
-		}
+// mapQueryType maps an omni analysis.QueryType onto bytebase's base.QueryType.
+// The two enums are defined to correspond 1:1 (omni's QueryType doc states the
+// values mirror base.QueryType so this switch is total); an unexpected value
+// falls back to QueryTypeUnknown.
+func mapQueryType(t analysis.QueryType) base.QueryType {
+	switch t {
+	case analysis.Select:
 		return base.Select
-	case body.Alter_statement() != nil, body.Create_constant_statement() != nil, body.Create_connection_statement() != nil, body.Create_database_statement() != nil,
-		body.Create_function_statement() != nil, body.Create_procedure_statement() != nil, body.Create_index_statement() != nil, body.Create_privilege_restriction_statement() != nil, body.Create_row_access_policy_statement() != nil,
-		body.Create_external_table_statement() != nil, body.Create_external_table_function_statement() != nil, body.Create_model_statement() != nil, body.Create_property_graph_statement() != nil,
-		body.Create_schema_statement() != nil, body.Create_external_schema_statement() != nil, body.Create_snapshot_statement() != nil, body.Create_table_function_statement() != nil, body.Create_table_statement() != nil,
-		body.Create_view_statement() != nil, body.Create_entity_statement() != nil, body.Rename_statement() != nil, body.Drop_all_row_access_policies_statement() != nil, body.Drop_statement() != nil, body.Undrop_statement() != nil:
-		return base.DDL
-	case body.Dml_statement() != nil, body.Merge_statement() != nil, body.Call_statement() != nil:
-		return base.DML
-	case body.Explain_statement() != nil:
+	case analysis.Explain:
 		return base.Explain
-	// Treat SAFE SET as select statement.
-	case body.Set_statement() != nil:
-		return base.Select
+	case analysis.SelectInfoSchema:
+		return base.SelectInfoSchema
+	case analysis.DDL:
+		return base.DDL
+	case analysis.DML:
+		return base.DML
+	case analysis.Unknown:
+		return base.QueryTypeUnknown
 	default:
 		return base.QueryTypeUnknown
 	}
