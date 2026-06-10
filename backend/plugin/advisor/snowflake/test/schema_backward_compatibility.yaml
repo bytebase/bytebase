@@ -67,4 +67,4 @@
 # the behavior both versions already had for plain CREATE + DROP.
 - statement: CREATE TABLE SCRATCH LIKE SOURCE_TABLE;DROP TABLE SCRATCH;
   changeType: 1
-  want: []
+  want: null
