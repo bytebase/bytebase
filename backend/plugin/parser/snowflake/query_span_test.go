@@ -35,14 +35,15 @@ func TestGetQuerySpan(t *testing.T) {
 			"test-data/query-span/standard.yaml",
 			"test-data/query-span/subquery.yaml",
 			"test-data/query-span/set-operator.yaml",
-			// TODO: re-enable once omni's Snowflake parser supports PIVOT/UNPIVOT.
-			// The omni parser currently does NOT model the PIVOT/UNPIVOT table-source
-			// clause: it lexes PIVOT/UNPIVOT as keywords but the table-reference parser
-			// silently drops the clause (parsing "FROM t PIVOT(...) AS p" as a bare
-			// "FROM t"), so the pivot-transformed result columns cannot be recovered
-			// from the AST. The legacy ANTLR extractor handled both. The expected
-			// lineage assertions are preserved in pivot.yaml for when omni gains the
-			// feature. Tracked as an omni-vs-legacy divergence in the migration ledger.
+			// TODO: re-enable once pivot lineage is implemented on the omni AST.
+			// omni models PIVOT/UNPIVOT on ast.TableRef (Pivot/Unpivot/Nested), but
+			// this extractor does not compute the pivoted projection yet — it FAILS
+			// CLOSED instead (see extractTableSourceFromTableRef and
+			// TestGetQuerySpan_PivotFailsClosed): GetQuerySpan returns an explicit
+			// error for pivoted table sources rather than silently resolving the
+			// bare base table with wrong lineage. The expected lineage assertions
+			// are preserved in pivot.yaml for when pivot projection lands. Tracked
+			// in the migration ledger.
 			// "test-data/query-span/pivot.yaml",
 			"test-data/query-span/cte.yaml",
 		}
@@ -103,4 +104,25 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 			return names, nil
 		}
+}
+
+// TestGetQuerySpan_PivotFailsClosed locks the PIVOT/UNPIVOT fail-closed
+// behavior: until pivot projection lineage is implemented, GetQuerySpan must
+// return an explicit error for pivoted table sources — never silently resolve
+// the bare base table (which would yield wrong lineage/positions for masking).
+func TestGetQuerySpan_PivotFailsClosed(t *testing.T) {
+	a := require.New(t)
+	metadata := &storepb.DatabaseSchemaMetadata{Name: "DB1"}
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	for _, sql := range []string{
+		`SELECT * FROM monthly_sales PIVOT (SUM(amount) FOR month IN ('JAN', 'FEB')) AS p;`,
+		`SELECT * FROM monthly_sales UNPIVOT (sales FOR month IN (jan, feb)) AS u;`,
+	} {
+		_, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNameLister,
+		}, base.Statement{Text: sql}, "DB1", "PUBLIC", false)
+		a.Errorf(err, "expected fail-closed error, statement: %s", sql)
+		a.Containsf(err.Error(), "PIVOT", "statement: %s", sql)
+	}
 }

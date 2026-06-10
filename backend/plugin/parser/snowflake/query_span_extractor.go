@@ -819,6 +819,15 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 		return nil, nil
 	}
 
+	// FAIL CLOSED on PIVOT/UNPIVOT: the pivoted relation's projection (dynamic
+	// pivot columns) is not modeled here yet, so resolving the bare base table
+	// would silently produce wrong lineage/positions for masking. Returning an
+	// error makes GetQuerySpan degrade explicitly instead. (omni models the
+	// clause on TableRef since #300; lineage support is a follow-up.)
+	if ref.Pivot != nil || ref.Unpivot != nil || ref.Nested != nil {
+		return nil, errors.New("PIVOT/UNPIVOT table sources are not supported for query span extraction yet")
+	}
+
 	var result []base.QuerySpanResult
 
 	switch {
@@ -1051,11 +1060,13 @@ func (q *querySpanExtractor) getField(normalizedDatabaseName, normalizedSchemaNa
 // including CTE references and subquery tables — mirroring the legacy
 // accessTablesListener, which added every object_ref it visited.
 //
-// It uses a hand-written recursion rather than ast.Inspect because omni's
-// generated AST walker does NOT descend into a SelectStmt's WITH clause, SELECT
-// targets, GROUP BY, ORDER BY, or FETCH; those sub-trees can carry table
-// references (CTE bodies, scalar subqueries) that the legacy listener — which
-// walked the full ANTLR parse tree — would have recorded.
+// It uses a hand-written recursion as belt-and-suspenders: it predates the
+// omni walker-coverage fix, when the generated walker skipped a SelectStmt's
+// WITH clause, SELECT targets, GROUP BY, ORDER BY, and FETCH. The walker now
+// descends into all of those (the SQL-review advisors rely on plain
+// ast.Inspect reaching CTE bodies and SELECT-list subqueries, locked by yaml
+// cases), so this recursion is no longer load-bearing for coverage; it is kept
+// because it is correct, tested, and independent of walker regressions.
 func getAccessTables(currentNormalizedDatabase, currentNormalizedSchema string, node ast.Node) base.SourceColumnSet {
 	resourceMap := make(base.SourceColumnSet)
 	collectAccessTables(node, currentNormalizedDatabase, currentNormalizedSchema, resourceMap)
@@ -1064,8 +1075,8 @@ func getAccessTables(currentNormalizedDatabase, currentNormalizedSchema string, 
 
 // collectAccessTables recursively records every table reference reachable from
 // node into resourceMap. It explicitly descends into the SelectStmt sub-parts
-// that omni's generated walker skips; for everything else it falls back to
-// ast.Inspect, which reaches the remaining FROM/WHERE/JOIN/subquery table refs.
+// (WITH/targets/GROUP BY/ORDER BY/FETCH; redundant with the fixed omni walker,
+// see getAccessTables); for everything else it falls back to ast.Inspect.
 func collectAccessTables(node ast.Node, defaultDatabase, defaultSchema string, resourceMap base.SourceColumnSet) {
 	if node == nil {
 		return
