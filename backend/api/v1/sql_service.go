@@ -1587,7 +1587,15 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return checkDatabaseAccess(perm)
 	}
 
-	for _, span := range spans {
+	// Spans align with non-empty statements (GetQuerySpan skips Empty statements).
+	nonEmptyStatements := make([]parserbase.Statement, 0, len(statements))
+	for _, st := range statements {
+		if !st.Empty {
+			nonEmptyStatements = append(nonEmptyStatements, st)
+		}
+	}
+
+	for i, span := range spans {
 		var perm permission.Permission
 		// New query ACL experience.
 		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
@@ -1613,6 +1621,77 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		if perm == "" {
 			// always fallback to bb.sql.select
 			perm = permission.SQLSelect
+		}
+
+		// DML/DDL: authorize per write-target table so table/schema-scoped grants work.
+		// Resolve THIS statement's write targets only (never the whole batch) so a mixed
+		// batch like `CREATE TABLE a; INSERT INTO b;` checks each statement with its own
+		// permission against its own targets. Falls back to the database-level check when
+		// targets can't be resolved (unsupported engine, parse failure, unrecognized form,
+		// or span/statement misalignment) — never fail open. SUP-222.
+		if perm == permission.SQLDml || perm == permission.SQLDdl {
+			if i >= len(nonEmptyStatements) {
+				if err := checkDatabaseAccess(perm); err != nil {
+					return err
+				}
+				continue
+			}
+			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[i].Text)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve write targets: %v", err))
+			}
+			if len(targets) == 0 {
+				if err := checkDatabaseAccess(perm); err != nil {
+					return err
+				}
+				continue
+			}
+
+			env := ""
+			if database.EffectiveEnvironmentID != nil {
+				env = *database.EffectiveEnvironmentID
+			}
+
+			var deniedResources []string
+			for _, t := range targets {
+				databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
+				if _, granted := grantedTargets[databaseFullName]; granted {
+					continue
+				}
+				attributes := map[string]any{
+					common.CELAttributeRequestTime:        time.Now(),
+					common.CELAttributeResourceDatabase:   databaseFullName,
+					common.CELAttributeResourceSchemaName: t.schema,
+					common.CELAttributeResourceTableName:  t.table,
+					// environment_id is REQUIRED here: hasDatabaseAccessRights keeps the
+					// environment clause for SQLDml/SQLDdl (sql_service.go:1780). Omitting
+					// it would reintroduce a "no such attribute" error.
+					common.CELAttributeResourceEnvironmentID: env,
+				}
+				ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, workspacePolicy.Policy, projectPolicy.Policy)
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for table: %q, error %v", t.table, err))
+				}
+				if !ok {
+					resource := databaseFullName
+					if t.schema != "" {
+						resource = fmt.Sprintf("%s/schemas/%s", resource, t.schema)
+					}
+					resource = fmt.Sprintf("%s/tables/%s", resource, t.table)
+					deniedResources = append(deniedResources, resource)
+				}
+			}
+			if len(deniedResources) > 0 {
+				return &queryError{
+					err: connect.NewError(
+						connect.CodePermissionDenied,
+						errors.Errorf("permission denied to access resources: %v", deniedResources),
+					),
+					resources:  deniedResources,
+					permission: perm,
+				}
+			}
+			continue
 		}
 
 		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
@@ -1697,7 +1776,8 @@ func (s *SQLService) resolveWriteTargets(
 
 	stmts, err := parserbase.ParseStatements(engine, statement)
 	if err != nil {
-		return nil, nil // unparseable here → fall back (already parsed once for the span)
+		//nolint:nilerr // unparseable here → fall back to database-level check (already parsed once for the span)
+		return nil, nil
 	}
 	asts := parserbase.ExtractASTs(stmts)
 	if len(asts) == 0 {
@@ -1720,7 +1800,8 @@ func (s *SQLService) resolveWriteTargets(
 		engine, database.DatabaseName, defaultSchemaForEngine(engine, database.DatabaseName), dbMeta, asts, statement,
 	)
 	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
-		return nil, nil // unsupported engine / no result → fall back
+		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
+		return nil, nil
 	}
 
 	var targets []writeTargetResource
