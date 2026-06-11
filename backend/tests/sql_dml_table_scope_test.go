@@ -554,4 +554,68 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr = runAs(token, fmt.Sprintf("ALTER TABLE public.b ADD COLUMN %s int;", col2))
 		assertDeniedOn(t, resp, qErr, "public/tables/b")
 	})
+
+	// 8. Empty-target fail-safe fallback (SUP-222). The DML/DDL access check resolves
+	//    this statement's write targets via ExtractChangedResources; when that yields
+	//    ZERO table targets it falls back to checkDatabaseAccess, which must stay
+	//    fail-CLOSED. resolveWriteTargets returns zero targets in two converging cases:
+	//      (a) a newACL engine WITHOUT a ChangedResources extractor — BigQuery,
+	//          Snowflake, Spanner, MongoDB, Elasticsearch; and
+	//      (b) DDL on a non-table object — ExtractChangedResources tracks tables only.
+	//    Both hit the SAME engine-agnostic `len(targets)==0 → checkDatabaseAccess(perm)`
+	//    guard in accessCheckWithGrantedTargets. Standing up BigQuery/Snowflake in the
+	//    harness is expensive, so we exercise the IDENTICAL guard on Postgres with a
+	//    non-table DDL — CREATE SEQUENCE — which parses to *ast.CreateSeqStmt: it
+	//    classifies as DDL (perm = bb.sql.ddl) but is NOT handled by the pg
+	//    ExtractChangedResources switch (which only adds tables for CREATE TABLE / DROP /
+	//    ALTER TABLE / RENAME / CREATE INDEX / INSERT / UPDATE / DELETE), so it resolves
+	//    to zero targets. This Postgres case therefore stands in for the
+	//    unsupported-engine (no-extractor) case: same guard, same fail-closed contract.
+	t.Run("EmptyTargetFailSafeFallback", func(t *testing.T) {
+		// Unique sequence name so re-runs (and the two sub-cases) never collide.
+		seqName := "s_" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
+		createSeq := fmt.Sprintf("CREATE SEQUENCE public.%s;", seqName)
+		ddlCond := func(extra string) string {
+			return fmt.Sprintf(
+				`resource.database == "%s"%s && resource.environment_id in ["%s"]`,
+				dbFullName, extra, envID,
+			)
+		}
+
+		// 8a. Db-scoped DDL grant → the empty-target fallback ALLOWS. The condition
+		//     scopes by database + environment only (no table/schema clause), exactly
+		//     the attributes checkDatabaseAccess supplies, so the fallback matches and
+		//     the CREATE SEQUENCE executes.
+		t.Run("DbScopedAllows", func(t *testing.T) {
+			ra := require.New(t)
+			email, token := newLimitedUser(t)
+			setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-ddl", email, ddlCond("")))
+
+			resp, qErr := runAs(token, createSeq)
+			assertAllowed(t, resp, qErr)
+			// Confirm the sequence actually landed (the fallback authorized execution).
+			ra.Equal(int64(1), countRows(t,
+				fmt.Sprintf("pg_sequences WHERE schemaname = 'public' AND sequencename = '%s'", seqName)),
+				"the sequence should have been created")
+		})
+
+		// 8b. Table-scoped DDL grant → the empty-target fallback DENIES (never fail
+		//     open). Same CREATE SEQUENCE, but the grant adds a resource.table_name
+		//     clause. Because the statement has ZERO table targets, the code falls back
+		//     to checkDatabaseAccess, whose attributes carry NO resource.table_name, so
+		//     the table-scoped condition cannot match → denied at the database level.
+		//     The db-level denial (resource = the bare database, not a /tables/… path)
+		//     is itself the proof that targets were empty: had a non-empty target been
+		//     resolved and matched the granted table, the statement would be ALLOWED.
+		t.Run("TableScopedDenies", func(t *testing.T) {
+			email, token := newLimitedUser(t)
+			tableClause := ` && resource.table_name in ["any_table"]`
+			setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-ddl", email, ddlCond(tableClause)))
+
+			resp, qErr := runAs(token, createSeq)
+			// Denied on the bare database (the fallback's checkDatabaseAccess resource),
+			// NOT on a /tables/… path — confirming the empty-target path was taken.
+			assertDeniedOn(t, resp, qErr, dbFullName)
+		})
+	})
 }
