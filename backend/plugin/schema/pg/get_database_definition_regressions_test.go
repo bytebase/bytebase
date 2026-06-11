@@ -154,6 +154,16 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 						ReferencedTable:   "t2",
 						ReferencedColumns: []string{"id"},
 					}},
+					Triggers: []*storepb.TriggerMetadata{{
+						Name:    "trg_t1_c1",
+						Body:    `CREATE TRIGGER trg_t1_c1 BEFORE UPDATE OF c1 ON s1.t1 FOR EACH ROW EXECUTE FUNCTION s1.f()`,
+						Comment: "comment on a never-created trigger",
+					}},
+					Rules: []*storepb.RuleMetadata{{
+						Name:       "rule_t1",
+						Event:      "INSERT",
+						Definition: `CREATE RULE rule_t1 AS ON INSERT TO s1.t1 WHERE new.c1 > 0 DO INSTEAD NOTHING;`,
+					}},
 				},
 				{
 					// Healthy table; its own constraints must still dump, but
@@ -182,7 +192,7 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		}},
 	}
 
-	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "OWNED BY", "COMMENT ON INDEX"}
+	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "trg_t1_c1", "rule_t1", "OWNED BY", "COMMENT ON INDEX"}
 
 	for name, ctx := range map[string]schema.GetDefinitionContext{
 		"dump": {},

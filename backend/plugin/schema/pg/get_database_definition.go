@@ -282,9 +282,14 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct triggers.
+	// Construct triggers. Skip triggers on tables without column metadata;
+	// their definitions (UPDATE OF, WHEN clauses) can reference the missing
+	// columns.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
+			if tableMissingColumnMetadata(table) {
+				continue
+			}
 			for _, trigger := range table.Triggers {
 				if trigger.SkipDump {
 					continue
@@ -318,10 +323,11 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct rules.
+	// Construct rules. Skip rules on tables without column metadata; their
+	// definitions can reference the missing columns.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
-			if len(table.Rules) > 0 {
+			if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
 				if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
 					return "", err
 				}
@@ -553,8 +559,13 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct triggers.
+	// Construct triggers. Skip triggers on tables without column metadata;
+	// their definitions (UPDATE OF, WHEN clauses) can reference the missing
+	// columns.
 	for _, table := range schema.Tables {
+		if tableMissingColumnMetadata(table) {
+			continue
+		}
 		for _, trigger := range table.Triggers {
 			if trigger.SkipDump {
 				continue
@@ -587,9 +598,10 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct rules.
+	// Construct rules. Skip rules on tables without column metadata; their
+	// definitions can reference the missing columns.
 	for _, table := range schema.Tables {
-		if len(table.Rules) > 0 {
+		if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
 			if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
 				return "", err
 			}
@@ -624,6 +636,11 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 	if err := writeTable(&buf, schema, table, sequences); err != nil {
 		return "", err
 	}
+	// Skip triggers, rules, and foreign keys for a table without column
+	// metadata; their definitions can reference the missing columns.
+	if tableMissingColumnMetadata(table) {
+		return buf.String(), nil
+	}
 	// Construct triggers.
 	for _, trigger := range table.Triggers {
 		if trigger.SkipDump {
@@ -639,13 +656,10 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 			return "", err
 		}
 	}
-	// Construct foreign keys. A table without column metadata cannot carry
-	// foreign keys referencing its (missing) columns.
-	if !tableMissingColumnMetadata(table) {
-		for _, fk := range table.ForeignKeys {
-			if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
-				return "", err
-			}
+	// Construct foreign keys.
+	for _, fk := range table.ForeignKeys {
+		if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
+			return "", err
 		}
 	}
 	return buf.String(), nil
@@ -2767,11 +2781,14 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				return "", err
 			}
 
-			// Write trigger comments if present
-			for _, trigger := range table.Triggers {
-				if len(trigger.Comment) > 0 {
-					if err := writeTriggerCommentSDL(&buf, schema.Name, table.Name, trigger); err != nil {
-						return "", err
+			// Write trigger comments if present. Skip when the table has no
+			// column metadata — its triggers were not emitted.
+			if !tableMissingColumnMetadata(table) {
+				for _, trigger := range table.Triggers {
+					if len(trigger.Comment) > 0 {
+						if err := writeTriggerCommentSDL(&buf, schema.Name, table.Name, trigger); err != nil {
+							return "", err
+						}
 					}
 				}
 			}
@@ -3835,11 +3852,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				return nil, errors.Wrapf(err, "failed to generate triggers SDL for %s.%s", schemaName, table.Name)
 			}
 
-			// Write trigger comments if present
-			for _, trigger := range table.Triggers {
-				if len(trigger.Comment) > 0 {
-					if err := writeTriggerCommentSDL(&buf, schemaName, table.Name, trigger); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate trigger comment for %s.%s.%s", schemaName, table.Name, trigger.Name)
+			// Write trigger comments if present. Skip when the table has no
+			// column metadata — its triggers were not emitted.
+			if !tableMissingColumnMetadata(table) {
+				for _, trigger := range table.Triggers {
+					if len(trigger.Comment) > 0 {
+						if err := writeTriggerCommentSDL(&buf, schemaName, table.Name, trigger); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate trigger comment for %s.%s.%s", schemaName, table.Name, trigger.Name)
+						}
 					}
 				}
 			}
@@ -4411,6 +4431,11 @@ func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.Index
 }
 
 func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Trigger definitions (UPDATE OF, WHEN clauses) can reference
+		// columns absent from the dump.
+		return nil
+	}
 	for _, trigger := range table.Triggers {
 		if trigger.SkipDump {
 			continue
