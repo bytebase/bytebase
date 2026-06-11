@@ -1674,6 +1674,82 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	return nil
 }
 
+// writeTargetResource is a (database, schema, table) write target of a DML/DDL statement.
+type writeTargetResource struct {
+	database string
+	schema   string
+	table    string
+}
+
+// resolveWriteTargets returns the tables a DML/DDL statement writes/changes, using
+// the same extractor plan-check trusts. Returns (nil, nil) when the engine has no
+// extractor, the statement can't be parsed, or no targets are found — callers must
+// then fall back to the database-level check (never fail open). See SUP-222.
+func (s *SQLService) resolveWriteTargets(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	statement string,
+) ([]writeTargetResource, error) {
+	engine := instance.Metadata.GetEngine()
+
+	stmts, err := parserbase.ParseStatements(engine, statement)
+	if err != nil {
+		return nil, nil // unparseable here → fall back (already parsed once for the span)
+	}
+	asts := parserbase.ExtractASTs(stmts)
+	if len(asts) == 0 {
+		return nil, nil
+	}
+
+	dbMeta, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if dbMeta == nil {
+		return nil, nil
+	}
+
+	changeSummary, err := parserbase.ExtractChangedResources(
+		engine, database.DatabaseName, defaultSchemaForEngine(engine, database.DatabaseName), dbMeta, asts, statement,
+	)
+	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
+		return nil, nil // unsupported engine / no result → fall back
+	}
+
+	var targets []writeTargetResource
+	for _, db := range changeSummary.ChangedResources.Build().GetDatabases() {
+		for _, sc := range db.GetSchemas() {
+			for _, tbl := range sc.GetTables() {
+				targets = append(targets, writeTargetResource{
+					database: db.GetName(),
+					schema:   sc.GetName(),
+					table:    tbl.GetName(),
+				})
+			}
+		}
+	}
+	return targets, nil
+}
+
+// defaultSchemaForEngine mirrors statement_report_executor.go's per-engine default.
+func defaultSchemaForEngine(engine storepb.Engine, databaseName string) string {
+	switch engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
+		return "public"
+	case storepb.Engine_MSSQL:
+		return "dbo"
+	case storepb.Engine_ORACLE:
+		return databaseName
+	default: // MySQL, TiDB, etc. — no schema layer
+		return ""
+	}
+}
+
 // sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.
 func sanitizeResults(results []*v1pb.QueryResult) {
 	for _, result := range results {
