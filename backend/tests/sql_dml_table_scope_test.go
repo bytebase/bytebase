@@ -512,13 +512,14 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		assertDeniedOn(t, resp, qErr, "/tables/t_granted")
 	})
 
-	// 7. Mixed DDL+DML batch (validates the per-statement fix). bb.sql.ddl is
-	//    table-scoped to a, bb.sql.dml is table-scoped to b. A single Query runs a
-	//    DDL on a and a DML on b. Each statement is authorized against its own target
-	//    with its own permission: the INSERT-on-b span is checked with bb.sql.dml
-	//    (granted on b), NOT with the DDL span's bb.sql.ddl. Without the per-statement
-	//    fix, whole-statement resolution would check b under bb.sql.ddl and deny.
-	t.Run("MixedDDLDMLBatchPerStatement", func(t *testing.T) {
+	// 7. Multi-statement batches fall back to the database-level check (fail-closed). A
+	//    batch can change the session's default schema mid-batch (Postgres SET search_path,
+	//    Oracle ALTER SESSION SET CURRENT_SCHEMA), redirecting a later unqualified write to
+	//    a schema the per-statement resolver can't reliably track. Rather than risk
+	//    authorizing the wrong schema, multi-statement DML/DDL falls back to the
+	//    database-level check — table/schema-scoped grants then require a database-level
+	//    grant. Single statements stay per-write-target. SUP-222 / BYT-9698.
+	t.Run("MultiStatementBatchFallsBackToDatabaseLevel", func(t *testing.T) {
 		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		ddlCond := fmt.Sprintf(
@@ -535,24 +536,35 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			scopedBinding("roles/repro-write", email, dmlCond),
 		)
 
-		// Use a unique (identifier-safe) column name so re-runs don't collide on ALTER.
+		// A 2-statement batch (DDL on a + DML on b), even though each table is individually
+		// granted, is DENIED at the database level — table-scoped grants don't satisfy the
+		// fallback. The denial names the bare database, NOT a /tables/ resource.
 		col := "c" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
-		before := countRows(t, "public.b")
 		stmt := fmt.Sprintf("ALTER TABLE public.a ADD COLUMN %s int; INSERT INTO public.b (id) VALUES (1);", col)
 		resp, qErr := runAs(token, stmt)
-		assertAllowed(t, resp, qErr)
-		ra.Equal(before+1, countRows(t, "public.b"), "the INSERT on b should have executed")
+		assertDeniedOn(t, resp, qErr, dbFullName)
+		last := resp.Results[len(resp.Results)-1]
+		ra.NotContains(strings.Join(last.GetPermissionDenied().GetResources(), ","), "/tables/",
+			"a multi-statement batch must deny via the database-level fallback, not a per-target check")
 
-		// Sharpness check: the DDL grant on a does NOT authorize a DML on a. With the
-		// per-statement, per-permission fix, an INSERT on a (DML) is denied because the
-		// only grant touching a is bb.sql.ddl, and b's bb.sql.dml grant doesn't cover a.
+		// Sharpness: SINGLE statements are still authorized per write-target table — the DDL
+		// grant on a does not authorize a DML on a, and the DML grant on b does not authorize
+		// DDL on b.
 		resp, qErr = runAs(token, "INSERT INTO public.a (id) VALUES (1);")
 		assertDeniedOn(t, resp, qErr, "public/tables/a")
-
-		// And the DML grant on b does NOT authorize DDL on b.
 		col2 := "c" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
 		resp, qErr = runAs(token, fmt.Sprintf("ALTER TABLE public.b ADD COLUMN %s int;", col2))
 		assertDeniedOn(t, resp, qErr, "public/tables/b")
+
+		// Positive: with a DATABASE-scoped DML grant the same kind of multi-statement DML
+		// batch is allowed (the fallback passes) — confirming the fallback is not a blanket
+		// deny.
+		dbDmlCond := fmt.Sprintf(`resource.database == "%s" && resource.environment_id in ["%s"]`, dbFullName, envID)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, dbDmlCond))
+		before := countRows(t, "public.b")
+		resp, qErr = runAs(token, "INSERT INTO public.b (id) VALUES (1); INSERT INTO public.b (id) VALUES (2);")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+2, countRows(t, "public.b"), "both INSERTs should execute under the database-level grant")
 	})
 
 	// 8. Empty-target fail-safe fallback (SUP-222). The DML/DDL access check resolves
@@ -681,6 +693,55 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			strings.Join(last.GetPermissionDenied().GetResources(), ","),
 			"schemas/public/tables/t_sbx",
 			"the request schema (other_schema), not public, must be the resolved write target",
+		)
+	})
+
+	// 10. Codex P1 (round 2): an EARLIER statement in the same batch changes search_path.
+	//     `SET search_path = other_schema; INSERT INTO t_sbx2` — SET is a safe Select (passes
+	//     with the read grant), and Postgres runs both on the same session, so the unqualified
+	//     INSERT writes other_schema.t_sbx2, which the public-scoped grant does not cover.
+	//     Because a batch can redirect the schema mid-stream in forms the resolver can't
+	//     reliably track, multi-statement DML/DDL falls back to the database-level check →
+	//     DENIED at the bare database, so the redirected write is never authorized.
+	//     SUP-222 / BYT-9698.
+	t.Run("EarlierSetSearchPathNotBypassed", func(t *testing.T) {
+		ra := require.New(t)
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.schema_name == "public" && resource.table_name in ["t_sbx2"] && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE IF NOT EXISTS public.t_sbx2 (id int);`)},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		// An earlier SET search_path would redirect the later unqualified INSERT to
+		// other_schema; the multi-statement batch must not authorize that write.
+		ctl.authInterceptor.token = token
+		resp, qErr := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: "SET search_path = other_schema; INSERT INTO t_sbx2 VALUES (1)",
+			Limit:     1000,
+		}))
+		ctl.authInterceptor.token = ownerToken
+
+		var msg *v1pb.QueryResponse
+		if resp != nil {
+			msg = resp.Msg
+		}
+		// Denied via the database-level fallback (multi-statement) — the bare database, not a
+		// per-target /tables/ resource. The public-scoped grant cannot satisfy it.
+		assertDeniedOn(t, msg, qErr, dbFullName)
+		last := msg.Results[len(msg.Results)-1]
+		ra.NotContains(
+			strings.Join(last.GetPermissionDenied().GetResources(), ","),
+			"/tables/",
+			"a SET search_path batch must deny via the database-level fallback, never authorizing the redirected write",
 		)
 	})
 }

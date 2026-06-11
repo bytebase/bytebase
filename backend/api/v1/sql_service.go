@@ -495,7 +495,24 @@ func getEffectiveQueryDataPolicy(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement, string /* requestSchema */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement, string /* requestSchema */, bool /* multiStatement */) error
+
+// hasMultipleStatements reports whether a batch has more than one non-empty statement.
+// Multi-statement batches can change the session's default schema mid-batch (e.g. Postgres
+// `SET search_path`), so DML/DDL in them falls back to the database-level check. SUP-222.
+func hasMultipleStatements(statements []parserbase.Statement) bool {
+	n := 0
+	for _, st := range statements {
+		if st.Empty {
+			continue
+		}
+		n++
+		if n > 1 {
+			return true
+		}
+	}
+	return false
+}
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -634,6 +651,7 @@ func queryRetry(
 	licenseService *enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
+	multiStatement bool,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
@@ -663,7 +681,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -853,7 +871,7 @@ func queryRetryStopOnError(
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
 	}
 
 	// Split the statement into individual SQLs
@@ -862,8 +880,13 @@ func queryRetryStopOnError(
 		// Engines without splitter support (MongoDB, Redis, Elasticsearch) fall back to
 		// treating the entire statement as a single unit. These engines also don't have
 		// GetQuerySpan support, so queryRetry will return nil spans (old behavior).
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
 	}
+
+	// A multi-statement batch can change the session schema mid-batch (e.g. SET search_path),
+	// which the per-statement access check below cannot track; flag it so DML/DDL falls back
+	// to the database-level check. SUP-222.
+	multiStatement := hasMultipleStatements(statements)
 
 	var allResults []*v1pb.QueryResult
 	var allSpans []*parserbase.QuerySpan
@@ -875,7 +898,7 @@ func queryRetryStopOnError(
 			continue
 		}
 
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, multiStatement)
 		totalDuration += duration
 
 		if err != nil {
@@ -1187,6 +1210,7 @@ func doExport(
 		licenseService,
 		optionalAccessCheck,
 		schemaSyncer,
+		hasMultipleStatements(statements),
 	)
 	if queryErr != nil {
 		return nil, duration, queryErr
@@ -1485,8 +1509,9 @@ func (s *SQLService) accessCheck(
 	isExplain bool,
 	statements []parserbase.Statement,
 	requestSchema string,
+	multiStatement bool,
 ) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema)
+	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema, multiStatement)
 }
 
 // accessCheckWithGrant returns an accessCheckFunc that exempts the access
@@ -1506,8 +1531,8 @@ func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage)
 	for _, t := range accessGrant.Payload.Targets {
 		grantedTargets[t] = struct{}{}
 	}
-	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema)
+	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string, multiStatement bool) error {
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema, multiStatement)
 	}
 }
 
@@ -1521,6 +1546,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
 	requestSchema string,
+	multiStatement bool,
 ) error {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
 	if err != nil {
@@ -1597,7 +1623,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		}
 	}
 
-	for i, span := range spans {
+	for _, span := range spans {
 		var perm permission.Permission
 		// New query ACL experience.
 		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
@@ -1626,19 +1652,21 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		}
 
 		// DML/DDL: authorize per write-target table so table/schema-scoped grants work.
-		// Resolve THIS statement's write targets only (never the whole batch) so a mixed
-		// batch like `CREATE TABLE a; INSERT INTO b;` checks each statement with its own
-		// permission against its own targets. Falls back to the database-level check when
-		// targets can't be resolved (unsupported engine, parse failure, unrecognized form,
-		// or span/statement misalignment) — never fail open. SUP-222.
+		// A multi-statement batch can change the session's default schema mid-batch (e.g.
+		// Postgres `SET search_path`, Oracle `ALTER SESSION SET CURRENT_SCHEMA`), redirecting
+		// a later unqualified write to a schema the per-statement resolver can't reliably
+		// track — authorizing it against the wrong schema would be a fail-open bypass. So we
+		// resolve per write-target table only for SINGLE-statement queries (incl.
+		// INSERT…SELECT); multi-statement batches fall back to the database-level check
+		// (table/schema-scoped grants then require a database-level grant). SUP-222 / BYT-9698.
 		if perm == permission.SQLDml || perm == permission.SQLDdl {
-			if i >= len(nonEmptyStatements) {
+			if multiStatement || len(nonEmptyStatements) != 1 {
 				if err := checkDatabaseAccess(perm); err != nil {
 					return err
 				}
 				continue
 			}
-			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[i].Text, requestSchema)
+			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[0].Text, requestSchema)
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve write targets: %v", err))
 			}
