@@ -896,4 +896,48 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr = runAs(token, fmt.Sprintf("INSERT INTO %s.public.t_xenv VALUES (1);", otherDBName))
 		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherDBName))
 	})
+
+	// 15. A QUALIFIED cross-database write in a MULTI-statement batch must be authorized against
+	//     its TARGET database, not the request database (SUP-222 / BYT-9698, Codex follow-up).
+	//     Multi-statement batches drop to a database-level check (an earlier statement can rebind
+	//     the session schema/database, so per-table/schema scoping is unreliable), but that check
+	//     must still key on each target database: a grant on the request database must not
+	//     authorize a write whose catalog names another database — otherwise wrapping the write in
+	//     a batch would bypass the per-target check the single-statement path applies. (Postgres
+	//     can't execute cross-database writes, but authorization precedes execution and keys on the
+	//     catalog name, so the decision is observable.)
+	t.Run("MultiStatementCrossDatabaseNotBypassed", func(t *testing.T) {
+		ra := require.New(t)
+		const otherDBName = "sup222edge_mstmt_other"
+		ra.NoError(ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, otherDBName, "postgres"))
+
+		// Seed the granted table in the request database for the positive control.
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte("CREATE TABLE IF NOT EXISTS public.t_mxdb (id int);")},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		// DATABASE-scoped DML grant on the REQUEST database only (no table/schema clause).
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		// Positive control: a SAME-database multi-statement batch is authorized at the database
+		// level by the request-database grant, and executes.
+		before := countRows(t, "public.t_mxdb")
+		resp, qErr := runAs(token, "SELECT 1; INSERT INTO public.t_mxdb VALUES (1);")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_mxdb"), "same-database multi-statement write executes")
+
+		// The fix: the same request-database grant must NOT authorize a multi-statement batch
+		// whose qualified write targets ANOTHER database — the database-level fallback checks the
+		// TARGET database, not the request database. Denied on the other database.
+		resp, qErr = runAs(token, fmt.Sprintf("SELECT 1; INSERT INTO %s.public.t_mxdb VALUES (1);", otherDBName))
+		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherDBName))
+	})
 }

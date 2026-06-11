@@ -1623,7 +1623,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		}
 	}
 
-	for _, span := range spans {
+	for i, span := range spans {
 		var perm permission.Permission
 		// New query ACL experience.
 		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
@@ -1651,32 +1651,36 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			perm = permission.SQLSelect
 		}
 
-		// DML/DDL: authorize per write-target table so table/schema-scoped grants work.
-		// A multi-statement batch can change the session's default schema mid-batch (e.g.
-		// Postgres `SET search_path`, Oracle `ALTER SESSION SET CURRENT_SCHEMA`), redirecting
-		// a later unqualified write to a schema the per-statement resolver can't reliably
-		// track — authorizing it against the wrong schema would be a fail-open bypass. So we
-		// resolve per write-target table only for SINGLE-statement queries (incl.
-		// INSERT…SELECT); multi-statement batches fall back to the database-level check
-		// (table/schema-scoped grants then require a database-level grant). SUP-222 / BYT-9698.
+		// DML/DDL: authorize per write-target so table/schema-scoped grants work. Resolve the
+		// write targets of the statement aligned with this span (spans skip Empty statements, so
+		// nonEmptyStatements is indexed in lockstep).
+		//
+		// A single statement is authorized at full per-(schema,table) precision. A multi-statement
+		// batch can rebind the session's default schema (SET search_path) or database (USE) mid-
+		// batch, so an unqualified write's schema/table identity is unreliable; such a batch is
+		// authorized at the DATABASE level only. Crucially that database-level check still runs
+		// against each TARGET database, not the request database: a qualified cross-database write
+		// (e.g. MySQL `INSERT INTO other_db.t`) is not rebindable, so a grant on the request
+		// database must not authorize it. SUP-222 / BYT-9698.
 		if perm == permission.SQLDml || perm == permission.SQLDdl {
-			if multiStatement || len(nonEmptyStatements) != 1 {
-				if err := checkDatabaseAccess(perm); err != nil {
-					return err
-				}
-				continue
+			stmtText := ""
+			if i < len(nonEmptyStatements) {
+				stmtText = nonEmptyStatements[i].Text
 			}
-			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[0].Text, requestSchema)
+			targets, err := s.resolveWriteTargets(ctx, instance, database, stmtText, requestSchema)
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve write targets: %v", err))
 			}
 			if len(targets) == 0 {
+				// No resolvable table target (non-table DDL, unsupported engine, parse failure) →
+				// database-level check on the request database.
 				if err := checkDatabaseAccess(perm); err != nil {
 					return err
 				}
 				continue
 			}
-			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, workspacePolicy.Policy, projectPolicy.Policy)
+			databaseLevelOnly := multiStatement || len(nonEmptyStatements) != 1
+			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
 			if err != nil {
 				return err
 			}
@@ -1758,21 +1762,28 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 // resources that were denied (empty = all authorized). A target whose database is already
 // JIT-granted is skipped.
 //
-// resource.schema_name is asserted ONLY when the target schema is known: an empty schema (the
-// sentinel mapped to "") omits the attribute, so a schema-scoped grant fails closed (CEL errors
-// on the missing attribute → the binding is skipped) while a table-only grant still matches. A
-// present-but-empty value would instead let a negated condition (schema_name != "x") wrongly
-// match.
+// databaseLevelOnly selects the precision of the check. For a single statement it is false and
+// each target is authorized at full per-(schema,table) precision. For a multi-statement batch it
+// is true: an earlier statement can rebind the session's default schema (SET search_path) or
+// database (USE), so per-(schema,table) identity is unreliable and only the TARGET database is
+// authorized (each distinct database once) — schema/table attributes are omitted so a
+// schema/table-scoped grant fails closed, and a denial names the bare database.
+//
+// resource.schema_name (full-precision mode only) is asserted ONLY when the target schema is
+// known: an empty schema (the sentinel mapped to "") omits the attribute, so a schema-scoped
+// grant fails closed (CEL errors on the missing attribute → the binding is skipped) while a
+// table-only grant still matches. A present-but-empty value would instead let a negated condition
+// (schema_name != "x") wrongly match.
 //
 // resource.environment_id is always set, and is resolved PER TARGET database: a cross-database
 // write (e.g. MySQL/MSSQL `INSERT INTO other_db.t`) targets a database that may live in a
 // different environment than the one the editor opened, and resource.database already names that
-// target — copying the request database's environment would let an environment-scoped grant
-// authorize a write into another environment. The request database needs no lookup (the common
-// same-database case); other targets are fetched once and cached, and an unknown target fails
-// closed. The attribute is always present because hasDatabaseAccessRights keeps the environment
-// clause for SQLDml/SQLDdl, so omitting it would reintroduce a "no such attribute" error.
-// SUP-222 / BYT-9698.
+// target — copying the request database's environment (or authorizing against the request
+// database at all) would let a grant on the request database authorize a write into another
+// database/environment. The request database needs no lookup (the common same-database case);
+// other targets are fetched once and cached, and an unknown target fails closed. The attribute is
+// always present because hasDatabaseAccessRights keeps the environment clause for SQLDml/SQLDdl,
+// so omitting it would reintroduce a "no such attribute" error. SUP-222 / BYT-9698.
 func (s *SQLService) authorizeWriteTargets(
 	ctx context.Context,
 	user *store.UserMessage,
@@ -1781,6 +1792,7 @@ func (s *SQLService) authorizeWriteTargets(
 	perm permission.Permission,
 	targets []writeTargetResource,
 	grantedTargets map[string]struct{},
+	databaseLevelOnly bool,
 	iamPolicies ...*storepb.IamPolicy,
 ) ([]string, error) {
 	// One timestamp per request so every target evaluates request.time consistently.
@@ -1791,12 +1803,25 @@ func (s *SQLService) authorizeWriteTargets(
 	if database.EffectiveEnvironmentID != nil {
 		envByDatabase[database.DatabaseName] = *database.EffectiveEnvironmentID
 	}
+	checkedDatabase := map[string]bool{} // databaseLevelOnly: authorize each target database once
 
 	var deniedResources []string
 	for _, t := range targets {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
 		if _, granted := grantedTargets[databaseFullName]; granted {
 			continue
+		}
+		if databaseLevelOnly {
+			if checkedDatabase[t.database] {
+				continue
+			}
+			checkedDatabase[t.database] = true
+		}
+
+		// A denial names the bare database in databaseLevelOnly mode, else the schema/table target.
+		deniedResource := databaseFullName
+		if !databaseLevelOnly {
+			deniedResource = formatWriteTargetResource(databaseFullName, t.schema, t.table)
 		}
 
 		env, known := envByDatabase[t.database]
@@ -1812,7 +1837,7 @@ func (s *SQLService) authorizeWriteTargets(
 			}
 			if targetDB == nil {
 				// Unknown target database → its environment can't be established → fail closed.
-				deniedResources = append(deniedResources, formatWriteTargetResource(databaseFullName, t.schema, t.table))
+				deniedResources = append(deniedResources, deniedResource)
 				continue
 			}
 			if targetDB.EffectiveEnvironmentID != nil {
@@ -1824,18 +1849,20 @@ func (s *SQLService) authorizeWriteTargets(
 		attributes := map[string]any{
 			common.CELAttributeRequestTime:           requestTime,
 			common.CELAttributeResourceDatabase:      databaseFullName,
-			common.CELAttributeResourceTableName:     t.table,
 			common.CELAttributeResourceEnvironmentID: env,
 		}
-		if t.schema != "" {
-			attributes[common.CELAttributeResourceSchemaName] = t.schema
+		if !databaseLevelOnly {
+			attributes[common.CELAttributeResourceTableName] = t.table
+			if t.schema != "" {
+				attributes[common.CELAttributeResourceSchemaName] = t.schema
+			}
 		}
 		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for table: %q, error %v", t.table, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for target %q: %v", deniedResource, err))
 		}
 		if !allowed {
-			deniedResources = append(deniedResources, formatWriteTargetResource(databaseFullName, t.schema, t.table))
+			deniedResources = append(deniedResources, deniedResource)
 		}
 	}
 	return deniedResources, nil
