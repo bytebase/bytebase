@@ -84,6 +84,55 @@ describe("Dialog", () => {
     });
   });
 
+  test("pads the popup by default and lets callers override sizing", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <>
+          <Dialog open>
+            <DialogContent className="default-surface">Default</DialogContent>
+          </Dialog>
+          <Dialog open>
+            <DialogContent className="custom-surface max-w-md p-0">
+              Custom
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    });
+
+    const overlayRoot = document.getElementById("bb-react-layer-overlay");
+    const surfaces = Array.from(
+      overlayRoot?.querySelectorAll(".default-surface, .custom-surface") ?? []
+    ) as HTMLElement[];
+    const defaultSurface = surfaces.find((el) =>
+      el.className.includes("default-surface")
+    );
+    const customSurface = surfaces.find((el) =>
+      el.className.includes("custom-surface")
+    );
+
+    // Safe defaults: bare <DialogContent> must be padded.
+    expect(defaultSurface?.className).toContain("p-6");
+
+    // Caller overrides must fully replace the defaults via tailwind-merge.
+    // The default max-w must be a single non-responsive utility — a 2xl:
+    // variant would survive the merge and clobber the caller's max-w-* on
+    // wide screens (BYT-9699).
+    expect(customSurface?.className).toContain("max-w-md");
+    expect(customSurface?.className).toContain("p-0");
+    expect(customSurface?.className).not.toContain("p-6");
+    expect(customSurface?.className).not.toMatch(/2xl:max-w/);
+    expect(customSurface?.className).not.toContain("max-w-[max(");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("keeps the agent layer visible to assistive tech when an app dialog opens", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

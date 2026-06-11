@@ -2,12 +2,14 @@ import { EllipsisVertical, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import { Button } from "@/react/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
+import { Button } from "@/react/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,33 +125,33 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
         onDelete={setDeleteTarget}
       />
 
-      <Dialog
+      <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
       >
-        <DialogContent>
-          <DialogTitle>
+        <AlertDialogContent>
+          <AlertDialogTitle>
             {deleteTarget
               ? t("project.webhook.deletion.confirm-title", {
                   title: deleteTarget.title,
                 })
               : ""}
-          </DialogTitle>
-          <p className="text-sm text-control-light">
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t("common.cannot-undo-this-action")}
-          </p>
-          <div className="flex justify-end gap-x-2 mt-4">
+          </AlertDialogDescription>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               {t("common.delete")}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

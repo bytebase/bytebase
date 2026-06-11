@@ -485,7 +485,7 @@ export function DataExportButton({
       {viewMode === "DROPDOWN" && supportPassword && (
         <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
           <DialogContent className="w-[26rem] max-w-[calc(100vw-4rem)]">
-            <div className="flex flex-col gap-y-3 p-6">
+            <div className="flex flex-col gap-y-3">
               <DialogTitle>{t("export-data.password-optional")}</DialogTitle>
               <p className="text-sm text-control-light">
                 {t("export-data.password-info")}

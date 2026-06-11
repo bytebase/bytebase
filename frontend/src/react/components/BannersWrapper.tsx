@@ -299,7 +299,7 @@ function BannerUpgradeSubscription() {
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-lg">
-          <div className="p-6">
+          <div>
             <DialogTitle className="mb-4 text-base font-medium">
               {t("subscription.upgrade-now")}?
             </DialogTitle>
