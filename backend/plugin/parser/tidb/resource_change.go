@@ -88,7 +88,11 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 		)
 	case *tidbast.DropTableStmt:
 		if node.IsView {
-			// View tracking removed - not used in risk/approval calculations
+			// Views aren't tracked as changed tables (risk/approval doesn't use them), but a
+			// qualified cross-database DROP VIEW is gated by its target database. SUP-222.
+			for _, name := range node.Tables {
+				addTiDBObjectDatabase(changedResources, name)
+			}
 			return nil
 		}
 		for _, name := range node.Tables {

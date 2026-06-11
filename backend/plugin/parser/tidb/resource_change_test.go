@@ -87,6 +87,7 @@ func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
 	// Qualified non-table object DDL (view/sequence) → a database-only target on the qualifier.
 	for _, statement := range []string{
 		`CREATE VIEW other_db.v AS SELECT 1;`,
+		`DROP VIEW other_db.v;`,
 		`CREATE SEQUENCE other_db.s;`,
 	} {
 		stmts, err := base.ParseStatements(storepb.Engine_TIDB, statement)

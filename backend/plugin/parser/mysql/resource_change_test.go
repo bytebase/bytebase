@@ -86,6 +86,7 @@ func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
 	for _, statement := range []string{
 		`CREATE VIEW other_db.v AS SELECT 1;`,
 		`DROP VIEW other_db.v;`,
+		`ALTER PROCEDURE other_db.p COMMENT 'c';`,
 	} {
 		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, statement)
 		require.NoError(t, err, statement)

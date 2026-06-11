@@ -148,6 +148,8 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			}
 		case *ast.CreateFunctionStmt:
 			addObjectDatabase(n.Name)
+		case *ast.AlterRoutineStmt:
+			addObjectDatabase(n.Name)
 		case *ast.DropRoutineStmt:
 			addObjectDatabase(n.Name)
 		case *ast.DropTriggerStmt:

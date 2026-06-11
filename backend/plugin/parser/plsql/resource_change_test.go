@@ -212,6 +212,9 @@ func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
 		`CREATE VIEW OTHER.V AS SELECT * FROM T;`,
 		`CREATE SEQUENCE OTHER.S;`,
 		`CREATE SYNONYM OTHER.SYN FOR T;`,
+		`DROP PACKAGE OTHER.PKG;`,
+		`DROP TYPE OTHER.TY;`,
+		`ALTER PACKAGE OTHER.PKG COMPILE;`,
 	} {
 		stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
 		require.NoError(t, err, statement)

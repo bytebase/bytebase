@@ -72,7 +72,9 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 		}
 		switch n.ObjectType {
 		case oracleast.OBJECT_VIEW, oracleast.OBJECT_SEQUENCE, oracleast.OBJECT_SYNONYM,
-			oracleast.OBJECT_PROCEDURE, oracleast.OBJECT_FUNCTION, oracleast.OBJECT_TRIGGER:
+			oracleast.OBJECT_PROCEDURE, oracleast.OBJECT_FUNCTION, oracleast.OBJECT_TRIGGER,
+			oracleast.OBJECT_PACKAGE, oracleast.OBJECT_PACKAGE_BODY, oracleast.OBJECT_TYPE,
+			oracleast.OBJECT_TYPE_BODY, oracleast.OBJECT_MATERIALIZED_VIEW, oracleast.OBJECT_CLUSTER:
 			for _, name := range omniObjectNameList(n.Names) {
 				e.addObjectDatabase(name)
 			}
@@ -125,6 +127,18 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 	case *oracleast.AlterTriggerStmt:
 		e.addObjectDatabase(n.Name)
 	case *oracleast.AlterSynonymStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreatePackageStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterPackageStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateTypeStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterTypeStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateClusterStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterMaterializedViewStmt:
 		e.addObjectDatabase(n.Name)
 	default:
 	}
