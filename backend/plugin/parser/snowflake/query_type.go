@@ -1,8 +1,6 @@
 package snowflake
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -54,6 +52,10 @@ func getQueryType(node ast.Node) base.QueryType {
 		return base.DML
 
 	// SHOW / DESCRIBE read system metadata.
+	case *ast.ExplainStmt:
+		// EXPLAIN is read-only and data-returning regardless of the inner
+		// statement (legacy other_command.explain never recursed into it).
+		return base.Explain
 	case *ast.ShowStmt, *ast.DescribeStmt:
 		return base.SelectInfoSchema
 
@@ -78,54 +80,4 @@ func getQueryType(node ast.Node) base.QueryType {
 	// Everything else (CREATE/ALTER/DROP/UNDROP/TRUNCATE/GRANT/REVOKE/... and any
 	// other recognized statement) is DDL — the safe upper bound for ACL.
 	return base.DDL
-}
-
-// isExplainStatement reports whether the given single-statement text is an
-// EXPLAIN statement. omni's Snowflake parser does not yet support EXPLAIN
-// (parser.Parse returns "EXPLAIN statement parsing is not yet supported"), so
-// EXPLAIN is detected lexically here, exactly mirroring the legacy listener,
-// which treated any other_command.explain as a read-only, data-returning
-// statement WITHOUT inspecting the inner statement.
-//
-// The check skips leading whitespace and a leading line/block comment, then
-// matches a leading EXPLAIN keyword on a word boundary, case-insensitively.
-const sqlWhitespaceCutset = " \t\r\n\f\v"
-
-func isExplainStatement(text string) bool {
-	return strings.EqualFold(leadingKeyword(text), "EXPLAIN")
-}
-
-// leadingKeyword returns the first identifier-like token of the statement text
-// (uppercased callers handle case), after skipping leading whitespace and a
-// single leading -- line comment or /* */ block comment. It is intentionally
-// minimal: it only needs to recognize the leading EXPLAIN keyword.
-func leadingKeyword(text string) string {
-	s := strings.TrimLeft(text, sqlWhitespaceCutset)
-	for {
-		switch {
-		case strings.HasPrefix(s, "--"):
-			if idx := strings.IndexByte(s, '\n'); idx >= 0 {
-				s = strings.TrimLeft(s[idx+1:], sqlWhitespaceCutset)
-				continue
-			}
-			return ""
-		case strings.HasPrefix(s, "/*"):
-			if idx := strings.Index(s, "*/"); idx >= 0 {
-				s = strings.TrimLeft(s[idx+2:], sqlWhitespaceCutset)
-				continue
-			}
-			return ""
-		}
-		break
-	}
-	end := 0
-	for end < len(s) {
-		c := s[end]
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' {
-			end++
-			continue
-		}
-		break
-	}
-	return s[:end]
 }

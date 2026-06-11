@@ -46,18 +46,6 @@ func validateQuery(statement string) (bool, bool, error) {
 			continue
 		}
 
-		// EXPLAIN: read-only and data-returning, regardless of the inner
-		// statement. Matches the legacy other_command.explain branch, which never
-		// recursed into the explained statement. We detect EXPLAIN lexically and
-		// short-circuit BEFORE parser.Parse so that "EXPLAIN <anything>" is accepted
-		// exactly as legacy did — including an EXPLAIN whose inner statement omni
-		// doesn't model (which would otherwise surface as a parse error here).
-		// (omni DOES parse EXPLAIN; the lexical short-circuit is for legacy parity,
-		// not a parser limitation.)
-		if isExplainStatement(stmt.Text) {
-			continue
-		}
-
 		file, perr := parser.Parse(stmt.Text)
 		if perr != nil {
 			return false, false, perr
@@ -103,7 +91,7 @@ func classifyForEditor(qt base.QueryType, node ast.Node) (bool, bool) {
 		return true, true
 	}
 	switch qt {
-	case base.Select, base.SelectInfoSchema:
+	case base.Select, base.SelectInfoSchema, base.Explain:
 		return true, false
 	default:
 		return false, false

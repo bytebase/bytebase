@@ -55,16 +55,12 @@ func TestDiagnose(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			// DIVERGENCE (omni vs legacy ANTLR): the legacy parser consumed the
-			// whole statement to EOF and reported a syntax error on the stray
-			// "FFROM" token. The omni best-effort parser parses the valid
-			// "SELECT *" prefix and does not flag trailing unconsumed tokens
-			// within a single statement, so NO diagnostic is produced here. This
-			// is a deliberate behavioral difference, documented for review; we do
-			// not assert legacy behavior the omni parser does not have.
-			name:      "Trailing garbage token after valid prefix (omni accepts)",
+			// Resolved divergence: omni's strict parse (post-#303) now rejects
+			// unconsumed trailing tokens, matching the legacy ANTLR behavior —
+			// the stray "FFROM" token produces a syntax diagnostic.
+			name:      "Trailing garbage token after valid prefix",
 			sql:       "SELECT * FFROM users",
-			expectErr: false,
+			expectErr: true,
 		},
 		{
 			// DIVERGENCE (omni vs legacy ANTLR): empty / whitespace-only input is
