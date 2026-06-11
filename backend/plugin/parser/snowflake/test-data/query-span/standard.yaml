@@ -1196,3 +1196,61 @@
           table: T1
           column: ""
     predicatecolumns: []
+- description: JOIN members in a derived table do not leak into the outer scope (stale-alias lookup must fail, not resolve)
+  statement: SELECT D.A, T3.C FROM (SELECT T1.A FROM T1 JOIN T2 ON T1.ID = T2.ID) D, T3;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {"name": "T1", "columns": [{"name": "ID"}, {"name": "A"}]},
+            {"name": "T2", "columns": [{"name": "ID"}, {"name": "B"}]},
+            {"name": "T3", "columns": [{"name": "C"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: C
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T3
+          column: ""
+    predicatecolumns: []

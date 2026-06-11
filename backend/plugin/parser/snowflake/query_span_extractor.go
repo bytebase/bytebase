@@ -451,18 +451,22 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStm
 	}
 
 	if len(ctx.From) > 0 {
+		// Snapshot BEFORE extracting the FROM scope: extractTableSourceFromFrom
+		// appends JOIN member relations to q.joinMemberSources as it walks join
+		// trees, so a later snapshot would bake those into the restore point and
+		// leak them into sibling/outer scopes.
+		originalFromFieldsLength := len(q.tableSourcesFrom)
+		originalJoinMemberLength := len(q.joinMemberSources)
+		defer func() {
+			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldsLength]
+			q.joinMemberSources = q.joinMemberSources[:originalJoinMemberLength]
+		}()
 		tableSourceFrom, err := q.extractTableSourceFromFrom(ctx.From)
 		if err != nil {
 			return nil, err
 		}
 		if tableSourceFrom != nil {
-			originalFromFieldsLength := len(q.tableSourcesFrom)
-			originalJoinMemberLength := len(q.joinMemberSources)
 			q.tableSourcesFrom = append(q.tableSourcesFrom, tableSourceFrom)
-			defer func() {
-				q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldsLength]
-				q.joinMemberSources = q.joinMemberSources[:originalJoinMemberLength]
-			}()
 		}
 	}
 
@@ -761,6 +765,7 @@ func filterExcludedColumns(columns []base.QuerySpanResult, exclude []ast.Ident) 
 // collapse into an unnamed pseudo-table.
 func (q *querySpanExtractor) extractTableSourceFromFrom(froms []ast.Node) (base.TableSource, error) {
 	var result base.TableSource
+	merged := false
 	for _, item := range froms {
 		tableSource, err := q.extractTableSourceFromItem(item)
 		if err != nil {
@@ -773,6 +778,15 @@ func (q *querySpanExtractor) extractTableSourceFromFrom(froms []ast.Node) (base.
 			result = tableSource
 			continue
 		}
+		// Comma-list FROM items merge into one unnamed scope for positional/star
+		// purposes; record each named item in joinMemberSources so qualified
+		// references (alias.col, table.col) keep resolving — the same fallback
+		// JOIN trees use.
+		if !merged {
+			q.joinMemberSources = append(q.joinMemberSources, result)
+			merged = true
+		}
+		q.joinMemberSources = append(q.joinMemberSources, tableSource)
 		result = &base.PseudoTable{
 			Name:    "",
 			Columns: append(result.GetQuerySpanResult(), tableSource.GetQuerySpanResult()...),
