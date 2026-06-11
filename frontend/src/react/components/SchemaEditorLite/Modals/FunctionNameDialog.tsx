@@ -79,7 +79,7 @@ export function FunctionNameDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-full max-w-md">
         <DialogTitle>
           {isCreateMode
             ? t("schema-editor.actions.create-function")
