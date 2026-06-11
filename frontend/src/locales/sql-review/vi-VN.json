@@ -712,5 +712,9 @@
     "bb-sql-review-prod-desc": "Chính sách toàn diện, nơi bạn có sự bảo vệ và các phương pháp tốt nhất cho cơ sở dữ liệu.",
     "bb-sql-review-sample": "Mẫu Ví dụ",
     "bb-sql-review-sample-desc": "Một mẫu tối thiểu với bảo vệ DROP và không cho phép cột nullable."
+  },
+  "validation": {
+    "rule-required": "Chọn ít nhất một quy tắc.",
+    "string-array-required": "Thêm ít nhất một giá trị cho {{rule}}."
   }
 }

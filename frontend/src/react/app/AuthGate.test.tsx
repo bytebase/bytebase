@@ -72,7 +72,7 @@ vi.mock("@/react/components/auth/InactiveRemindModal", () => ({
 
 vi.mock("@/react/router/guard", () => ({
   buildSigninRedirectQuery: mocks.buildSigninRedirectQuery,
-  isAuthRelatedRoute: () => false,
+  isAuthRelatedRoute: (name: string) => name.startsWith("auth."),
 }));
 
 vi.mock("@/react/router/handles", () => ({
@@ -234,6 +234,39 @@ describe("AuthGate", () => {
 
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(container.querySelector("[data-testid='page']")).not.toBeNull();
+  });
+
+  test("keeps auth-route children mounted while post-login workspace data loads", async () => {
+    mocks.session.isLoggedIn = false;
+    mocks.routeName = "auth.oauth.callback";
+    mocks.location.pathname = "/oauth/callback";
+    // Hold the post-login data load open so the gate stays in its loading
+    // phase for the rest of the test (once: it must not leak into later tests
+    // — clearAllMocks doesn't restore implementations).
+    mocks.loadSubscription.mockImplementationOnce(() => new Promise(() => {}));
+
+    await act(async () => {
+      root.render(
+        <AuthGate>
+          <div data-testid="page">Page</div>
+        </AuthGate>
+      );
+    });
+
+    expect(container.querySelector("[data-testid='page']")).not.toBeNull();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+
+    // The OAuth callback page completes login() mid-page: the session flips
+    // without a navigation. The callback page must stay mounted — unmounting
+    // would discard its in-flight UI and re-process the single-use OAuth
+    // state token on remount.
+    await act(async () => {
+      mocks.session.isLoggedIn = true;
+      useAppStore.setState({});
+    });
+
+    expect(container.querySelector("[data-testid='page']")).not.toBeNull();
+    expect(container.querySelector("[role='status']")).toBeNull();
   });
 
   test("refreshes permission data in the background during session polling", async () => {

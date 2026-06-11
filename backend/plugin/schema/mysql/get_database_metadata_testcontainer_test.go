@@ -531,8 +531,9 @@ CREATE TABLE json_features (
 			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
-			// Get metadata from parser
-			parsedMetadata, err := GetDatabaseMetadata(tc.ddl)
+			// Get metadata from the omni parser, the function registered for
+			// the production diff path (see get_database_metadata_omni.go).
+			parsedMetadata, err := GetDatabaseMetadataOmni(tc.ddl)
 			require.NoError(t, err)
 
 			// Compare metadata
@@ -845,9 +846,10 @@ func normalizeCheckExpression(expr string) string {
 	expr = strings.ReplaceAll(expr, "`", "")
 	expr = strings.ReplaceAll(expr, " ", "")
 
-	// Remove character set prefixes like _utf8mb4
-	re := regexp.MustCompile(`_[a-zA-Z0-9]+\\`)
-	expr = re.ReplaceAllString(expr, "")
+	// Remove character set introducers attached to string literals, like
+	// _utf8mb4'...' (synced metadata) or _utf8mb4\'...\' (legacy escaped form)
+	re := regexp.MustCompile(`_[a-zA-Z0-9]+\\?'`)
+	expr = re.ReplaceAllString(expr, "'")
 
 	// Remove escaped quotes
 	expr = strings.ReplaceAll(expr, `\'`, `'`)

@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject, redirect } from "react-router-dom";
 import { BodyLayout } from "@/react/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/react/app/layouts/DashboardLayout";
+import { RouteErrorPage } from "@/react/app/RouteErrorPage";
 import { rootGuard } from "@/react/router/guard";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -1010,22 +1011,32 @@ export const dashboardRoutes: RouteObject[] = [
         path: "",
         element: <BodyLayout />,
         children: [
-          ...workspaceLevelRoutes,
-          ...workspaceSettingRoutes,
-          ...environmentV1Routes,
-          ...instanceRoutes,
-          ...projectV1Routes,
-          // Workspace "My Issues" — lives under BodyLayout for the shared
-          // dashboard header, but renders as a standalone full-width page
-          // (header with logo, no sidebar): BodyLayout switches it to the
-          // `issues` shell variant.
           {
-            path: "issues",
-            handle: { name: WORKSPACE_ROUTE_MY_ISSUES },
-            lazy: lazyPage(
-              () => import("@/react/pages/workspace/MyIssuesPage"),
-              (m) => m.MyIssuesPage
-            ),
+            // Layout-seam error boundary (pathless): a crashing page
+            // renders the recovery panel inside BodyLayout's content
+            // area, keeping the sidebar + header alive. Placing the
+            // errorElement on the BodyLayout route itself would replace
+            // the whole shell.
+            errorElement: <RouteErrorPage inline />,
+            children: [
+              ...workspaceLevelRoutes,
+              ...workspaceSettingRoutes,
+              ...environmentV1Routes,
+              ...instanceRoutes,
+              ...projectV1Routes,
+              // Workspace "My Issues" — lives under BodyLayout for the
+              // shared dashboard header, but renders as a standalone
+              // full-width page (header with logo, no sidebar):
+              // BodyLayout switches it to the `issues` shell variant.
+              {
+                path: "issues",
+                handle: { name: WORKSPACE_ROUTE_MY_ISSUES },
+                lazy: lazyPage(
+                  () => import("@/react/pages/workspace/MyIssuesPage"),
+                  (m) => m.MyIssuesPage
+                ),
+              },
+            ],
           },
         ],
       },

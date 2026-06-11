@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { debounce, head, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +16,7 @@ import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_QUERY_HISTORY_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -31,6 +33,7 @@ import {
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
+  getDateForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -60,7 +63,21 @@ const SQL_EDITOR_MODULES = new Set<string>([
   SQL_EDITOR_INSTANCE_MODULE,
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
+  SQL_EDITOR_QUERY_HISTORY_MODULE,
 ]);
+
+// Fingerprint of a query-history draft tab's seeded statement + connection
+// target. The "Opened from link" banner is dropped once this changes (edit,
+// connection switch, or tab close).
+const linkedDraftFingerprint = (tab: {
+  statement: string;
+  connection: { instance: string; database: string };
+}) =>
+  JSON.stringify([
+    tab.statement,
+    tab.connection.instance,
+    tab.connection.database,
+  ]);
 
 const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
   "SCHEMA",
@@ -253,7 +270,90 @@ export function SQLEditorRouteShell() {
     return true;
   };
 
+  // Hydrates a query-history deep link
+  // (`/sql-editor/projects/:project/queryHistories/:queryHistory`): fetches the
+  // history and opens its statement in a new draft tab, seeding the connection
+  // from the history's database when it is still accessible in the project. The
+  // queryHistory URL is a one-shot entry point — once the draft tab is seeded,
+  // the reactive `syncURL` effect rewrites the URL to the resulting
+  // database/project route.
+  const prepareQueryHistory = async () => {
+    if (route.name !== SQL_EDITOR_QUERY_HISTORY_MODULE) return false;
+    const projectId = route.params.project;
+    const queryHistoryId = route.params.queryHistory;
+    if (typeof projectId !== "string" || !projectId) return false;
+    if (typeof queryHistoryId !== "string" || !queryHistoryId) return false;
+
+    const projectName = `projects/${projectId}`;
+    await maybeSwitchProject(projectName);
+
+    const historyName = `${projectName}/queryHistories/${queryHistoryId}`;
+    const history = await useSQLEditorStore
+      .getState()
+      .fetchQueryHistory(historyName)
+      .catch(() => undefined);
+    if (!history) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.query-history-not-found"),
+      });
+      return false;
+    }
+
+    // Resolve the connection from the history's database. Leave it empty (a
+    // statement-only draft) and warn when the database is gone or no longer
+    // belongs to this project.
+    let connection: { instance: string; database: string } | undefined;
+    if (isValidDatabaseName(history.database)) {
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(history.database);
+      if (
+        isValidDatabaseName(database.name) &&
+        database.project === projectName
+      ) {
+        const { instance } = extractDatabaseResourceName(database.name);
+        connection = { instance, database: database.name };
+      } else {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("sql-editor.unable-to-connect-database", {
+            name: history.database,
+          }),
+        });
+      }
+    }
+
+    const title = `Query history at ${dayjs(
+      getDateForPbTimestampProtoEs(history.createTime)
+    ).format("YYYY-MM-DD HH:mm:ss")}`;
+    const tab = getSQLEditorTabsState().addTab(
+      {
+        title,
+        statement: history.statement,
+        ...(connection ? { connection } : {}),
+      },
+      /* beside */ true
+    );
+
+    // Surface the history in the sidebar: remember it (and its draft tab's
+    // baseline) for the "Opened from link" section and force the HISTORY panel
+    // open. `setAsidePanelTab` here wins over the localStorage restore that the
+    // `project-context-ready` event schedules (`restoreLastVisitedSidebarTab`
+    // also prefers HISTORY while a linked history is set, covering either
+    // ordering).
+    useSQLEditorStore.getState().setLinkedQueryHistory(history, {
+      tabId: tab.id,
+      baseline: linkedDraftFingerprint(tab),
+    });
+    setAsidePanelTab("HISTORY");
+    return true;
+  };
+
   const initializeConnectionFromQuery = async () => {
+    if (await prepareQueryHistory()) return;
     if (await prepareSheet()) return;
     if (await prepareConnectionParams()) return;
   };
@@ -401,6 +501,44 @@ export function SQLEditorRouteShell() {
     await navigate.replace({ name: SQL_EDITOR_HOME_MODULE });
   };
 
+  // ---- dismiss "Opened from link" when its draft tab diverges -----------
+
+  const linkedQueryHistory = useSQLEditorStore((s) => s.linkedQueryHistory);
+  const linkedQueryHistoryTabId = useSQLEditorStore(
+    (s) => s.linkedQueryHistoryTabId
+  );
+  const linkedQueryHistoryBaseline = useSQLEditorStore(
+    (s) => s.linkedQueryHistoryBaseline
+  );
+  const linkedTabFingerprint = useSQLEditorTabState((s) => {
+    if (!linkedQueryHistoryTabId) return undefined;
+    const tab = s.tabsById.get(linkedQueryHistoryTabId);
+    return tab ? linkedDraftFingerprint(tab) : undefined;
+  });
+  useEffect(() => {
+    if (!linkedQueryHistory || !linkedQueryHistoryBaseline) return;
+    // Drop the banner once the seeded draft diverges from its baseline — the
+    // user edited the statement, switched the connection, or closed the tab
+    // (fingerprint becomes undefined). It matches at seed time, so this won't
+    // fire on load.
+    if (linkedTabFingerprint !== linkedQueryHistoryBaseline) {
+      useSQLEditorStore.getState().setLinkedQueryHistory(undefined);
+    }
+  }, [linkedQueryHistory, linkedQueryHistoryBaseline, linkedTabFingerprint]);
+
+  // Running a query consumes the deep-link context — drop the "Opened from
+  // link" banner on the first execution (worksheet or terminal).
+  useEffect(() => {
+    const off = sqlEditorEvents.on("query-executed", () => {
+      if (useSQLEditorStore.getState().linkedQueryHistory) {
+        useSQLEditorStore.getState().setLinkedQueryHistory(undefined);
+      }
+    });
+    return () => {
+      off();
+    };
+  }, []);
+
   // ---- sidebar tab restore (after project context ready) ----------------
 
   useEffect(() => {
@@ -415,6 +553,14 @@ export function SQLEditorRouteShell() {
 
   const sidebarRestoredRef = useRef(false);
   const restoreLastVisitedSidebarTab = () => {
+    // A query-history deep link forces the HISTORY panel open, ahead of the
+    // `?panel=` override and the localStorage default.
+    if (useSQLEditorStore.getState().linkedQueryHistory) {
+      setAsidePanelTab("HISTORY");
+      sidebarRestoredRef.current = true;
+      return;
+    }
+
     let stored: AsidePanelTab = "WORKSHEET";
     try {
       const raw = window.localStorage.getItem(

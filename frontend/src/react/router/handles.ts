@@ -60,6 +60,7 @@ export const SQL_EDITOR_PROJECT_MODULE = "sql-editor.project";
 export const SQL_EDITOR_INSTANCE_MODULE = "sql-editor.instance";
 export const SQL_EDITOR_DATABASE_MODULE = "sql-editor.database";
 export const SQL_EDITOR_WORKSHEET_MODULE = "sql-editor.worksheet";
+export const SQL_EDITOR_QUERY_HISTORY_MODULE = "sql-editor.query-history";
 
 // --- dashboard/workspaceSetting.ts ---
 export const SETTING_ROUTE = "setting";

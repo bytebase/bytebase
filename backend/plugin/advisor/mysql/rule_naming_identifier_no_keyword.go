@@ -93,8 +93,8 @@ func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStm
 				r.checkIdentifierAtLine(col.Name, r.LocToLine(n.Loc))
 			}
 		case ast.ATRenameTable:
-			if cmd.NewName != "" {
-				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
+			if newTableName := omniRenameTableName(cmd); newTableName != "" {
+				r.checkIdentifierAtLine(newTableName, r.LocToLine(n.Loc))
 			}
 		case ast.ATRenameColumn:
 			if cmd.NewName != "" {

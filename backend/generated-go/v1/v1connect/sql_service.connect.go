@@ -40,6 +40,9 @@ const (
 	// SQLServiceSearchQueryHistoriesProcedure is the fully-qualified name of the SQLService's
 	// SearchQueryHistories RPC.
 	SQLServiceSearchQueryHistoriesProcedure = "/bytebase.v1.SQLService/SearchQueryHistories"
+	// SQLServiceGetQueryHistoryProcedure is the fully-qualified name of the SQLService's
+	// GetQueryHistory RPC.
+	SQLServiceGetQueryHistoryProcedure = "/bytebase.v1.SQLService/GetQueryHistory"
 	// SQLServiceExportProcedure is the fully-qualified name of the SQLService's Export RPC.
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
 	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
@@ -59,6 +62,9 @@ type SQLServiceClient interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
+	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
@@ -99,6 +105,12 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 			connect.WithClientOptions(opts...),
 		),
+		getQueryHistory: connect.NewClient[v1.GetQueryHistoryRequest, v1.QueryHistory](
+			httpClient,
+			baseURL+SQLServiceGetQueryHistoryProcedure,
+			connect.WithSchema(sQLServiceMethods.ByName("GetQueryHistory")),
+			connect.WithClientOptions(opts...),
+		),
 		export: connect.NewClient[v1.ExportRequest, v1.ExportResponse](
 			httpClient,
 			baseURL+SQLServiceExportProcedure,
@@ -125,6 +137,7 @@ type sQLServiceClient struct {
 	query                *connect.Client[v1.QueryRequest, v1.QueryResponse]
 	adminExecute         *connect.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
+	getQueryHistory      *connect.Client[v1.GetQueryHistoryRequest, v1.QueryHistory]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
 	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
 	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
@@ -143,6 +156,11 @@ func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect.BidiStream
 // SearchQueryHistories calls bytebase.v1.SQLService.SearchQueryHistories.
 func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return c.searchQueryHistories.CallUnary(ctx, req)
+}
+
+// GetQueryHistory calls bytebase.v1.SQLService.GetQueryHistory.
+func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, req *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {
+	return c.getQueryHistory.CallUnary(ctx, req)
 }
 
 // Export calls bytebase.v1.SQLService.Export.
@@ -171,6 +189,9 @@ type SQLServiceHandler interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
+	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
@@ -207,6 +228,12 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sQLServiceGetQueryHistoryHandler := connect.NewUnaryHandler(
+		SQLServiceGetQueryHistoryProcedure,
+		svc.GetQueryHistory,
+		connect.WithSchema(sQLServiceMethods.ByName("GetQueryHistory")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sQLServiceExportHandler := connect.NewUnaryHandler(
 		SQLServiceExportProcedure,
 		svc.Export,
@@ -233,6 +260,8 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceAdminExecuteHandler.ServeHTTP(w, r)
 		case SQLServiceSearchQueryHistoriesProcedure:
 			sQLServiceSearchQueryHistoriesHandler.ServeHTTP(w, r)
+		case SQLServiceGetQueryHistoryProcedure:
+			sQLServiceGetQueryHistoryHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
 			sQLServiceExportHandler.ServeHTTP(w, r)
 		case SQLServiceDiffMetadataProcedure:
@@ -258,6 +287,10 @@ func (UnimplementedSQLServiceHandler) AdminExecute(context.Context, *connect.Bid
 
 func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
+}
+
+func (UnimplementedSQLServiceHandler) GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.GetQueryHistory is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {

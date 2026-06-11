@@ -5565,6 +5565,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ExportResponse'
+  /bytebase.v1.SQLService/GetQueryHistory:
+    post:
+      tags:
+        - bytebase.v1.SQLService
+      summary: GetQueryHistory
+      description: |-
+        GetQueryHistory gets a single query history for the caller.
+         Permissions required: None (only returns the caller's own query history)
+      operationId: bytebase.v1.SQLService.GetQueryHistory
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetQueryHistoryRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.QueryHistory'
   /bytebase.v1.SQLService/Query:
     post:
       tags:
@@ -11854,6 +11892,17 @@ components:
             The name of the project to retrieve.
              Format: projects/{project}
       title: GetProjectRequest
+      additionalProperties: false
+    bytebase.v1.GetQueryHistoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the query history to retrieve.
+             Format: projects/{project}/queryHistories/{id}
+      title: GetQueryHistoryRequest
       additionalProperties: false
     bytebase.v1.GetReleaseRequest:
       type: object

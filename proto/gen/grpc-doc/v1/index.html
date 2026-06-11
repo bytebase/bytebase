@@ -1068,6 +1068,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetQueryHistoryRequest"><span class="badge">M</span>GetQueryHistoryRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.MaskingReason"><span class="badge">M</span>MaskingReason</a>
                 </li>
               
@@ -13604,6 +13608,31 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
 
         
       
+        <h3 id="bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the query history to retrieve.
+Format: projects/{project}/queryHistories/{id} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.MaskingReason">MaskingReason</h3>
         <p></p>
 
@@ -14803,6 +14832,14 @@ Permissions required: None (only returns caller&#39;s own query histories)</p></
               </tr>
             
               <tr>
+                <td>GetQueryHistory</td>
+                <td><a href="#bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</a></td>
+                <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                <td><p>GetQueryHistory gets a single query history for the caller.
+Permissions required: None (only returns the caller&#39;s own query history)</p></td>
+              </tr>
+            
+              <tr>
                 <td>Export</td>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
@@ -14871,6 +14908,16 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
                 <td>POST</td>
                 <td>/v1/queryHistories:search</td>
                 <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetQueryHistory</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/queryHistories/*}</td>
+                <td></td>
               </tr>
               
             

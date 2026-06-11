@@ -218,6 +218,16 @@ func omniColumnName(cmd *ast.AlterTableCmd) string {
 	return cmd.Name
 }
 
+func omniRenameTableName(cmd *ast.AlterTableCmd) string {
+	if cmd == nil || cmd.Type != ast.ATRenameTable {
+		return ""
+	}
+	if cmd.NewTable != nil {
+		return cmd.NewTable.Name
+	}
+	return cmd.NewName
+}
+
 // omniIsPrimaryKey checks if a column has a PRIMARY KEY constraint.
 func omniIsPrimaryKey(col *ast.ColumnDef) bool {
 	if col == nil {

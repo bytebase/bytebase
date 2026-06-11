@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
+      "continue-with-email": "Tiếp tục bằng email",
+      "continue-with-idp": "Tiếp tục bằng {{idp}}",
       "email-code-tab": "Mã qua email",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
@@ -150,8 +152,10 @@
       "new-user": "Mới sử dụng Bytebase?",
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",
-      "send-code": "Gửi mã",
-      "sign-in-with-idp": "Đăng nhập bằng {{idp}}",
+      "sign-in-or-create": "Đăng nhập hoặc tạo tài khoản của bạn",
+      "sign-in-to-account": "Đăng nhập vào tài khoản của bạn",
+      "standard-tab": "Tiêu chuẩn",
+      "tos": "Bằng cách tiếp tục, bạn đồng ý với <terms>Điều khoản dịch vụ</terms> và <privacy>Chính sách quyền riêng tư</privacy> của chúng tôi.",
       "verification-code": "Mã xác minh"
     },
     "sign-up": {
@@ -390,6 +394,7 @@
     "remaining": "còn lại",
     "remove": "Gỡ bỏ",
     "removed": "LOẠI BỎ",
+    "render-failed": "Không thể hiển thị nội dung này.",
     "reopen": "Mở lại",
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
@@ -838,8 +843,11 @@
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
   },
   "error-page": {
+    "error-details": "Chi tiết lỗi",
     "go-back-home": "Về trang chủ",
-    "not-found": "Không tìm thấy"
+    "not-found": "Không tìm thấy",
+    "something-went-wrong": "Đã xảy ra lỗi",
+    "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo cho quản trị viên."
   },
   "export-center": {
     "data-export": "Xuất dữ liệu",
@@ -2690,6 +2698,7 @@
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "copy-all-rows-as-csv": "Sao chép tất cả các hàng dưới dạng CSV",
     "copy-all-rows-as-sql": "Sao chép tất cả các hàng dưới dạng SQL",
+    "copy-history-link": "Sao chép liên kết lịch sử",
     "copy-name": "Sao chép tên",
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng <action></action> hoặc <button></button>",
     "copy-selected-rows-as-csv": "Sao chép các hàng đã chọn dưới dạng CSV",
@@ -2743,6 +2752,7 @@
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
+    "opened-from-link": "Mở từ liên kết",
     "pending-query": "Đang chờ truy vấn",
     "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
@@ -2755,8 +2765,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
+    "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
     "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
+    "recent": "Gần đây",
     "redis-command": {
       "all-nodes": "Tất cả các nút",
       "only-for-cluster": "Chỉ khả dụng cho kết nối cụm",
@@ -2813,6 +2825,7 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",
     "text-format": "Định dạng văn bản",
+    "unable-to-connect-database": "Không thể kết nối đến cơ sở dữ liệu {{name}}",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "vertical-display": "Hiển thị dọc",

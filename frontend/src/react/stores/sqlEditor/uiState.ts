@@ -38,8 +38,17 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
   highlightAccessGrantName: undefined,
   isShowingCode: false,
   aiPanelSize: readAIPanelSize(),
+  linkedQueryHistory: undefined,
+  linkedQueryHistoryTabId: undefined,
+  linkedQueryHistoryBaseline: undefined,
 
   setAsidePanelTab: (tab) => set({ asidePanelTab: tab }),
+  setLinkedQueryHistory: (value, meta) =>
+    set({
+      linkedQueryHistory: value,
+      linkedQueryHistoryTabId: value ? meta?.tabId : undefined,
+      linkedQueryHistoryBaseline: value ? meta?.baseline : undefined,
+    }),
   setShowConnectionPanel: (v) => set({ showConnectionPanel: v }),
   setShowAIPanel: (v) => set({ showAIPanel: v }),
   setPendingInsertAtCaret: (v) => set({ pendingInsertAtCaret: v }),

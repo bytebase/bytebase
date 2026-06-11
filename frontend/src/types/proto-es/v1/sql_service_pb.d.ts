@@ -1202,6 +1202,25 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
 export declare const SearchQueryHistoriesRequestSchema: GenMessage<SearchQueryHistoriesRequest>;
 
 /**
+ * @generated from message bytebase.v1.GetQueryHistoryRequest
+ */
+export declare type GetQueryHistoryRequest = Message<"bytebase.v1.GetQueryHistoryRequest"> & {
+  /**
+   * The name of the query history to retrieve.
+   * Format: projects/{project}/queryHistories/{id}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetQueryHistoryRequest.
+ * Use `create(GetQueryHistoryRequestSchema)` to create a new message.
+ */
+export declare const GetQueryHistoryRequestSchema: GenMessage<GetQueryHistoryRequest>;
+
+/**
  * @generated from message bytebase.v1.SearchQueryHistoriesResponse
  */
 export declare type SearchQueryHistoriesResponse = Message<"bytebase.v1.SearchQueryHistoriesResponse"> & {
@@ -1460,6 +1479,17 @@ export declare const SQLService: GenService<{
     methodKind: "unary";
     input: typeof SearchQueryHistoriesRequestSchema;
     output: typeof SearchQueryHistoriesResponseSchema;
+  },
+  /**
+   * GetQueryHistory gets a single query history for the caller.
+   * Permissions required: None (only returns the caller's own query history)
+   *
+   * @generated from rpc bytebase.v1.SQLService.GetQueryHistory
+   */
+  getQueryHistory: {
+    methodKind: "unary";
+    input: typeof GetQueryHistoryRequestSchema;
+    output: typeof QueryHistorySchema;
   },
   /**
    * Exports query results to a file format.
