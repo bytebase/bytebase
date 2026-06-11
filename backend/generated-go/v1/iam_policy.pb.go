@@ -266,11 +266,15 @@ type Binding struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Support variables:
-	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
-	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
-	// resource.table_name: the table name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
+	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+	// resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+	// resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
 	// resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
+	//
+	// Known limitations of table/schema-scoped DDL/DML grants:
+	// - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary.
+	// - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get).
 	//
 	// For example:
 	// resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
