@@ -4,6 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	parser "github.com/bytebase/omni/snowflake/parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestValidateSQLForEditor(t *testing.T) {
@@ -96,6 +100,25 @@ func TestValidateSQLForEditor(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, test.valid, gotValid, test.statement)
 			require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
+		}
+	}
+}
+
+// TestGetQueryType_CallExecuteAreDML locks the legacy classification of
+// CALL / EXECUTE IMMEDIATE / EXECUTE TASK as DML (procedures can mutate data;
+// the DDL fallback would map them to the wrong ACL bucket).
+func TestGetQueryType_CallExecuteAreDML(t *testing.T) {
+	for _, sql := range []string{
+		"CALL P(1);",
+		"EXECUTE IMMEDIATE 'SELECT 1';",
+		"EXECUTE TASK T1;",
+	} {
+		file, err := parser.Parse(sql)
+		if err != nil {
+			t.Fatalf("parse %q: %v", sql, err)
+		}
+		if got := getQueryType(file.Stmts[0]); got != base.DML {
+			t.Fatalf("getQueryType(%q) = %v, want base.DML", sql, got)
 		}
 	}
 }

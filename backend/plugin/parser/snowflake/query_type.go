@@ -26,17 +26,18 @@ import (
 //   - other_command comment                           → *ast.CommentStmt    → base.DDL
 //   - ddl_command (CREATE/ALTER/DROP/UNDROP/...)       → the *ast.*Stmt set  → base.DDL
 //
+// CALL / EXECUTE IMMEDIATE / EXECUTE TASK classify base.DML and EXPLAIN
+// classifies base.Explain, matching the legacy other_command branches.
+//
 // Everything else (the remaining other_command forms the legacy listener left
 // as base.QueryTypeUnknown — TRUNCATE, GRANT/REVOKE, COMMIT/ROLLBACK, PUT/GET,
-// LIST/REMOVE, UNSET, CALL, ...) defaults to base.DDL: the safe upper bound for
+// LIST/REMOVE, UNSET, ...) defaults to base.DDL: the safe upper bound for
 // access-control purposes, matching the Trino migration's "everything else is
-// DDL" default. The only current consumer is validateQuery, which only
-// distinguishes read-only (Select/SelectInfoSchema) from everything else, so
-// the upper-bound default never relaxes the read-only gate.
+// DDL" default. validateQuery only distinguishes read-only
+// (Select/SelectInfoSchema/Explain) from everything else, so the upper-bound
+// default never relaxes the read-only gate.
 //
-// A nil node yields base.QueryTypeUnknown. omni does not yet emit a node for
-// EXPLAIN or CALL (Parse returns an "... not yet supported" error for those);
-// EXPLAIN is handled at the statement-text level in validateQuery.
+// A nil node yields base.QueryTypeUnknown.
 func getQueryType(node ast.Node) base.QueryType {
 	if node == nil {
 		return base.QueryTypeUnknown
@@ -46,9 +47,13 @@ func getQueryType(node ast.Node) base.QueryType {
 	case *ast.SelectStmt, *ast.SetOperationStmt:
 		return base.Select
 
-	// DML: INSERT (single + multi-table), UPDATE, DELETE, MERGE.
+	// DML: INSERT (single + multi-table), UPDATE, DELETE, MERGE. The legacy
+	// listener also classified CALL / EXECUTE IMMEDIATE / EXECUTE TASK as DML
+	// (other_command branches) — a stored procedure can mutate data, so DML is
+	// the right ACL bucket, not the DDL fallback.
 	case *ast.InsertStmt, *ast.InsertMultiStmt,
-		*ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
+		*ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt,
+		*ast.CallStmt, *ast.ExecuteImmediateStmt, *ast.ExecuteTaskStmt:
 		return base.DML
 
 	// SHOW / DESCRIBE read system metadata.
