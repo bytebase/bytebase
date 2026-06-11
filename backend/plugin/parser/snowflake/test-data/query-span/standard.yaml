@@ -1017,3 +1017,139 @@
           table: T1
           column: ""
     predicatecolumns: []
+- description: SELECT * REPLACE rewires the replaced column's lineage to the replacement expression (cross-column)
+  statement: SELECT * REPLACE (UPPER(B) AS A) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: SELECT * REPLACE with a qualified cross-table expression over a JOIN
+  statement: SELECT * REPLACE (T2.B AS A) FROM T1 JOIN T2 ON T1.ID = T2.ID;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "A"}
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: ID
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: ID
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []

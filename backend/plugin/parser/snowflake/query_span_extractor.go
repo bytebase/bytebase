@@ -36,6 +36,13 @@ type querySpanExtractor struct {
 
 	// tableSourcesFrom is used to record the table sources from the query.
 	tableSourcesFrom []base.TableSource
+
+	// joinMemberSources records the individual relations inside JOIN trees of
+	// the current FROM scope. tableSourcesFrom holds one (unnamed, merged)
+	// pseudo-table per FROM item, so qualified references like T2.B or T2.*
+	// inside a join could not resolve by table name; lookups fall back to this
+	// list. Scoped/truncated together with tableSourcesFrom.
+	joinMemberSources []base.TableSource
 }
 
 func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -438,9 +445,11 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStm
 		}
 		if tableSourceFrom != nil {
 			originalFromFieldsLength := len(q.tableSourcesFrom)
+			originalJoinMemberLength := len(q.joinMemberSources)
 			q.tableSourcesFrom = append(q.tableSourcesFrom, tableSourceFrom)
 			defer func() {
 				q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldsLength]
+				q.joinMemberSources = q.joinMemberSources[:originalJoinMemberLength]
 			}()
 		}
 	}
@@ -465,6 +474,10 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStm
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement")
 			}
 			left = filterExcludedColumns(left, target.Exclude)
+			left, err = q.applyStarReplaces(left, target.Replace)
+			if err != nil {
+				return nil, err
+			}
 			left = applyStarRenames(left, target.Rename)
 			result.Columns = append(result.Columns, left...)
 			continue
@@ -767,9 +780,15 @@ func (q *querySpanExtractor) extractTableSourceFromJoin(join *ast.JoinExpr) (bas
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the left part of the join")
 	}
+	if left != nil {
+		q.joinMemberSources = append(q.joinMemberSources, left)
+	}
 	right, err := q.extractTableSourceFromItem(join.Right)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the right part of the join")
+	}
+	if right != nil {
+		q.joinMemberSources = append(q.joinMemberSources, right)
 	}
 
 	var leftColumns, rightColumns []base.QuerySpanResult
@@ -910,6 +929,10 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 	}
 
 	var result []base.QuerySpanResult
+	// underlying keeps the resolved (named) table source so an unaliased
+	// reference retains its identity — qualified references (T2.B, T2.*) must
+	// resolve by the original table name.
+	var underlying base.TableSource
 
 	switch {
 	case ref.Name != nil:
@@ -917,6 +940,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 		if err != nil {
 			return nil, err
 		}
+		underlying = tableSource
 		result = append(result, tableSource.GetQuerySpanResult()...)
 	case ref.Subquery != nil:
 		tableSource, err := q.extractPseudoTableFromQueryNode(ref.Subquery)
@@ -942,6 +966,12 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 			Name:    aliasName,
 			Columns: result,
 		}, nil
+	}
+
+	// No alias: keep the resolved table source (with its real name) so
+	// qualified lookups by the original table name still match.
+	if underlying != nil {
+		return underlying, nil
 	}
 
 	return &base.PseudoTable{
@@ -1066,6 +1096,25 @@ func (q *querySpanExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatab
 		return result, nil
 	}
 
+	// Qualified reference that did not match a FROM item: it may name a
+	// relation inside a JOIN tree (tableSourcesFrom holds only the merged,
+	// unnamed join pseudo-table).
+	if mask&maskTableName != 0 {
+		for _, tableSource := range q.joinMemberSources {
+			if mask&maskDatabaseName != 0 && normalizedDatabaseName != tableSource.GetDatabaseName() {
+				continue
+			}
+			if mask&maskSchemaName != 0 && normalizedSchemaName != tableSource.GetSchemaName() {
+				continue
+			}
+			if normalizedTableName != tableSource.GetTableName() {
+				continue
+			}
+			result = append(result, tableSource.GetQuerySpanResult()...)
+			return result, nil
+		}
+	}
+
 	return nil, errors.Errorf(`no matching table %q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
@@ -1137,6 +1186,28 @@ func (q *querySpanExtractor) getField(normalizedDatabaseName, normalizedSchemaNa
 			return field, nil
 		}
 	}
+	// Qualified reference into a JOIN tree: tableSourcesFrom holds only the
+	// merged, unnamed join pseudo-table, so match the member relations.
+	if mask&maskTableName != 0 {
+		for _, tableSource := range q.joinMemberSources {
+			if mask&maskDatabaseName != 0 && normalizedDatabaseName != tableSource.GetDatabaseName() {
+				continue
+			}
+			if mask&maskSchemaName != 0 && normalizedSchemaName != tableSource.GetSchemaName() {
+				continue
+			}
+			if normalizedTableName != tableSource.GetTableName() {
+				continue
+			}
+			for _, field := range tableSource.GetQuerySpanResult() {
+				if mask&maskColumnName != 0 && normalizedColumnName != field.Name {
+					continue
+				}
+				return field, nil
+			}
+		}
+	}
+
 	return base.QuerySpanResult{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
@@ -1322,4 +1393,34 @@ func applyStarRenames(columns []base.QuerySpanResult, renames []ast.StarRename) 
 		}
 	}
 	return renamed
+}
+
+// applyStarReplaces applies the `SELECT * REPLACE (expr AS col, ...)` transform
+// to a star expansion: the matching result column keeps its position and name
+// but its lineage becomes the replacement EXPRESSION's source columns
+// (Snowflake returns expr in place of the original column value). Copy-on-write
+// like applyStarRenames — the input may be a table source's internal slice.
+func (q *querySpanExtractor) applyStarReplaces(columns []base.QuerySpanResult, replaces []ast.StarReplace) ([]base.QuerySpanResult, error) {
+	if len(replaces) == 0 {
+		return columns, nil
+	}
+	exprByColumn := make(map[string]ast.Node, len(replaces))
+	for _, r := range replaces {
+		exprByColumn[normalizeSnowflakeIdentifier(r.Col)] = r.Expr
+	}
+	replaced := make([]base.QuerySpanResult, len(columns))
+	copy(replaced, columns)
+	for i := range replaced {
+		expr, ok := exprByColumn[replaced[i].Name]
+		if !ok {
+			continue
+		}
+		sourceColumns, err := q.collectSourceColumnsFromExpr(expr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to resolve star REPLACE expression for column %q", replaced[i].Name)
+		}
+		replaced[i].SourceColumns = sourceColumns
+		replaced[i].IsPlainField = false
+	}
+	return replaced, nil
 }
