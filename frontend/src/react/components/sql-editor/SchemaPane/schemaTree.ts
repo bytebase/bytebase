@@ -307,28 +307,21 @@ export const keyForNodeTarget = <T extends NodeType>(
       ].join("/");
     }
     case "column": {
-      const { column } = target as NodeTarget<"column">;
-      const key = `columns/${column}`;
-      if ("table" in target) {
-        return [
-          keyForNodeTarget("table", target as NodeTarget<"table">),
-          key,
-        ].join("/");
-      } else if ("external-table" in target) {
-        return [
-          keyForNodeTarget(
-            "external-table",
-            target as NodeTarget<"external-table">
-          ),
-          key,
-        ].join("/");
-      } else if ("view" in target) {
-        return [
-          keyForNodeTarget("view", target as NodeTarget<"view">),
-          key,
-        ].join("/");
+      // No casts inside the branches: `in` narrows the union, so the
+      // compiler verifies each property name against RichColumnMetadata's
+      // members. A typo here fails the build instead of producing an
+      // empty key (which would crash react-arborist at render).
+      const columnTarget = target as NodeTarget<"column">;
+      const key = `columns/${columnTarget.column}`;
+      if ("externalTable" in columnTarget) {
+        return [keyForNodeTarget("external-table", columnTarget), key].join(
+          "/"
+        );
       }
-      return "";
+      if ("view" in columnTarget) {
+        return [keyForNodeTarget("view", columnTarget), key].join("/");
+      }
+      return [keyForNodeTarget("table", columnTarget), key].join("/");
     }
     default: {
       const { id } = target as NodeTarget<"expandable-text" | "error">;
