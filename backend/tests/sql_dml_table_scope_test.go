@@ -616,6 +616,18 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			// Denied on the bare database (the fallback's checkDatabaseAccess resource),
 			// NOT on a /tables/… path — confirming the empty-target path was taken.
 			assertDeniedOn(t, resp, qErr, dbFullName)
+			// assertDeniedOn does a substring Contains on dbFullName, which is a PREFIX of
+			// any per-target resource name (instances/…/databases/…/schemas/…/tables/…), so
+			// it alone cannot distinguish the bare-db fallback from a per-target denial.
+			// Assert the denied resources carry NO /tables/ segment to PROVE the empty-target
+			// fallback (checkDatabaseAccess) ran — guarding against a future regression where
+			// resolveWriteTargets returns a spurious target.
+			last := resp.Results[len(resp.Results)-1]
+			require.New(t).NotContains(
+				strings.Join(last.GetPermissionDenied().GetResources(), ","),
+				"/tables/",
+				"CREATE SEQUENCE must be denied via the bare-database fallback (empty write targets), not a per-target /tables/ check",
+			)
 		})
 	})
 }
