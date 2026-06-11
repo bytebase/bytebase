@@ -1689,14 +1689,22 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 					continue
 				}
 				attributes := map[string]any{
-					common.CELAttributeRequestTime:        time.Now(),
-					common.CELAttributeResourceDatabase:   databaseFullName,
-					common.CELAttributeResourceSchemaName: t.schema,
-					common.CELAttributeResourceTableName:  t.table,
+					common.CELAttributeRequestTime:       time.Now(),
+					common.CELAttributeResourceDatabase:  databaseFullName,
+					common.CELAttributeResourceTableName: t.table,
 					// environment_id is REQUIRED here: hasDatabaseAccessRights keeps the
 					// environment clause for SQLDml/SQLDdl (it is only stripped for non-DML/DDL
 					// perms). Omitting it would reintroduce a "no such attribute" error.
 					common.CELAttributeResourceEnvironmentID: env,
+				}
+				// Set resource.schema_name ONLY when the target schema is known. For an
+				// unqualified write whose executed schema can't be determined here (t.schema
+				// == "", from the sentinel) the key must be ABSENT, not "": a present-but-empty
+				// value lets a negated condition (schema_name != "x", !(schema_name in [...]))
+				// wrongly match, whereas an absent attribute makes CEL error → the binding is
+				// skipped → fail-closed. SUP-222.
+				if t.schema != "" {
+					attributes[common.CELAttributeResourceSchemaName] = t.schema
 				}
 				ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, workspacePolicy.Policy, projectPolicy.Policy)
 				if err != nil {
@@ -1835,17 +1843,8 @@ func (s *SQLService) resolveWriteTargets(
 		return nil, nil
 	}
 
-	schemaForResolution := defaultSchemaForEngine(engine, database.DatabaseName)
-	// Postgres honors QueryRequest.schema by SET search_path at execution, so resolve
-	// unqualified write targets against that same schema (empty → pg falls back to the
-	// database's default search_path). Other covered engines ignore the request schema
-	// at execution, so they keep their fixed engine default. See SUP-222 / BYT-9698.
-	if engine == storepb.Engine_POSTGRES {
-		schemaForResolution = requestSchema
-	}
-
 	changeSummary, err := parserbase.ExtractChangedResources(
-		engine, database.DatabaseName, schemaForResolution, dbMeta, asts, statement,
+		engine, database.DatabaseName, schemaForWriteTargetResolution(engine, database.DatabaseName, requestSchema), dbMeta, asts, statement,
 	)
 	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
 		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
@@ -1855,10 +1854,17 @@ func (s *SQLService) resolveWriteTargets(
 	var targets []writeTargetResource
 	for _, db := range changeSummary.ChangedResources.Build().GetDatabases() {
 		for _, sc := range db.GetSchemas() {
+			schema := sc.GetName()
+			// An unqualified target whose executed schema can't be determined here resolves
+			// to the sentinel; treat it as unknown ("") so the schema_name attribute is
+			// omitted (fail-closed for schema-scoped grants, still matches table-only ones).
+			if schema == unresolvedSchemaSentinel {
+				schema = ""
+			}
 			for _, tbl := range sc.GetTables() {
 				targets = append(targets, writeTargetResource{
 					database: db.GetName(),
-					schema:   sc.GetName(),
+					schema:   schema,
 					table:    tbl.GetName(),
 				})
 			}
@@ -1867,16 +1873,36 @@ func (s *SQLService) resolveWriteTargets(
 	return targets, nil
 }
 
-// defaultSchemaForEngine mirrors statement_report_executor.go's per-engine default.
-func defaultSchemaForEngine(engine storepb.Engine, databaseName string) string {
+// unresolvedSchemaSentinel is an impossible schema name (it contains NUL, which no real
+// PostgreSQL/MSSQL identifier can) used as the default schema for UNqualified write targets
+// when the schema the engine will actually resolve cannot be known ahead of execution
+// (Postgres's connection-user `$user` search_path, MSSQL's login default_schema). It
+// propagates only to unqualified targets — qualified ones keep their explicit schema — and
+// is mapped to "" so the resource.schema_name attribute is omitted before the grant check.
+const unresolvedSchemaSentinel = "\x00bb_unresolved_schema\x00"
+
+// schemaForWriteTargetResolution returns the default schema to resolve UNqualified write
+// targets against, per engine — the schema the engine will actually write to, or the
+// sentinel when that can't be determined here (so the schema_name attribute is omitted and
+// schema-scoped grants fail closed). Qualified targets ignore this and keep their qualifier.
+func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, requestSchema string) string {
 	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
-		return "public"
+	case storepb.Engine_POSTGRES:
+		// Execution pins search_path to QueryRequest.schema when set; otherwise the
+		// connection user's default ($user, public) is not knowable here.
+		if requestSchema != "" {
+			return requestSchema
+		}
+		return unresolvedSchemaSentinel
 	case storepb.Engine_MSSQL:
-		return "dbo"
+		// No per-request schema pin; execution uses the login's default_schema, which is not
+		// in synced metadata. Never trust a request schema for MSSQL.
+		return unresolvedSchemaSentinel
 	case storepb.Engine_ORACLE:
+		// The driver pins CURRENT_SCHEMA to the connection database (= schema); no per-request
+		// override (mid-batch ALTER SESSION is covered by the multi-statement fallback).
 		return databaseName
-	default: // MySQL, TiDB, etc. — no schema layer
+	default: // MySQL/TiDB — no schema layer; resource.schema_name is omitted.
 		return ""
 	}
 }

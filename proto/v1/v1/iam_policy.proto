@@ -76,6 +76,9 @@ message Binding {
   // Known limitations of table/schema-scoped DDL/DML grants:
   // - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary.
   // - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get).
+  // - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant).
+  // - Multi-statement batches fall back to a database-level check (a statement could change the session schema mid-batch), so multi-statement DDL/DML requires a database-level grant.
+  // - Enforcement is on the statement's literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object.
   //
   // For example:
   // resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]

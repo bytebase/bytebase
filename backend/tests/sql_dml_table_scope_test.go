@@ -744,4 +744,75 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			"a SET search_path batch must deny via the database-level fallback, never authorizing the redirected write",
 		)
 	})
+
+	// 11. Sentinel/omit: for an UNqualified write with no request schema, the schema Postgres
+	//     will resolve (connection user's $user/public) can't be known here, so the write
+	//     target resolves to an internal sentinel and resource.schema_name is OMITTED
+	//     (key-absent). Effects: schema-scoped grants fail closed (must qualify); table-only
+	//     grants still match; and a negated schema condition must NOT over-allow (the
+	//     empty-string trap). SUP-222 / BYT-9698.
+	t.Run("UnqualifiedSchemaUnknown", func(t *testing.T) {
+		ra := require.New(t)
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE IF NOT EXISTS public.t_uq (id int);`)},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		// (a) schema-scoped grant + UNqualified write → denied; schema can't be confirmed, so
+		//     the schema_name attribute is omitted and the `== "public"` clause errors. The
+		//     denial names the table with NO /schemas/ segment.
+		email, token := newLimitedUser(t)
+		schemaCond := fmt.Sprintf(`resource.database == "%s" && resource.schema_name == "public" && resource.table_name in ["t_uq"] && resource.environment_id in ["%s"]`, dbFullName, envID)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, schemaCond))
+		resp, qErr := runAs(token, "INSERT INTO t_uq VALUES (1)")
+		assertDeniedOn(t, resp, qErr, "/tables/t_uq")
+		ra.NotContains(strings.Join(resp.Results[len(resp.Results)-1].GetPermissionDenied().GetResources(), ","),
+			"/schemas/", "unknown schema must omit the /schemas/ segment")
+
+		// (b) Same grant, but a QUALIFIED write → schema is explicit (public) → allowed + executed.
+		before := countRows(t, "public.t_uq")
+		resp, qErr = runAs(token, "INSERT INTO public.t_uq VALUES (1)")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_uq"), "qualified write to the granted schema executes")
+
+		// (c) TABLE-only grant (no schema clause) + UNqualified write → allowed (schema-agnostic).
+		email2, token2 := newLimitedUser(t)
+		tableCond := fmt.Sprintf(`resource.database == "%s" && resource.table_name in ["t_uq"] && resource.environment_id in ["%s"]`, dbFullName, envID)
+		setProjectBindings(t, readBinding(email2), scopedBinding("roles/repro-write", email2, tableCond))
+		before = countRows(t, "public.t_uq")
+		resp, qErr = runAs(token2, "INSERT INTO t_uq VALUES (1)")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_uq"), "table-only grant allows the unqualified write")
+
+		// (d) THE EMPTY-STRING TRAP: a NEGATED schema condition + UNqualified write must DENY.
+		//     If schema_name were set to "" rather than omitted, `schema_name != "secret"`
+		//     would evaluate true → over-allow. Omission (key-absent) makes CEL error → deny.
+		email3, token3 := newLimitedUser(t)
+		negCond := fmt.Sprintf(`resource.database == "%s" && resource.table_name in ["t_uq"] && resource.schema_name != "secret" && resource.environment_id in ["%s"]`, dbFullName, envID)
+		setProjectBindings(t, readBinding(email3), scopedBinding("roles/repro-write", email3, negCond))
+		resp, qErr = runAs(token3, "INSERT INTO t_uq VALUES (1)")
+		assertDeniedOn(t, resp, qErr, "/tables/t_uq")
+	})
+
+	// 12. Case-folding: an unquoted uppercase `PUBLIC.t` folds to `public` and matches a
+	//     public-scoped grant (the resolved schema is normalized, not the literal text).
+	t.Run("CaseFoldedQualifiedSchema", func(t *testing.T) {
+		ra := require.New(t)
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE IF NOT EXISTS public.t_cf (id int);`)},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(`resource.database == "%s" && resource.schema_name == "public" && resource.table_name in ["t_cf"] && resource.environment_id in ["%s"]`, dbFullName, envID)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+		before := countRows(t, "public.t_cf")
+		resp, qErr := runAs(token, "INSERT INTO PUBLIC.t_cf VALUES (1)")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_cf"), "case-folded PUBLIC matches the public-scoped grant")
+	})
 }
