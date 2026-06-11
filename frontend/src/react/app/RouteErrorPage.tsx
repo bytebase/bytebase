@@ -12,7 +12,9 @@ import { cn } from "@/react/lib/utils";
  * when mounting on a layout-seam route so the panel fills the layout's
  * content area and the navigation chrome stays alive.
  */
-export function RouteErrorPage({ inline = false }: { inline?: boolean }) {
+export function RouteErrorPage({
+  inline = false,
+}: Readonly<{ inline?: boolean }>) {
   const { t } = useTranslation();
   const error = useRouteError();
   const message = error instanceof Error ? error.message : String(error);
@@ -32,10 +34,13 @@ export function RouteErrorPage({ inline = false }: { inline?: boolean }) {
         {t("error-page.unexpected-error-description")}
       </p>
       <div className="flex gap-x-2">
-        <Button onClick={() => window.location.reload()}>
+        <Button onClick={() => globalThis.location.reload()}>
           {t("common.refresh")}
         </Button>
-        <Button variant="outline" onClick={() => window.location.assign("/")}>
+        <Button
+          variant="outline"
+          onClick={() => globalThis.location.assign("/")}
+        >
           {t("error-page.go-back-home")}
         </Button>
       </div>
