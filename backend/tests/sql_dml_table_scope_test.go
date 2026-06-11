@@ -630,4 +630,57 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			)
 		})
 	})
+
+	// 9. Codex P1 search_path-override bypass guard (SUP-222 / BYT-9698). Postgres
+	//    honors QueryRequest.schema by running `SET search_path TO "<schema>"` before
+	//    execution, so an UNQUALIFIED `INSERT INTO t_sbx` writes to <request_schema>.t_sbx.
+	//    The grant is table-scoped to public.t_sbx. The user sends Schema="other_schema"
+	//    + an unqualified INSERT: Postgres would write other_schema.t_sbx (NOT granted).
+	//    The fix resolves the write target against the request schema (other_schema), so
+	//    the public-scoped grant doesn't cover it → DENIED on other_schema/tables/t_sbx.
+	//    Before the fix, resolution ignored the request schema and used public, wrongly
+	//    ALLOWING the write to other_schema.t_sbx — the fail-open authorization bypass.
+	//    The target schema/table need not exist: authorization precedes execution.
+	t.Run("RequestSchemaOverrideNotBypassed", func(t *testing.T) {
+		ra := require.New(t)
+		email, token := newLimitedUser(t)
+		// Table-scoped DML grant on public.t_sbx only.
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.schema_name == "public" && resource.table_name in ["t_sbx"] && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		// Ensure public.t_sbx exists (the granted target) via the change-database flow.
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE IF NOT EXISTS public.t_sbx (id int);`)},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		// Unqualified INSERT + Schema="other_schema": Postgres SET search_path would route
+		// the write to other_schema.t_sbx, which the public-scoped grant does not cover.
+		ctl.authInterceptor.token = token
+		resp, qErr := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: "INSERT INTO t_sbx VALUES (1)",
+			Schema:    new("other_schema"),
+			Limit:     1000,
+		}))
+		ctl.authInterceptor.token = ownerToken
+
+		var msg *v1pb.QueryResponse
+		if resp != nil {
+			msg = resp.Msg
+		}
+		// DENIED, naming other_schema (the real write target), NOT public.
+		assertDeniedOn(t, msg, qErr, "schemas/other_schema/tables/t_sbx")
+		last := msg.Results[len(msg.Results)-1]
+		ra.NotContains(
+			strings.Join(last.GetPermissionDenied().GetResources(), ","),
+			"schemas/public/tables/t_sbx",
+			"the request schema (other_schema), not public, must be the resolved write target",
+		)
+	})
 }

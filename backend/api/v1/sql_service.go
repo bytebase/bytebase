@@ -495,7 +495,7 @@ func getEffectiveQueryDataPolicy(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement, string /* requestSchema */) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -663,7 +663,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -1484,8 +1484,9 @@ func (s *SQLService) accessCheck(
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
 	statements []parserbase.Statement,
+	requestSchema string,
 ) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil)
+	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema)
 }
 
 // accessCheckWithGrant returns an accessCheckFunc that exempts the access
@@ -1505,8 +1506,8 @@ func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage)
 	for _, t := range accessGrant.Payload.Targets {
 		grantedTargets[t] = struct{}{}
 	}
-	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets)
+	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string) error {
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema)
 	}
 }
 
@@ -1519,6 +1520,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	isExplain bool,
 	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
+	requestSchema string,
 ) error {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
 	if err != nil {
@@ -1636,7 +1638,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				}
 				continue
 			}
-			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[i].Text)
+			targets, err := s.resolveWriteTargets(ctx, instance, database, nonEmptyStatements[i].Text, requestSchema)
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve write targets: %v", err))
 			}
@@ -1779,6 +1781,7 @@ func (s *SQLService) resolveWriteTargets(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	statement string,
+	requestSchema string,
 ) ([]writeTargetResource, error) {
 	engine := instance.Metadata.GetEngine()
 
@@ -1804,8 +1807,17 @@ func (s *SQLService) resolveWriteTargets(
 		return nil, nil
 	}
 
+	schemaForResolution := defaultSchemaForEngine(engine, database.DatabaseName)
+	// Postgres honors QueryRequest.schema by SET search_path at execution, so resolve
+	// unqualified write targets against that same schema (empty → pg falls back to the
+	// database's default search_path). Other covered engines ignore the request schema
+	// at execution, so they keep their fixed engine default. See SUP-222 / BYT-9698.
+	if engine == storepb.Engine_POSTGRES {
+		schemaForResolution = requestSchema
+	}
+
 	changeSummary, err := parserbase.ExtractChangedResources(
-		engine, database.DatabaseName, defaultSchemaForEngine(engine, database.DatabaseName), dbMeta, asts, statement,
+		engine, database.DatabaseName, schemaForResolution, dbMeta, asts, statement,
 	)
 	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
 		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
