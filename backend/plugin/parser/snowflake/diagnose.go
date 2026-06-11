@@ -3,7 +3,7 @@ package snowflake
 import (
 	"context"
 
-	diagnostics "github.com/bytebase/omni/snowflake/diagnostics"
+	"github.com/bytebase/omni/snowflake/diagnostics"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

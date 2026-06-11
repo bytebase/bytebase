@@ -3,7 +3,7 @@ package snowflake
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
@@ -76,7 +76,7 @@ func (c *whereRequireForSelectChecker) checkStmt(node omniast.Node, text string,
 		}
 		return true
 	})
-	sort.Ints(offsets)
+	slices.Sort(offsets)
 
 	for _, offset := range offsets {
 		c.adviceList = append(c.adviceList, &storepb.Advice{

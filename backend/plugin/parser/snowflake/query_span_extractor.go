@@ -173,6 +173,17 @@ func (q *querySpanExtractor) extractCTEFromWith(ctes []*ast.CTE, recursiveWith b
 	for _, cte := range ctes {
 		normalizedCTEName := normalizeSnowflakeIdentifier(cte.Name)
 		isRecursiveCTE := recursiveWith || cte.Recursive || queryNodeHasSetOperation(cte.Query)
+		// UNION [ALL] BY NAME merges columns by name, which the recursive
+		// fixed-point merge below does not model (it merges positionally and
+		// would attribute A's lineage to B for swapped columns). Route BY NAME
+		// set-op bodies through the plain extraction path, which handles BY
+		// NAME correctly; a genuinely self-referencing BY NAME CTE then fails
+		// resolution explicitly instead of producing wrong lineage. (Legacy
+		// ANTLR could not parse BY NAME at all, so there is no legacy behavior
+		// to preserve here.)
+		if isRecursiveCTE && setOpChainHasByName(cte.Query) {
+			isRecursiveCTE = false
+		}
 		if isRecursiveCTE {
 			if err := q.extractRecursiveCTE(normalizedCTEName, cte); err != nil {
 				return err
@@ -201,6 +212,19 @@ func (q *querySpanExtractor) extractCTEFromWith(ctes []*ast.CTE, recursiveWith b
 func queryNodeHasSetOperation(node ast.Node) bool {
 	_, ok := node.(*ast.SetOperationStmt)
 	return ok
+}
+
+// setOpChainHasByName reports whether any set operation in a (possibly nested)
+// set-operation chain uses the BY NAME column-matching mode.
+func setOpChainHasByName(node ast.Node) bool {
+	setOp, ok := node.(*ast.SetOperationStmt)
+	if !ok {
+		return false
+	}
+	if setOp.ByName {
+		return true
+	}
+	return setOpChainHasByName(setOp.Left) || setOpChainHasByName(setOp.Right)
 }
 
 func (q *querySpanExtractor) extractRecursiveCTE(cteName string, cte *ast.CTE) error {
@@ -589,6 +613,7 @@ func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.S
 			}
 			// Continue the normal traversal for Args.
 			return true
+		default:
 		}
 		return true
 	}
@@ -616,6 +641,7 @@ func exprDisplayName(expr ast.Node) string {
 		return exprDisplayName(e.Expr)
 	case *ast.CollateExpr:
 		return exprDisplayName(e.Expr)
+	default:
 	}
 	return ""
 }
