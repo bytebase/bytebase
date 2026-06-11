@@ -297,7 +297,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	}
 
 	// Construct foreign keys.
-	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 	for _, schema := range metadata.Schemas {
 		if err := writeSchemaForeignKeys(&buf, schema, tablesMissingColumns); err != nil {
 			return "", err
@@ -515,7 +515,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 	}
 
 	// Construct foreign keys.
-	if err := writeSchemaForeignKeys(&buf, schema, collectTablesMissingColumns([]*storepb.SchemaMetadata{schema})); err != nil {
+	if err := writeSchemaForeignKeys(&buf, schema, collectTables([]*storepb.SchemaMetadata{schema}, tableMissingColumnMetadata)); err != nil {
 		return "", err
 	}
 
@@ -1586,26 +1586,35 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 //
 // A genuine zero-column table (CREATE TABLE t ()) is legal in PostgreSQL and
 // may carry column-independent objects such as CHECK (1 = 1), but it cannot
-// carry primary keys, unique constraints, or foreign keys; indexes on it are
+// carry primary keys, unique constraints, foreign keys, or a partition key
+// (PostgreSQL rejects constant partition-key expressions); indexes on it are
 // limited to constant-expression corner cases. Treat zero columns as missing
-// metadata only when indexes or foreign keys are present, so genuine
-// zero-column tables keep their objects.
+// metadata only when such objects are present, so genuine zero-column tables
+// keep their objects.
 func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
-	return len(table.Columns) == 0 && (len(table.Indexes) > 0 || len(table.ForeignKeys) > 0)
+	return len(table.Columns) == 0 &&
+		(len(table.Indexes) > 0 || len(table.ForeignKeys) > 0 || len(table.Partitions) > 0)
 }
 
-// collectTablesMissingColumns returns the tables without column metadata,
-// keyed by getObjectID(schema, table).
-func collectTablesMissingColumns(schemas []*storepb.SchemaMetadata) map[string]bool {
-	missing := make(map[string]bool)
+// tableHasNoColumns reports an empty synced column list, whether genuinely
+// zero-column or privilege-filtered. A sequence cannot be owned by a column
+// of such a table, so ALTER SEQUENCE ... OWNED BY is skipped either way.
+func tableHasNoColumns(table *storepb.TableMetadata) bool {
+	return len(table.Columns) == 0
+}
+
+// collectTables returns the tables matching include, keyed by
+// getObjectID(schema, table).
+func collectTables(schemas []*storepb.SchemaMetadata, include func(*storepb.TableMetadata) bool) map[string]bool {
+	set := make(map[string]bool)
 	for _, schema := range schemas {
 		for _, table := range schema.Tables {
-			if tableMissingColumnMetadata(table) {
-				missing[getObjectID(schema.Name, table.Name)] = true
+			if include(table) {
+				set[getObjectID(schema.Name, table.Name)] = true
 			}
 		}
 	}
-	return missing
+	return set
 }
 
 // writeSchemaTriggers writes the triggers of every table, view, and
@@ -1733,9 +1742,13 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		return err
 	}
 
-	for _, sequence := range nonIdentitySequences {
-		if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
-			return err
+	// Skip OWNED BY for a table with no columns; the clause would reference
+	// a column absent from the dump.
+	if !tableHasNoColumns(table) {
+		for _, sequence := range nonIdentitySequences {
+			if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -2531,7 +2544,8 @@ func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) 
 func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
-	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
+	tablesWithoutColumns := collectTables(metadata.Schemas, tableHasNoColumns)
 
 	// Write CREATE SCHEMA statements first for non-public schemas
 	for _, schema := range metadata.Schemas {
@@ -2777,10 +2791,10 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				continue
 			}
 			// Write ALTER SEQUENCE OWNED BY for sequences with owners. Skip
-			// when the owning table has no column metadata; the OWNED BY
-			// clause would reference a column absent from the dump.
+			// when the owning table has no columns; the OWNED BY clause
+			// would reference a column absent from the dump.
 			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" &&
-				!tablesMissingColumns[getObjectID(schema.Name, sequence.OwnerTable)] {
+				!tablesWithoutColumns[getObjectID(schema.Name, sequence.OwnerTable)] {
 				if err := writeAlterSequenceOwnedBy(&buf, schema.Name, sequence); err != nil {
 					return "", err
 				}
@@ -3722,7 +3736,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	// Build table sequences map for each table
 	tableSequencesMap := buildTableSequencesMap(metadata)
 
-	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 
 	// Generate files for each schema
 	for _, schemaMetadata := range metadata.Schemas {
@@ -3860,9 +3874,9 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 					}
 
 					// Add ALTER SEQUENCE OWNED BY. Skip when the owning table
-					// has no column metadata; the OWNED BY clause would
-					// reference a column absent from the dump.
-					if !tableMissingColumnMetadata(table) {
+					// has no columns; the OWNED BY clause would reference a
+					// column absent from the dump.
+					if !tableHasNoColumns(table) {
 						buf.WriteString("\n")
 						if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
 							return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)

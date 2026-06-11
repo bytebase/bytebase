@@ -111,18 +111,34 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		Name: "db",
 		Schemas: []*storepb.SchemaMetadata{{
 			Name: "s1",
-			Sequences: []*storepb.SequenceMetadata{{
-				// Owned by a column missing from t1's metadata: the sequence
-				// itself must dump, its OWNED BY clause must not.
-				Name:        "t1_c1_seq",
-				DataType:    "bigint",
-				Start:       "1",
-				Increment:   "1",
-				MinValue:    "1",
-				MaxValue:    "9223372036854775807",
-				OwnerTable:  "t1",
-				OwnerColumn: "c1",
-			}},
+			Sequences: []*storepb.SequenceMetadata{
+				{
+					// Owned by a column missing from t1's metadata: the sequence
+					// itself must dump, its OWNED BY clause must not.
+					Name:        "t1_c1_seq",
+					DataType:    "bigint",
+					Start:       "1",
+					Increment:   "1",
+					MinValue:    "1",
+					MaxValue:    "9223372036854775807",
+					OwnerTable:  "t1",
+					OwnerColumn: "c1",
+				},
+				{
+					// Owned by a column of t4, a zero-column table with no
+					// broken-metadata signal (no indexes/FKs/partitions):
+					// OWNED BY must still be skipped — a sequence cannot be
+					// owned by a column of a zero-column table.
+					Name:        "t4_id_seq",
+					DataType:    "bigint",
+					Start:       "1",
+					Increment:   "1",
+					MinValue:    "1",
+					MaxValue:    "9223372036854775807",
+					OwnerTable:  "t4",
+					OwnerColumn: "id",
+				},
+			},
 			Tables: []*storepb.TableMetadata{
 				{
 					// Broken sync: constraints and indexes, but no columns.
@@ -194,11 +210,30 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 						ReferencedColumns: []string{"c1"},
 					}},
 				},
+				{
+					// Broken sync on a partitioned table with no indexes: the
+					// partition key references missing columns, so the table
+					// must dump bare, without the PARTITION BY clause.
+					Name: "t3",
+					Partitions: []*storepb.TablePartitionMetadata{{
+						Name:       "t3_p1",
+						Expression: "RANGE (created_at)",
+					}},
+				},
+				{
+					// Genuine zero-column table: no indexes, foreign keys, or
+					// partitions. Its column-independent CHECK must be kept.
+					Name: "t4",
+					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+						Name:       "chk_t4_ok",
+						Expression: "(1 = 1)",
+					}},
+				},
 			},
 		}},
 	}
 
-	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "trg_t1_c1", "rule_t1", "OWNED BY", "COMMENT ON INDEX"}
+	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "trg_t1_c1", "rule_t1", "t3_p1", "PARTITION BY", "OWNED BY", "COMMENT ON INDEX"}
 
 	for name, ctx := range map[string]schema.GetDefinitionContext{
 		"dump": {},
@@ -222,6 +257,12 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		}
 		if !strings.Contains(ddl, `CREATE SEQUENCE "s1"."t1_c1_seq"`) {
 			t.Errorf("[%s] expected CREATE SEQUENCE for t1_c1_seq, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, `CREATE TABLE "s1"."t3" (`) {
+			t.Errorf("[%s] expected bare CREATE TABLE for t3, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, "chk_t4_ok") {
+			t.Errorf("[%s] expected genuine zero-column table t4 to keep its CHECK constraint, got:\n%s", name, ddl)
 		}
 
 		if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
