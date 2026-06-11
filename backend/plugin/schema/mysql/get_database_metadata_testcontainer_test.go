@@ -846,9 +846,10 @@ func normalizeCheckExpression(expr string) string {
 	expr = strings.ReplaceAll(expr, "`", "")
 	expr = strings.ReplaceAll(expr, " ", "")
 
-	// Remove character set prefixes like _utf8mb4
-	re := regexp.MustCompile(`_[a-zA-Z0-9]+\\`)
-	expr = re.ReplaceAllString(expr, "")
+	// Remove character set introducers attached to string literals, like
+	// _utf8mb4'...' (synced metadata) or _utf8mb4\'...\' (legacy escaped form)
+	re := regexp.MustCompile(`_[a-zA-Z0-9]+\\?'`)
+	expr = re.ReplaceAllString(expr, "'")
 
 	// Remove escaped quotes
 	expr = strings.ReplaceAll(expr, `\'`, `'`)
