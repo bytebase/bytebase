@@ -19,6 +19,24 @@ func TestValidateSQLForEditor(t *testing.T) {
 			gotAllQuery: true,
 		},
 		{
+			// Result-pipe: read-only source + trailing SELECT over $1 is a query.
+			statement:   "SHOW TABLES ->> SELECT * FROM $1;",
+			valid:       true,
+			gotAllQuery: true,
+		},
+		{
+			// Result-pipe with a non-read-only source must not classify as a query.
+			statement:   "CALL P() ->> SELECT * FROM $1;",
+			valid:       false,
+			gotAllQuery: false,
+		},
+		{
+			// A non-read-only statement piped FROM a SHOW must not classify as a query.
+			statement:   "SHOW TABLES ->> DELETE FROM T1;",
+			valid:       false,
+			gotAllQuery: false,
+		},
+		{
 			statement:   "DESC TABLE bytebase;",
 			valid:       true,
 			gotAllQuery: true,

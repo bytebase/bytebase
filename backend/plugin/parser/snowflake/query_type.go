@@ -41,7 +41,7 @@ func getQueryType(node ast.Node) base.QueryType {
 	if node == nil {
 		return base.QueryTypeUnknown
 	}
-	switch node.(type) {
+	switch n := node.(type) {
 	// SELECT / set operations.
 	case *ast.SelectStmt, *ast.SetOperationStmt:
 		return base.Select
@@ -52,6 +52,11 @@ func getQueryType(node ast.Node) base.QueryType {
 		return base.DML
 
 	// SHOW / DESCRIBE read system metadata.
+	case *ast.ResultScanStmt:
+		// stmt ->> query: the result shape is the trailing query's (typically a
+		// SELECT over $1). Read-only-ness of the SOURCE is enforced separately
+		// in classifyForEditor.
+		return getQueryType(n.Query)
 	case *ast.ExplainStmt:
 		// EXPLAIN is read-only and data-returning regardless of the inner
 		// statement (legacy other_command.explain never recursed into it).

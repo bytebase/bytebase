@@ -179,6 +179,11 @@ func (q *querySpanExtractor) extractPseudoTableFromQueryNode(node ast.Node) (*ba
 			}()
 		}
 		return q.extractPseudoTableFromSetOperation(n)
+	case *ast.ResultScanStmt:
+		// FAIL CLOSED: a result-pipe (->>) query reads the previous statement's
+		// result set, which has no resolvable schema here; resolving the trailing
+		// SELECT against $1 would produce wrong lineage. Same posture as PIVOT.
+		return nil, errors.New("result-pipe (->>) statements are not supported for query span extraction yet")
 	default:
 		return nil, errors.Errorf("unsupported query node type %T", node)
 	}

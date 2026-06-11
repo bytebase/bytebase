@@ -81,6 +81,18 @@ func validateQuery(statement string) (bool, bool, error) {
 // base.Select while the legacy editor listener REJECTED USE (use_command was
 // not in its accepted dml/other/describe/show set), so USE is excluded here.
 func classifyForEditor(qt base.QueryType, node ast.Node) (bool, bool) {
+	if sh, ok := node.(*ast.ShowStmt); ok && sh.Pipe != nil {
+		// SHOW ... ->> <stmt>: SHOW itself is read-only metadata; the verdict is
+		// the piped statement's (a non-read-only pipe must not classify as a query).
+		return classifyForEditor(getQueryType(sh.Pipe), sh.Pipe)
+	}
+	if rs, ok := node.(*ast.ResultScanStmt); ok {
+		// stmt ->> query is read-only only if BOTH the source statement and the
+		// trailing query are; it returns the trailing query's data.
+		srcOK, _ := classifyForEditor(getQueryType(rs.Source), rs.Source)
+		queryOK, querySet := classifyForEditor(getQueryType(rs.Query), rs.Query)
+		return srcOK && queryOK, querySet
+	}
 	if _, ok := node.(*ast.UseStmt); ok {
 		// Legacy validateQuery rejected USE even though getQueryType classifies it
 		// read-only; preserve the stricter editor behavior.
