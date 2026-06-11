@@ -444,3 +444,98 @@ func TestGetViewDefFromCreateView(t *testing.T) {
 		require.Equal(t, tc.def, got)
 	}
 }
+
+func TestUnescapeCheckClause(t *testing.T) {
+	testCases := []struct {
+		clause string
+		want   string
+	}{
+		{
+			// information_schema.CHECK_CONSTRAINTS escapes single quotes as \'.
+			clause: `((` + "`type`" + ` = _utf8mb4\'A\') and (` + "`amount`" + ` is not null))`,
+			want:   "((`type` = _utf8mb4'A') and (`amount` is not null))",
+		},
+		{
+			clause: "(`amount` > 0)",
+			want:   "(`amount` > 0)",
+		},
+		{
+			clause: `(` + "`status`" + ` in (_utf8mb4\'open\',_utf8mb4\'closed\'))`,
+			want:   "(`status` in (_utf8mb4'open',_utf8mb4'closed'))",
+		},
+	}
+
+	for _, tc := range testCases {
+		require.Equal(t, tc.want, unescapeCheckClause(tc.clause))
+	}
+}
+
+func TestStripReturnsCharset(t *testing.T) {
+	testCases := []struct {
+		name string
+		def  string
+		want string
+	}{
+		{
+			name: "multiline parameter list with RETURNS CHARSET and COLLATE",
+			def: "CREATE FUNCTION `f1`(\n" +
+				"    p_a BIGINT,\n" +
+				"    p_b VARCHAR(36)\n" +
+				") RETURNS char(36) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci\n" +
+				"    NO SQL\n" +
+				"    DETERMINISTIC\n" +
+				"BEGIN\n" +
+				"    RETURN p_b;\n" +
+				"END",
+			want: "CREATE FUNCTION `f1`(\n" +
+				"    p_a BIGINT,\n" +
+				"    p_b VARCHAR(36)\n" +
+				") RETURNS char(36)\n" +
+				"    NO SQL\n" +
+				"    DETERMINISTIC\n" +
+				"BEGIN\n" +
+				"    RETURN p_b;\n" +
+				"END",
+		},
+		{
+			name: "single-line parameter list with RETURNS CHARSET",
+			def: "CREATE FUNCTION `f2`(i INT) RETURNS char(36) CHARSET utf8mb4\n" +
+				"BEGIN\n" +
+				"    RETURN 'x';\n" +
+				"END",
+			want: "CREATE FUNCTION `f2`(i INT) RETURNS char(36)\n" +
+				"BEGIN\n" +
+				"    RETURN 'x';\n" +
+				"END",
+		},
+		{
+			name: "RETURNS without CHARSET is unchanged",
+			def: "CREATE FUNCTION `f3`(i INT) RETURNS int\n" +
+				"RETURN i + 1",
+			want: "CREATE FUNCTION `f3`(i INT) RETURNS int\n" +
+				"RETURN i + 1",
+		},
+		{
+			name: "CHARSET in parameter list only is unchanged",
+			def: "CREATE FUNCTION `f4`(\n" +
+				"    p_a VARCHAR(10) CHARSET utf8mb4,\n" +
+				"    p_b INT\n" +
+				") RETURNS int\n" +
+				"RETURN p_b",
+			want: "CREATE FUNCTION `f4`(\n" +
+				"    p_a VARCHAR(10) CHARSET utf8mb4,\n" +
+				"    p_b INT\n" +
+				") RETURNS int\n" +
+				"RETURN p_b",
+		},
+		{
+			name: "no RETURNS clause is unchanged",
+			def:  "CREATE PROCEDURE `p1`(IN a INT)\nBEGIN\nEND",
+			want: "CREATE PROCEDURE `p1`(IN a INT)\nBEGIN\nEND",
+		},
+	}
+
+	for _, tc := range testCases {
+		require.Equal(t, tc.want, stripReturnsCharset(tc.def), tc.name)
+	}
+}
