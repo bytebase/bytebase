@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	parser "github.com/bytebase/omni/snowflake/parser"
+	"github.com/bytebase/omni/snowflake/parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -144,5 +144,25 @@ func TestGetQueryType_UnmappedStaysUnknown(t *testing.T) {
 		if got := getQueryType(file.Stmts[0]); got != tc.want {
 			t.Fatalf("getQueryType(%q) = %v, want %v", tc.sql, got, tc.want)
 		}
+	}
+}
+
+// TestGetQueryType_ShowPipeClassifiesByQuery locks that SHOW ... ->> <query>
+// classifies as the piped query's type (so the trailing SELECT is
+// permission-checked and masked as a query, not as info-schema metadata).
+func TestGetQueryType_ShowPipeClassifiesByQuery(t *testing.T) {
+	file, err := parser.Parse("SHOW TABLES ->> SELECT * FROM SENSITIVE_T;")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := getQueryType(file.Stmts[0]); got != base.Select {
+		t.Fatalf("got %v, want base.Select", got)
+	}
+	file, err = parser.Parse("SHOW TABLES;")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := getQueryType(file.Stmts[0]); got != base.SelectInfoSchema {
+		t.Fatalf("got %v, want base.SelectInfoSchema", got)
 	}
 }

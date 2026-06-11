@@ -184,6 +184,11 @@ func (q *querySpanExtractor) extractPseudoTableFromQueryNode(node ast.Node) (*ba
 		// result set, which has no resolvable schema here; resolving the trailing
 		// SELECT against $1 would produce wrong lineage. Same posture as PIVOT.
 		return nil, errors.New("result-pipe (->>) statements are not supported for query span extraction yet")
+	case *ast.ShowStmt:
+		// Only reachable for SHOW ... ->> <query> (a plain SHOW classifies
+		// SelectInfoSchema and returns before extraction). Same fail-closed
+		// posture as ResultScanStmt: $1's schema is not resolvable.
+		return nil, errors.New("result-pipe (->>) statements are not supported for query span extraction yet")
 	default:
 		return nil, errors.Errorf("unsupported query node type %T", node)
 	}

@@ -126,3 +126,19 @@ func TestGetQuerySpan_PivotFailsClosed(t *testing.T) {
 		a.Containsf(err.Error(), "PIVOT", "statement: %s", sql)
 	}
 }
+
+// TestGetQuerySpan_ShowPipeFailsClosed locks the fail-closed posture for
+// SHOW result-pipes: the trailing query reads $1 (unresolvable schema), so
+// span extraction errors explicitly instead of resolving wrong lineage or
+// passing as metadata-only.
+func TestGetQuerySpan_ShowPipeFailsClosed(t *testing.T) {
+	a := require.New(t)
+	metadata := &storepb.DatabaseSchemaMetadata{Name: "DB1"}
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	_, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: databaseMetadataGetter,
+		ListDatabaseNamesFunc:   databaseNameLister,
+	}, base.Statement{Text: `SHOW TABLES ->> SELECT * FROM SENSITIVE_T;`}, "DB1", "PUBLIC", false)
+	a.Error(err)
+	a.Contains(err.Error(), "result-pipe")
+}

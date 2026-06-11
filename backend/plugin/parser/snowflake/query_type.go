@@ -69,7 +69,16 @@ func getQueryType(node ast.Node) base.QueryType {
 		// EXPLAIN is read-only and data-returning regardless of the inner
 		// statement (legacy other_command.explain never recursed into it).
 		return base.Explain
-	case *ast.ShowStmt, *ast.DescribeStmt:
+	case *ast.ShowStmt:
+		// A SHOW with a result-pipe (SHOW ... ->> <query>) produces the piped
+		// query's result — classify by it, so the trailing SELECT is
+		// permission-checked/masked as a query instead of hiding behind
+		// info-schema-only access.
+		if n.Pipe != nil {
+			return getQueryType(n.Pipe)
+		}
+		return base.SelectInfoSchema
+	case *ast.DescribeStmt:
 		return base.SelectInfoSchema
 
 	// USE is a session-scoped no-op for read purposes; the legacy listener
