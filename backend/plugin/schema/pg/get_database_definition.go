@@ -284,78 +284,23 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 
 	// Construct triggers.
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			for _, trigger := range table.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, table.Name, trigger); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, view := range schema.Views {
-			for _, trigger := range view.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, view.Name, trigger); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, materializedView := range schema.MaterializedViews {
-			for _, trigger := range materializedView.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, materializedView.Name, trigger); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaTriggers(&buf, schema); err != nil {
+			return "", err
 		}
 	}
 
 	// Construct rules.
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if len(table.Rules) > 0 {
-				if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, view := range schema.Views {
-			// Rules for views are already written in writeView
-			// Only write non-SELECT rules here (they are not part of the view definition)
-			var nonSelectRules []*storepb.RuleMetadata
-			for _, rule := range view.Rules {
-				if rule.Event != "SELECT" {
-					nonSelectRules = append(nonSelectRules, rule)
-				}
-			}
-			if len(nonSelectRules) > 0 {
-				if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaRules(&buf, schema); err != nil {
+			return "", err
 		}
 	}
 
 	// Construct foreign keys.
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if table.SkipDump {
-				continue
-			}
-			for _, fk := range table.ForeignKeys {
-				if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaForeignKeys(&buf, schema, tablesMissingColumns); err != nil {
+			return "", err
 		}
 	}
 
@@ -560,73 +505,18 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 	}
 
 	// Construct triggers.
-	for _, table := range schema.Tables {
-		for _, trigger := range table.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, table.Name, trigger); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, view := range schema.Views {
-		for _, trigger := range view.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, view.Name, trigger); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, materializedView := range schema.MaterializedViews {
-		for _, trigger := range materializedView.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, materializedView.Name, trigger); err != nil {
-				return "", err
-			}
-		}
+	if err := writeSchemaTriggers(&buf, schema); err != nil {
+		return "", err
 	}
 
 	// Construct rules.
-	for _, table := range schema.Tables {
-		if len(table.Rules) > 0 {
-			if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, view := range schema.Views {
-		// Only write non-SELECT rules here (SELECT rules are part of the view definition)
-		var nonSelectRules []*storepb.RuleMetadata
-		for _, rule := range view.Rules {
-			if rule.Event != "SELECT" {
-				nonSelectRules = append(nonSelectRules, rule)
-			}
-		}
-		if len(nonSelectRules) > 0 {
-			if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
-				return "", err
-			}
-		}
+	if err := writeSchemaRules(&buf, schema); err != nil {
+		return "", err
 	}
 
 	// Construct foreign keys.
-	for _, table := range schema.Tables {
-		if table.SkipDump {
-			continue
-		}
-		for _, fk := range table.ForeignKeys {
-			if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
-				return "", err
-			}
-		}
+	if err := writeSchemaForeignKeys(&buf, schema, collectTables([]*storepb.SchemaMetadata{schema}, tableMissingColumnMetadata)); err != nil {
+		return "", err
 	}
 
 	return buf.String(), nil
@@ -636,6 +526,11 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 	var buf strings.Builder
 	if err := writeTable(&buf, schema, table, sequences); err != nil {
 		return "", err
+	}
+	// Skip triggers, rules, and foreign keys for a table without column
+	// metadata; their definitions can reference the missing columns.
+	if tableMissingColumnMetadata(table) {
+		return buf.String(), nil
 	}
 	// Construct triggers.
 	for _, trigger := range table.Triggers {
@@ -1681,7 +1576,156 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 	return generationType, identitySequences, nonIdentitySequences
 }
 
+// tableMissingColumnMetadata reports whether a synced table's column list
+// was filtered away. information_schema.columns is privilege-filtered, so a
+// sync user without column privileges on a table sees zero columns while the
+// pg_catalog-based queries still return the table's constraints, indexes,
+// triggers, and rules. DDL referencing the missing columns would make the
+// dump non-replayable, so writers skip column-dependent statements for such
+// tables.
+//
+// A genuine zero-column table (CREATE TABLE t ()) is legal in PostgreSQL and
+// may carry column-independent objects such as CHECK (1 = 1), but it cannot
+// carry primary keys, unique constraints, foreign keys, or a partition key
+// (PostgreSQL rejects constant partition-key expressions); indexes on it are
+// limited to constant-expression corner cases. Treat zero columns as missing
+// metadata only when such objects are present, so genuine zero-column tables
+// keep their objects.
+func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
+	return len(table.Columns) == 0 &&
+		(len(table.Indexes) > 0 || len(table.ForeignKeys) > 0 || len(table.Partitions) > 0)
+}
+
+// tableHasNoColumns reports an empty synced column list, whether genuinely
+// zero-column or privilege-filtered. A sequence cannot be owned by a column
+// of such a table, so ALTER SEQUENCE ... OWNED BY is skipped either way.
+func tableHasNoColumns(table *storepb.TableMetadata) bool {
+	return len(table.Columns) == 0
+}
+
+// collectTables returns the tables matching include, keyed by
+// getObjectID(schema, table).
+func collectTables(schemas []*storepb.SchemaMetadata, include func(*storepb.TableMetadata) bool) map[string]bool {
+	set := make(map[string]bool)
+	for _, schema := range schemas {
+		for _, table := range schema.Tables {
+			if include(table) {
+				set[getObjectID(schema.Name, table.Name)] = true
+			}
+		}
+	}
+	return set
+}
+
+// writeSchemaTriggers writes the triggers of every table, view, and
+// materialized view in the schema. Triggers on tables without column
+// metadata are skipped; their definitions (UPDATE OF, WHEN clauses) can
+// reference the missing columns.
+func writeSchemaTriggers(out io.Writer, schema *storepb.SchemaMetadata) error {
+	for _, table := range schema.Tables {
+		if tableMissingColumnMetadata(table) {
+			continue
+		}
+		for _, trigger := range table.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, table.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		for _, trigger := range view.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, view.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, materializedView := range schema.MaterializedViews {
+		for _, trigger := range materializedView.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, materializedView.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// writeSchemaRules writes the rules of every table and the non-SELECT rules
+// of every view in the schema (SELECT rules are part of the view
+// definition). Rules on tables without column metadata are skipped; their
+// definitions can reference the missing columns.
+func writeSchemaRules(out io.Writer, schema *storepb.SchemaMetadata) error {
+	for _, table := range schema.Tables {
+		if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
+			if err := writeRules(out, schema.Name, table.Name, table.Rules); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		var nonSelectRules []*storepb.RuleMetadata
+		for _, rule := range view.Rules {
+			if rule.Event != "SELECT" {
+				nonSelectRules = append(nonSelectRules, rule)
+			}
+		}
+		if len(nonSelectRules) > 0 {
+			if err := writeRules(out, schema.Name, view.Name, nonSelectRules); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// writeSchemaForeignKeys writes the foreign keys of every table in the
+// schema, skipping foreign keys touching a table without column metadata on
+// either side; they would reference columns absent from the dump.
+func writeSchemaForeignKeys(out io.Writer, schema *storepb.SchemaMetadata, tablesMissingColumns map[string]bool) error {
+	for _, table := range schema.Tables {
+		if table.SkipDump || tablesMissingColumns[getObjectID(schema.Name, table.Name)] {
+			continue
+		}
+		for _, fk := range table.ForeignKeys {
+			if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
+				continue
+			}
+			if err := writeForeignKey(out, schema.Name, table.Name, fk); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Emit a bare CREATE TABLE so the table still exists on replay, and
+		// skip constraints, indexes, partitions, and sequence ownership —
+		// they all reference columns absent from the dump.
+		if err := writeCreateTable(out, schema, table.Name, nil, nil, nil); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
+			return err
+		}
+		if len(table.Comment) > 0 {
+			return writeTableComment(out, schema, table)
+		}
+		return nil
+	}
+
 	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
 
 	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints, table.ExcludeConstraints); err != nil {
@@ -1698,9 +1742,13 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		return err
 	}
 
-	for _, sequence := range nonIdentitySequences {
-		if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
-			return err
+	// Skip OWNED BY for a table with no columns; the clause would reference
+	// a column absent from the dump.
+	if !tableHasNoColumns(table) {
+		for _, sequence := range nonIdentitySequences {
+			if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -2496,6 +2544,9 @@ func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) 
 func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
+	tablesWithoutColumns := collectTables(metadata.Schemas, tableHasNoColumns)
+
 	// Write CREATE SCHEMA statements first for non-public schemas
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
@@ -2665,7 +2716,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			tableSequences := tableSequencesMap[tableKey]
 
 			// Write CREATE TABLE statement
-			if err := writeCreateTableSDL(&buf, schema.Name, table, tableSequences); err != nil {
+			if err := writeCreateTableSDL(&buf, schema.Name, table, tableSequences, tablesMissingColumns); err != nil {
 				return "", err
 			}
 
@@ -2694,13 +2745,17 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				return "", err
 			}
 
-			// Write index comments if present
-			for _, index := range table.Indexes {
-				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
-				if !index.Primary && !index.Unique {
-					if len(index.Comment) > 0 {
-						if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
-							return "", err
+			// Write index comments if present. Skip when the table has no
+			// column metadata — its indexes were not emitted, so a COMMENT ON
+			// INDEX would target a nonexistent index.
+			if !tableMissingColumnMetadata(table) {
+				for _, index := range table.Indexes {
+					// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+					if !index.Primary && !index.Unique {
+						if len(index.Comment) > 0 {
+							if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
+								return "", err
+							}
 						}
 					}
 				}
@@ -2711,11 +2766,14 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				return "", err
 			}
 
-			// Write trigger comments if present
-			for _, trigger := range table.Triggers {
-				if len(trigger.Comment) > 0 {
-					if err := writeTriggerCommentSDL(&buf, schema.Name, table.Name, trigger); err != nil {
-						return "", err
+			// Write trigger comments if present. Skip when the table has no
+			// column metadata — its triggers were not emitted.
+			if !tableMissingColumnMetadata(table) {
+				for _, trigger := range table.Triggers {
+					if len(trigger.Comment) > 0 {
+						if err := writeTriggerCommentSDL(&buf, schema.Name, table.Name, trigger); err != nil {
+							return "", err
+						}
 					}
 				}
 			}
@@ -2732,8 +2790,11 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			if skipSequences[sequenceKey] {
 				continue
 			}
-			// Write ALTER SEQUENCE OWNED BY for sequences with owners
-			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+			// Write ALTER SEQUENCE OWNED BY for sequences with owners. Skip
+			// when the owning table has no columns; the OWNED BY clause
+			// would reference a column absent from the dump.
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" &&
+				!tablesWithoutColumns[getObjectID(schema.Name, sequence.OwnerTable)] {
 				if err := writeAlterSequenceOwnedBy(&buf, schema.Name, sequence); err != nil {
 					return "", err
 				}
@@ -3133,7 +3194,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName str
 	return nil
 }
 
-func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata, tablesMissingColumns map[string]bool) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -3178,7 +3239,7 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	}
 
 	// Write table constraints
-	if err := writeTableConstraintsSDL(out, table, writeItemSep); err != nil {
+	if err := writeTableConstraintsSDL(out, table, writeItemSep, tablesMissingColumns); err != nil {
 		return err
 	}
 
@@ -3186,7 +3247,12 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	return err
 }
 
-func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error) error {
+func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error, tablesMissingColumns map[string]bool) error {
+	if tableMissingColumnMetadata(table) {
+		// Constraints would reference columns absent from the dump.
+		return nil
+	}
+
 	// Write primary key constraint
 	for _, index := range table.Indexes {
 		if index.Primary {
@@ -3231,8 +3297,13 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, write
 		}
 	}
 
-	// Write foreign key constraints
+	// Write foreign key constraints. Skip foreign keys whose referenced
+	// table has no column metadata; the REFERENCES clause would name
+	// columns absent from the dump.
 	for _, fk := range table.ForeignKeys {
+		if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
+			continue
+		}
 		if err := writeSep(); err != nil {
 			return err
 		}
@@ -3245,6 +3316,10 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, write
 }
 
 func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Indexes would reference columns absent from the dump.
+		return nil
+	}
 	for _, index := range table.Indexes {
 		// Skip indexes that are constraints (primary key, unique constraints)
 		// These are already handled in the CREATE TABLE statement
@@ -3661,6 +3736,8 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	// Build table sequences map for each table
 	tableSequencesMap := buildTableSequencesMap(metadata)
 
+	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
+
 	// Generate files for each schema
 	for _, schemaMetadata := range metadata.Schemas {
 		if schemaMetadata.SkipDump {
@@ -3713,7 +3790,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 			var buf strings.Builder
 			// Write CREATE TABLE statement in SDL format
-			if err := writeCreateTableSDL(&buf, schemaName, table, tableSequences); err != nil {
+			if err := writeCreateTableSDL(&buf, schemaName, table, tableSequences, tablesMissingColumns); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate table SDL for %s.%s", schemaName, table.Name)
 			}
 			buf.WriteString(";\n\n")
@@ -3739,13 +3816,17 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
 			}
 
-			// Write index comments if present
-			for _, index := range table.Indexes {
-				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
-				if !index.Primary && !index.Unique {
-					if len(index.Comment) > 0 {
-						if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
-							return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+			// Write index comments if present. Skip when the table has no
+			// column metadata — its indexes were not emitted, so a COMMENT ON
+			// INDEX would target a nonexistent index.
+			if !tableMissingColumnMetadata(table) {
+				for _, index := range table.Indexes {
+					// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+					if !index.Primary && !index.Unique {
+						if len(index.Comment) > 0 {
+							if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+								return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+							}
 						}
 					}
 				}
@@ -3756,11 +3837,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				return nil, errors.Wrapf(err, "failed to generate triggers SDL for %s.%s", schemaName, table.Name)
 			}
 
-			// Write trigger comments if present
-			for _, trigger := range table.Triggers {
-				if len(trigger.Comment) > 0 {
-					if err := writeTriggerCommentSDL(&buf, schemaName, table.Name, trigger); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate trigger comment for %s.%s.%s", schemaName, table.Name, trigger.Name)
+			// Write trigger comments if present. Skip when the table has no
+			// column metadata — its triggers were not emitted.
+			if !tableMissingColumnMetadata(table) {
+				for _, trigger := range table.Triggers {
+					if len(trigger.Comment) > 0 {
+						if err := writeTriggerCommentSDL(&buf, schemaName, table.Name, trigger); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate trigger comment for %s.%s.%s", schemaName, table.Name, trigger.Name)
+						}
 					}
 				}
 			}
@@ -3789,10 +3873,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 						}
 					}
 
-					// Add ALTER SEQUENCE OWNED BY
-					buf.WriteString("\n")
-					if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
+					// Add ALTER SEQUENCE OWNED BY. Skip when the owning table
+					// has no columns; the OWNED BY clause would reference a
+					// column absent from the dump.
+					if !tableHasNoColumns(table) {
+						buf.WriteString("\n")
+						if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
+						}
 					}
 				}
 			}
@@ -4328,6 +4416,11 @@ func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.Index
 }
 
 func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Trigger definitions (UPDATE OF, WHEN clauses) can reference
+		// columns absent from the dump.
+		return nil
+	}
 	for _, trigger := range table.Triggers {
 		if trigger.SkipDump {
 			continue

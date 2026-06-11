@@ -26,25 +26,25 @@
   querySpan:
     type: 1
     results:
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
-- description: Set operation
-  statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
+- description: 'Set operation (subset-projecting CTEs, then SELECT * UNION ALL): each CTE projects a subset of a wider base table, so a SELECT * over the CTE reproduces only the projected columns, then the set-op position-merges'
+  statement: WITH CTE_1 AS (SELECT ID, NAME FROM people), CTE_2 AS (SELECT PEOPLE_ID, ADDRESS FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
   defaultDatabase: ds1
   metadata: |-
     {
@@ -61,6 +61,9 @@
                 },
                 {
                   "name":  "NAME"
+                },
+                {
+                  "name":  "SSN"
                 }
               ]
             },
@@ -72,6 +75,9 @@
                 },
                 {
                   "name":  "ADDRESS"
+                },
+                {
+                  "name":  "ZIP"
                 }
               ]
             }
@@ -82,57 +88,57 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: PEOPLE_ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: PEOPLE_ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_1
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_2
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_2
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Parenthesized join
   statement: SELECT ID, NAME, ADDRESS FROM (people JOIN address ON people.ID = address.PEOPLE_ID USING (ID));
@@ -176,52 +182,52 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Join using
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
@@ -265,52 +271,52 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Simple join
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID;
@@ -351,47 +357,47 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Recursive cte
   statement: |-
@@ -430,74 +436,74 @@
   querySpan:
     type: 1
     results:
-        - name: C1
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: b
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: C2
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: b
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: C3
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: b
-            - server: ""
-              database: ds1
-              schema: ""
-              table: T1
-              column: c
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: "N"
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: C1
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: C2
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: C3
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: T1
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: "N"
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_01
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: T1
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_01
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: T1
+        column: ""
     predicatecolumns: []
-- description: Simple normal cte
+- description: Simple normal cte (CTE projects a SUBSET of a wider base table; SELECT * over the CTE must reproduce only ID, NAME — not the base SSN)
   statement: WITH CTE_1 AS (SELECT ID, NAME FROM people) SELECT * FROM CTE_1;
   defaultDatabase: ds1
   metadata: |-
@@ -515,6 +521,9 @@
                 },
                 {
                   "name":  "NAME"
+                },
+                {
+                  "name":  "SSN"
                 }
               ]
             }
@@ -525,37 +534,37 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_1
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
@@ -602,32 +611,32 @@
   querySpan:
     type: 1
     results:
-        - name: CITY
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: GALLERIES
-              column: CITY
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: TOTAL_PAINTINGS
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: CITY
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: GALLERIES
+            column: CITY
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: TOTAL_PAINTINGS
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: galleries
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: paintings
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: galleries
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: paintings
+        column: ""
     predicatecolumns: []
 - description: Expression subquery
   statement: SELECT (SELECT NAME FROM people), ID FROM people;
@@ -657,29 +666,29 @@
   querySpan:
     type: 1
     results:
-        - name: ""
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ""
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
-- description: Table subquery
+- description: 'Table subquery (derived * over a base-star CTE, plus a qualified result.ID): result.ID resolves through the derived relation and the CTE A to people.ID, while the sibling * reproduces every base column'
   statement: WITH A AS (SELECT * FROM people) SELECT result.ID, * FROM (SELECT * FROM A) result;
   defaultDatabase: ds1
   metadata: |-
@@ -697,6 +706,9 @@
                 },
                 {
                   "name":  "NAME"
+                },
+                {
+                  "name":  "SSN"
                 }
               ]
             }
@@ -707,47 +719,57 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: SSN
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: SSN
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: A
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: A
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Wild projecter
   statement: SELECT s.* FROM people s;
@@ -777,32 +799,32 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Simple projecter
   statement: SELECT ID, NAME FROM people;
@@ -832,32 +854,32 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Expression in target field
   statement: SELECT ID+1, ID+NAME, foo(bar(ID), NAME) FROM people;
@@ -887,52 +909,52 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Simple select asterisk statement
   statement: SELECT * FROM people;
@@ -962,30 +984,2082 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: 2-arm equal-width UNION ALL explicit columns'
+  statement: SELECT a, b FROM t1 UNION ALL SELECT c, d FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" }, { "name": "b" } ] },
+            { "name": "t2", "columns": [ { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: d
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: 3-way UNION ALL'
+  statement: SELECT a FROM t1 UNION ALL SELECT b FROM t2 UNION ALL SELECT c FROM t3;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" } ] },
+            { "name": "t2", "columns": [ { "name": "b" } ] },
+            { "name": "t3", "columns": [ { "name": "c" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t3
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t3
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: arm with SELECT * (t2 has 2 cols)'
+  statement: SELECT a, b FROM t1 UNION ALL SELECT * FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" }, { "name": "b" } ] },
+            { "name": "t2", "columns": [ { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: d
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: UNION DISTINCT'
+  statement: SELECT a, b FROM t1 UNION DISTINCT SELECT c, d FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" }, { "name": "b" } ] },
+            { "name": "t2", "columns": [ { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: d
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: INTERSECT DISTINCT'
+  statement: SELECT a, b FROM t1 INTERSECT DISTINCT SELECT c, d FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" }, { "name": "b" } ] },
+            { "name": "t2", "columns": [ { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: d
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: EXCEPT DISTINCT'
+  statement: SELECT a, b FROM t1 EXCEPT DISTINCT SELECT c, d FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" }, { "name": "b" } ] },
+            { "name": "t2", "columns": [ { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: b
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: d
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'set-op: arms with different column NAMES (first-select-name rule)'
+  statement: SELECT id AS uid, name FROM t1 UNION ALL SELECT pid, lbl FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "id" }, { "name": "name" } ] },
+            { "name": "t2", "columns": [ { "name": "pid" }, { "name": "lbl" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: UID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: id
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: pid
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: name
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: lbl
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'join: JOIN ... ON (unqualified cols resolve across both sides by name)'
+  statement: SELECT id, lbl FROM a JOIN b ON a.id = b.aid;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "id" }, { "name": "x" } ] },
+            { "name": "b", "columns": [ { "name": "aid" }, { "name": "lbl" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: LBL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: lbl
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'join: JOIN ... USING(K) explicit columns (the coalesced K reads from both sides; X from a, Y from b)'
+  statement: SELECT K, X, Y FROM a JOIN b USING (K);
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "K" }, { "name": "X" } ] },
+            { "name": "b", "columns": [ { "name": "K" }, { "name": "Y" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: K
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: K
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: K
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: X
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: X
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: "Y"
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: "Y"
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'join: self-join FROM t x JOIN t y ON ...'
+  statement: SELECT x.id, y.parent_id FROM t x JOIN t y ON x.parent_id = y.id;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "id" }, { "name": "parent_id" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: PARENT_ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: parent_id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'join: 3-table join (unqualified cols resolve across all three sides by name)'
+  statement: SELECT id, lbl, nt FROM a JOIN b ON a.id = b.aid JOIN c ON b.aid = c.bid;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "id" } ] },
+            { "name": "b", "columns": [ { "name": "aid" }, { "name": "lbl" } ] },
+            { "name": "c", "columns": [ { "name": "bid" }, { "name": "nt" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: LBL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: lbl
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NT
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: c
+            column: nt
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+    predicatecolumns: []
+- description: 'cte: simple'
+  statement: WITH c AS (SELECT id, name FROM users) SELECT id, name FROM c;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "users", "columns": [ { "name": "id" }, { "name": "name" }, { "name": "email" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: 'cte: projecting a SUBSET then SELECT *'
+  statement: WITH c AS (SELECT email FROM users) SELECT * FROM c;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "users", "columns": [ { "name": "id" }, { "name": "name" }, { "name": "email" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: EMAIL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: 'cte: recursive'
+  statement: |-
+    WITH RECURSIVE c AS (
+      SELECT n FROM seed
+      UNION ALL
+      SELECT n + 1 FROM c WHERE n < 10
+    )
+    SELECT n FROM c;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "seed", "columns": [ { "name": "n" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: "N"
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: seed
+            column: "n"
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: seed
+        column: ""
+    predicatecolumns: []
+- description: 'cte: nested CTEs (outer + inner WITH)'
+  statement: WITH outer_cte AS (WITH inner_cte AS (SELECT id, name FROM users) SELECT id, name FROM inner_cte) SELECT id, name FROM outer_cte;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "users", "columns": [ { "name": "id" }, { "name": "name" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: inner_cte
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: outer_cte
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: 'cte: referenced twice (self-join of a CTE)'
+  statement: WITH c AS (SELECT id, parent_id FROM nodes) SELECT a.id, b.parent_id FROM c a JOIN c b ON a.parent_id = b.id;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "nodes", "columns": [ { "name": "id" }, { "name": "parent_id" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: nodes
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: PARENT_ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: nodes
+            column: parent_id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: nodes
+        column: ""
+    predicatecolumns: []
+- description: 'derived: SELECT * FROM (SELECT ...) d'
+  statement: SELECT * FROM (SELECT id, name FROM users) d;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "users", "columns": [ { "name": "id" }, { "name": "name" }, { "name": "email" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: 'derived: SELECT d.col FROM (SELECT a AS col FROM t) d'
+  statement: SELECT d.col FROM (SELECT a AS col FROM t) d;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "a" }, { "name": "b" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: COL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: a
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'derived: projecting a subset/expression'
+  statement: SELECT total FROM (SELECT price + tax AS total FROM orders) d;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "orders", "columns": [ { "name": "price" }, { "name": "tax" }, { "name": "qty" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: TOTAL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: orders
+            column: price
+          - server: ""
+            database: ds1
+            schema: ""
+            table: orders
+            column: tax
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: orders
+        column: ""
+    predicatecolumns: []
+- description: scalar subquery in SELECT list
+  statement: SELECT (SELECT x FROM t2) AS c FROM t1;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "id" } ] },
+            { "name": "t2", "columns": [ { "name": "x" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: C
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'struct: SELECT s.field FROM t (STRUCT-typed column s)'
+  statement: SELECT s.field FROM t;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "s" }, { "name": "id" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: S
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: s
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'struct: nested field s.a.b'
+  statement: SELECT s.a.b FROM t;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "s" }, { "name": "id" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: S
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: s
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'qualified star: SELECT t.* FROM t'
+  statement: SELECT t.* FROM t;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "id" }, { "name": "name" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'dataset-qualified table: SELECT id, name FROM ds1.t (legacy errors on dataset-qualified STAR ds1.t.*, so use explicit cols)'
+  statement: SELECT id, name FROM ds1.t;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "id" }, { "name": "name" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'qualified star: alias star SELECT x.* FROM t x'
+  statement: SELECT x.* FROM t x;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "id" }, { "name": "name" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'combo: SELECT * EXCEPT(X) FROM a JOIN b USING(K) — uppercase key so the legacy resolver coalesces (its lowercase USING never coalesces, a known legacy case-fold leak; omni coalesces case-insensitively — pinned by a unit test)'
+  statement: SELECT * EXCEPT (X) FROM a JOIN b USING (K);
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "K" }, { "name": "X" } ] },
+            { "name": "b", "columns": [ { "name": "K" }, { "name": "Y" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: K
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: K
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: K
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: "Y"
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: "Y"
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'combo: SELECT * FROM cte UNION ALL SELECT * FROM othercte (each CTE projects a subset of a wider base; the * over each reproduces {id,name}, then the set-op position-merges)'
+  statement: WITH cte AS (SELECT id, name FROM users), othercte AS (SELECT id, name FROM members) SELECT * FROM cte UNION ALL SELECT * FROM othercte;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "users", "columns": [ { "name": "id" }, { "name": "name" }, { "name": "email" } ] },
+            { "name": "members", "columns": [ { "name": "id" }, { "name": "name" }, { "name": "ssn" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: members
+            column: id
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: members
+            column: name
+          - server: ""
+            database: ds1
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: cte
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: members
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: othercte
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: 'join: LEFT OUTER JOIN ... ON'
+  statement: SELECT id, lbl FROM a LEFT OUTER JOIN b ON a.id = b.aid;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "id" } ] },
+            { "name": "b", "columns": [ { "name": "aid" }, { "name": "lbl" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: LBL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: lbl
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'join: CROSS JOIN (comma) emits both sides'
+  statement: SELECT id, lbl FROM a, b;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "id" } ] },
+            { "name": "b", "columns": [ { "name": "lbl" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: LBL
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: lbl
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'asterisk over join: SELECT * FROM a JOIN b ON (no coalescing)'
+  statement: SELECT * FROM a JOIN b ON a.id = b.aid;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "a", "columns": [ { "name": "id" }, { "name": "x" } ] },
+            { "name": "b", "columns": [ { "name": "aid" }, { "name": "y" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: x
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: a
+            column: x
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: aid
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: aid
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: "y"
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: b
+            column: "y"
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: a
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: b
+        column: ""
+    predicatecolumns: []
+- description: 'derived: SELECT a FROM (SELECT a,b,c FROM t) — outer projects one column of a 3-column derived relation'
+  statement: SELECT a FROM (SELECT a, b, c FROM t) d;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "a" }, { "name": "b" }, { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: a
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'derived: SELECT d.* over a subset-projecting derived relation (reproduces the derived projection a,b — not the base d2)'
+  statement: SELECT d.* FROM (SELECT a, b FROM t) d;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t", "columns": [ { "name": "a" }, { "name": "b" }, { "name": "c" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: a
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t
+        column: ""
+    predicatecolumns: []
+- description: 'cte: subset CTE referenced with explicit columns AND a star sibling (WITH c AS (SELECT a,b FROM t) SELECT c.a, * FROM c)'
+  statement: WITH c AS (SELECT a, b FROM wide) SELECT c.a, * FROM c;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "wide", "columns": [ { "name": "a" }, { "name": "b" }, { "name": "c" }, { "name": "d" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: wide
+            column: a
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: wide
+            column: a
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: B
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: wide
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: wide
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op base-star x base-star: SELECT * FROM t1 UNION ALL SELECT * FROM t2 (one output col position-merges t1.pub + t2.sec; t2.sec is the sensitive non-first arm — must NOT surface as a separate output column)'
+  statement: SELECT * FROM t1 UNION ALL SELECT * FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "pub" } ] },
+            { "name": "t2", "columns": [ { "name": "sec" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: pub
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: pub
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: sec
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op base-star x base-star (2 cols each): SELECT * FROM t1 UNION ALL SELECT * FROM t2 (both expand to 2 cols then position-merge; t2.sec is the sensitive 2nd-position arm)'
+  statement: SELECT * FROM t1 UNION ALL SELECT * FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "x1" }, { "name": "y1" } ] },
+            { "name": "t2", "columns": [ { "name": "x2" }, { "name": "sec" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: x1
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: x1
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: x2
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: y1
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: y1
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: sec
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op nested star-merge: SELECT a FROM t1 UNION ALL SELECT * FROM t2 UNION ALL SELECT c FROM t3 (the inner star-merge arm t2 must survive the OUTER merge; t2.sec is the sensitive middle arm)'
+  statement: SELECT a FROM t1 UNION ALL SELECT * FROM t2 UNION ALL SELECT c FROM t3;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "a" } ] },
+            { "name": "t2", "columns": [ { "name": "sec" } ] },
+            { "name": "t3", "columns": [ { "name": "c" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: A
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: a
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: sec
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t3
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t3
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op EXCEPT-star arm: SELECT * EXCEPT(dropme) FROM t1 UNION ALL SELECT rcol FROM t2 (the EXCEPT starGroup on the left arm must survive the merge — dropme excluded, surviving keep position-merges with t2.rcol)'
+  statement: SELECT * EXCEPT (dropme) FROM t1 UNION ALL SELECT rcol FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "keep" }, { "name": "dropme" } ] },
+            { "name": "t2", "columns": [ { "name": "rcol" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: keep
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: keep
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: rcol
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op REPLACE-star arm: SELECT t1.* REPLACE(t2.sec AS keep) FROM t1 JOIN t2 ON t1.keep=t2.jid UNION ALL SELECT rcol FROM t3 (the REPLACE starGroup must survive the merge; output keep position-merges the REPLACE lineage t2.sec with t3.rcol — t2.sec sensitive)'
+  statement: SELECT t1.* REPLACE (t2.sec AS keep) FROM t1 JOIN t2 ON t1.keep = t2.jid UNION ALL SELECT rcol FROM t3;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "keep" } ] },
+            { "name": "t2", "columns": [ { "name": "sec" }, { "name": "jid" } ] },
+            { "name": "t3", "columns": [ { "name": "rcol" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: keep
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: sec
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t3
+            column: rcol
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t3
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden recursive base-star arm: WITH RECURSIVE r AS (SELECT * FROM seed UNION ALL SELECT * FROM r) SELECT * FROM r (base-star recursive arm; the fixpoint must publish seed lineage exactly once — NOT duplicate it into 4 cols; seed.sec sensitive)'
+  statement: WITH RECURSIVE r AS (SELECT * FROM seed UNION ALL SELECT * FROM r) SELECT * FROM r;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "seed", "columns": [ { "name": "id" }, { "name": "sec" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: seed
+            column: id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: sec
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: seed
+            column: sec
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: r
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: seed
+        column: ""
+    predicatecolumns: []
+- description: 'leak-harden set-op base-star x base-star UNION DISTINCT: SELECT * FROM t1 UNION DISTINCT SELECT * FROM t2 (DISTINCT variant of base-star merge; t2.sec sensitive)'
+  statement: SELECT * FROM t1 UNION DISTINCT SELECT * FROM t2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name": "ds1",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            { "name": "t1", "columns": [ { "name": "pub" } ] },
+            { "name": "t2", "columns": [ { "name": "sec" } ] }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: pub
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t1
+            column: pub
+          - server: ""
+            database: ds1
+            schema: ""
+            table: t2
+            column: sec
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: t2
+        column: ""
     predicatecolumns: []

@@ -48,9 +48,13 @@ function DialogContent({
         ref={ref}
         className={cn(
           `fixed left-1/2 top-1/2 ${LAYER_SURFACE_CLASS} -translate-x-1/2 -translate-y-1/2`,
-          "w-[calc(100vw-8rem)] max-w-3xl 2xl:max-w-[55vw]",
+          // Single max-w utility (no responsive variant) so a caller's
+          // max-w-* fully replaces it via tailwind-merge; a 2xl: variant
+          // here would survive the merge and win the cascade on wide
+          // screens, silently overriding the caller's width.
+          "w-[calc(100vw-8rem)] max-w-[max(48rem,55vw)]",
           "max-h-[calc(100vh-10rem)] overflow-y-auto",
-          "rounded-sm bg-background shadow-lg",
+          "rounded-sm bg-background p-6 shadow-lg",
           className
         )}
         {...props}

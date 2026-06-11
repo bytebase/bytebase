@@ -73,7 +73,7 @@ export function SchemaNameDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
+      <DialogContent className="w-full max-w-md">
         <DialogTitle>{t("schema-editor.actions.create-schema")}</DialogTitle>
         <div className="mt-4 flex flex-col gap-y-4">
           <Input

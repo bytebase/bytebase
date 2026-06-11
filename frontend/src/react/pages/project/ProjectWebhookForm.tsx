@@ -4,13 +4,15 @@ import { EllipsisVertical, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/react/components/RouterLink";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -572,26 +574,26 @@ export function ProjectWebhookForm({
       </div>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogTitle>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogTitle>
             {t("project.webhook.deletion.confirm-title", {
               title: state.title,
             })}
-          </DialogTitle>
-          <p className="text-sm text-control-light">
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t("common.cannot-undo-this-action")}
-          </p>
-          <div className="flex justify-end gap-x-2 mt-4">
+          </AlertDialogDescription>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={deleteWebhook}>
               {t("common.delete")}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

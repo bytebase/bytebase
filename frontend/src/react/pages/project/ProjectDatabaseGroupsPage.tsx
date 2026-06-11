@@ -4,12 +4,14 @@ import { useTranslation } from "react-i18next";
 import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
-import { Button } from "@/react/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
+import { Button } from "@/react/components/ui/button";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { router } from "@/react/router";
 import {
@@ -128,31 +130,31 @@ export function ProjectDatabaseGroupsPage({
         />
       </div>
 
-      <Dialog
+      <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
       >
-        <DialogContent>
-          <DialogTitle>
+        <AlertDialogContent>
+          <AlertDialogTitle>
             {deleteTarget
               ? t("database-group.delete-group", { name: deleteTarget.title })
               : ""}
-          </DialogTitle>
-          <p className="text-sm text-control-light">
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t("common.cannot-undo-this-action")}
-          </p>
-          <div className="flex justify-end gap-x-2 mt-4">
+          </AlertDialogDescription>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               {t("common.delete")}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
