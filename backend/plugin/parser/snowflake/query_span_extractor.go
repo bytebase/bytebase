@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -473,6 +474,7 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStm
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement")
 			}
+			left = filterIlikeColumns(left, target.Ilike)
 			left = filterExcludedColumns(left, target.Exclude)
 			left, err = q.applyStarReplaces(left, target.Replace)
 			if err != nil {
@@ -1393,6 +1395,53 @@ func applyStarRenames(columns []base.QuerySpanResult, renames []ast.StarRename) 
 		}
 	}
 	return renamed
+}
+
+// filterIlikeColumns applies the `SELECT * ILIKE '<pattern>'` transform: only
+// columns whose name matches the pattern (case-insensitive; % = any run,
+// _ = any single character) survive the star expansion. Applied FIRST, before
+// EXCLUDE/REPLACE/RENAME, per the documented transform order. The positional
+// masker depends on the span matching the actual result-set shape, so this
+// must genuinely filter (not over-attribute).
+func filterIlikeColumns(columns []base.QuerySpanResult, pattern *ast.Literal) []base.QuerySpanResult {
+	if pattern == nil {
+		return columns
+	}
+	matcher := ilikeMatcher(pattern.Value)
+	filtered := make([]base.QuerySpanResult, 0, len(columns))
+	for _, column := range columns {
+		if matcher(column.Name) {
+			filtered = append(filtered, column)
+		}
+	}
+	return filtered
+}
+
+// ilikeMatcher compiles a Snowflake ILIKE pattern into a case-insensitive
+// matcher over the whole name (% -> any run, _ -> any single rune). Go regexp
+// (?i) covers ASCII case-insensitivity; it does not replicate Snowflake SQL
+// collation for non-ASCII identifiers (low risk: column names are near-always
+// ASCII).
+func ilikeMatcher(pattern string) func(string) bool {
+	var sb strings.Builder
+	sb.WriteString(`(?is)\A`)
+	for _, r := range pattern {
+		switch r {
+		case '%':
+			sb.WriteString(`.*`)
+		case '_':
+			sb.WriteString(`.`)
+		default:
+			sb.WriteString(regexp.QuoteMeta(string(r)))
+		}
+	}
+	sb.WriteString(`\z`)
+	re, err := regexp.Compile(sb.String())
+	if err != nil {
+		// A pattern that fails to compile matches nothing (fail closed).
+		return func(string) bool { return false }
+	}
+	return re.MatchString
 }
 
 // applyStarReplaces applies the `SELECT * REPLACE (expr AS col, ...)` transform

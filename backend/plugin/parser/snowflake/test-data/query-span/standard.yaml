@@ -1153,3 +1153,46 @@
           table: T2
           column: ""
     predicatecolumns: []
+- description: SELECT * ILIKE filters the star expansion by the pattern (case-insensitive)
+  statement: SELECT * ILIKE '%s%' FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "SSN"},
+                {"name":  "NAME"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: SSN
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: SSN
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
