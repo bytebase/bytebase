@@ -122,3 +122,27 @@ func TestGetQueryType_CallExecuteAreDML(t *testing.T) {
 		}
 	}
 }
+
+// TestGetQueryType_UnmappedStaysUnknown locks the fail-closed fallback: parsed
+// statements the classifier does not deliberately map (legacy left them
+// QueryTypeUnknown, which the SQL service denies) must NOT default to DDL.
+func TestGetQueryType_UnmappedStaysUnknown(t *testing.T) {
+	for _, tc := range []struct {
+		sql  string
+		want base.QueryType
+	}{
+		{"TRUNCATE TABLE T1;", base.QueryTypeUnknown},
+		{"GRANT SELECT ON TABLE T1 TO ROLE R1;", base.QueryTypeUnknown},
+		{"CREATE TABLE T1 (A INT);", base.DDL},
+		{"ALTER TABLE T1 ADD COLUMN B INT;", base.DDL},
+		{"DROP TABLE T1;", base.DDL},
+	} {
+		file, err := parser.Parse(tc.sql)
+		if err != nil {
+			t.Fatalf("parse %q: %v", tc.sql, err)
+		}
+		if got := getQueryType(file.Stmts[0]); got != tc.want {
+			t.Fatalf("getQueryType(%q) = %v, want %v", tc.sql, got, tc.want)
+		}
+	}
+}

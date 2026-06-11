@@ -1,6 +1,8 @@
 package snowflake
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -29,13 +31,14 @@ import (
 // CALL / EXECUTE IMMEDIATE / EXECUTE TASK classify base.DML and EXPLAIN
 // classifies base.Explain, matching the legacy other_command branches.
 //
-// Everything else (the remaining other_command forms the legacy listener left
-// as base.QueryTypeUnknown — TRUNCATE, GRANT/REVOKE, COMMIT/ROLLBACK, PUT/GET,
-// LIST/REMOVE, UNSET, ...) defaults to base.DDL: the safe upper bound for
-// access-control purposes, matching the Trino migration's "everything else is
-// DDL" default. validateQuery only distinguishes read-only
-// (Select/SelectInfoSchema/Explain) from everything else, so the upper-bound
-// default never relaxes the read-only gate.
+// CREATE/ALTER/DROP/UNDROP statements classify base.DDL (the legacy
+// ddl_command branch), matched by node-tag prefix. Everything else (the
+// other_command forms the legacy listener left as base.QueryTypeUnknown —
+// TRUNCATE, GRANT/REVOKE, COMMIT/ROLLBACK, PUT/GET, LIST/REMOVE, UNSET,
+// scripting blocks, ...) stays base.QueryTypeUnknown, which the SQL service
+// DENIES before execution: fail closed, exactly as legacy. A blanket DDL
+// fallback would let bb.sql.ddl holders run account/stage administration
+// commands that were never deliberately mapped.
 //
 // A nil node yields base.QueryTypeUnknown.
 func getQueryType(node ast.Node) base.QueryType {
@@ -87,7 +90,16 @@ func getQueryType(node ast.Node) base.QueryType {
 		return base.DDL
 	}
 
-	// Everything else (CREATE/ALTER/DROP/UNDROP/TRUNCATE/GRANT/REVOKE/... and any
-	// other recognized statement) is DDL — the safe upper bound for ACL.
-	return base.DDL
+	// CREATE / ALTER / DROP / UNDROP — the legacy ddl_command set — classify by
+	// node-tag prefix (every omni DDL node is named Create*/Alter*/Drop*/Undrop*).
+	tag := node.Tag().String()
+	for _, prefix := range []string{"Create", "Alter", "Drop", "Undrop"} {
+		if strings.HasPrefix(tag, prefix) {
+			return base.DDL
+		}
+	}
+
+	// Anything not deliberately mapped stays Unknown — the SQL service denies
+	// it before execution (fail closed, legacy parity).
+	return base.QueryTypeUnknown
 }
