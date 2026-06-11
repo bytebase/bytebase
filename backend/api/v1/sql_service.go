@@ -1767,12 +1767,13 @@ type writeTargetResource struct {
 // extractor, the statement can't be parsed, or no targets are found — callers must
 // then fall back to the database-level check (never fail open). See SUP-222.
 //
-// The extractor reports every table referenced by the change, so for UPDATE … JOIN …
-// or DELETE … USING … the read-only joined/using tables are included alongside the
-// mutated table; this only ever over-restricts (fail-closed), never under-restricts.
-// It also tracks tables only, so DDL on non-table objects (views, functions,
-// procedures, sequences) resolves to zero targets and falls back to the
-// database-level check — a table-scoped grant cannot authorize such DDL.
+// Some engines' extractors report auxiliary tables referenced by the change (e.g.
+// the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
+// mutated table, others only the primary target; either way this can only ever
+// over-restrict (fail-closed), never under-restrict. It also tracks tables only, so
+// DDL on non-table objects (views, functions, procedures, sequences) resolves to zero
+// targets and falls back to the database-level check — a table-scoped grant cannot
+// authorize such DDL.
 func (s *SQLService) resolveWriteTargets(
 	ctx context.Context,
 	instance *store.InstanceMessage,
