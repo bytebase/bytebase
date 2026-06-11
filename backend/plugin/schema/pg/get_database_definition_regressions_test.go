@@ -91,6 +91,106 @@ func TestGetDatabaseDefinition_TableWithOnlyCheckConstraints(t *testing.T) {
 	}
 }
 
+// TestGetDatabaseDefinition_TableWithConstraintsButNoColumns reproduces a
+// dump replay failure observed on a real workspace export: the sync user
+// lacked column privileges on some tables, so information_schema.columns
+// returned nothing while pg_catalog still exposed the tables' constraints.
+// The dump then emitted `CREATE TABLE "s1"."t1" ();` followed by
+// `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (c1, c2);`, which
+// PostgreSQL rejects because the columns do not exist. The dump must skip
+// column-dependent DDL for such tables instead of producing non-replayable
+// statements.
+func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "s1",
+			Tables: []*storepb.TableMetadata{
+				{
+					// Broken sync: constraints and indexes, but no columns.
+					Name: "t1",
+					Indexes: []*storepb.IndexMetadata{
+						{
+							Name:         "pk_t1",
+							Primary:      true,
+							Unique:       true,
+							IsConstraint: true,
+							Expressions:  []string{"c1", "c2"},
+						},
+						{
+							Name:         "uk_t1_c1",
+							Unique:       true,
+							IsConstraint: true,
+							Expressions:  []string{"c1"},
+						},
+						{
+							Name:        "idx_t1_c2",
+							Type:        "btree",
+							Expressions: []string{"c2"},
+							Definition:  `CREATE INDEX idx_t1_c2 ON s1.t1 USING btree (c2);`,
+						},
+					},
+					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+						Name:       "chk_t1_c1",
+						Expression: "(c1 > 0)",
+					}},
+					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+						Name:              "fk_t1_t2",
+						Columns:           []string{"c1"},
+						ReferencedSchema:  "s1",
+						ReferencedTable:   "t2",
+						ReferencedColumns: []string{"id"},
+					}},
+				},
+				{
+					// Healthy table; its own constraints must still dump, but
+					// its foreign key into the broken table must not.
+					Name: "t2",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "id", Type: "integer", Nullable: false},
+						{Name: "t1_c1", Type: "integer", Nullable: true},
+					},
+					Indexes: []*storepb.IndexMetadata{{
+						Name:         "pk_t2",
+						Primary:      true,
+						Unique:       true,
+						IsConstraint: true,
+						Expressions:  []string{"id"},
+					}},
+					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+						Name:              "fk_t2_t1",
+						Columns:           []string{"t1_c1"},
+						ReferencedSchema:  "s1",
+						ReferencedTable:   "t1",
+						ReferencedColumns: []string{"c1"},
+					}},
+				},
+			},
+		}},
+	}
+
+	ddl, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetDatabaseDefinition: %v", err)
+	}
+
+	if !strings.Contains(ddl, `CREATE TABLE "s1"."t1" (`) {
+		t.Errorf("expected bare CREATE TABLE for t1, got:\n%s", ddl)
+	}
+	for _, banned := range []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1"} {
+		if strings.Contains(ddl, banned) {
+			t.Errorf("DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", banned, ddl)
+		}
+	}
+	if !strings.Contains(ddl, `ADD CONSTRAINT "pk_t2" PRIMARY KEY (id)`) {
+		t.Errorf("expected pk_t2 on the healthy table, got:\n%s", ddl)
+	}
+
+	if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
+		t.Errorf("omni catalog parse error: %v\nDDL:\n%s", parseErr, ddl)
+	}
+}
+
 // TestGetDatabaseDefinition_TableNameContainingDot reproduces A3: a table
 // whose name literally contains a period was writing out as `"".".."` —
 // because the schema + "." + object object-ID was split back on the first

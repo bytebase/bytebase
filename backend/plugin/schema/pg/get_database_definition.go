@@ -345,13 +345,26 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct foreign keys.
+	// Construct foreign keys. Skip foreign keys touching a table without
+	// column metadata on either side; they would reference columns absent
+	// from the dump.
+	tablesMissingColumns := make(map[string]bool)
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
-			if table.SkipDump {
+			if tableMissingColumnMetadata(table) {
+				tablesMissingColumns[getObjectID(schema.Name, table.Name)] = true
+			}
+		}
+	}
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			if table.SkipDump || tablesMissingColumns[getObjectID(schema.Name, table.Name)] {
 				continue
 			}
 			for _, fk := range table.ForeignKeys {
+				if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
+					continue
+				}
 				if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
 					return "", err
 				}
@@ -617,12 +630,23 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct foreign keys.
+	// Construct foreign keys. Skip foreign keys touching a table without
+	// column metadata on either side; they would reference columns absent
+	// from the dump.
+	tablesMissingColumns := make(map[string]bool)
 	for _, table := range schema.Tables {
-		if table.SkipDump {
+		if tableMissingColumnMetadata(table) {
+			tablesMissingColumns[table.Name] = true
+		}
+	}
+	for _, table := range schema.Tables {
+		if table.SkipDump || tablesMissingColumns[table.Name] {
 			continue
 		}
 		for _, fk := range table.ForeignKeys {
+			if fk.ReferencedSchema == schema.Name && tablesMissingColumns[fk.ReferencedTable] {
+				continue
+			}
 			if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
 				return "", err
 			}
@@ -652,10 +676,13 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 			return "", err
 		}
 	}
-	// Construct foreign keys.
-	for _, fk := range table.ForeignKeys {
-		if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
-			return "", err
+	// Construct foreign keys. A table without column metadata cannot carry
+	// foreign keys referencing its (missing) columns.
+	if !tableMissingColumnMetadata(table) {
+		for _, fk := range table.ForeignKeys {
+			if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
+				return "", err
+			}
 		}
 	}
 	return buf.String(), nil
@@ -1681,7 +1708,33 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 	return generationType, identitySequences, nonIdentitySequences
 }
 
+// tableMissingColumnMetadata reports whether a synced table carries no column
+// metadata. information_schema.columns is privilege-filtered, so a sync user
+// without column privileges on a table sees zero columns while the
+// pg_catalog-based queries still return the table's constraints and indexes.
+// DDL referencing the missing columns would make the dump non-replayable, so
+// writers skip column-dependent statements for such tables.
+func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
+	return len(table.Columns) == 0
+}
+
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Emit a bare CREATE TABLE so the table still exists on replay, and
+		// skip constraints, indexes, partitions, and sequence ownership —
+		// they all reference columns absent from the dump.
+		if err := writeCreateTable(out, schema, table.Name, nil, nil, nil); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
+			return err
+		}
+		if len(table.Comment) > 0 {
+			return writeTableComment(out, schema, table)
+		}
+		return nil
+	}
+
 	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
 
 	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints, table.ExcludeConstraints); err != nil {
@@ -3187,6 +3240,11 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 }
 
 func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error) error {
+	if tableMissingColumnMetadata(table) {
+		// Constraints would reference columns absent from the dump.
+		return nil
+	}
+
 	// Write primary key constraint
 	for _, index := range table.Indexes {
 		if index.Primary {
@@ -3245,6 +3303,10 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, write
 }
 
 func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if tableMissingColumnMetadata(table) {
+		// Indexes would reference columns absent from the dump.
+		return nil
+	}
 	for _, index := range table.Indexes {
 		// Skip indexes that are constraints (primary key, unique constraints)
 		// These are already handled in the CREATE TABLE statement
