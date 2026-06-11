@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -46,8 +47,9 @@ type QueryHistoryMessage struct {
 
 // FindQueryHistoryMessage is the API message for finding query histories.
 type FindQueryHistoryMessage struct {
-	Creator *string
-	Project *string
+	ResourceID *string
+	Creator    *string
+	Project    *string
 	// Instance is the instance resource name like instances/{instance}.
 	Instance *string
 	// Database is database resource name like instances/{instance}/databases/{database}.
@@ -122,6 +124,9 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
+	if v := find.ResourceID; v != nil {
+		q.And("query_history.resource_id = ?", *v)
+	}
 	if v := find.Creator; v != nil {
 		q.And("query_history.creator = ?", *v)
 	}
@@ -186,6 +191,23 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	}
 
 	return queryHistories, nil
+}
+
+// GetQueryHistory gets a single query history by its resource id. Returns nil
+// when no matching record exists.
+func (s *Store) GetQueryHistory(ctx context.Context, resourceID string) (*QueryHistoryMessage, error) {
+	limit := 1
+	histories, err := s.ListQueryHistories(ctx, &FindQueryHistoryMessage{
+		ResourceID: &resourceID,
+		Limit:      &limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(histories) == 0 {
+		return nil, nil
+	}
+	return histories[0], nil
 }
 
 func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
@@ -267,7 +289,13 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				if !ok {
 					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
-				return parseToSQL("statement", "%"+strValue+"%")
+				// Normalize whitespace on both sides so a single-line search
+				// like "SELECT * FROM t" matches a stored multi-line statement
+				// "SELECT\n  *\nFROM t", and match case-insensitively. Mirrors
+				// the access-grant `query.contains` search in
+				// GetListAccessGrantFilter.
+				normalizedValue := strings.Join(strings.Fields(strValue), " ")
+				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}

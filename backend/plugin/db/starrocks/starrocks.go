@@ -69,7 +69,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		protocol = "unix"
 	}
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if dbType == storepb.Engine_DORIS {
+	if dbType == storepb.Engine_DORIS || dbType == storepb.Engine_STARROCKS {
 		params = append(params, "interpolateParams=true")
 	}
 	if connCfg.DataSource.GetSshHost() != "" {
@@ -276,7 +276,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string) 
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_DORIS, statement)
+	singleSQLs, err := base.SplitMultiSQL(d.dbType, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_DORIS, statement)
+		_, allQuery, err := base.ValidateSQLForEditor(d.dbType, statement)
 		if err != nil {
 			// TODO(d): need to make parser compatible.
 			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))

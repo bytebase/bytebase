@@ -132,9 +132,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     });
   }, [currentUserName, navigate, t]);
 
+  // Auth surfaces (signin, OAuth/OIDC callbacks, MFA, …) render outside the
+  // readiness gate: they don't depend on the workspace data loaded above, and
+  // hiding them while it loads would unmount the OAuth callback page mid-login
+  // (its `login()` flips `isLoggedIn`, which triggers that load) and blank the
+  // signin page on first paint.
   return (
     <>
-      {ready && !shouldRedirectToSignin ? (
+      {(ready || isAuthRoute) && !shouldRedirectToSignin ? (
         children
       ) : (
         <div className="flex items-center justify-center h-screen">

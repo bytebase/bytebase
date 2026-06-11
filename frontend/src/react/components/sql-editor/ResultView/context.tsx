@@ -379,6 +379,9 @@ export function SQLResultViewProvider({
         deselect();
       }
       if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
+        if (window.getSelection()?.toString()) {
+          return;
+        }
         e.preventDefault();
         e.stopImmediatePropagation();
         copy("selected", formatAsText);

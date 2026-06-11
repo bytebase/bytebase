@@ -71,6 +71,27 @@ describe("react route table reachability", () => {
     expect(collectBareLeaves(routes)).toEqual([]);
   });
 
+  it("the root route declares an errorElement so render crashes show a recovery page", () => {
+    // Without this, any uncaught render error anywhere in the app shows
+    // react-router's developer-facing default error screen (raw minified
+    // stack, "Hey developer" hint) — see issue #20575.
+    expect(routes[0].errorElement).toBeTruthy();
+  });
+
+  it("dashboard pages sit behind a layout-seam errorElement below BodyLayout", () => {
+    // The seam must be a pathless route BELOW BodyLayout: an errorElement
+    // ON the layout route would replace the layout (sidebar and all) when
+    // a page crashes, instead of rendering the panel in the content area.
+    const dashboardRoot = routes[0].children?.find((r) => r.path === "/");
+    expect(dashboardRoot).toBeDefined();
+    const bodyLayoutRoute = dashboardRoot!.children?.find((r) => r.path === "");
+    expect(bodyLayoutRoute).toBeDefined();
+    const seam = bodyLayoutRoute!.children?.[0];
+    expect(seam?.path).toBeUndefined();
+    expect(seam?.errorElement).toBeTruthy();
+    expect(seam?.children?.length).toBeGreaterThan(0);
+  });
+
   it.each([
     "/projects/db333/rollouts/605",
     "/sql-editor/does-not-exist",

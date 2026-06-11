@@ -285,6 +285,31 @@ CREATE TABLE translations (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 `,
 		},
+		{
+			description: "Check constraints with string literals and function with multiline parameters",
+			originalDDL: `
+CREATE TABLE transactions (
+	id INT PRIMARY KEY AUTO_INCREMENT,
+	type VARCHAR(10),
+	amount DECIMAL(10, 2),
+	CONSTRAINT c1 CHECK (type = 'A' AND amount IS NOT NULL)
+);
+
+DELIMITER $$
+
+CREATE FUNCTION lookup_token(
+	p_a BIGINT,
+	p_b VARCHAR(36)
+) RETURNS CHAR(36) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci
+	NO SQL
+	DETERMINISTIC
+BEGIN
+	RETURN p_b;
+END$$
+
+DELIMITER ;
+`,
+		},
 	}
 
 	for _, tc := range testCases {

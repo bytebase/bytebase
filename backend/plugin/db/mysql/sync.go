@@ -416,6 +416,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			); err != nil {
 				return nil, err
 			}
+			check.Expression = unescapeCheckClause(check.Expression)
 			key := db.TableKey{Schema: "", Table: tableName}
 			checkMap[key] = append(checkMap[key], check)
 		}
@@ -906,15 +907,40 @@ func (d *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functi
 			f = fmt.Sprintf("CREATE%s", f[functionSymbolIdx:])
 		}
 
-		if charsetIdx := strings.Index(f, " CHARSET "); charsetIdx != -1 {
-			if newLineIdx := strings.Index(f, "\n"); newLineIdx != -1 {
-				f = f[:charsetIdx] + f[newLineIdx:]
-			}
-		}
+		f = stripReturnsCharset(f)
 
 		return f, nil
 	}
 	return "", nil
+}
+
+// unescapeCheckClause unescapes the check constraint clause stored in
+// information_schema.CHECK_CONSTRAINTS.CHECK_CLAUSE, which escapes single
+// quotes as \' (e.g. (`type` = _utf8mb4\'A\')). The escaped form is not valid
+// SQL and must be unescaped before being written back into DDL.
+func unescapeCheckClause(clause string) string {
+	return strings.ReplaceAll(clause, `\'`, `'`)
+}
+
+// stripReturnsCharset removes the " CHARSET ... [COLLATE ...]" attributes that
+// SHOW CREATE FUNCTION appends to the RETURNS clause. The search is anchored to
+// the RETURNS line because the parameter list is preserved verbatim from the
+// original definition: it can span multiple lines and may itself contain
+// CHARSET attributes.
+func stripReturnsCharset(def string) string {
+	returnsIdx := strings.Index(def, " RETURNS ")
+	if returnsIdx == -1 {
+		return def
+	}
+	lineEnd := strings.Index(def[returnsIdx:], "\n")
+	if lineEnd == -1 {
+		return def
+	}
+	charsetIdx := strings.Index(def[returnsIdx:returnsIdx+lineEnd], " CHARSET ")
+	if charsetIdx == -1 {
+		return def
+	}
+	return def[:returnsIdx+charsetIdx] + def[returnsIdx+lineEnd:]
 }
 
 func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {

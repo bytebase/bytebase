@@ -232,6 +232,7 @@
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
+    - [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest)
     - [MaskingReason](#bytebase-v1-MaskingReason)
     - [QueryHistory](#bytebase-v1-QueryHistory)
     - [QueryOption](#bytebase-v1-QueryOption)
@@ -4495,6 +4496,21 @@ DatabaseService manages databases and their schemas.
 
 
 
+<a name="bytebase-v1-GetQueryHistoryRequest"></a>
+
+### GetQueryHistoryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the query history to retrieve. Format: projects/{project}/queryHistories/{id} |
+
+
+
+
+
+
 <a name="bytebase-v1-MaskingReason"></a>
 
 ### MaskingReason
@@ -4924,6 +4940,7 @@ SQLService executes SQL queries and manages query operations.
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) | Executes a read-only SQL query against a database. Permissions required: bb.databases.get |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Executes SQL with admin privileges via streaming connection. Permissions required: bb.sql.admin |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
+| GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |
 | AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) | Provides AI-powered SQL completion and generation. Permissions required: None (authenticated users only, requires AI to be enabled) |

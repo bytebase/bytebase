@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {{email}}.",
+      "continue-with-email": "Continue with email",
+      "continue-with-idp": "Continue with {{idp}}",
       "email-code-tab": "Email Code",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
@@ -150,8 +152,10 @@
       "new-user": "New to Bytebase?",
       "resend-code": "Resend code",
       "resend-in": "Resend in {{seconds}}s",
-      "send-code": "Send code",
-      "sign-in-with-idp": "Sign in with {{idp}}",
+      "sign-in-or-create": "Sign in or create your account",
+      "sign-in-to-account": "Sign in to your account",
+      "standard-tab": "Standard",
+      "tos": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "verification-code": "Verification code"
     },
     "sign-up": {
@@ -390,6 +394,7 @@
     "remaining": "remaining",
     "remove": "Remove",
     "removed": "Removed",
+    "render-failed": "Failed to display this content.",
     "reopen": "Reopen",
     "reorder": "Reorder",
     "required-permission": "Required permissions",
@@ -838,8 +843,11 @@
     "successfully-updated-environment": "Successfully updated environment '{{name}}'."
   },
   "error-page": {
+    "error-details": "Error details",
     "go-back-home": "Go back home",
-    "not-found": "Not Found"
+    "not-found": "Not Found",
+    "something-went-wrong": "Something went wrong",
+    "unexpected-error-description": "An unexpected error occurred while displaying this page. Refreshing usually fixes it; if it keeps happening, please report the issue to your administrator."
   },
   "export-center": {
     "data-export": "Data Export",
@@ -2690,6 +2698,7 @@
     "copy-all-column-names": "Copy all column names",
     "copy-all-rows-as-csv": "Copy all rows as CSV",
     "copy-all-rows-as-sql": "Copy all rows as SQL",
+    "copy-history-link": "Copy history link",
     "copy-name": "Copy name",
     "copy-selected-results": "Copy selected data by <action></action> or <button></button>",
     "copy-selected-rows-as-csv": "Copy selected rows as CSV",
@@ -2743,6 +2752,7 @@
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
+    "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
     "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
@@ -2755,8 +2765,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
+    "query-history-not-found": "Query history not found or no longer accessible",
     "query-time": "Query time",
     "re-request": "Re-request",
+    "recent": "Recent",
     "redis-command": {
       "all-nodes": "All nodes",
       "only-for-cluster": "Only available for cluster connection",
@@ -2813,6 +2825,7 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
+    "unable-to-connect-database": "Unable to connect to database {{name}}",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "vertical-display": "Vertical display",

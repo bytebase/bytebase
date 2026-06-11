@@ -5,6 +5,7 @@ import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_QUERY_HISTORY_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/react/router/handles";
 import type { Permission } from "@/types";
@@ -69,6 +70,10 @@ export const sqlEditorRoutes: RouteObject[] = [
       {
         path: "projects/:project/sheets/:sheet",
         handle: { name: SQL_EDITOR_WORKSHEET_MODULE },
+      },
+      {
+        path: "projects/:project/queryHistories/:queryHistory",
+        handle: { name: SQL_EDITOR_QUERY_HISTORY_MODULE },
       },
     ],
   },

@@ -21,7 +21,11 @@ const stubUIStateSlice = (): UIStateSlice => ({
   highlightAccessGrantName: undefined,
   isShowingCode: false,
   aiPanelSize: 0.3,
+  linkedQueryHistory: undefined,
+  linkedQueryHistoryTabId: undefined,
+  linkedQueryHistoryBaseline: undefined,
   setAsidePanelTab: vi.fn(),
+  setLinkedQueryHistory: vi.fn(),
   setShowConnectionPanel: vi.fn(),
   setShowAIPanel: vi.fn(),
   setPendingInsertAtCaret: vi.fn(),
@@ -35,6 +39,7 @@ const stubQueryHistorySlice = (): QueryHistorySlice => ({
   fetchQueryHistoryList: vi.fn(async () => undefined as never),
   resetPageToken: vi.fn(),
   mergeLatest: vi.fn(async () => undefined as never),
+  fetchQueryHistory: vi.fn(async () => undefined as never),
 });
 
 const stubTreeSlice = (): TreeSlice => ({

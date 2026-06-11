@@ -39,47 +39,47 @@
   querySpan:
     type: 1
     results:
-        - name: Id
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: MySchema
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: Name
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: MySchema
-              table: Customers
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: CustomerId
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Orders
-              column: CustomerId
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: Id
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: MySchema
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: Name
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: MySchema
+            table: Customers
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: CustomerId
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Orders
+            column: CustomerId
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: MySchema
-          table: Customers
-          column: ""
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Orders
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: MySchema
+        table: Customers
+        column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Orders
+        column: ""
     predicatecolumns: []
 - description: Except and replace
   statement: SELECT * EXCEPT (ID) REPLACE (ID/2 AS NAME) FROM people;
@@ -109,22 +109,22 @@
   querySpan:
     type: 1
     results:
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Set operation
   statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
@@ -165,59 +165,59 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: PEOPLE_ID
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: PEOPLE_ID
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_1
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: CTE_2
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_1
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: CTE_2
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
-- description: Parenthesized join
+- description: Parenthesized join (ON+USING legacy over-accept; ADDRESS deliberately has NO ID column so the USING(ID) coalesce is one-sided — with an ADDRESS.ID the legacy resolver under-reports the explicit ID lineage to PEOPLE.ID only while omni correctly merges both sides; reshaped so both agree, mirroring the bigquery sibling)
   statement: SELECT ID, NAME, ADDRESS FROM (people JOIN address ON people.ID = address.PEOPLE_ID USING (ID));
   defaultDatabase: ds1
   metadata: |-
@@ -242,9 +242,6 @@
               "name":  "ADDRESS",
               "columns":  [
                 {
-                  "name": "ID"
-                },
-                {
                   "name":  "PEOPLE_ID"
                 },
                 {
@@ -259,49 +256,49 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
-- description: Join using
+- description: Join using (ON+USING legacy over-accept; ADDRESS deliberately has NO ID column — see the Parenthesized-join sibling note)
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
   defaultDatabase: ds1
   metadata: |-
@@ -326,9 +323,6 @@
               "name":  "ADDRESS",
               "columns":  [
                 {
-                  "name": "ID"
-                },
-                {
                   "name":  "PEOPLE_ID"
                 },
                 {
@@ -343,47 +337,47 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: ID
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: PEOPLE
-              column: NAME
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: ADDRESS
-              column: ADDRESS
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: ID
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: PEOPLE
+            column: NAME
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: ADDRESS
+            column: ADDRESS
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Simple join
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID;
@@ -424,47 +418,47 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: People
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: People
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ADDRESS
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Address
-              column: Address
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: People
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: People
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Address
+            column: Address
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: address
-          column: ""
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: address
+        column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: people
+        column: ""
     predicatecolumns: []
 - description: Recursive cte
   statement: |-
@@ -503,72 +497,72 @@
   querySpan:
     type: 1
     results:
-        - name: C1
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: b
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: C2
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: b
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: C3
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: a
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: b
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: T1
-              column: c
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: "N"
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: C1
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: C2
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: b
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: C3
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: a
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: b
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: T1
+            column: c
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: "N"
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: CTE_01
-          column: ""
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: T1
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: CTE_01
+        column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: T1
+        column: ""
     predicatecolumns: []
 - description: Simple normal cte
   statement: WITH CTE_1 AS (SELECT Id, Name FROM Customers) SELECT * FROM CTE_1;
@@ -598,37 +592,37 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: CTE_1
-          column: ""
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: CTE_1
+        column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
@@ -675,32 +669,32 @@
   querySpan:
     type: 1
     results:
-        - name: CITY
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: GALLERIES
-              column: CITY
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: TOTAL_PAINTINGS
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: CITY
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: GALLERIES
+            column: CITY
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: TOTAL_PAINTINGS
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: galleries
-          column: ""
-        - server: ""
-          database: ds1
-          schema: ""
-          table: paintings
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: galleries
+        column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: paintings
+        column: ""
     predicatecolumns: []
 - description: FIXME(zp)Expression subquery
   statement: SELECT (SELECT Name FROM Customers), ID FROM Customers;
@@ -730,27 +724,27 @@
   querySpan:
     type: 1
     results:
-        - name: ""
-          sourcecolumns: []
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ""
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Table subquery
   statement: WITH A AS (SELECT * FROM Customers) SELECT result.ID, * FROM (SELECT * FROM A) result;
@@ -780,47 +774,47 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: Id
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: Name
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: Id
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: Name
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: A
-          column: ""
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: A
+        column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Wild projecter
   statement: SELECT s.* FROM Customers s;
@@ -850,32 +844,32 @@
   querySpan:
     type: 1
     results:
-        - name: Id
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: Name
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: Id
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: Name
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Simple projecter
   statement: SELECT Id, Name FROM Customers;
@@ -905,32 +899,32 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Expression in target field
   statement: SELECT Id+1, Id+Name, foo(bar(Id), Name) FROM Customers;
@@ -960,52 +954,52 @@
   querySpan:
     type: 1
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: false
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
     predicatecolumns: []
 - description: Simple select asterisk statement
   statement: SELECT * FROM Customers;
@@ -1035,30 +1029,1966 @@
   querySpan:
     type: 1
     results:
-        - name: Id
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Id
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: Name
-          sourcecolumns:
-            - server: ""
-              database: maskingdb
-              schema: ""
-              table: Customers
-              column: Name
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
+      - name: Id
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: Name
+        sourcecolumns:
+          - server: ""
+            database: maskingdb
+            schema: ""
+            table: Customers
+            column: Name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: maskingdb
-          schema: ""
-          table: Customers
-          column: ""
+      - server: ""
+        database: maskingdb
+        schema: ""
+        table: Customers
+        column: ""
+    predicatecolumns: []
+- description: Set op union all equal width explicit with sensitive column on second arm
+  statement: SELECT id, name FROM users UNION ALL SELECT order_id, card_number FROM orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op union all three way with sensitive column on third arm
+  statement: SELECT id FROM users UNION ALL SELECT order_id FROM orders UNION ALL SELECT iban FROM payments;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]},
+            {"name": "payments", "columns": [{"name": "payment_id"}, {"name": "order_id"}, {"name": "paid_amount"}, {"name": "iban"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: payments
+            column: iban
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: payments
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op union all with select star first arm
+  statement: SELECT * FROM users UNION ALL SELECT order_id, user_id, amount, card_number FROM orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: user_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: email
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ssn
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: ssn
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op union distinct
+  statement: SELECT name FROM users UNION DISTINCT SELECT card_number FROM orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op intersect distinct
+  statement: SELECT email FROM users INTERSECT DISTINCT SELECT iban FROM payments;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "payments", "columns": [{"name": "payment_id"}, {"name": "order_id"}, {"name": "paid_amount"}, {"name": "iban"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: EMAIL
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: payments
+            column: iban
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: payments
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op except distinct still taints from excluded arm
+  statement: SELECT phone FROM profiles EXCEPT DISTINCT SELECT card_number FROM orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "profiles", "columns": [{"name": "id"}, {"name": "address"}, {"name": "phone"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: PHONE
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: profiles
+            column: phone
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: profiles
+        column: ""
+    predicatecolumns: []
+- description: Set op different arm names keeps first arm name
+  statement: SELECT id AS user_key FROM users UNION ALL SELECT order_id AS order_key FROM orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: USER_KEY
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Set op of two subset projecting ctes
+  statement: WITH safe_users AS (SELECT id, name FROM users), safe_orders AS (SELECT order_id, card_number FROM orders) SELECT * FROM safe_users UNION ALL SELECT * FROM safe_orders;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: safe_orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: safe_users
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Join on with sensitive columns unprojected
+  statement: SELECT u.name, o.amount FROM users u JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: AMOUNT
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Join using uppercase identifier coalesces
+  statement: SELECT * FROM users JOIN logins USING (ID);
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "logins", "columns": [{"name": "id"}, {"name": "device"}, {"name": "ip_address"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: logins
+            column: id
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: email
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ssn
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: ssn
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: device
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: logins
+            column: device
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ip_address
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: logins
+            column: ip_address
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: logins
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Self join with aliases
+  statement: SELECT a.full_name, b.salary FROM employees a JOIN employees b ON a.manager_id = b.emp_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "employees", "columns": [{"name": "emp_id"}, {"name": "manager_id"}, {"name": "full_name"}, {"name": "salary"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: FULL_NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: employees
+            column: full_name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: SALARY
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: employees
+            column: salary
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: employees
+        column: ""
+    predicatecolumns: []
+- description: Three table join chain
+  statement: SELECT u.name, o.amount, p.iban FROM users u JOIN orders o ON u.id = o.user_id JOIN payments p ON o.order_id = p.order_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]},
+            {"name": "payments", "columns": [{"name": "payment_id"}, {"name": "order_id"}, {"name": "paid_amount"}, {"name": "iban"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: AMOUNT
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: IBAN
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: payments
+            column: iban
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: payments
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Select star over join
+  statement: SELECT * FROM users u JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: email
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ssn
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: ssn
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: order_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: user_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: user_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: amount
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: card_number
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Left join with sensitive column on right side
+  statement: SELECT u.name, o.card_number FROM users u LEFT JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: CARD_NUMBER
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Comma cross join
+  statement: SELECT u.name, l.device FROM users u, logins l;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "logins", "columns": [{"name": "id"}, {"name": "device"}, {"name": "ip_address"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: DEVICE
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: logins
+            column: device
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: logins
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Subset projecting cte then select star over it
+  statement: WITH safe AS (SELECT id, name FROM users) SELECT * FROM safe;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: safe
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Recursive cte with join back to cte
+  statement: |-
+    WITH RECURSIVE ladder AS (
+      SELECT emp_id, manager_id, full_name FROM employees
+      UNION ALL
+      SELECT e.emp_id, e.manager_id, e.full_name FROM employees e JOIN ladder l ON e.manager_id = l.emp_id
+    )
+    SELECT full_name FROM ladder;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "employees", "columns": [{"name": "emp_id"}, {"name": "manager_id"}, {"name": "full_name"}, {"name": "salary"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: FULL_NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: employees
+            column: full_name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: employees
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: ladder
+        column: ""
+    predicatecolumns: []
+- description: Nested cte inside cte body
+  statement: WITH outer_cte AS (WITH inner_cte AS (SELECT id, email FROM users) SELECT id FROM inner_cte) SELECT * FROM outer_cte;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: inner_cte
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: outer_cte
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Cte referenced twice with different aliases
+  statement: WITH c AS (SELECT id, name, ssn FROM users) SELECT a.id, b.name FROM c a JOIN c b ON a.id = b.id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: c
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Star over join of cte and base table
+  statement: WITH safe AS (SELECT id, name FROM users) SELECT * FROM safe s JOIN orders o ON s.id = o.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: order_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: user_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: user_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: amount
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: card_number
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: card_number
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: safe
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Derived table select star with subset projection
+  statement: SELECT * FROM (SELECT id, name FROM users) d;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Derived table renamed projection referenced by alias
+  statement: SELECT d.alias_col FROM (SELECT email AS alias_col FROM users) d;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ALIAS_COL
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Derived table computed projection referenced by alias
+  statement: SELECT d.total FROM (SELECT amount + 1 AS total FROM orders) d;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: TOTAL
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+    predicatecolumns: []
+- description: Derived table dot star
+  statement: SELECT d.* FROM (SELECT id, ssn FROM users) d;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: SSN
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: ssn
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Unaliased scalar subquery in select list
+  statement: SELECT (SELECT email FROM users), id FROM users;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ""
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Aliased correlated scalar subquery projecting sensitive column
+  statement: SELECT o.order_id, (SELECT u.ssn FROM users u WHERE u.id = o.user_id) AS owner_ssn FROM orders o;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ORDER_ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: OWNER_SSN
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Struct field path with table alias prefix
+  statement: SELECT p.address.city FROM profiles p;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "profiles", "columns": [{"name": "id"}, {"name": "address"}, {"name": "phone"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: profiles
+            column: address
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: profiles
+        column: ""
+    predicatecolumns: []
+- description: Struct field path without table prefix
+  statement: SELECT address.city FROM profiles;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "profiles", "columns": [{"name": "id"}, {"name": "address"}, {"name": "phone"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: ADDRESS
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: profiles
+            column: address
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: profiles
+        column: ""
+    predicatecolumns: []
+- description: Table name qualified star over join
+  statement: SELECT users.* FROM users JOIN orders ON users.id = orders.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: email
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: ssn
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: ssn
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Named schema table joined with default schema table of same name
+  statement: SELECT a.region, b.email FROM analytics.users a JOIN users b ON a.id = b.id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        },
+        {
+          "name": "analytics",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "region"}, {"name": "score"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: REGION
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: users
+            column: region
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: EMAIL
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: analytics
+        table: users
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
+    predicatecolumns: []
+- description: Select star from named schema table
+  statement: SELECT * FROM analytics.events;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        },
+        {
+          "name": "analytics",
+          "tables": [
+            {"name": "events", "columns": [{"name": "event_id"}, {"name": "user_id"}, {"name": "payload"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: event_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: events
+            column: event_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: user_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: events
+            column: user_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: payload
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: events
+            column: payload
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: analytics
+        table: events
+        column: ""
+    predicatecolumns: []
+- description: Three part database schema table name
+  statement: SELECT event_id FROM spannerdb.analytics.events;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        },
+        {
+          "name": "analytics",
+          "tables": [
+            {"name": "events", "columns": [{"name": "event_id"}, {"name": "user_id"}, {"name": "payload"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: EVENT_ID
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: events
+            column: event_id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: analytics
+        table: events
+        column: ""
+    predicatecolumns: []
+- description: Table name qualified column over named schema table
+  statement: SELECT events.payload FROM analytics.events;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]}
+          ]
+        },
+        {
+          "name": "analytics",
+          "tables": [
+            {"name": "events", "columns": [{"name": "event_id"}, {"name": "user_id"}, {"name": "payload"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: PAYLOAD
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: analytics
+            table: events
+            column: payload
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: analytics
+        table: events
+        column: ""
+    predicatecolumns: []
+- description: Information schema select is system only
+  statement: SELECT table_name FROM INFORMATION_SCHEMA.TABLES;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Lowercase information schema select is system only
+  statement: SELECT t.table_name FROM information_schema.tables t;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Spanner sys select is system only
+  statement: SELECT * FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Star except over join with sensitive columns excluded
+  statement: SELECT * EXCEPT (ssn, card_number) FROM users u JOIN orders o ON u.id = o.user_id;
+  defaultDatabase: spannerdb
+  metadata: |-
+    {
+      "name": "spannerdb",
+      "schemas": [
+        {
+          "name": "",
+          "tables": [
+            {"name": "users", "columns": [{"name": "id"}, {"name": "name"}, {"name": "email"}, {"name": "ssn"}]},
+            {"name": "orders", "columns": [{"name": "order_id"}, {"name": "user_id"}, {"name": "amount"}, {"name": "card_number"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: id
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: name
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: name
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: email
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: users
+            column: email
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: order_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: order_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: user_id
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: user_id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: amount
+        sourcecolumns:
+          - server: ""
+            database: spannerdb
+            schema: ""
+            table: orders
+            column: amount
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: orders
+        column: ""
+      - server: ""
+        database: spannerdb
+        schema: ""
+        table: users
+        column: ""
     predicatecolumns: []

@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { TreeDataNode } from "./tree";
 import { Tree } from "./tree";
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
@@ -44,6 +48,72 @@ describe("Tree", () => {
       root.unmount();
     });
     document.body.removeChild(container);
+  });
+
+  test("a node with a falsy id renders a contained fallback instead of crashing", async () => {
+    // react-arborist throws on falsy ids. The Tree must contain that
+    // failure to the pane (fallback + console.error) instead of letting
+    // the exception unmount the whole app.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    try {
+      const nodes = [makeNode("", "Broken")];
+      await act(async () => {
+        root.render(
+          <Tree
+            data={nodes}
+            renderNode={({ node, style }) => (
+              <div style={style}>{node.data.data.label}</div>
+            )}
+            height={200}
+          />
+        );
+      });
+      expect(container.textContent).toContain("common.render-failed");
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  test("recovers from the fallback when the data prop changes", async () => {
+    // After a contained crash, swapping in new data (e.g. the user picks
+    // another database) must re-attempt rendering, not stay broken.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    try {
+      const renderNode = ({
+        node,
+        style,
+      }: {
+        node: { data: TreeDataNode<TestPayload> };
+        style: React.CSSProperties;
+      }) => <div style={style}>{node.data.data.label}</div>;
+      await act(async () => {
+        root.render(
+          <Tree
+            data={[makeNode("", "Broken")]}
+            renderNode={renderNode}
+            height={200}
+          />
+        );
+      });
+      expect(container.textContent).toContain("common.render-failed");
+
+      await act(async () => {
+        root.render(
+          <Tree
+            data={[makeNode("ok", "Recovered")]}
+            renderNode={renderNode}
+            height={200}
+          />
+        );
+      });
+      expect(container.textContent).toContain("Recovered");
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   test("renders nodes from data via renderNode", async () => {

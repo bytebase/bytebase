@@ -48,6 +48,13 @@ service SQLService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // GetQueryHistory gets a single query history for the caller.
+  // Permissions required: None (only returns the caller's own query history)
+  rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
   // Exports query results to a file format.
   // Permissions required: bb.databases.get
   rpc Export(ExportRequest) returns (ExportResponse) {
@@ -499,6 +506,12 @@ message SearchQueryHistoriesRequest {
   // statement.contains("select")
   // type == "QUERY" && statement.contains("select")
   string filter = 3;
+}
+
+message GetQueryHistoryRequest {
+  // The name of the query history to retrieve.
+  // Format: projects/{project}/queryHistories/{id}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SearchQueryHistoriesResponse {

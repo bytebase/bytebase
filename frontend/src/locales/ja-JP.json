@@ -143,6 +143,8 @@
     },
     "sign-in": {
       "code-sent-hint": "{{email}} に認証コードを送信しました。",
+      "continue-with-email": "メールで続行",
+      "continue-with-idp": "{{idp}} で続行",
       "email-code-tab": "メール認証コード",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
@@ -150,8 +152,10 @@
       "new-user": "Bytebase を初めて使用しますか?",
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",
-      "send-code": "コードを送信",
-      "sign-in-with-idp": "{{idp}} 経由でログイン",
+      "sign-in-or-create": "ログインまたはアカウントを作成",
+      "sign-in-to-account": "アカウントにログイン",
+      "standard-tab": "標準",
+      "tos": "続行すると、<terms>利用規約</terms>および<privacy>プライバシーポリシー</privacy>に同意したものとみなされます。",
       "verification-code": "認証コード"
     },
     "sign-up": {
@@ -390,6 +394,7 @@
     "remaining": "残り",
     "remove": "削除",
     "removed": "削除されました",
+    "render-failed": "このコンテンツを表示できませんでした。",
     "reopen": "再開",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
@@ -838,8 +843,11 @@
     "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
   },
   "error-page": {
+    "error-details": "エラー詳細",
     "go-back-home": "ホームページに戻る",
-    "not-found": "ページが見つかりません"
+    "not-found": "ページが見つかりません",
+    "something-went-wrong": "問題が発生しました",
+    "unexpected-error-description": "このページの表示中に予期しないエラーが発生しました。通常は更新すると解決します。問題が続く場合は、管理者にご報告ください。"
   },
   "export-center": {
     "data-export": "データエクスポート",
@@ -2690,6 +2698,7 @@
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-all-rows-as-csv": "すべての行を CSV としてコピー",
     "copy-all-rows-as-sql": "すべての行を SQL としてコピー",
+    "copy-history-link": "履歴リンクをコピー",
     "copy-name": "名前をコピーする",
     "copy-selected-results": "選択したデータを<action></action>または<button></button>でコピーします",
     "copy-selected-rows-as-csv": "選択した行を CSV としてコピー",
@@ -2743,6 +2752,7 @@
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
+    "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
     "preview-table-data": "テーブルデータのプレビュー",
     "previous-row": "前の行",
@@ -2755,8 +2765,10 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
+    "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
     "query-time": "クエリ時間",
     "re-request": "再申請",
+    "recent": "最近",
     "redis-command": {
       "all-nodes": "すべてのノード",
       "only-for-cluster": "クラスタ接続のみ使用可能",
@@ -2813,6 +2825,7 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
+    "unable-to-connect-database": "データベース {{name}} に接続できません",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "vertical-display": "縦型表示",

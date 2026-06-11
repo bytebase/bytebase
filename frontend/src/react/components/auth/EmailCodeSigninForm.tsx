@@ -102,21 +102,17 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
   const allowSignin = !!email && codeParts.join("").length === 6;
 
   return (
-    <form className="flex flex-col gap-y-6 px-1" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-y-4" onSubmit={handleSubmit}>
       <div>
-        <label
-          htmlFor="email-code-email"
-          className="block text-sm font-medium leading-5 text-control"
-        >
+        <label htmlFor="email-code-email" className="sr-only">
           {t("common.email")}
-          <span className="text-error ml-0.5">*</span>
         </label>
-        <div className="mt-1 rounded-md shadow-xs">
+        <div className="rounded-md shadow-xs">
           <Input
             id="email-code-email"
             type="email"
             autoComplete="email"
-            placeholder="jim@example.com"
+            placeholder="you@company.com"
             required
             value={email}
             disabled={step === "code" || emailFromQuery}
@@ -129,7 +125,6 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
         <div className="flex flex-col gap-y-2">
           <label className="block text-sm font-medium leading-5 text-control">
             {t("auth.sign-in.verification-code")}
-            <span className="text-error ml-0.5">*</span>
           </label>
           <div className="text-sm text-control-light">
             {t("auth.sign-in.code-sent-hint", { email })}
@@ -164,7 +159,7 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
             disabled={!isValidEmail(email) || sending}
             onClick={sendCode}
           >
-            {t("auth.sign-in.send-code")}
+            {t("auth.sign-in.continue-with-email")}
           </Button>
         ) : (
           <Button

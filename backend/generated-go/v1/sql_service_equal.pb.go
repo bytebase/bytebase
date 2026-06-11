@@ -570,6 +570,19 @@ func (x *SearchQueryHistoriesRequest) Equal(y *SearchQueryHistoriesRequest) bool
 	return true
 }
 
+func (x *GetQueryHistoryRequest) Equal(y *GetQueryHistoryRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *SearchQueryHistoriesResponse) Equal(y *SearchQueryHistoriesResponse) bool {
 	if x == y {
 		return true
