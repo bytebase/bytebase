@@ -39,6 +39,16 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		changedResources.AddTable(d, s, &storepb.ChangedResourceTable{Name: t}, affectData)
 	}
 
+	// addObjectDatabase records a database-only write target for a non-table object DDL
+	// (view/procedure/function/trigger) ONLY when the object's own name carries an explicit
+	// database qualifier. Unqualified names record nothing (request-database fallback). The
+	// object's own qualifier is used — never an ON-table or body reference. SUP-222 / BYT-9698.
+	addObjectDatabase := func(ref *ast.TableRef) {
+		if ref != nil && ref.Database != "" {
+			changedResources.AddDatabase(ref.Database)
+		}
+	}
+
 	for _, unifiedAST := range asts {
 		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
@@ -73,6 +83,15 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 				for _, item := range n.OnTables.Items {
 					if ref, ok := item.(*ast.TableRef); ok {
 						addTable(ref, false)
+					}
+				}
+			case ast.DropView, ast.DropProcedure, ast.DropFunction, ast.DropTrigger:
+				if n.Names == nil {
+					continue
+				}
+				for _, item := range n.Names.Items {
+					if ref, ok := item.(*ast.TableRef); ok {
+						addObjectDatabase(ref)
 					}
 				}
 			default:
@@ -124,6 +143,15 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 			if n.IntoTable != nil {
 				addTable(n.IntoTable, false)
 			}
+
+		case *ast.CreateViewStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateProcedureStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateFunctionStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateTriggerStmt:
+			addObjectDatabase(n.Name)
 
 		default:
 		}

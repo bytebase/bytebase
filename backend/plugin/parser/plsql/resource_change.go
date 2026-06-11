@@ -70,6 +70,14 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 				e.addIndexTable(name)
 			}
 		}
+		switch n.ObjectType {
+		case oracleast.OBJECT_VIEW, oracleast.OBJECT_SEQUENCE, oracleast.OBJECT_SYNONYM,
+			oracleast.OBJECT_PROCEDURE, oracleast.OBJECT_FUNCTION, oracleast.OBJECT_TRIGGER:
+			for _, name := range omniObjectNameList(n.Names) {
+				e.addObjectDatabase(name)
+			}
+		default:
+		}
 	case *oracleast.AlterTableStmt:
 		affected := true
 		for _, cmd := range omniAlterTableCmdList(n.Actions) {
@@ -94,6 +102,30 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 		e.trackDML(a.Text)
 	case *oracleast.TruncateStmt:
 		e.addTable(n.Table, true)
+	case *oracleast.CreateViewStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateProcedureStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateFunctionStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateTriggerStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateSequenceStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.CreateSynonymStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterViewStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterSequenceStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterProcedureStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterFunctionStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterTriggerStmt:
+		e.addObjectDatabase(n.Name)
+	case *oracleast.AlterSynonymStmt:
+		e.addObjectDatabase(n.Name)
 	default:
 	}
 }
@@ -111,6 +143,16 @@ func (e *omniChangedResourceExtractor) extractInsert(stmt *oracleast.InsertStmt,
 		return
 	}
 	e.trackDML(text)
+}
+
+// addObjectDatabase records a database-only write target for a non-table object DDL (view,
+// procedure, function, trigger, sequence, synonym) ONLY when its name carries an explicit schema
+// qualifier (Oracle's schema maps to a database). An unqualified name records nothing, keeping
+// the request-database fallback. See SUP-222 / BYT-9698.
+func (e *omniChangedResourceExtractor) addObjectDatabase(name *oracleast.ObjectName) {
+	if name != nil && name.Schema != "" {
+		e.changedResources.AddDatabase(name.Schema)
+	}
 }
 
 func (e *omniChangedResourceExtractor) addTable(name *oracleast.ObjectName, affected bool) {

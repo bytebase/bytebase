@@ -1811,16 +1811,22 @@ func (s *SQLService) authorizeWriteTargets(
 		if _, granted := grantedTargets[databaseFullName]; granted {
 			continue
 		}
-		if databaseLevelOnly {
+		// A target with no table name is a database-only target: DDL on a non-table object
+		// (view/procedure/function/trigger/…) whose only auth-relevant identity is its database.
+		// Authorize it at the database level — like a multi-statement batch — so a qualified
+		// cross-database object DDL is gated by its own database, not the request database, with
+		// no spurious table-name match. SUP-222 / BYT-9698.
+		useDatabaseLevel := databaseLevelOnly || t.table == ""
+		if useDatabaseLevel {
 			if checkedDatabase[t.database] {
 				continue
 			}
 			checkedDatabase[t.database] = true
 		}
 
-		// A denial names the bare database in databaseLevelOnly mode, else the schema/table target.
+		// A denial names the bare database for a database-level check, else the schema/table target.
 		deniedResource := databaseFullName
-		if !databaseLevelOnly {
+		if !useDatabaseLevel {
 			deniedResource = formatWriteTargetResource(databaseFullName, t.schema, t.table)
 		}
 
@@ -1851,7 +1857,7 @@ func (s *SQLService) authorizeWriteTargets(
 			common.CELAttributeResourceDatabase:      databaseFullName,
 			common.CELAttributeResourceEnvironmentID: env,
 		}
-		if !databaseLevelOnly {
+		if !useDatabaseLevel {
 			attributes[common.CELAttributeResourceTableName] = t.table
 			if t.schema != "" {
 				attributes[common.CELAttributeResourceSchemaName] = t.schema
@@ -1893,10 +1899,13 @@ type writeTargetResource struct {
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
 // the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
 // mutated table, others only the primary target; either way this can only ever
-// over-restrict (fail-closed), never under-restrict. It also tracks tables only, so
-// DDL on non-table objects (views, functions, procedures, sequences) resolves to zero
-// targets and falls back to the database-level check — a table-scoped grant cannot
-// authorize such DDL.
+// over-restrict (fail-closed), never under-restrict.
+//
+// DDL on a non-table object (view/procedure/function/trigger/…) has no table to scope. When
+// such DDL names an EXPLICIT target database (e.g. CREATE VIEW other_db.v), the extractor
+// records a database-only target so the write is gated by that database; an UNqualified one
+// records nothing and falls back to the request-database check. Object DDL the extractor does
+// not model still resolves to zero targets → request-database fallback.
 func (s *SQLService) resolveWriteTargets(
 	ctx context.Context,
 	instance *store.InstanceMessage,
@@ -1935,6 +1944,7 @@ func (s *SQLService) resolveWriteTargets(
 	}
 
 	var targets []writeTargetResource
+	databasesWithTableTarget := map[string]bool{}
 	for _, db := range changeSummary.ChangedResources.Build().GetDatabases() {
 		for _, sc := range db.GetSchemas() {
 			schema := sc.GetName()
@@ -1945,6 +1955,7 @@ func (s *SQLService) resolveWriteTargets(
 				schema = ""
 			}
 			for _, tbl := range sc.GetTables() {
+				databasesWithTableTarget[db.GetName()] = true
 				targets = append(targets, writeTargetResource{
 					database: db.GetName(),
 					schema:   schema,
@@ -1952,6 +1963,18 @@ func (s *SQLService) resolveWriteTargets(
 				})
 			}
 		}
+	}
+	// Database-only targets (Tier 2): a qualified non-table object DDL (e.g. CREATE VIEW
+	// other_db.v) records only its target database, with no table. It is authorized at the
+	// database level against that database (a table-less target → useDatabaseLevel in
+	// authorizeWriteTargets), so a qualified cross-database object DDL is gated by its own
+	// database, not the request database. Skip any database already covered by a (more precise)
+	// table target. See SUP-222 / BYT-9698.
+	for _, db := range changeSummary.ChangedResources.GetDatabaseOnlyTargets() {
+		if databasesWithTableTarget[db] {
+			continue
+		}
+		targets = append(targets, writeTargetResource{database: db})
 	}
 	return targets, nil
 }

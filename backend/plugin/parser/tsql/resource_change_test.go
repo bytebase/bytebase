@@ -98,3 +98,26 @@ func TestExtractChangedResources_Merge(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got.ChangedResources)
 }
+
+func TestExtractChangedResources_ObjectDDLDatabaseOnly(t *testing.T) {
+	// Qualified non-table object DDL → a database-only target on the qualifier.
+	for _, statement := range []string{
+		`CREATE VIEW other_db.dbo.v AS SELECT 1 AS x;`,
+		`DROP VIEW other_db.dbo.v;`,
+	} {
+		stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("DB", "dbo", nil, asts, statement)
+		require.NoError(t, err, statement)
+		require.Equal(t, []string{"other_db"}, got.ChangedResources.GetDatabaseOnlyTargets(), statement)
+	}
+	// Unqualified → no database-only target (request-database fallback).
+	const unqualified = `CREATE VIEW v AS SELECT 1 AS x;`
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, unqualified)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "dbo", nil, asts, unqualified)
+	require.NoError(t, err)
+	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+}

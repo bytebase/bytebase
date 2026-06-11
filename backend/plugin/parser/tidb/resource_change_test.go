@@ -82,3 +82,26 @@ func TestExtractChangedResourcesLoadDataImport(t *testing.T) {
 		require.Equal(t, want, got.ChangedResources, statement)
 	}
 }
+
+func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
+	// Qualified non-table object DDL (view/sequence) → a database-only target on the qualifier.
+	for _, statement := range []string{
+		`CREATE VIEW other_db.v AS SELECT 1;`,
+		`CREATE SEQUENCE other_db.s;`,
+	} {
+		stmts, err := base.ParseStatements(storepb.Engine_TIDB, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
+		require.NoError(t, err, statement)
+		require.Equal(t, []string{"other_db"}, got.ChangedResources.GetDatabaseOnlyTargets(), statement)
+	}
+	// Unqualified → no database-only target (request-database fallback).
+	const unqualified = `CREATE VIEW v AS SELECT 1;`
+	stmts, err := base.ParseStatements(storepb.Engine_TIDB, unqualified)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, unqualified)
+	require.NoError(t, err)
+	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+}
