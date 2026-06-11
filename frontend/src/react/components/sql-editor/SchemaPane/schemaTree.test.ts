@@ -208,6 +208,28 @@ describe("keyForNodeTarget", () => {
     ).toBe(`${DATABASE}/schemas/public/tables/users/columns/id`);
   });
 
+  test("column under an external table joins under the external table", () => {
+    expect(
+      keyForNodeTarget("column", {
+        database: DATABASE,
+        schema: "public",
+        externalTable: "remote_users",
+        column: "id",
+      })
+    ).toBe(`${DATABASE}/schemas/public/externalTables/remote_users/columns/id`);
+  });
+
+  test("column under a view joins under the view", () => {
+    expect(
+      keyForNodeTarget("column", {
+        database: DATABASE,
+        schema: "public",
+        view: "active_users",
+        column: "id",
+      })
+    ).toBe(`${DATABASE}/schemas/public/views/active_users/columns/id`);
+  });
+
   test("expandable-text + error keys join type/id", () => {
     expect(
       keyForNodeTarget("expandable-text", {
@@ -583,6 +605,36 @@ describe("buildDatabaseSchemaTree", () => {
     );
     expect(tablesFolder).toBeDefined();
     expect(tablesFolder!.children![0].meta.type).toBe("error");
+  });
+
+  test("every node key is non-empty and unique (react-arborist throws on falsy ids)", () => {
+    const md = makeMetadata([
+      makeSchema("public", {
+        tables: [
+          makeTable("users", {
+            columns: ["id"],
+            indexes: ["ix"],
+            foreignKeys: ["fk"],
+            checks: ["ck"],
+            triggers: ["trg"],
+            partitions: [makePartition("p1", ["sp1"])],
+          }),
+        ],
+        externalTables: [makeExternalTable("ext", ["c1", "c2"])],
+        views: [makeView("v", ["vc"])],
+        procedures: ["proc"],
+        functions: ["fn"],
+        sequences: ["seq"],
+        packages: ["pkg"],
+      }),
+    ]);
+    const tree = buildDatabaseSchemaTree(makeDatabase(), md);
+    const seen = new Set<string>();
+    for (const { key, type } of walk(tree)) {
+      expect(key, `falsy key on node type=${type}`).toBeTruthy();
+      expect(seen.has(key), `duplicate key: ${key}`).toBe(false);
+      seen.add(key);
+    }
   });
 
   test("external tables / views / procedures / functions / packages / sequences only appear when populated", () => {
