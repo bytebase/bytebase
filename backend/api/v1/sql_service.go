@@ -495,7 +495,7 @@ func getEffectiveQueryDataPolicy(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -663,7 +663,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -1483,8 +1483,9 @@ func (s *SQLService) accessCheck(
 	user *store.UserMessage,
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
+	statements []parserbase.Statement,
 ) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, nil)
+	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil)
 }
 
 // accessCheckWithGrant returns an accessCheckFunc that exempts the access
@@ -1504,8 +1505,8 @@ func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage)
 	for _, t := range accessGrant.Payload.Targets {
 		grantedTargets[t] = struct{}{}
 	}
-	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, grantedTargets)
+	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement) error {
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets)
 	}
 }
 
@@ -1516,6 +1517,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	user *store.UserMessage,
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
+	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
 ) error {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
