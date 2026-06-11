@@ -216,7 +216,9 @@ export function Panels() {
                 >
                   {subPanel}
                 </Panel>
-                <PanelResizeHandle className={resizeHandleClass("vertical")} />
+                <PanelResizeHandle
+                  className={resizeHandleClass("vertical", "w-0.5")}
+                />
                 <Panel
                   defaultSize={`${(1 - editorPanelSize.size) * 100}%`}
                   minSize="10%"
