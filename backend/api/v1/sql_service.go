@@ -1664,8 +1664,8 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 					common.CELAttributeResourceSchemaName: t.schema,
 					common.CELAttributeResourceTableName:  t.table,
 					// environment_id is REQUIRED here: hasDatabaseAccessRights keeps the
-					// environment clause for SQLDml/SQLDdl (sql_service.go:1780). Omitting
-					// it would reintroduce a "no such attribute" error.
+					// environment clause for SQLDml/SQLDdl (it is only stripped for non-DML/DDL
+					// perms). Omitting it would reintroduce a "no such attribute" error.
 					common.CELAttributeResourceEnvironmentID: env,
 				}
 				ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, workspacePolicy.Policy, projectPolicy.Policy)
@@ -1766,6 +1766,13 @@ type writeTargetResource struct {
 // the same extractor plan-check trusts. Returns (nil, nil) when the engine has no
 // extractor, the statement can't be parsed, or no targets are found — callers must
 // then fall back to the database-level check (never fail open). See SUP-222.
+//
+// The extractor reports every table referenced by the change, so for UPDATE … JOIN …
+// or DELETE … USING … the read-only joined/using tables are included alongside the
+// mutated table; this only ever over-restricts (fail-closed), never under-restricts.
+// It also tracks tables only, so DDL on non-table objects (views, functions,
+// procedures, sequences) resolves to zero targets and falls back to the
+// database-level check — a table-scoped grant cannot authorize such DDL.
 func (s *SQLService) resolveWriteTargets(
 	ctx context.Context,
 	instance *store.InstanceMessage,
