@@ -84,6 +84,12 @@ func TestGetDatabaseDefinition_TableWithOnlyCheckConstraints(t *testing.T) {
 	if !strings.Contains(ddl, `CREATE TABLE "public"."cons_only" (`) {
 		t.Errorf("expected CREATE TABLE for cons_only, got:\n%s", ddl)
 	}
+	// A genuine zero-column table (no indexes or foreign keys) must keep its
+	// column-independent CHECK constraint — only privilege-filtered broken
+	// metadata goes down the bare-table path.
+	if !strings.Contains(ddl, "cons_only_dummy") {
+		t.Errorf("expected CHECK constraint cons_only_dummy to be preserved, got:\n%s", ddl)
+	}
 	// Omni will reject a table with zero columns semantically, but it must
 	// at least parse cleanly; the test asserts the parse-level contract.
 	if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {

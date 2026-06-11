@@ -282,72 +282,17 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct triggers. Skip triggers on tables without column metadata;
-	// their definitions (UPDATE OF, WHEN clauses) can reference the missing
-	// columns.
+	// Construct triggers.
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if tableMissingColumnMetadata(table) {
-				continue
-			}
-			for _, trigger := range table.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, table.Name, trigger); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, view := range schema.Views {
-			for _, trigger := range view.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, view.Name, trigger); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, materializedView := range schema.MaterializedViews {
-			for _, trigger := range materializedView.Triggers {
-				if trigger.SkipDump {
-					continue
-				}
-				if err := writeTrigger(&buf, schema.Name, materializedView.Name, trigger); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaTriggers(&buf, schema); err != nil {
+			return "", err
 		}
 	}
 
-	// Construct rules. Skip rules on tables without column metadata; their
-	// definitions can reference the missing columns.
+	// Construct rules.
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
-				if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
-					return "", err
-				}
-			}
-		}
-
-		for _, view := range schema.Views {
-			// Rules for views are already written in writeView
-			// Only write non-SELECT rules here (they are not part of the view definition)
-			var nonSelectRules []*storepb.RuleMetadata
-			for _, rule := range view.Rules {
-				if rule.Event != "SELECT" {
-					nonSelectRules = append(nonSelectRules, rule)
-				}
-			}
-			if len(nonSelectRules) > 0 {
-				if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaRules(&buf, schema); err != nil {
+			return "", err
 		}
 	}
 
@@ -559,68 +504,14 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct triggers. Skip triggers on tables without column metadata;
-	// their definitions (UPDATE OF, WHEN clauses) can reference the missing
-	// columns.
-	for _, table := range schema.Tables {
-		if tableMissingColumnMetadata(table) {
-			continue
-		}
-		for _, trigger := range table.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, table.Name, trigger); err != nil {
-				return "", err
-			}
-		}
+	// Construct triggers.
+	if err := writeSchemaTriggers(&buf, schema); err != nil {
+		return "", err
 	}
 
-	for _, view := range schema.Views {
-		for _, trigger := range view.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, view.Name, trigger); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, materializedView := range schema.MaterializedViews {
-		for _, trigger := range materializedView.Triggers {
-			if trigger.SkipDump {
-				continue
-			}
-			if err := writeTrigger(&buf, schema.Name, materializedView.Name, trigger); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	// Construct rules. Skip rules on tables without column metadata; their
-	// definitions can reference the missing columns.
-	for _, table := range schema.Tables {
-		if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
-			if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	for _, view := range schema.Views {
-		// Only write non-SELECT rules here (SELECT rules are part of the view definition)
-		var nonSelectRules []*storepb.RuleMetadata
-		for _, rule := range view.Rules {
-			if rule.Event != "SELECT" {
-				nonSelectRules = append(nonSelectRules, rule)
-			}
-		}
-		if len(nonSelectRules) > 0 {
-			if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
-				return "", err
-			}
-		}
+	// Construct rules.
+	if err := writeSchemaRules(&buf, schema); err != nil {
+		return "", err
 	}
 
 	// Construct foreign keys.
@@ -1685,14 +1576,22 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 	return generationType, identitySequences, nonIdentitySequences
 }
 
-// tableMissingColumnMetadata reports whether a synced table carries no column
-// metadata. information_schema.columns is privilege-filtered, so a sync user
-// without column privileges on a table sees zero columns while the
-// pg_catalog-based queries still return the table's constraints and indexes.
-// DDL referencing the missing columns would make the dump non-replayable, so
-// writers skip column-dependent statements for such tables.
+// tableMissingColumnMetadata reports whether a synced table's column list
+// was filtered away. information_schema.columns is privilege-filtered, so a
+// sync user without column privileges on a table sees zero columns while the
+// pg_catalog-based queries still return the table's constraints, indexes,
+// triggers, and rules. DDL referencing the missing columns would make the
+// dump non-replayable, so writers skip column-dependent statements for such
+// tables.
+//
+// A genuine zero-column table (CREATE TABLE t ()) is legal in PostgreSQL and
+// may carry column-independent objects such as CHECK (1 = 1), but it cannot
+// carry primary keys, unique constraints, or foreign keys; indexes on it are
+// limited to constant-expression corner cases. Treat zero columns as missing
+// metadata only when indexes or foreign keys are present, so genuine
+// zero-column tables keep their objects.
 func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
-	return len(table.Columns) == 0
+	return len(table.Columns) == 0 && (len(table.Indexes) > 0 || len(table.ForeignKeys) > 0)
 }
 
 // collectTablesMissingColumns returns the tables without column metadata,
@@ -1707,6 +1606,78 @@ func collectTablesMissingColumns(schemas []*storepb.SchemaMetadata) map[string]b
 		}
 	}
 	return missing
+}
+
+// writeSchemaTriggers writes the triggers of every table, view, and
+// materialized view in the schema. Triggers on tables without column
+// metadata are skipped; their definitions (UPDATE OF, WHEN clauses) can
+// reference the missing columns.
+func writeSchemaTriggers(out io.Writer, schema *storepb.SchemaMetadata) error {
+	for _, table := range schema.Tables {
+		if tableMissingColumnMetadata(table) {
+			continue
+		}
+		for _, trigger := range table.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, table.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		for _, trigger := range view.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, view.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, materializedView := range schema.MaterializedViews {
+		for _, trigger := range materializedView.Triggers {
+			if trigger.SkipDump {
+				continue
+			}
+			if err := writeTrigger(out, schema.Name, materializedView.Name, trigger); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// writeSchemaRules writes the rules of every table and the non-SELECT rules
+// of every view in the schema (SELECT rules are part of the view
+// definition). Rules on tables without column metadata are skipped; their
+// definitions can reference the missing columns.
+func writeSchemaRules(out io.Writer, schema *storepb.SchemaMetadata) error {
+	for _, table := range schema.Tables {
+		if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
+			if err := writeRules(out, schema.Name, table.Name, table.Rules); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		var nonSelectRules []*storepb.RuleMetadata
+		for _, rule := range view.Rules {
+			if rule.Event != "SELECT" {
+				nonSelectRules = append(nonSelectRules, rule)
+			}
+		}
+		if len(nonSelectRules) > 0 {
+			if err := writeRules(out, schema.Name, view.Name, nonSelectRules); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // writeSchemaForeignKeys writes the foreign keys of every table in the
