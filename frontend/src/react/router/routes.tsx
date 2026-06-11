@@ -1,5 +1,6 @@
 import { type RouteObject, redirect } from "react-router-dom";
 import { RootLayout } from "@/react/app/RootLayout";
+import { RouteErrorPage } from "@/react/app/RouteErrorPage";
 import { WORKSPACE_ROUTE_404 } from "@/react/router/handles";
 import { authRoutes } from "@/react/router/routes/auth";
 import { dashboardRoutes } from "@/react/router/routes/dashboard";
@@ -16,6 +17,10 @@ import { sqlEditorRoutes } from "@/react/router/routes/sqlEditor";
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
+    // Catch-all for uncaught render/loader exceptions anywhere in the
+    // tree: show a user-facing recovery page instead of react-router's
+    // developer default screen.
+    errorElement: <RouteErrorPage />,
     children: [
       ...authRoutes,
       ...dashboardRoutes,
