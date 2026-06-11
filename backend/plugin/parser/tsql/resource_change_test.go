@@ -104,6 +104,9 @@ func TestExtractChangedResources_ObjectDDLDatabaseOnly(t *testing.T) {
 	for _, statement := range []string{
 		`CREATE VIEW other_db.dbo.v AS SELECT 1 AS x;`,
 		`DROP VIEW other_db.dbo.v;`,
+		`CREATE SEQUENCE other_db.dbo.s;`,
+		`CREATE SYNONYM other_db.dbo.syn FOR t;`,
+		`DROP TYPE other_db.dbo.ty;`,
 	} {
 		stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
 		require.NoError(t, err, statement)

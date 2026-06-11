@@ -85,7 +85,8 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 						addTable(ref, false)
 					}
 				}
-			case ast.DropView, ast.DropProcedure, ast.DropFunction, ast.DropTrigger:
+			case ast.DropView, ast.DropProcedure, ast.DropFunction, ast.DropTrigger,
+				ast.DropSequence, ast.DropSynonym, ast.DropType:
 				if n.Names == nil {
 					continue
 				}
@@ -151,6 +152,14 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		case *ast.CreateFunctionStmt:
 			addObjectDatabase(n.Name)
 		case *ast.CreateTriggerStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateSequenceStmt:
+			addObjectDatabase(n.Name)
+		case *ast.AlterSequenceStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateSynonymStmt:
+			addObjectDatabase(n.Name)
+		case *ast.CreateTypeStmt:
 			addObjectDatabase(n.Name)
 
 		default:
