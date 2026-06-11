@@ -394,6 +394,7 @@
     "remaining": "remaining",
     "remove": "Remove",
     "removed": "Removed",
+    "render-failed": "Failed to display this content.",
     "reopen": "Reopen",
     "reorder": "Reorder",
     "required-permission": "Required permissions",

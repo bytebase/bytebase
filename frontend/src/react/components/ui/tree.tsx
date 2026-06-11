@@ -2,6 +2,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { useLayoutEffect, useRef } from "react";
 import type { MoveHandler, NodeApi, TreeApi } from "react-arborist";
 import { Tree as ArboristTree } from "react-arborist";
+import { useTranslation } from "react-i18next";
+import { ErrorBoundary } from "@/react/components/ui/error-boundary";
 import { cn } from "@/react/lib/utils";
 
 export interface TreeDataNode<T> {
@@ -62,6 +64,7 @@ export function Tree<T>({
   disableDrop = true,
   className,
 }: TreeProps<T>) {
+  const { t } = useTranslation();
   const treeRef = useRef<TreeApi<TreeDataNode<T>> | null>(null);
   const prevExpandedRef = useRef<readonly string[] | undefined>(undefined);
   // react-arborist fires `onToggle` synchronously inside `tree.open()` /
@@ -159,30 +162,45 @@ export function Tree<T>({
     <div
       className={cn("outline-none focus:outline-none rounded-sm", className)}
     >
-      <ArboristTree<TreeDataNode<T>>
-        ref={treeRef}
-        data={data as TreeDataNode<T>[]}
-        idAccessor="id"
-        childrenAccessor="children"
-        selection={selectedIds?.[0]}
-        onSelect={handleSelect}
-        onToggle={handleArboristToggle}
-        onMove={onMove}
-        searchTerm={searchTerm}
-        searchMatch={resolvedSearchMatch}
-        openByDefault={false}
-        disableDrag={disableDrag}
-        disableDrop={disableDrop}
-        disableEdit
-        height={height}
-        rowHeight={rowHeight}
-        indent={indent}
-        width="100%"
-      >
-        {({ node, style, dragHandle }) =>
-          renderNode({ node, style, dragHandle })
+      {/* react-arborist hard-throws on malformed data (e.g. a falsy node
+          id). Contain that to this pane — a broken tree must not unmount
+          the whole app. */}
+      <ErrorBoundary
+        resetKey={data}
+        fallback={
+          <div className="px-2 py-1 text-sm text-control-light">
+            {t("common.render-failed")}
+          </div>
         }
-      </ArboristTree>
+        onError={(error) => {
+          console.error("[Tree] failed to render tree data:", error);
+        }}
+      >
+        <ArboristTree<TreeDataNode<T>>
+          ref={treeRef}
+          data={data as TreeDataNode<T>[]}
+          idAccessor="id"
+          childrenAccessor="children"
+          selection={selectedIds?.[0]}
+          onSelect={handleSelect}
+          onToggle={handleArboristToggle}
+          onMove={onMove}
+          searchTerm={searchTerm}
+          searchMatch={resolvedSearchMatch}
+          openByDefault={false}
+          disableDrag={disableDrag}
+          disableDrop={disableDrop}
+          disableEdit
+          height={height}
+          rowHeight={rowHeight}
+          indent={indent}
+          width="100%"
+        >
+          {({ node, style, dragHandle }) =>
+            renderNode({ node, style, dragHandle })
+          }
+        </ArboristTree>
+      </ErrorBoundary>
     </div>
   );
 }
