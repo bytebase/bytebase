@@ -288,6 +288,19 @@ Its embedded **Monaco**, however, cannot have its own theme — Monaco's theme i
 (see **Monaco** below); the drawer's editor shares the one active Monaco theme. No new
 global *chrome* theming — only the specific SQL-Editor portal subtrees re-apply vars.
 
+**Portal coverage for v1 (scope decision).** The portal inventory is larger than the
+FAB/sidebar + drawer: other SQL-Editor surfaces also mount under the app-global overlay
+root — the custom hover panels (`DatabaseHoverPanel`, `SchemaPane/HoverPanel`), the
+`RequestRoleSheet` (same `RequestDrawerHost` path), and **Base-UI-internal** popups
+(`ConnectChooser`'s `Select` dropdown, `EllipsisCell`'s tooltip). For the first ship we
+wrap **our own** `createPortal`/`Sheet` surfaces (overlays, drawer, RequestRoleSheet,
+hover panels) in a nested scope. The Base-UI-internal popups portal through shared `ui/*`
+primitives and can't be re-scoped per-SQL-Editor without touching app-wide components, so
+they are a **tracked follow-up** — under a dark/named theme they may briefly show the
+default (light) tokens. Visual tests (§ Testing) enumerate covered vs deferred surfaces.
+(If app-scope chrome lands later, the whole portal problem disappears: tokens applied at
+app root cascade into the shared overlay root automatically.)
+
 **Nested admin scope.** Wrap `<TerminalPanel>`'s root div (`TerminalPanel.tsx:206`) in a
 nested `SQLEditorThemeScope` whose theme is the **resolved admin theme**:
 
@@ -324,27 +337,48 @@ on screen simultaneously: the access-request drawer hosts its own editor
 "one code panel at a time" assumption does **not** hold.
 
 The SQL Editor therefore maintains **one active Monaco theme**, derived from the
-**foreground code surface** and applied by a single controller (driven by the current
-tab `mode` + selected `themeId`) that calls `monaco.editor.setTheme(\`bb-${active.id}\`)`
-whenever either changes (today set once at `MonacoEditor.tsx:346`):
+**foreground code surface**: worksheet → the **selected** theme; admin →
+`resolveAdminTheme(selected)` (`useActiveSQLEditorTheme()`). It is applied two ways that
+agree on the value:
 
-- worksheet tab → the **selected** theme;
-- admin tab → `resolveAdminTheme(selected)`.
+- The SQL-Editor editors (`StandardPanel/SQLEditor`, `TerminalPanel/CompactSQLEditor`,
+  and the drawer's editor) pass an explicit `theme` option = `monacoThemeName(active)`,
+  so the shared `MonacoEditor` sets the right theme on construction (no `bb-light`
+  flash). `CompactSQLEditor` drops its hardcoded `theme: "vs-dark"` for this.
+- A single controller hook `useMonacoThemeController()` (mounted once at the SQL-Editor
+  root) re-applies the active theme on `themeId`/`mode` change via
+  `monaco.editor.setTheme(getResolvedTheme(monacoThemeName(active)))` — covering live
+  switches while editors stay mounted.
 
-When the access drawer is open, its Monaco **adopts this same active theme** (the
-reviewer's "use the effective active Monaco theme") — it does **not** request a
-competing one. This is the deliberate resolution to the global-`setTheme` conflict: the
-drawer's *chrome* still re-themes via its own CSS-var scope (so its form controls match
-the selected theme), but its code surface shares the one global Monaco theme rather than
-fighting the terminal for it. Consequence: opening the drawer over a light-selected admin
-tab shows a dark statement editor (matching the visible terminal) — acceptable, since
-per-editor Monaco themes are impossible. If product later wants the drawer's editor to
-always track the *selected* (not admin) theme, defer to either swapping the global theme
-to the drawer's while it is focused and restoring on close, or suppressing the terminal
-editor behind the drawer scrim — both out of scope here.
+`getResolvedTheme` is **mandatory** here: in runtime modes where the vscode theme-service
+override prevents a custom theme from registering (`initializeTheme` only adds a name to
+`registeredThemes` after `defineTheme` succeeds), calling `setTheme` with an unregistered
+name is a silent no-op; `getResolvedTheme` falls back to the always-available
+`bb-light`/`vs`, so a named theme can never leave Monaco stuck on a stale theme.
 
-`CompactSQLEditor.tsx:323` drops its hardcoded `theme: "vs-dark"` and lets this
-controller drive the theme.
+**Boundary & non-SQL Monaco (scope decision).** `setTheme` is global, but the shared
+`MonacoEditor` is **left unchanged**: editors that pass no explicit theme — every non-SQL
+Monaco surface in the app — keep resetting to the default `bb-light` on construction. So
+while the SQL Editor is mounted the controller owns the global Monaco theme; elsewhere
+each editor resets itself. **Containment guarantee:** `useMonacoThemeController` also
+resets the global Monaco theme back to `bb-light` on **unmount** (a separate `[]`-effect
+cleanup), so the SQL Editor's selected theme never lingers on app-scope Monaco after the
+user leaves — covering even an already-mounted/kept-alive non-SQL editor that wouldn't
+re-run its own construction reset. Because the SQL Editor is a full-page view, non-SQL
+Monaco is never on screen alongside it, so this split is invisible in normal navigation —
+no app-wide Monaco change is needed now. (Monaco's hard limit: two editors visible at the
+same instant cannot have different themes — there is one global theme. This never occurs
+here because the SQL Editor doesn't share the screen with another Monaco surface.) App-level Monaco (all editors follow the preference)
+was considered and **rejected for v1**: it would require coupling the shared `MonacoEditor`
+to the theme preference + an app-root controller + an app-level store — broad blast radius
+for a benefit that is only theoretical today. See **Extensibility to app scope** (Future
+work) for the small lift path.
+
+When the access drawer is open, its Monaco **adopts the active theme** (passes the same
+active Monaco name), so it never competes with the terminal for the global theme.
+Consequence: opening the drawer over a light-selected admin tab shows a dark statement
+editor (matching the visible terminal) — acceptable, since per-editor Monaco themes are
+impossible.
 
 ### 5. Color migration (prerequisite)
 
@@ -402,17 +436,20 @@ and must be migrated. Two rules:
 ### 6. Switcher UI
 
 Add a preset selector using the shared React `Select` (a dropdown — preferred over a
-radio group now that the catalog has six entries) inside
-**`QueryContextSettingPopover.tsx`**, as a new `border-t pt-1` section below "Max row
-count" — this popover already hosts editor/query preferences (data source, Redis, row
-limit). Options are driven off the `PRESETS` array (so adding a theme needs no UI
-change). Each label uses the preset's `name` i18n key; add a section label
-(`sql-editor.editor-theme`) translated in all five locale files. Built-in palette names
-(Solarized, Monokai, Nord) are proper nouns and stay untranslated as values.
+radio group now that the catalog has six entries). It is its own small component
+`ThemeSelect` placed in **`EditorAction.tsx`**'s `action-right` group (next to
+`ChooserGroup` / `OpenAIButton`).
 
-> Alternative considered: a dedicated editor-settings menu. Rejected for now — reusing
-> the existing settings popover avoids new toolbar surface. Revisit if a richer
-> theme/custom-theme UI lands.
+> **Why not `QueryContextSettingPopover` (the original draft target):** that popover
+> early-returns `null` in admin mode (`currentTabMode !== "ADMIN"`), so a switcher there
+> would disappear in exactly the mode we are theming. `EditorAction` is rendered by
+> **both** `StandardPanel` and `TerminalPanel`, and its `action-right` group is always
+> visible — so the theme control is reachable in worksheet and admin alike.
+
+Options are driven off the `PRESETS` array (so adding a theme needs no UI change). Each
+label uses the preset's `name` i18n key; built-in palette names (Solarized, Monokai,
+Nord) are proper nouns and stay untranslated as values. The current value and `onChange`
+bind to `useSQLEditorEditorState((s) => s.themeId)` / `setThemeId`.
 
 ## Data flow
 
@@ -516,7 +553,28 @@ MONACO (single global, driven by foreground panel — cannot be per-scope):
   is missing.
 - "System" preset following `prefers-color-scheme`.
 - Backend/cross-device persistence of the theme choice.
-- Extending the same pattern app-wide beyond the SQL Editor.
+- The deferred Base-UI-internal portal popups (ConnectChooser dropdown, EllipsisCell
+  tooltip) — re-scope their content under a dark/named theme.
+
+### Extensibility to app scope
+
+The architecture is deliberately **liftable to app-wide** with a small, well-understood
+change — not a rewrite — should that ever be wanted (a maintainer raised it; deferred as
+out of scope for v1 to keep complexity/time down):
+
+- **Chrome.** `SQLEditorThemeScope` and the token model already override the *global*
+  `--color-*` names. Lifting = mount the scope at the app root instead of the SQL-Editor
+  container. As a bonus, the portal problem vanishes (tokens at app root cascade into the
+  shared overlay root).
+- **Monaco.** Move `useMonacoThemeController()` from the SQL-Editor root to the app root,
+  and change the shared `MonacoEditor`'s construction-time reset to use the active
+  preference instead of the hardcoded `bb-light` default — then every Monaco surface
+  follows the preference.
+- **Preference.** Move `themeId` from the SQL-Editor store to an app-level (workspace/
+  user-scoped) store, and relocate the switcher from the editor toolbar to a global
+  appearance/settings surface.
+
+Each step is independent and the token/preset/scope code is unchanged.
 
 ## Open questions
 
