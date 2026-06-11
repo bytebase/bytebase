@@ -150,9 +150,36 @@ func (q *querySpanExtractor) extractPseudoTableFromQueryNode(node ast.Node) (*ba
 		}
 		return q.extractPseudoTableFromSelectStmt(n)
 	case *ast.SetOperationStmt:
+		// A WITH clause preceding a set operation is attached by omni to the
+		// LEFTMOST SelectStmt, but its CTEs are visible to EVERY operand
+		// (legacy handled WITH at the query_statement level). Hoist them over
+		// the whole set-op extraction; the leftmost SelectStmt pushes them
+		// again during its own extraction, which is harmless shadowing.
+		if leftmost := leftmostSelect(n); leftmost != nil && len(leftmost.With) > 0 {
+			originalCTECount := len(q.ctes)
+			if err := q.extractCTEFromWith(leftmost.With, isRecursiveWith(leftmost.With)); err != nil {
+				return nil, err
+			}
+			defer func() {
+				q.ctes = q.ctes[:originalCTECount]
+			}()
+		}
 		return q.extractPseudoTableFromSetOperation(n)
 	default:
 		return nil, errors.Errorf("unsupported query node type %T", node)
+	}
+}
+
+// leftmostSelect descends a set-operation chain's left spine to the SelectStmt
+// that textually leads the statement (where omni attaches a leading WITH).
+func leftmostSelect(node ast.Node) *ast.SelectStmt {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n
+	case *ast.SetOperationStmt:
+		return leftmostSelect(n.Left)
+	default:
+		return nil
 	}
 }
 
@@ -925,9 +952,12 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(ref *ast.TableRef) (
 
 func (q *querySpanExtractor) findTableSchema(objectName *ast.ObjectName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSource, error) {
 	normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeSnowflakeObjectName(objectName, "", "")
-	// For snowflake, we should find the table schema in ctes by ascending order.
+	// Scan CTEs newest-first so an inner scope's CTE shadows an outer one with
+	// the same name (q.ctes is a stack of scopes; duplicate names within one
+	// WITH list are a Snowflake error, so this only affects cross-scope shadowing).
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
-		for _, cte := range q.ctes {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			cte := q.ctes[i]
 			if normalizedTableName == cte.Name {
 				return normalizedDatabaseName, cte, nil
 			}
@@ -1012,7 +1042,9 @@ func (q *querySpanExtractor) getAllFieldsOfTableInFromOrOuterCTE(normalizedDatab
 	var result []base.QuerySpanResult
 
 	if mask&maskDatabaseName == 0 && mask&maskSchemaName == 0 && mask&maskTableName != 0 {
-		for _, cte := range q.ctes {
+		// Newest-first: inner-scope CTEs shadow outer ones (see findTableSchema).
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			cte := q.ctes[i]
 			if normalizedTableName == cte.Name {
 				result = append(result, cte.GetQuerySpanResult()...)
 				return result, nil
