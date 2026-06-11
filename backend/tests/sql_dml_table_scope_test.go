@@ -284,6 +284,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	// newLimitedUser creates a fresh non-owner user that can log in, and returns its
 	// email + a bearer token. Run as the owner before calling.
 	newLimitedUser := func(t *testing.T) (string, string) {
+		t.Helper()
 		ra := require.New(t)
 		ctl.authInterceptor.token = ownerToken
 		email := fmt.Sprintf("limited-%s@example.com", generateRandomString("u"))
@@ -302,6 +303,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	// setProjectBindings resets the project IAM policy to baseline + the given
 	// extra bindings. Run as the owner.
 	setProjectBindings := func(t *testing.T, extra ...*v1pb.Binding) {
+		t.Helper()
 		ra := require.New(t)
 		ctl.authInterceptor.token = ownerToken
 		policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
@@ -352,9 +354,11 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	// assertAllowed asserts the Query was authorized: no error and no
 	// permission_denied detail on any result.
 	assertAllowed := func(t *testing.T, resp *v1pb.QueryResponse, qErr error) {
+		t.Helper()
 		ra := require.New(t)
 		ra.NoError(qErr, "statement should be authorized")
 		ra.NotNil(resp)
+		ra.NotEmpty(resp.Results, "expected at least one result")
 		for _, r := range resp.Results {
 			ra.Empty(r.Error, "result should carry no error")
 			ra.Nil(r.GetPermissionDenied(), "result should carry no permission_denied detail")
@@ -368,6 +372,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	// resource containing wantResourceSubstr (e.g. ".../tables/t_other"), and no row
 	// must have been written (rows == 0).
 	assertDeniedOn := func(t *testing.T, resp *v1pb.QueryResponse, _ error, wantResourceSubstr string) {
+		t.Helper()
 		ra := require.New(t)
 		ra.NotNil(resp)
 		ra.NotEmpty(resp.Results)
@@ -381,6 +386,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 
 	// countRows returns the row count of a table, queried as the owner.
 	countRows := func(t *testing.T, table string) int64 {
+		t.Helper()
 		ra := require.New(t)
 		ctl.authInterceptor.token = ownerToken
 		resp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
@@ -417,6 +423,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	//    An INSERT into a public table is allowed AND executed; an INSERT into a
 	//    table in a different schema is denied.
 	t.Run("SchemaScopedGrant", func(t *testing.T) {
+		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		cond := fmt.Sprintf(
 			`resource.database == "%s" && resource.schema_name == "public" && resource.environment_id in ["%s"]`,
@@ -427,7 +434,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		before := countRows(t, "public.t_dst")
 		resp, qErr := runAs(token, "INSERT INTO public.t_dst (id) VALUES (101);")
 		assertAllowed(t, resp, qErr)
-		a.Equal(before+1, countRows(t, "public.t_dst"), "the row should have been inserted")
+		ra.Equal(before+1, countRows(t, "public.t_dst"), "the row should have been inserted")
 
 		// A table outside the granted schema is denied.
 		resp, qErr = runAs(token, "INSERT INTO other_schema.t_in_other (id) VALUES (1);")
@@ -439,6 +446,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	//    reads from t_src and writes to t_dst → allowed AND executed, proving
 	//    read-source tables are not gated.
 	t.Run("InsertSelectGatesTargetOnly", func(t *testing.T) {
+		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_dst"))
 
@@ -446,12 +454,13 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		srcCount := countRows(t, "public.t_src")
 		resp, qErr := runAs(token, "INSERT INTO public.t_dst SELECT id FROM public.t_src;")
 		assertAllowed(t, resp, qErr)
-		a.Equal(before+srcCount, countRows(t, "public.t_dst"), "all source rows should have been copied")
+		ra.Equal(before+srcCount, countRows(t, "public.t_dst"), "all source rows should have been copied")
 	})
 
 	// 4. Database-scoped DML still works (no regression). The condition scopes by
 	//    database + environment only (no table/schema clause).
 	t.Run("DatabaseScopedDMLNoRegression", func(t *testing.T) {
+		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		cond := fmt.Sprintf(
 			`resource.database == "%s" && resource.environment_id in ["%s"]`,
@@ -462,12 +471,13 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		before := countRows(t, "public.t_other")
 		resp, qErr := runAs(token, "INSERT INTO public.t_other (id) VALUES (202);")
 		assertAllowed(t, resp, qErr)
-		a.Equal(before+1, countRows(t, "public.t_other"), "the row should have been inserted")
+		ra.Equal(before+1, countRows(t, "public.t_other"), "the row should have been inserted")
 	})
 
 	// 5. UPDATE and DELETE on the granted table are allowed; the same statements
 	//    against a non-granted table are denied.
 	t.Run("UpdateDeleteScoped", func(t *testing.T) {
+		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
 
@@ -478,7 +488,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			Statement: "INSERT INTO public.t_granted (id) VALUES (1);",
 			Limit:     1,
 		}))
-		a.NoError(err)
+		ra.NoError(err)
 
 		resp, qErr := runAs(token, "UPDATE public.t_granted SET id = 2 WHERE id = 1;")
 		assertAllowed(t, resp, qErr)
@@ -509,6 +519,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	//    (granted on b), NOT with the DDL span's bb.sql.ddl. Without the per-statement
 	//    fix, whole-statement resolution would check b under bb.sql.ddl and deny.
 	t.Run("MixedDDLDMLBatchPerStatement", func(t *testing.T) {
+		ra := require.New(t)
 		email, token := newLimitedUser(t)
 		ddlCond := fmt.Sprintf(
 			`resource.database == "%s" && resource.table_name in ["a"] && resource.environment_id in ["%s"]`,
@@ -530,17 +541,17 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		stmt := fmt.Sprintf("ALTER TABLE public.a ADD COLUMN %s int; INSERT INTO public.b (id) VALUES (1);", col)
 		resp, qErr := runAs(token, stmt)
 		assertAllowed(t, resp, qErr)
-		a.Equal(before+1, countRows(t, "public.b"), "the INSERT on b should have executed")
+		ra.Equal(before+1, countRows(t, "public.b"), "the INSERT on b should have executed")
 
 		// Sharpness check: the DDL grant on a does NOT authorize a DML on a. With the
 		// per-statement, per-permission fix, an INSERT on a (DML) is denied because the
 		// only grant touching a is bb.sql.ddl, and b's bb.sql.dml grant doesn't cover a.
 		resp, qErr = runAs(token, "INSERT INTO public.a (id) VALUES (1);")
-		assertDeniedOn(t, resp, qErr, "/tables/a")
+		assertDeniedOn(t, resp, qErr, "public/tables/a")
 
 		// And the DML grant on b does NOT authorize DDL on b.
 		col2 := "c" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
 		resp, qErr = runAs(token, fmt.Sprintf("ALTER TABLE public.b ADD COLUMN %s int;", col2))
-		assertDeniedOn(t, resp, qErr, "/tables/b")
+		assertDeniedOn(t, resp, qErr, "public/tables/b")
 	})
 }
