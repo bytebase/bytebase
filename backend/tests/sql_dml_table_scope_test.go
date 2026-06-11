@@ -3,9 +3,11 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -177,4 +179,368 @@ func TestSQLEditorTableScopedDML(t *testing.T) {
 	a.Empty(countResp.Msg.Results[0].Error)
 	a.Len(countResp.Msg.Results[0].Rows, 1)
 	a.Equal(int64(1), countResp.Msg.Results[0].Rows[0].Values[0].GetInt64Value(), "the inserted row should be present")
+}
+
+// TestSQLEditorTableScopedDMLEdgeCases exercises the regression + edge cases for
+// the SUP-222 fix: DML/DDL grants are authorized per write-target table (via
+// ExtractChangedResources), fall back to a database-level check when targets
+// can't be resolved (never fail open), and are authorized per statement in
+// multi-statement batches.
+//
+// All cases below MUST pass: they assert the fix's correctness and its edges.
+// One server/instance/database is shared across cases via subtests; each subtest
+// uses a fresh limited user + a per-case project IAM policy so grants don't leak.
+//
+// Postgres is required for the same reason the base test documents: it is a
+// "newACL" engine, so DML/DDL statements reach the ACL at all.
+func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
+	// Not t.Parallel(): the subtests share one server/instance/database and each
+	// rewrites the project IAM policy, so they must run serially (not in parallel
+	// with each other). The whole test still runs alongside other test binaries.
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	ownerToken := ctl.authInterceptor.token
+
+	pgContainer, err := getPgContainer(ctx)
+	defer func() {
+		pgContainer.Close(ctx)
+	}()
+	a.NoError(err)
+
+	// Single Postgres instance + database shared by every subtest.
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "pgInstance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+	instance := instanceResp.Msg
+
+	const databaseName = "sup222edge"
+	a.NoError(ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "postgres"))
+
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+	}))
+	a.NoError(err)
+	database := databaseResp.Msg
+
+	envID, err := common.GetEnvironmentID(database.GetEffectiveEnvironment()) // bare id, e.g. "prod"
+	a.NoError(err)
+
+	// Create every table the subtests reference, plus a non-public schema, via the
+	// change-database flow. Doing it once keeps the (slow) rollout flow off the hot path.
+	setupSQL := strings.Join([]string{
+		`CREATE TABLE public.t_granted (id bigint);`,
+		`CREATE TABLE public.t_other (id bigint);`,
+		`CREATE TABLE public.t_dst (id bigint);`,
+		`CREATE TABLE public.t_src (id bigint);`,
+		`CREATE TABLE public.a (id bigint);`,
+		`CREATE TABLE public.b (id bigint);`,
+		`CREATE SCHEMA other_schema;`,
+		`CREATE TABLE other_schema.t_in_other (id bigint);`,
+		`INSERT INTO public.t_src (id) VALUES (7), (8), (9);`,
+	}, "\n")
+	setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet:  &v1pb.Sheet{Content: []byte(setupSQL)},
+	}))
+	a.NoError(err)
+	a.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+	// Custom roles used across cases. bb.sql.dml for writes, bb.sql.ddl for schema
+	// changes — each table-scopable via the binding's CEL condition.
+	_, err = ctl.roleServiceClient.CreateRole(ctx, connect.NewRequest(&v1pb.CreateRoleRequest{
+		Role:   &v1pb.Role{Title: "repro-write", Permissions: []string{"bb.sql.dml"}},
+		RoleId: "repro-write",
+	}))
+	a.NoError(err)
+	_, err = ctl.roleServiceClient.CreateRole(ctx, connect.NewRequest(&v1pb.CreateRoleRequest{
+		Role:   &v1pb.Role{Title: "repro-ddl", Permissions: []string{"bb.sql.ddl"}},
+		RoleId: "repro-ddl",
+	}))
+	a.NoError(err)
+
+	// Capture the baseline project IAM policy so each subtest can reset to it
+	// before layering on its own bindings (no cross-subtest grant leakage).
+	baselineResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	baselineBindings := baselineResp.Msg.Bindings
+
+	dbFullName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)
+
+	// newLimitedUser creates a fresh non-owner user that can log in, and returns its
+	// email + a bearer token. Run as the owner before calling.
+	newLimitedUser := func(t *testing.T) (string, string) {
+		ra := require.New(t)
+		ctl.authInterceptor.token = ownerToken
+		email := fmt.Sprintf("limited-%s@example.com", generateRandomString("u"))
+		password := "1024bytebase"
+		u, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+			User: &v1pb.User{Email: email, Password: password, Title: "Limited User"},
+		}))
+		ra.NoError(err)
+		_, err = ctl.addMemberToWorkspaceIAM(ctx, u.Msg.Workspace, fmt.Sprintf("user:%s", email), "roles/workspaceMember")
+		ra.NoError(err)
+		loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{Email: email, Password: password}))
+		ra.NoError(err)
+		return email, loginResp.Msg.Token
+	}
+
+	// setProjectBindings resets the project IAM policy to baseline + the given
+	// extra bindings. Run as the owner.
+	setProjectBindings := func(t *testing.T, extra ...*v1pb.Binding) {
+		ra := require.New(t)
+		ctl.authInterceptor.token = ownerToken
+		policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+			Resource: ctl.project.Name,
+		}))
+		ra.NoError(err)
+		policy := policyResp.Msg
+		policy.Bindings = append(append([]*v1pb.Binding{}, baselineBindings...), extra...)
+		_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+			Resource: ctl.project.Name,
+			Policy:   policy,
+		}))
+		ra.NoError(err)
+	}
+
+	// readBinding is the unconditional sqlEditorReadUser binding every write case
+	// pairs with (method-gate + bb.sql.select, no bb.sql.dml/ddl).
+	readBinding := func(email string) *v1pb.Binding {
+		return &v1pb.Binding{
+			Role:    "roles/sqlEditorReadUser",
+			Members: []string{fmt.Sprintf("user:%s", email)},
+		}
+	}
+	// scopedBinding builds a conditional binding for the given role/condition.
+	scopedBinding := func(role, email, condition string) *v1pb.Binding {
+		return &v1pb.Binding{
+			Role:      role,
+			Members:   []string{fmt.Sprintf("user:%s", email)},
+			Condition: &expr.Expr{Expression: condition},
+		}
+	}
+
+	// runAs swaps to the user token, runs a Query, then restores the owner token.
+	runAs := func(token, statement string) (*v1pb.QueryResponse, error) {
+		ctl.authInterceptor.token = token
+		resp, qErr := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: statement,
+			Limit:     1000,
+		}))
+		ctl.authInterceptor.token = ownerToken
+		if resp != nil {
+			return resp.Msg, qErr
+		}
+		return nil, qErr
+	}
+
+	// assertAllowed asserts the Query was authorized: no error and no
+	// permission_denied detail on any result.
+	assertAllowed := func(t *testing.T, resp *v1pb.QueryResponse, qErr error) {
+		ra := require.New(t)
+		ra.NoError(qErr, "statement should be authorized")
+		ra.NotNil(resp)
+		for _, r := range resp.Results {
+			ra.Empty(r.Error, "result should carry no error")
+			ra.Nil(r.GetPermissionDenied(), "result should carry no permission_denied detail")
+		}
+	}
+
+	// assertDeniedOn asserts the Query was denied on a specific resource. The denial
+	// is surfaced on the last result's permission_denied detail (not as a top-level
+	// error): queryRetryStopOnError attaches the access-check failure to the result's
+	// Error field and returns a nil top-level error. The result detail must name a
+	// resource containing wantResourceSubstr (e.g. ".../tables/t_other"), and no row
+	// must have been written (rows == 0).
+	assertDeniedOn := func(t *testing.T, resp *v1pb.QueryResponse, _ error, wantResourceSubstr string) {
+		ra := require.New(t)
+		ra.NotNil(resp)
+		ra.NotEmpty(resp.Results)
+		last := resp.Results[len(resp.Results)-1]
+		pd := last.GetPermissionDenied()
+		ra.NotNil(pd, "last result should carry a permission_denied detail; got error=%q", last.Error)
+		ra.Empty(last.Rows, "a denied statement must not return/execute rows")
+		joined := strings.Join(pd.Resources, ",")
+		ra.Contains(joined, wantResourceSubstr, "denied resources %v should name %q", pd.Resources, wantResourceSubstr)
+	}
+
+	// countRows returns the row count of a table, queried as the owner.
+	countRows := func(t *testing.T, table string) int64 {
+		ra := require.New(t)
+		ctl.authInterceptor.token = ownerToken
+		resp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: fmt.Sprintf("SELECT count(*) FROM %s;", table),
+			Limit:     1,
+		}))
+		ra.NoError(err)
+		ra.Len(resp.Msg.Results, 1)
+		ra.Empty(resp.Msg.Results[0].Error)
+		ra.Len(resp.Msg.Results[0].Rows, 1)
+		return resp.Msg.Results[0].Rows[0].Values[0].GetInt64Value()
+	}
+
+	tableScopedDML := func(email, table string) *v1pb.Binding {
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.table_name in ["%s"] && resource.environment_id in ["%s"]`,
+			dbFullName, table, envID,
+		)
+		return scopedBinding("roles/repro-write", email, cond)
+	}
+
+	// 1. Denied on a non-granted table: grant is table-scoped to t_granted; an
+	//    INSERT into t_other must be denied and name t_other.
+	t.Run("DeniedOnNonGrantedTable", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
+
+		resp, qErr := runAs(token, "INSERT INTO public.t_other (id) VALUES (1);")
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+	})
+
+	// 2. Schema-scoped grant: condition scopes by schema_name only (no table_name).
+	//    An INSERT into a public table is allowed AND executed; an INSERT into a
+	//    table in a different schema is denied.
+	t.Run("SchemaScopedGrant", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.schema_name == "public" && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		before := countRows(t, "public.t_dst")
+		resp, qErr := runAs(token, "INSERT INTO public.t_dst (id) VALUES (101);")
+		assertAllowed(t, resp, qErr)
+		a.Equal(before+1, countRows(t, "public.t_dst"), "the row should have been inserted")
+
+		// A table outside the granted schema is denied.
+		resp, qErr = runAs(token, "INSERT INTO other_schema.t_in_other (id) VALUES (1);")
+		assertDeniedOn(t, resp, qErr, "other_schema/tables/t_in_other")
+	})
+
+	// 3. INSERT ... SELECT requires DML only on the target. The grant is table-scoped
+	//    to t_dst; there is NO grant of any kind referencing t_src. The statement
+	//    reads from t_src and writes to t_dst → allowed AND executed, proving
+	//    read-source tables are not gated.
+	t.Run("InsertSelectGatesTargetOnly", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_dst"))
+
+		before := countRows(t, "public.t_dst")
+		srcCount := countRows(t, "public.t_src")
+		resp, qErr := runAs(token, "INSERT INTO public.t_dst SELECT id FROM public.t_src;")
+		assertAllowed(t, resp, qErr)
+		a.Equal(before+srcCount, countRows(t, "public.t_dst"), "all source rows should have been copied")
+	})
+
+	// 4. Database-scoped DML still works (no regression). The condition scopes by
+	//    database + environment only (no table/schema clause).
+	t.Run("DatabaseScopedDMLNoRegression", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(
+			`resource.database == "%s" && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		before := countRows(t, "public.t_other")
+		resp, qErr := runAs(token, "INSERT INTO public.t_other (id) VALUES (202);")
+		assertAllowed(t, resp, qErr)
+		a.Equal(before+1, countRows(t, "public.t_other"), "the row should have been inserted")
+	})
+
+	// 5. UPDATE and DELETE on the granted table are allowed; the same statements
+	//    against a non-granted table are denied.
+	t.Run("UpdateDeleteScoped", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
+
+		// Seed a row to mutate (as the owner).
+		ctl.authInterceptor.token = ownerToken
+		_, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: "INSERT INTO public.t_granted (id) VALUES (1);",
+			Limit:     1,
+		}))
+		a.NoError(err)
+
+		resp, qErr := runAs(token, "UPDATE public.t_granted SET id = 2 WHERE id = 1;")
+		assertAllowed(t, resp, qErr)
+		resp, qErr = runAs(token, "DELETE FROM public.t_granted WHERE id = 2;")
+		assertAllowed(t, resp, qErr)
+
+		// The same statements against t_other are denied.
+		resp, qErr = runAs(token, "UPDATE public.t_other SET id = 2 WHERE id = 1;")
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+		resp, qErr = runAs(token, "DELETE FROM public.t_other WHERE id = 1;")
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+	})
+
+	// 6. Fail-safe is closed: a user with ONLY the unconditional read pairing and no
+	//    write grant must be denied (the no-matching-grant fallback denies, not grants).
+	t.Run("FailSafeClosed", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email))
+
+		resp, qErr := runAs(token, "INSERT INTO public.t_granted (id) VALUES (1);")
+		assertDeniedOn(t, resp, qErr, "/tables/t_granted")
+	})
+
+	// 7. Mixed DDL+DML batch (validates the per-statement fix). bb.sql.ddl is
+	//    table-scoped to a, bb.sql.dml is table-scoped to b. A single Query runs a
+	//    DDL on a and a DML on b. Each statement is authorized against its own target
+	//    with its own permission: the INSERT-on-b span is checked with bb.sql.dml
+	//    (granted on b), NOT with the DDL span's bb.sql.ddl. Without the per-statement
+	//    fix, whole-statement resolution would check b under bb.sql.ddl and deny.
+	t.Run("MixedDDLDMLBatchPerStatement", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		ddlCond := fmt.Sprintf(
+			`resource.database == "%s" && resource.table_name in ["a"] && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		dmlCond := fmt.Sprintf(
+			`resource.database == "%s" && resource.table_name in ["b"] && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t,
+			readBinding(email),
+			scopedBinding("roles/repro-ddl", email, ddlCond),
+			scopedBinding("roles/repro-write", email, dmlCond),
+		)
+
+		// Use a unique (identifier-safe) column name so re-runs don't collide on ALTER.
+		col := "c" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
+		before := countRows(t, "public.b")
+		stmt := fmt.Sprintf("ALTER TABLE public.a ADD COLUMN %s int; INSERT INTO public.b (id) VALUES (1);", col)
+		resp, qErr := runAs(token, stmt)
+		assertAllowed(t, resp, qErr)
+		a.Equal(before+1, countRows(t, "public.b"), "the INSERT on b should have executed")
+
+		// Sharpness check: the DDL grant on a does NOT authorize a DML on a. With the
+		// per-statement, per-permission fix, an INSERT on a (DML) is denied because the
+		// only grant touching a is bb.sql.ddl, and b's bb.sql.dml grant doesn't cover a.
+		resp, qErr = runAs(token, "INSERT INTO public.a (id) VALUES (1);")
+		assertDeniedOn(t, resp, qErr, "/tables/a")
+
+		// And the DML grant on b does NOT authorize DDL on b.
+		col2 := "c" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
+		resp, qErr = runAs(token, fmt.Sprintf("ALTER TABLE public.b ADD COLUMN %s int;", col2))
+		assertDeniedOn(t, resp, qErr, "/tables/b")
+	})
 }
