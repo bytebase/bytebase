@@ -948,7 +948,7 @@
   querySpan:
     type: 1
     results:
-        - name: ""
+        - name: TO_DATE($1)
           sourcecolumns:
             - server: ""
               database: SNOWFLAKE

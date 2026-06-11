@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
@@ -38,6 +39,10 @@ type querySpanExtractor struct {
 	// tableSourcesFrom is used to record the table sources from the query.
 	tableSourcesFrom []base.TableSource
 
+	// statementText is the single statement being extracted; expression result
+	// names slice it by node Loc (the legacy extractor used ctx.GetText()).
+	statementText string
+
 	// joinMemberSources records the individual relations inside JOIN trees of
 	// the current FROM scope. tableSourcesFrom holds one (unnamed, merged)
 	// pseudo-table per FROM item, so qualified references like T2.B or T2.*
@@ -62,6 +67,7 @@ func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQ
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
+	q.statementText = statement
 
 	file, err := parseSnowflakeAST(statement)
 	if err != nil {
@@ -532,7 +538,7 @@ func (q *querySpanExtractor) extractQuerySpanResultFromTargetExpr(expr ast.Node)
 		return querySpanResult.Name, querySpanResult, nil
 	}
 
-	name := exprDisplayName(expr)
+	name := q.exprDisplayName(expr)
 	sourceColumns, err := q.collectSourceColumnsFromExpr(expr)
 	if err != nil {
 		return "", base.QuerySpanResult{}, err
@@ -672,19 +678,26 @@ func (q *querySpanExtractor) collectSourceColumnsFromExpr(expr ast.Node) (base.S
 // expression's source text. For a bare column reference the trailing part is
 // used; for anything else omni's source range is unavailable here, so the name
 // is left empty (callers that have an AS alias override it anyway).
-func exprDisplayName(expr ast.Node) string {
+func (q *querySpanExtractor) exprDisplayName(expr ast.Node) string {
 	switch e := expr.(type) {
 	case *ast.ColumnRef:
 		if len(e.Parts) > 0 {
 			return normalizeSnowflakeIdentifier(e.Parts[len(e.Parts)-1])
 		}
 	case *ast.ParenExpr:
-		return exprDisplayName(e.Expr)
+		return q.exprDisplayName(e.Expr)
 	case *ast.CastExpr:
-		return exprDisplayName(e.Expr)
+		return q.exprDisplayName(e.Expr)
 	case *ast.CollateExpr:
-		return exprDisplayName(e.Expr)
+		return q.exprDisplayName(e.Expr)
 	default:
+	}
+	// Fall back to the expression's verbatim source text (the legacy extractor
+	// used ctx.GetText()): omni nodes carry byte Locs into the statement.
+	if loc := ast.NodeLoc(expr); loc.End > loc.Start && loc.Start >= 0 && loc.End <= len(q.statementText) {
+		if name := strings.TrimSpace(q.statementText[loc.Start:loc.End]); utf8.ValidString(name) {
+			return name
+		}
 	}
 	return ""
 }
