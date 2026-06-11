@@ -32,6 +32,7 @@ import {
   storageKeySqlEditorWorksheetTree,
   workspaceCacheScope,
 } from "@/utils";
+import { isSubFolder } from "./folder";
 import { type SheetViewMode, SheetViewModeList } from "./types";
 
 // Worksheet caches, folder sets, and the sheet-tree contain Map / Set
@@ -421,21 +422,6 @@ const rootTreeNodeFor = (view: SheetViewMode): WorksheetFolderNode => ({
   label: rootLabelFor(view),
   editable: false,
 });
-
-const isSubFolder = ({
-  parent,
-  path,
-  dig,
-}: {
-  parent: string;
-  path: string;
-  dig: boolean;
-}) => {
-  const parentPrefix = `${parent}/`;
-  return path !== parentPrefix && path.startsWith(parentPrefix) && dig
-    ? true
-    : !path.replace(parentPrefix, "").includes("/");
-};
 
 const ensureFolderPath = (view: SheetViewMode, path: string): string => {
   const root = rootPathFor(view);
