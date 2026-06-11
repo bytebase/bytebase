@@ -215,7 +215,9 @@ export function SQLEditorHomePage() {
                 <AsidePanel />
               </div>
             </Panel>
-            <PanelResizeHandle className={resizeHandleClass("vertical")} />
+            <PanelResizeHandle
+              className={resizeHandleClass("vertical", "w-0.5")}
+            />
           </>
         )}
         <Panel>

@@ -265,7 +265,8 @@ export function TabList() {
     <div
       className={cn(
         "bb-sql-editor-tab-list flex justify-between items-center",
-        "box-border text-control-light text-sm border-b pr-2 gap-1"
+        // pl-2 keeps the first tab off the vertical resize bar to its left.
+        "box-border text-control-light text-sm border-b pl-2 pr-2 gap-1"
       )}
     >
       <div
