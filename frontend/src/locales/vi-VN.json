@@ -842,8 +842,11 @@
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
   },
   "error-page": {
+    "error-details": "Chi tiết lỗi",
     "go-back-home": "Về trang chủ",
-    "not-found": "Không tìm thấy"
+    "not-found": "Không tìm thấy",
+    "something-went-wrong": "Đã xảy ra lỗi",
+    "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo chi tiết lỗi bên dưới."
   },
   "export-center": {
     "data-export": "Xuất dữ liệu",

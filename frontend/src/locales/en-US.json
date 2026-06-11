@@ -842,8 +842,11 @@
     "successfully-updated-environment": "Successfully updated environment '{{name}}'."
   },
   "error-page": {
+    "error-details": "Error details",
     "go-back-home": "Go back home",
-    "not-found": "Not Found"
+    "not-found": "Not Found",
+    "something-went-wrong": "Something went wrong",
+    "unexpected-error-description": "An unexpected error occurred while displaying this page. Refreshing usually fixes it; if it keeps happening, please report the error details below."
   },
   "export-center": {
     "data-export": "Data Export",

@@ -842,8 +842,11 @@
     "successfully-updated-environment": "环境'{{name}}'更新成功"
   },
   "error-page": {
+    "error-details": "错误详情",
     "go-back-home": "回到主页",
-    "not-found": "页面未找到"
+    "not-found": "页面未找到",
+    "something-went-wrong": "出错了",
+    "unexpected-error-description": "显示此页面时发生意外错误。刷新通常可以解决；如果问题持续出现，请将下方的错误详情反馈给我们。"
   },
   "export-center": {
     "data-export": "数据导出",

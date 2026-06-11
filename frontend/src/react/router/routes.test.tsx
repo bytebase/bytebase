@@ -71,6 +71,13 @@ describe("react route table reachability", () => {
     expect(collectBareLeaves(routes)).toEqual([]);
   });
 
+  it("the root route declares an errorElement so render crashes show a recovery page", () => {
+    // Without this, any uncaught render error anywhere in the app shows
+    // react-router's developer-facing default error screen (raw minified
+    // stack, "Hey developer" hint) — see issue #20575.
+    expect(routes[0].errorElement).toBeTruthy();
+  });
+
   it.each([
     "/projects/db333/rollouts/605",
     "/sql-editor/does-not-exist",

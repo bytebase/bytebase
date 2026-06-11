@@ -842,8 +842,11 @@
     "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
   },
   "error-page": {
+    "error-details": "エラー詳細",
     "go-back-home": "ホームページに戻る",
-    "not-found": "ページが見つかりません"
+    "not-found": "ページが見つかりません",
+    "something-went-wrong": "問題が発生しました",
+    "unexpected-error-description": "このページの表示中に予期しないエラーが発生しました。通常は更新すると解決します。問題が続く場合は、以下のエラー詳細をご報告ください。"
   },
   "export-center": {
     "data-export": "データエクスポート",
