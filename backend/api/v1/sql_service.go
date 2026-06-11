@@ -1676,48 +1676,9 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				}
 				continue
 			}
-
-			env := ""
-			if database.EffectiveEnvironmentID != nil {
-				env = *database.EffectiveEnvironmentID
-			}
-
-			var deniedResources []string
-			for _, t := range targets {
-				databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
-				if _, granted := grantedTargets[databaseFullName]; granted {
-					continue
-				}
-				attributes := map[string]any{
-					common.CELAttributeRequestTime:       time.Now(),
-					common.CELAttributeResourceDatabase:  databaseFullName,
-					common.CELAttributeResourceTableName: t.table,
-					// environment_id is REQUIRED here: hasDatabaseAccessRights keeps the
-					// environment clause for SQLDml/SQLDdl (it is only stripped for non-DML/DDL
-					// perms). Omitting it would reintroduce a "no such attribute" error.
-					common.CELAttributeResourceEnvironmentID: env,
-				}
-				// Set resource.schema_name ONLY when the target schema is known. For an
-				// unqualified write whose executed schema can't be determined here (t.schema
-				// == "", from the sentinel) the key must be ABSENT, not "": a present-but-empty
-				// value lets a negated condition (schema_name != "x", !(schema_name in [...]))
-				// wrongly match, whereas an absent attribute makes CEL error → the binding is
-				// skipped → fail-closed. SUP-222.
-				if t.schema != "" {
-					attributes[common.CELAttributeResourceSchemaName] = t.schema
-				}
-				ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, workspacePolicy.Policy, projectPolicy.Policy)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for table: %q, error %v", t.table, err))
-				}
-				if !ok {
-					resource := databaseFullName
-					if t.schema != "" {
-						resource = fmt.Sprintf("%s/schemas/%s", resource, t.schema)
-					}
-					resource = fmt.Sprintf("%s/tables/%s", resource, t.table)
-					deniedResources = append(deniedResources, resource)
-				}
+			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, workspacePolicy.Policy, projectPolicy.Policy)
+			if err != nil {
+				return err
 			}
 			if len(deniedResources) > 0 {
 				return &queryError{
@@ -1793,6 +1754,65 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	return nil
 }
 
+// authorizeWriteTargets evaluates perm for each resolved DML/DDL write target and returns the
+// resources that were denied (empty = all authorized). A target whose database is already
+// JIT-granted is skipped.
+//
+// resource.schema_name is asserted ONLY when the target schema is known: an empty schema (the
+// sentinel mapped to "") omits the attribute, so a schema-scoped grant fails closed (CEL errors
+// on the missing attribute → the binding is skipped) while a table-only grant still matches. A
+// present-but-empty value would instead let a negated condition (schema_name != "x") wrongly
+// match. resource.environment_id is always set: hasDatabaseAccessRights keeps the environment
+// clause for SQLDml/SQLDdl, so omitting it would reintroduce a "no such attribute" error.
+// SUP-222 / BYT-9698.
+func (s *SQLService) authorizeWriteTargets(
+	ctx context.Context,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	perm permission.Permission,
+	targets []writeTargetResource,
+	grantedTargets map[string]struct{},
+	iamPolicies ...*storepb.IamPolicy,
+) ([]string, error) {
+	env := ""
+	if database.EffectiveEnvironmentID != nil {
+		env = *database.EffectiveEnvironmentID
+	}
+	// One timestamp per request so every target evaluates request.time consistently.
+	requestTime := time.Now()
+
+	var deniedResources []string
+	for _, t := range targets {
+		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
+		if _, granted := grantedTargets[databaseFullName]; granted {
+			continue
+		}
+		attributes := map[string]any{
+			common.CELAttributeRequestTime:           requestTime,
+			common.CELAttributeResourceDatabase:      databaseFullName,
+			common.CELAttributeResourceTableName:     t.table,
+			common.CELAttributeResourceEnvironmentID: env,
+		}
+		if t.schema != "" {
+			attributes[common.CELAttributeResourceSchemaName] = t.schema
+		}
+		ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for table: %q, error %v", t.table, err))
+		}
+		if !ok {
+			resource := databaseFullName
+			if t.schema != "" {
+				resource = fmt.Sprintf("%s/schemas/%s", resource, t.schema)
+			}
+			resource = fmt.Sprintf("%s/tables/%s", resource, t.table)
+			deniedResources = append(deniedResources, resource)
+		}
+	}
+	return deniedResources, nil
+}
+
 // writeTargetResource is a (database, schema, table) write target of a DML/DDL statement.
 type writeTargetResource struct {
 	database string
@@ -1831,11 +1851,9 @@ func (s *SQLService) resolveWriteTargets(
 		return nil, nil
 	}
 
-	dbMeta, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		Workspace:    common.GetWorkspaceIDFromContext(ctx),
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-	})
+	// Cache-first: GetQuerySpan already fetched and cached this database's metadata earlier in
+	// the same request, so reuse it instead of issuing a second store query on the write path.
+	dbMeta, err := s.store.GetDBSchemaSnapshot(ctx, common.GetWorkspaceIDFromContext(ctx), database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -1899,11 +1917,23 @@ func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, request
 		// in synced metadata. Never trust a request schema for MSSQL.
 		return unresolvedSchemaSentinel
 	case storepb.Engine_ORACLE:
-		// The driver pins CURRENT_SCHEMA to the connection database (= schema); no per-request
-		// override (mid-batch ALTER SESSION is covered by the multi-statement fallback).
+		// Execution pins CURRENT_SCHEMA to the connection database (= schema) once at pool Open
+		// (oracle.go), and the SQL Editor opens a fresh pool per request, so an unqualified write
+		// resolves to databaseName — knowable and execution-accurate. (A mid-batch ALTER SESSION
+		// is covered by the multi-statement fallback.) This pin is the reason the schema is
+		// auth-grade here; if the driver ever stops pinning per-connection, switch to the sentinel.
 		return databaseName
-	default: // MySQL/TiDB — no schema layer; resource.schema_name is omitted.
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+		// No schema layer; the extractor emits an empty schema and resource.schema_name is omitted.
 		return ""
+	default:
+		// Fail closed for any other engine. An engine that reaches here without an explicit,
+		// execution-verified schema mapping must NOT have its unqualified writes resolved against
+		// a guessed default — e.g. a pg-family extractor (COCKROACHDB, REDSHIFT) would fill in the
+		// metadata search_path, a REAL schema name, which we'd then assert as resource.schema_name
+		// and over-allow a schema-scoped grant. The sentinel maps to an omitted attribute, so
+		// schema-scoped grants fail closed while table-only grants still match. SUP-222 / BYT-9698.
+		return unresolvedSchemaSentinel
 	}
 }
 

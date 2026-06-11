@@ -26,6 +26,13 @@ func TestSchemaForWriteTargetResolution(t *testing.T) {
 		{"oracle pins CURRENT_SCHEMA to the database name", storepb.Engine_ORACLE, "", dbName},
 		{"mysql has no schema layer → omit", storepb.Engine_MYSQL, "", ""},
 		{"tidb has no schema layer → omit", storepb.Engine_TIDB, "", ""},
+		// Any engine without an explicit, execution-verified mapping must fail closed via the
+		// sentinel — never "" (which a pg-family extractor would fill from the metadata search
+		// path, a real schema name we'd then wrongly assert). Guards a future newACL flip for
+		// COCKROACHDB/REDSHIFT (both pg-family extractors). SUP-222 / BYT-9698.
+		{"unlisted engine fails closed via sentinel", storepb.Engine_SNOWFLAKE, "ignored", unresolvedSchemaSentinel},
+		{"cockroachdb (pg-family extractor) fails closed via sentinel", storepb.Engine_COCKROACHDB, "", unresolvedSchemaSentinel},
+		{"redshift (pg-family extractor) fails closed via sentinel", storepb.Engine_REDSHIFT, "", unresolvedSchemaSentinel},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
