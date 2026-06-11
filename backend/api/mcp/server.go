@@ -54,10 +54,22 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 	}
 	s.registerTools()
 
-	// Create HTTP handler for streamable HTTP transport
+	// Create HTTP handler for streamable HTTP transport.
+	//
+	// DisableLocalhostProtection turns off the SDK's DNS-rebinding check
+	// (auto-enabled since go-sdk v1.4.0). That check rejects requests that
+	// arrive over a loopback connection while carrying a non-loopback Host
+	// header. Behind a same-host reverse proxy (proxy_pass http://127.0.0.1),
+	// Bytebase accepts a loopback connection while the proxy preserves the
+	// public Host, so the check fires on legitimate traffic and returns
+	// "403 Forbidden: invalid Host header" (BYT-9693). It is safe to disable:
+	// /mcp is gated by mandatory OAuth bearer-token auth (authMiddleware), so
+	// the token — not network position — is the security boundary, and the
+	// rebinding threat targets unauthenticated, browser-reached localhost
+	// servers, which Bytebase is not.
 	s.httpHandler = mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
-	}, nil)
+	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
 
 	return s, nil
 }
