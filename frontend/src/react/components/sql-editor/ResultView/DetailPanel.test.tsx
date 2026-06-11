@@ -9,7 +9,11 @@ import {
   type RowValue,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { SQLResultViewProvider, useSQLResultViewContext } from "./context";
+import {
+  SQLResultViewProvider,
+  useSelectionContext,
+  useSQLResultViewContext,
+} from "./context";
 import { DetailPanel } from "./DetailPanel";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
@@ -72,6 +76,14 @@ function OpenDetailOnMount() {
   return null;
 }
 
+function SelectCellOnMount() {
+  const { toggleSelectCell } = useSelectionContext();
+  useEffect(() => {
+    toggleSelectCell(0, 0);
+  }, [toggleSelectCell]);
+  return null;
+}
+
 function TestDetailPanel({
   disallowCopyingData = false,
 }: {
@@ -86,6 +98,18 @@ function TestDetailPanel({
     >
       <OpenDetailOnMount />
       <DetailPanel rows={rows} columns={columns} />
+    </SQLResultViewProvider>
+  );
+}
+
+function TestProviderWithGridSelection() {
+  return (
+    <SQLResultViewProvider
+      engine={Engine.POSTGRES}
+      rows={rows}
+      columns={columns}
+    >
+      <SelectCellOnMount />
     </SQLResultViewProvider>
   );
 }
@@ -175,6 +199,33 @@ describe("DetailPanel", () => {
 
     getSelectionSpy.mockRestore();
     document.removeEventListener("click", onDocumentClick);
+    unmount();
+  });
+
+  test("lets native text selection handle copy even when grid selection exists", () => {
+    const { render, unmount } = renderIntoContainer(
+      <TestProviderWithGridSelection />
+    );
+    render();
+
+    const getSelectionSpy = vi.spyOn(window, "getSelection").mockReturnValue({
+      toString: () => "selected drawer text",
+    } as Selection);
+
+    const event = new KeyboardEvent("keydown", {
+      key: "c",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    act(() => {
+      document.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+
+    getSelectionSpy.mockRestore();
     unmount();
   });
 });
