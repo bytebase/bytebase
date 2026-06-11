@@ -75,8 +75,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
-	isAtLeastPG10 := isAtLeastPG10(d.connectionCtx.EngineVersion)
-	isAtLeastPG12 := isAtLeastPG12(d.connectionCtx.EngineVersion)
+	// Prefer the live server version over the engine version cached in the connection
+	// context: the cached value can be empty or stale, and the version checks below
+	// assume "new enough" on parse failure, which would break the sync on old servers.
+	engineVersion := d.connectionCtx.EngineVersion
+	if version, err := d.getVersion(ctx); err == nil {
+		engineVersion = version
+	}
+	isAtLeastPG10 := isAtLeastPG10(engineVersion)
+	isAtLeastPG12 := isAtLeastPG12(engineVersion)
 	searchPath, err := d.GetSearchPath(ctx)
 	if err != nil {
 		return nil, common.Errorf(common.Internal, "failed to get search path for database %q: %v", d.databaseName, err)
