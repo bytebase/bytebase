@@ -438,6 +438,7 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStmt(ctx *ast.SelectStm
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement")
 			}
 			left = filterExcludedColumns(left, target.Exclude)
+			left = applyStarRenames(left, target.Rename)
 			result.Columns = append(result.Columns, left...)
 			continue
 		}
@@ -1263,4 +1264,30 @@ func (q *querySpanExtractor) resolvePositionalRef(dollar *ast.DollarRef) (base.Q
 		return base.QuerySpanResult{}, errors.Errorf("column position $%d is invalid: the FROM clause only returns %d columns", position, len(left))
 	}
 	return left[position-1], nil
+}
+
+// applyStarRenames applies the `SELECT * RENAME (col AS alias, ...)` transform
+// to a star expansion: the matching result columns keep their lineage but take
+// the alias as their output name (Snowflake returns the renamed column).
+// Matching uses normalized identifiers, like the rest of the resolver.
+func applyStarRenames(columns []base.QuerySpanResult, renames []ast.StarRename) []base.QuerySpanResult {
+	if len(renames) == 0 {
+		return columns
+	}
+	aliasByColumn := make(map[string]string, len(renames))
+	for _, r := range renames {
+		aliasByColumn[normalizeSnowflakeIdentifier(r.Col)] = normalizeSnowflakeIdentifier(r.Alias)
+	}
+	// Copy before renaming: columns may be the FROM-scope table source's
+	// internal slice (getAllFieldsOfTableInFromOrOuterCTE returns it directly,
+	// and base.PseudoTable documents that callers must copy before modifying);
+	// mutating it in place would corrupt the scope for later references.
+	renamed := make([]base.QuerySpanResult, len(columns))
+	copy(renamed, columns)
+	for i := range renamed {
+		if alias, ok := aliasByColumn[renamed[i].Name]; ok {
+			renamed[i].Name = alias
+		}
+	}
+	return renamed
 }

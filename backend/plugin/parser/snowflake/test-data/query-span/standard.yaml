@@ -965,3 +965,55 @@
           table: T1
           column: ""
     predicatecolumns: []
+- description: SELECT * RENAME reports the alias as the result column name (lineage unchanged)
+  statement: SELECT * RENAME (B AS MASKED_B) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: MASKED_B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
