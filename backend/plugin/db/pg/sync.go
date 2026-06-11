@@ -520,13 +520,25 @@ func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, 
 	return schemaNames, schemaOwners, schemaComments, skipDump, nil
 }
 
+// getListForeignTableQuery returns the foreign table query against pg_catalog directly.
+// information_schema.foreign_tables hides foreign tables the current user has no privilege
+// on (pg_has_role(c.relowner, 'USAGE') OR has_table_privilege(...) OR
+// has_any_column_privilege(...)), silently omitting them from the synced metadata. The
+// expressions are copied from the information_schema._pg_foreign_tables view definition
+// minus the privilege predicate (and minus its pg_authid join, which only feeds a column
+// we do not output and is not readable by non-superusers anyway).
 func getListForeignTableQuery() string {
 	return `SELECT
-		foreign_table.foreign_table_schema,
-		foreign_table.foreign_table_name,
-		foreign_table.foreign_server_catalog,
-		foreign_table.foreign_server_name
-	FROM information_schema.foreign_tables AS foreign_table;`
+		n.nspname AS foreign_table_schema,
+		c.relname AS foreign_table_name,
+		current_database() AS foreign_server_catalog,
+		s.srvname AS foreign_server_name
+	FROM pg_catalog.pg_foreign_table t
+		JOIN pg_catalog.pg_class c ON c.oid = t.ftrelid
+		JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_catalog.pg_foreign_server s ON s.oid = t.ftserver
+	WHERE c.relkind = 'f'
+	ORDER BY n.nspname, c.relname;`
 }
 func getListTableQuery(isAtLeastPG10 bool) string {
 	relisPartition := ""
