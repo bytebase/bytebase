@@ -140,6 +140,7 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 							Type:        "btree",
 							Expressions: []string{"c2"},
 							Definition:  `CREATE INDEX idx_t1_c2 ON s1.t1 USING btree (c2);`,
+							Comment:     "comment on a never-created index",
 						},
 					},
 					CheckConstraints: []*storepb.CheckConstraintMetadata{{
@@ -181,7 +182,7 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		}},
 	}
 
-	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "OWNED BY"}
+	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "OWNED BY", "COMMENT ON INDEX"}
 
 	for name, ctx := range map[string]schema.GetDefinitionContext{
 		"dump": {},

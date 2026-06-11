@@ -2746,13 +2746,17 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 				return "", err
 			}
 
-			// Write index comments if present
-			for _, index := range table.Indexes {
-				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
-				if !index.Primary && !index.Unique {
-					if len(index.Comment) > 0 {
-						if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
-							return "", err
+			// Write index comments if present. Skip when the table has no
+			// column metadata — its indexes were not emitted, so a COMMENT ON
+			// INDEX would target a nonexistent index.
+			if !tableMissingColumnMetadata(table) {
+				for _, index := range table.Indexes {
+					// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+					if !index.Primary && !index.Unique {
+						if len(index.Comment) > 0 {
+							if err := writeIndexCommentSDL(&buf, schema.Name, index); err != nil {
+								return "", err
+							}
 						}
 					}
 				}
@@ -3810,13 +3814,17 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				return nil, errors.Wrapf(err, "failed to generate indexes SDL for %s.%s", schemaName, table.Name)
 			}
 
-			// Write index comments if present
-			for _, index := range table.Indexes {
-				// Only write comment for standalone indexes (not primary key or unique constraint indexes)
-				if !index.Primary && !index.Unique {
-					if len(index.Comment) > 0 {
-						if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
-							return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+			// Write index comments if present. Skip when the table has no
+			// column metadata — its indexes were not emitted, so a COMMENT ON
+			// INDEX would target a nonexistent index.
+			if !tableMissingColumnMetadata(table) {
+				for _, index := range table.Indexes {
+					// Only write comment for standalone indexes (not primary key or unique constraint indexes)
+					if !index.Primary && !index.Unique {
+						if len(index.Comment) > 0 {
+							if err := writeIndexCommentSDL(&buf, schemaName, index); err != nil {
+								return nil, errors.Wrapf(err, "failed to generate index comment for %s.%s", schemaName, index.Name)
+							}
 						}
 					}
 				}
