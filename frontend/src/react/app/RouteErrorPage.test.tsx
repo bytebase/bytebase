@@ -104,7 +104,9 @@ describe("RouteErrorPage", () => {
     }
   });
 
-  test("a route render crash shows the recovery page with error details", async () => {
+  test("a route render crash shows the recovery page, with raw details in dev mode", async () => {
+    // Vitest runs with import.meta.env.DEV = true, so this covers the
+    // dev/diagnostic contract: raw error details are shown for debugging.
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
@@ -119,13 +121,52 @@ describe("RouteErrorPage", () => {
       expect(container.textContent).toContain(
         "error-page.something-went-wrong"
       );
-      // The thrown error is surfaced so users can report it.
       expect(container.textContent).toContain("boom from render");
       // Recovery actions.
       expect(container.textContent).toContain("common.refresh");
       expect(container.textContent).toContain("error-page.go-back-home");
     } finally {
       consoleError.mockRestore();
+    }
+  });
+
+  test("production hides raw error details and logs them to the console instead", async () => {
+    // The recovery page catches render/loader/lazy-route failures across
+    // the whole app — raw stacks and loader error text can leak bundle
+    // paths, component names, or backend messages. Ordinary users get
+    // generic copy + recovery actions; the raw error goes to the console
+    // for diagnostics (react-router does not log it for custom
+    // errorElements).
+    vi.stubEnv("DEV", false);
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    try {
+      const router = createMemoryRouter(
+        [{ path: "/", element: <Boom />, errorElement: <RouteErrorPage /> }],
+        { initialEntries: ["/"] }
+      );
+      await act(async () => {
+        root.render(<RouterProvider router={router} />);
+      });
+      expect(container.textContent).toContain(
+        "error-page.something-went-wrong"
+      );
+      expect(container.textContent).toContain("common.refresh");
+      expect(container.textContent).toContain("error-page.go-back-home");
+      // No raw error text or details block for end users.
+      expect(container.textContent).not.toContain("boom from render");
+      expect(container.querySelector("details")).toBeNull();
+      // The raw error is still logged for diagnostics.
+      expect(
+        consoleError.mock.calls.some(
+          (args) =>
+            typeof args[0] === "string" && args[0].includes("[RouteErrorPage]")
+        )
+      ).toBe(true);
+    } finally {
+      consoleError.mockRestore();
+      vi.unstubAllEnvs();
     }
   });
 });

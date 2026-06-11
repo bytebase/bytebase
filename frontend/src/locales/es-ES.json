@@ -847,7 +847,7 @@
     "go-back-home": "Volver al inicio",
     "not-found": "No encontrado",
     "something-went-wrong": "Algo salió mal",
-    "unexpected-error-description": "Se produjo un error inesperado al mostrar esta página. Actualizar suele solucionarlo; si persiste, informa los detalles del error a continuación."
+    "unexpected-error-description": "Se produjo un error inesperado al mostrar esta página. Actualizar suele solucionarlo; si persiste, informa el problema a tu administrador."
   },
   "export-center": {
     "data-export": "Exportación de datos",
