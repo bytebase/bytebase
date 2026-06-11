@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import { ErrorBoundary } from "@/react/components/ui/error-boundary";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
@@ -541,30 +542,45 @@ export function AsideTree() {
         )}
       </div>
       <div ref={containerRef} className="flex-1 overflow-hidden">
-        <Tree
-          data={arboristData}
-          idAccessor="id"
-          searchTerm={searchPattern}
-          searchMatch={(node, term) =>
-            node.data.name.toLowerCase().includes(term.toLowerCase())
+        {/* react-arborist hard-throws on malformed data (e.g. a falsy
+            node id) — contain that to this pane, same as the shared
+            ui/Tree primitive does. */}
+        <ErrorBoundary
+          resetKey={arboristData}
+          fallback={
+            <div className="px-2 py-1 text-sm text-control-light">
+              {t("common.render-failed")}
+            </div>
           }
-          rowHeight={28}
-          indent={16}
-          openByDefault={false}
-          width="100%"
-          height={containerRef.current?.clientHeight ?? 400}
+          onError={(error) => {
+            console.error("[AsideTree] failed to render tree data:", error);
+          }}
         >
-          {(props) => (
-            <NodeRenderer
-              {...props}
-              nodeMap={nodeMap}
-              onNodeClick={handleNodeClick}
-              onContextMenu={readonly ? undefined : showMenu}
-              getNodeStatus={getNodeStatus}
-              selection={selection}
-            />
-          )}
-        </Tree>
+          <Tree
+            data={arboristData}
+            idAccessor="id"
+            searchTerm={searchPattern}
+            searchMatch={(node, term) =>
+              node.data.name.toLowerCase().includes(term.toLowerCase())
+            }
+            rowHeight={28}
+            indent={16}
+            openByDefault={false}
+            width="100%"
+            height={containerRef.current?.clientHeight ?? 400}
+          >
+            {(props) => (
+              <NodeRenderer
+                {...props}
+                nodeMap={nodeMap}
+                onNodeClick={handleNodeClick}
+                onContextMenu={readonly ? undefined : showMenu}
+                getNodeStatus={getNodeStatus}
+                selection={selection}
+              />
+            )}
+          </Tree>
+        </ErrorBoundary>
       </div>
 
       {/* Context menu portal */}
