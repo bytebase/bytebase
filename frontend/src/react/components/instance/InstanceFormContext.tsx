@@ -34,6 +34,7 @@ import {
   isValidSpannerHost,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
+import { FeatureModal } from "../ui/feature-modal";
 import type { BasicInfo, DataSourceEditState, EditDataSource } from "./common";
 import {
   calcDataSourceUpdateMask,
@@ -613,6 +614,14 @@ export function InstanceFormProvider({
   return (
     <InstanceFormCtx.Provider value={value}>
       {children}
+      <FeatureModal
+        open={!!missingFeature}
+        feature={missingFeature}
+        instance={instance}
+        onOpenChange={(open) => {
+          if (!open) setMissingFeature(undefined);
+        }}
+      />
     </InstanceFormCtx.Provider>
   );
 }

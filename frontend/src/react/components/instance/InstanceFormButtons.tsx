@@ -70,7 +70,6 @@ export function InstanceFormButtons({
     readonlyDataSourceList,
     setDataSourceEditState,
     hasReadonlyReplicaFeature,
-    missingFeature: _missingFeature,
     setMissingFeature,
     testConnection,
     checkDataSource,
