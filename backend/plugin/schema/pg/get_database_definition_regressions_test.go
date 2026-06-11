@@ -105,6 +105,18 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		Name: "db",
 		Schemas: []*storepb.SchemaMetadata{{
 			Name: "s1",
+			Sequences: []*storepb.SequenceMetadata{{
+				// Owned by a column missing from t1's metadata: the sequence
+				// itself must dump, its OWNED BY clause must not.
+				Name:        "t1_c1_seq",
+				DataType:    "bigint",
+				Start:       "1",
+				Increment:   "1",
+				MinValue:    "1",
+				MaxValue:    "9223372036854775807",
+				OwnerTable:  "t1",
+				OwnerColumn: "c1",
+			}},
 			Tables: []*storepb.TableMetadata{
 				{
 					// Broken sync: constraints and indexes, but no columns.
@@ -169,25 +181,49 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 		}},
 	}
 
-	ddl, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
-	if err != nil {
-		t.Fatalf("GetDatabaseDefinition: %v", err)
-	}
+	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "OWNED BY"}
 
-	if !strings.Contains(ddl, `CREATE TABLE "s1"."t1" (`) {
-		t.Errorf("expected bare CREATE TABLE for t1, got:\n%s", ddl)
-	}
-	for _, banned := range []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1"} {
-		if strings.Contains(ddl, banned) {
-			t.Errorf("DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", banned, ddl)
+	for name, ctx := range map[string]schema.GetDefinitionContext{
+		"dump": {},
+		"sdl":  {SDLFormat: true},
+	} {
+		ddl, err := GetDatabaseDefinition(ctx, meta)
+		if err != nil {
+			t.Fatalf("[%s] GetDatabaseDefinition: %v", name, err)
+		}
+
+		if !strings.Contains(ddl, `CREATE TABLE "s1"."t1" (`) {
+			t.Errorf("[%s] expected bare CREATE TABLE for t1, got:\n%s", name, ddl)
+		}
+		for _, b := range banned {
+			if strings.Contains(ddl, b) {
+				t.Errorf("[%s] DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", name, b, ddl)
+			}
+		}
+		if !strings.Contains(ddl, "pk_t2") {
+			t.Errorf("[%s] expected pk_t2 on the healthy table, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, `CREATE SEQUENCE "s1"."t1_c1_seq"`) {
+			t.Errorf("[%s] expected CREATE SEQUENCE for t1_c1_seq, got:\n%s", name, ddl)
+		}
+
+		if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
+			t.Errorf("[%s] omni catalog parse error: %v\nDDL:\n%s", name, parseErr, ddl)
 		}
 	}
-	if !strings.Contains(ddl, `ADD CONSTRAINT "pk_t2" PRIMARY KEY (id)`) {
-		t.Errorf("expected pk_t2 on the healthy table, got:\n%s", ddl)
-	}
 
-	if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
-		t.Errorf("omni catalog parse error: %v\nDDL:\n%s", parseErr, ddl)
+	multiFile, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetMultiFileDatabaseDefinition: %v", err)
+	}
+	var combined strings.Builder
+	for _, file := range multiFile.Files {
+		combined.WriteString(file.Content)
+	}
+	for _, b := range banned {
+		if strings.Contains(combined.String(), b) {
+			t.Errorf("[multi-file] DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", b, combined.String())
+		}
 	}
 }
 

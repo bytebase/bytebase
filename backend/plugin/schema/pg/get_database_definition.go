@@ -345,30 +345,11 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct foreign keys. Skip foreign keys touching a table without
-	// column metadata on either side; they would reference columns absent
-	// from the dump.
-	tablesMissingColumns := make(map[string]bool)
+	// Construct foreign keys.
+	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
 	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if tableMissingColumnMetadata(table) {
-				tablesMissingColumns[getObjectID(schema.Name, table.Name)] = true
-			}
-		}
-	}
-	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			if table.SkipDump || tablesMissingColumns[getObjectID(schema.Name, table.Name)] {
-				continue
-			}
-			for _, fk := range table.ForeignKeys {
-				if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
-					continue
-				}
-				if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
-					return "", err
-				}
-			}
+		if err := writeSchemaForeignKeys(&buf, schema, tablesMissingColumns); err != nil {
+			return "", err
 		}
 	}
 
@@ -630,27 +611,9 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct foreign keys. Skip foreign keys touching a table without
-	// column metadata on either side; they would reference columns absent
-	// from the dump.
-	tablesMissingColumns := make(map[string]bool)
-	for _, table := range schema.Tables {
-		if tableMissingColumnMetadata(table) {
-			tablesMissingColumns[table.Name] = true
-		}
-	}
-	for _, table := range schema.Tables {
-		if table.SkipDump || tablesMissingColumns[table.Name] {
-			continue
-		}
-		for _, fk := range table.ForeignKeys {
-			if fk.ReferencedSchema == schema.Name && tablesMissingColumns[fk.ReferencedTable] {
-				continue
-			}
-			if err := writeForeignKey(&buf, schema.Name, table.Name, fk); err != nil {
-				return "", err
-			}
-		}
+	// Construct foreign keys.
+	if err := writeSchemaForeignKeys(&buf, schema, collectTablesMissingColumns([]*storepb.SchemaMetadata{schema})); err != nil {
+		return "", err
 	}
 
 	return buf.String(), nil
@@ -1718,6 +1681,40 @@ func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
 	return len(table.Columns) == 0
 }
 
+// collectTablesMissingColumns returns the tables without column metadata,
+// keyed by getObjectID(schema, table).
+func collectTablesMissingColumns(schemas []*storepb.SchemaMetadata) map[string]bool {
+	missing := make(map[string]bool)
+	for _, schema := range schemas {
+		for _, table := range schema.Tables {
+			if tableMissingColumnMetadata(table) {
+				missing[getObjectID(schema.Name, table.Name)] = true
+			}
+		}
+	}
+	return missing
+}
+
+// writeSchemaForeignKeys writes the foreign keys of every table in the
+// schema, skipping foreign keys touching a table without column metadata on
+// either side; they would reference columns absent from the dump.
+func writeSchemaForeignKeys(out io.Writer, schema *storepb.SchemaMetadata, tablesMissingColumns map[string]bool) error {
+	for _, table := range schema.Tables {
+		if table.SkipDump || tablesMissingColumns[getObjectID(schema.Name, table.Name)] {
+			continue
+		}
+		for _, fk := range table.ForeignKeys {
+			if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
+				continue
+			}
+			if err := writeForeignKey(out, schema.Name, table.Name, fk); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	if tableMissingColumnMetadata(table) {
 		// Emit a bare CREATE TABLE so the table still exists on replay, and
@@ -2549,6 +2546,8 @@ func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) 
 func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
+	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
+
 	// Write CREATE SCHEMA statements first for non-public schemas
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
@@ -2718,7 +2717,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			tableSequences := tableSequencesMap[tableKey]
 
 			// Write CREATE TABLE statement
-			if err := writeCreateTableSDL(&buf, schema.Name, table, tableSequences); err != nil {
+			if err := writeCreateTableSDL(&buf, schema.Name, table, tableSequences, tablesMissingColumns); err != nil {
 				return "", err
 			}
 
@@ -2785,8 +2784,11 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			if skipSequences[sequenceKey] {
 				continue
 			}
-			// Write ALTER SEQUENCE OWNED BY for sequences with owners
-			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+			// Write ALTER SEQUENCE OWNED BY for sequences with owners. Skip
+			// when the owning table has no column metadata; the OWNED BY
+			// clause would reference a column absent from the dump.
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" &&
+				!tablesMissingColumns[getObjectID(schema.Name, sequence.OwnerTable)] {
 				if err := writeAlterSequenceOwnedBy(&buf, schema.Name, sequence); err != nil {
 					return "", err
 				}
@@ -3186,7 +3188,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName str
 	return nil
 }
 
-func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata, tablesMissingColumns map[string]bool) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -3231,7 +3233,7 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	}
 
 	// Write table constraints
-	if err := writeTableConstraintsSDL(out, table, writeItemSep); err != nil {
+	if err := writeTableConstraintsSDL(out, table, writeItemSep, tablesMissingColumns); err != nil {
 		return err
 	}
 
@@ -3239,7 +3241,7 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	return err
 }
 
-func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error) error {
+func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error, tablesMissingColumns map[string]bool) error {
 	if tableMissingColumnMetadata(table) {
 		// Constraints would reference columns absent from the dump.
 		return nil
@@ -3289,8 +3291,13 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, write
 		}
 	}
 
-	// Write foreign key constraints
+	// Write foreign key constraints. Skip foreign keys whose referenced
+	// table has no column metadata; the REFERENCES clause would name
+	// columns absent from the dump.
 	for _, fk := range table.ForeignKeys {
+		if tablesMissingColumns[getObjectID(fk.ReferencedSchema, fk.ReferencedTable)] {
+			continue
+		}
 		if err := writeSep(); err != nil {
 			return err
 		}
@@ -3723,6 +3730,8 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	// Build table sequences map for each table
 	tableSequencesMap := buildTableSequencesMap(metadata)
 
+	tablesMissingColumns := collectTablesMissingColumns(metadata.Schemas)
+
 	// Generate files for each schema
 	for _, schemaMetadata := range metadata.Schemas {
 		if schemaMetadata.SkipDump {
@@ -3775,7 +3784,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 			var buf strings.Builder
 			// Write CREATE TABLE statement in SDL format
-			if err := writeCreateTableSDL(&buf, schemaName, table, tableSequences); err != nil {
+			if err := writeCreateTableSDL(&buf, schemaName, table, tableSequences, tablesMissingColumns); err != nil {
 				return nil, errors.Wrapf(err, "failed to generate table SDL for %s.%s", schemaName, table.Name)
 			}
 			buf.WriteString(";\n\n")
@@ -3851,10 +3860,14 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 						}
 					}
 
-					// Add ALTER SEQUENCE OWNED BY
-					buf.WriteString("\n")
-					if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
+					// Add ALTER SEQUENCE OWNED BY. Skip when the owning table
+					// has no column metadata; the OWNED BY clause would
+					// reference a column absent from the dump.
+					if !tableMissingColumnMetadata(table) {
+						buf.WriteString("\n")
+						if err := writeAlterSequenceOwnedBy(&buf, schemaName, sequence); err != nil {
+							return nil, errors.Wrapf(err, "failed to generate ALTER SEQUENCE OWNED BY for %s.%s", schemaName, sequence.Name)
+						}
 					}
 				}
 			}
