@@ -848,4 +848,52 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr = runAs(token, "TRUNCATE TABLE public.t_other;")
 		assertDeniedOn(t, resp, qErr, "/tables/t_other")
 	})
+
+	// 14. resource.environment_id is resolved per TARGET database, not copied from the request
+	//     database (SUP-222 / BYT-9698, Codex follow-up). A cross-database write names a database
+	//     that may sit in a different environment; an environment-scoped grant must be evaluated
+	//     against the TARGET's environment, or it could authorize a write into another
+	//     environment. Postgres can't execute cross-database writes, but authorization precedes
+	//     execution and the resolver keys on the statement's catalog name, so the access decision
+	//     is observable: a second database on the same instance is placed in the `test`
+	//     environment, and a grant scoped to the request database's `prod` environment must NOT
+	//     authorize a write whose catalog names that test-environment database.
+	t.Run("CrossDatabaseEnvironmentResolvedPerTarget", func(t *testing.T) {
+		ra := require.New(t)
+		testEnv, err := ctl.getEnvironment(ctx, "test")
+		ra.NoError(err)
+		// A second database on the SAME instance, in a DIFFERENT (test) environment.
+		const otherDBName = "sup222edge_other_env"
+		ra.NoError(ctl.createDatabase(ctx, ctl.project, instance, testEnv, otherDBName, "postgres"))
+
+		// Seed the granted table in the request (prod) database for the positive control.
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte("CREATE TABLE IF NOT EXISTS public.t_xenv (id int);")},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		// Grant: environment-scoped to the request database's environment (prod) + table t_xenv,
+		// with NO database clause — so only the environment distinguishes the two targets.
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(
+			`resource.environment_id in ["%s"] && resource.table_name in ["t_xenv"]`,
+			envID, // the request database's environment (prod)
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		// Positive control: a write to the request (prod) database matches the prod-scoped grant.
+		before := countRows(t, "public.t_xenv")
+		resp, qErr := runAs(token, "INSERT INTO public.t_xenv VALUES (1);")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_xenv"), "same-environment write executes")
+
+		// The fix: a cross-database write whose catalog names the TEST-environment database is
+		// DENIED — its environment is resolved from the target, not copied from the request. The
+		// denial names the target database. (Pre-fix the request's prod environment was used, so
+		// the prod-scoped grant wrongly authorized this write.)
+		resp, qErr = runAs(token, fmt.Sprintf("INSERT INTO %s.public.t_xenv VALUES (1);", otherDBName))
+		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherDBName))
+	})
 }

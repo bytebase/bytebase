@@ -1762,7 +1762,15 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 // sentinel mapped to "") omits the attribute, so a schema-scoped grant fails closed (CEL errors
 // on the missing attribute → the binding is skipped) while a table-only grant still matches. A
 // present-but-empty value would instead let a negated condition (schema_name != "x") wrongly
-// match. resource.environment_id is always set: hasDatabaseAccessRights keeps the environment
+// match.
+//
+// resource.environment_id is always set, and is resolved PER TARGET database: a cross-database
+// write (e.g. MySQL/MSSQL `INSERT INTO other_db.t`) targets a database that may live in a
+// different environment than the one the editor opened, and resource.database already names that
+// target — copying the request database's environment would let an environment-scoped grant
+// authorize a write into another environment. The request database needs no lookup (the common
+// same-database case); other targets are fetched once and cached, and an unknown target fails
+// closed. The attribute is always present because hasDatabaseAccessRights keeps the environment
 // clause for SQLDml/SQLDdl, so omitting it would reintroduce a "no such attribute" error.
 // SUP-222 / BYT-9698.
 func (s *SQLService) authorizeWriteTargets(
@@ -1775,12 +1783,14 @@ func (s *SQLService) authorizeWriteTargets(
 	grantedTargets map[string]struct{},
 	iamPolicies ...*storepb.IamPolicy,
 ) ([]string, error) {
-	env := ""
-	if database.EffectiveEnvironmentID != nil {
-		env = *database.EffectiveEnvironmentID
-	}
 	// One timestamp per request so every target evaluates request.time consistently.
 	requestTime := time.Now()
+
+	// environment_id of the request database, reused without a lookup for same-database targets.
+	envByDatabase := map[string]string{database.DatabaseName: ""}
+	if database.EffectiveEnvironmentID != nil {
+		envByDatabase[database.DatabaseName] = *database.EffectiveEnvironmentID
+	}
 
 	var deniedResources []string
 	for _, t := range targets {
@@ -1788,6 +1798,29 @@ func (s *SQLService) authorizeWriteTargets(
 		if _, granted := grantedTargets[databaseFullName]; granted {
 			continue
 		}
+
+		env, known := envByDatabase[t.database]
+		if !known {
+			targetName := t.database
+			targetDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &targetName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve target database %q: %v", t.database, err))
+			}
+			if targetDB == nil {
+				// Unknown target database → its environment can't be established → fail closed.
+				deniedResources = append(deniedResources, formatWriteTargetResource(databaseFullName, t.schema, t.table))
+				continue
+			}
+			if targetDB.EffectiveEnvironmentID != nil {
+				env = *targetDB.EffectiveEnvironmentID
+			}
+			envByDatabase[t.database] = env
+		}
+
 		attributes := map[string]any{
 			common.CELAttributeRequestTime:           requestTime,
 			common.CELAttributeResourceDatabase:      databaseFullName,
@@ -1797,20 +1830,25 @@ func (s *SQLService) authorizeWriteTargets(
 		if t.schema != "" {
 			attributes[common.CELAttributeResourceSchemaName] = t.schema
 		}
-		ok, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
+		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for table: %q, error %v", t.table, err))
 		}
-		if !ok {
-			resource := databaseFullName
-			if t.schema != "" {
-				resource = fmt.Sprintf("%s/schemas/%s", resource, t.schema)
-			}
-			resource = fmt.Sprintf("%s/tables/%s", resource, t.table)
-			deniedResources = append(deniedResources, resource)
+		if !allowed {
+			deniedResources = append(deniedResources, formatWriteTargetResource(databaseFullName, t.schema, t.table))
 		}
 	}
 	return deniedResources, nil
+}
+
+// formatWriteTargetResource renders a denied write target as
+// instances/i/databases/d[/schemas/s]/tables/t; the schema segment is omitted when unknown.
+func formatWriteTargetResource(databaseFullName, schema, table string) string {
+	resource := databaseFullName
+	if schema != "" {
+		resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
+	}
+	return fmt.Sprintf("%s/tables/%s", resource, table)
 }
 
 // writeTargetResource is a (database, schema, table) write target of a DML/DDL statement.
