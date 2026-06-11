@@ -14,9 +14,6 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   useCurrentUser: vi.fn(),
   patchWorksheet: vi.fn().mockResolvedValue({}),
-  // `useSQLEditorTabState(selector)` runs `selector` against this stub
-  // state; the component selects `tabsById.get(currentTabId)?.status`.
-  tabStatus: "CLEAN" as string,
   pushNotification: vi.fn(),
   extractProjectResourceName: vi.fn(
     (name: string) => name.split("/")[1] ?? name
@@ -49,19 +46,6 @@ vi.mock("@/react/stores/app", () => {
     ),
   };
 });
-
-vi.mock("@/react/stores/sqlEditor/tab", () => ({
-  useSQLEditorTabState: (
-    selector: (s: {
-      currentTabId: string;
-      tabsById: Map<string, { status: string }>;
-    }) => unknown
-  ) =>
-    selector({
-      currentTabId: "t1",
-      tabsById: new Map([["t1", { status: mocks.tabStatus }]]),
-    }),
-}));
 
 vi.mock("@/utils", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
@@ -145,7 +129,6 @@ beforeEach(async () => {
     name: "users/test@example.com",
   });
   mocks.patchWorksheet.mockResolvedValue({});
-  mocks.tabStatus = "CLEAN";
 
   // Mock clipboard
   Object.defineProperty(navigator, "clipboard", {
@@ -257,11 +240,12 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("copy button disabled when currentTab status is not CLEAN", () => {
-    mocks.tabStatus = "DIRTY";
-
+  test("copy button disabled when there is no shareable worksheet link", () => {
+    // No worksheet (an unsaved draft) → no link → copy disabled. A saved
+    // worksheet from the tree always has a link, so copy is enabled regardless
+    // of the current tab's status (covered by the private-worksheet test below).
     const { container, render, unmount } = renderIntoContainer(
-      <SharePopoverBody worksheet={mockWorksheet as never} />
+      <SharePopoverBody worksheet={undefined as never} />
     );
     render();
 
