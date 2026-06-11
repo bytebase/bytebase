@@ -61,3 +61,19 @@ func TestExtractChangedResources(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestExtractChangedResourcesTruncate(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `TRUNCATE TABLE public.t1, myschema.t2;`
+
+	want := model.NewChangedResources(dbMetadata)
+	want.AddTable("db", "public", &storepb.ChangedResourceTable{Name: "t1"}, true)
+	want.AddTable("db", "myschema", &storepb.ChangedResourceTable{Name: "t2"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "public", dbMetadata, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}

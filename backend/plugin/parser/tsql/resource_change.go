@@ -81,6 +81,9 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		case *ast.CreateIndexStmt:
 			addTable(n.Table, false)
 
+		case *ast.TruncateStmt:
+			addTable(n.Table, true)
+
 		case *ast.InsertStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
 				addTable(ref, false)

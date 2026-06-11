@@ -109,6 +109,19 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 			},
 			true,
 		)
+	case *tidbast.TruncateTableStmt:
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name: table,
+			},
+			true,
+		)
 	case *tidbast.RenameTableStmt:
 		for _, tableToTable := range node.TableToTables {
 			{

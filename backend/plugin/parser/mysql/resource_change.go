@@ -48,6 +48,12 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
+		case *ast.TruncateStmt:
+			for _, ref := range n.Tables {
+				db, table := omniTableRef(ref, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
+			}
+
 		case *ast.AlterTableStmt:
 			if n.Table != nil {
 				db, table := omniTableRef(n.Table, currentDatabase)

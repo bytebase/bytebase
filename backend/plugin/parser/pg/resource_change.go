@@ -169,6 +169,18 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
 				sampleDMLs = append(sampleDMLs, getOmniStatementText(omniAST))
 			}
+		case *ast.TruncateStmt:
+			if n.Relations != nil {
+				for _, item := range n.Relations.Items {
+					rv, ok := item.(*ast.RangeVar)
+					if !ok {
+						continue
+					}
+					db, schema, table := extractRangeVarNames(rv, database, searchPath)
+					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
+				}
+			}
+
 		default:
 		}
 	}

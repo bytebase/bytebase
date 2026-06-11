@@ -815,4 +815,37 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		assertAllowed(t, resp, qErr)
 		ra.Equal(before+1, countRows(t, "public.t_cf"), "case-folded PUBLIC matches the public-scoped grant")
 	})
+
+	// 13. TRUNCATE is table-scopable DDL (SUP-222 / BYT-9698, Codex follow-up). TRUNCATE
+	//     classifies as DDL and names an explicit base-table target, so the changed-resource
+	//     extractor resolves that target and a table-scoped bb.sql.ddl grant authorizes a
+	//     TRUNCATE on the granted table and denies it per-target on any other — it does NOT
+	//     fall back to the database-level check the way non-table DDL (CREATE SEQUENCE) does.
+	t.Run("TruncateScopedDDL", func(t *testing.T) {
+		ra := require.New(t)
+		// Dedicated, seeded table so the allow case can prove execution (rows → 0).
+		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte("CREATE TABLE IF NOT EXISTS public.t_trunc (id int);\nINSERT INTO public.t_trunc VALUES (1), (2), (3);")},
+		}))
+		ra.NoError(err)
+		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
+
+		email, token := newLimitedUser(t)
+		ddlCond := fmt.Sprintf(
+			`resource.database == "%s" && resource.table_name in ["t_trunc"] && resource.environment_id in ["%s"]`,
+			dbFullName, envID,
+		)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-ddl", email, ddlCond))
+
+		// TRUNCATE on the granted table is authorized AND executes (all rows removed).
+		ra.Greater(countRows(t, "public.t_trunc"), int64(0), "precondition: t_trunc must be seeded")
+		resp, qErr := runAs(token, "TRUNCATE TABLE public.t_trunc;")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(int64(0), countRows(t, "public.t_trunc"), "TRUNCATE should have removed all rows")
+
+		// TRUNCATE on a non-granted table is denied per-target (names the table, not the bare db).
+		resp, qErr = runAs(token, "TRUNCATE TABLE public.t_other;")
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+	})
 }

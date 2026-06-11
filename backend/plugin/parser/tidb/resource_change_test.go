@@ -51,3 +51,17 @@ func TestExtractChangedResources(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestExtractChangedResourcesTruncate(t *testing.T) {
+	const statement = `TRUNCATE TABLE t;`
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_TIDB, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}

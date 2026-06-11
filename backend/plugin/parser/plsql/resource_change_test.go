@@ -177,3 +177,17 @@ type testAST struct{}
 func (testAST) ASTStartPosition() *storepb.Position {
 	return nil
 }
+
+func TestExtractChangedResourcesTruncate(t *testing.T) {
+	const statement = `TRUNCATE TABLE t;`
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}

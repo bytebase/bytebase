@@ -70,3 +70,17 @@ func TestExtractChangedResources_InsertDefaultValues(t *testing.T) {
 	require.Equal(t, 0, got.DMLCount)
 	require.Empty(t, got.SampleDMLS)
 }
+
+func TestExtractChangedResources_Truncate(t *testing.T) {
+	const statement = `TRUNCATE TABLE dbo.t;`
+
+	want := model.NewChangedResources(nil)
+	want.AddTable("DB", "dbo", &storepb.ChangedResourceTable{Name: "t"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "dbo", nil, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
