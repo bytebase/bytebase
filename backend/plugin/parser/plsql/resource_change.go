@@ -89,6 +89,9 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 	case *oracleast.DeleteStmt:
 		e.addTable(n.Table, false)
 		e.trackDML(a.Text)
+	case *oracleast.MergeStmt:
+		e.addTable(n.Target, false)
+		e.trackDML(a.Text)
 	case *oracleast.TruncateStmt:
 		e.addTable(n.Table, true)
 	default:

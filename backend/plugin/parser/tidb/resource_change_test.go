@@ -65,3 +65,20 @@ func TestExtractChangedResourcesTruncate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got.ChangedResources)
 }
+
+func TestExtractChangedResourcesLoadDataImport(t *testing.T) {
+	for _, statement := range []string{
+		`LOAD DATA INFILE '/tmp/f.csv' INTO TABLE other_db.t;`,
+		`IMPORT INTO other_db.t FROM '/tmp/f.csv';`,
+	} {
+		want := model.NewChangedResources(nil /* dbMetadata */)
+		want.AddTable("other_db", "", &storepb.ChangedResourceTable{Name: "t"}, false)
+
+		stmts, err := base.ParseStatements(storepb.Engine_TIDB, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
+		require.NoError(t, err, statement)
+		require.Equal(t, want, got.ChangedResources, statement)
+	}
+}

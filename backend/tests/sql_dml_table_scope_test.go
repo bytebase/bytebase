@@ -940,4 +940,26 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr = runAs(token, fmt.Sprintf("SELECT 1; INSERT INTO %s.public.t_mxdb VALUES (1);", otherDBName))
 		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherDBName))
 	})
+
+	// 16. MERGE resolves its write target (the INTO table) and is authorized per-target like
+	//     INSERT/UPDATE/DELETE — not via the database-level fallback (SUP-222 / BYT-9698, Codex
+	//     P1: an unmodeled MERGE would resolve to zero targets and authorize the qualified write
+	//     against the request database). A table-scoped DML grant on the MERGE target authorizes
+	//     it; MERGE into a non-granted table is denied per-target. (MERGE's USING read source is
+	//     ungated — the documented read-source limitation.)
+	t.Run("MergeAuthorizedPerTarget", func(t *testing.T) {
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_dst"))
+
+		mergeInto := func(target string) string {
+			return fmt.Sprintf("MERGE INTO public.%s d USING public.t_src s ON d.id = s.id "+
+				"WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id);", target)
+		}
+		// MERGE into the granted table is authorized per-target (not a bare-database denial).
+		resp, qErr := runAs(token, mergeInto("t_dst"))
+		assertAllowed(t, resp, qErr)
+		// MERGE into a non-granted table is denied, naming that table.
+		resp, qErr = runAs(token, mergeInto("t_other"))
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+	})
 }

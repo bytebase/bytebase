@@ -77,3 +77,18 @@ func TestExtractChangedResourcesTruncate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got.ChangedResources)
 }
+
+func TestExtractChangedResourcesMerge(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `MERGE INTO myschema.tgt t USING src s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a;`
+
+	want := model.NewChangedResources(dbMetadata)
+	want.AddTable("db", "myschema", &storepb.ChangedResourceTable{Name: "tgt"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "public", dbMetadata, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}

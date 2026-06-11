@@ -110,6 +110,21 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 			}
 			addDML(omniAST.Text)
 
+		case *ast.MergeStmt:
+			if ref, ok := n.Target.(*ast.TableRef); ok {
+				addTable(ref, false)
+			}
+			addDML(omniAST.Text)
+
+		case *ast.CreateTableAsSelectStmt:
+			addTable(n.Name, false)
+
+		case *ast.SelectStmt:
+			// SELECT ... INTO new_table creates a table; the INTO target is the write target.
+			if n.IntoTable != nil {
+				addTable(n.IntoTable, false)
+			}
+
 		default:
 		}
 	}

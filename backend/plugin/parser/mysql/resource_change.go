@@ -54,6 +54,12 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
+		case *ast.LoadDataStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
 		case *ast.AlterTableStmt:
 			if n.Table != nil {
 				db, table := omniTableRef(n.Table, currentDatabase)

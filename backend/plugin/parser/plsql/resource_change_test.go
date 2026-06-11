@@ -191,3 +191,17 @@ func TestExtractChangedResourcesTruncate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got.ChangedResources)
 }
+
+func TestExtractChangedResourcesMerge(t *testing.T) {
+	const statement = `MERGE INTO OTHER.TGT t USING SRC s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.a = s.a;`
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("OTHER", "", &storepb.ChangedResourceTable{Name: "TGT"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}

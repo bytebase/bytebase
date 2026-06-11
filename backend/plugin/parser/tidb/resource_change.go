@@ -122,6 +122,22 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 			},
 			true,
 		)
+	case *tidbast.LoadDataStmt:
+		if node.Table != nil {
+			d, table := node.Table.Schema.O, node.Table.Name.O
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
+		}
+	case *tidbast.ImportIntoStmt:
+		if node.Table != nil {
+			d, table := node.Table.Schema.O, node.Table.Name.O
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
+		}
 	case *tidbast.RenameTableStmt:
 		for _, tableToTable := range node.TableToTables {
 			{

@@ -181,6 +181,12 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				}
 			}
 
+		case *ast.MergeStmt:
+			if n.Relation != nil {
+				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
 		default:
 		}
 	}
