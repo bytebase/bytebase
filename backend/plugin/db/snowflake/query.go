@@ -136,6 +136,13 @@ func findRightMostSelect(node omniast.Node) *omniast.SelectStmt {
 		return findRightMostSelect(n.Right)
 	case *omniast.ResultScanStmt:
 		return findRightMostSelect(n.Query)
+	case *omniast.ShowStmt:
+		// SHOW ... ->> <query>: omni stores the piped statement on ShowStmt.Pipe;
+		// the row limit applies to that trailing query.
+		if n.Pipe != nil {
+			return findRightMostSelect(n.Pipe)
+		}
+		return nil
 	default:
 		return nil
 	}
