@@ -3745,7 +3745,7 @@
   "task": {
     "affected-rows": "Hàng bị ảnh hưởng",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
-    "cancel-task-description": "Các lần chạy tác vụ đang chờ và sẵn sàng sẽ được hủy ngay. Các lần chạy đang chạy sẽ nhận yêu cầu hủy theo cách cố gắng tối đa và có thể tiếp tục chạy; hãy thử lại nếu cần.",
+    "cancel-task-description": "Các tác vụ đang chờ hoặc ở trạng thái sẵn sàng sẽ bị hủy ngay lập tức. Những tiến trình đang chạy sẽ nhận được yêu cầu hủy trên cơ sở nỗ lực tối đa và có thể vẫn tiếp tục chạy; hãy thử lại nếu cần.",
     "check-type": {
       "affected-rows": {
         "description": "Ước tính theo thông tin thống kê.",
