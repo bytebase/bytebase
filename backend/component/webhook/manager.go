@@ -104,6 +104,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				mentionUsers = append(mentionUsers, &store.UserMessage{
 					Name:  user.Name,
 					Email: user.Email,
+					Phone: user.Phone,
 					Type:  storepb.PrincipalType_END_USER,
 				})
 			}
@@ -121,6 +122,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			mentionUsers = []*store.UserMessage{{
 				Name:  e.IssueApproved.Creator.Name,
 				Email: e.IssueApproved.Creator.Email,
+				Phone: e.IssueApproved.Creator.Phone,
 				Type:  storepb.PrincipalType_END_USER,
 			}}
 		}
@@ -138,6 +140,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				{
 					Name:  e.SentBack.Creator.Name,
 					Email: e.SentBack.Creator.Email,
+					Phone: e.SentBack.Creator.Phone,
 					Type:  storepb.PrincipalType_END_USER,
 				},
 			}
@@ -202,13 +205,15 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set issue information if available
 	if issue != nil {
 		creatorName := issue.Title // Fallback
-		creatorAccount, err := m.store.GetAccountByEmail(ctx, issue.CreatorEmail)
-		if err != nil {
-			slog.Warn("failed to get creator user for webhook context",
-				slog.String("issue_title", issue.Title),
-				log.BBError(err))
-		} else if creatorAccount != nil {
-			creatorName = creatorAccount.Name
+		if m.store != nil && issue.CreatorEmail != "" {
+			creatorAccount, err := m.store.GetAccountByEmail(ctx, issue.CreatorEmail)
+			if err != nil {
+				slog.Warn("failed to get creator user for webhook context",
+					slog.String("issue_title", issue.Title),
+					log.BBError(err))
+			} else if creatorAccount != nil {
+				creatorName = creatorAccount.Name
+			}
 		}
 		webhookCtx.Issue = &webhook.Issue{
 			ID:          issue.UID,

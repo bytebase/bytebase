@@ -106,4 +106,5 @@ type EventRolloutCompleted struct {
 type User struct {
 	Name  string
 	Email string
+	Phone string
 }
