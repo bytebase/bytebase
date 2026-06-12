@@ -1135,6 +1135,7 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 		approvers = append(approvers, webhook.User{
 			Name:  user.Name,
 			Email: user.Email,
+			Phone: user.Phone,
 		})
 	}
 
@@ -1175,6 +1176,7 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 			Creator: &webhook.User{
 				Name:  creatorAccount.Name,
 				Email: creatorAccount.Email,
+				Phone: creatorAccount.Phone,
 			},
 			Issue:     webhook.NewIssue(issue),
 			Approvers: approvers,
@@ -1199,8 +1201,8 @@ func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManage
 		Type:    storepb.Activity_ISSUE_APPROVED,
 		Project: webhook.NewProject(project),
 		IssueApproved: &webhook.EventIssueApproved{
-			Approver: &webhook.User{Name: approver.Name, Email: approver.Email},
-			Creator:  &webhook.User{Name: creatorAccount.Name, Email: creatorAccount.Email},
+			Approver: &webhook.User{Name: approver.Name, Email: approver.Email, Phone: approver.Phone},
+			Creator:  &webhook.User{Name: creatorAccount.Name, Email: creatorAccount.Email, Phone: creatorAccount.Phone},
 			Issue:    webhook.NewIssue(issue),
 		},
 	})

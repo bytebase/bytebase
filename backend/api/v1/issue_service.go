@@ -750,10 +750,12 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 			Approver: &webhook.User{
 				Name:  user.Name,
 				Email: user.Email,
+				Phone: user.Phone,
 			},
 			Creator: &webhook.User{
 				Name:  creatorAccount.Name,
 				Email: creatorAccount.Email,
+				Phone: creatorAccount.Phone,
 			},
 			Issue:  webhook.NewIssue(issue),
 			Reason: req.Msg.Comment,
