@@ -92,3 +92,23 @@ func TestExtractChangedResourcesMerge(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got.ChangedResources)
 }
+
+func TestExtractChangedResourcesCTAS(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	for _, tc := range []struct {
+		statement, schema, table string
+	}{
+		{`CREATE TABLE myschema.t1 AS SELECT * FROM src;`, "myschema", "t1"},
+		{`SELECT * INTO myschema.t2 FROM src;`, "myschema", "t2"},
+	} {
+		want := model.NewChangedResources(dbMetadata)
+		want.AddTable("db", tc.schema, &storepb.ChangedResourceTable{Name: tc.table}, false)
+
+		stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, tc.statement)
+		require.NoError(t, err, tc.statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("db", "public", dbMetadata, asts, tc.statement)
+		require.NoError(t, err, tc.statement)
+		require.Equal(t, want, got.ChangedResources, tc.statement)
+	}
+}

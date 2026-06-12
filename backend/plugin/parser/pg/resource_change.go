@@ -187,6 +187,19 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
+		case *ast.CreateTableAsStmt:
+			if n.Into != nil && n.Into.Rel != nil {
+				db, schema, table := extractRangeVarNames(n.Into.Rel, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.SelectStmt:
+			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause).
+			if n.IntoClause != nil && n.IntoClause.Rel != nil {
+				db, schema, table := extractRangeVarNames(n.IntoClause.Rel, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
 		default:
 		}
 	}

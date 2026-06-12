@@ -13,8 +13,13 @@ func classifyQueryType(node ast.Node, allSystems bool) base.QueryType {
 		return base.QueryTypeUnknown
 	}
 
-	switch node.(type) {
+	switch n := node.(type) {
 	case *ast.SelectStmt:
+		// SELECT ... INTO new_table creates a table — it is a write (DDL), not a read.
+		// Without this the write would take the SELECT path and execute under read access.
+		if n.IntoTable != nil {
+			return base.DDL
+		}
 		if allSystems {
 			return base.SelectInfoSchema
 		}

@@ -962,4 +962,34 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr = runAs(token, mergeInto("t_other"))
 		assertDeniedOn(t, resp, qErr, "/tables/t_other")
 	})
+
+	// 17. A write target in a DIFFERENT project than the SQL-Editor session is denied. The
+	//     per-target check evaluates the REQUEST project's IAM policy, so a cross-project target
+	//     must fail closed to preserve the project boundary — otherwise a binding in the session's
+	//     project could authorize a write to a database owned by another project. SUP-222.
+	t.Run("CrossProjectWriteDenied", func(t *testing.T) {
+		ra := require.New(t)
+		ctl.authInterceptor.token = ownerToken
+		projectID := generateRandomString("sup222other")
+		_, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+			Project:   &v1pb.Project{Name: fmt.Sprintf("projects/%s", projectID), Title: projectID, AllowSelfApproval: true},
+			ProjectId: projectID,
+		}))
+		ra.NoError(err)
+		otherProject, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{Name: fmt.Sprintf("projects/%s", projectID)}))
+		ra.NoError(err)
+		// A database in the OTHER project, on the SAME instance.
+		const otherProjDB = "sup222edge_other_proj"
+		ra.NoError(ctl.createDatabase(ctx, otherProject.Msg, instance, nil /* environment */, otherProjDB, "postgres"))
+
+		// An ENVIRONMENT-scoped DML grant in the session's project (no database clause), so it
+		// WOULD match the cross-project target's environment — proving the denial comes from the
+		// cross-project guard, not a non-matching condition.
+		email, token := newLimitedUser(t)
+		cond := fmt.Sprintf(`resource.environment_id in ["%s"]`, envID)
+		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
+
+		resp, qErr := runAs(token, fmt.Sprintf("INSERT INTO %s.public.t VALUES (1);", otherProjDB))
+		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherProjDB))
+	})
 }

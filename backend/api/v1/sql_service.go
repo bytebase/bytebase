@@ -1846,6 +1846,14 @@ func (s *SQLService) authorizeWriteTargets(
 				deniedResources = append(deniedResources, deniedResource)
 				continue
 			}
+			if targetDB.ProjectID != database.ProjectID {
+				// A write target in a DIFFERENT project than the SQL-Editor session must be gated
+				// by that target project's IAM policy, which this check (evaluating the request
+				// project's policy) does not consult. Fail closed to preserve the project
+				// boundary — a cross-project write is denied. SUP-222 / BYT-9698.
+				deniedResources = append(deniedResources, deniedResource)
+				continue
+			}
 			if targetDB.EffectiveEnvironmentID != nil {
 				env = *targetDB.EffectiveEnvironmentID
 			}

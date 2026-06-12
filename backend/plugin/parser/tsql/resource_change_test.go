@@ -124,3 +124,20 @@ func TestExtractChangedResources_ObjectDDLDatabaseOnly(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
 }
+
+func TestClassifyQueryType_SelectInto(t *testing.T) {
+	classify := func(statement string) base.QueryType {
+		stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		require.Len(t, asts, 1, statement)
+		omniAST, ok := asts[0].(*OmniAST)
+		require.True(t, ok, statement)
+		return classifyQueryType(omniAST.Node, false)
+	}
+	// SELECT ... INTO creates a table — a write — so it must classify as DDL and take the
+	// write-authorization path, not be authorized as a read.
+	require.Equal(t, base.DDL, classify(`SELECT a INTO dbo.new_t FROM dbo.src;`))
+	// A plain SELECT stays a read.
+	require.Equal(t, base.Select, classify(`SELECT a FROM dbo.src;`))
+}
