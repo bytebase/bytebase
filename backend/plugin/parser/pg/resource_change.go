@@ -194,9 +194,10 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			}
 
 		case *ast.SelectStmt:
-			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause).
-			if n.IntoClause != nil && n.IntoClause.Rel != nil {
-				db, schema, table := extractRangeVarNames(n.IntoClause.Rel, database, searchPath)
+			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause,
+			// which may sit on the first arm of a set operation).
+			if into := omniIntoClause(n); into != nil && into.Rel != nil {
+				db, schema, table := extractRangeVarNames(into.Rel, database, searchPath)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 

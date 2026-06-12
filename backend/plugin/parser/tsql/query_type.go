@@ -1,6 +1,8 @@
 package tsql
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/mssql/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -17,7 +19,10 @@ func classifyQueryType(node ast.Node, allSystems bool) base.QueryType {
 	case *ast.SelectStmt:
 		// SELECT ... INTO new_table creates a table — it is a write (DDL), not a read.
 		// Without this the write would take the SELECT path and execute under read access.
-		if n.IntoTable != nil {
+		// INTO may sit on the first arm of a set operation, not the root. An INTO #temp
+		// (or ##temp) target stays a read: it materialises a session-scoped tempdb table
+		// that the extractor registers in TempTables for follow-up statements.
+		if target := selectIntoTarget(n); target != nil && !strings.HasPrefix(target.Object, "#") {
 			return base.DDL
 		}
 		if allSystems {

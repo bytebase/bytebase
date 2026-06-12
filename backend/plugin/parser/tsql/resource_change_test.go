@@ -136,8 +136,36 @@ func TestClassifyQueryType_SelectInto(t *testing.T) {
 		return classifyQueryType(omniAST.Node, false)
 	}
 	// SELECT ... INTO creates a table — a write — so it must classify as DDL and take the
-	// write-authorization path, not be authorized as a read.
+	// write-authorization path, not be authorized as a read. INTO may sit on the first
+	// arm of a set operation, not the root.
 	require.Equal(t, base.DDL, classify(`SELECT a INTO dbo.new_t FROM dbo.src;`))
+	require.Equal(t, base.DDL, classify(`SELECT a INTO new_t FROM x UNION SELECT b FROM y;`))
+	// INTO a session-scoped temp table stays a read: the extractor registers it in
+	// TempTables so follow-up SELECTs in the same session resolve its columns.
+	require.Equal(t, base.Select, classify(`SELECT a INTO #t FROM dbo.src;`))
+	require.Equal(t, base.Select, classify(`SELECT a INTO ##g FROM dbo.src;`))
 	// A plain SELECT stays a read.
 	require.Equal(t, base.Select, classify(`SELECT a FROM dbo.src;`))
+}
+
+func TestExtractChangedResources_SelectInto(t *testing.T) {
+	extract := func(statement string) *model.ChangedResources {
+		stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("DB", "dbo", nil, asts, statement)
+		require.NoError(t, err, statement)
+		return got.ChangedResources
+	}
+
+	// The INTO target is the write target, including when it sits on the first
+	// arm of a set operation.
+	want := model.NewChangedResources(nil)
+	want.AddTable("DB", "dbo", &storepb.ChangedResourceTable{Name: "new_t"}, false)
+	require.Equal(t, want, extract(`SELECT a INTO new_t FROM x;`))
+	require.Equal(t, want, extract(`SELECT a INTO new_t FROM x UNION SELECT b FROM y;`))
+
+	// INTO #temp is session-scoped tempdb — not a database change.
+	empty := model.NewChangedResources(nil)
+	require.Equal(t, empty, extract(`SELECT a INTO #t FROM x;`))
 }

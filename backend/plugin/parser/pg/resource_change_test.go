@@ -100,6 +100,8 @@ func TestExtractChangedResourcesCTAS(t *testing.T) {
 	}{
 		{`CREATE TABLE myschema.t1 AS SELECT * FROM src;`, "myschema", "t1"},
 		{`SELECT * INTO myschema.t2 FROM src;`, "myschema", "t2"},
+		// INTO sits on the first arm of a set operation, not the root.
+		{`SELECT a INTO myschema.t3 FROM src UNION SELECT a FROM src2;`, "myschema", "t3"},
 	} {
 		want := model.NewChangedResources(dbMetadata)
 		want.AddTable("db", tc.schema, &storepb.ChangedResourceTable{Name: tc.table}, false)

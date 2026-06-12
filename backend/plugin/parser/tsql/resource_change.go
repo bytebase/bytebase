@@ -140,9 +140,11 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 			addTable(n.Name, false)
 
 		case *ast.SelectStmt:
-			// SELECT ... INTO new_table creates a table; the INTO target is the write target.
-			if n.IntoTable != nil {
-				addTable(n.IntoTable, false)
+			// SELECT ... INTO new_table creates a table; the INTO target is the write
+			// target (possibly on the first arm of a set operation). INTO #temp is a
+			// session-scoped tempdb table, not a database change.
+			if target := selectIntoTarget(n); target != nil && !strings.HasPrefix(target.Object, "#") {
+				addTable(target, false)
 			}
 
 		case *ast.CreateViewStmt:
