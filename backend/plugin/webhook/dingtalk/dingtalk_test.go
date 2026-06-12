@@ -15,3 +15,11 @@ func TestGetDingTalkMobileFromUserStripsCountryCode(t *testing.T) {
 	a.NoError(err)
 	a.Equal("13800000000", got)
 }
+
+func TestGetDingTalkMobileFromPhoneStripsCountryCode(t *testing.T) {
+	a := require.New(t)
+
+	got, err := getDingTalkMobileFromPhone("+8613800000000")
+	a.NoError(err)
+	a.Equal("13800000000", got)
+}

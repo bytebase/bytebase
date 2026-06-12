@@ -37,7 +37,11 @@ func Validate(ctx context.Context, id, secret, robot, phone string) error {
 	if err := p.refreshToken(ctx); err != nil {
 		return errors.Wrapf(err, "failed to refresh token")
 	}
-	id, err := p.getIDByPhone(ctx, phone)
+	mobile, err := getDingTalkMobileFromPhone(phone)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse phone number")
+	}
+	id, err = p.getIDByPhone(ctx, mobile)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get user id by phone")
 	}

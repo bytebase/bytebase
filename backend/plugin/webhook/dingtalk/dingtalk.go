@@ -144,12 +144,16 @@ func getDingTalkMobileFromUser(user *store.UserMessage) (string, error) {
 	if user == nil {
 		return "", nil
 	}
-	if user.Phone == "" {
+	return getDingTalkMobileFromPhone(user.Phone)
+}
+
+func getDingTalkMobileFromPhone(phone string) (string, error) {
+	if phone == "" {
 		return "", nil
 	}
-	phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+	phoneNumber, err := phonenumbers.Parse(phone, "")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
+		return "", errors.Wrapf(err, "failed to parse phone number %q", phone)
 	}
 	if phoneNumber == nil {
 		return "", nil
