@@ -3,19 +3,18 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 const (
@@ -54,29 +53,28 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	// Create the rule
 	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.checkStatement(node, stmt.Text)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // ColumnMaximumVarcharLengthRule checks for maximum varchar length.
 type ColumnMaximumVarcharLengthRule struct {
 	BaseRule
 	maximum int
+	// stmtText is the SQL text of the statement currently being checked; node
+	// Loc offsets are relative to it.
+	stmtText string
 }
 
 // NewColumnMaximumVarcharLengthRule creates a new ColumnMaximumVarcharLengthRule.
@@ -95,32 +93,29 @@ func (*ColumnMaximumVarcharLengthRule) Name() string {
 	return "ColumnMaximumVarcharLengthRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnMaximumVarcharLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeDataType {
-		r.checkDataType(ctx.(*parser.Data_typeContext))
-	}
-	return nil
+// checkStatement walks one statement's omni AST and checks every data type.
+// This mirrors the legacy ANTLR listener that fired on every Data_type context
+// anywhere in the statement.
+func (r *ColumnMaximumVarcharLengthRule) checkStatement(node omniast.Node, stmtText string) {
+	r.stmtText = stmtText
+	omniast.Inspect(node, func(n omniast.Node) bool {
+		if typeName, ok := n.(*omniast.TypeName); ok {
+			r.checkTypeName(typeName)
+		}
+		return true
+	})
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnMaximumVarcharLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *ColumnMaximumVarcharLengthRule) checkDataType(ctx *parser.Data_typeContext) {
-	if ctx.VARCHAR() == nil {
+func (r *ColumnMaximumVarcharLengthRule) checkTypeName(typeName *omniast.TypeName) {
+	// The legacy rule only fired on the literal VARCHAR keyword: aliases like
+	// STRING, TEXT, NVARCHAR (all TypeVarchar in omni) did not trigger it.
+	if !strings.EqualFold(typeName.Name, "VARCHAR") {
 		return
 	}
 
 	length := varcharDefaultLength
-	if v := ctx.Data_type_size(); v != nil && v.Num() != nil {
-		var err error
-		length, err = strconv.Atoi(v.Num().GetText())
-		if err != nil {
-			return
-		}
+	if len(typeName.Params) > 0 {
+		length = typeName.Params[0]
 	}
 
 	if length > r.maximum {
@@ -129,7 +124,19 @@ func (r *ColumnMaximumVarcharLengthRule) checkDataType(ctx *parser.Data_typeCont
 			Code:          code.VarcharLengthExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.line(typeName.Loc.Start)),
 		})
 	}
+}
+
+// line converts a byte offset within the current statement text to a 1-based
+// line number, mirroring the ANTLR token line the legacy advisor reported.
+func (r *ColumnMaximumVarcharLengthRule) line(offset int) int {
+	if offset < 0 {
+		return 1
+	}
+	if offset > len(r.stmtText) {
+		offset = len(r.stmtText)
+	}
+	return 1 + strings.Count(r.stmtText[:offset], "\n")
 }

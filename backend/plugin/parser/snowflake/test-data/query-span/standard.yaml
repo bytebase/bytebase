@@ -358,6 +358,11 @@
               schema: PUBLIC
               table: T1
               column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: A
           isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
@@ -367,6 +372,11 @@
               database: SNOWFLAKE
               schema: PUBLIC
               table: T2
+              column: E
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
               column: E
           isplainfield: true
           sourcefieldpaths: []
@@ -540,5 +550,707 @@
           database: SNOWFLAKE
           schema: PUBLIC
           table: T1
+          column: ""
+    predicatecolumns: []
+- description: CASE WHEN branches contribute lineage (omni walker does not descend into WhenClause)
+  statement: SELECT CASE WHEN A > 0 THEN B ELSE C END AS X FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: X
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: Window function OVER (PARTITION BY / ORDER BY) contributes lineage (omni walker does not descend into WindowSpec)
+  statement: SELECT ROW_NUMBER() OVER (PARTITION BY C ORDER BY A) AS RN FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: RN
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: Join using collapses the shared column once with merged lineage, using columns first, then left and right non-shared
+  statement: SELECT * FROM T1 JOIN T2 USING (K);
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "K"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "K"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: K
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: K
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: K
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []
+- description: Natural join star expansion collapses the shared column once with lineage from both sides
+  statement: SELECT * FROM T1 NATURAL JOIN T2;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "K"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "K"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: K
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: K
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: K
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []
+- description: USE command yields an empty span instead of an error
+  statement: USE DATABASE D1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: SET command yields an empty span instead of an error
+  statement: SET MY_VAR = 10;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Positional column references $1 and qualified T.$2 resolve to the FROM scope (legacy DOLLAR/Column_position parity)
+  statement: SELECT $1, T.$2 FROM T1 T;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: Positional $1 inside a compound expression contributes the first FROM column's lineage
+  statement: SELECT TO_DATE($1) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: TO_DATE($1)
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: SELECT * RENAME reports the alias as the result column name (lineage unchanged)
+  statement: SELECT * RENAME (B AS MASKED_B) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: MASKED_B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: SELECT * REPLACE rewires the replaced column's lineage to the replacement expression (cross-column)
+  statement: SELECT * REPLACE (UPPER(B) AS A) FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: SELECT * REPLACE with a qualified cross-table expression over a JOIN
+  statement: SELECT * REPLACE (T2.B AS A) FROM T1 JOIN T2 ON T1.ID = T2.ID;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "A"}
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: ID
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: ID
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []
+- description: SELECT * ILIKE filters the star expansion by the pattern (case-insensitive)
+  statement: SELECT * ILIKE '%s%' FROM T1;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "ID"},
+                {"name":  "SSN"},
+                {"name":  "NAME"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: SSN
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: SSN
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []
+- description: JOIN members in a derived table do not leak into the outer scope (stale-alias lookup must fail, not resolve)
+  statement: SELECT D.A, T3.C FROM (SELECT T1.A FROM T1 JOIN T2 ON T1.ID = T2.ID) D, T3;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {"name": "T1", "columns": [{"name": "ID"}, {"name": "A"}]},
+            {"name": "T2", "columns": [{"name": "ID"}, {"name": "B"}]},
+            {"name": "T3", "columns": [{"name": "C"}]}
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: C
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T3
           column: ""
     predicatecolumns: []

@@ -5,14 +5,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -35,87 +32,63 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewNamingTableNoKeywordRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &namingTableNoKeywordChecker{
+		level:      level,
+		title:      checkCtx.Rule.Type.String(),
+		adviceList: []*storepb.Advice{},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.checkStmt(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// NamingTableNoKeywordRule checks for table naming without keywords.
-type NamingTableNoKeywordRule struct {
-	BaseRule
+type namingTableNoKeywordChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
 }
 
-// NewNamingTableNoKeywordRule creates a new NamingTableNoKeywordRule.
-func NewNamingTableNoKeywordRule(level storepb.Advice_Status, title string) *NamingTableNoKeywordRule {
-	return &NamingTableNoKeywordRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
-
-// Name returns the rule name.
-func (*NamingTableNoKeywordRule) Name() string {
-	return "NamingTableNoKeywordRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *NamingTableNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+func (c *namingTableNoKeywordChecker) checkStmt(node snowflakeast.Node) {
+	switch n := node.(type) {
+	case *snowflakeast.CreateTableStmt:
+		// The legacy listener only fired on the plain CREATE TABLE grammar rule;
+		// CREATE TABLE ... AS SELECT / LIKE / CLONE were separate rules it did
+		// not subscribe to. Mirror that scope exactly.
+		if n.AsSelect != nil || n.Like != nil || n.Clone != nil {
+			return
+		}
+		if n.Name == nil {
+			return
+		}
+		c.checkTableName(n.Name.Name)
+	case *snowflakeast.AlterTableStmt:
+		for _, action := range n.Actions {
+			if action.Kind != snowflakeast.AlterTableRename || action.NewName == nil {
+				continue
+			}
+			c.checkTableName(action.NewName.Name)
+		}
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NamingTableNoKeywordRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *NamingTableNoKeywordRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name().GetO())
+// checkTableName reports the table part of an object name when its canonical
+// (folded) form is a Snowflake keyword. The legacy listener emitted this
+// advice without a start position; keep that shape for identical output.
+func (c *namingTableNoKeywordChecker) checkTableName(name snowflakeast.Ident) {
+	tableName := name.Normalize()
 	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:  c.level,
 			Code:    code.NameIsKeywordIdentifier.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-		})
-	}
-}
-
-func (r *NamingTableNoKeywordRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	if ctx.RENAME() == nil {
-		return
-	}
-
-	tableName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Object_name(1).GetO())
-	if snowsqlparser.IsSnowflakeKeyword(tableName, false) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
-			Code:    code.NameIsKeywordIdentifier.Int32(),
-			Title:   r.title,
+			Title:   c.title,
 			Content: fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
 		})
 	}

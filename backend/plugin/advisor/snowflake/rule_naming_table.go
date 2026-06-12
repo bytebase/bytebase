@@ -4,19 +4,17 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 var (
@@ -52,122 +50,104 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), format, maxLength)
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &namingTableChecker{
+		level:      level,
+		title:      checkCtx.Rule.Type.String(),
+		format:     format,
+		maxLength:  maxLength,
+		adviceList: []*storepb.Advice{},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.text = stmt.Text
+		checker.baseLine = stmt.BaseLine()
+		checker.checkStmt(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// NamingTableRule checks for table naming convention.
-type NamingTableRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
+type namingTableChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	format     *regexp.Regexp
+	maxLength  int
+	// text is the SQL text of the statement currently being checked.
+	text string
+	// baseLine is the 0-based line of the current statement in the whole script.
+	baseLine int
 }
 
-// NewNamingTableRule creates a new NamingTableRule.
-func NewNamingTableRule(level storepb.Advice_Status, title string, format *regexp.Regexp, maxLength int) *NamingTableRule {
-	return &NamingTableRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		format:    format,
-		maxLength: maxLength,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingTableRule) Name() string {
-	return "NamingTableRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+func (c *namingTableChecker) checkStmt(node snowflakeast.Node) {
+	switch n := node.(type) {
+	case *snowflakeast.CreateTableStmt:
+		// The legacy listener only fired on the plain CREATE TABLE grammar rule;
+		// CREATE TABLE ... AS SELECT / LIKE / CLONE were separate rules it did
+		// not subscribe to. Mirror that scope exactly.
+		if n.AsSelect != nil || n.Like != nil || n.Clone != nil {
+			return
+		}
+		if n.Name == nil {
+			return
+		}
+		c.checkTableName(n.Name.Name, n.Loc)
+	case *snowflakeast.AlterTableStmt:
+		for _, action := range n.Actions {
+			if action.Kind != snowflakeast.AlterTableRename || action.NewName == nil {
+				continue
+			}
+			c.checkTableName(action.NewName.Name, n.Loc)
+		}
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NamingTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *NamingTableRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	objectName := ctx.Object_name().GetO().GetText()
+// checkTableName applies the format and max-length checks to the table part of
+// an object name, anchoring the advice on the statement start (stmtLoc), as
+// the legacy listener did. The legacy rule took the raw source text of the
+// name and stripped only the surrounding double quotes — no case folding and
+// no unescaping of doubled quotes — which Ident.String() (the re-quoted
+// source form) reproduces exactly.
+func (c *namingTableChecker) checkTableName(name snowflakeast.Ident, stmtLoc snowflakeast.Loc) {
+	objectName := name.String()
 	tableName := strings.TrimPrefix(strings.TrimSuffix(objectName, `"`), `"`)
+	position := c.positionAtOffset(stmtLoc.Start)
 
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	if !c.format.MatchString(tableName) {
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
 			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Title:         c.title,
+			Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, c.format),
+			StartPosition: position,
 		})
 	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	if c.maxLength > 0 && len(tableName) > c.maxLength {
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
 			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Title:         c.title,
+			Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, c.maxLength),
+			StartPosition: position,
 		})
 	}
 }
 
-func (r *NamingTableRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	if ctx.RENAME() == nil {
-		return
+// positionAtOffset converts a byte offset within the current statement text to
+// an advice position, reproducing the legacy baseLine + ANTLR-line arithmetic.
+// A negative (unknown) offset degrades to the statement's first line.
+func (c *namingTableChecker) positionAtOffset(offset int) *storepb.Position {
+	line := 1
+	if offset > 0 {
+		if offset > len(c.text) {
+			offset = len(c.text)
+		}
+		line += strings.Count(c.text[:offset], "\n")
 	}
-
-	allObjectNames := ctx.AllObject_name()
-	if len(allObjectNames) != 2 {
-		slog.Warn("Unexpected number of object names in alter table rename statement", slog.Int("objectNameCount", len(allObjectNames)))
-		return
-	}
-
-	newObjectName := allObjectNames[1].GetO().GetText()
-	tableName := strings.TrimPrefix(strings.TrimSuffix(newObjectName, `"`), `"`)
-
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
-	}
+	return common.ConvertANTLRLineToPosition(c.baseLine + line)
 }

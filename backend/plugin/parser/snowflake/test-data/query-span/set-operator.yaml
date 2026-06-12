@@ -112,3 +112,210 @@
           table: T3
           column: ""
     predicatecolumns: []
+- description: Union all by name merges columns by name, not by position
+  statement: SELECT A, B FROM T1 UNION ALL BY NAME SELECT B, A FROM T2;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []
+- description: UNION ALL BY NAME inside a CTE merges by column name (not positionally)
+  statement: WITH C AS (SELECT A, B FROM T1 UNION ALL BY NAME SELECT B, A FROM T2) SELECT * FROM C;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {"name":  "A"},
+                {"name":  "B"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: C
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+    predicatecolumns: []
+- description: WITH CTEs stay visible to every set-operation operand (not just the left)
+  statement: WITH C AS (SELECT A FROM T1) SELECT A FROM C UNION SELECT A FROM C;
+  defaultDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {"name":  "A"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: C
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+    predicatecolumns: []

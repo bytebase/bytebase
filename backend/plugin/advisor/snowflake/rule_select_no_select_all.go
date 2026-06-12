@@ -3,15 +3,16 @@ package snowflake
 
 import (
 	"context"
+	"slices"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 var (
@@ -33,67 +34,81 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &selectNoSelectAllChecker{
+		level: level,
+		title: checkCtx.Rule.Type.String(),
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.checkStmt(node, stmt.Text, stmt.BaseLine())
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// SelectNoSelectAllRule checks for no select all.
-type SelectNoSelectAllRule struct {
-	BaseRule
+type selectNoSelectAllChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
 }
 
-// NewSelectNoSelectAllRule creates a new SelectNoSelectAllRule.
-func NewSelectNoSelectAllRule(level storepb.Advice_Status, title string) *SelectNoSelectAllRule {
-	return &SelectNoSelectAllRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
+// checkStmt flags every `*` / `qualifier.*` SELECT-list item anywhere in the
+// statement (top-level query, subqueries, CTEs, INSERT ... SELECT, ...),
+// mirroring the legacy listener that fired on every Select_list_elem holding a
+// column_elem_star. Stars inside expressions (e.g. COUNT(*)) are not
+// SELECT-list stars and are not flagged, matching the legacy behavior.
+func (c *selectNoSelectAllChecker) checkStmt(node omniast.Node, text string, baseLine int) {
+	// Collect the star-token offsets first and emit advices in text order so
+	// the advice order matches the legacy depth-first listener walk.
+	var starOffsets []int
+	omniast.Inspect(node, func(n omniast.Node) bool {
+		selectStmt, ok := n.(*omniast.SelectStmt)
+		if !ok {
+			return true
+		}
+		for _, target := range selectStmt.Targets {
+			if target == nil || !target.Star {
+				continue
+			}
+			// Anchor on the `*` token itself (the legacy rule used the STAR
+			// token's line). For both `*` and `qualifier.*` the star is the
+			// last byte of the StarExpr.
+			offset := target.Loc.Start
+			if star, ok := target.Expr.(*omniast.StarExpr); ok && star.Loc.IsValid() {
+				offset = star.Loc.End - 1
+			}
+			starOffsets = append(starOffsets, offset)
+		}
+		return true
+	})
+	slices.Sort(starOffsets)
 
-// Name returns the rule name.
-func (*SelectNoSelectAllRule) Name() string {
-	return "SelectNoSelectAllRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *SelectNoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeSelectListElem {
-		r.enterSelectListElem(ctx.(*parser.Select_list_elemContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *SelectNoSelectAllRule) enterSelectListElem(ctx *parser.Select_list_elemContext) {
-	if v := ctx.Column_elem_star(); v != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	for _, offset := range starOffsets {
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
 			Code:          code.StatementSelectAll.Int32(),
-			Title:         r.title,
+			Title:         c.title,
 			Content:       "Avoid using SELECT *.",
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + v.STAR().GetSymbol().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
 		})
 	}
+}
+
+// statementLineForOffset converts a byte offset within a statement's text into
+// the 1-based line number of that offset — the same line ANTLR assigned to a
+// token at that position when the legacy listeners parsed the identical
+// per-statement text. Add the statement's BaseLine() to obtain the line in the
+// whole script.
+func statementLineForOffset(text string, offset int) int {
+	if offset < 0 {
+		offset = 0
+	}
+	if offset > len(text) {
+		offset = len(text)
+	}
+	return strings.Count(text[:offset], "\n") + 1
 }

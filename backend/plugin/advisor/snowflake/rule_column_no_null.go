@@ -3,15 +3,14 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -37,33 +36,27 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	// Create the rule
 	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String())
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.checkStatement(node, stmt.Text)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // ColumnNoNullRule checks for column no NULL value.
 type ColumnNoNullRule struct {
 	BaseRule
-
-	// currentOriginalTableName is the original table name of the current table.
-	currentOriginalTableName string
-	// columnNullable is a map from normalized column name to the line number causing the column to be nullable.
-	columnNullable map[string]int
+	// stmtText is the SQL text of the statement currently being checked; node
+	// Loc offsets are relative to it.
+	stmtText string
 }
 
 // NewColumnNoNullRule creates a new ColumnNoNullRule.
@@ -73,7 +66,6 @@ func NewColumnNoNullRule(level storepb.Advice_Status, title string) *ColumnNoNul
 			level: level,
 			title: title,
 		},
-		columnNullable: make(map[string]int),
 	}
 }
 
@@ -82,50 +74,91 @@ func (*ColumnNoNullRule) Name() string {
 	return "ColumnNoNullRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeFullColDecl:
-		r.enterFullColDecl(ctx.(*parser.Full_col_declContext))
-	case NodeTypeOutOfLineConstraint:
-		r.enterOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	case NodeTypeTableColumnAction:
-		r.enterTableColumnAction(ctx.(*parser.Table_column_actionContext))
-	case "Alter_table_alter_column":
-		r.enterAlterTableAlterColumn(ctx.(*parser.Alter_table_alter_columnContext))
-	case "Alter_column_decl":
-		r.enterAlterColumnDecl(ctx.(*parser.Alter_column_declContext))
+// checkStatement checks one statement's omni AST node.
+func (r *ColumnNoNullRule) checkStatement(node omniast.Node, stmtText string) {
+	r.stmtText = stmtText
+	switch n := node.(type) {
+	case *omniast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *omniast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (r *ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable()
-	case NodeTypeAlterTable:
-		r.exitAlterTable()
-	case "Alter_table_alter_column":
-		r.exitAlterTableAlterColumn()
-	default:
-		// Ignore other node types
+func (r *ColumnNoNullRule) checkCreateTable(stmt *omniast.CreateTableStmt) {
+	// The legacy advisor only fired on plain CREATE TABLE (the Create_table
+	// context); CREATE TABLE ... AS SELECT / LIKE / CLONE parsed as different
+	// contexts and were never checked.
+	if stmt.AsSelect != nil || stmt.Like != nil || stmt.Clone != nil {
+		return
 	}
-	return nil
+
+	// columnNullable maps the normalized column name to the line number causing
+	// the column to be nullable. Mirrors the legacy add-then-delete walk so
+	// duplicate column names behave identically.
+	columnNullable := make(map[string]int)
+	for _, column := range stmt.Columns {
+		normalizedColumnName := column.Name.Normalize()
+		columnNullable[normalizedColumnName] = r.line(column.Loc.Start)
+		if column.NotNull {
+			delete(columnNullable, normalizedColumnName)
+		}
+		if column.InlineConstraint != nil && column.InlineConstraint.Type == omniast.ConstrPrimaryKey {
+			delete(columnNullable, normalizedColumnName)
+		}
+	}
+	// Out-of-line PRIMARY KEY constraints make their columns non-nullable.
+	for _, constraint := range stmt.Constraints {
+		if constraint.Type != omniast.ConstrPrimaryKey {
+			continue
+		}
+		for _, column := range constraint.Columns {
+			delete(columnNullable, column.Normalize())
+		}
+	}
+
+	r.addNullableAdvice(columnNullable)
 }
 
-func (r *ColumnNoNullRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	r.currentOriginalTableName = ctx.Object_name().GetText()
+func (r *ColumnNoNullRule) checkAlterTable(stmt *omniast.AlterTableStmt) {
+	columnNullable := make(map[string]int)
+	for _, action := range stmt.Actions {
+		switch action.Kind {
+		case omniast.AlterTableAddColumn:
+			for _, column := range action.Columns {
+				normalizedColumnName := column.Name.Normalize()
+				columnNullable[normalizedColumnName] = r.line(column.Loc.Start)
+				if column.NotNull {
+					delete(columnNullable, normalizedColumnName)
+				}
+				if column.InlineConstraint != nil && column.InlineConstraint.Type == omniast.ConstrPrimaryKey {
+					delete(columnNullable, normalizedColumnName)
+				}
+			}
+		case omniast.AlterTableAlterColumn:
+			for _, columnAlter := range action.ColumnAlters {
+				if columnAlter.Kind == omniast.ColumnAlterDropNotNull {
+					columnNullable[columnAlter.Column.Normalize()] = r.line(columnAlter.Column.Loc.Start)
+				}
+			}
+		case omniast.AlterTableAddConstraint:
+			// Mirrors the legacy walk where an out-of-line PRIMARY KEY removed
+			// its columns from the nullable set.
+			if action.Constraint != nil && action.Constraint.Type == omniast.ConstrPrimaryKey {
+				for _, column := range action.Constraint.Columns {
+					delete(columnNullable, column.Normalize())
+				}
+			}
+		default:
+		}
+	}
+
+	r.addNullableAdvice(columnNullable)
 }
 
-func (r *ColumnNoNullRule) exitCreateTable() {
-	for normalizedColumnName, columnNullableLine := range r.columnNullable {
+func (r *ColumnNoNullRule) addNullableAdvice(columnNullable map[string]int) {
+	for normalizedColumnName, columnNullableLine := range columnNullable {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.ColumnCannotNull.Int32(),
@@ -134,136 +167,16 @@ func (r *ColumnNoNullRule) exitCreateTable() {
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
 		})
 	}
-	r.currentOriginalTableName = ""
-	r.columnNullable = make(map[string]int)
 }
 
-func (r *ColumnNoNullRule) enterFullColDecl(ctx *parser.Full_col_declContext) {
-	if r.currentOriginalTableName == "" {
-		return
+// line converts a byte offset within the current statement text to a 1-based
+// line number, mirroring the ANTLR token line the legacy advisor reported.
+func (r *ColumnNoNullRule) line(offset int) int {
+	if offset < 0 {
+		return 1
 	}
-	normalizedOriginalColumnID := normalizeSnowflakeColumnName(ctx.Col_decl().Column_name())
-	r.columnNullable[normalizedOriginalColumnID] = ctx.GetStart().GetLine()
-	for _, nullNotNull := range ctx.AllNull_not_null() {
-		if nullNotNull.NOT() != nil {
-			delete(r.columnNullable, normalizedOriginalColumnID)
-			break
-		}
+	if offset > len(r.stmtText) {
+		offset = len(r.stmtText)
 	}
-	for _, constraint := range ctx.AllInline_constraint() {
-		if constraint.Primary_key() != nil {
-			delete(r.columnNullable, normalizedOriginalColumnID)
-			break
-		}
-	}
-}
-
-func (r *ColumnNoNullRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	if r.currentOriginalTableName == "" {
-		return
-	}
-	if ctx.Primary_key() != nil {
-		for _, columnListInParentheses := range ctx.AllColumn_list_in_parentheses() {
-			for _, column := range columnListInParentheses.Column_list().AllColumn_name() {
-				normalizedOriginalColumnID := normalizeSnowflakeColumnName(column)
-				delete(r.columnNullable, normalizedOriginalColumnID)
-			}
-		}
-	}
-}
-
-func (r *ColumnNoNullRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	r.currentOriginalTableName = ctx.Object_name(0).GetText()
-}
-
-func (r *ColumnNoNullRule) exitAlterTable() {
-	for normalizedColumnName, columnNullableLine := range r.columnNullable {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.ColumnCannotNull.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
-		})
-	}
-	r.currentOriginalTableName = ""
-	r.columnNullable = make(map[string]int)
-}
-
-func (r *ColumnNoNullRule) enterTableColumnAction(ctx *parser.Table_column_actionContext) {
-	if r.currentOriginalTableName == "" {
-		return
-	}
-	if ctx.ADD() != nil {
-		for _, fullColDecl := range ctx.AllFull_col_decl() {
-			normalizedNewColumnName := normalizeSnowflakeColumnName(fullColDecl.Col_decl().Column_name())
-			hasPK := false
-			for _, inlineConstraint := range fullColDecl.AllInline_constraint() {
-				if inlineConstraint.Primary_key() != nil {
-					hasPK = true
-					break
-				}
-			}
-			hasNotNull := false
-			for _, nullNotNull := range fullColDecl.AllNull_not_null() {
-				if nullNotNull.NOT() != nil {
-					hasNotNull = true
-					break
-				}
-			}
-
-			if !hasPK && !hasNotNull {
-				r.columnNullable[normalizedNewColumnName] = fullColDecl.GetStart().GetLine()
-			}
-		}
-		return
-	}
-	if ctx.Alter_modify() != nil {
-		for _, alterColumnClause := range ctx.AllAlter_column_clause() {
-			normalizedOriginalColumnName := normalizeSnowflakeColumnName(alterColumnClause.Column_name())
-			if alterColumnClause.DROP() != nil && alterColumnClause.NOT() != nil && alterColumnClause.NULL_() != nil {
-				r.columnNullable[normalizedOriginalColumnName] = alterColumnClause.GetStart().GetLine()
-			}
-		}
-		return
-	}
-}
-
-func (r *ColumnNoNullRule) enterAlterTableAlterColumn(ctx *parser.Alter_table_alter_columnContext) {
-	r.currentOriginalTableName = ctx.Object_name().GetText()
-}
-
-func (r *ColumnNoNullRule) exitAlterTableAlterColumn() {
-	for normalizedColumnName, columnNullableLine := range r.columnNullable {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.ColumnCannotNull.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("After dropping NOT NULL of column %s, it will be nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
-		})
-	}
-	r.currentOriginalTableName = ""
-	r.columnNullable = make(map[string]int)
-}
-
-func (r *ColumnNoNullRule) enterAlterColumnDecl(ctx *parser.Alter_column_declContext) {
-	if r.currentOriginalTableName == "" {
-		return
-	}
-	normalizedNewColumnName := normalizeSnowflakeColumnName(ctx.Column_name())
-	if ctx.Alter_column_opts().DROP() != nil && ctx.Alter_column_opts().NOT() != nil && ctx.Alter_column_opts().NULL_() != nil {
-		r.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
-	}
-}
-
-func normalizeSnowflakeColumnName(columnName parser.IColumn_nameContext) string {
-	if columnName == nil {
-		return ""
-	}
-	allIDs := columnName.AllId_()
-	if len(allIDs) == 0 {
-		return ""
-	}
-	return snowsqlparser.NormalizeSnowSQLObjectNamePart(allIDs[len(allIDs)-1])
+	return 1 + strings.Count(r.stmtText[:offset], "\n")
 }

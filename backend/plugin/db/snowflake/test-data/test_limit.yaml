@@ -149,3 +149,8 @@
     ;
 
 # antlr parser does not support ILIKE, EXCLUDE, RENAME
+- stmt: SHOW TABLES ->> SELECT * FROM $1;
+  limit: 100
+  want: |-
+    SHOW TABLES ->> SELECT * FROM $1 LIMIT 100
+    ;
