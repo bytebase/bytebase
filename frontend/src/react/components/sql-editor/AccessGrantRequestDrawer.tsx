@@ -9,10 +9,7 @@ import {
   monacoThemeName,
   themeToCssVars,
 } from "@/react/components/sql-editor/theme/derive";
-import {
-  SQLEditorThemeScope,
-  useSQLEditorTheme,
-} from "@/react/components/sql-editor/theme/SQLEditorThemeScope";
+import { SQLEditorThemeScope } from "@/react/components/sql-editor/theme/SQLEditorThemeScope";
 import { useActiveSQLEditorTheme } from "@/react/components/sql-editor/theme/useActiveSQLEditorTheme";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -124,14 +121,17 @@ function AccessGrantRequestDrawerInner({
   const project = useSQLEditorEditorState((s) => s.project);
 
   // Re-theme the drawer chrome since the Sheet portals outside the SQL Editor
-  // chrome DOM subtree, so the chrome CSS vars don't cascade here.
-  const theme = useSQLEditorTheme();
+  // chrome DOM subtree, so the chrome CSS vars don't cascade here. Use the
+  // ACTIVE theme (the dark admin fallback in admin mode), not the selected
+  // root theme — otherwise opening the drawer from an admin tab renders light
+  // chrome over the dark terminal. This also keeps the chrome consistent with
+  // the embedded Monaco below, which already uses the active theme.
+  const active = useActiveSQLEditorTheme();
 
   // The embedded Monaco MUST carry the active SQL Editor theme. Monaco's
   // setTheme is global: a <MonacoEditor> mounting with no theme resets the
   // shared Monaco theme to bb-light, flipping the whole editor to light the
   // moment the drawer opens. Passing the active theme keeps it consistent.
-  const active = useActiveSQLEditorTheme();
   const monacoOptions = useMemo(
     () => ({ theme: monacoThemeName(active) }),
     [active]
@@ -253,7 +253,7 @@ function AccessGrantRequestDrawerInner({
   };
 
   return (
-    <SQLEditorThemeScope theme={theme} asContents>
+    <SQLEditorThemeScope theme={active} asContents>
       <SheetHeader>
         <SheetTitle>{t("sql-editor.request-data-access")}</SheetTitle>
       </SheetHeader>
@@ -392,9 +392,12 @@ export function AccessGrantRequestDrawer({
 
   // The Sheet portals to the app-global overlay root, so the SQL Editor scope's
   // CSS vars don't cascade to it. Apply them directly on SheetContent so the
-  // panel background AND its form contents follow the active theme.
-  const theme = useSQLEditorTheme();
-  const sheetStyle = useMemo(() => themeToCssVars(theme.tokens), [theme]);
+  // panel background AND its form contents follow the active theme. ACTIVE (not
+  // the selected root theme) so an admin tab's dark fallback themes the drawer;
+  // these inline vars would otherwise override the dark vars that
+  // useSQLEditorOverlayTheme writes to the overlay root.
+  const active = useActiveSQLEditorTheme();
+  const sheetStyle = useMemo(() => themeToCssVars(active.tokens), [active]);
 
   return (
     <Sheet open={true} onOpenChange={(next) => !next && onClose()}>
