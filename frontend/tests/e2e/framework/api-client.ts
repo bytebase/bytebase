@@ -163,15 +163,43 @@ export class BytebaseApiClient {
     await this.request<unknown>("PATCH", "/v1/subscription/license", { license });
   }
 
-  // Returns server info — notably the current workspace resource name.
-  async getActuatorInfo(): Promise<{ workspace: string }> {
-    return this.request<{ workspace: string }>("GET", "/v1/actuator/info");
+  // Returns server info — notably the current workspace resource name and the
+  // count of distinct users occupying a seat in workspace IAM (seat-limit spec).
+  async getActuatorInfo(): Promise<{ workspace: string; userCountInIam?: number }> {
+    return this.request<{ workspace: string; userCountInIam?: number }>(
+      "GET",
+      "/v1/actuator/info",
+    );
+  }
+
+  // Current subscription plan (e.g. "FREE", "ENTERPRISE"). Used by the seat-limit
+  // spec (BYT-9633) to confirm the license drop took effect and was restored.
+  async getSubscription(): Promise<{ plan?: string }> {
+    return this.request<{ plan?: string }>("GET", "/v1/subscription");
   }
 
   // Creates an end-user with the given email/password/title in the caller's
   // workspace. Caller must be a workspace admin.
   async createUser(email: string, password: string, title: string): Promise<void> {
     await this.request<unknown>("POST", "/v1/users", { email, password, title });
+  }
+
+  // Soft-delete (deactivate) a user. The principal is marked deleted but its IAM
+  // bindings remain — a deactivated user no longer occupies a seat. Best-effort
+  // so teardown of seat-limit fixtures can't fail the suite (BYT-9633).
+  async deleteUser(email: string): Promise<void> {
+    try { await this.request<unknown>("DELETE", `/v1/users/${email}`); } catch { /* ignore */ }
+  }
+
+  // Reactivate a soft-deleted user. NOT best-effort: the seat-limit spec asserts
+  // this REJECTS (ResourceExhausted) when reactivating would exceed the limit, so
+  // the error must propagate (BYT-9633 / #20497 preUndeleteUserGuard).
+  async undeleteUser(email: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/users/${email}:undelete`,
+      { name: `users/${email}` },
+    );
   }
 
   // Grants `email` the given role at the workspace level by merging a new
@@ -199,6 +227,21 @@ export class BytebaseApiClient {
     });
   }
 
+  // Read/write the full workspace IAM policy. The seat-limit spec (BYT-9633)
+  // snapshots the policy, appends many user: members in one write to push the
+  // workspace over the FREE-plan seat limit, then restores the snapshot.
+  async getWorkspaceIamPolicy(workspace: string): Promise<IamPolicy> {
+    return this.request<IamPolicy>("GET", `/v1/${workspace}:getIamPolicy`);
+  }
+
+  async setWorkspaceIamPolicy(workspace: string, policy: IamPolicy): Promise<IamPolicy> {
+    return this.request<IamPolicy>("POST", `/v1/${workspace}:setIamPolicy`, {
+      resource: workspace,
+      policy,
+      etag: policy.etag ?? "",
+    });
+  }
+
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
@@ -210,6 +253,27 @@ export class BytebaseApiClient {
 
   async syncDatabase(databaseFullName: string) {
     return this.request<unknown>("POST", `/v1/${databaseFullName}:sync`, {});
+  }
+
+  // Sync an instance so Bytebase discovers databases created out-of-band
+  // (e.g. via psql CREATE DATABASE). Used by the targets "View all" spec
+  // (BYT-9558) which needs >20 target databases on the sample instance.
+  async syncInstance(instanceName: string) {
+    return this.request<unknown>("POST", `/v1/${instanceName}:sync`, {
+      name: instanceName,
+    });
+  }
+
+  // Move a database into a project (UpdateDatabase, update_mask=project). The
+  // backend's validateSpecs rejects plan/issue targets that don't belong to the
+  // plan's project, so a database created via psql must be transferred before it
+  // can be used as a change target (BYT-9558).
+  async transferDatabaseToProject(databaseFullName: string, project: string) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${databaseFullName}?updateMask=project`,
+      { name: databaseFullName, project },
+    );
   }
 
   // Policies
@@ -266,6 +330,41 @@ export class BytebaseApiClient {
     return this.request<unknown>("PATCH",
       `/v1/${instanceName}:updateDataSource?updateMask=port`,
       { id: dataSourceId, port });
+  }
+
+  // Add a data source (typically READ_ONLY) to an instance. AddDataSource binds
+  // `body: "*"`, so the HTTP body carries both the instance `name` and the
+  // `dataSource`. Used by the automatic-routing spec (BYT-9557) to give an
+  // instance both an admin and a read-only data source.
+  async addDataSource(
+    instanceName: string,
+    dataSource: {
+      id: string;
+      type: "READ_ONLY" | "ADMIN";
+      username: string;
+      password?: string;
+      host: string;
+      port: string;
+    },
+  ) {
+    return this.request<unknown>("POST", `/v1/${instanceName}:addDataSource`, {
+      name: instanceName,
+      dataSource,
+    });
+  }
+
+  // Remove a data source by id. Best-effort (teardown): the admin data source
+  // stays at index 0, so a failed read-only removal can't corrupt
+  // getInstancePgPort (which reads dataSources[0]).
+  async removeDataSource(instanceName: string, dataSourceId: string) {
+    try {
+      await this.request<unknown>("POST", `/v1/${instanceName}:removeDataSource`, {
+        name: instanceName,
+        dataSource: { id: dataSourceId },
+      });
+    } catch {
+      /* best-effort teardown */
+    }
   }
 
   // Query — endpoint is /v1/instances/{instance}/databases/{database}:query
@@ -435,9 +534,27 @@ export class BytebaseApiClient {
   }
 
   // Issues
-  async createIssue(project: string, title: string, plan: string): Promise<{ name: string; status: string; approvalStatus: string }> {
+  async createIssue(
+    project: string,
+    title: string,
+    plan: string,
+    description?: string,
+  ): Promise<{ name: string; status: string; approvalStatus: string }> {
     return this.request("POST", `/v1/${project}/issues`, {
-      title, type: "DATABASE_CHANGE", plan,
+      title,
+      type: "DATABASE_CHANGE",
+      plan,
+      ...(description !== undefined && { description }),
+    });
+  }
+
+  // Post a comment to an issue. CreateIssueComment binds `body: "issue_comment"`,
+  // so the HTTP body is the IssueComment payload directly. Used by the
+  // markdown-link spec (BYT-9664) to seed a comment with links via the API
+  // rather than driving the review popover.
+  async createIssueComment(issueName: string, comment: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${issueName}:comment`, {
+      comment,
     });
   }
 
