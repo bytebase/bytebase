@@ -629,8 +629,6 @@ MONACO (single global, driven by foreground panel — cannot be per-scope):
   user/workspace `Setting`, with localStorage as the offline/default fallback. No proto
   or store-shape change in v1; the serializable model (seam #2 above) makes this additive.
 - "System" preset following `prefers-color-scheme`.
-- The deferred Base-UI-internal portal popups (ConnectChooser dropdown, EllipsisCell
-  tooltip) — re-scope their content under a dark/named theme.
 
 ### Extensibility to app scope
 
