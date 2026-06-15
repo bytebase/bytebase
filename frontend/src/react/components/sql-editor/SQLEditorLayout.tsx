@@ -12,7 +12,7 @@ import { useMonacoThemeController } from "./theme/useMonacoThemeController";
 import { useSQLEditorOverlayTheme } from "./theme/useSQLEditorOverlayTheme";
 import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
 
-function SQLEditorThemeRoot({ children }: { children: ReactNode }) {
+function SQLEditorThemeRoot({ children }: Readonly<{ children: ReactNode }>) {
   const themeId = useSQLEditorEditorState((s) => s.themeId);
   // Live-applies the theme on switch. It deliberately does NOT call setTheme on
   // mount — editors theme themselves at construction via options.theme — so it

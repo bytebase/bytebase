@@ -53,12 +53,11 @@ const initializeTheme = () => {
  * per-instance, so a stale `vs-dark` from a recently-disposed
  * terminal editor can bleed into a freshly-mounted worksheet editor).
  */
-export const getResolvedTheme = (requested?: string): string => {
-  const name = requested || "bb-light";
-  if (state.registeredThemes.has(name)) return name;
+export const getResolvedTheme = (requested = "bb-light"): string => {
+  if (state.registeredThemes.has(requested)) return requested;
   // Custom theme not registered → use its own base (vs / vs-dark), so a dark
   // theme never falls back to the light `vs`.
-  return state.themeBase.get(name) ?? "vs";
+  return state.themeBase.get(requested) ?? "vs";
 };
 
 const initialize = async () => {

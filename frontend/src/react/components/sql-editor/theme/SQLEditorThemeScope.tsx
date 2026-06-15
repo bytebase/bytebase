@@ -10,14 +10,14 @@ export const useSQLEditorTheme = (): SQLEditorTheme =>
   useContext(SQLEditorThemeContext);
 
 type Props = {
-  theme: SQLEditorTheme;
-  children: ReactNode;
-  className?: string;
+  readonly theme: SQLEditorTheme;
+  readonly children: ReactNode;
+  readonly className?: string;
   // Render the container with `display: contents` (no box) — inline CSS custom
   // properties still cascade to children, so tokens scope without affecting
   // layout. Use for the root and portal wrappers where an extra box would
   // disturb sizing.
-  asContents?: boolean;
+  readonly asContents?: boolean;
 };
 
 /**

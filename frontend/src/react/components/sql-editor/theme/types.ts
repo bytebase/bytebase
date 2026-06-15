@@ -1,7 +1,3 @@
-// Chrome tokens are "r g b" triples (Tailwind utilities resolve to
-// `rgb(var(--color-x) / <alpha>)`).
-export type RGB = string;
-
 // All chrome token names, for iteration/validation. Single source of truth —
 // the SQLEditorThemeToken union is derived from this array so they can never
 // diverge.
@@ -54,6 +50,7 @@ export interface SQLEditorTheme {
   // token colors come from the base. (Per-theme editor/syntax palettes were
   // removed: they never reached the canvas in this runtime.)
   monacoBase: "vs" | "vs-dark";
-  // Chrome layer: the SQL-Editor `--color-*` token values for this theme.
-  tokens: Record<SQLEditorThemeToken, RGB>;
+  // Chrome layer: the SQL-Editor `--color-*` token values for this theme,
+  // each a "r g b" triple (Tailwind resolves to `rgb(var(--color-x) / <alpha>)`).
+  tokens: Record<SQLEditorThemeToken, string>;
 }

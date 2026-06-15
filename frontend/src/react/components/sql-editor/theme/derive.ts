@@ -54,7 +54,7 @@ export function resolveAdminTheme(selected: SQLEditorTheme): SQLEditorTheme {
 export function validateTheme(theme: SQLEditorTheme): void {
   for (const token of SQL_EDITOR_THEME_TOKENS) {
     if (typeof theme.tokens[token] !== "string") {
-      throw new Error(`theme "${theme.id}" missing chrome token ${token}`);
+      throw new TypeError(`theme "${theme.id}" missing chrome token ${token}`);
     }
   }
 }

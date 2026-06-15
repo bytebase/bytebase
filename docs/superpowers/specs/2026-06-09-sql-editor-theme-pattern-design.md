@@ -12,10 +12,34 @@ preference, and the `ThemeSelect` toolbar switcher all landed as designed. The
 following diverged during implementation (driven by how the codingame VSCode Monaco
 runtime and the real DOM behave):
 
-- **Catalog reduced to two themes: `light` + `dark`.** Solarized×2, Monokai, and Nord
-  were dropped — two polished themes beat six half-finished ones. `syntax` is therefore
-  unused in practice: both presets omit it and inherit `vs`/`vs-dark` verbatim (the
-  `SyntaxPalette` machinery stays for the documented custom-theme future).
+- **Catalog: `light`, `dark`, and `solarized-dark`.** Solarized Dark shipped as the first
+  named theme; the other originally-planned named themes (Solarized Light, Monokai, Nord)
+  were not authored.
+- **The Monaco `editor`/`syntax` theme layer was removed entirely.** This app runs Monaco
+  through the codingame VSCode theme service, which **ignores `monaco.editor.defineTheme`**,
+  so per-theme editor colors and syntax palettes never reach the canvas. The
+  `SQLEditorTheme.editor` / `.syntax` fields and the `EditorChromeColors` / `SyntaxPalette`
+  types are **deleted**; `buildMonacoTheme` now carries only the `vs`/`vs-dark` base + the
+  word-highlight reset. A theme is just `{ id, name, monacoBase, tokens }`. (Authentic
+  per-theme editor syntax would require registering real VSCode themes — a documented
+  follow-up; see Future work.)
+- **Editor background follows the chrome via a transparent canvas.** Because the canvas
+  can't be themed through `defineTheme`, a scoped CSS rule makes the Monaco editor
+  (`.sqleditor--wrapper .monaco-editor` + `-background` + `.margin`) transparent so it
+  shows the chrome `--color-background`; syntax token colors come from the `vs`/`vs-dark`
+  base. Transparent (not an opaque token) so Monaco's own overlays (current line,
+  selection) still composite on top.
+  - **By design, this is `.sqleditor--wrapper`-scoped, so portaled editors are
+    excluded.** The access-request drawer's `MonacoEditor` mounts outside the wrapper
+    (in the overlay root), so it keeps the opaque `vs`/`vs-dark` canvas (`#1e1e1e` for
+    the dark base) rather than the chrome background. It matches `dark` (whose
+    `--color-background` is also `#1e1e1e`) but intentionally does **not** track a named
+    theme's chrome bg (e.g. Solarized Dark's teal). Accepted: named themes are chrome-
+    only, the switcher is dev-only, and per-theme editor canvases are a Future-work item.
+- **Theme names are literal labels; the switcher is dev-only.** `ThemeSelect` is gated
+  behind `isDev()` (hidden in production), so theme names aren't translated:
+  `SQLEditorTheme.name` is a plain display string (no i18n key) — built-ins, proper-noun
+  presets (Solarized Dark), and future user-named custom themes all just set it.
 - **Monaco theming is per-editor + a *change-only* controller, not a mount-time global
   `setTheme`.** Calling `monaco.editor.setTheme` while an editor is still constructing
   races the codingame theme service and throws → the editor falls back to a read-only
@@ -66,21 +90,24 @@ named pre-defined themes ship alongside it. The model is shaped so that user-def
 **custom themes** can be added later with no re-architecture — a custom theme is just
 another theme object.
 
-> **Shipped reality:** the catalog was reduced to **two** themes (`light` + `dark`)
-> before merge, and the `isDark` property was removed entirely — see
-> [Implementation notes — as shipped](#implementation-notes--as-shipped) above, which
-> is authoritative wherever it conflicts with the original design below.
+> **Shipped reality:** the catalog ships **three** themes (`light`, `dark`,
+> `solarized-dark`); the Monaco `editor`/`syntax` layer **and** `isDark` were removed; and
+> theme `name` is a plain literal label (no i18n). The detailed `editor`/`syntax`/
+> six-theme architecture in §1–§6 below is the **original design** — see
+> [Implementation notes — as shipped](#implementation-notes--as-shipped) above, which is
+> authoritative wherever it conflicts.
 
-This phase ships a **catalog of pre-defined preset themes** (below), each with its
-authentic Monaco syntax palette. Custom-theme editing UI, a "System" option, and
-backend persistence are explicitly out of scope (see [Future work](#future-work)).
+This phase ships a small **catalog of pre-defined preset themes** (below). Custom-theme
+editing UI, a "System" option, and backend persistence are explicitly out of scope (see
+[Future work](#future-work)).
 
 ### Theme catalog
 
 | id | name | monacoBase | notes |
 | --- | --- | --- | --- |
 | `light` | Default Light | `vs` | today's `:root`/`bb` look, verbatim — the default |
-| `dark` | Default Dark | `vs-dark` | Bytebase dark, inherits `vs-dark` chrome + tokens |
+| `dark` | Default Dark | `vs-dark` | Bytebase dark, inherits `vs-dark` editor + chrome tokens |
+| `solarized-dark` | Solarized Dark | `vs-dark` | first named theme; chrome only (editor stays `vs-dark` base) |
 
 ## Locked decisions
 
@@ -88,8 +115,8 @@ backend persistence are explicitly out of scope (see [Future work](#future-work)
 | --- | --- |
 | End goal | Build the foundation for runtime-switchable themes |
 | Scope | SQL Editor only — chrome + Monaco + result views |
-| Granularity | Preset themes only — `light` + `dark` shipped (catalog above) |
-| Syntax fidelity | Each named theme ships its full, authentic Monaco syntax palette |
+| Granularity | Preset themes only — `light`, `dark`, `solarized-dark` shipped (catalog above) |
+| Syntax fidelity | **Chrome only.** The codingame Monaco runtime ignores per-theme `defineTheme` colors, so editor **syntax** stays the `vs`/`vs-dark` base; the editor background follows the chrome via a transparent canvas. (Per-theme syntax would need real VSCode themes — see Future work.) |
 | Token scoping | Scoped override — re-declare `--color-*` on the SQL Editor container |
 | Persistence | localStorage, client-only, workspace-scoped |
 | Theme representation | Approach A — theme is a plain JS token map; both layers derive from it |
@@ -621,9 +648,9 @@ MONACO (single global, driven by foreground panel — cannot be per-scope):
      (`monaco/core.ts`); custom themes need the same `defineTheme("bb-<id>", …)` on
      create/edit (else `getResolvedTheme` falls back to `bb-light`).
 
-  Also handle the `name` field: presets use an i18n key (`t(theme.name)`); a custom
-  theme's name is a literal user string, so add a display field or `nameIsLiteral` flag
-  rather than relying on i18n returning the key verbatim.
+  The `name` field is already a plain literal label (no i18n — the switcher is dev-only,
+  so theme names aren't translated), so a custom theme just sets `name` to the user's
+  string; nothing special is needed there.
 - **Backend / cross-device persistence — later (not now).** Confirmed direction
   (2026-06-15): the selected id + any custom theme objects move from localStorage to a
   user/workspace `Setting`, with localStorage as the offline/default fallback. No proto
