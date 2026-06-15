@@ -41,25 +41,4 @@ export const solarizedDark: SQLEditorTheme = {
     "--color-matrix-green-hover": "136 255 136",
     "--color-dark-bg": "0 43 54", // base03
   },
-  editor: {
-    background: "#002b36", // base03
-    selectionBackground: "#073642", // base02
-    cursor: "#93a1a1", // base1
-    lineHighlight: "#073642", // base02
-    gutterBackground: "#002b36", // base03
-    lineNumber: "#586e75", // base01
-    activeLineNumber: "#93a1a1", // base1
-  },
-  syntax: {
-    comment: "#586e75", // base01
-    keyword: "#859900", // green
-    string: "#2aa198", // cyan
-    number: "#d33682", // magenta
-    type: "#b58900", // yellow
-    function: "#268bd2", // blue
-    variable: "#839496", // base0
-    operator: "#859900", // green
-    delimiter: "#839496", // base0
-    predefined: "#268bd2", // blue
-  },
 };

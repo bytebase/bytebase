@@ -35,8 +35,4 @@ export const dark: SQLEditorTheme = {
     "--color-matrix-green-hover": "136 255 136",
     "--color-dark-bg": "30 30 30",
   },
-  // Inherits `vs-dark` verbatim (today's admin terminal used plain vs-dark):
-  // no syntax rules, no color overrides beyond the shared wordHighlight reset.
-  editor: {},
-  // no `syntax`.
 };

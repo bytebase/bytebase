@@ -1,7 +1,6 @@
 // Chrome tokens are "r g b" triples (Tailwind utilities resolve to
-// `rgb(var(--color-x) / <alpha>)`). Monaco values are "#rrggbb" hex.
+// `rgb(var(--color-x) / <alpha>)`).
 export type RGB = string;
-export type Hex = string;
 
 // All chrome token names, for iteration/validation. Single source of truth —
 // the SQLEditorThemeToken union is derived from this array so they can never
@@ -42,40 +41,19 @@ export const SQL_EDITOR_THEME_TOKENS = [
 // fill all of these (enforced by validateTheme).
 export type SQLEditorThemeToken = (typeof SQL_EDITOR_THEME_TOKENS)[number];
 
-// Monaco editor-surface colors (canvas — unreachable by CSS cascade).
-export interface EditorChromeColors {
-  background: Hex;
-  selectionBackground: Hex;
-  cursor: Hex;
-  lineHighlight: Hex;
-  gutterBackground: Hex;
-  lineNumber: Hex;
-  activeLineNumber: Hex;
-}
-
-// Normalized, language-agnostic syntax palette. buildMonacoTheme maps these
-// onto Monaco token rules (incl. SQL scopes).
-export interface SyntaxPalette {
-  comment: Hex;
-  keyword: Hex;
-  string: Hex;
-  number: Hex;
-  type: Hex;
-  function: Hex;
-  variable: Hex;
-  operator: Hex;
-  delimiter: Hex;
-  predefined: Hex;
-}
-
 export interface SQLEditorTheme {
   id: string;
   // Literal display label, shown as-is (the theme switcher is dev-only, so
   // theme names aren't translated). Built-ins, proper-noun presets, and future
   // user-named custom themes all just set this.
   name: string;
+  // Picks the Monaco editor base. The editor canvas is themed by the codingame
+  // VSCode theme service (which ignores `monaco.editor.defineTheme`), so a theme
+  // only chooses light vs dark here — the editor background then shows the
+  // chrome `--color-background` through the transparent-canvas CSS, and syntax
+  // token colors come from the base. (Per-theme editor/syntax palettes were
+  // removed: they never reached the canvas in this runtime.)
   monacoBase: "vs" | "vs-dark";
+  // Chrome layer: the SQL-Editor `--color-*` token values for this theme.
   tokens: Record<SQLEditorThemeToken, RGB>;
-  editor: Partial<EditorChromeColors>;
-  syntax?: SyntaxPalette;
 }

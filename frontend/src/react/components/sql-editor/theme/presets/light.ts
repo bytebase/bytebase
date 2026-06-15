@@ -35,13 +35,4 @@ export const light: SQLEditorTheme = {
     "--color-matrix-green-hover": "136 255 136",
     "--color-dark-bg": "30 30 30",
   },
-  // Reproduces today's `bb` Monaco theme verbatim: inherits `vs` (no syntax
-  // rules), transparent background, and only the four colors bb overrode.
-  editor: {
-    background: "#fffffe00",
-    cursor: "#4f46e5",
-    lineNumber: "#a1a1aa",
-    activeLineNumber: "#18181b",
-  },
-  // no `syntax` → buildMonacoTheme emits rules: [] → inherits `vs` verbatim.
 };
