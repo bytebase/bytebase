@@ -200,6 +200,70 @@ func TestGetWebhookContext_ProjectAlwaysSet(t *testing.T) {
 	a.Equal("My Project", webhookCtx.Project.Title)
 }
 
+func TestGetWebhookContext_MentionEndUsersIncludePhone(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		event     *Event
+		wantPhone string
+	}{
+		{
+			name: "approval requested approver",
+			event: &Event{
+				Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
+				Project: &Project{ResourceID: "proj-1", Workspace: "ws-1"},
+				ApprovalRequested: &EventIssueApprovalRequested{
+					Creator: &User{Name: "Alice", Email: "alice@example.com"},
+					Issue:   &Issue{UID: 1, Title: "test"},
+					Approvers: []User{
+						{Name: "Bob", Email: "bob@example.com", Phone: "+8613800000000"},
+					},
+				},
+			},
+			wantPhone: "+8613800000000",
+		},
+		{
+			name: "issue approved creator",
+			event: &Event{
+				Type:    storepb.Activity_ISSUE_APPROVED,
+				Project: &Project{ResourceID: "proj-1", Workspace: "ws-1"},
+				IssueApproved: &EventIssueApproved{
+					Approver: &User{Name: "Bob", Email: "bob@example.com"},
+					Creator:  &User{Name: "Alice", Email: "alice@example.com", Phone: "+8613900000000"},
+					Issue:    &Issue{UID: 1, Title: "test"},
+				},
+			},
+			wantPhone: "+8613900000000",
+		},
+		{
+			name: "sent back creator",
+			event: &Event{
+				Type:    storepb.Activity_ISSUE_SENT_BACK,
+				Project: &Project{ResourceID: "proj-1", Workspace: "ws-1"},
+				SentBack: &EventIssueSentBack{
+					Approver: &User{Name: "Bob", Email: "bob@example.com"},
+					Creator:  &User{Name: "Alice", Email: "alice@example.com", Phone: "+8615000000000"},
+					Issue:    &Issue{UID: 1, Title: "test"},
+				},
+			},
+			wantPhone: "+8615000000000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			m := newTestManager()
+
+			webhookCtx, err := m.getWebhookContextFromEvent(ctx, tt.event, tt.event.Type)
+			a.NoError(err)
+			a.Len(webhookCtx.MentionEndUsers, 1)
+			a.Equal(tt.wantPhone, webhookCtx.MentionEndUsers[0].Phone)
+		})
+	}
+}
+
 func TestGetWebhookContext_AllEventLevels(t *testing.T) {
 	m := newTestManager()
 	ctx := context.Background()

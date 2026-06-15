@@ -33,3 +33,16 @@
         line: 1
         column: 0
       endposition: null
+# Lock: CTE bodies ARE visited (omni walker post-#294 covers SelectStmt.With);
+# a SELECT * inside a CTE body flags even when the outer SELECT is star-free.
+- statement: WITH c AS (SELECT * FROM t) SELECT a FROM c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

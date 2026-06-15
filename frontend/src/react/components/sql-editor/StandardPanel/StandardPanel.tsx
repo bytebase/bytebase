@@ -102,7 +102,9 @@ export function StandardPanel() {
       </Panel>
       {showAIPanel && tab && (
         <>
-          <PanelResizeHandle className={resizeHandleClass("vertical")} />
+          <PanelResizeHandle
+            className={resizeHandleClass("vertical", "w-0.5")}
+          />
           <Panel
             defaultSize={`${(1 - editorPanelSize.size) * 100}%`}
             minSize="10%"
@@ -129,7 +131,7 @@ export function StandardPanel() {
       <Panel defaultSize="60%" minSize="20%" maxSize="80%">
         {editorWithAi}
       </Panel>
-      <PanelResizeHandle className={resizeHandleClass("horizontal")} />
+      <PanelResizeHandle className={resizeHandleClass("horizontal", "h-0.5")} />
       <Panel defaultSize="40%" minSize="20%">
         <div className="relative h-full">
           <ResultPanel />

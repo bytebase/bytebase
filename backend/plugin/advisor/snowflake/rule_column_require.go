@@ -5,18 +5,17 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -49,22 +48,20 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), requireColumns)
-	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.checkStatement(node, stmt.Text)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // ColumnRequireRule checks for required columns.
@@ -72,13 +69,9 @@ type ColumnRequireRule struct {
 	BaseRule
 	// requireColumns is the required columns, the key is the normalized column name.
 	requireColumns map[string]any
-
-	// The following variables should be clean up when ENTER some statement.
-	//
-	// currentMissingColumn is the missing column, the key is the normalized column name.
-	currentMissingColumn map[string]any
-	// currentOriginalTableName is the original table name, should be reset when QUIT some statement.
-	currentOriginalTableName string
+	// stmtText is the SQL text of the statement currently being checked; node
+	// Loc offsets are relative to it.
+	stmtText string
 }
 
 // NewColumnRequireRule creates a new ColumnRequireRule.
@@ -97,137 +90,108 @@ func (*ColumnRequireRule) Name() string {
 	return "ColumnRequireRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnRequireRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeColumnDeclItemList:
-		r.enterColumnDeclItemList(ctx.(*parser.Column_decl_item_listContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	case NodeTypeTableColumnAction:
-		r.enterTableColumnAction(ctx.(*parser.Table_column_actionContext))
+// checkStatement checks one statement's omni AST node.
+func (r *ColumnRequireRule) checkStatement(node omniast.Node, stmtText string) {
+	r.stmtText = stmtText
+	switch n := node.(type) {
+	case *omniast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *omniast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *ColumnRequireRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-func (r *ColumnRequireRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	r.currentOriginalTableName = ctx.Object_name().GetText()
-	r.currentMissingColumn = make(map[string]any)
-	for column := range r.requireColumns {
-		r.currentMissingColumn[column] = true
 	}
 }
 
-func (r *ColumnRequireRule) enterColumnDeclItemList(ctx *parser.Column_decl_item_listContext) {
-	if r.currentOriginalTableName == "" {
+func (r *ColumnRequireRule) checkCreateTable(stmt *omniast.CreateTableStmt) {
+	// The legacy advisor only fired on plain CREATE TABLE (the Create_table
+	// context); CREATE TABLE ... AS SELECT / LIKE / CLONE parsed as different
+	// contexts and were never checked.
+	if stmt.AsSelect != nil || stmt.Like != nil || stmt.Clone != nil {
 		return
 	}
-	allColumnDeclItems := ctx.AllColumn_decl_item()
-	for _, columnDeclItem := range allColumnDeclItems {
-		if fullColDecl := columnDeclItem.Full_col_decl(); fullColDecl != nil {
-			normalizedColumnName := normalizeSnowflakeColumnNameForRequire(fullColDecl.Col_decl().Column_name())
-			delete(r.currentMissingColumn, normalizedColumnName)
+
+	missingColumns := make(map[string]any)
+	for column := range r.requireColumns {
+		missingColumns[column] = true
+	}
+	for _, column := range stmt.Columns {
+		delete(missingColumns, column.Name.Normalize())
+	}
+	if len(missingColumns) == 0 {
+		return
+	}
+
+	// The legacy advisor reported the stop line of the column declaration list,
+	// i.e. the line where its last item (column or out-of-line constraint) ends.
+	line := r.line(stmt.Loc.Start)
+	lastItemEnd := -1
+	for _, column := range stmt.Columns {
+		if column.Loc.End > lastItemEnd {
+			lastItemEnd = column.Loc.End
 		}
 	}
+	for _, constraint := range stmt.Constraints {
+		if constraint.Loc.End > lastItemEnd {
+			lastItemEnd = constraint.Loc.End
+		}
+	}
+	if lastItemEnd > 0 {
+		line = r.line(lastItemEnd - 1)
+	}
+
+	r.addMissingColumnAdvice(missingColumns, stmt.Name.String(), line)
 }
 
-func (r *ColumnRequireRule) exitCreateTable(ctx *parser.Create_tableContext) {
-	columnNames := make([]string, 0, len(r.currentMissingColumn))
-	for column := range r.currentMissingColumn {
-		columnNames = append(columnNames, column)
-	}
-	if len(columnNames) == 0 {
-		return
-	}
-
-	slices.Sort(columnNames)
-	for _, column := range columnNames {
-		line := ctx.GetStart().GetLine()
-		if createTableClause := ctx.Create_table_clause(); createTableClause != nil {
-			if columnDeclItemListParen := createTableClause.Column_decl_item_list_paren(); columnDeclItemListParen != nil {
-				if columnDeclItemList := columnDeclItemListParen.Column_decl_item_list(); columnDeclItemList != nil && columnDeclItemList.GetStop() != nil {
-					line = columnDeclItemList.GetStop().GetLine()
-				}
+func (r *ColumnRequireRule) checkAlterTable(stmt *omniast.AlterTableStmt) {
+	missingColumns := make(map[string]any)
+	actionLine := 0
+	for _, action := range stmt.Actions {
+		if action.Kind != omniast.AlterTableDropColumn {
+			continue
+		}
+		if actionLine == 0 {
+			actionLine = r.line(action.Loc.Start)
+		}
+		for _, column := range action.DropColumnNames {
+			normalizedColumnName := column.Normalize()
+			if _, ok := r.requireColumns[normalizedColumnName]; ok {
+				missingColumns[normalizedColumnName] = true
 			}
 		}
+	}
+	if len(missingColumns) == 0 {
+		return
+	}
+
+	r.addMissingColumnAdvice(missingColumns, stmt.Name.String(), actionLine)
+}
+
+func (r *ColumnRequireRule) addMissingColumnAdvice(missingColumns map[string]any, originalTableName string, line int) {
+	columnNames := make([]string, 0, len(missingColumns))
+	for column := range missingColumns {
+		columnNames = append(columnNames, column)
+	}
+	slices.Sort(columnNames)
+
+	for _, column := range columnNames {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NoRequiredColumn.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("Table %s missing required column %q", r.currentOriginalTableName, column),
+			Content:       fmt.Sprintf("Table %s missing required column %q", originalTableName, column),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
 		})
 	}
-	r.currentOriginalTableName = ""
-	r.currentMissingColumn = nil
 }
 
-func (r *ColumnRequireRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	r.currentOriginalTableName = ctx.Object_name(0).GetText()
-	r.currentMissingColumn = make(map[string]any)
-}
-
-func (r *ColumnRequireRule) enterTableColumnAction(ctx *parser.Table_column_actionContext) {
-	if r.currentOriginalTableName == "" || ctx.DROP() == nil || ctx.Alter_modify() != nil {
-		return
+// line converts a byte offset within the current statement text to a 1-based
+// line number, mirroring the ANTLR token line the legacy advisor reported.
+func (r *ColumnRequireRule) line(offset int) int {
+	if offset < 0 {
+		return 1
 	}
-
-	for _, columnName := range ctx.Column_list().AllColumn_name() {
-		originalColumName := columnName.GetText()
-		normalizedColumnName := snowsqlparser.ExtractSnowSQLOrdinaryIdentifier(originalColumName)
-		if _, ok := r.requireColumns[normalizedColumnName]; ok {
-			r.currentMissingColumn[normalizedColumnName] = true
-		}
+	if offset > len(r.stmtText) {
+		offset = len(r.stmtText)
 	}
-}
-
-func normalizeSnowflakeColumnNameForRequire(columnName parser.IColumn_nameContext) string {
-	if columnName == nil {
-		return ""
-	}
-	allIDs := columnName.AllId_()
-	if len(allIDs) == 0 {
-		return ""
-	}
-	return snowsqlparser.NormalizeSnowSQLObjectNamePart(allIDs[len(allIDs)-1])
-}
-
-func (r *ColumnRequireRule) exitAlterTable(ctx *parser.Alter_tableContext) {
-	columnNames := make([]string, 0, len(r.currentMissingColumn))
-	for column := range r.currentMissingColumn {
-		columnNames = append(columnNames, column)
-	}
-	if len(columnNames) == 0 {
-		return
-	}
-
-	slices.Sort(columnNames)
-	for _, column := range columnNames {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NoRequiredColumn.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Table %s missing required column %q", r.currentOriginalTableName, column),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.Table_column_action().GetStart().GetLine()),
-		})
-	}
-	r.currentOriginalTableName = ""
-	r.currentMissingColumn = nil
+	return 1 + strings.Count(r.stmtText[:offset], "\n")
 }

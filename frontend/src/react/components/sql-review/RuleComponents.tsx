@@ -400,7 +400,7 @@ export function RuleEditDialog({
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
-        <div className="p-6 flex flex-col gap-y-4">
+        <div className="flex flex-col gap-y-4">
           <div className="flex items-center justify-between">
             <DialogTitle>{t("sql-review.rule.self")}</DialogTitle>
             <span className="text-sm text-control-placeholder">

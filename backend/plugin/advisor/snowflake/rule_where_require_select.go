@@ -3,15 +3,16 @@ package snowflake
 
 import (
 	"context"
+	"slices"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/snowflake"
+	omniast "github.com/bytebase/omni/snowflake/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 var (
@@ -33,75 +34,103 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String())
-	checker := NewGenericChecker([]Rule{rule})
+	checker := &whereRequireForSelectChecker{
+		level: level,
+		title: checkCtx.Rule.Type.String(),
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		checker.checkStmt(node, stmt.Text, stmt.BaseLine())
 	}
 
-	return checker.GetAdviceList(), nil
+	return checker.adviceList, nil
 }
 
-// WhereRequireForSelectRule checks for WHERE clause requirement in SELECT statements.
-type WhereRequireForSelectRule struct {
-	BaseRule
+type whereRequireForSelectChecker struct {
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
 }
 
-// NewWhereRequireForSelectRule creates a new WhereRequireForSelectRule.
-func NewWhereRequireForSelectRule(level storepb.Advice_Status, title string) *WhereRequireForSelectRule {
-	return &WhereRequireForSelectRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
+// checkStmt flags every SELECT with a FROM clause but no WHERE clause anywhere
+// in the statement — including CTE bodies, derived tables, and subqueries —
+// mirroring the legacy listener that fired on every Select_statement context.
+// SELECTs without a FROM clause (e.g. SELECT 1) are allowed.
+func (c *whereRequireForSelectChecker) checkStmt(node omniast.Node, text string, baseLine int) {
+	// Collect anchor offsets first and emit advices in text order so the
+	// advice order matches the legacy depth-first listener walk (a CTE body
+	// is reported before the main SELECT that follows it).
+	var offsets []int
+	omniast.Inspect(node, func(n omniast.Node) bool {
+		selectStmt, ok := n.(*omniast.SelectStmt)
+		if !ok {
+			return true
+		}
+		// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+		if selectStmt.Where == nil && selectStmt.From != nil {
+			offsets = append(offsets, selectBodyStart(selectStmt, text))
+		}
+		return true
+	})
+	slices.Sort(offsets)
 
-// Name returns the rule name.
-func (*WhereRequireForSelectRule) Name() string {
-	return "WhereRequireForSelectRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *WhereRequireForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeSelectStatement {
-		r.enterSelectStatement(ctx.(*parser.Select_statementContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *WhereRequireForSelectRule) enterSelectStatement(ctx *parser.Select_statementContext) {
-	if ctx == nil {
-		return
-	}
-	optional := ctx.Select_optional_clauses()
-	if optional == nil {
-		return
-	}
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-	if optional.Where_clause() == nil && optional.From_clause() != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	for _, offset := range offsets {
+		c.adviceList = append(c.adviceList, &storepb.Advice{
+			Status:        c.level,
 			Code:          code.StatementNoWhere.Int32(),
-			Title:         r.title,
+			Title:         c.title,
 			Content:       "WHERE clause is required for SELECT statement.",
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
 		})
 	}
+}
+
+// selectBodyStart returns the byte offset of the SELECT keyword that opens the
+// body of selectStmt within text. For a plain SELECT that is Loc.Start; for a
+// WITH ... SELECT the omni parser extends Loc.Start back over the CTE list,
+// while the legacy ANTLR Select_statement context started at the body SELECT
+// itself — so skip past the last CTE's closing paren and any trivia to land on
+// the SELECT keyword, reproducing the legacy line exactly.
+func selectBodyStart(selectStmt *omniast.SelectStmt, text string) int {
+	start := selectStmt.Loc.Start
+	if n := len(selectStmt.With); n > 0 {
+		last := selectStmt.With[n-1]
+		if last != nil && last.Loc.End >= 0 && last.Loc.End <= len(text) {
+			if offset, ok := skipSpaceAndComments(text, last.Loc.End); ok {
+				start = offset
+			}
+		}
+	}
+	return start
+}
+
+// skipSpaceAndComments advances offset past whitespace and SQL comments
+// (`--` and `//` line comments, `/* */` block comments) and returns the offset
+// of the next token, or false when only trivia remains.
+func skipSpaceAndComments(text string, offset int) (int, bool) {
+	for offset < len(text) {
+		switch c := text[offset]; {
+		case c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f':
+			offset++
+		case strings.HasPrefix(text[offset:], "--") || strings.HasPrefix(text[offset:], "//"):
+			next := strings.IndexByte(text[offset:], '\n')
+			if next < 0 {
+				return 0, false
+			}
+			offset += next + 1
+		case strings.HasPrefix(text[offset:], "/*"):
+			end := strings.Index(text[offset+2:], "*/")
+			if end < 0 {
+				return 0, false
+			}
+			offset += 2 + end + 2
+		default:
+			return offset, true
+		}
+	}
+	return 0, false
 }

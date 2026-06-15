@@ -68,3 +68,16 @@
       endposition: null
 - statement: SELECT 1;
   changeType: 1
+# Lock: CTE bodies ARE visited (omni walker post-#294 covers SelectStmt.With);
+# the inner WHERE-less CTE SELECT flags even when the outer SELECT has WHERE.
+- statement: WITH c AS (SELECT x FROM t) SELECT a FROM c WHERE id = 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELECT statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	omniast "github.com/bytebase/omni/snowflake/ast"
+	omniparser "github.com/bytebase/omni/snowflake/parser"
 	"github.com/pkg/errors"
-
-	snowsql "github.com/bytebase/parser/snowflake"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	snowparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	"github.com/bytebase/bytebase/backend/utils"
 )
+
+const stmtErrFmt = "statement: %s"
 
 func getStatementWithResultLimit(statement string, limit int) string {
 	stmt, err := getStatementWithResultLimitInline(statement, limit)
@@ -24,132 +26,124 @@ func getStatementWithResultLimit(statement string, limit int) string {
 	return stmt
 }
 
+// getStatementWithResultLimitInline rewrites the single statement so that its
+// outermost query returns at most limitCount rows. The rewrite splices the
+// replacement into the original statement text via omni AST byte offsets
+// (ast.Loc), preserving the original formatting. The output shape mirrors the
+// legacy ANTLR TokenStreamRewriter: the statement trimmed of trailing
+// spaces/semicolons, plus a final "\n;".
+//
+// Mirroring the legacy rewriter, only the outermost query's right-most select
+// is touched:
+//   - LIMIT <n>            → n becomes min(n, limitCount) (n == 0 → limitCount)
+//   - OFFSET/FETCH <n>     → the fetch count is replaced the same way
+//   - TOP <n>              → replaced the same way
+//   - no limiting clause   → " LIMIT <limitCount>" is appended at the end of
+//     that select (inside any wrapping parentheses)
+//
+// Non-query statements are returned unchanged (the legacy listener never
+// fired on them). Any error makes the caller fall back to wrapping the
+// statement in SELECT * FROM (...) LIMIT n.
 func getStatementWithResultLimitInline(singleStatement string, limitCount int) (string, error) {
-	results, err := snowparser.ParseSnowSQL(singleStatement)
+	trimmed := strings.TrimRightFunc(singleStatement, utils.IsSpaceOrSemicolon)
+
+	file, err := omniparser.Parse(trimmed)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+	}
+	if len(file.Stmts) != 1 {
+		return "", errors.Errorf("expected exactly 1 statement, got %d", len(file.Stmts))
 	}
 
-	if len(results) != 1 {
-		return "", errors.Errorf("expected exactly 1 statement, got %d", len(results))
+	sel := findRightMostSelect(file.Stmts[0])
+	if sel == nil {
+		// Not a query statement; return the normalized text unchanged.
+		return trimmed + "\n;", nil
 	}
 
-	result := results[0]
-
-	listener := &snowsqlRewriter{
-		limitCount:     limitCount,
-		outerMostQuery: true,
-	}
-
-	listener.rewriter = *antlr.NewTokenStreamRewriter(result.Tokens)
-	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
-	if listener.err != nil {
-		return "", errors.Wrapf(listener.err, "statement: %s", singleStatement)
-	}
-
-	return listener.rewriter.GetTextDefault(), nil
-}
-
-type snowsqlRewriter struct {
-	*snowsql.BaseSnowflakeParserListener
-
-	rewriter       antlr.TokenStreamRewriter
-	err            error
-	outerMostQuery bool
-	limitCount     int
-}
-
-func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementContext) {
-	if !r.outerMostQuery {
-		return
-	}
-	r.outerMostQuery = false
-
-	// if has set_operators, use last select_statement of set_operator.
-	var selectCtx *snowsql.Select_statementContext
-	if len(ctx.AllSet_operators()) > 0 {
-		setOperator := ctx.Set_operators(len(ctx.AllSet_operators()) - 1)
-		selectCtx = findRightMostSelectStatement(setOperator.Select_statement_in_parentheses())
-	}
-	// otherwise, ues outermost direct select_statement.
-	if selectCtx == nil {
-		selectCtx = findRightMostSelectStatement(ctx.Select_statement_in_parentheses())
-	}
-	if selectCtx == nil {
-		return
-	}
-
-	limitClause := selectCtx.Limit_clause()
-	if limitClause != nil {
-		if limitClause.LIMIT() != nil {
-			if len(limitClause.AllNum()) > 0 {
-				firstNumber := limitClause.Num(0)
-				userLimitText := firstNumber.GetText()
-				limit, _ := strconv.Atoi(userLimitText)
-				if limit == 0 || r.limitCount < limit {
-					limit = r.limitCount
-				}
-				r.rewriter.ReplaceDefault(firstNumber.GetStart().GetTokenIndex(), firstNumber.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
-			}
-		} else {
-			var num snowsql.INumContext
-			if limitClause.OFFSET() != nil {
-				if len(limitClause.AllNum()) > 1 {
-					num = limitClause.Num(1)
-				}
-			} else {
-				if len(limitClause.AllNum()) > 0 {
-					num = limitClause.Num(0)
-				}
-			}
-			if num != nil {
-				userLimitText := num.GetText()
-				limit, _ := strconv.Atoi(userLimitText)
-				if limit == 0 || r.limitCount < limit {
-					limit = r.limitCount
-				}
-				r.rewriter.ReplaceDefault(num.GetStart().GetTokenIndex(), num.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
-			}
+	// LIMIT <n> [OFFSET <m>]: replace n.
+	if sel.Limit != nil {
+		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Limit), limitCount)
+		if err != nil {
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 		}
-		return
+		return spliced + "\n;", nil
 	}
 
-	selectTopClause := selectCtx.Select_top_clause()
-	if selectTopClause != nil && selectTopClause.Select_list_top() != nil && selectTopClause.Select_list_top().Top_clause() != nil {
-		topClause := selectTopClause.Select_list_top().Top_clause()
-		number := topClause.Num()
-		userLimitText := number.GetText()
-		limit, _ := strconv.Atoi(userLimitText)
-		if limit == 0 || r.limitCount < limit {
-			limit = r.limitCount
+	// [OFFSET <m>] FETCH [FIRST|NEXT] <n> ...: replace the fetch count n.
+	if sel.Fetch != nil {
+		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Fetch.Count), limitCount)
+		if err != nil {
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
 		}
-		r.rewriter.ReplaceDefault(number.GetStart().GetTokenIndex(), number.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
-		return
+		return spliced + "\n;", nil
 	}
 
-	// Append after select_optional_clauses.
-	r.rewriter.InsertAfterDefault(selectCtx.Select_optional_clauses().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+	// A bare OFFSET without LIMIT/FETCH cannot take an appended LIMIT clause
+	// (LIMIT must precede OFFSET); the legacy parser rejected this shape, so
+	// keep routing it to the caller's fallback.
+	if sel.Offset != nil {
+		return "", errors.Errorf("statement has OFFSET without LIMIT/FETCH: %s", singleStatement)
+	}
+
+	// TOP <n>: replace n.
+	if sel.Top != nil {
+		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Top), limitCount)
+		if err != nil {
+			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+		}
+		return spliced + "\n;", nil
+	}
+
+	// No limiting clause: append after the end of the select.
+	end := sel.Loc.End
+	if !sel.Loc.IsValid() || end > len(trimmed) {
+		return "", errors.Errorf("invalid select location %v for statement: %s", sel.Loc, singleStatement)
+	}
+	return trimmed[:end] + fmt.Sprintf(" LIMIT %d", limitCount) + trimmed[end:] + "\n;", nil
 }
 
-func findRightMostSelectStatement(ctx snowsql.ISelect_statement_in_parenthesesContext) *snowsql.Select_statementContext {
-	if ctx == nil {
+// spliceLimitNumber replaces the number at loc within text by
+// min(userLimit, limitCount), where a user limit of 0 means "no limit" and
+// becomes limitCount — the exact arithmetic of the legacy rewriter. A
+// non-integer at loc is an error (the legacy grammar only accepted integer
+// tokens there; anything else fell back).
+func spliceLimitNumber(text string, loc omniast.Loc, limitCount int) (string, error) {
+	if !loc.IsValid() || loc.End > len(text) || loc.Start > loc.End {
+		return "", errors.Errorf("invalid limit number location %v", loc)
+	}
+	userLimit, err := strconv.Atoi(text[loc.Start:loc.End])
+	if err != nil {
+		return "", errors.Wrapf(err, "non-integer limit count %q", text[loc.Start:loc.End])
+	}
+	limit := userLimit
+	if limit == 0 || limitCount < limit {
+		limit = limitCount
+	}
+	return text[:loc.Start] + strconv.Itoa(limit) + text[loc.End:], nil
+}
+
+// findRightMostSelect returns the right-most SELECT of the outermost query:
+// for set operations the last operand's select (recursing through nested set
+// operations and parenthesized selects, which omni flattens), for the
+// result-pipe operator (->>) the consuming query's select. Returns nil for
+// non-query statements.
+func findRightMostSelect(node omniast.Node) *omniast.SelectStmt {
+	switch n := node.(type) {
+	case *omniast.SelectStmt:
+		return n
+	case *omniast.SetOperationStmt:
+		return findRightMostSelect(n.Right)
+	case *omniast.ResultScanStmt:
+		return findRightMostSelect(n.Query)
+	case *omniast.ShowStmt:
+		// SHOW ... ->> <query>: omni stores the piped statement on ShowStmt.Pipe;
+		// the row limit applies to that trailing query.
+		if n.Pipe != nil {
+			return findRightMostSelect(n.Pipe)
+		}
+		return nil
+	default:
 		return nil
 	}
-
-	if setOperator := ctx.Set_operators(); setOperator != nil {
-		if selectCtx := findRightMostSelectStatement(setOperator.Select_statement_in_parentheses()); selectCtx != nil {
-			return selectCtx
-		}
-	}
-	if nested := ctx.Select_statement_in_parentheses(); nested != nil {
-		if selectCtx := findRightMostSelectStatement(nested); selectCtx != nil {
-			return selectCtx
-		}
-	}
-	if selectStatement := ctx.Select_statement(); selectStatement != nil {
-		if selectCtx, ok := selectStatement.(*snowsql.Select_statementContext); ok {
-			return selectCtx
-		}
-	}
-	return nil
 }

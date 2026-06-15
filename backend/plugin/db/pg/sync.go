@@ -75,7 +75,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
-	isAtLeastPG10 := isAtLeastPG10(d.connectionCtx.EngineVersion)
+	// Prefer the live server version over the engine version cached in the connection
+	// context: the cached value can be empty or stale, and the version checks below
+	// assume "new enough" on parse failure, which would break the sync on old servers.
+	engineVersion := d.connectionCtx.EngineVersion
+	if version, err := d.getVersion(ctx); err == nil {
+		engineVersion = version
+	}
+	isAtLeastPG10 := isAtLeastPG10(engineVersion)
+	isAtLeastPG12 := isAtLeastPG12(engineVersion)
 	searchPath, err := d.GetSearchPath(ctx)
 	if err != nil {
 		return nil, common.Errorf(common.Internal, "failed to get search path for database %q: %v", d.databaseName, err)
@@ -102,7 +110,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
-	columnMap, err := getTableColumns(txn)
+	columnMap, err := getTableColumns(txn, isAtLeastPG12)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", d.databaseName)
 	}
@@ -519,13 +527,25 @@ func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, 
 	return schemaNames, schemaOwners, schemaComments, skipDump, nil
 }
 
+// getListForeignTableQuery returns the foreign table query against pg_catalog directly.
+// information_schema.foreign_tables hides foreign tables the current user has no privilege
+// on (pg_has_role(c.relowner, 'USAGE') OR has_table_privilege(...) OR
+// has_any_column_privilege(...)), silently omitting them from the synced metadata. The
+// expressions are copied from the information_schema._pg_foreign_tables view definition
+// minus the privilege predicate (and minus its pg_authid join, which only feeds a column
+// we do not output and is not readable by non-superusers anyway).
 func getListForeignTableQuery() string {
 	return `SELECT
-		foreign_table.foreign_table_schema,
-		foreign_table.foreign_table_name,
-		foreign_table.foreign_server_catalog,
-		foreign_table.foreign_server_name
-	FROM information_schema.foreign_tables AS foreign_table;`
+		n.nspname AS foreign_table_schema,
+		c.relname AS foreign_table_name,
+		current_database() AS foreign_server_catalog,
+		s.srvname AS foreign_server_name
+	FROM pg_catalog.pg_foreign_table t
+		JOIN pg_catalog.pg_class c ON c.oid = t.ftrelid
+		JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_catalog.pg_foreign_server s ON s.oid = t.ftserver
+	WHERE c.relkind = 'f'
+	ORDER BY n.nspname, c.relname;`
 }
 func getListTableQuery(isAtLeastPG10 bool) string {
 	relisPartition := ""
@@ -774,36 +794,76 @@ func setTxSearchPath(txn *sql.Tx, searchPath string) error {
 	return nil
 }
 
-var listColumnQuery = `
+// getListColumnQuery returns the column query against pg_catalog directly.
+// information_schema.columns hides columns of tables the current user has no privilege
+// on (its WHERE clause checks pg_has_role(c.relowner, 'USAGE') OR has_column_privilege(...)),
+// while indexes and constraints are synced from pg_catalog without such filtering. A sync
+// user lacking table privileges would thus get table metadata with constraints but zero
+// columns. Querying pg_catalog directly keeps column metadata complete regardless of
+// privileges. The expressions are copied verbatim from the information_schema.columns
+// view definition (minus the privilege predicate) so all produced values stay identical.
+func getListColumnQuery(isAtLeastPG12 bool) string {
+	// pg_attribute.attgenerated only exists on PostgreSQL >= 12. On older versions
+	// information_schema.columns.column_default has no generated-column exclusion either,
+	// so this matches the per-version information_schema behavior.
+	columnDefault := "pg_catalog.pg_get_expr(ad.adbin, ad.adrelid)"
+	if isAtLeastPG12 {
+		columnDefault = "CASE WHEN a.attgenerated = '' THEN pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) END"
+	}
+	return fmt.Sprintf(`
 SELECT
-	cols.table_schema,
-	cols.table_name,
-	cols.column_name,
-	cols.data_type,
-	cols.character_maximum_length,
-	cols.numeric_precision,
-	cols.numeric_scale,
-	cols.datetime_precision,
-	cols.ordinal_position,
-	cols.column_default,
-	cols.is_nullable,
-	cols.collation_name,
-	cols.udt_schema,
-	cols.udt_name,
-	cols.identity_generation,
-	pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
-FROM INFORMATION_SCHEMA.COLUMNS AS cols
-LEFT JOIN pg_namespace n ON n.nspname = cols.table_schema
-LEFT JOIN pg_class c ON c.relname = cols.table_name AND c.relnamespace = n.oid AND c.relkind IN ('r', 'v', 'm', 'p', 'f')` + fmt.Sprintf(`
-WHERE cols.table_schema NOT IN (%s)
-  AND cols.table_schema NOT LIKE 'pg_temp%%'
-  AND cols.table_schema NOT LIKE 'pg_toast%%'
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.SystemSchemaWhereClause)
+	nc.nspname AS table_schema,
+	c.relname AS table_name,
+	a.attname AS column_name,
+	CASE
+		WHEN t.typtype = 'd' THEN
+			CASE
+				WHEN bt.typelem <> 0 AND bt.typlen = -1 THEN 'ARRAY'
+				WHEN nbt.nspname = 'pg_catalog' THEN pg_catalog.format_type(t.typbasetype, NULL)
+				ELSE 'USER-DEFINED'
+			END
+		ELSE
+			CASE
+				WHEN t.typelem <> 0 AND t.typlen = -1 THEN 'ARRAY'
+				WHEN nt.nspname = 'pg_catalog' THEN pg_catalog.format_type(a.atttypid, NULL)
+				ELSE 'USER-DEFINED'
+			END
+	END AS data_type,
+	information_schema._pg_char_max_length(information_schema._pg_truetypid(a.*, t.*), information_schema._pg_truetypmod(a.*, t.*)) AS character_maximum_length,
+	information_schema._pg_numeric_precision(information_schema._pg_truetypid(a.*, t.*), information_schema._pg_truetypmod(a.*, t.*)) AS numeric_precision,
+	information_schema._pg_numeric_scale(information_schema._pg_truetypid(a.*, t.*), information_schema._pg_truetypmod(a.*, t.*)) AS numeric_scale,
+	information_schema._pg_datetime_precision(information_schema._pg_truetypid(a.*, t.*), information_schema._pg_truetypmod(a.*, t.*)) AS datetime_precision,
+	a.attnum AS ordinal_position,
+	%s AS column_default,
+	CASE WHEN a.attnotnull OR (t.typtype = 'd' AND t.typnotnull) THEN 'NO' ELSE 'YES' END AS is_nullable,
+	co.collname AS collation_name,
+	COALESCE(nbt.nspname, nt.nspname) AS udt_schema,
+	COALESCE(bt.typname, t.typname) AS udt_name,
+	CASE a.attidentity WHEN 'a' THEN 'ALWAYS' WHEN 'd' THEN 'BY DEFAULT' END AS identity_generation,
+	pg_catalog.col_description(c.oid, a.attnum) AS column_comment
+FROM pg_catalog.pg_attribute a
+	LEFT JOIN pg_catalog.pg_attrdef ad ON a.attrelid = ad.adrelid AND a.attnum = ad.adnum
+	JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+	JOIN pg_catalog.pg_namespace nc ON c.relnamespace = nc.oid
+	JOIN pg_catalog.pg_type t ON a.atttypid = t.oid
+	JOIN pg_catalog.pg_namespace nt ON t.typnamespace = nt.oid
+	LEFT JOIN (pg_catalog.pg_type bt JOIN pg_catalog.pg_namespace nbt ON bt.typnamespace = nbt.oid)
+		ON t.typtype = 'd' AND t.typbasetype = bt.oid
+	LEFT JOIN (pg_catalog.pg_collation co JOIN pg_catalog.pg_namespace nco ON co.collnamespace = nco.oid)
+		ON a.attcollation = co.oid AND (nco.nspname <> 'pg_catalog' OR co.collname <> 'default')
+WHERE a.attnum > 0
+	AND NOT a.attisdropped
+	AND c.relkind IN ('r', 'v', 'f', 'p')
+	AND nc.nspname NOT IN (%s)
+	AND nc.nspname NOT LIKE 'pg_temp%%'
+	AND nc.nspname NOT LIKE 'pg_toast%%'
+ORDER BY nc.nspname, c.relname, a.attnum;`, columnDefault, pgparser.SystemSchemaWhereClause)
+}
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func getTableColumns(txn *sql.Tx, isAtLeastPG12 bool) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
-	rows, err := txn.Query(listColumnQuery)
+	rows, err := txn.Query(getListColumnQuery(isAtLeastPG12))
 	if err != nil {
 		return nil, err
 	}
@@ -1820,11 +1880,19 @@ func getFunctions(
 }
 
 func isAtLeastPG10(version string) bool {
+	return isAtLeastMajorVersion(version, 10)
+}
+
+func isAtLeastPG12(version string) bool {
+	return isAtLeastMajorVersion(version, 12)
+}
+
+func isAtLeastMajorVersion(version string, major uint64) bool {
 	v, err := semver.ParseTolerant(version)
 	if err != nil {
 		slog.Error("invalid postgres version", slog.String("version", version))
-		// Assume the version is at least 10.0 for any error.
+		// Assume the version is new enough for any error.
 		return true
 	}
-	return v.Major >= 10
+	return v.Major >= major
 }

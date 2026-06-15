@@ -59,3 +59,12 @@
     CREATE TABLE T(ID INT);
     DROP TABLE T;
   changeType: 1
+# DIVERGENCE LOCK (omni migration): legacy fired CompatibilityDropTable here only
+# because its ANTLR listener never subscribed to the Create_table_like context —
+# an accidental gap, not intent. omni folds CREATE TABLE ... LIKE into
+# CreateTableStmt, so a LIKE-created table dropped in the SAME batch is treated
+# like any other in-batch creation (no advice), matching the rule's intent and
+# the behavior both versions already had for plain CREATE + DROP.
+- statement: CREATE TABLE SCRATCH LIKE SOURCE_TABLE;DROP TABLE SCRATCH;
+  changeType: 1
+  want: null
