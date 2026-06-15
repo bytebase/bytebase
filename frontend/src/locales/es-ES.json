@@ -288,7 +288,6 @@
     "discard-changes": "Descartar cambios",
     "discord": "Discord",
     "dismiss": "Descartar",
-    "done": "Hecho",
     "download": "Descargar",
     "draft": "Borrador",
     "duplicate": "Duplicar",
@@ -1303,7 +1302,6 @@
       },
       "write": "Escribir"
     },
-    "create-rollout": "Crear rollout",
     "data-export": {
       "download-tooltip": "Disponible por 24 horas",
       "file-expired": "Archivo expirado",
@@ -1491,19 +1489,8 @@
     },
     "phase": {
       "create-rollout-action": "Crear rollout manualmente",
-      "deploy-approval-must-complete": "El flujo de aprobación debe completarse.",
-      "deploy-approval-optional": "La aprobación puede omitirse según la configuración actual del proyecto.",
-      "deploy-approval-pending": "Completa el flujo de aprobación antes de que el rollout pueda continuar automáticamente.",
-      "deploy-approval-ready": "La aprobación ya está completa para este plan.",
-      "deploy-checks-blocked": "Las verificaciones fallidas están bloqueando la creación automática del rollout.",
-      "deploy-checks-must-pass": "Las comprobaciones deben aprobarse.",
-      "deploy-checks-optional": "Las verificaciones fallidas no bloquearán el rollout manual en este proyecto.",
-      "deploy-checks-ready": "Las verificaciones ya permiten la creación automática del rollout.",
-      "deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
-      "deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
-      "deploy-manual-create-description-readonly": "Un usuario con el permiso Create Rollout puede crear el rollout manualmente.",
       "hide-details": "Ocultar detalles",
       "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles"
@@ -1513,6 +1500,59 @@
       "requirements-not-met": "Los requisitos de copia previa no se cumplen para: {{databases}}"
     },
     "ready-for-review": "Listo para revisión",
+    "review": {
+      "action": "Revisar",
+      "activity": {
+        "add-a-comment": "Añadir un comentario...",
+        "created-this-plan": "creó este plan",
+        "marked-ready-for-review": "marcó este plan como listo para revisión",
+        "n-hidden-events_one": "{{count}} evento oculto",
+        "n-hidden-events_other": "{{count}} eventos ocultos",
+        "self": "Actividad",
+        "show-all": "Mostrar todo"
+      },
+      "approval-flow": {
+        "approved-by": "Aprobado por {{user}}",
+        "current": "Actual",
+        "n-approved": "{{n}} aprobados",
+        "n-pending": "{{n}} pendientes",
+        "n-reviewers_one": "{{count}} revisor",
+        "n-reviewers_other": "{{count}} revisores",
+        "rejected-by": "Rechazado por {{user}}"
+      },
+      "comment-required-to-reject": "Se requiere un comentario para rechazar",
+      "footer": {
+        "all-gates-passed": "Todos los requisitos cumplidos",
+        "approved-but-checks-failed": "Revisión aprobada, pero las comprobaciones del plan fallaron",
+        "auto-rollout-after-approval": "el despliegue se crea automáticamente tras la aprobación",
+        "blocked-by-rejection": "Bloqueado por la revisión rechazada — atiende los comentarios de arriba para continuar",
+        "bypass-and-deploy": "Omitir y desplegar",
+        "confirm-acknowledge": "Omitir",
+        "confirm-bypass-title": "Esto omitirá:",
+        "confirm-checks-failed_one": "{{count}} comprobación del plan fallida",
+        "confirm-checks-failed_other": "{{count}} comprobaciones del plan fallidas",
+        "confirm-checks-running": "Comprobaciones del plan en ejecución",
+        "confirm-review-not-approved": "Revisión aún no aprobada",
+        "confirm-review-rejected": "Revisión rechazada",
+        "creating-rollout-automatically": "creando el despliegue automáticamente...",
+        "errors-passed-not-created_one": "{{count}} error, {{passed}} superadas. El despliegue no se creó automáticamente.",
+        "errors-passed-not-created_other": "{{count}} errores, {{passed}} superadas. El despliegue no se creó automáticamente.",
+        "gate-approval": "Aprobación del problema",
+        "gate-no-failed-checks": "Sin comprobaciones fallidas",
+        "gates-blocked": "No se cumplen los controles obligatorios del proyecto: el despliegue está bloqueado.",
+        "n-checks-failed_one": "{{count}} comprobación fallida",
+        "n-checks-failed_other": "{{count}} comprobaciones fallidas",
+        "n-checks-passed_one": "{{count}} comprobación superada",
+        "n-checks-passed_other": "{{count}} comprobaciones superadas",
+        "waiting-on-review": "Esperando revisión"
+      },
+      "rejection": {
+        "guidance-prefix": "Actualiza tus cambios para atender los comentarios, o",
+        "guidance-suffix": "sin cambios",
+        "re-request-review": "vuelve a solicitar la revisión",
+        "title": "Rechazado por {{user}}"
+      }
+    },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "select-targets": "Seleccionar destinos",
@@ -1547,8 +1587,7 @@
       "title": "Objetivos",
       "view-all": "Ver todo ({{count}})"
     },
-    "title-required": "El título es obligatorio",
-    "view-discussion": "Ver discusión"
+    "title-required": "El título es obligatorio"
   },
   "plugin": {
     "ai": {
@@ -1936,7 +1975,6 @@
     }
   },
   "rollout": {
-    "bypass-stage-requirements": "Omitir advertencias",
     "no-stages": "No hay etapas disponibles",
     "no-tasks-created": "Aún no se han creado tareas",
     "pending-tasks-preview": {

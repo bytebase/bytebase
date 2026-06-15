@@ -288,7 +288,6 @@
     "discard-changes": "Discard changes",
     "discord": "Discord",
     "dismiss": "Dismiss",
-    "done": "Done",
     "download": "Download",
     "draft": "Draft",
     "duplicate": "Duplicate",
@@ -1303,7 +1302,6 @@
       },
       "write": "Write"
     },
-    "create-rollout": "Create Rollout",
     "data-export": {
       "download-tooltip": "Available for 24 hours",
       "file-expired": "File Expired",
@@ -1491,19 +1489,8 @@
     },
     "phase": {
       "create-rollout-action": "Manually create rollout",
-      "deploy-approval-must-complete": "Approval flow must be done.",
-      "deploy-approval-optional": "Approval can be bypassed based on the current project settings.",
-      "deploy-approval-pending": "Finish the approval flow before rollout can proceed automatically.",
-      "deploy-approval-ready": "Approval is complete for this plan.",
-      "deploy-checks-blocked": "Failed checks are blocking automatic rollout creation.",
-      "deploy-checks-must-pass": "Checks must pass.",
-      "deploy-checks-optional": "Failed checks won't block manual rollout in this project.",
-      "deploy-checks-ready": "Checks are ready for automatic rollout creation.",
-      "deploy-checks-running": "Wait for running checks to finish before automatic rollout can proceed.",
       "deploy-description": "Bytebase will automatically create the rollout when all checks pass and the issue is approved.",
       "deploy-description-gitops": "This plan is ready to roll out. Create a rollout to deploy the linked release.",
-      "deploy-manual-create-description": "Based on the current project settings, you can also create the rollout manually.",
-      "deploy-manual-create-description-readonly": "User with Create Rollout permission can create the rollout manually.",
       "hide-details": "Hide details",
       "review-description": "Submit for review to proceed",
       "show-details": "Show details"
@@ -1513,6 +1500,59 @@
       "requirements-not-met": "Pre-backup requirements not met: {{databases}}"
     },
     "ready-for-review": "Ready for Review",
+    "review": {
+      "action": "Review",
+      "activity": {
+        "add-a-comment": "Add a comment...",
+        "created-this-plan": "created this plan",
+        "marked-ready-for-review": "marked this plan ready for review",
+        "n-hidden-events_one": "{{count}} hidden event",
+        "n-hidden-events_other": "{{count}} hidden events",
+        "self": "Activity",
+        "show-all": "Show all"
+      },
+      "approval-flow": {
+        "approved-by": "Approved by {{user}}",
+        "current": "Current",
+        "n-approved": "{{n}} approved",
+        "n-pending": "{{n}} pending",
+        "n-reviewers_one": "{{count}} reviewer",
+        "n-reviewers_other": "{{count}} reviewers",
+        "rejected-by": "Rejected by {{user}}"
+      },
+      "comment-required-to-reject": "A comment is required to reject",
+      "footer": {
+        "all-gates-passed": "All gates passed",
+        "approved-but-checks-failed": "Review approved, but plan checks failed",
+        "auto-rollout-after-approval": "rollout is created automatically after approval",
+        "blocked-by-rejection": "Blocked by the rejected review — address the feedback above to continue",
+        "bypass-and-deploy": "Bypass and deploy",
+        "confirm-acknowledge": "Bypass",
+        "confirm-bypass-title": "This will bypass:",
+        "confirm-checks-failed_one": "{{count}} failed plan check",
+        "confirm-checks-failed_other": "{{count}} failed plan checks",
+        "confirm-checks-running": "Plan checks still running",
+        "confirm-review-not-approved": "Review not yet approved",
+        "confirm-review-rejected": "Review rejected",
+        "creating-rollout-automatically": "creating rollout automatically...",
+        "errors-passed-not-created_one": "{{count}} error, {{passed}} passed. Rollout was not created automatically.",
+        "errors-passed-not-created_other": "{{count}} errors, {{passed}} passed. Rollout was not created automatically.",
+        "gate-approval": "Issue approval",
+        "gate-no-failed-checks": "No failed plan checks",
+        "gates-blocked": "Required project gates are not met — deployment is blocked.",
+        "n-checks-failed_one": "{{count}} check failed",
+        "n-checks-failed_other": "{{count}} checks failed",
+        "n-checks-passed_one": "{{count}} check passed",
+        "n-checks-passed_other": "{{count}} checks passed",
+        "waiting-on-review": "Waiting on review"
+      },
+      "rejection": {
+        "guidance-prefix": "Update your changes to address the feedback, or",
+        "guidance-suffix": "without changes",
+        "re-request-review": "re-request review",
+        "title": "Rejected by {{user}}"
+      }
+    },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
     "select-targets": "Select Targets",
@@ -1547,8 +1587,7 @@
       "title": "Targets",
       "view-all": "View all ({{count}})"
     },
-    "title-required": "Title is required",
-    "view-discussion": "View discussion"
+    "title-required": "Title is required"
   },
   "plugin": {
     "ai": {
@@ -1936,7 +1975,6 @@
     }
   },
   "rollout": {
-    "bypass-stage-requirements": "Bypass warnings",
     "no-stages": "No stages available",
     "no-tasks-created": "No tasks created yet",
     "pending-tasks-preview": {

@@ -288,7 +288,6 @@
     "discard-changes": "Hủy thay đổi",
     "discord": "Discord",
     "dismiss": "Loại bỏ",
-    "done": "Hoàn tất",
     "download": "Tải xuống",
     "draft": "Bản nháp",
     "duplicate": "Nhân bản",
@@ -1303,7 +1302,6 @@
       },
       "write": "Viết"
     },
-    "create-rollout": "Tạo rollout",
     "data-export": {
       "download-tooltip": "Có sẵn trong 24 giờ",
       "file-expired": "Tệp đã hết hạn",
@@ -1491,19 +1489,8 @@
     },
     "phase": {
       "create-rollout-action": "Tạo rollout thủ công",
-      "deploy-approval-must-complete": "Luồng phê duyệt phải hoàn tất.",
-      "deploy-approval-optional": "Có thể bỏ qua luồng phê duyệt theo cấu hình dự án hiện tại.",
-      "deploy-approval-pending": "Hoàn tất luồng phê duyệt trước khi rollout có thể tiếp tục tự động.",
-      "deploy-approval-ready": "Phê duyệt cho kế hoạch này đã hoàn tất.",
-      "deploy-checks-blocked": "Các kiểm tra lỗi đang chặn việc tạo rollout tự động.",
-      "deploy-checks-must-pass": "Các kiểm tra phải đạt.",
-      "deploy-checks-optional": "Các kiểm tra lỗi sẽ không chặn rollout thủ công trong dự án này.",
-      "deploy-checks-ready": "Các kiểm tra đã sẵn sàng để tạo rollout tự động.",
-      "deploy-checks-running": "Hãy chờ các kiểm tra đang chạy hoàn tất trước khi rollout tự động có thể tiếp tục.",
       "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
       "deploy-description-gitops": "Kế hoạch này đã sẵn sàng để triển khai. Tạo một rollout để triển khai bản phát hành được liên kết.",
-      "deploy-manual-create-description": "Dựa trên cài đặt dự án hiện tại, bạn cũng có thể tạo rollout thủ công.",
-      "deploy-manual-create-description-readonly": "Người dùng có quyền Create Rollout có thể tạo rollout thủ công.",
       "hide-details": "Ẩn chi tiết",
       "review-description": "Gửi để xem xét để tiếp tục",
       "show-details": "Hiển thị chi tiết"
@@ -1513,6 +1500,59 @@
       "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu sao lưu trước: {{databases}}"
     },
     "ready-for-review": "Sẵn sàng để xem xét",
+    "review": {
+      "action": "Xem xét",
+      "activity": {
+        "add-a-comment": "Thêm bình luận...",
+        "created-this-plan": "đã tạo kế hoạch này",
+        "marked-ready-for-review": "đã đánh dấu kế hoạch này sẵn sàng xét duyệt",
+        "n-hidden-events_one": "{{count}} sự kiện ẩn",
+        "n-hidden-events_other": "{{count}} sự kiện ẩn",
+        "self": "Hoạt động",
+        "show-all": "Hiển thị tất cả"
+      },
+      "approval-flow": {
+        "approved-by": "Được phê duyệt bởi {{user}}",
+        "current": "Hiện tại",
+        "n-approved": "{{n}} đã phê duyệt",
+        "n-pending": "{{n}} đang chờ",
+        "n-reviewers_one": "{{count}} người xét duyệt",
+        "n-reviewers_other": "{{count}} người xét duyệt",
+        "rejected-by": "Bị từ chối bởi {{user}}"
+      },
+      "comment-required-to-reject": "Cần có bình luận để từ chối",
+      "footer": {
+        "all-gates-passed": "Đã đạt mọi điều kiện",
+        "approved-but-checks-failed": "Xét duyệt đã được phê duyệt, nhưng kiểm tra kế hoạch thất bại",
+        "auto-rollout-after-approval": "bản triển khai được tạo tự động sau khi phê duyệt",
+        "blocked-by-rejection": "Bị chặn bởi xét duyệt đã từ chối — hãy xử lý phản hồi ở trên để tiếp tục",
+        "bypass-and-deploy": "Bỏ qua và triển khai",
+        "confirm-acknowledge": "Bỏ qua",
+        "confirm-bypass-title": "Thao tác này sẽ bỏ qua:",
+        "confirm-checks-failed_one": "{{count}} kiểm tra kế hoạch thất bại",
+        "confirm-checks-failed_other": "{{count}} kiểm tra kế hoạch thất bại",
+        "confirm-checks-running": "Kiểm tra kế hoạch đang chạy",
+        "confirm-review-not-approved": "Đánh giá chưa được phê duyệt",
+        "confirm-review-rejected": "Đánh giá bị từ chối",
+        "creating-rollout-automatically": "đang tự động tạo bản triển khai...",
+        "errors-passed-not-created_one": "{{count}} lỗi, {{passed}} đạt. Bản triển khai không được tạo tự động.",
+        "errors-passed-not-created_other": "{{count}} lỗi, {{passed}} đạt. Bản triển khai không được tạo tự động.",
+        "gate-approval": "Phê duyệt vấn đề",
+        "gate-no-failed-checks": "Không có kiểm tra kế hoạch thất bại",
+        "gates-blocked": "Các cổng bắt buộc của dự án chưa được đáp ứng — việc triển khai bị chặn.",
+        "n-checks-failed_one": "{{count}} kiểm tra thất bại",
+        "n-checks-failed_other": "{{count}} kiểm tra thất bại",
+        "n-checks-passed_one": "{{count}} kiểm tra đạt",
+        "n-checks-passed_other": "{{count}} kiểm tra đạt",
+        "waiting-on-review": "Đang chờ xét duyệt"
+      },
+      "rejection": {
+        "guidance-prefix": "Cập nhật thay đổi để xử lý phản hồi, hoặc",
+        "guidance-suffix": "mà không thay đổi",
+        "re-request-review": "yêu cầu xét duyệt lại",
+        "title": "Bị {{user}} từ chối"
+      }
+    },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
     "select-targets": "Chọn mục tiêu",
@@ -1547,8 +1587,7 @@
       "title": "Mục tiêu",
       "view-all": "Xem tất cả ({{count}})"
     },
-    "title-required": "Tiêu đề là bắt buộc",
-    "view-discussion": "Xem thảo luận"
+    "title-required": "Tiêu đề là bắt buộc"
   },
   "plugin": {
     "ai": {
@@ -1936,7 +1975,6 @@
     }
   },
   "rollout": {
-    "bypass-stage-requirements": "Bỏ qua cảnh báo",
     "no-stages": "Không có giai đoạn nào",
     "no-tasks-created": "Chưa có tác vụ nào được tạo",
     "pending-tasks-preview": {

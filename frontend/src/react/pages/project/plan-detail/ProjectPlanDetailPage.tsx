@@ -23,10 +23,10 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel";
-import { PlanDetailReviewApprovalFlow } from "./components/PlanDetailApprovalFlow";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
+import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { INLINE_TASK_PANEL_BREAKPOINT_PX } from "./shell/constants";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -532,11 +532,7 @@ function ReviewBranch() {
     );
   }
 
-  return (
-    <div className="flex flex-col">
-      <PlanDetailReviewApprovalFlow />
-    </div>
-  );
+  return <PlanReviewSection />;
 }
 
 function DesktopColumn({
