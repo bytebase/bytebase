@@ -18,10 +18,6 @@ import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
-import {
-  SQLEditorThemeScope,
-  useSQLEditorTheme,
-} from "@/react/components/sql-editor/theme/SQLEditorThemeScope";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
@@ -137,11 +133,14 @@ function RequestRoleForm({
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  // Re-theme the chrome when hosted in the SQL Editor (RequestDrawerHost),
-  // whose Sheet portals outside the chrome DOM subtree. Outside the SQL
-  // Editor (e.g. MembersPage) the context default resolves to the light
-  // preset, leaving the appearance unchanged.
-  const theme = useSQLEditorTheme();
+  // No SQL-Editor theme scope here: this sheet is shared (MembersPage,
+  // ComponentPermissionGuard) AND hosted in the SQL Editor (RequestDrawerHost).
+  // Its Sheet portals into the overlay root, which `useSQLEditorOverlayTheme`
+  // already themes with the *active* theme (the dark admin fallback) while the
+  // SQL Editor is mounted — so it inherits the correct theme there, and `:root`
+  // (light) elsewhere. A nested scope keyed off the selected theme would instead
+  // override admin's dark overlay back to light, and using the active theme
+  // directly would leak the SQL-Editor theme onto MembersPage.
   const [role, setRole] = useState(initialRole);
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<
@@ -438,7 +437,7 @@ function RequestRoleForm({
     project.issueLabels.length > 0 || project.forceIssueLabels;
 
   return (
-    <SQLEditorThemeScope theme={theme} asContents>
+    <>
       <SheetHeader>
         <SheetTitle>{t("issue.title.request-role")}</SheetTitle>
       </SheetHeader>
@@ -618,6 +617,6 @@ function RequestRoleForm({
           {t("common.submit")}
         </Button>
       </SheetFooter>
-    </SQLEditorThemeScope>
+    </>
   );
 }

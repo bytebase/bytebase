@@ -384,6 +384,21 @@ default (light) tokens. Visual tests (§ Testing) enumerate covered vs deferred 
 (If app-scope chrome lands later, the whole portal problem disappears: tokens applied at
 app root cascade into the shared overlay root automatically.)
 
+> **As shipped — superseded by the overlay-root approach.** Rather than wrapping each
+> portal in its own nested scope, `useSQLEditorOverlayTheme` themes the shared overlay
+> *layer root* once with the **active** theme (so it also covers the Base-UI-internal
+> popups that couldn't be re-scoped individually — they're no longer a follow-up). Two
+> consequences for the surfaces above:
+> - **`RequestRoleSheet` uses NO nested scope.** It's shared with non-SQL-Editor pages
+>   (`MembersPage`, `ComponentPermissionGuard`), so a scope keyed off the selected theme
+>   would force light over a dark admin drawer, and reading the active theme directly
+>   would leak the SQL-Editor theme onto those pages. It simply inherits the overlay
+>   root: active inside the editor, `:root` (light) outside.
+> - **`AccessGrantRequestDrawer` keeps an explicit nested scope + inline `sheetStyle`,
+>   both keyed off the *active* theme** (it's SQL-Editor-only, so that's safe and also
+>   themes its embedded Monaco). Its Monaco additionally opts into the transparent-canvas
+>   rule via the `sqleditor--monaco-transparent` marker class.
+
 **Nested admin scope.** Wrap `<TerminalPanel>`'s root div (`TerminalPanel.tsx:206`) in a
 nested `SQLEditorThemeScope` whose theme is the **resolved admin theme**:
 
