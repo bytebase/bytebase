@@ -1,8 +1,61 @@
 # SQL Editor Theme Pattern — Design
 
 **Date:** 2026-06-09
-**Status:** Approved design, pending spec review
+**Status:** Implemented — the sections below are the original design; the box
+immediately below records what actually shipped and where it diverged.
 **Scope:** SQL Editor only (UI chrome + Monaco editor surface + result views)
+
+## Implementation notes — as shipped (supersedes design details below)
+
+The data-driven model, the `SQLEditorThemeScope`, the workspace-scoped localStorage
+preference, and the `ThemeSelect` toolbar switcher all landed as designed. The
+following diverged during implementation (driven by how the codingame VSCode Monaco
+runtime and the real DOM behave):
+
+- **Catalog reduced to two themes: `light` + `dark`.** Solarized×2, Monokai, and Nord
+  were dropped — two polished themes beat six half-finished ones. `syntax` is therefore
+  unused in practice: both presets omit it and inherit `vs`/`vs-dark` verbatim (the
+  `SyntaxPalette` machinery stays for the documented custom-theme future).
+- **Monaco theming is per-editor + a *change-only* controller, not a mount-time global
+  `setTheme`.** Calling `monaco.editor.setTheme` while an editor is still constructing
+  races the codingame theme service and throws → the editor falls back to a read-only
+  `<pre>`. So: each SQL-Editor editor passes `options.theme` (themes at construction),
+  and `useMonacoThemeController` re-applies the global theme **only on a genuine theme
+  change** (StrictMode-safe via a prev-value ref), never on mount.
+- **`getResolvedTheme` falls back to each theme's *base* (`vs` / `vs-dark`).** Custom
+  `bb-*` themes do not register in this runtime (the service silently swallows
+  `defineTheme`), so a dark theme used to fall back to the light `vs` — leaving the
+  editor light under Dark. `core.ts` records each preset's `monacoBase` and falls back
+  to it.
+- **Chrome theming was a *transparent-container* problem, not hardcoded colors.** The
+  big panels already use semantic tokens; they're just transparent / un-classed, so on
+  the white default they looked fine and under Dark showed white. Fixes: `bg-background`
+  + `text-main` on the `sqleditor--wrapper` (themed backdrop + default text), and the
+  global default border now uses `rgb(var(--color-block-border))` (identical to the old
+  gray-200 in light, themed inside a scope). The active-statement decoration was
+  tokenized (`bg-control-bg-hover`). Only a handful of genuinely-hardcoded colors needed
+  migrating.
+- **Portaled overlays are themed at the overlay *layer root*, not per component.**
+  Dialogs (Save Sheet, …), the access drawer, and Base-UI Select/Popover/Tooltip popups
+  all portal to the app-global overlay root, outside the scope's DOM — CSS vars can't
+  cascade. `useSQLEditorOverlayTheme` sets the theme's vars + a default text color on
+  `getLayerRoot("overlay")` while the SQL Editor is mounted (reverted on unmount), which
+  themes **all** of them from one place. (In light the vars equal `:root`, so it's a
+  no-op outside a dark theme.)
+- **Admin (terminal) nested scope, drawer chrome, and the `dark`-prop removal** landed as
+  designed.
+- **`isDark` is fully deprecated — no light/dark branching in components.** The original
+  design exposed `SQLEditorTheme.isDark` "for the few spots that need a boolean," but in
+  practice components used `isDark ? colorA : colorB`, which bakes colors into the
+  component and can't extend to a 3rd/custom theme. So: the property is **removed** from
+  `SQLEditorTheme`; all `isDark ? colorA : colorB` became plain semantic-token classes
+  (each theme defines the value); `resolveAdminTheme` keys off `monacoBase === "vs-dark"`;
+  and the one genuine terminal-vs-worksheet *layout* difference uses an explicit `compact`
+  prop (`TerminalPanel` → `ResultView` → `SingleResultView`), not the theme. Net: colors
+  are 100% token-driven and a custom theme is just another token map.
+
+Net new files vs. the design: `theme/useSQLEditorOverlayTheme.ts`. The `getResolvedTheme`
+base-fallback is unit-tested in `monaco/core.test.ts`.
 
 ## Goal
 
@@ -13,20 +66,21 @@ named pre-defined themes ship alongside it. The model is shaped so that user-def
 **custom themes** can be added later with no re-architecture — a custom theme is just
 another theme object.
 
-This phase ships a **catalog of six pre-defined preset themes** (below), each with its
+> **Shipped reality:** the catalog was reduced to **two** themes (`light` + `dark`)
+> before merge, and the `isDark` property was removed entirely — see
+> [Implementation notes — as shipped](#implementation-notes--as-shipped) above, which
+> is authoritative wherever it conflicts with the original design below.
+
+This phase ships a **catalog of pre-defined preset themes** (below), each with its
 authentic Monaco syntax palette. Custom-theme editing UI, a "System" option, and
 backend persistence are explicitly out of scope (see [Future work](#future-work)).
 
-### Theme catalog (v1)
+### Theme catalog
 
-| id | name | isDark | monacoBase | notes |
-| --- | --- | --- | --- | --- |
-| `light` | Default Light | false | `vs` | today's `:root`/`bb` look, verbatim — the default |
-| `dark` | Default Dark | true | `vs-dark` | Bytebase dark, derived from existing `dark:`/`bb-dark` |
-| `solarized-light` | Solarized Light | false | `vs` | Ethan Schoonover palette |
-| `solarized-dark` | Solarized Dark | true | `vs-dark` | Ethan Schoonover palette |
-| `monokai` | Monokai | true | `vs-dark` | vivid green/pink/orange on near-black |
-| `nord` | Nord | true | `vs-dark` | arctic blue-gray |
+| id | name | monacoBase | notes |
+| --- | --- | --- | --- |
+| `light` | Default Light | `vs` | today's `:root`/`bb` look, verbatim — the default |
+| `dark` | Default Dark | `vs-dark` | Bytebase dark, inherits `vs-dark` chrome + tokens |
 
 ## Locked decisions
 
@@ -34,12 +88,12 @@ backend persistence are explicitly out of scope (see [Future work](#future-work)
 | --- | --- |
 | End goal | Build the foundation for runtime-switchable themes |
 | Scope | SQL Editor only — chrome + Monaco + result views |
-| Granularity | Preset themes only — 6 pre-defined themes in v1 (catalog above) |
+| Granularity | Preset themes only — `light` + `dark` shipped (catalog above) |
 | Syntax fidelity | Each named theme ships its full, authentic Monaco syntax palette |
 | Token scoping | Scoped override — re-declare `--color-*` on the SQL Editor container |
 | Persistence | localStorage, client-only, workspace-scoped |
 | Theme representation | Approach A — theme is a plain JS token map; both layers derive from it |
-| Admin (terminal) mode | A **nested theme scope**; effective theme = `selected.isDark ? selected : dark` |
+| Admin (terminal) mode | A **nested theme scope**; effective theme = `selected.monacoBase === "vs-dark" ? selected : dark` |
 
 ### Why Approach A (data-driven) over a static CSS-class model
 
@@ -103,13 +157,15 @@ type RGB = string;   // "r g b" for chrome tokens, e.g. "82 82 91"
 type Hex = string;   // "#rrggbb" for Monaco (Monaco consumes hex)
 
 interface SQLEditorTheme {
-  id: string;            // "light" | "monokai" | … (stable, persisted)
+  id: string;            // "light" | "dark" | … (stable, persisted)
   name: string;          // i18n key for the display label
-  isDark: boolean;       // for the few spots that need a boolean (Monaco base, 3rd-party widgets)
+  // NOTE: `isDark` was REMOVED before merge (see Implementation notes). Components
+  // never branch on a boolean; light/dark differences are encoded in `tokens`, and
+  // the one place that needs the Monaco family reads `monacoBase` directly.
   monacoBase: "vs" | "vs-dark";
   tokens: Record<SQLEditorThemeToken, RGB>;   // chrome layer
-  editor: EditorChromeColors;                 // Monaco surface (bg, gutter, selection, cursor, lineHighlight, …)
-  syntax: SyntaxPalette;                       // Monaco token colors (keyword, string, comment, number, type, …)
+  editor: Partial<EditorChromeColors>;        // Monaco surface (bg, gutter, selection, cursor, lineHighlight, …)
+  syntax?: SyntaxPalette;                      // Monaco token colors; omitted → inherit monacoBase verbatim
 }
 ```
 
@@ -175,7 +231,7 @@ function buildMonacoTheme(theme: SQLEditorTheme): monaco.editor.IStandaloneTheme
 function monacoThemeName(theme: SQLEditorTheme): string;          // `bb-${theme.id}`
 
 // ADMIN: foreground-panel resolution for the nested terminal scope + Monaco controller.
-function resolveAdminTheme(selected: SQLEditorTheme): SQLEditorTheme; // selected.isDark ? selected : presets.dark
+function resolveAdminTheme(selected: SQLEditorTheme): SQLEditorTheme; // selected.monacoBase === "vs-dark" ? selected : presets.dark
 
 // VALIDATION: throws if any chrome token / editor key / syntax key is missing.
 //   Unit-tested across every entry in PRESETS so no theme can ship with holes.
@@ -252,8 +308,8 @@ const useSQLEditorTheme = () => useContext(SQLEditorThemeContext);
 ```
 
 A `<SQLEditorThemeScope theme={…}>` component does two things for whatever it wraps:
-1. provides the theme via context (so descendants can read `theme.isDark` / the Monaco
-   theme name), and
+1. provides the theme via context (so descendants can read `theme.monacoBase` / the
+   Monaco theme name), and
 2. applies the theme's `tokens` as inline CSS custom properties on its container
    element. Because every SQL Editor component uses the semantic Tailwind classes,
    the subtree re-themes via CSS cascade.
@@ -305,7 +361,7 @@ app root cascade into the shared overlay root automatically.)
 nested `SQLEditorThemeScope` whose theme is the **resolved admin theme**:
 
 ```ts
-resolveAdminTheme(selected) = selected.isDark ? selected : presets.dark;
+resolveAdminTheme(selected) = selected.monacoBase === "vs-dark" ? selected : presets.dark;
 ```
 
 Its inline CSS-var overrides win over the parent scope for the terminal subtree (CSS
@@ -313,12 +369,13 @@ cascade), so the terminal + its `ResultView`s render dark (or in the selected da
 theme), while the surrounding chrome keeps the selected theme. Worksheet mode renders
 under the root scope only — no nesting.
 
-This is the **replacement for the `dark` boolean prop**: `ResultView` (and anything
-else that needs a light/dark signal) reads `useSQLEditorTheme().isDark` instead of a
-prop, and its styling comes from the scope's tokens rather than `dark:` variants. The
-`dark` prop and the `dark && "dark bg-dark-bg"` class at `ResultView.tsx:237` are
-removed; `TerminalPanel`'s hardcoded `bg-dark-bg` becomes the token-driven
-`bg-background` (the nested dark theme sets `--color-background` to the dark value).
+This is the **replacement for the `dark` boolean prop**: `ResultView` reads nothing —
+its styling comes entirely from the scope's tokens rather than `dark:` variants or a
+boolean. (As shipped, `ResultView` keeps only a `compact` prop, which is a terminal-vs-
+worksheet *layout* difference, not a theme one.) The `dark` prop and the
+`dark && "dark bg-dark-bg"` class at `ResultView.tsx:237` are removed; `TerminalPanel`'s
+hardcoded `bg-dark-bg` becomes the token-driven `bg-background` (the nested dark theme
+sets `--color-background` to the dark value).
 
 **Monaco.** In `monaco/core.ts`, register one Monaco theme **per preset** via
 `buildMonacoTheme(preset)`, which maps the preset's `editor` colors → Monaco `colors{}`
@@ -388,9 +445,9 @@ and must be migrated. Two rules:
 1. Replace raw palette classes / inline colors with the semantic token equivalent.
 2. **Delete `dark:`-prefixed variants** — dark theming now flows through token
    *values* supplied by the active (root or nested) theme scope, not a global `.dark`
-   class. The `dark` boolean prop threaded through `ResultView` is removed; consumers
-   read `useSQLEditorTheme().isDark` where a boolean is genuinely needed (e.g. Monaco
-   theme, third-party widgets). In admin mode the result grid renders dark because it
+   class. The `dark` boolean prop threaded through `ResultView` is removed; the rare
+   consumer that needs the Monaco family reads `useSQLEditorTheme().monacoBase`, but no
+   component branches colors on a boolean. In admin mode the result grid renders dark because it
    sits inside the nested admin scope, not because of `dark:` classes.
 
 **Result views (currently `dark:`-driven):**
@@ -468,8 +525,8 @@ localStorage ──load──▶ useSQLEditorEditorStore.themeId ──set by─
  (selected tokens)    theme=resolveAdminTheme(sel) · context read via useSQLEditorTheme()
                       · --color-* on TerminalPanel   (portals preserve context, not CSS)
                         root (overrides parent)     · re-applies --color-* on portaled DOM
-                      · ResultView reads isDark       (drawer Sheet chrome, FAB, sidebar)
-                        from context
+                      · ResultView is token-driven    (drawer Sheet chrome, FAB, sidebar)
+                        (compact prop = layout only)
 ```
 
 MONACO (single global, driven by foreground panel — cannot be per-scope):
