@@ -391,3 +391,118 @@ test.describe("Schema Diagram menuitem opens the diagram canvas", () => {
     await expect(tableCards.first()).toBeVisible({ timeout: 15_000 });
   });
 });
+
+test.describe("Schema tree folder labels render on a single line (BYT-9602)", () => {
+  // BYT-9602 (FIXED, #20446): the SchemaPane tree had two text branches in
+  // CommonNode.tsx — the search-highlight branch (HighlightLabelText) carried
+  // `flex-1 truncate pl-[2px] min-w-16`, but the plain-text branch (TextNode
+  // folder rows like Tables / Views / Indexes / Foreign keys) was a bare
+  // `<span className="pl-[2px]">{text}</span>` with NO truncate. At the default
+  // pane width and deep indent, two-word labels wrapped onto two lines inside
+  // the fixed-height virtualized rows, so the list looked "crunched" with
+  // overlapping text. The fix gave the plain-text branch the same
+  // `flex-1 truncate ... min-w-16` contract.
+  //
+  // Oracle: every folder-row label is single-line — `white-space: nowrap`
+  // (the `truncate` contract) AND a label box no taller than one line. The
+  // CSS-contract half flips exactly with the fix (pre-fix the plain branch had
+  // `white-space: normal`); the geometry half is the user-visible "doesn't
+  // wrap" effect (M: a relational single-line bound, not an absolute pixel).
+
+  test("expanded folder-row labels do not wrap to a second line", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await page.waitForTimeout(800);
+
+    await sqlEditor.gutterSchemaTab.click();
+    await page.waitForTimeout(800);
+
+    // Expand the public schema so its folder rows (Tables / Views / …) — the
+    // plain-text TextNode labels the bug affected — become visible.
+    const publicRow = page
+      .locator('.bb-schema-tree-row[data-node-meta-type="schema"]')
+      .filter({ hasText: "public" })
+      .first();
+    await expect(publicRow).toBeVisible({ timeout: 10_000 });
+    const tablesFolder = page
+      .locator(".bb-schema-tree-row")
+      .filter({ hasText: /^Tables$/ })
+      .first();
+    if (!(await tablesFolder.isVisible().catch(() => false))) {
+      await publicRow.click();
+    }
+    await expect(tablesFolder).toBeVisible({ timeout: 5000 });
+
+    // Inspect the FOLDER-row labels the fix touches — the plain-text TextNode
+    // rows whose label is a known grouping-folder name (Tables / Views /
+    // Functions / Indexes / Foreign keys / …). We deliberately exclude
+    // placeholder rows (e.g. an italic "<Empty>" state) which are a different
+    // node type and legitimately not truncate-styled.
+    const FOLDER_NAMES = new Set([
+      "Tables",
+      "Views",
+      "Functions",
+      "Procedures",
+      "Sequences",
+      "External Tables",
+      "Indexes",
+      "Foreign keys",
+      "Triggers",
+      "Partitions",
+      "Columns",
+      "Dependencies",
+      "Packages",
+    ]);
+    const labels = await page.evaluate((folderNames: string[]) => {
+      const names = new Set(folderNames);
+      const rows = Array.from(document.querySelectorAll(".bb-schema-tree-row"));
+      const out: Array<{
+        text: string;
+        whiteSpace: string;
+        labelHeight: number;
+      }> = [];
+      for (const row of rows) {
+        for (const span of Array.from(row.querySelectorAll("span"))) {
+          const direct = Array.from(span.childNodes)
+            .filter((n) => n.nodeType === Node.TEXT_NODE)
+            .map((n) => n.textContent ?? "")
+            .join("")
+            .trim();
+          if (!names.has(direct)) continue;
+          const cs = getComputedStyle(span);
+          out.push({
+            text: direct,
+            whiteSpace: cs.whiteSpace,
+            labelHeight: Math.round(span.getBoundingClientRect().height),
+          });
+        }
+      }
+      return out;
+    }, [...FOLDER_NAMES]);
+
+    expect(
+      labels.length,
+      "expanding public must reveal at least one grouping-folder label (e.g. Tables)",
+    ).toBeGreaterThan(0);
+
+    // CSS-contract: the fix applies `truncate` (white-space: nowrap) to the
+    // plain-text branch. Every folder label must be nowrap (pre-fix: normal → wrap).
+    const wrapping = labels.filter((l) => l.whiteSpace === "normal");
+    expect(
+      wrapping,
+      `every schema-tree folder label must be single-line (white-space: nowrap); ` +
+        `these still wrap: ${JSON.stringify(wrapping)}`,
+    ).toEqual([]);
+
+    // User-visible: no folder label is taller than a single line (~20px;
+    // 28px allows padding while still failing a 2-line ~40px wrap).
+    const tooTall = labels.filter((l) => l.labelHeight > 28);
+    expect(
+      tooTall,
+      `no schema-tree folder label may wrap to a second line; these are multi-line: ` +
+        JSON.stringify(tooTall),
+    ).toEqual([]);
+  });
+});

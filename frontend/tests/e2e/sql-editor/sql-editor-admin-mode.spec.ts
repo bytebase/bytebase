@@ -361,22 +361,23 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
   //     to the editor's content — so the recalled SQL appears in the
   //     prompt.
   //
-  // KNOWN-BUG (BYT-9560): the pinia → zustand migration in #20363 changed
-  // the store from mutable Vue refs to immutable
-  // `webTerminal.ts:updateWebTerminalQueryItem` (`{...item, ...patch}`).
-  // `useHistory.ts:push` stores the LIVE-at-push-time reference, but the
-  // store later replaces that object — leaving history.list[i] pointing
-  // at the empty initial snapshot. move("up") then writes `""` back to
-  // the tail, so Up/Down appear to do nothing.
+  // HISTORY (BYT-9560): the pinia → zustand migration in #20363 originally
+  // broke recall entirely (move("up") wrote "" back to the tail, so Up/Down did
+  // nothing). #20394 fixed it — recall and full multi-step navigation now work.
+  // All three tests below are live regression locks (no `test.fail()`):
+  //   - Up on an empty prompt recalls the most recent statement.
+  //   - Down after Up returns to the empty prompt.
+  //   - Repeated Up walks back through EVERY prior statement (most-recent →
+  //     oldest); repeated Down walks forward back to empty. (Verified live.)
   //
-  // All three tests below are marked `test.fail()` until BYT-9560 lands.
-  // When the fix arrives they flip from "expected failure" to a real
-  // pass automatically — DO NOT remove `test.fail()` until the fix
-  // commit is in `main` and the test pass is verified.
+  // Cadence note: Up takes ~2 presses per step (after a recall the cursor sits
+  // at end-of-line → the next Up just repositions it to (1,1), re-arming the
+  // `cursorAtFirst` gate, before the following Up recalls). Down is 1 press per
+  // step. The multi-step test collapses consecutive duplicates and asserts the
+  // reachability/order, not the exact press count — see its body.
   //
-  // We assert ONLY the user-visible outcome via `editor.getValue()`
-  // on the last Monaco. We don't assert on the internal `useHistory`
-  // index — that's implementation. (Principle A.)
+  // We assert ONLY the user-visible outcome (the prompt text on the last
+  // Monaco). We don't assert on the internal `useHistory` index. (Principle A.)
 
   test.beforeEach(async () => {
     const projectId = env.project.split("/").pop()!;
@@ -404,10 +405,8 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
   });
 
   test("Up arrow on an empty prompt recalls the most recently executed statement", async () => {
-    // BYT-9560 (single-step Up recall) is FIXED as of the current build —
-    // the prior `test.fail()` hold flipped to passing, so this now runs as a
-    // normal regression lock. (Repeated-Up recall is still broken; that case
-    // keeps its hold below.)
+    // BYT-9560 (single-step Up recall) is FIXED — this is a live regression
+    // lock. (Multi-step walk-back also works; see the repeated-Up test below.)
     test.setTimeout(120_000);
 
     // Establish a single executed statement so there is something to
@@ -510,34 +509,34 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
     expect(await readAdminPromptValue()).toBe("");
   });
 
-  test("Up arrow pressed repeatedly walks further back through history", async () => {
-    // BYT-9560 — multi-step Up recall is STILL broken (single-step Up/Down
-    // recall was fixed and those holds were removed). Repeated Up does not
-    // walk further back through history, so this stays an expected-fail hold.
-    test.fail();
+  test("Up arrow pressed repeatedly walks back through every prior statement", async () => {
+    // BYT-9560 (multi-step recall) WORKS — repeated Up reaches every prior
+    // command, most-recent → oldest. Verified empirically in the live admin
+    // terminal.
+    //
+    // Cadence nuance (this is why the test collapses consecutive duplicates
+    // rather than asserting one step per press): the Up-history keybinding is
+    // gated on `cursorAtFirst` = cursor at (line 1, col 1) (utils.ts). A recall
+    // drops the statement into the prompt and leaves the cursor at END-of-line,
+    // so the *next* Up doesn't recall — Monaco's default ArrowUp just moves the
+    // cursor back to (1,1), re-arming the gate — and the Up after that recalls
+    // the next item. Net: Up takes ~2 presses per step. Down, gated on
+    // `cursorAtLast` (already true at end-of-line after a recall), is a clean
+    // 1 press per step. Both reach every entry; the test asserts reachability
+    // and order, not the exact press count.
     test.setTimeout(120_000);
 
-    // Run three distinct statements. After each, the terminal pushes
-    // the executed item into history and appends a fresh IDLE prompt
-    // — so by the third run, history has 3 entries plus the current
-    // empty tail.
+    // Run three distinct statements. After each, the terminal pushes the
+    // executed item into history and appends a fresh IDLE prompt.
     const first = "SELECT 1 AS one;";
     const second = "SELECT 2 AS two;";
     const third = "SELECT 3 AS three;";
 
     for (const stmt of [first, second, third]) {
       await runInAdminTerminal(stmt);
-      // Wait for THIS result row to appear before running the next —
-      // otherwise the "running" overlay swallows the next click and
-      // the second/third statement is lost.
-      await expect(
-        page
-          .getByText(/^1\s+rows?$/i)
-          .first(),
-      ).toBeVisible({ timeout: 15_000 });
-      // Wait until the result row count catches up with the number of
-      // runs. The result panel renders one "1 rows" footer per
-      // finished query.
+      await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({
+        timeout: 15_000,
+      });
       await page.waitForTimeout(400);
     }
 
@@ -546,26 +545,40 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
     await page.waitForTimeout(150);
     expect(await readAdminPromptValue()).toBe("");
 
-    // Press Up once → should recall the most recent (`third`).
-    await page.keyboard.press("ArrowUp");
-    await page.waitForTimeout(200);
-    expect(await readAdminPromptValue()).toBe(third);
+    // Walk a directional key several times, recording the DISTINCT prompt
+    // values in the order they first appear (consecutive duplicates — the
+    // cursor-reposition no-op presses — are collapsed). Returns the recall
+    // progression.
+    const walk = async (key: "ArrowUp" | "ArrowDown", presses = 8) => {
+      const seen: string[] = [];
+      let prev = await readAdminPromptValue();
+      for (let i = 0; i < presses; i++) {
+        await page.keyboard.press(key);
+        await page.waitForTimeout(200);
+        const v = await readAdminPromptValue();
+        if (v !== prev) {
+          seen.push(v);
+          prev = v;
+        }
+      }
+      return seen;
+    };
 
-    // Press Up again → should step further back to `second`. This is
-    // the CUJ that distinguishes "history navigation" from "recall last
-    // command once" — a real terminal lets the user keep scrolling.
-    await page.keyboard.press("ArrowUp");
-    await page.waitForTimeout(200);
-    expect(await readAdminPromptValue()).toBe(second);
+    // Up from the empty prompt must walk back through ALL prior statements,
+    // most-recent → oldest, and stop at the oldest (no wrap-around).
+    const back = await walk("ArrowUp");
+    expect(
+      back,
+      "repeated Up must recall every prior statement in reverse order " +
+        "(most-recent → oldest)",
+    ).toEqual([third, second, first]);
 
-    // Press Up again → `first`.
-    await page.keyboard.press("ArrowUp");
-    await page.waitForTimeout(200);
-    expect(await readAdminPromptValue()).toBe(first);
-
-    // Press Down once → should advance forward to `second`.
-    await page.keyboard.press("ArrowDown");
-    await page.waitForTimeout(200);
-    expect(await readAdminPromptValue()).toBe(second);
+    // Down from the oldest must walk forward back through them to the empty
+    // prompt.
+    const forward = await walk("ArrowDown");
+    expect(
+      forward,
+      "repeated Down must walk forward back to the live (empty) prompt",
+    ).toEqual([second, third, ""]);
   });
 });

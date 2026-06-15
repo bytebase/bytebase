@@ -269,7 +269,8 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
     // drawer is opened from the generic "Request access" CTA (no pendingCreate).
     // Asserting unchecked — not just visible — catches a regression that
     // pre-checks either capability for a plain request. (The "Request export"
-    // entry point DOES pre-check both — covered in sql-editor-export.spec.ts.)
+    // entry point pre-checks ONLY Export, not Unmask, after BYT-9654/#20516 —
+    // covered in sql-editor-export.spec.ts.)
     const unmaskCheckbox = viewerPage.getByRole("checkbox", {
       name: "See unmasked sensitive data",
     });

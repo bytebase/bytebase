@@ -328,3 +328,110 @@ test.describe("Selecting a row paints visible feedback across the row", () => {
     ).toBeGreaterThan(paintedBefore!);
   });
 });
+
+test.describe("Result panel search with zero matches raises a no-result toast (BYT-9603)", () => {
+  // BYT-9603 (FIXED, #20478): typing a token that matches nothing in the
+  // result set used to give NO feedback — the user couldn't tell whether the
+  // search ran and found nothing or simply did nothing. The fix raises an INFO
+  // toast "No matching result found" (sql-editor.search-no-result) on the
+  // transition into the no-matches state (SingleResultView.tsx:392).
+  //
+  // The toast is gated on `searchActive && indexes.length === 0 &&
+  // !wasInNoResultsRef.current`, so it fires once on entering the empty state
+  // — exactly the user-visible signal that was missing before the fix.
+
+  test("typing a non-matching token surfaces the no-result toast; a matching token does not", async () => {
+    test.setTimeout(120_000);
+    await openFreshConnectedTab();
+
+    await sqlEditor.runPreparedQuery("SELECT 1 AS n;");
+    await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // The result toolbar's AdvancedSearch input has an empty placeholder, so
+    // anchor it inside the `.result-toolbar` container (SingleResultView.tsx).
+    const searchInput = page.locator(".result-toolbar input").first();
+    await expect(searchInput).toBeVisible({ timeout: 5000 });
+    await searchInput.click();
+    // pressSequentially mirrors a real user typing; the search query emit is
+    // debounced (~300ms) and the no-result effect runs off the resulting
+    // searchParams change.
+    await searchInput.pressSequentially("zzz_no_such_value", { delay: 20 });
+    await page.keyboard.press("Enter");
+
+    // Oracle: the INFO toast appears. It auto-dismisses (~6s), so assert
+    // promptly. This is the exact feedback BYT-9603 added.
+    await expect(
+      page.getByText("No matching result found").first(),
+    ).toBeVisible({ timeout: 5000 });
+
+    // Negative cell: clearing and typing a token that DOES match (the literal
+    // "1" is in the single result row) must NOT raise the toast. Wait for the
+    // prior toast to clear first so we don't read a stale one.
+    await expect(page.getByText("No matching result found")).toHaveCount(0, {
+      timeout: 8000,
+    });
+    await searchInput.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("Delete");
+    await searchInput.pressSequentially("1", { delay: 20 });
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(800);
+    await expect(page.getByText("No matching result found")).toHaveCount(0);
+  });
+});
+
+test.describe("Detail panel scrolls long content to the last line (BYT-9610)", () => {
+  // BYT-9610 (FIXED, #20461): the cell Detail drawer used `h-full` on its body
+  // wrapper, which is 100% of the Sheet popup even though SheetHeader already
+  // consumed ~57px at the top. The inner `flex-1 overflow-auto` scroll region
+  // therefore extended ~57px PAST the viewport bottom, so the last few lines of
+  // long content rendered off-screen and could never be scrolled into view.
+  //
+  // The fix (DetailPanel.tsx) switched the wrapper to `flex-1 min-h-0`, so the
+  // scroll region fits within the sheet and every line is reachable.
+
+  test("the Detail scroll region fits inside the viewport for long content", async () => {
+    test.setTimeout(120_000);
+    await openFreshConnectedTab();
+
+    // One row, one cell whose value is 300 newline-separated lines, with a
+    // unique marker on the FIRST and LAST lines — far taller than the panel's
+    // clamp, so the bottom marker sits well below the fold.
+    const TOP = "e2e9610top";
+    const BOTTOM = "e2e9610bottom";
+    await sqlEditor.runPreparedQuery(
+      `SELECT '${TOP}' || E'\\n' || string_agg('line-' || lpad(i::text, 4, '0'), E'\\n') || E'\\n${BOTTOM}' AS payload FROM generate_series(1, 300) i;`,
+    );
+    await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    const cell = page.locator('[data-row-index="0"] [data-col-index="1"]');
+    await expect(cell).toBeVisible({ timeout: 5000 });
+    await cell.click();
+
+    // Confirm the Detail panel opened: the value renders a SECOND time inside the
+    // panel (the top marker now appears in both the cell and the panel).
+    await expect(page.getByText(TOP).nth(1)).toBeVisible({ timeout: 10_000 });
+
+    // Bug-defining oracle (mirrors the BYT-9558 sheet-scroll lock): the LAST line
+    // of the value must be reachable by scrolling the panel. The panel's copy of
+    // the bottom marker is the last occurrence in the DOM (the Sheet portals to
+    // the end). Pre-fix the scroll region's bottom sat below the viewport, so the
+    // last lines could never be scrolled into view; post-fix the region fits and
+    // the bottom marker can be brought into the viewport.
+    const bottomInPanel = page.getByText(BOTTOM).last();
+    await bottomInPanel.scrollIntoViewIfNeeded();
+    await expect(
+      bottomInPanel,
+      "the last line of the Detail value must be reachable by scrolling the " +
+        "panel — pre-fix the scroll region overflowed the viewport bottom and " +
+        "the bottom lines were off-screen and unreachable",
+    ).toBeInViewport({ timeout: 5000 });
+
+    // Close the sheet so a sibling describe sharing the page starts clean.
+    await page.keyboard.press("Escape");
+  });
+});

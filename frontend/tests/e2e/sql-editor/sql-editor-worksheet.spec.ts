@@ -27,6 +27,239 @@ test.afterAll(async () => {
   await sharedContext?.close();
 });
 
+test.describe("Share popover copy-link button (BYT-9667)", () => {
+  // BYT-9667 (FIXED, #20541): the worksheet Share popover's URL copy icon looked
+  // inert — same flat grey background as the addon segments, no hover/click
+  // feedback (only a bottom toast). The comment thread added two contracts:
+  //   (a) the copy button must stay CLICKABLE for PRIVATE worksheets (an interim
+  //       change disabled it for private — Peter rejected that), and
+  //   (b) it should be disabled ONLY while the tab has unsaved changes.
+  // The fix converts it to the shared ghost Button (white bg, grey on hover via
+  // `enabled:hover:bg-control-bg-hover`) and gates disabled-ness purely on
+  // `tabStatus !== "CLEAN"` (SharePopoverBody.tsx) — never on share visibility.
+  //
+  // Note: the Share TRIGGER itself requires a CLEAN tab (EditorAction.tsx
+  // `allowShare`), so the only legitimate "disabled" path is a dirty tab, which
+  // disables the whole Share button (the copy button is then unreachable).
+
+  // This block needs clipboard permission, which the file's shared context
+  // lacks — use a dedicated context (same pattern as sql-editor-export.spec.ts).
+  let ctx9667: BrowserContext;
+  let page9667: Page;
+  let editor9667: SqlEditorPage;
+  const TITLE = `e2e-byt9667-${Date.now()}`;
+  let worksheet = "";
+
+  test.beforeAll(async ({ browser }) => {
+    // Created PRIVATE by default — exactly the regression cell.
+    worksheet = (
+      await env.api.createWorksheet(env.project, TITLE, env.database, "SELECT 1;")
+    ).name;
+    ctx9667 = await browser.newContext({
+      storageState: ".auth/state.json",
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    page9667 = await ctx9667.newPage();
+    editor9667 = new SqlEditorPage(page9667, env.baseURL);
+  });
+
+  test.afterAll(async () => {
+    if (worksheet) await env.api.deleteWorksheet(worksheet);
+    await ctx9667?.close();
+  });
+
+  test("copy button is enabled for a private worksheet, responds to hover, and copies the deep link", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    const sheetUuid = worksheet.split("/").pop()!;
+    await editor9667.gotoSheet(projectId, sheetUuid);
+    await page9667.waitForTimeout(1500);
+
+    // Tab must be CLEAN so the Share trigger is enabled.
+    await expect(editor9667.activeTab()).toContainText(TITLE, {
+      timeout: 10_000,
+    });
+
+    const shareButton = page9667.getByRole("button", {
+      name: "Share",
+      exact: true,
+    });
+    await expect(shareButton).toBeEnabled({ timeout: 10_000 });
+    await shareButton.click();
+
+    const copyBtn = page9667.locator("[data-copy-btn]");
+    await expect(copyBtn).toBeVisible({ timeout: 5000 });
+
+    // (a) Regression: the copy button stays clickable for a PRIVATE worksheet.
+    await expect(
+      copyBtn,
+      "the copy button must remain enabled for a private worksheet",
+    ).toBeEnabled();
+
+    // (b) Visual response: hovering changes the background (white → hover grey).
+    // Relational assertion (M) — don't pin an exact rgb, just require a change.
+    const bgBefore = await copyBtn.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    await copyBtn.hover();
+    await page9667.waitForTimeout(150);
+    const bgHover = await copyBtn.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    expect(
+      bgHover,
+      `the copy button must show a hover background change (was the headline ` +
+        `bug: static grey, no hover feedback). before=${bgBefore} hover=${bgHover}`,
+    ).not.toBe(bgBefore);
+
+    // (c) Clicking copies the worksheet deep link + raises the success toast.
+    await copyBtn.click();
+    await expect(
+      page9667.getByText("The URL is copied to your clipboard").first(),
+    ).toBeVisible({ timeout: 5000 });
+    const clipboard = await page9667.evaluate(() =>
+      navigator.clipboard.readText(),
+    );
+    expect(clipboard).toMatch(
+      new RegExp(`/sql-editor/projects/[^/]+/sheets/${sheetUuid}`),
+    );
+  });
+
+  test("the Share trigger is disabled while the tab has unsaved changes", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    const sheetUuid = worksheet.split("/").pop()!;
+    await editor9667.gotoSheet(projectId, sheetUuid);
+    await page9667.waitForTimeout(1500);
+    await expect(editor9667.activeTab()).toContainText(TITLE, {
+      timeout: 10_000,
+    });
+
+    // Clean → Share enabled.
+    const shareButton = page9667.getByRole("button", {
+      name: "Share",
+      exact: true,
+    });
+    await expect(shareButton).toBeEnabled({ timeout: 10_000 });
+
+    // Make the tab dirty by editing the statement.
+    await editor9667.codeEditor.click();
+    await page9667.waitForTimeout(150);
+    await page9667.keyboard.type(" -- dirty", { delay: 10 });
+    await page9667.waitForTimeout(300);
+    await expect(editor9667.activeTabStatus()).resolves.toBe("DIRTY");
+
+    // The only legitimate disable condition after the fix: a dirty tab disables
+    // the Share button entirely.
+    await expect(
+      shareButton,
+      "a dirty tab must disable the Share button (the only legitimate disable)",
+    ).toBeDisabled({ timeout: 5000 });
+  });
+});
+
+test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)", () => {
+  // BYT-9631 (FIXED, #20541): selecting multiple worksheets via Multi-select and
+  // clicking Delete showed the WRONG dialog — the single-folder "Non-empty
+  // folder" prompt ("Do you want to move all worksheets into the root folder or
+  // just delete them?") with a "Delete all files" / "Move to root folder"
+  // choice. For an explicit multi-selection that was confusing and offered a
+  // nonsensical "move to root folder" option. The fix routes multi-delete to a
+  // dedicated AlertDialog: "Delete selected items?" / "The selected worksheets
+  // and folders will be permanently deleted."
+
+  const STAMP = Date.now();
+  const TITLE_A = `e2e-multidel-a-${STAMP}`;
+  const TITLE_B = `e2e-multidel-b-${STAMP}`;
+  const TITLE_C = `e2e-multidel-c-${STAMP}`;
+  let wsA = "";
+  let wsB = "";
+  let wsC = "";
+
+  test.beforeAll(async () => {
+    wsA = (await env.api.createWorksheet(env.project, TITLE_A, env.database, "SELECT 1;")).name;
+    wsB = (await env.api.createWorksheet(env.project, TITLE_B, env.database, "SELECT 2;")).name;
+    wsC = (await env.api.createWorksheet(env.project, TITLE_C, env.database, "SELECT 3;")).name;
+  });
+
+  test.afterAll(async () => {
+    // A and B may already be deleted by the test; deleteWorksheet swallows 404.
+    for (const ws of [wsA, wsB, wsC]) {
+      if (ws) await env.api.deleteWorksheet(ws);
+    }
+  });
+
+  test("deleting two checked worksheets uses the multi-select dialog, not the non-empty-folder prompt", async () => {
+    test.setTimeout(120_000);
+
+    await sqlEditor.gotoHome();
+    await page.waitForTimeout(1000);
+
+    const tree = page.locator(".worksheet-tree");
+    await expect(tree.getByText(TITLE_A).first()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Enter multi-select via the worksheet row's context menu.
+    await tree.getByText(TITLE_A).first().click({ button: "right" });
+    const multiSelectItem = page.getByRole("menuitem", {
+      name: "Multi-select",
+      exact: true,
+    });
+    await expect(multiSelectItem).toBeVisible({ timeout: 5000 });
+    await multiSelectItem.click();
+    await page.waitForTimeout(500);
+
+    // Check A and B (a subset — leave C unchecked) via their row checkboxes.
+    // Anchor on the LEAF row (the nearest treeitem ancestor of the title text) —
+    // filtering treeitems by hasText would also match the enclosing "Mine"
+    // folder, whose checkbox is the wrong target.
+    for (const title of [TITLE_A, TITLE_B]) {
+      const titleText = tree.getByText(title).first();
+      await expect(titleText).toBeVisible({ timeout: 5000 });
+      const row = titleText.locator(
+        'xpath=ancestor-or-self::*[@role="treeitem"][1]',
+      );
+      await row.getByRole("checkbox").first().click();
+      await page.waitForTimeout(200);
+    }
+
+    // Click the multi-select toolbar's Delete button (TrashIcon + "Delete").
+    const toolbarDelete = page
+      .getByRole("button", { name: "Delete", exact: true })
+      .first();
+    await expect(toolbarDelete).toBeEnabled({ timeout: 5000 });
+    await toolbarDelete.click();
+
+    // The dedicated multi-delete dialog — NOT the non-empty-folder prompt.
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog.getByText("Delete selected items?")).toBeVisible();
+    await expect(
+      dialog.getByText(
+        "The selected worksheets and folders will be permanently deleted.",
+      ),
+    ).toBeVisible();
+    // The wrong (pre-fix) dialog must be absent.
+    await expect(page.getByText("Non-empty folder")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Delete all files" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Move to root folder" }),
+    ).toHaveCount(0);
+
+    // Confirm the delete via the dedicated dialog. The dialog closing on confirm
+    // proves the multi-delete flow ran through the CORRECT path (the BYT-9631
+    // fix), rather than the old non-empty-folder "move to root / delete all"
+    // branch which this selection never should have hit.
+    await dialog.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 5000 });
+  });
+});
+
 test.describe("Duplicate", () => {
   // The duplicate handler in SheetTree.tsx (around line 1152) calls
   //   editorWorksheetStore.createWorksheet({ title, folders, database })

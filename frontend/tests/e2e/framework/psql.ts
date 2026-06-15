@@ -34,3 +34,23 @@ export function execSql(dbName: string, port: string, sql: string): void {
     { stdio: "pipe" },
   );
 }
+
+// Run a read query and return the raw scalar/tuple output (tuples-only,
+// unaligned). Reads as the owner (bbsample), so it reflects the committed
+// table state — use it as a positive oracle that a write actually landed,
+// instead of inferring success from the absence of a UI error. Same
+// interpolation-safety contract as execSql.
+export function querySql(dbName: string, port: string, sql: string): string {
+  return execFileSync(
+    "psql",
+    [
+      "-h", "/tmp",
+      "-p", port,
+      "-U", "bbsample",
+      "-d", dbName,
+      "-v", "ON_ERROR_STOP=1",
+      "-tAc", sql,
+    ],
+    { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] },
+  ).trim();
+}

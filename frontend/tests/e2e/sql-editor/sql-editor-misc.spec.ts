@@ -159,3 +159,72 @@ test.describe("QueryContextSettingPopover hidden in admin mode (O1)", () => {
     await page.waitForTimeout(400);
   });
 });
+
+test.describe("Sidebar resize works on first drag (BYT-9611)", () => {
+  // BYT-9611 (FIXED, #20461): on the VERY FIRST load of the SQL editor, dragging
+  // the vertical divider between the left aside panel and the editor did
+  // nothing — the first drag was swallowed. Root cause: the sidebar Panel mixed
+  // controlled + uncontrolled sizing (`defaultSize` derived from a `useState`
+  // the `onResize` callback updated), so the first drag's resize re-rendered a
+  // new defaultSize back into react-resizable-panels and ate the gesture. A
+  // second drag then worked.
+  //
+  // This test asserts the FIRST drag after a fresh load resizes the panel. It
+  // must run on a freshly navigated page and be the first separator drag — so
+  // it uses its own goto and no earlier test in this file drags the handle.
+
+  test("the first drag of the vertical divider resizes the aside panel", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    // Fresh navigation: the bug only manifests on the first drag after load.
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(1000);
+
+    // The PanelGroup is horizontal with a single vertical PanelResizeHandle
+    // (Separator → role="separator") between the aside panel and the editor
+    // (SQLEditorHomePage.tsx:218).
+    const handle = page.getByRole("separator").first();
+    await expect(handle).toBeVisible({ timeout: 10_000 });
+
+    const before = await handle.boundingBox();
+    expect(before, "resize handle must have a bounding box").not.toBeNull();
+    const startX = before!.x + before!.width / 2;
+    const startY = before!.y + before!.height / 2;
+
+    // FIRST drag — push the divider ~120px to the right.
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 120, startY, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+
+    const after = await handle.boundingBox();
+    const delta = after!.x - before!.x;
+    // Aside default is 25% (~320px @1280) with a 40% max (~512px), so a 120px
+    // drag applies fully. Allow clamping/sub-pixel tolerance: require the FIRST
+    // drag to move the divider substantially right. Pre-fix this delta was ~0.
+    expect(
+      delta,
+      `the first drag must resize the aside panel — the divider moved ${Math.round(
+        delta,
+      )}px (expected > 80). Pre-fix the first drag was swallowed (delta ~0).`,
+    ).toBeGreaterThan(80);
+
+    // Lock that resizing keeps working: a second drag back left also moves it.
+    const mid = await handle.boundingBox();
+    const mx = mid!.x + mid!.width / 2;
+    const my = mid!.y + mid!.height / 2;
+    await page.mouse.move(mx, my);
+    await page.mouse.down();
+    await page.mouse.move(mx - 100, my, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const back = await handle.boundingBox();
+    expect(
+      back!.x,
+      "a subsequent drag left must move the divider back",
+    ).toBeLessThan(after!.x);
+  });
+});
