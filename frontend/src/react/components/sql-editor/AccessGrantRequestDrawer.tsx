@@ -283,7 +283,11 @@ function AccessGrantRequestDrawerInner({
               description={t("sql-editor.only-select-allowed")}
             />
             <MonacoEditor
-              className="border rounded-[3px] h-40"
+              // Drawer Monaco portals outside `.sqleditor--wrapper`, so opt the
+              // canvas into the transparent-background rule and back it with the
+              // themed `bg-background` (from `sheetStyle`'s `--color-background`)
+              // so it matches the active theme like the worksheet editor.
+              className="border rounded-[3px] h-40 bg-background sqleditor--monaco-transparent"
               content={query}
               language="sql"
               autoCompleteContext={autoCompleteContext}

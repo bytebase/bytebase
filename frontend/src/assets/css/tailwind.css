@@ -438,9 +438,17 @@ body[data-bb-screenshot-active] [data-screenshot-hide] {
    while leaving Monaco's own overlays (current-line, selection) compositing on
    top. An opaque background here instead covers the current-line highlight.
    (Syntax token colors are still owned by the VSCode theme service / TextMate.)
-   `!important` overrides the theme service's `--vscode-editor-background` rule. */
+   `!important` overrides the theme service's `--vscode-editor-background` rule.
+
+   Covers every editor under the SQL Editor root (`.sqleditor--wrapper`) plus any
+   SQL-Editor Monaco that portals OUTSIDE that subtree (e.g. the access-request
+   drawer's editor, which mounts in the overlay root) and so opts in explicitly
+   via the `sqleditor--monaco-transparent` marker class on its container. */
 .sqleditor--wrapper .monaco-editor,
 .sqleditor--wrapper .monaco-editor .monaco-editor-background,
-.sqleditor--wrapper .monaco-editor .margin {
+.sqleditor--wrapper .monaco-editor .margin,
+.sqleditor--monaco-transparent .monaco-editor,
+.sqleditor--monaco-transparent .monaco-editor .monaco-editor-background,
+.sqleditor--monaco-transparent .monaco-editor .margin {
   background-color: transparent !important;
 }

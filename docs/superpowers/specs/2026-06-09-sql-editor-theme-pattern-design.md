@@ -29,13 +29,13 @@ runtime and the real DOM behave):
   shows the chrome `--color-background`; syntax token colors come from the `vs`/`vs-dark`
   base. Transparent (not an opaque token) so Monaco's own overlays (current line,
   selection) still composite on top.
-  - **By design, this is `.sqleditor--wrapper`-scoped, so portaled editors are
-    excluded.** The access-request drawer's `MonacoEditor` mounts outside the wrapper
-    (in the overlay root), so it keeps the opaque `vs`/`vs-dark` canvas (`#1e1e1e` for
-    the dark base) rather than the chrome background. It matches `dark` (whose
-    `--color-background` is also `#1e1e1e`) but intentionally does **not** track a named
-    theme's chrome bg (e.g. Solarized Dark's teal). Accepted: named themes are chrome-
-    only, the switcher is dev-only, and per-theme editor canvases are a Future-work item.
+  - **Portaled editors opt in via a marker class.** The rule's primary selector is
+    `.sqleditor--wrapper`-scoped, so a SQL-Editor `MonacoEditor` that portals outside
+    that subtree (the access-request drawer's editor, mounted in the overlay root) would
+    otherwise keep the opaque `vs`/`vs-dark` canvas and mismatch a named theme's chrome
+    bg (e.g. Solarized Dark's teal). Such editors add the `sqleditor--monaco-transparent`
+    marker class (a second selector on the same rule) plus `bg-background`, so the canvas
+    shows the active theme's `--color-background` — consistent with the worksheet editor.
 - **Theme names are literal labels; the switcher is dev-only.** `ThemeSelect` is gated
   behind `isDev()` (hidden in production), so theme names aren't translated:
   `SQLEditorTheme.name` is a plain display string (no i18n key) — built-ins, proper-noun
