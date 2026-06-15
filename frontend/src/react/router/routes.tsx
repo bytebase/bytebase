@@ -1,6 +1,7 @@
-import { type RouteObject, redirect } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
 import { RootLayout } from "@/react/app/RootLayout";
 import { RouteErrorPage } from "@/react/app/RouteErrorPage";
+import { rootGuard } from "@/react/router/guard";
 import { WORKSPACE_ROUTE_404 } from "@/react/router/handles";
 import { authRoutes } from "@/react/router/routes/auth";
 import { dashboardRoutes } from "@/react/router/routes/dashboard";
@@ -28,7 +29,11 @@ export const routes: RouteObject[] = [
       {
         path: "*",
         handle: { name: WORKSPACE_ROUTE_404 },
-        loader: () => redirect("/404"),
+        loader: ({ request }) =>
+          rootGuard({
+            name: WORKSPACE_ROUTE_404,
+            url: new URL(request.url),
+          }),
       },
     ],
   },
