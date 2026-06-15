@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,6 +28,28 @@ func init() {
 		segmenter.Dict = segmenterDic.Dict
 		return &segmenter
 	}
+}
+
+// CanonicalizeIssueLabels returns the deterministic representation stored in issue payloads.
+func CanonicalizeIssueLabels(labels []string) []string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	canonicalLabels := make([]string, 0, len(labels))
+	for _, label := range labels {
+		label = strings.TrimSpace(label)
+		if label == "" {
+			continue
+		}
+		canonicalLabels = append(canonicalLabels, label)
+	}
+	if len(canonicalLabels) == 0 {
+		return nil
+	}
+
+	slices.Sort(canonicalLabels)
+	return slices.Compact(canonicalLabels)
 }
 
 // IssueMessage is the mssage for issues.
@@ -130,6 +153,9 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 // CreateIssue creates a new issue.
 func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMessage, error) {
 	create.Status = storepb.Issue_OPEN
+	if create.Payload != nil {
+		create.Payload.Labels = CanonicalizeIssueLabels(create.Payload.Labels)
+	}
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal issue payload")
@@ -210,6 +236,7 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 		set.Comma("description = ?", *v)
 	}
 	if v := patch.PayloadUpsert; v != nil {
+		v.Labels = CanonicalizeIssueLabels(v.Labels)
 		p, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
