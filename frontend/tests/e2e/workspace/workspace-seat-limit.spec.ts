@@ -108,11 +108,25 @@ test.afterAll(async () => {
         /* retry */
       }
     }
-    // Restore the original IAM policy (drops the seat-filler bindings).
+    // Restore the original IAM policy (drops the seat-filler + service-account
+    // bindings). Re-fetch first so we write with the CURRENT etag: the snapshot
+    // was captured in beforeAll and its etag is stale after the intervening IAM
+    // writes (the seat-filler bind here and the service-account bind in the
+    // first test), and SetIamPolicy rejects a stale non-empty etag as a
+    // concurrent update (CodeAborted) — which a bare `.catch` would silently
+    // swallow, leaving the workspace polluted.
     if (policySnapshot) {
-      await env.api
-        .setWorkspaceIamPolicy(workspace, policySnapshot)
-        .catch(() => {});
+      const current = await env.api
+        .getWorkspaceIamPolicy(workspace)
+        .catch(() => undefined);
+      if (current) {
+        await env.api
+          .setWorkspaceIamPolicy(workspace, {
+            bindings: policySnapshot.bindings,
+            etag: current.etag,
+          })
+          .catch(() => {});
+      }
     }
     // Deactivate the seat-filler users (best-effort cleanup).
     for (const email of createdUserEmails) {
