@@ -15,7 +15,7 @@ import { useAppStore } from "@/react/stores/app";
 import { unknownUser } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type { User as UserProto } from "@/types/proto-es/v1/user_service_pb";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import {
   type ApprovalStepStatus,
@@ -387,7 +387,7 @@ function InitialsAvatar({
   user,
 }: {
   className: string;
-  user: User;
+  user: UserProto;
 }) {
   const name = user.title || user.email.split("@")[0];
   return (
