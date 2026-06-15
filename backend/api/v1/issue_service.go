@@ -395,7 +395,8 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
+	issueLabels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
+	if project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
@@ -408,7 +409,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	issue, err := s.buildIssueMessage(ctx, project, user.Email, req.Msg)
+	issue, err := s.buildIssueMessage(ctx, project, user.Email, req.Msg, issueLabels)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +431,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
+func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {
 	var planUID *int64
 	var roleGrant *storepb.RoleGrant
 	var title, description string
@@ -544,7 +545,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 				ApprovalTemplate:    nil,
 				Approvers:           nil,
 			},
-			Labels: request.Issue.Labels,
+			Labels: labels,
 		},
 	}
 
@@ -1037,16 +1038,17 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			})
 
 		case "labels":
-			if slices.Equal(issue.Payload.Labels, req.Msg.Issue.Labels) {
+			labels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
+			if slices.Equal(issue.Payload.Labels, labels) {
 				continue
 			}
-			if len(req.Msg.Issue.Labels) == 0 {
+			if len(labels) == 0 {
 				patch.RemoveLabels = true
 			} else {
 				if patch.PayloadUpsert == nil {
 					patch.PayloadUpsert = &storepb.Issue{}
 				}
-				patch.PayloadUpsert.Labels = req.Msg.Issue.Labels
+				patch.PayloadUpsert.Labels = labels
 			}
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
@@ -1055,7 +1057,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
 							FromLabels: issue.Payload.Labels,
-							ToLabels:   req.Msg.Issue.Labels,
+							ToLabels:   labels,
 						},
 					},
 				},
