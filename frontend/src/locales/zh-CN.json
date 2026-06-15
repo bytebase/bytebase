@@ -995,6 +995,11 @@
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "凭证来源",
+      "default-credential": {
+        "aws": "Bytebase 将从环境变量 <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken> 读取凭证，回退到共享凭证文件 <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> 或 AWS ECS 中的 IAM 角色",
+        "azure": "Bytebase 将从环境变量 <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> 或 <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath> 读取凭证，并回退到 Azure VM 中附加的用户",
+        "gcp": "Bytebase 将从环境变量 <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials> 读取凭证，回退到 GCP GCE 中附加的服务账号"
+      },
       "saas-default-credential-restriction": "出于安全考虑，Bytebase Cloud 不支持使用默认凭证。请提供具体凭证。",
       "specific-credential": "指定凭证",
       "tenant-id": "Tenant ID"
