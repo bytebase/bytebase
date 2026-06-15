@@ -995,6 +995,11 @@
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "Nguồn thông tin xác thực",
+      "default-credential": {
+        "aws": "Bytebase sẽ đọc thông tin xác thực từ các biến môi trường <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, dự phòng bằng tệp thông tin xác thực dùng chung <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> hoặc vai trò IAM trong AWS ECS",
+        "azure": "Bytebase sẽ đọc thông tin xác thực từ các biến môi trường <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> hoặc <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, và dự phòng bằng người dùng được gắn trong Azure VM",
+        "gcp": "Bytebase sẽ đọc thông tin xác thực từ biến môi trường <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, dự phòng bằng tài khoản dịch vụ được gắn trong GCP GCE"
+      },
       "saas-default-credential-restriction": "Thông tin xác thực mặc định không khả dụng trong Bytebase Cloud vì lý do bảo mật. Vui lòng cung cấp thông tin xác thực cụ thể.",
       "specific-credential": "Chứng chỉ cụ thể",
       "tenant-id": "Tenant ID"

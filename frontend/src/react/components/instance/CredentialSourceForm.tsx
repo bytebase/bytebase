@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
@@ -489,38 +489,49 @@ function DefaultCredentialInfo({
 }: {
   authenticationType: DataSource_AuthenticationType;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-1 sm:col-span-3 sm:col-start-1 textinfolabel !leading-6">
       {authenticationType === DataSource_AuthenticationType.AZURE_IAM && (
-        <span>
-          Bytebase will read the credential from environment variables{" "}
-          <Code>AZURE_CLIENT_ID</Code>/<Code>AZURE_TENANT_ID</Code>/
-          <Code>AZURE_CLIENT_SECRET</Code> or{" "}
-          <Code>AZURE_CLIENT_CERTIFICATE_PATH</Code>, and fallback to attached
-          users in Azure VM
-        </span>
+        <Trans
+          t={t}
+          i18nKey="instance.iam-extension.default-credential.azure"
+          components={{
+            azureClientId: <Code />,
+            azureTenantId: <Code />,
+            azureClientSecret: <Code />,
+            azureClientCertificatePath: <Code />,
+          }}
+        />
       )}
       {authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM && (
-        <span>
-          Bytebase will read the credential from environment variables{" "}
-          <Code>AWS_ACCESS_KEY_ID</Code>/<Code>AWS_SECRET_ACCESS_KEY</Code>/
-          <Code>AWS_SESSION_TOKEN</Code>, fallback to shared credentials file{" "}
-          <Code>~/.aws/credentials</Code> or IAM role in AWS ECS
-        </span>
+        <Trans
+          t={t}
+          i18nKey="instance.iam-extension.default-credential.aws"
+          components={{
+            awsAccessKeyId: <Code />,
+            awsSecretAccessKey: <Code />,
+            awsSessionToken: <Code />,
+            awsCredentialsPath: <Code />,
+          }}
+        />
       )}
       {authenticationType ===
         DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
-        <span>
-          Bytebase will read the credential from environment variable{" "}
-          <Code>GOOGLE_APPLICATION_CREDENTIALS</Code>, fallback to the attached
-          service account in GCP GCE
-        </span>
+        <Trans
+          t={t}
+          i18nKey="instance.iam-extension.default-credential.gcp"
+          components={{
+            googleApplicationCredentials: <Code />,
+          }}
+        />
       )}
     </div>
   );
 }
 
-function Code({ children }: { children: React.ReactNode }) {
+function Code({ children }: { children?: React.ReactNode }) {
   return <code className="bg-gray-100 p-1 rounded-sm mr-1">{children}</code>;
 }
 
