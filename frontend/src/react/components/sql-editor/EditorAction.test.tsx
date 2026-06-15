@@ -74,6 +74,7 @@ vi.mock("@/react/stores/sqlEditor/editor", () => ({
 vi.mock("@/utils", () => ({
   isWorksheetWritableV1: mocks.isWorksheetWritableV1,
   keyboardShortcutStr: mocks.keyboardShortcutStr,
+  isDev: () => true,
 }));
 
 vi.mock("@/views/sql-editor/events", () => ({

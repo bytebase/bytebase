@@ -257,11 +257,27 @@ describe("SharePopoverBody", () => {
     unmount();
   });
 
-  test("copy button disabled when currentTab status is not CLEAN", () => {
+  test("copy button stays enabled when the current tab is dirty (gated on the shared worksheet, not the current tab status)", () => {
+    // Opening Share from the worksheet tree shares a specific (saved) worksheet
+    // regardless of the current tab. A dirty current tab must NOT disable copy.
     mocks.tabStatus = "DIRTY";
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />
+    );
+    render();
+
+    const copyBtn = container.querySelector(
+      "[data-copy-btn]"
+    ) as HTMLButtonElement;
+    expect(copyBtn).not.toBeNull();
+    expect(copyBtn.disabled).toBe(false);
+    unmount();
+  });
+
+  test("copy button disabled when there is no shareable worksheet link", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <SharePopoverBody worksheet={undefined as never} />
     );
     render();
 

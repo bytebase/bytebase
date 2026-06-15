@@ -19,7 +19,6 @@ import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetID } from "@/utils";
@@ -43,9 +42,6 @@ export function SharePopoverBody({ worksheet }: Props) {
   const { t } = useTranslation();
   const workspaceExternalURL = useAppStore((s) => s.serverInfo?.externalUrl);
   const currentUser = useCurrentUser();
-  const tabStatus = useSQLEditorTabState(
-    (s) => s.tabsById.get(s.currentTabId)?.status
-  );
 
   const accessOptions = useMemo<AccessOption[]>(
     () => [
@@ -179,7 +175,7 @@ export function SharePopoverBody({ worksheet }: Props) {
                 "border flex flex-row justify-start items-center px-2 py-1 rounded-sm",
                 allowChangeAccess
                   ? "hover:border-accent"
-                  : "border-gray-200 text-gray-400"
+                  : "border-control-border text-control-placeholder"
               )}
             >
               <strong>{currentAccess.label}</strong>
@@ -194,8 +190,8 @@ export function SharePopoverBody({ worksheet }: Props) {
                   data-option-row
                   className={cn(
                     "p-2 rounded-xs flex justify-between",
-                    allowChangeAccess && "cursor-pointer hover:bg-gray-200",
-                    option.value === currentAccess.value && "bg-gray-200"
+                    allowChangeAccess && "cursor-pointer hover:bg-control-bg",
+                    option.value === currentAccess.value && "bg-control-bg"
                   )}
                   onClick={() => handleChangeAccess(option)}
                 >
@@ -233,18 +229,21 @@ export function SharePopoverBody({ worksheet }: Props) {
           type="text"
           readOnly
           value={sharedTabLink}
-          className="flex-1 min-w-0 h-full px-2 bg-white text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
+          className="flex-1 min-w-0 h-full px-2 bg-background text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
         />
-        {/* Copy button — always available regardless of share status; only
-            disabled while the tab has unsaved changes. */}
+        {/* Copy button — enabled whenever the shared worksheet has a link.
+            Gated on the shared worksheet (sharedTabLink), NOT the current tab's
+            status: the popover can be opened for any worksheet from the tree,
+            so the current tab's dirty state is irrelevant. Only an unsaved draft
+            (no worksheet → no link) disables it. */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           data-copy-btn
-          disabled={tabStatus !== "CLEAN"}
+          disabled={!sharedTabLink}
           onClick={handleCopyLink}
-          className="h-full rounded-none border-l border-control-border bg-white enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
+          className="h-full rounded-none border-l border-control-border bg-background enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
         >
           <Copy className="size-4" />
         </Button>

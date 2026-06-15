@@ -57,7 +57,9 @@ vi.mock("@/react/stores/sqlEditor/editor", () => ({
     selector({ project: mocks.project }),
 }));
 
-// Zustand tab store — imperative getter to derive default targets.
+// Zustand tab store — imperative getter to derive default targets, plus the
+// reactive hook consumed by useActiveSQLEditorTheme (drives the drawer's Monaco
+// theme). The tab has no mode, so the active theme resolves to the default.
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
   getSQLEditorTabsState: () => ({
     currentTabId: "tab1",
@@ -65,6 +67,16 @@ vi.mock("@/react/stores/sqlEditor/tab", () => ({
       ["tab1", { connection: { database: mocks.currentTabDatabase } }],
     ]),
   }),
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { mode?: string }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "tab1",
+      tabsById: new Map([["tab1", {}]]),
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({

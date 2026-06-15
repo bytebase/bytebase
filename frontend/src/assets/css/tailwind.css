@@ -20,7 +20,11 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    /* Default border color uses the semantic --color-block-border token so it
+       follows a scoped theme (e.g. the SQL Editor dark theme). The token is an
+       "r g b" triple, so it MUST be wrapped in rgb(); the fallback is the old
+       gray-200 value, so nothing changes outside a themed scope. */
+    border-color: rgb(var(--color-block-border, 229 231 235));
   }
 
   /* Thin scrollbars globally */
@@ -420,4 +424,23 @@
    the exported PNG. */
 body[data-bb-screenshot-active] [data-screenshot-hide] {
   display: none !important;
+}
+
+/* SQL Editor: keep the Monaco canvas background in sync with the active theme.
+   This app runs Monaco through the codingame VSCode theme service, which
+   ignores `monaco.editor.defineTheme`, so our per-theme `editor.background`
+   never reaches the canvas — the editor stays on the built-in vs/vs-dark base.
+   That mismatches any named theme whose chrome background isn't `#1e1e1e`
+   (e.g. Solarized Dark's teal).
+
+   We make the base layers TRANSPARENT (not an opaque token color) so the SQL
+   Editor's themed chrome shows through — matching the active theme for free —
+   while leaving Monaco's own overlays (current-line, selection) compositing on
+   top. An opaque background here instead covers the current-line highlight.
+   (Syntax token colors are still owned by the VSCode theme service / TextMate.)
+   `!important` overrides the theme service's `--vscode-editor-background` rule. */
+.sqleditor--wrapper .monaco-editor,
+.sqleditor--wrapper .monaco-editor .monaco-editor-background,
+.sqleditor--wrapper .monaco-editor .margin {
+  background-color: transparent !important;
 }

@@ -11,7 +11,6 @@ import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { PostgresError } from "./PostgresError";
 
 interface ErrorViewProps {
-  dark: boolean;
   error: string | undefined;
   executeParams?: SQLEditorQueryParams;
   resultSet?: SQLResultSetV1;
@@ -19,7 +18,6 @@ interface ErrorViewProps {
 }
 
 export function ErrorView({
-  dark,
   error,
   executeParams,
   resultSet,
@@ -107,7 +105,7 @@ export function ErrorView({
     <div
       className={cn(
         "w-full text-md font-normal flex flex-col gap-2 text-sm",
-        dark ? "text-matrix-green-hover" : "text-control-light"
+        "text-control-light"
       )}
     >
       <Alert variant="error" className="w-full">

@@ -21,13 +21,14 @@ import {
 } from "@/react/stores/sqlEditor/tab";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
+import { isDev, isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { AdminModeButton } from "./AdminModeButton";
 import { ChooserGroup } from "./ChooserGroup";
 import { OpenAIButton } from "./OpenAIButton";
 import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
 import { SharePopoverBody } from "./SharePopoverBody";
+import { ThemeSelect } from "./ThemeSelect";
 
 type Props = {
   readonly onExecute?: (params: SQLEditorQueryParams) => void;
@@ -241,6 +242,8 @@ export function EditorAction({ onExecute }: Props) {
         )}
       </div>
       <div className="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center">
+        {/* Theme switcher is dev-only until the theme feature ships. */}
+        {isDev() && <ThemeSelect />}
         <ChooserGroup />
         <OpenAIButton
           size="sm"

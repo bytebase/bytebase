@@ -67,7 +67,7 @@ export function EllipsisCell({
               maxWidth: "min(33vw, 320px)",
             }}
             className={cn(
-              "rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs font-normal text-white shadow-md whitespace-pre-wrap break-all pointer-events-none",
+              "rounded-sm bg-main px-2.5 py-1.5 text-xs font-normal text-main-text shadow-md whitespace-pre-wrap break-all pointer-events-none",
               LAYER_SURFACE_CLASS
             )}
           >

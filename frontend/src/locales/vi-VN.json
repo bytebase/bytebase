@@ -2825,6 +2825,9 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",
     "text-format": "Định dạng văn bản",
+    "theme": {
+      "self": "Giao diện"
+    },
     "unable-to-connect-database": "Không thể kết nối đến cơ sở dữ liệu {{name}}",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",

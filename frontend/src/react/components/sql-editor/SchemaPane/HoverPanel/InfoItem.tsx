@@ -19,7 +19,7 @@ export function InfoItem({ title, titleSlot, children }: Props) {
       className="w-full grid gap-x-4 items-center"
       style={{ gridTemplateColumns: "auto 1fr" }}
     >
-      <div className="text-gray-500 font-medium whitespace-nowrap">
+      <div className="text-control-light font-medium whitespace-nowrap">
         {titleSlot ?? title}
       </div>
       <div className="text-right flex items-center justify-end min-w-0">

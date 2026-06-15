@@ -40,7 +40,7 @@ export function ExternalTableIcon({ className }: IconProps) {
 export function ViewIcon({ className }: IconProps) {
   return (
     <div className={cn("relative", baseSize, className)}>
-      <Table className={cn(baseSize, "text-gray-400")} />
+      <Table className={cn(baseSize, "text-control-placeholder")} />
       <Glasses
         className="absolute bottom-0 right-0 w-3/4 h-3/4 fill-white"
         stroke="rgb(var(--color-accent))"
@@ -51,12 +51,18 @@ export function ViewIcon({ className }: IconProps) {
 }
 
 export function ProcedureIcon({ className }: IconProps) {
-  return <Parentheses className={cn(baseSize, "text-gray-400", className)} />;
+  return (
+    <Parentheses
+      className={cn(baseSize, "text-control-placeholder", className)}
+    />
+  );
 }
 
 export function FunctionIcon({ className }: IconProps) {
   return (
-    <SquareFunction className={cn(baseSize, "text-gray-400", className)} />
+    <SquareFunction
+      className={cn(baseSize, "text-control-placeholder", className)}
+    />
   );
 }
 
@@ -68,7 +74,7 @@ export function SequenceIcon({ className }: IconProps) {
   return (
     <div
       className={cn(
-        "relative w-4 h-4 inline-flex items-center justify-center text-gray-500",
+        "relative w-4 h-4 inline-flex items-center justify-center text-control-light",
         className
       )}
     >
@@ -84,11 +90,13 @@ export function TriggerIcon({ className }: IconProps) {
 }
 
 export function PackageIcon({ className }: IconProps) {
-  return <Package className={cn(baseSize, "text-gray-400", className)} />;
+  return (
+    <Package className={cn(baseSize, "text-control-placeholder", className)} />
+  );
 }
 
 export function ForeignKeyIcon({ className }: IconProps) {
-  return <Link className={cn("size-3.5 text-gray-500", className)} />;
+  return <Link className={cn("size-3.5 text-control-light", className)} />;
 }
 
 export function TablePartitionIcon({ className }: IconProps) {
@@ -120,10 +128,10 @@ export function IndexIcon({ className }: IconProps) {
 }
 
 /**
- * Vue's CheckIcon is tabler/check at 12px in `text-gray-500`.
+ * Vue's CheckIcon is tabler/check at 12px in `text-control-light`.
  */
 export function CheckConstraintIcon({ className }: IconProps) {
-  return <Check className={cn("size-3.5 text-gray-500", className)} />;
+  return <Check className={cn("size-3.5 text-control-light", className)} />;
 }
 
 // ColumnIcon is shared with SchemaEditorLite; both surfaces must render

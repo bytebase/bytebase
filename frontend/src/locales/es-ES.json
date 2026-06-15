@@ -2825,6 +2825,9 @@
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Vista de tabla",
     "text-format": "Formato de texto",
+    "theme": {
+      "self": "Tema"
+    },
     "unable-to-connect-database": "No se puede conectar a la base de datos {{name}}",
     "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",

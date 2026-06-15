@@ -1,9 +1,12 @@
 import type * as MonacoType from "monaco-editor";
+import {
+  buildMonacoTheme,
+  monacoThemeName,
+} from "@/react/components/sql-editor/theme/derive";
+import { PRESETS } from "@/react/components/sql-editor/theme/presets";
 import type { Language } from "@/types";
 import { defer } from "@/utils";
 import { initializeMonacoServices } from "./services";
-import { getBBTheme } from "./themes/bb";
-import { getBBDarkTheme } from "./themes/bb-dark";
 
 let monacoModule: typeof MonacoType | undefined;
 const monacoLoadDefer = defer<typeof MonacoType>();
@@ -14,21 +17,28 @@ export const MonacoEditorReady = monacoEditorReadyDefer.promise;
 const state = {
   themeInitialized: false,
   registeredThemes: new Set<string>(["vs", "vs-dark", "hc-black", "hc-light"]),
+  // The Monaco base ("vs" | "vs-dark") for each generated theme name. When a
+  // custom theme fails to register (the codingame VSCode theme service silently
+  // ignores `defineTheme` in some runtime modes), `getResolvedTheme` falls back
+  // to the theme's OWN base — so a dark theme falls back to `vs-dark`, not the
+  // light `vs`. Recorded for every preset whether or not registration succeeds.
+  themeBase: new Map<string, "vs" | "vs-dark">(),
 };
 
 const initializeTheme = () => {
   if (state.themeInitialized) return;
   state.themeInitialized = true;
   if (!monacoModule) return;
-  try {
-    monacoModule.editor.defineTheme("bb", getBBTheme());
-    state.registeredThemes.add("bb");
-    monacoModule.editor.defineTheme("bb-dark", getBBDarkTheme());
-    state.registeredThemes.add("bb-dark");
-  } catch {
-    // The VSCode theme service override owns themes in some runtime modes.
-    // Whichever theme failed stays out of `state.registeredThemes`, so
-    // `getResolvedTheme` will fall back to the built-in `vs` for it.
+  for (const preset of PRESETS) {
+    const name = monacoThemeName(preset);
+    state.themeBase.set(name, preset.monacoBase);
+    try {
+      monacoModule.editor.defineTheme(name, buildMonacoTheme(preset));
+      state.registeredThemes.add(name);
+    } catch {
+      // The vscode theme-service override owns themes in some runtime modes;
+      // an un-registered theme falls back to its base via getResolvedTheme.
+    }
   }
 };
 
@@ -44,11 +54,11 @@ const initializeTheme = () => {
  * terminal editor can bleed into a freshly-mounted worksheet editor).
  */
 export const getResolvedTheme = (requested?: string): string => {
-  const fallback = "vs";
-  if (!requested) {
-    return state.registeredThemes.has("bb") ? "bb" : fallback;
-  }
-  return state.registeredThemes.has(requested) ? requested : fallback;
+  const name = requested || "bb-light";
+  if (state.registeredThemes.has(name)) return name;
+  // Custom theme not registered → use its own base (vs / vs-dark), so a dark
+  // theme never falls back to the light `vs`.
+  return state.themeBase.get(name) ?? "vs";
 };
 
 const initialize = async () => {
@@ -135,7 +145,7 @@ export const defaultEditorOptions =
     return {
       renderValidationDecorations: "on",
       accessibilitySupport: "off",
-      theme: "bb",
+      theme: "bb-light",
       tabSize: 2,
       insertSpaces: true,
       autoClosingQuotes: "never",
@@ -176,7 +186,7 @@ export const defaultDiffEditorOptions =
       enableSplitViewResizing: false,
       accessibilitySupport: "off",
       renderValidationDecorations: "on",
-      theme: "bb",
+      theme: "bb-light",
       autoClosingQuotes: "never",
       folding: false,
       automaticLayout: true,

@@ -2825,6 +2825,9 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
+    "theme": {
+      "self": "Theme"
+    },
     "unable-to-connect-database": "Unable to connect to database {{name}}",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",

@@ -89,7 +89,6 @@ import {
 } from "./VirtualDataTable";
 
 export interface SingleResultViewProps {
-  dark: boolean;
   disallowCopyingData: boolean;
   params: SQLEditorQueryParams;
   database: Database;
@@ -103,6 +102,9 @@ export interface SingleResultViewProps {
   // Rendered in the toolbar when `showExport` is false — e.g. a
   // "Request export" affordance when the policy disables direct export.
   requestExportSlot?: ReactNode;
+  // Compact layout (fixed-height, non-growing body) used by the terminal /
+  // admin result panel. Defaults to the flex-grow worksheet layout.
+  compact?: boolean;
 }
 
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
@@ -118,7 +120,7 @@ type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
  * them twice and doubled the 100k-row allocation on large result sets.
  */
 export function SingleResultView(props: SingleResultViewProps) {
-  const { dark, disallowCopyingData, database, result } = props;
+  const { disallowCopyingData, database, result } = props;
   const engine = getInstanceResource(database).engine;
   const [noSQLTableView, setNoSQLTableView] = useLocalStorageBoolean(
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
@@ -197,7 +199,6 @@ export function SingleResultView(props: SingleResultViewProps) {
 
   return (
     <SQLResultViewProvider
-      dark={dark}
       disallowCopyingData={disallowCopyingData}
       engine={engine}
       schema={props.params.connection.schema}
@@ -233,7 +234,6 @@ interface SingleResultViewInnerProps extends SingleResultViewProps {
 }
 
 function SingleResultViewInner({
-  dark,
   disallowCopyingData,
   params,
   database,
@@ -252,6 +252,7 @@ function SingleResultViewInner({
   supportsTableViewToggle,
   noSQLTableView,
   setNoSQLTableView,
+  compact = false,
 }: SingleResultViewInnerProps) {
   const { t } = useTranslation();
   const project = useSQLEditorEditorState((s) => s.project);
@@ -513,7 +514,7 @@ function SingleResultViewInner({
       <div
         className={cn(
           "text-md font-normal flex items-center gap-x-1",
-          dark ? "text-matrix-green-hover" : "text-control-light"
+          "text-control-light"
         )}
       >
         <span>{String(extractSQLRowValuePlain(result.rows[0].values[0]))}</span>
@@ -523,7 +524,7 @@ function SingleResultViewInner({
   }
 
   if (viewMode === "EMPTY") {
-    return <EmptyView dark={dark} />;
+    return <EmptyView />;
   }
 
   return (
@@ -543,7 +544,7 @@ function SingleResultViewInner({
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
-              <ErrorView dark={dark} error={result.error} />
+              <ErrorView error={result.error} />
             </Alert>
           )}
 
@@ -591,15 +592,11 @@ function SingleResultViewInner({
               {!disallowCopyingData && rows.length > 0 && (
                 // Split button: the main action copies as plain text (TSV); the
                 // dropdown caret (hover) offers CSV and, for SQL engines, SQL.
-                // `variant="outline"` is `bg-transparent + text-control`, which
-                // disappears inside the admin-mode dark backdrop. Force an
-                // opaque light-on-dark surface in `.dark` to match the Vue
-                // toolbar's contrast (light gray bg + dark text).
                 <div className="flex items-center">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 px-2 rounded-r-none border-r-0 dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
+                    className="h-7 px-2 rounded-r-none border-r-0 bg-control-bg text-control border-control-border hover:bg-control-bg-hover"
                     onClick={() => copy("all", formatAsText)}
                   >
                     <CopyIcon className="size-4" />
@@ -614,7 +611,7 @@ function SingleResultViewInner({
                           size="sm"
                           variant="outline"
                           aria-label={t("common.copy")}
-                          className="h-7 w-6 px-0 rounded-l-none dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
+                          className="h-7 w-6 px-0 rounded-l-none bg-control-bg text-control border-control-border hover:bg-control-bg-hover"
                         >
                           <ChevronDownIcon className="size-4" />
                         </Button>
@@ -664,7 +661,9 @@ function SingleResultViewInner({
           <div
             className={cn(
               "w-full flex flex-col relative",
-              dark ? "h-80 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto"
+              compact
+                ? "h-80 overflow-hidden"
+                : "flex-1 min-h-0 overflow-y-auto"
             )}
           >
             {vertical ? (

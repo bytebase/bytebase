@@ -1,11 +1,32 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { BannersWrapper } from "@/react/components/BannersWrapper";
 import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";
 import { router } from "@/react/router";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { RequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
+import { resolveThemeId } from "./theme/presets";
+import { SQLEditorThemeScope } from "./theme/SQLEditorThemeScope";
+import { useMonacoThemeController } from "./theme/useMonacoThemeController";
+import { useSQLEditorOverlayTheme } from "./theme/useSQLEditorOverlayTheme";
 import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
+
+function SQLEditorThemeRoot({ children }: { children: ReactNode }) {
+  const themeId = useSQLEditorEditorState((s) => s.themeId);
+  // Live-applies the theme on switch. It deliberately does NOT call setTheme on
+  // mount — editors theme themselves at construction via options.theme — so it
+  // never races Monaco construction (see useMonacoThemeController).
+  useMonacoThemeController();
+  // Themes all portaled overlays (dialogs, drawer, Select/Popover popups) that
+  // render outside the SQL Editor DOM subtree.
+  useSQLEditorOverlayTheme();
+  return (
+    <SQLEditorThemeScope theme={resolveThemeId(themeId)} asContents>
+      {children}
+    </SQLEditorThemeScope>
+  );
+}
 
 /**
  * React port of `frontend/src/layouts/SQLEditorLayout.vue`.
@@ -55,13 +76,15 @@ export function SQLEditorLayout() {
           that the React layering policy now forbids. */}
       <ul
         id="sql-editor-debug"
-        className="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400"
+        className="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-background/50 border border-control-border"
       />
       <BannersWrapper />
       {ready && (
-        <RequestDrawerHost>
-          <SQLEditorRouteShell />
-        </RequestDrawerHost>
+        <SQLEditorThemeRoot>
+          <RequestDrawerHost>
+            <SQLEditorRouteShell />
+          </RequestDrawerHost>
+        </SQLEditorThemeRoot>
       )}
     </div>
   );

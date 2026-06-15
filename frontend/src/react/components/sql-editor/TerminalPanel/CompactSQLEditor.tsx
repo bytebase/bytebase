@@ -16,6 +16,8 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
+import { monacoThemeName } from "../theme/derive";
+import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import {
   checkCursorAtFirst,
   checkCursorAtLast,
@@ -320,10 +322,12 @@ export function CompactSQLEditor({
     [firstLinePrompt]
   );
 
+  const activeTheme = useActiveSQLEditorTheme();
+
   const editorOptions =
     useMemo<monaco.editor.IStandaloneEditorConstructionOptions>(
       () => ({
-        theme: "vs-dark",
+        theme: monacoThemeName(activeTheme),
         lineNumbers: getLineNumber,
         lineNumbersMinChars: firstLinePrompt.length + 3,
         cursorStyle: readonly ? "underline" : "block",
@@ -334,7 +338,7 @@ export function CompactSQLEditor({
         },
         overviewRulerLanes: 0,
       }),
-      [readonly, firstLinePrompt, getLineNumber]
+      [activeTheme, readonly, firstLinePrompt, getLineNumber]
     );
 
   return (

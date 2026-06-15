@@ -2,9 +2,9 @@ import { ChevronRight, Database, SquareStack } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { ConnectionChooserButton } from "@/react/components/sql-editor/ConnectionChooserButton";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
-import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
@@ -54,19 +54,10 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
   };
 
   return (
-    <button
-      type="button"
+    <ConnectionChooserButton
       disabled={disabled || !projectContextReady}
       onClick={handleClick}
-      className={cn(
-        "inline-flex items-center justify-end gap-1 px-2 h-8 text-sm",
-        "border border-accent text-accent",
-        "hover:bg-accent/5 focus:bg-accent/5",
-        "rounded-none first:rounded-l-xs last:rounded-r-xs",
-        "[&:not(:last-child)]:border-r-0",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        "transition-colors overflow-hidden"
-      )}
+      className="overflow-hidden"
     >
       {isConnected ? (
         <div className="flex flex-row items-center text-control truncate">
@@ -90,6 +81,6 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
       ) : (
         <span>{t("sql-editor.select-a-database-to-start")}</span>
       )}
-    </button>
+    </ConnectionChooserButton>
   );
 }

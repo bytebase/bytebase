@@ -2825,6 +2825,9 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
+    "theme": {
+      "self": "テーマ"
+    },
     "unable-to-connect-database": "データベース {{name}} に接続できません",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",

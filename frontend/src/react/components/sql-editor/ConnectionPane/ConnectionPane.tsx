@@ -677,7 +677,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       <DatabaseHoverPanel offsetX={10} offsetY={4} margin={4} />
 
       {treeStoreState !== "READY" && (
-        <div className="absolute inset-0 bg-white/75 flex items-center justify-center">
+        <div className="absolute inset-0 bg-background/75 flex items-center justify-center">
           <span className="text-control text-sm">
             {t("sql-editor.loading-databases")}
           </span>

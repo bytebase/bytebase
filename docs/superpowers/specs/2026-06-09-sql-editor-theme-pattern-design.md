@@ -605,11 +605,30 @@ MONACO (single global, driven by foreground panel — cannot be per-scope):
 
 ## Future work (out of scope)
 
-- Custom theme editor (color pickers / JSON), validation, and storage of arbitrary
-  palettes. The model already supports it — only UI + persistence of custom objects
-  is missing.
+- **Custom theme editor — planned next.** A user-defined theme is just another
+  `SQLEditorTheme` object, so the application/override path (scope cascade + Monaco)
+  needs no change; the editor UI's only job is to *produce* a valid object
+  (color pickers / JSON), guarded by the existing `validateTheme`. Confirmed direction
+  (2026-06-15) — not built in v1. Landing it cleanly relies on three seams this design
+  already establishes; keep them intact:
+  1. **Single resolution point** — `resolveThemeId(id)` is the only place that turns an
+     id into a theme. Grow its source from `PRESET_BY_ID` → `{ …presets, …custom }` in
+     that one spot; everything downstream takes the resolved object.
+  2. **`SQLEditorTheme` stays plain serializable data** (token map of `"r g b"` strings
+     + hex strings — no functions/refs), so it persists to localStorage now and maps
+     cleanly to a proto/`Setting` later.
+  3. **Runtime Monaco registration** — presets are `defineTheme`'d once at init
+     (`monaco/core.ts`); custom themes need the same `defineTheme("bb-<id>", …)` on
+     create/edit (else `getResolvedTheme` falls back to `bb-light`).
+
+  Also handle the `name` field: presets use an i18n key (`t(theme.name)`); a custom
+  theme's name is a literal user string, so add a display field or `nameIsLiteral` flag
+  rather than relying on i18n returning the key verbatim.
+- **Backend / cross-device persistence — later (not now).** Confirmed direction
+  (2026-06-15): the selected id + any custom theme objects move from localStorage to a
+  user/workspace `Setting`, with localStorage as the offline/default fallback. No proto
+  or store-shape change in v1; the serializable model (seam #2 above) makes this additive.
 - "System" preset following `prefers-color-scheme`.
-- Backend/cross-device persistence of the theme choice.
 - The deferred Base-UI-internal portal popups (ConnectChooser dropdown, EllipsisCell
   tooltip) — re-scope their content under a dark/named theme.
 

@@ -36,7 +36,7 @@ import {
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
 // =============================================================================
-// SQLResultViewContext (dark / disallowCopyingData / detail-cell)
+// SQLResultViewContext (disallowCopyingData / detail-cell)
 // =============================================================================
 
 export interface ResultViewDetail {
@@ -45,7 +45,6 @@ export interface ResultViewDetail {
 }
 
 export interface SQLResultViewContext {
-  dark: boolean;
   disallowCopyingData: boolean;
   detail: ResultViewDetail | undefined;
   setDetail: (detail: ResultViewDetail | undefined) => void;
@@ -133,7 +132,6 @@ const NON_SQL_ENGINES = new Set<Engine>([
 ]);
 
 interface SQLResultViewProviderProps {
-  dark?: boolean;
   disallowCopyingData?: boolean;
   engine: Engine;
   // Connected schema, used to qualify the generated INSERT's table name.
@@ -145,7 +143,7 @@ interface SQLResultViewProviderProps {
 
 /**
  * Per-instance provider for one `<ResultView>` mount. Owns:
- *  - The dark/disallowCopying flags + the detail-cell state
+ *  - The disallowCopying flag + the detail-cell state
  *  - The binary-format Map (per-cell and per-column overrides)
  *  - The selection state + row/column/cell toggles + clipboard copy
  *
@@ -153,7 +151,6 @@ interface SQLResultViewProviderProps {
  * `useBinaryFormatContext`, and `useSelectionContext`.
  */
 export function SQLResultViewProvider({
-  dark = false,
   disallowCopyingData = false,
   engine,
   schema,
@@ -166,8 +163,8 @@ export function SQLResultViewProvider({
   // ---- SQLResultViewContext ----
   const [detail, setDetail] = useState<ResultViewDetail | undefined>(undefined);
   const sqlResultView = useMemo<SQLResultViewContext>(
-    () => ({ dark, disallowCopyingData, detail, setDetail }),
-    [dark, disallowCopyingData, detail]
+    () => ({ disallowCopyingData, detail, setDetail }),
+    [disallowCopyingData, detail]
   );
 
   // ---- BinaryFormatContext ----
