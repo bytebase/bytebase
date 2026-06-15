@@ -12,6 +12,13 @@ import {
 } from "@/react/stores/sqlEditor/editor";
 import { PRESETS } from "./theme/presets";
 
+// NOTE: preset names below are rendered as literal strings, NOT i18n keys, by
+// design. This switcher is dev-only (mounted behind `isDev()`), so end users
+// never see it; the names are largely proper nouns (e.g. "Solarized Dark") that
+// aren't translated anyway; and future user-defined custom themes will carry
+// arbitrary user-provided names. Only the switcher's own chrome label is
+// localized (`sql-editor.theme.self`). See the theme design doc's as-shipped
+// notes. (Intentional exception to the AGENTS.md "all UI text in locales" rule.)
 export function ThemeSelect() {
   const { t } = useTranslation();
   const themeId = useSQLEditorEditorState((s) => s.themeId);

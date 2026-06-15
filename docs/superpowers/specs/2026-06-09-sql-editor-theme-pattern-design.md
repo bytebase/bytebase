@@ -389,11 +389,16 @@ app root cascade into the shared overlay root automatically.)
 > *layer root* once with the **active** theme (so it also covers the Base-UI-internal
 > popups that couldn't be re-scoped individually — they're no longer a follow-up). Two
 > consequences for the surfaces above:
-> - **`RequestRoleSheet` uses NO nested scope.** It's shared with non-SQL-Editor pages
->   (`MembersPage`, `ComponentPermissionGuard`), so a scope keyed off the selected theme
->   would force light over a dark admin drawer, and reading the active theme directly
->   would leak the SQL-Editor theme onto those pages. It simply inherits the overlay
->   root: active inside the editor, `:root` (light) outside.
+> - **`RequestRoleSheet` is theme-injected by its host via an explicit prop.** It's shared
+>   with non-SQL-Editor pages (`MembersPage`, `ComponentPermissionGuard`), so it must NOT
+>   read the active theme itself (leaks the SQL-Editor theme onto those pages) and must NOT
+>   read the shared theme *context* (any ambient `SQLEditorThemeScope` ancestor would bleed
+>   in). Instead it takes an optional `theme` prop and applies it as inline vars on its
+>   `SheetContent` (the Sheet portals to the overlay root, so inline-on-content is what
+>   reaches the portaled DOM). Only the SQL-Editor host (`RequestDrawerHost`) passes it —
+>   the **active** theme. With no prop, `SheetContent` is left unstyled and inherits
+>   `:root`, so the drawer **always** renders in the default light app theme outside the
+>   SQL Editor, regardless of any ambient scope.
 > - **`AccessGrantRequestDrawer` keeps an explicit nested scope + inline `sheetStyle`,
 >   both keyed off the *active* theme** (it's SQL-Editor-only, so that's safe and also
 >   themes its embedded Monaco). Its Monaco additionally opts into the transparent-canvas

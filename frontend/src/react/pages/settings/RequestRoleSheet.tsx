@@ -18,6 +18,8 @@ import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
+import { themeToCssVars } from "@/react/components/sql-editor/theme/derive";
+import type { SQLEditorTheme } from "@/react/components/sql-editor/theme/types";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
@@ -90,6 +92,14 @@ export interface RequestRoleSheetProps {
    * switch to ALL or EXPRESSION mode if they want to broaden the scope.
    */
   initialDatabaseResources?: DatabaseResource[];
+  /**
+   * SQL-Editor theme to apply to the drawer chrome. Set ONLY by the SQL-Editor
+   * host (`RequestDrawerHost`) to the active theme (dark admin fallback
+   * included). Omitted by every other caller (MembersPage,
+   * ComponentPermissionGuard, …) so the drawer always renders in the default
+   * (light) app theme outside the SQL Editor.
+   */
+  theme?: SQLEditorTheme;
   onClose: () => void;
 }
 
@@ -110,10 +120,24 @@ const databaseModeLabelKey = (mode: DatabaseMode): string => {
 };
 
 export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
-  const { open, project, onClose } = props;
+  const { open, project, theme, onClose } = props;
+  // The Sheet portals to the app-global overlay root, so a SQL-Editor theme
+  // scope's CSS vars don't cascade in via the DOM — apply them inline on
+  // SheetContent instead, and ONLY when a `theme` is explicitly passed (by the
+  // SQL-Editor host). With no `theme`, leave SheetContent unstyled so it
+  // inherits `:root` and always renders in the default light app theme outside
+  // the SQL Editor — regardless of any ambient theme scope.
+  const sheetStyle = useMemo(
+    () => (theme ? themeToCssVars(theme.tokens) : undefined),
+    [theme]
+  );
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
+      <SheetContent
+        width="standard"
+        style={sheetStyle}
+        className={theme ? "text-main" : undefined}
+      >
         {/* Base UI's Dialog.Portal unmounts after the close animation,
             so the inner form mounts/unmounts with the Sheet's lifecycle
             without needing an explicit {open && ...} guard. The `key`
@@ -133,14 +157,8 @@ function RequestRoleForm({
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  // No SQL-Editor theme scope here: this sheet is shared (MembersPage,
-  // ComponentPermissionGuard) AND hosted in the SQL Editor (RequestDrawerHost).
-  // Its Sheet portals into the overlay root, which `useSQLEditorOverlayTheme`
-  // already themes with the *active* theme (the dark admin fallback) while the
-  // SQL Editor is mounted — so it inherits the correct theme there, and `:root`
-  // (light) elsewhere. A nested scope keyed off the selected theme would instead
-  // override admin's dark overlay back to light, and using the active theme
-  // directly would leak the SQL-Editor theme onto MembersPage.
+  // Theming is handled by the outer RequestRoleSheet (inline vars on
+  // SheetContent); this form just inherits them.
   const [role, setRole] = useState(initialRole);
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<

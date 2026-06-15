@@ -815,7 +815,7 @@ export function DatabaseResourceSelector({
 
   return (
     <div className="border border-control-border rounded-sm overflow-hidden">
-      <div className="bg-gray-50 border-b border-control-border px-2 py-1.5">
+      <div className="bg-control-bg border-b border-control-border px-2 py-1.5">
         <AdvancedSearch
           placeholder={t("common.filter")}
           params={searchParams}
@@ -825,7 +825,7 @@ export function DatabaseResourceSelector({
       </div>
       <div className="flex" style={{ height: "min(24rem, 60vh)" }}>
         <div className="flex-1 flex flex-col border-r border-control-border min-w-0">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-gray-50 border-b border-control-border text-xs text-control-light">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-control-bg border-b border-control-border text-xs text-control-light">
             <button
               type="button"
               className="text-accent hover:underline cursor-pointer"
@@ -854,7 +854,7 @@ export function DatabaseResourceSelector({
 
               return (
                 <div key={db.name}>
-                  <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-gray-50 group">
+                  <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg group">
                     <button
                       type="button"
                       className="shrink-0 w-4 h-4 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
@@ -922,7 +922,7 @@ export function DatabaseResourceSelector({
 
                             return (
                               <div key={schema.name}>
-                                <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-gray-50">
+                                <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg">
                                   <button
                                     type="button"
                                     className="shrink-0 w-4 h-4 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
@@ -974,7 +974,7 @@ export function DatabaseResourceSelector({
           </div>
         </div>
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-center px-3 py-1.5 bg-gray-50 border-b border-control-border text-xs text-control-light">
+          <div className="flex items-center px-3 py-1.5 bg-control-bg border-b border-control-border text-xs text-control-light">
             <span>
               {value.length} {t("common.items", { count: value.length })}{" "}
               {t("common.selected").toLowerCase()}
@@ -990,7 +990,7 @@ export function DatabaseResourceSelector({
                 {value.map((r) => (
                   <div
                     key={`${r.databaseFullName}/${r.schema ?? ""}/${r.table ?? ""}/${(r.columns ?? []).join("\0")}`}
-                    className="flex items-center gap-x-1 px-2 py-1 text-sm hover:bg-gray-50 group rounded-sm"
+                    className="flex items-center gap-x-1 px-2 py-1 text-sm hover:bg-control-bg group rounded-sm"
                   >
                     <span className="flex-1 truncate">{resourceLabel(r)}</span>
                     <button
@@ -1036,7 +1036,7 @@ function TableNode({
 }) {
   return (
     <div>
-      <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-gray-50">
+      <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg">
         {includeColumns && columns.length > 0 ? (
           <button
             type="button"
@@ -1065,7 +1065,7 @@ function TableNode({
           {columns.map((column) => (
             <div
               key={column.name}
-              className="flex items-center gap-x-1 px-2 py-1 hover:bg-gray-50"
+              className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg"
             >
               <span className="shrink-0 w-4" />
               <Checkbox

@@ -35,6 +35,19 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
+// RequestDrawerHost (imported transitively for `useRequestDrawerHost`) now pulls
+// in the active-theme hook, which reaches the editor/app stores + i18n. This
+// test only exercises button behavior, so stub the hook to keep the module graph
+// light (the drawers themselves are already mocked below).
+vi.mock("./theme/useActiveSQLEditorTheme", () => ({
+  useActiveSQLEditorTheme: () => ({
+    id: "light",
+    name: "Default Light",
+    monacoBase: "vs",
+    tokens: {},
+  }),
+}));
+
 vi.mock("@/store", () => ({
   useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   hasFeature: mocks.hasFeature,
