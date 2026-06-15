@@ -26,7 +26,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import type { BytebaseApiClient } from "../framework/api-client";
-import { execSql, getInstancePgPort } from "../framework/psql";
+import { execSql, getInstancePgPort, querySql } from "../framework/psql";
 import { SqlEditorPage } from "./sql-editor.page";
 
 test.setTimeout(120_000);
@@ -323,22 +323,53 @@ test.describe("Automatic mode routes DML to the admin data source (BYT-9557)", (
     // fails with "permission denied for table"; the fix routes DML to the ADMIN
     // data source (the table's owner), so it succeeds. Pre-fix this rendered the
     // permission-denied error.
-    await sqlEditor.runPreparedQuery(
+    // Re-open the editor in a fresh tab before the UPDATE. runPreparedQuery's
+    // setEditorContent does NOT reliably clear a SECOND statement once a result
+    // is on screen: the prior SELECT's text is retained, the editor ends up with
+    // "SELECT current_user;UPDATE …", Run executes only the SELECT, and the
+    // UPDATE never runs — so the old "no permission-denied error" assertion
+    // passed vacuously (no UPDATE → no denial). A fresh editor runs the UPDATE
+    // in isolation. (Verified: with the fresh editor the UPDATE executes, the UI
+    // shows "rows affected", and the row becomes 'after'.)
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await page.waitForTimeout(1200);
+    await sqlEditor.setEditorContent(
       `UPDATE ${RO_PROBE_TABLE} SET v = 'after' WHERE id = 1;`,
     );
-    await page.waitForTimeout(800);
-    // No-denial is the clean discriminator: the RO user can only SELECT this
-    // admin-owned table, so a successful (un-denied) UPDATE proves the DML was
-    // routed to the admin data source — not the read-only one. Pre-fix this
-    // rendered "ERROR: permission denied for table".
+    await sqlEditor.runButton.click();
+
+    // Positive oracle anchored to THIS statement's effect: poll the row as the
+    // owner until v flips 'before' -> 'after'. This both waits for the UPDATE to
+    // resolve and proves it actually applied. If automatic mode (wrongly) routed
+    // the DML to the read-only data source it would be permission-denied and v
+    // would stay 'before', so the poll would time out and fail — unlike a bare
+    // "no error visible yet" assertion, which can pass before the statement even
+    // resolves.
+    await expect
+      .poll(
+        () =>
+          querySql(
+            env.databaseId,
+            pgPort,
+            `SELECT v FROM ${RO_PROBE_TABLE} WHERE id = 1`,
+          ),
+        {
+          timeout: 15_000,
+          message:
+            "the admin-routed UPDATE must apply (v='after'); if automatic mode " +
+            "routed the DML to the read-only data source it would be denied and " +
+            "v would stay 'before'",
+        },
+      )
+      .toBe("after");
+
+    // The UPDATE having landed, the user must also not see a permission-denied
+    // error. Safe now — the poll proved the statement resolved, so this is not
+    // racing it. Pre-fix this rendered "ERROR: permission denied for table".
     await expect(
       page.getByText(/permission denied/i),
       "the DML must not be denied — it should route to the admin data source, " +
         "not the read-only one (which can only SELECT the admin-owned table)",
-    ).toHaveCount(0, { timeout: 5000 });
-    await expect(
-      page.getByText(/ERROR/i),
-      "the admin-routed UPDATE must succeed (no error)",
     ).toHaveCount(0, { timeout: 5000 });
   });
 });
