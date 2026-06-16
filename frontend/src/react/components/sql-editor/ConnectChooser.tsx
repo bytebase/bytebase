@@ -18,6 +18,7 @@ import {
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
+import { ConnectionChooserButton } from "./ConnectionChooserButton";
 
 export type { ComboboxOption };
 
@@ -198,18 +199,9 @@ export function ConnectChooser({
 
   return (
     <>
-      <button
+      <ConnectionChooserButton
         ref={triggerRef}
-        type="button"
-        className={cn(
-          "inline-flex items-center justify-end gap-1 px-2 h-8 text-sm",
-          "border border-accent text-accent",
-          "hover:bg-accent/5 focus:bg-accent/5",
-          "rounded-none first:rounded-l-xs last:rounded-r-xs",
-          "[&:not(:last-child)]:border-r-0",
-          "transition-colors",
-          isChosen ? "max-w-[12rem]" : "max-w-none"
-        )}
+        className={isChosen ? "max-w-[12rem]" : "max-w-none"}
         aria-label={placeholder}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -227,7 +219,7 @@ export function ConnectChooser({
             {placeholder}
           </span>
         )}
-      </button>
+      </ConnectionChooserButton>
       {open && createPortal(dropdownContent, getLayerRoot("overlay"))}
     </>
   );

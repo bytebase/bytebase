@@ -116,7 +116,10 @@ export interface MonacoEditorProps {
 // Marker class for the active-statement highlight. Used both to render the
 // decoration and to identify (and clear) all such decorations on the shared
 // model, regardless of which editor lifecycle created them.
-const ACTIVE_STATEMENT_DECORATION_CLASS = "bg-gray-200";
+// `bg-control-bg-hover` is `#e5e7eb` in light (identical to the old gray-200,
+// so no app-wide change) and a themed gray in dark so the highlight isn't a
+// near-white block on the dark editor surface.
+const ACTIVE_STATEMENT_DECORATION_CLASS = "bg-control-bg-hover";
 
 export function MonacoEditor({
   advices = [],

@@ -94,7 +94,7 @@ export function DatabaseHoverPanel({
     <div
       ref={popoverRef}
       className={cn(
-        "fixed border border-gray-100 rounded-sm bg-white p-2 shadow-sm transition-all text-sm",
+        "fixed border border-block-border rounded-sm bg-background p-2 shadow-sm transition-all text-sm",
         LAYER_SURFACE_CLASS,
         !show && "pointer-events-none opacity-0"
       )}
@@ -111,7 +111,7 @@ export function DatabaseHoverPanel({
           style={{ gridTemplateColumns: "auto 1fr" }}
         >
           <div className="contents">
-            <div className="text-gray-500 font-medium">
+            <div className="text-control-light font-medium">
               {t("common.environment")}
             </div>
             <div className="text-main text-right flex justify-end">
@@ -121,7 +121,7 @@ export function DatabaseHoverPanel({
             </div>
           </div>
           <div className="contents">
-            <div className="text-gray-500 font-medium">
+            <div className="text-control-light font-medium">
               {t("common.instance")}
             </div>
             <div className="text-main text-right truncate">
@@ -130,7 +130,7 @@ export function DatabaseHoverPanel({
           </div>
           {!hasProjectContext && (
             <div className="contents">
-              <div className="text-gray-500 font-medium">
+              <div className="text-control-light font-medium">
                 {t("common.project")}
               </div>
               <div className="text-main text-right truncate">
@@ -139,14 +139,14 @@ export function DatabaseHoverPanel({
             </div>
           )}
           <div className="contents">
-            <div className="text-gray-500 font-medium">
+            <div className="text-control-light font-medium">
               {t("common.labels")}
             </div>
             <div className="text-main flex flex-row justify-end flex-wrap gap-1">
               {Object.entries(database.labels).map(([key, value]) => (
                 <div
                   key={key}
-                  className="text-xs py-px px-1 bg-gray-200/75 rounded-xs"
+                  className="text-xs py-px px-1 bg-control-bg rounded-xs"
                 >
                   <span>{key}</span>
                   {value ? (

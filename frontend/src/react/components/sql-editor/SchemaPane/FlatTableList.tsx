@@ -166,12 +166,12 @@ export function FlatTableList({
                 <TableIcon className="size-3.5 shrink-0" />
                 <span className="truncate">
                   {item.schema ? (
-                    <span className="text-gray-500">{item.schema}.</span>
+                    <span className="text-control-light">{item.schema}.</span>
                   ) : null}
                   <span>{item.metadata.name}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 shrink-0 ml-2">
+              <div className="flex items-center gap-2 text-xs text-control-light shrink-0 ml-2">
                 <span>{item.metadata.columns.length} cols</span>
                 {item.metadata.columns.length > 0 ? (
                   <Button
@@ -203,10 +203,10 @@ export function FlatTableList({
             </div>
 
             {isExpanded ? (
-              <div className="pl-4 pr-2 bg-gray-50 border-l-2 border-gray-200">
+              <div className="pl-4 pr-2 bg-control-bg border-l-2 border-block-border">
                 {item.metadata.columns.length > 0 ? (
                   <div className="py-1">
-                    <div className="text-xs font-medium text-gray-600 mb-1">
+                    <div className="text-xs font-medium text-control-light mb-1">
                       {t("database.columns")}
                     </div>
                     {item.metadata.columns.map((column) => (
@@ -215,17 +215,19 @@ export function FlatTableList({
                         className="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs pl-2"
                       >
                         <div className="flex items-center gap-1">
-                          <ColumnIcon className="size-3 text-gray-400" />
+                          <ColumnIcon className="size-3 text-control-placeholder" />
                           <span>{column.name}</span>
                         </div>
-                        <span className="text-gray-500">{column.type}</span>
+                        <span className="text-control-light">
+                          {column.type}
+                        </span>
                       </div>
                     ))}
                   </div>
                 ) : null}
                 {item.metadata.indexes && item.metadata.indexes.length > 0 ? (
-                  <div className="py-1 border-t border-gray-200">
-                    <div className="text-xs font-medium text-gray-600 mb-1">
+                  <div className="py-1 border-t border-block-border">
+                    <div className="text-xs font-medium text-control-light mb-1">
                       {t("database.indexes")}
                     </div>
                     {item.metadata.indexes.map((index) => (
@@ -234,10 +236,10 @@ export function FlatTableList({
                         className="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs pl-2"
                       >
                         <div className="flex items-center gap-1">
-                          <IndexIcon className="size-3 text-gray-400" />
+                          <IndexIcon className="size-3 text-control-placeholder" />
                           <span>{index.name}</span>
                         </div>
-                        <span className="text-gray-500">
+                        <span className="text-control-light">
                           {index.unique ? "UNIQUE" : ""}{" "}
                           {index.primary ? "PRIMARY" : ""}
                         </span>

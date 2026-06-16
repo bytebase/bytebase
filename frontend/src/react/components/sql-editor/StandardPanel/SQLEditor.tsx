@@ -33,6 +33,8 @@ import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain, nextAnimationFrame } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { useAIActions } from "../Panels/common/useAIActions";
+import { monacoThemeName } from "../theme/derive";
+import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import { computeAppendedSelection } from "./appendSelection";
 import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
@@ -430,6 +432,12 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     };
   }, [instanceName, databaseName, schema]);
 
+  const activeTheme = useActiveSQLEditorTheme();
+  const editorOptions = useMemo(
+    () => ({ theme: monacoThemeName(activeTheme) }),
+    [activeTheme]
+  );
+
   return (
     <div className="w-full h-full grow flex flex-col justify-start items-start overflow-hidden">
       <MonacoEditor
@@ -443,6 +451,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         dialect={dialect}
         readOnly={readonly}
         autoCompleteContext={autoCompleteContext}
+        options={editorOptions}
         onChange={handleChange}
         onSelectContent={handleSelectContent}
         onSelectionChange={handleSelectionChange}

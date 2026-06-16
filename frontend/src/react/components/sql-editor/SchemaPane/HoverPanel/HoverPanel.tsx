@@ -139,7 +139,7 @@ export function HoverPanel({
     <div
       ref={popoverRef}
       className={cn(
-        "fixed border border-gray-100 rounded-sm bg-white p-2 shadow-sm transition-[top] text-sm",
+        "fixed border border-block-border rounded-sm bg-background p-2 shadow-sm transition-[top] text-sm",
         LAYER_SURFACE_CLASS,
         !show && "invisible pointer-events-none"
       )}

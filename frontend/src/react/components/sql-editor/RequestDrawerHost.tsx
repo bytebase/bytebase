@@ -9,6 +9,7 @@ import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
 import type { DatabaseResource, Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
+import { useActiveSQLEditorTheme } from "./theme/useActiveSQLEditorTheme";
 
 type RequestRoleArgs = {
   project: Project;
@@ -57,6 +58,14 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
     []
   );
 
+  // This host only renders inside the SQL Editor, so resolve the ACTIVE theme
+  // (the dark admin fallback in admin mode) and hand it to RequestRoleSheet as
+  // an explicit prop. RequestRoleSheet is shared with non-SQL-Editor pages, so
+  // it stays light unless a host passes a theme — this is the only caller that
+  // does. (AccessGrantRequestDrawer is SQL-Editor-only and reads the active
+  // theme itself.)
+  const activeTheme = useActiveSQLEditorTheme();
+
   return (
     <RequestDrawerHostContext.Provider value={value}>
       {children}
@@ -67,6 +76,7 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
           requiredPermissions={roleArgs.requiredPermissions}
           initialRole={roleArgs.initialRole}
           initialDatabaseResources={roleArgs.initialDatabaseResources}
+          theme={activeTheme}
           onClose={() => setRoleArgs(null)}
         />
       )}

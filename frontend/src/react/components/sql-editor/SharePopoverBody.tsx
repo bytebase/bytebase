@@ -175,7 +175,7 @@ export function SharePopoverBody({ worksheet }: Props) {
                 "border flex flex-row justify-start items-center px-2 py-1 rounded-sm",
                 allowChangeAccess
                   ? "hover:border-accent"
-                  : "border-gray-200 text-gray-400"
+                  : "border-control-border text-control-placeholder"
               )}
             >
               <strong>{currentAccess.label}</strong>
@@ -190,8 +190,8 @@ export function SharePopoverBody({ worksheet }: Props) {
                   data-option-row
                   className={cn(
                     "p-2 rounded-xs flex justify-between",
-                    allowChangeAccess && "cursor-pointer hover:bg-gray-200",
-                    option.value === currentAccess.value && "bg-gray-200"
+                    allowChangeAccess && "cursor-pointer hover:bg-control-bg",
+                    option.value === currentAccess.value && "bg-control-bg"
                   )}
                   onClick={() => handleChangeAccess(option)}
                 >
@@ -229,7 +229,7 @@ export function SharePopoverBody({ worksheet }: Props) {
           type="text"
           readOnly
           value={sharedTabLink}
-          className="flex-1 min-w-0 h-full px-2 bg-white text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
+          className="flex-1 min-w-0 h-full px-2 bg-background text-control text-sm cursor-text appearance-none border-0 shadow-none outline-hidden focus:outline-hidden focus:ring-0 focus:border-0 focus:shadow-none"
         />
         {/* Copy button — enabled whenever the shared worksheet has a link.
             Gated on the shared worksheet (sharedTabLink), NOT the current tab's
@@ -243,7 +243,7 @@ export function SharePopoverBody({ worksheet }: Props) {
           data-copy-btn
           disabled={!sharedTabLink}
           onClick={handleCopyLink}
-          className="h-full rounded-none border-l border-control-border bg-white enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
+          className="h-full rounded-none border-l border-control-border bg-background enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
         >
           <Copy className="size-4" />
         </Button>

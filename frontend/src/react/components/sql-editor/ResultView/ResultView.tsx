@@ -48,7 +48,9 @@ export interface ResultViewProps {
   database: Database;
   resultSet?: SQLResultSetV1;
   loading?: boolean;
-  dark?: boolean;
+  // Compact layout (fixed-height result body) for the terminal / admin panel.
+  // The worksheet panel leaves this false to keep the flex-grow layout.
+  compact?: boolean;
 }
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
@@ -65,7 +67,7 @@ export function ResultView({
   database,
   resultSet,
   loading,
-  dark = false,
+  compact = false,
 }: ResultViewProps) {
   const { t } = useTranslation();
   const project = useSQLEditorEditorState((s) => s.project);
@@ -237,7 +239,7 @@ export function ResultView({
     <div
       className={cn(
         "relative flex flex-col justify-start items-start pb-1 overflow-y-auto h-full w-full",
-        dark && "dark bg-dark-bg"
+        "bg-background"
       )}
     >
       {executeParams && resultSet && !showPlaceholder && (
@@ -245,7 +247,6 @@ export function ResultView({
           {viewMode === "SINGLE-RESULT" &&
             (resultSet.results[0]?.error ? (
               <ErrorView
-                dark={dark}
                 error={resultSet.results[0].error}
                 executeParams={executeParams}
                 resultSet={resultSet}
@@ -253,7 +254,6 @@ export function ResultView({
               />
             ) : (
               <SingleResultView
-                dark={dark}
                 disallowCopyingData={disallowCopyingData}
                 params={executeParams}
                 database={database}
@@ -265,6 +265,7 @@ export function ResultView({
                 requestExportSlot={
                   !showExport ? requestExportButton : undefined
                 }
+                compact={compact}
               />
             ))}
 
@@ -318,7 +319,6 @@ export function ResultView({
                 >
                   {result.error ? (
                     <ErrorView
-                      dark={dark}
                       error={result.error}
                       executeParams={executeParams}
                       resultSet={resultSet}
@@ -326,7 +326,6 @@ export function ResultView({
                     />
                   ) : (
                     <SingleResultView
-                      dark={dark}
                       disallowCopyingData={disallowCopyingData}
                       params={executeParams}
                       database={database}
@@ -334,6 +333,7 @@ export function ResultView({
                       showExport={false}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={handleExport}
+                      compact={compact}
                     />
                   )}
                 </TabsPanel>
@@ -341,11 +341,10 @@ export function ResultView({
             </Tabs>
           )}
 
-          {viewMode === "EMPTY" && <EmptyView dark={dark} />}
+          {viewMode === "EMPTY" && <EmptyView />}
 
           {viewMode === "ERROR" && (
             <ErrorView
-              dark={dark}
               error={resultSet.error}
               executeParams={executeParams}
               resultSet={resultSet}

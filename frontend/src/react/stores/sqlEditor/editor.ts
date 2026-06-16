@@ -1,6 +1,10 @@
 import { useSyncExternalStore } from "react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import {
+  DEFAULT_THEME_ID,
+  PRESET_BY_ID,
+} from "@/react/components/sql-editor/theme/presets";
 import { useAppStore } from "@/react/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
@@ -8,6 +12,7 @@ import {
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
   storageKeySqlEditorLastProject,
+  storageKeySqlEditorTheme,
   workspaceCacheScope,
 } from "@/utils/storage-keys";
 
@@ -18,6 +23,7 @@ export interface SQLEditorEditorState {
   redisCommandOption: QueryOption_RedisRunCommandsOn;
   isShowExecutingHint: boolean;
   executingHintDatabase: Database | undefined;
+  themeId: string;
 
   setProject: (project: string) => void;
   setProjectContextReady: (ready: boolean) => void;
@@ -25,6 +31,7 @@ export interface SQLEditorEditorState {
   setRedisCommandOption: (option: QueryOption_RedisRunCommandsOn) => void;
   setShowExecutingHint: (show: boolean) => void;
   setExecutingHintDatabase: (db: Database | undefined) => void;
+  setThemeId: (id: string) => void;
 }
 
 const DEFAULT_RESULT_ROWS_LIMIT = 1000;
@@ -78,6 +85,22 @@ const readProject = () =>
     ""
   );
 
+const themeKey = () => {
+  const state = useAppStore.getState();
+  const isSaaS =
+    typeof state?.isSaaSMode === "function" ? state.isSaaSMode() : false;
+  return storageKeySqlEditorTheme(
+    workspaceCacheScope(isSaaS, state?.currentUser?.workspace ?? "")
+  );
+};
+
+const readThemeId = () =>
+  safeRead<string>(
+    themeKey(),
+    (v) => (typeof v === "string" && PRESET_BY_ID[v] ? v : undefined),
+    DEFAULT_THEME_ID
+  );
+
 const readResultRowsLimit = () =>
   safeRead<number>(
     STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
@@ -107,6 +130,7 @@ export const useSQLEditorEditorStore: UseBoundStore<
     redisCommandOption: readRedisOption(),
     isShowExecutingHint: false,
     executingHintDatabase: undefined,
+    themeId: readThemeId(),
 
     setProject(project) {
       set((s) => {
@@ -125,6 +149,14 @@ export const useSQLEditorEditorStore: UseBoundStore<
         s.resultRowsLimit = limit;
       });
       safeWrite(STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT, limit);
+    },
+    setThemeId(id) {
+      // Ignore ids not in the catalog so a stale/garbage value can't break theming.
+      const next = PRESET_BY_ID[id] ? id : DEFAULT_THEME_ID;
+      set((s) => {
+        s.themeId = next;
+      });
+      safeWrite(themeKey(), next);
     },
     setRedisCommandOption(option) {
       set((s) => {

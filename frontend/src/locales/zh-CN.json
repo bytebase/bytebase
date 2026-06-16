@@ -2872,6 +2872,9 @@
     "table-empty-placeholder": "点击 \"运行\" 执行查询",
     "table-view": "表格视图",
     "text-format": "文本格式",
+    "theme": {
+      "self": "主题"
+    },
     "unable-to-connect-database": "无法连接到数据库 {{name}}",
     "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",

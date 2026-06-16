@@ -2151,8 +2151,14 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     ? (roleList.find((r) => r.name === PresetRoleType.PROJECT_OWNER)
         ?.permissions ?? [])
     : [];
+  // Require a non-empty owner permission set: when roleList is empty (roles
+  // still loading, or listRoles failed and the loader continued with []), a
+  // vacuous every() would otherwise report "full access" and wrongly block a
+  // non-owner from the request-role flow. Falling through to false keeps the
+  // request flow reachable (it has its own permission guard).
   const hasFullProjectAccess =
     !!project &&
+    ownerPermissions.length > 0 &&
     ownerPermissions.every((permission) =>
       hasProjectPermissionV2(project, permission as Permission)
     );

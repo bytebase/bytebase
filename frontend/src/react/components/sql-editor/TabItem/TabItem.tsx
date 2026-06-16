@@ -66,17 +66,19 @@ export function TabItem({
     if (!environment || environment.id === String(UNKNOWN_ID)) return undefined;
     return environment.color || undefined;
   });
-  const backgroundColorRgb = isCurrentTab
-    ? environmentTintColor
+  // Per-environment tint only. The active-tab fallback (no env color) is
+  // themed via the `accent` token classes below instead of a hardcoded indigo,
+  // so it stays readable in dark themes.
+  const envColorRgb =
+    isCurrentTab && environmentTintColor
       ? hexToRgb(environmentTintColor).join(", ")
-      : hexToRgb("#4f46e5").join(", ")
-    : "";
+      : "";
 
-  const bodyStyle = backgroundColorRgb
+  const bodyStyle = envColorRgb
     ? {
-        backgroundColor: `rgba(${backgroundColorRgb}, 0.1)`,
-        borderTopColor: `rgb(${backgroundColorRgb})`,
-        color: `rgb(${backgroundColorRgb})`,
+        backgroundColor: `rgba(${envColorRgb}, 0.1)`,
+        borderTopColor: `rgb(${envColorRgb})`,
+        color: `rgb(${envColorRgb})`,
       }
     : undefined;
 
@@ -115,7 +117,12 @@ export function TabItem({
       <div
         className={cn(
           "body flex items-center justify-between gap-x-2 pl-2 pr-1 border-t h-9",
-          isCurrentTab ? "pt-0.5 border-t-[3px] bg-background" : "pt-1"
+          isCurrentTab ? "pt-0.5 border-t-[3px] bg-background" : "pt-1",
+          // Active tab without a per-environment color: accent token (adapts to
+          // light/dark) replaces the old hardcoded indigo that was dim on dark.
+          isCurrentTab &&
+            !envColorRgb &&
+            "border-accent text-accent bg-accent/10"
         )}
         style={bodyStyle}
       >

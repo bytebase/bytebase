@@ -72,7 +72,7 @@ export function DatabaseQueryContext({
 
   if (isExecuting) {
     return (
-      <div className="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-white/80 dark:bg-black/80">
+      <div className="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-background/80">
         <div className="flex items-center gap-x-1">
           <Loader2 className="size-5 animate-spin mr-1" />
           <span>{t("sql-editor.executing-query")}</span>
@@ -90,7 +90,7 @@ export function DatabaseQueryContext({
 
   if (context.status === "CANCELLED") {
     return (
-      <div className="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-white/80 dark:bg-black/80">
+      <div className="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-background/80">
         <Button
           size="sm"
           variant="outline"

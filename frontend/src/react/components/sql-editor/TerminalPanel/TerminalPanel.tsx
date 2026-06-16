@@ -14,6 +14,8 @@ import {
 } from "@/react/stores/sqlEditor/tab";
 import { getWebTerminalQuerySession } from "@/react/stores/sqlEditor/webTerminal-service";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
+import { SQLEditorThemeScope } from "../theme/SQLEditorThemeScope";
+import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import { CompactSQLEditor } from "./CompactSQLEditor";
 import { useHistory } from "./useHistory";
 
@@ -37,6 +39,7 @@ import { useHistory } from "./useHistory";
  */
 export function TerminalPanel() {
   const { t } = useTranslation();
+  const adminTheme = useActiveSQLEditorTheme();
   const batchGetOrFetchDatabases = useAppStore(
     (s) => s.batchGetOrFetchDatabases
   );
@@ -203,70 +206,72 @@ export function TerminalPanel() {
   );
 
   return (
-    <div className="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-dark-bg">
-      <EditorAction />
-      {!isDisconnected ? (
-        <div
-          ref={containerRef}
-          className="w-full flex-1 overflow-y-auto bg-dark-bg"
-        >
-          <div ref={stackRef} className="w-full flex flex-col">
-            {queryList.map((query) => {
-              const editable = isEditableQueryItem(query);
-              const database = query.params?.connection.database
-                ? getDatabaseByName(query.params.connection.database)
-                : undefined;
-              return (
-                <div key={query.id} className="relative">
-                  <CompactSQLEditor
-                    content={query.statement}
-                    readonly={!editable}
-                    onChange={handleChangeFor.get(query.id) ?? noop}
-                    onExecute={handleExecute}
-                    onHistory={handleHistory}
-                    onClearScreen={handleClearScreen}
-                  />
-                  {query.params && query.resultSet && database && (
-                    <div className="p-2 w-full flex-1 min-h-0">
-                      <ResultView
-                        executeParams={query.params}
-                        resultSet={query.resultSet}
-                        database={database}
-                        loading={query.status === "RUNNING"}
-                        dark
-                      />
-                    </div>
-                  )}
-                  {query.resultSet?.error && (
-                    <div className="p-2 pb-1 text-md font-normal text-matrix-green-hover">
-                      {t("sql-editor.connection-lost")}
-                    </div>
-                  )}
-                  {query.status === "RUNNING" && (
-                    <div className="absolute inset-0 bg-black/20 flex justify-center items-center gap-2">
-                      <Loader2 className="size-5 animate-spin text-control-light" />
-                      {query === currentQuery && expired && (
-                        <button
-                          type="button"
-                          className="text-gray-400 cursor-pointer hover:underline text-sm select-none"
-                          onClick={handleCancelQuery}
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+    <SQLEditorThemeScope theme={adminTheme} className="h-full w-full">
+      <div className="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-background">
+        <EditorAction />
+        {!isDisconnected ? (
+          <div
+            ref={containerRef}
+            className="w-full flex-1 overflow-y-auto bg-background"
+          >
+            <div ref={stackRef} className="w-full flex flex-col">
+              {queryList.map((query) => {
+                const editable = isEditableQueryItem(query);
+                const database = query.params?.connection.database
+                  ? getDatabaseByName(query.params.connection.database)
+                  : undefined;
+                return (
+                  <div key={query.id} className="relative">
+                    <CompactSQLEditor
+                      content={query.statement}
+                      readonly={!editable}
+                      onChange={handleChangeFor.get(query.id) ?? noop}
+                      onExecute={handleExecute}
+                      onHistory={handleHistory}
+                      onClearScreen={handleClearScreen}
+                    />
+                    {query.params && query.resultSet && database && (
+                      <div className="p-2 w-full flex-1 min-h-0">
+                        <ResultView
+                          executeParams={query.params}
+                          resultSet={query.resultSet}
+                          database={database}
+                          loading={query.status === "RUNNING"}
+                          compact
+                        />
+                      </div>
+                    )}
+                    {query.resultSet?.error && (
+                      <div className="p-2 pb-1 text-md font-normal text-matrix-green-hover">
+                        {t("sql-editor.connection-lost")}
+                      </div>
+                    )}
+                    {query.status === "RUNNING" && (
+                      <div className="absolute inset-0 bg-overlay/20 flex justify-center items-center gap-2">
+                        <Loader2 className="size-5 animate-spin text-control-light" />
+                        {query === currentQuery && expired && (
+                          <button
+                            type="button"
+                            className="text-control-placeholder cursor-pointer hover:underline text-sm select-none"
+                            onClick={handleCancelQuery}
+                          >
+                            {t("common.cancel")}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col min-h-0">
-          <ConnectionHolder />
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className="flex-1 flex flex-col min-h-0">
+            <ConnectionHolder />
+          </div>
+        )}
+      </div>
+    </SQLEditorThemeScope>
   );
 }
 

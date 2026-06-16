@@ -15,6 +15,10 @@ import { ConnectionPanel } from "@/react/components/sql-editor/ConnectionPanel";
 import { Panels } from "@/react/components/sql-editor/Panels/Panels";
 import { TabList } from "@/react/components/sql-editor/TabList";
 import {
+  SQLEditorThemeScope,
+  useSQLEditorTheme,
+} from "@/react/components/sql-editor/theme/SQLEditorThemeScope";
+import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
@@ -78,6 +82,9 @@ export function SQLEditorHomePage() {
       : undefined;
   const tab = useCurrentSQLEditorTab();
   const isDisconnected = useIsDisconnected();
+  // Read the active theme once so portaled overlays (which mount outside the
+  // chrome DOM subtree) can re-write the chrome CSS vars on their own root.
+  const theme = useSQLEditorTheme();
 
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
@@ -158,40 +165,45 @@ export function SQLEditorHomePage() {
 
   const mobileToggle = hideSidebar
     ? createPortal(
-        <button
-          type="button"
-          className={cn(
-            "fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-white hover:bg-control-bg cursor-pointer transition-all",
-            LAYER_SURFACE_CLASS,
-            sidebarExpanded ? "left-[80%] -translate-x-5" : "left-4"
-          )}
-          style={{
-            transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-            transitionDuration: "300ms",
-          }}
-          onClick={() => setSidebarExpanded((prev) => !prev)}
-          aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          <ChevronLeft
+        <SQLEditorThemeScope theme={theme} asContents>
+          <button
+            type="button"
             className={cn(
-              "w-6 h-6 transition-transform",
-              !sidebarExpanded && "-scale-100"
+              "fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
+              LAYER_SURFACE_CLASS,
+              sidebarExpanded ? "left-[80%] -translate-x-5" : "left-4"
             )}
-          />
-        </button>,
+            style={{
+              transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+              transitionDuration: "300ms",
+            }}
+            onClick={() => setSidebarExpanded((prev) => !prev)}
+            aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <ChevronLeft
+              className={cn(
+                "w-6 h-6 transition-transform",
+                !sidebarExpanded && "-scale-100"
+              )}
+            />
+          </button>
+        </SQLEditorThemeScope>,
         getLayerRoot("overlay")
       )
     : null;
 
   return (
-    <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col">
+    <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col bg-background text-main">
       {mobileToggle}
       {hideSidebar &&
         sidebarExpanded &&
         createPortal(
-          <>
+          <SQLEditorThemeScope theme={theme} asContents>
             <div
-              className={cn("fixed inset-0 bg-black/40", LAYER_BACKDROP_CLASS)}
+              className={cn(
+                "fixed inset-0 bg-overlay/40",
+                LAYER_BACKDROP_CLASS
+              )}
               onClick={() => setSidebarExpanded(false)}
             />
             <div
@@ -204,7 +216,7 @@ export function SQLEditorHomePage() {
             >
               <AsidePanel />
             </div>
-          </>,
+          </SQLEditorThemeScope>,
           getLayerRoot("overlay")
         )}
       <PanelGroup orientation="horizontal" className="h-full">

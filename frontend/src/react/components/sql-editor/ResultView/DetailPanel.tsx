@@ -66,8 +66,7 @@ function useLocalStorageBoolean(
 
 export function DetailPanel({ rows, columns }: DetailPanelProps) {
   const { t } = useTranslation();
-  const { dark, detail, disallowCopyingData, setDetail } =
-    useSQLResultViewContext();
+  const { detail, disallowCopyingData, setDetail } = useSQLResultViewContext();
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
   const [copied, setCopied] = useState(false);
 
@@ -192,7 +191,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
               // and the content code block don't bleed to the sheet's
               // raw edges.
               "flex-1 min-h-0 flex flex-col gap-y-2 px-6 py-4",
-              dark ? "text-white" : "text-main"
+              "text-main"
             )}
           >
             <div className="flex items-center justify-between gap-x-4">
