@@ -288,7 +288,6 @@
     "discard-changes": "変更をキャンセルする",
     "discord": "Discord",
     "dismiss": "閉じる",
-    "done": "完了",
     "download": "ダウンロード",
     "draft": "下書き",
     "duplicate": "コピー",
@@ -1303,7 +1302,6 @@
       },
       "write": "作成"
     },
-    "create-rollout": "ロールアウトを作成",
     "data-export": {
       "download-tooltip": "24 時間利用可能",
       "file-expired": "ファイルの有効期限が切れました",
@@ -1491,19 +1489,8 @@
     },
     "phase": {
       "create-rollout-action": "手動でロールアウトを作成",
-      "deploy-approval-must-complete": "承認フローが完了している必要があります。",
-      "deploy-approval-optional": "現在のプロジェクト設定では、承認フローをスキップできます。",
-      "deploy-approval-pending": "ロールアウトを自動的に進める前に承認フローを完了してください。",
-      "deploy-approval-ready": "このプランの承認は完了しています。",
-      "deploy-checks-blocked": "失敗したチェックによりロールアウトの自動作成が止まっています。",
-      "deploy-checks-must-pass": "チェックに合格する必要があります。",
-      "deploy-checks-optional": "このプロジェクトでは、チェック失敗は手動ロールアウトを妨げません。",
-      "deploy-checks-ready": "チェックはロールアウトの自動作成が可能な状態です。",
-      "deploy-checks-running": "実行中のチェックが終わるまで、ロールアウトの自動作成は続行されません。",
       "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "deploy-description-gitops": "このプランはロールアウトの準備ができています。リンクされたリリースをデプロイするにはロールアウトを作成してください。",
-      "deploy-manual-create-description": "現在のプロジェクト設定に応じて、ロールアウトを手動で作成することもできます。",
-      "deploy-manual-create-description-readonly": "Create Rollout 権限を持つユーザーがロールアウトを手動で作成できます。",
       "hide-details": "詳細を隠す",
       "review-description": "続行するにはレビューに提出してください",
       "show-details": "詳細を表示"
@@ -1513,6 +1500,63 @@
       "requirements-not-met": "次のデータベースは事前バックアップ要件を満たしていません: {{databases}}"
     },
     "ready-for-review": "レビュー準備完了",
+    "review": {
+      "action": "レビュー",
+      "activity": {
+        "add-a-comment": "コメントを追加...",
+        "created-this-plan": "がこのプランを作成しました",
+        "marked-ready-for-review": "がこのプランをレビュー準備完了にしました",
+        "n-hidden-events_one": "{{count}} 件の非表示イベント",
+        "n-hidden-events_other": "{{count}} 件の非表示イベント",
+        "self": "アクティビティ",
+        "show-all": "すべて表示"
+      },
+      "approval-flow": {
+        "and-n-more_one": "他 {{count}} 名",
+        "and-n-more_other": "他 {{count}} 名",
+        "approved-by": "{{user}} が承認",
+        "current": "現在",
+        "n-approved": "{{n}} 件承認済み",
+        "n-pending": "{{n}} 件保留中",
+        "n-reviewers_one": "{{count}} 名のレビュアー",
+        "n-reviewers_other": "{{count}} 名のレビュアー",
+        "no-reviewers": "レビュアーなし",
+        "rejected-by": "{{user}} が却下"
+      },
+      "comment-required-to-reject": "却下するにはコメントが必要です",
+      "footer": {
+        "all-gates-passed": "すべての条件を満たしました",
+        "approved-but-checks-failed": "レビューは承認されましたが、プランチェックに失敗しました",
+        "auto-rollout-after-approval": "承認後にロールアウトが自動作成されます",
+        "blocked-by-rejection": "却下されたレビューによりブロックされています — 続行するには上記のフィードバックに対応してください",
+        "bypass-and-deploy": "バイパスしてデプロイ",
+        "confirm-acknowledge": "バイパス",
+        "confirm-bypass-title": "次をバイパスします：",
+        "confirm-checks-failed_one": "{{count}} 件の失敗したプランチェック",
+        "confirm-checks-failed_other": "{{count}} 件の失敗したプランチェック",
+        "confirm-checks-running": "プランチェック実行中",
+        "confirm-review-not-approved": "レビュー未承認",
+        "confirm-review-rejected": "レビュー却下",
+        "creating-rollout-automatically": "ロールアウトを自動作成中...",
+        "errors-passed-not-created_one": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
+        "errors-passed-not-created_other": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
+        "gate-approval": "課題の承認",
+        "gate-no-failed-checks": "失敗したプランチェックなし",
+        "gates-blocked": "必須のプロジェクトゲートが満たされていないため、デプロイはブロックされています。",
+        "n-checks-failed_one": "{{count}} 件のチェックに失敗",
+        "n-checks-failed_other": "{{count}} 件のチェックに失敗",
+        "n-checks-passed_one": "{{count}} 件のチェックに合格",
+        "n-checks-passed_other": "{{count}} 件のチェックに合格",
+        "rollout-blocked-by-failed-checks": "チェックが通過するまでロールアウトは自動作成されません",
+        "waiting-on-review": "レビュー待ち"
+      },
+      "rejection": {
+        "guidance-prefix": "フィードバックに対応して変更を更新するか、変更なしで",
+        "guidance-suffix": "こともできます",
+        "re-request-review": "レビューを再依頼する",
+        "title": "{{user}} に却下されました"
+      }
+    },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
     "select-targets": "対象を選択",
@@ -1547,8 +1591,7 @@
       "title": "ターゲット",
       "view-all": "すべて表示 ({{count}})"
     },
-    "title-required": "タイトルは必須です",
-    "view-discussion": "ディスカッションを見る"
+    "title-required": "タイトルは必須です"
   },
   "plugin": {
     "ai": {
@@ -1936,7 +1979,6 @@
     }
   },
   "rollout": {
-    "bypass-stage-requirements": "警告をバイパス",
     "no-stages": "利用可能なステージはありません",
     "no-tasks-created": "まだタスクが作成されていません",
     "pending-tasks-preview": {

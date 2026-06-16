@@ -5,7 +5,7 @@ import {
   type Plan_Spec,
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { diffPlanSpecs, type SpecDiffEntry } from "../diffPlanSpecs";
+import { diffPlanSpecs, type SpecDiffEntry } from "./diffPlanSpecs";
 
 function cdcSpec(opts: {
   id: string;

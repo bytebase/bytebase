@@ -76,8 +76,8 @@ vi.mock("./components/deploy/DeployTaskDetailPanel", () => ({
   DeployTaskDetailPanel: () => null,
 }));
 
-vi.mock("./components/PlanDetailApprovalFlow", () => ({
-  PlanDetailReviewApprovalFlow: () => null,
+vi.mock("./components/review/PlanReviewSection", () => ({
+  PlanReviewSection: () => null,
 }));
 
 vi.mock("./components/PlanDetailChangesBranch", () => ({
