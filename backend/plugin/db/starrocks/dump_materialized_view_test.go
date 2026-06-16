@@ -1,0 +1,26 @@
+package starrocks
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+// BYT-9689: the dump path re-tags materialized-view rows so it emits
+// SHOW CREATE MATERIALIZED VIEW for them. Doris reports MVs as 'BASE TABLE',
+// StarRocks as 'VIEW'; both must become 'MATERIALIZED VIEW' when the name is a known
+// MV, while regular tables and views are left untouched.
+func TestMarkMaterializedViews(t *testing.T) {
+	tables := []*TableSchema{
+		{Name: "mv_doris", TableType: baseTableType},     // Doris MV reported as BASE TABLE
+		{Name: "mv_starrocks", TableType: viewTableType}, // StarRocks MV reported as VIEW
+		{Name: "v_regular", TableType: viewTableType},    // regular view (not an MV)
+		{Name: "t_plain", TableType: baseTableType},      // plain table
+	}
+	markMaterializedViews(tables, map[string]bool{"mv_doris": true, "mv_starrocks": true})
+
+	require.Equal(t, materializedViewType, tables[0].TableType)
+	require.Equal(t, materializedViewType, tables[1].TableType)
+	require.Equal(t, viewTableType, tables[2].TableType, "regular view must stay a view")
+	require.Equal(t, baseTableType, tables[3].TableType, "plain table must stay a table")
+}
