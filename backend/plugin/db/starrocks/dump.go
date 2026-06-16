@@ -155,13 +155,11 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 		if tbl.TableType != viewTableType && tbl.TableType != materializedViewType {
 			continue
 		}
-		// The temporary view just created above were used to satisfy the schema dependency. See comment above.
-		// We have to drop the temporary and incorrect view here to recreate the final and correct one.
-		dropStmt := "DROP VIEW IF EXISTS `%s`;\n"
-		if tbl.TableType == materializedViewType {
-			dropStmt = "DROP MATERIALIZED VIEW IF EXISTS `%s`;\n"
-		}
-		if _, err := io.WriteString(out, fmt.Sprintf(dropStmt, tbl.Name)); err != nil {
+		// The temporary placeholder created above is always a regular view (even for
+		// materialized views — see getTemporaryMaterializedView), so it must be dropped
+		// with DROP VIEW. DROP MATERIALIZED VIEW would not match the placeholder, leaving
+		// it in the shared namespace so the real CREATE MATERIALIZED VIEW below collides.
+		if _, err := io.WriteString(out, dropPlaceholderStmt(tbl.Name)); err != nil {
 			return err
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
@@ -197,6 +195,14 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 	}
 
 	return nil
+}
+
+// dropPlaceholderStmt returns the statement that drops the temporary placeholder emitted
+// for a view or materialized view before its real definition. The placeholder is always a
+// regular view (see getTemporaryMaterializedView), so it is dropped with DROP VIEW
+// regardless of the final object type.
+func dropPlaceholderStmt(name string) string {
+	return fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", name)
 }
 
 func getTemporaryView(name string, columns []string) string {
