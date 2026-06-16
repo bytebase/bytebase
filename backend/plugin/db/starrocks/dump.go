@@ -150,11 +150,10 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 			return err
 		}
 	}
-	// Construct final views and materialized views.
-	for _, tbl := range tables {
-		if tbl.TableType != viewTableType && tbl.TableType != materializedViewType {
-			continue
-		}
+	// Construct final views, then materialized views (see finalEmitOrder: an MV is
+	// materialized from its sources at CREATE time, so its source views must be real
+	// first, not the temporary SELECT 1 placeholders).
+	for _, tbl := range finalEmitOrder(tables) {
 		// The temporary placeholder created above is always a regular view (even for
 		// materialized views — see getTemporaryMaterializedView), so it must be dropped
 		// with DROP VIEW. DROP MATERIALIZED VIEW would not match the placeholder, leaving
@@ -195,6 +194,27 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 	}
 
 	return nil
+}
+
+// finalEmitOrder returns the views and materialized views in the order their real
+// definitions must be emitted: all regular views first, then materialized views, each
+// group keeping its original relative order. information_schema.tables is unordered, and
+// a materialized view can be defined on a regular view and is materialized from its
+// sources at CREATE time, so its source views must already be real (not the temporary
+// SELECT 1 placeholders). Base tables are emitted separately and are excluded here.
+func finalEmitOrder(tables []*TableSchema) []*TableSchema {
+	var views, materializedViews []*TableSchema
+	for _, tbl := range tables {
+		switch tbl.TableType {
+		case viewTableType:
+			views = append(views, tbl)
+		case materializedViewType:
+			materializedViews = append(materializedViews, tbl)
+		default:
+			// Base tables and any other types are emitted elsewhere; skip here.
+		}
+	}
+	return append(views, materializedViews...)
 }
 
 // dropPlaceholderStmt returns the statement that drops the temporary placeholder emitted

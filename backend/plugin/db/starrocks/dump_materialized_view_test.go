@@ -37,3 +37,24 @@ func TestMaterializedViewPlaceholderIsDroppedAsView(t *testing.T) {
 
 	require.Equal(t, "DROP VIEW IF EXISTS `mv1`;\n", dropPlaceholderStmt("mv1"))
 }
+
+// BYT-9689: information_schema.tables is unordered, so an MV can be listed before a view
+// it is defined on. A materialized view is materialized from its sources at CREATE time
+// (unlike a lazy regular view), so all regular views must be emitted — and on restore,
+// created real — before any materialized view; otherwise the MV would materialize from
+// the temporary SELECT 1 placeholder. finalEmitOrder partitions views ahead of MVs while
+// preserving each group's relative order, and drops base tables (emitted elsewhere).
+func TestFinalEmitOrder_ViewsBeforeMaterializedViews(t *testing.T) {
+	tables := []*TableSchema{
+		{Name: "mv1", TableType: materializedViewType},
+		{Name: "v1", TableType: viewTableType},
+		{Name: "t1", TableType: baseTableType},
+		{Name: "mv2", TableType: materializedViewType},
+		{Name: "v2", TableType: viewTableType},
+	}
+	var names []string
+	for _, tbl := range finalEmitOrder(tables) {
+		names = append(names, tbl.Name)
+	}
+	require.Equal(t, []string{"v1", "v2", "mv1", "mv2"}, names)
+}
