@@ -24,21 +24,23 @@ async function writeClipboard(text: string): Promise<boolean> {
   document.body.appendChild(textarea);
   textarea.select();
   try {
-    return document.execCommand("copy");
+    // execCommand is deprecated but remains the only clipboard path in
+    // insecure (http) contexts where navigator.clipboard is unavailable.
+    return document.execCommand("copy"); // NOSONAR
   } catch {
     return false;
   } finally {
-    document.body.removeChild(textarea);
+    textarea.remove();
   }
 }
 
 interface CopyButtonProps {
   // The text to copy. Pass a function to defer resolution until click.
-  content: string | (() => string);
-  size?: ButtonProps["size"];
-  variant?: ButtonProps["variant"];
-  disabled?: boolean;
-  className?: string;
+  readonly content: string | (() => string);
+  readonly size?: ButtonProps["size"];
+  readonly variant?: ButtonProps["variant"];
+  readonly disabled?: boolean;
+  readonly className?: string;
 }
 
 export function CopyButton({
