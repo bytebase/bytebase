@@ -26,6 +26,25 @@ export const hasChecksWarning = (plan: Plan): boolean => {
   );
 };
 
+export const getCreatePlanBlockingReasons = ({
+  title,
+  emptySpecCount,
+  t,
+}: {
+  title: string;
+  emptySpecCount: number;
+  t: T;
+}): string[] => {
+  const reasons: string[] = [];
+  if (!title.trim()) {
+    reasons.push(t("plan.title-required"));
+  }
+  if (emptySpecCount > 0) {
+    reasons.push(t("plan.navigator.statement-empty"));
+  }
+  return reasons;
+};
+
 export const getCreateIssueBlockingErrors = ({
   emptySpecCount,
   plan,

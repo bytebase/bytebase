@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "cannot-create": "Cannot create plan",
     "checks": {
       "completed": "Plan checks completed",
       "failed-to-run": "Failed to run plan checks",

@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "cannot-create": "Không thể tạo kế hoạch",
     "checks": {
       "completed": "Đã hoàn thành kiểm tra kế hoạch",
       "failed-to-run": "Không thể chạy kiểm tra kế hoạch",
