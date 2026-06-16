@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { getLayerRoot } from "@/react/components/ui/layer";
-import { themeToCssVars } from "./derive";
+import { themeColorScheme, themeToCssVars } from "./derive";
 import { useActiveSQLEditorTheme } from "./useActiveSQLEditorTheme";
 
 /**
@@ -33,11 +33,15 @@ export function useSQLEditorOverlayTheme() {
       root.style.setProperty(key, value as string);
     }
     root.style.setProperty("color", "rgb(var(--color-main))");
+    // Native controls (date pickers, scrollbars) in portaled popups follow
+    // color-scheme, not our --color-* tokens.
+    root.style.colorScheme = themeColorScheme(theme);
     return () => {
       for (const key of Object.keys(vars)) {
         root.style.removeProperty(key);
       }
       root.style.removeProperty("color");
+      root.style.colorScheme = "";
     };
   }, [theme]);
 }

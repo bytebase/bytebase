@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { cn } from "@/react/lib/utils";
-import { themeToCssVars } from "./derive";
+import { themeColorScheme, themeToCssVars } from "./derive";
 import { PRESET_BY_ID } from "./presets";
 import type { SQLEditorTheme } from "./types";
 
@@ -31,7 +31,15 @@ export function SQLEditorThemeScope({
   className,
   asContents = false,
 }: Props) {
-  const style = useMemo(() => themeToCssVars(theme.tokens), [theme]);
+  const style = useMemo(
+    () => ({
+      ...themeToCssVars(theme.tokens),
+      // Native controls (date pickers, scrollbars) follow color-scheme, not our
+      // --color-* tokens — set it so they match a dark theme too.
+      colorScheme: themeColorScheme(theme),
+    }),
+    [theme]
+  );
   return (
     <SQLEditorThemeContext.Provider value={theme}>
       <div className={cn(asContents && "contents", className)} style={style}>

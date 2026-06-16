@@ -50,6 +50,17 @@ export function resolveAdminTheme(selected: SQLEditorTheme): SQLEditorTheme {
   return selected.monacoBase === "vs-dark" ? selected : PRESET_BY_ID.dark;
 }
 
+/**
+ * The CSS `color-scheme` for a theme. Apply it (`style.colorScheme`) alongside
+ * the token vars so the platform renders NATIVE controls — date pickers,
+ * scrollbars, `<select>` popups — to match. These are drawn by the browser/OS
+ * and can't be styled with our `--color-*` tokens; `color-scheme` is the only
+ * lever. Keyed off the Monaco base so a dark theme reports `dark`.
+ */
+export function themeColorScheme(theme: SQLEditorTheme): "dark" | "light" {
+  return theme.monacoBase === "vs-dark" ? "dark" : "light";
+}
+
 /** Throws if any chrome token is missing. */
 export function validateTheme(theme: SQLEditorTheme): void {
   for (const token of SQL_EDITOR_THEME_TOKENS) {

@@ -7,6 +7,7 @@ import { accessGrantServiceClientConnect } from "@/connect";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import {
   monacoThemeName,
+  themeColorScheme,
   themeToCssVars,
 } from "@/react/components/sql-editor/theme/derive";
 import { SQLEditorThemeScope } from "@/react/components/sql-editor/theme/SQLEditorThemeScope";
@@ -401,7 +402,14 @@ export function AccessGrantRequestDrawer({
   // these inline vars would otherwise override the dark vars that
   // useSQLEditorOverlayTheme writes to the overlay root.
   const active = useActiveSQLEditorTheme();
-  const sheetStyle = useMemo(() => themeToCssVars(active.tokens), [active]);
+  const sheetStyle = useMemo(
+    () => ({
+      ...themeToCssVars(active.tokens),
+      // Native controls (date pickers, scrollbars) follow color-scheme.
+      colorScheme: themeColorScheme(active),
+    }),
+    [active]
+  );
 
   return (
     <Sheet open={true} onOpenChange={(next) => !next && onClose()}>

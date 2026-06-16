@@ -18,7 +18,10 @@ import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
-import { themeToCssVars } from "@/react/components/sql-editor/theme/derive";
+import {
+  themeColorScheme,
+  themeToCssVars,
+} from "@/react/components/sql-editor/theme/derive";
 import type { SQLEditorTheme } from "@/react/components/sql-editor/theme/types";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -128,7 +131,15 @@ export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
   // inherits `:root` and always renders in the default light app theme outside
   // the SQL Editor — regardless of any ambient theme scope.
   const sheetStyle = useMemo(
-    () => (theme ? themeToCssVars(theme.tokens) : undefined),
+    () =>
+      theme
+        ? {
+            ...themeToCssVars(theme.tokens),
+            // Native controls (the datetime picker, scrollbars) follow
+            // color-scheme, not our --color-* tokens.
+            colorScheme: themeColorScheme(theme),
+          }
+        : undefined,
     [theme]
   );
   return (

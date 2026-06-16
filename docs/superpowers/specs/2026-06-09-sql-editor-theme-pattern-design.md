@@ -77,6 +77,13 @@ runtime and the real DOM behave):
   and the one genuine terminal-vs-worksheet *layout* difference uses an explicit `compact`
   prop (`TerminalPanel` → `ResultView` → `SingleResultView`), not the theme. Net: colors
   are 100% token-driven and a custom theme is just another token map.
+- **Native controls follow `color-scheme`, not the tokens.** Browser/OS-drawn controls —
+  `<input type="datetime-local">` calendar popups, scrollbars, native `<select>` popups —
+  ignore our `--color-*` tokens entirely. The only lever is the CSS `color-scheme`
+  property, so every theme-application site sets it from a `themeColorScheme(theme)`
+  helper (`vs-dark → "dark"`): `SQLEditorThemeScope` (editor body, terminal), the request
+  drawers' inline `SheetContent` style, and the overlay layer root. Without it a dark
+  theme would show a white native date picker over the dark drawer.
 
 Net new files vs. the design: `theme/useSQLEditorOverlayTheme.ts`. The `getResolvedTheme`
 base-fallback is unit-tested in `monaco/core.test.ts`.
