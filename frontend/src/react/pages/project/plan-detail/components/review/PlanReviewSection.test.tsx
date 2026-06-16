@@ -473,6 +473,34 @@ describe("PlanReviewSection — five review states", () => {
     unmount();
   });
 
+  // BYT-9709: with failed checks the rollout will NOT be created automatically
+  // after approval, so the waiting-review line must not promise auto-creation.
+  test("in-progress (PENDING) + checks failed: footer drops the auto-rollout promise", () => {
+    const issue = makeIssue({ approvalStatus: ApprovalStatus.PENDING });
+    const plan = makePlan({
+      planCheckRunStatusCount: { ERROR: 1, SUCCESS: 2 },
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, plan)}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    expect(container.textContent).toContain(
+      "plan.review.footer.waiting-on-review"
+    );
+    expect(container.textContent).not.toContain(
+      "plan.review.footer.auto-rollout-after-approval"
+    );
+    expect(container.textContent).toContain(
+      "plan.review.footer.rollout-blocked-by-failed-checks"
+    );
+
+    unmount();
+  });
+
   test("rejected (REJECTED + rejection comment): rejection banner renders + footer shows blocked-by-rejection + bypass action (explicit override)", () => {
     const issue = makeIssue({ approvalStatus: ApprovalStatus.REJECTED });
     const plan = makePlan();

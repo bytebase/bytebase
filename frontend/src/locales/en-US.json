@@ -1544,6 +1544,7 @@
         "n-checks-failed_other": "{{count}} checks failed",
         "n-checks-passed_one": "{{count}} check passed",
         "n-checks-passed_other": "{{count}} checks passed",
+        "rollout-blocked-by-failed-checks": "rollout won't be created automatically until checks pass",
         "waiting-on-review": "Waiting on review"
       },
       "rejection": {

@@ -1539,11 +1539,12 @@
         "errors-passed-not-created_other": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
         "gate-approval": "工单审批",
         "gate-no-failed-checks": "无失败的检查",
-        "gates-blocked": "项目必需门禁未满足，无法部署。",
+        "gates-blocked": "项目所设置的条件未满足，无法部署。",
         "n-checks-failed_one": "{{count}} 项检查失败",
         "n-checks-failed_other": "{{count}} 项检查失败",
         "n-checks-passed_one": "{{count}} 项检查通过",
         "n-checks-passed_other": "{{count}} 项检查通过",
+        "rollout-blocked-by-failed-checks": "在检查通过前不会自动创建发布",
         "waiting-on-review": "等待审批"
       },
       "rejection": {

@@ -1544,6 +1544,7 @@
         "n-checks-failed_other": "{{count}} 件のチェックに失敗",
         "n-checks-passed_one": "{{count}} 件のチェックに合格",
         "n-checks-passed_other": "{{count}} 件のチェックに合格",
+        "rollout-blocked-by-failed-checks": "チェックが通過するまでロールアウトは自動作成されません",
         "waiting-on-review": "レビュー待ち"
       },
       "rejection": {

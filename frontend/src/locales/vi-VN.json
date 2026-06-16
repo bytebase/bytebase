@@ -1544,6 +1544,7 @@
         "n-checks-failed_other": "{{count}} kiểm tra thất bại",
         "n-checks-passed_one": "{{count}} kiểm tra đạt",
         "n-checks-passed_other": "{{count}} kiểm tra đạt",
+        "rollout-blocked-by-failed-checks": "bản triển khai sẽ không được tạo tự động cho đến khi các kiểm tra đạt",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
       "rejection": {

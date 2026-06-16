@@ -194,7 +194,9 @@ export function ReviewReadinessFooter({
           </span>
           <span className="hidden sm:inline">·</span>
           <span className="hidden whitespace-nowrap sm:inline">
-            {t("plan.review.footer.auto-rollout-after-approval")}
+            {checks.error > 0
+              ? t("plan.review.footer.rollout-blocked-by-failed-checks")
+              : t("plan.review.footer.auto-rollout-after-approval")}
           </span>
           {checkCounts}
         </>
