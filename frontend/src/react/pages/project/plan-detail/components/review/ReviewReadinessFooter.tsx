@@ -57,6 +57,17 @@ export function ReviewReadinessFooter({
     canCreateRollout: page.projectCanCreateRollout && !page.readonly,
     requireIssueApproval: page.projectRequireIssueApproval,
   });
+  // Must run before the "hidden" early return below — otherwise the hook count
+  // drops when a deploy flips the footer to hidden, and React throws "rendered
+  // fewer hooks than expected" on the success path.
+  const planCheckSummary = useMemo(
+    () =>
+      getPlanCheckSummaryWithFallback(
+        page.planCheckRuns,
+        plan.planCheckRunStatusCount
+      ),
+    [page.planCheckRuns, plan.planCheckRunStatusCount]
+  );
 
   if (state.kind === "hidden") return null;
 
@@ -96,15 +107,6 @@ export function ReviewReadinessFooter({
       setCreating(false);
     }
   };
-
-  const planCheckSummary = useMemo(
-    () =>
-      getPlanCheckSummaryWithFallback(
-        page.planCheckRuns,
-        plan.planCheckRunStatusCount
-      ),
-    [page.planCheckRuns, plan.planCheckRunStatusCount]
-  );
 
   // The project's enforced gates and whether each is satisfied. Enforced gates
   // are HARD: if any is unmet, bypass-and-deploy is blocked entirely — you can
