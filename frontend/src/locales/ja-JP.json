@@ -1660,7 +1660,7 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "このプロジェクトではロール申請が無効になっています。",
-          "can-grant-access-directly": "すでに {{permission}} を持っているため、直接アクセスを付与できます。",
+          "can-grant-access-directly": "このプロジェクトへのフルアクセス権を持っているため、直接アクセスを付与できます。",
           "feature-unavailable": "現在のプランではロール申請ワークフローを利用できません。"
         },
         "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",

@@ -23,6 +23,12 @@ vi.mock("@/types", () => ({
   DATASOURCE_ADMIN_USER_NAME: "bytebase",
 }));
 
+// CopyButton pulls in the app store (and its connect/i18n chain), which isn't
+// available in this minimal render harness. The i18n assertions don't touch it.
+vi.mock("@/react/components/ui/copy-button", () => ({
+  CopyButton: () => null,
+}));
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   const root = createRoot(container);

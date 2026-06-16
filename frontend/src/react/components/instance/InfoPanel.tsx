@@ -1,8 +1,9 @@
 import type { TFunction } from "i18next";
-import { Check, Copy, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import {
   Sheet,
   SheetBody,
@@ -229,33 +230,4 @@ function getSnippetLinkTitle(t: TFunction, key: InfoSnippetLinkTitleKey) {
   }
   const exhaustive: never = key;
   return exhaustive;
-}
-
-function CopyButton({ content }: { content: string }) {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(content);
-    setCopied(true);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setCopied(false), 2000);
-  }, [content]);
-
-  useEffect(() => {
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  return (
-    <button
-      className="p-0.5 rounded-xs text-control-light hover:text-main"
-      onClick={handleCopy}
-    >
-      {copied ? (
-        <Check className="size-4 text-success" />
-      ) : (
-        <Copy className="size-4" />
-      )}
-    </button>
-  );
 }

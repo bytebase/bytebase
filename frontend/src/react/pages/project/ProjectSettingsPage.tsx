@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -671,8 +672,12 @@ export function ProjectSettingsPage() {
                     }
                     required
                   />
-                  <div className="mt-1 text-sm text-control-light">
-                    {t("common.id")}: {extractProjectResourceName(project.name)}
+                  <div className="mt-1">
+                    <ResourceIdField
+                      readonly
+                      value={extractProjectResourceName(project.name)}
+                      resourceName={t("common.project")}
+                    />
                   </div>
                 </div>
 

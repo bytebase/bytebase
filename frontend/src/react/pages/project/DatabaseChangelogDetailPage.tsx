@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { ArrowUpRight, Check, Copy, LoaderCircle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Check, LoaderCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { Switch } from "@/react/components/ui/switch";
 import { router } from "@/react/router";
 import {
@@ -16,7 +17,6 @@ import {
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -43,34 +43,6 @@ export interface DatabaseChangelogDetailPageProps {
   instanceId: string;
   databaseName: string;
   changelogId: string;
-}
-
-function execCommandCopy(text: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    document.body.removeChild(textarea);
-  }
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall through to execCommand fallback.
-    }
-  }
-  return execCommandCopy(text);
 }
 
 function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
@@ -150,44 +122,6 @@ async function fetchHasSuccessfulDatabaseSync(
     console.error(`Failed to fetch task run log for ${taskRun}:`, error);
     return undefined;
   }
-}
-
-function CopyButton({ content }: { content: string }) {
-  const { t } = useTranslation();
-
-  const handleCopy = useCallback(async () => {
-    if (!content) {
-      return;
-    }
-
-    if (await copyToClipboard(content)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-      return;
-    }
-
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("common.copy-failed"),
-    });
-  }, [content, t]);
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      aria-label={t("common.copy")}
-      title={t("common.copy")}
-      disabled={!content}
-      onClick={handleCopy}
-    >
-      <Copy className="size-4" />
-    </Button>
-  );
 }
 
 export function DatabaseChangelogDetailPage({
@@ -515,7 +449,7 @@ export function DatabaseChangelogDetailPage({
                   ({formattedSchemaSize})
                 </span>
               ) : null}
-              <CopyButton content={resolvedChangelog.schema} />
+              <CopyButton content={resolvedChangelog.schema} size="sm" />
             </p>
 
             <div className="flex items-center justify-between gap-x-2">

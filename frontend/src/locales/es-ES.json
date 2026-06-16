@@ -1660,7 +1660,7 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
-          "can-grant-access-directly": "Ya tienes {{permission}}, así que puedes conceder acceso directamente.",
+          "can-grant-access-directly": "Ya tienes acceso completo a este proyecto, así que puedes conceder acceso directamente.",
           "feature-unavailable": "El flujo de solicitud de roles no está disponible en el plan actual."
         },
         "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",

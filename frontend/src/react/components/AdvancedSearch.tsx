@@ -454,9 +454,12 @@ export function AdvancedSearch({
     (text: string) => {
       setInputText(text);
 
-      if (menuView === "value") {
-        // In value mode, input text is used to filter values — don't change mode
-        return;
+      if (menuView === "value" && currentScope) {
+        // Stay in value mode only while the input still carries the
+        // "scope:" prefix. Once the user edits the prefix away (or clears
+        // the input), drop back out and re-evaluate the menu below.
+        if (text.startsWith(`${currentScope}:`)) return;
+        setCurrentScope(undefined);
       }
 
       // Check if text matches a scope prefix
@@ -471,14 +474,14 @@ export function AdvancedSearch({
       // Only show scope menu when input is empty (user is browsing filters).
       // When typing non-empty text, treat it as a plain query — don't push scope suggestions.
       if (!text.trim()) {
-        if (!menuView) setMenuView("scope");
+        setMenuView("scope");
       } else {
         setMenuView(undefined);
       }
 
       emitQuery(text);
     },
-    [menuView, availableScopeOptions, selectScope, emitQuery]
+    [menuView, currentScope, availableScopeOptions, selectScope, emitQuery]
   );
 
   const handleInputClick = useCallback(() => {

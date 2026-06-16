@@ -92,6 +92,7 @@ import {
   ALL_USERS_USER_EMAIL,
   type DatabaseResource,
   isDefaultProject,
+  type Permission,
   PresetRoleType,
   userBindingPrefix,
 } from "@/types";
@@ -2087,6 +2088,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const hasRequestRoleFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
+  const roleList = useAppStore((state) => state.roleList);
 
   // IAM policy loads are owned by the parent shells: ProjectRouteShell
   // loads project IAM on /projects/:projectId/members, and
@@ -2137,6 +2139,23 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       project.state !== State.DELETED &&
       hasProjectPermissionV2(project, "bb.projects.setIamPolicy")
     : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
+
+  // Whether the current user already holds every PROJECT_OWNER permission
+  // (workspace- or project-scoped). hasProjectPermissionV2 falls back to
+  // workspace permissions, so a single check covers both contexts. Mirrors the
+  // Vue `hasMissingPermission` gate rather than checking `setIamPolicy` alone.
+  // Computed inline (not memoized) so it tracks live IAM policy changes, the
+  // same way canSetIamPolicy above does — the permission check reads
+  // current-user state that isn't captured by [project, roleList] deps.
+  const ownerPermissions = project
+    ? (roleList.find((r) => r.name === PresetRoleType.PROJECT_OWNER)
+        ?.permissions ?? [])
+    : [];
+  const hasFullProjectAccess =
+    !!project &&
+    ownerPermissions.every((permission) =>
+      hasProjectPermissionV2(project, permission as Permission)
+    );
 
   const handleRevokeSelected = async () => {
     if (
@@ -2214,10 +2233,10 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         projectName,
         projectReady: !!project,
         allowRequestRole: project?.allowRequestRole ?? false,
-        canSetIamPolicy,
+        hasFullProjectAccess,
         hasRequestRoleFeature,
       }),
-    [projectName, project, canSetIamPolicy, hasRequestRoleFeature]
+    [projectName, project, hasFullProjectAccess, hasRequestRoleFeature]
   );
 
   const requestRoleDisabledReason = useMemo(() => {
@@ -2233,10 +2252,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         );
       case "can-grant-access-directly":
         return t(
-          "project.members.request-role.disabled-reason.can-grant-access-directly",
-          {
-            permission: reason.permission,
-          }
+          "project.members.request-role.disabled-reason.can-grant-access-directly"
         );
       case "feature-unavailable":
         return t(

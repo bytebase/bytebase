@@ -338,7 +338,7 @@ function RolloutPolicyConfig({
               <div className="relative" ref={dropdownRef}>
                 <Button
                   variant="outline"
-                  size="xs"
+                  size="sm"
                   onClick={() => setShowRoleDropdown(!showRoleDropdown)}
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
