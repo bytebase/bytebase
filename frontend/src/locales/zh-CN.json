@@ -288,7 +288,6 @@
     "discard-changes": "取消修改",
     "discord": "Discord",
     "dismiss": "关闭",
-    "done": "完成",
     "download": "下载",
     "draft": "草稿",
     "duplicate": "拷贝",
@@ -1303,7 +1302,6 @@
       },
       "write": "编辑"
     },
-    "create-rollout": "创建发布",
     "data-export": {
       "download-tooltip": "24 小时可用",
       "file-expired": "文件已过期",
@@ -1491,19 +1489,8 @@
     },
     "phase": {
       "create-rollout-action": "手动创建发布",
-      "deploy-approval-must-complete": "审批流必须完成。",
-      "deploy-approval-optional": "根据当前项目设置，审批流可以被绕过。",
-      "deploy-approval-pending": "在系统自动创建发布前，需要先完成审批流。",
-      "deploy-approval-ready": "该计划的审批已完成。",
-      "deploy-checks-blocked": "未通过的检查正在阻止系统自动创建发布。",
-      "deploy-checks-must-pass": "检查必须通过。",
-      "deploy-checks-optional": "在当前项目中，未通过的检查不会阻止手动创建发布。",
-      "deploy-checks-ready": "检查结果已满足系统自动创建发布的条件。",
-      "deploy-checks-running": "请等待运行中的检查完成，系统才能继续自动创建发布。",
       "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
       "deploy-description-gitops": "此计划已就绪，可以发布。创建一个发布以部署关联的 Release。",
-      "deploy-manual-create-description": "根据当前项目设置，你也可以手动创建发布。",
-      "deploy-manual-create-description-readonly": "拥有“创建发布”权限的用户可以手动创建发布。",
       "hide-details": "隐藏详情",
       "review-description": "提交审批以继续",
       "show-details": "显示详情"
@@ -1513,6 +1500,63 @@
       "requirements-not-met": "以下数据库不满足预备份要求：{{databases}}"
     },
     "ready-for-review": "准备提交评审",
+    "review": {
+      "action": "审批",
+      "activity": {
+        "add-a-comment": "添加评论...",
+        "created-this-plan": "创建了此计划",
+        "marked-ready-for-review": "将此计划提交审批",
+        "n-hidden-events_one": "{{count}} 条隐藏动态",
+        "n-hidden-events_other": "{{count}} 条隐藏动态",
+        "self": "动态",
+        "show-all": "显示全部"
+      },
+      "approval-flow": {
+        "and-n-more_one": "还有 {{count}} 位",
+        "and-n-more_other": "还有 {{count}} 位",
+        "approved-by": "由 {{user}} 批准",
+        "current": "当前",
+        "n-approved": "{{n}} 人已批准",
+        "n-pending": "{{n}} 个待审批",
+        "n-reviewers_one": "{{count}} 位审批人",
+        "n-reviewers_other": "{{count}} 位审批人",
+        "no-reviewers": "无审批人",
+        "rejected-by": "由 {{user}} 拒绝"
+      },
+      "comment-required-to-reject": "拒绝时必须填写评论",
+      "footer": {
+        "all-gates-passed": "所有条件已满足",
+        "approved-but-checks-failed": "审批已通过，但变更检查失败",
+        "auto-rollout-after-approval": "审批通过后将自动创建发布",
+        "blocked-by-rejection": "已被拒绝的审批阻塞 — 请先处理上方反馈",
+        "bypass-and-deploy": "跳过并发布",
+        "confirm-acknowledge": "绕过",
+        "confirm-bypass-title": "将绕过：",
+        "confirm-checks-failed_one": "{{count}} 项失败的检查",
+        "confirm-checks-failed_other": "{{count}} 项失败的检查",
+        "confirm-checks-running": "检查仍在运行",
+        "confirm-review-not-approved": "审核尚未通过",
+        "confirm-review-rejected": "审核已被拒绝",
+        "creating-rollout-automatically": "正在自动创建发布...",
+        "errors-passed-not-created_one": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
+        "errors-passed-not-created_other": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
+        "gate-approval": "工单审批",
+        "gate-no-failed-checks": "无失败的检查",
+        "gates-blocked": "项目所设置的条件未满足，无法部署。",
+        "n-checks-failed_one": "{{count}} 项检查失败",
+        "n-checks-failed_other": "{{count}} 项检查失败",
+        "n-checks-passed_one": "{{count}} 项检查通过",
+        "n-checks-passed_other": "{{count}} 项检查通过",
+        "rollout-blocked-by-failed-checks": "在检查通过前不会自动创建发布",
+        "waiting-on-review": "等待审批"
+      },
+      "rejection": {
+        "guidance-prefix": "请根据反馈修改变更，或",
+        "guidance-suffix": "（不做修改）",
+        "re-request-review": "重新发起审批",
+        "title": "被 {{user}} 拒绝"
+      }
+    },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
     "select-targets": "选择目标",
@@ -1547,8 +1591,7 @@
       "title": "目标库",
       "view-all": "查看全部 ({{count}})"
     },
-    "title-required": "标题不能为空",
-    "view-discussion": "查看讨论"
+    "title-required": "标题不能为空"
   },
   "plugin": {
     "ai": {
@@ -1936,7 +1979,6 @@
     }
   },
   "rollout": {
-    "bypass-stage-requirements": "绕过警告",
     "no-stages": "暂无阶段",
     "no-tasks-created": "尚未创建任务",
     "pending-tasks-preview": {

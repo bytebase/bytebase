@@ -1,77 +1,33 @@
 import { create } from "@bufbuild/protobuf";
-import {
-  CheckCircle2,
-  Loader2,
-  Pencil,
-  Play,
-  Plus,
-  ThumbsUp,
-  Trash2,
-} from "lucide-react";
-import {
-  Fragment,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { Loader2, Pencil, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import {
+  CommentCreator,
+  canEditIssueComment,
+  IssueCommentRow,
+} from "@/react/components/issue-activity/IssueCommentActivity";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
-import { ReadonlyDiffMonaco } from "@/react/components/monaco";
-import { RouterLink } from "@/react/components/RouterLink";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { cn } from "@/react/lib/utils";
-import { router, useCurrentRoute } from "@/react/router";
-import { buildPlanDeployRouteFromPlanName } from "@/react/router/routeHelpers";
+import { useCurrentRoute } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import {
-  getIssueCommentType,
-  IssueCommentType,
-} from "@/react/stores/app/issueComment";
-import { extractUserEmail, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import {
   type IssueComment,
-  IssueComment_Approval_Status,
   IssueSchema,
-  IssueStatus,
   ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
-import {
-  extractPlanUID,
-  extractProjectResourceName,
-  getSpecDisplayInfo,
-} from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
-import {
-  enablePriorBackupOfSpec,
-  sheetNameOfSpec,
-  targetsOfSpec,
-} from "@/utils/v1/issue/plan";
-import { getSheetStatement } from "@/utils/v1/sheet";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
-import { isDatabaseChangeDoneRolloutComment } from "../utils/activity";
-import {
-  diffEntryKey,
-  diffPlanSpecsForEvent,
-  type SpecDiffEntry,
-} from "../utils/diffPlanSpecs";
 
 // Stable empty reference for the no-issue branch of the comments selector.
 const EMPTY_ISSUE_COMMENTS: IssueComment[] = [];
@@ -207,22 +163,8 @@ export function IssueDetailCommentList() {
     );
   };
 
-  const allowEditComment = (comment: IssueComment): boolean => {
-    if (!project) {
-      return false;
-    }
-    const commentType = getIssueCommentType(comment);
-    const isEditable =
-      commentType === IssueCommentType.USER_COMMENT ||
-      (commentType === IssueCommentType.APPROVAL && comment.comment !== "");
-    if (!isEditable) {
-      return false;
-    }
-    if (currentUser.email === extractUserEmail(comment.creator)) {
-      return true;
-    }
-    return hasProjectPermissionV2(project, "bb.issueComments.update");
-  };
+  const allowEditComment = (comment: IssueComment): boolean =>
+    canEditIssueComment(comment, currentUser.email, project);
 
   const startEditComment = (comment: IssueComment) => {
     setActiveCommentName(comment.name);
@@ -270,9 +212,7 @@ export function IssueDetailCommentList() {
           return (
             <IssueCommentRow
               key={item.name}
-              isLast={index === issueComments.length - 1}
-              issueComment={item}
-              comment={
+              body={
                 item.comment ? (
                   <EditableMarkdownContent
                     allowSave={allowUpdateComment}
@@ -289,6 +229,10 @@ export function IssueDetailCommentList() {
                   />
                 ) : null
               }
+              comment={item}
+              isLast={index === issueComments.length - 1}
+              issue={page.issue}
+              plan={page.plan}
               subjectSuffix={
                 allowEditComment(item) && !activeCommentName ? (
                   <Button
@@ -427,7 +371,7 @@ function IssueDescriptionCommentRow({
 
   return (
     <li>
-      <div className="relative pb-4">
+      <div className="relative pb-3">
         {issueComments.length > 0 && (
           <span
             aria-hidden="true"
@@ -506,561 +450,6 @@ function IssueDescriptionCommentRow({
   );
 }
 
-function IssueCommentRow({
-  comment,
-  isLast,
-  issueComment,
-  subjectSuffix,
-}: {
-  comment?: ReactNode;
-  isLast: boolean;
-  issueComment: IssueComment;
-  subjectSuffix?: ReactNode;
-}) {
-  return (
-    <li>
-      <div className="relative pb-4" id={issueComment.name}>
-        {!isLast && (
-          <span
-            aria-hidden="true"
-            className="absolute left-4 -ml-px h-full w-0.5 bg-gray-200"
-          />
-        )}
-        <div className="relative flex items-start">
-          <div className="pt-1.5">
-            <CommentActionIcon issueComment={issueComment} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div
-              className={cn(
-                "overflow-hidden rounded-lg border",
-                comment
-                  ? "ml-3 border-gray-200 bg-white"
-                  : "ml-1 border-transparent"
-              )}
-            >
-              <div className={cn("px-3 py-2", comment && "bg-gray-50")}>
-                <div className="flex items-center justify-between">
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
-                    <CommentActionHeader issueComment={issueComment} />
-                  </div>
-                  {subjectSuffix}
-                </div>
-              </div>
-              {comment && (
-                <div className="wrap-break-word border-t border-gray-200 px-4 py-3 text-sm whitespace-pre-wrap text-gray-700">
-                  {comment}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function CommentActionHeader({ issueComment }: { issueComment: IssueComment }) {
-  const { t } = useTranslation();
-  const page = useIssueDetailContext();
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(issueComment.creator)
-  );
-  const creator = creatorUser ?? unknownUser(issueComment.creator);
-  const createdTs = getTimeForPbTimestampProtoEs(issueComment.createTime, 0);
-  const updatedTs = getTimeForPbTimestampProtoEs(issueComment.updateTime, 0);
-  const isEdited =
-    createdTs !== updatedTs &&
-    getIssueCommentType(issueComment) === IssueCommentType.USER_COMMENT;
-
-  return (
-    <>
-      {!isDatabaseChangeDoneRolloutComment(
-        page.issue,
-        page.plan,
-        issueComment
-      ) && <CommentCreator creator={creator} />}
-      <CommentActionSentence issueComment={issueComment} />
-      {issueComment.createTime && (
-        <HumanizeTs className="text-gray-500" ts={createdTs / 1000} />
-      )}
-      {isEdited && (
-        <span className="text-xs text-gray-500">({t("common.edited")})</span>
-      )}
-    </>
-  );
-}
-
-function CommentCreator({ creator }: { creator: User }) {
-  return (
-    <span className="font-medium text-main">
-      {creator.title || creator.email}
-    </span>
-  );
-}
-
-function CommentActionSentence({
-  issueComment,
-}: {
-  issueComment: IssueComment;
-}) {
-  const { t } = useTranslation();
-  const page = useIssueDetailContext();
-  const commentType = getIssueCommentType(issueComment);
-
-  if (
-    commentType === IssueCommentType.APPROVAL &&
-    issueComment.event.case === "approval"
-  ) {
-    const { status } = issueComment.event.value;
-    if (status === IssueComment_Approval_Status.APPROVED) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("custom-approval.issue-review.approved-issue")}
-        </span>
-      );
-    }
-    if (status === IssueComment_Approval_Status.REJECTED) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("custom-approval.issue-review.rejected-issue")}
-        </span>
-      );
-    }
-    if (status === IssueComment_Approval_Status.PENDING) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("custom-approval.issue-review.re-requested-review")}
-        </span>
-      );
-    }
-  }
-
-  if (
-    commentType === IssueCommentType.ISSUE_UPDATE &&
-    issueComment.event.case === "issueUpdate"
-  ) {
-    const {
-      fromDescription,
-      fromLabels,
-      fromStatus,
-      fromTitle,
-      toDescription,
-      toLabels,
-      toStatus,
-      toTitle,
-    } = issueComment.event.value;
-    if (fromTitle !== undefined && toTitle !== undefined) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("activity.sentence.changed-from-to", {
-            name: t("issue.issue-name").toLowerCase(),
-            newValue: toTitle,
-            oldValue: fromTitle,
-          })}
-        </span>
-      );
-    }
-    if (fromDescription !== undefined && toDescription !== undefined) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("activity.sentence.changed-description")}
-        </span>
-      );
-    }
-    if (fromStatus !== undefined && toStatus !== undefined) {
-      if (toStatus === IssueStatus.DONE) {
-        if (
-          isDatabaseChangeDoneRolloutComment(
-            page.issue,
-            page.plan,
-            issueComment
-          )
-        ) {
-          const planUID = page.plan ? extractPlanUID(page.plan.name) : "";
-          const planRoute = page.plan
-            ? buildPlanDeployRouteFromPlanName(page.plan.name)
-            : undefined;
-          const sentence =
-            page.issue?.approvalStatus === ApprovalStatus.APPROVED
-              ? planUID
-                ? t("activity.sentence.review-done-rollout-created-for-plan")
-                : t("activity.sentence.review-done-rollout-created")
-              : planUID
-                ? t("activity.sentence.review-skipped-rollout-created-for-plan")
-                : t("activity.sentence.review-skipped-rollout-created");
-
-          return (
-            <span className="wrap-break-word min-w-0 text-gray-600">
-              {sentence}
-              {planUID && planRoute && (
-                <>
-                  {" "}
-                  <RouterLink
-                    to={planRoute}
-                    className="font-medium text-accent hover:underline"
-                  >
-                    #{planUID}
-                  </RouterLink>
-                </>
-              )}
-            </span>
-          );
-        }
-        return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
-            {t("activity.sentence.resolved-issue")}
-          </span>
-        );
-      }
-      if (toStatus === IssueStatus.CANCELED) {
-        return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
-            {t("activity.sentence.canceled-issue")}
-          </span>
-        );
-      }
-      if (toStatus === IssueStatus.OPEN) {
-        return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
-            {t("activity.sentence.reopened-issue")}
-          </span>
-        );
-      }
-    }
-    if (fromLabels.length !== 0 || toLabels.length !== 0) {
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("activity.sentence.changed-labels")}
-        </span>
-      );
-    }
-  }
-
-  if (
-    commentType === IssueCommentType.PLAN_UPDATE &&
-    issueComment.event.case === "planUpdate"
-  ) {
-    const entries = diffPlanSpecsForEvent(issueComment.event.value);
-    if (entries.length === 0) return null;
-    if (entries.length === 1) {
-      return <SpecDiffRow entry={entries[0]} />;
-    }
-    return (
-      <div className="flex flex-col gap-1">
-        {entries.map((entry) => (
-          <SpecDiffRow key={diffEntryKey(entry)} entry={entry} />
-        ))}
-      </div>
-    );
-  }
-
-  return <span className="wrap-break-word min-w-0 text-gray-600" />;
-}
-
-function SpecDiffRow({ entry }: { entry: SpecDiffEntry }) {
-  const { t } = useTranslation();
-  const page = useIssueDetailContext();
-  const planName = page.plan?.name ?? "";
-
-  if (entry.kind === "added") {
-    return (
-      <SpecChangeRow specRef={specResourceName(planName, entry.spec)}>
-        {t("activity.sentence.added-spec")}
-      </SpecChangeRow>
-    );
-  }
-
-  if (entry.kind === "removed") {
-    return (
-      <SpecChangeRow specRef={specResourceName(planName, entry.spec)}>
-        {t("activity.sentence.removed-spec")}
-      </SpecChangeRow>
-    );
-  }
-
-  // updated
-  const fragments: ReactNode[] = [];
-  let trailing: ReactNode = null;
-  if (entry.sheetChanged) {
-    const fromSheet = sheetNameOfSpec(entry.from);
-    const toSheet = sheetNameOfSpec(entry.to);
-    fragments.push(
-      <span key="sheet">{t("activity.sentence.modified-sql-of")}</span>
-    );
-    trailing = (
-      <IssueDetailStatementUpdateButton
-        newSheet={toSheet}
-        oldSheet={fromSheet}
-      />
-    );
-  }
-  if (entry.targetsChanged) {
-    const fromTargets = targetsOfSpec(entry.from);
-    const toTargets = targetsOfSpec(entry.to);
-    const fromSet = new Set(fromTargets);
-    const toSet = new Set(toTargets);
-    const added = toTargets.filter((x) => !fromSet.has(x));
-    const removed = fromTargets.filter((x) => !toSet.has(x));
-    const diffText = [
-      added.length > 0 ? `+${added.join(", ")}` : null,
-      removed.length > 0 ? `-${removed.join(", ")}` : null,
-    ]
-      .filter(Boolean)
-      .join("  ");
-    fragments.push(
-      <span key="targets" className="inline-flex items-center gap-1">
-        {t("activity.sentence.changed-targets-of")}{" "}
-        <span className="text-xs">{diffText}</span>
-      </span>
-    );
-  }
-  if (entry.priorBackupChanged) {
-    const flipped = enablePriorBackupOfSpec(entry.to);
-    fragments.push(
-      <span key="backup">
-        {flipped
-          ? t("activity.sentence.enabled-prior-backup-on")
-          : t("activity.sentence.disabled-prior-backup-on")}
-      </span>
-    );
-  }
-  if (fragments.length === 0 && entry.otherChanged) {
-    // Unknown attribute change — generic fallback with a JSON-diff toggle.
-    return (
-      <SpecChangeRow specRef={specResourceName(planName, entry.to)}>
-        <span>{t("common.updated")}</span>
-        <details className="ml-2 text-xs">
-          <summary className="cursor-pointer text-control-light">
-            {t("common.detail")}
-          </summary>
-          <pre className="mt-1 max-h-48 overflow-auto rounded bg-control-bg p-2">
-            {JSON.stringify({ from: entry.from, to: entry.to }, null, 2)}
-          </pre>
-        </details>
-      </SpecChangeRow>
-    );
-  }
-
-  return (
-    <SpecChangeRow
-      specRef={specResourceName(planName, entry.to)}
-      trailing={trailing}
-    >
-      {joinFragments(fragments, t("common.and"))}
-    </SpecChangeRow>
-  );
-}
-
-function specResourceName(planName: string, spec: Plan_Spec): string {
-  return planName ? `${planName}/specs/${spec.id}` : `specs/${spec.id}`;
-}
-
-function SpecChangeRow({
-  specRef,
-  children,
-  trailing,
-}: {
-  specRef: string;
-  children: ReactNode;
-  trailing?: ReactNode;
-}) {
-  const { t } = useTranslation();
-  const page = useIssueDetailContext();
-  const specs = page.plan?.specs ?? [];
-  const specInfo = getSpecDisplayInfo(specs, specRef);
-  const specIdFromRef = specRef.match(/\/specs\/([^/]+)$/)?.[1] ?? "";
-  const specId = specInfo?.specId ?? specIdFromRef;
-  const specIdShort = specId.slice(0, 8);
-  // Only link to specs that still exist in the live plan — otherwise the spec
-  // view would silently bounce back to specs[0].
-  const specRoute = specInfo?.specId
-    ? {
-        query: {
-          ...router.currentRoute.value.query,
-          spec: specInfo.specId,
-        },
-      }
-    : null;
-
-  const chip = (
-    <span className="inline-flex items-center gap-1">
-      {t("plan.spec.change")}
-      {specIdShort !== "" ? (
-        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
-          {specIdShort}
-        </span>
-      ) : null}
-    </span>
-  );
-
-  return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap text-gray-600">
-      {children}{" "}
-      {specRoute != null ? (
-        <RouterLink
-          className="inline-flex items-center gap-1 hover:underline"
-          to={specRoute}
-        >
-          {chip}
-        </RouterLink>
-      ) : (
-        chip
-      )}
-      {trailing != null ? <> {trailing}</> : null}
-    </span>
-  );
-}
-
-function joinFragments(fragments: ReactNode[], separator: string): ReactNode {
-  if (fragments.length === 0) return null;
-  if (fragments.length === 1) return fragments[0];
-  return fragments.map((f, i) => (
-    <Fragment key={i}>
-      {i > 0 ? <span> {separator} </span> : null}
-      {f}
-    </Fragment>
-  ));
-}
-
-function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
-  const page = useIssueDetailContext();
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(issueComment.creator)
-  );
-  const user = creatorUser ?? unknownUser(issueComment.creator);
-  const commentType = getIssueCommentType(issueComment);
-
-  if (
-    commentType === IssueCommentType.APPROVAL &&
-    issueComment.event.case === "approval"
-  ) {
-    const { status } = issueComment.event.value;
-    if (status === IssueComment_Approval_Status.APPROVED) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<ThumbsUp className="h-4 w-4" />}
-        />
-      );
-    }
-    if (status === IssueComment_Approval_Status.REJECTED) {
-      return (
-        <CommentIconBadge
-          className="bg-warning text-white"
-          icon={<Pencil className="h-4 w-4" />}
-        />
-      );
-    }
-    if (status === IssueComment_Approval_Status.PENDING) {
-      return (
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<Play className="ml-px h-4 w-4" strokeWidth={3} />}
-        />
-      );
-    }
-  }
-
-  if (
-    commentType === IssueCommentType.ISSUE_UPDATE &&
-    issueComment.event.case === "issueUpdate"
-  ) {
-    if (
-      isDatabaseChangeDoneRolloutComment(page.issue, page.plan, issueComment)
-    ) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<CheckCircle2 className="size-4" />}
-        />
-      );
-    }
-
-    const { fromLabels, toDescription, toLabels, toTitle } =
-      issueComment.event.value;
-    if (
-      toTitle !== undefined ||
-      toDescription !== undefined ||
-      toLabels.length !== 0 ||
-      fromLabels.length !== 0
-    ) {
-      return (
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<Pencil className="h-4 w-4" />}
-        />
-      );
-    }
-  }
-
-  if (
-    commentType === IssueCommentType.PLAN_UPDATE &&
-    issueComment.event.case === "planUpdate"
-  ) {
-    const entries = diffPlanSpecsForEvent(issueComment.event.value);
-    const allAdded =
-      entries.length > 0 && entries.every((e) => e.kind === "added");
-    const allRemoved =
-      entries.length > 0 && entries.every((e) => e.kind === "removed");
-    if (allAdded) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<Plus className="h-4 w-4" />}
-        />
-      );
-    }
-    if (allRemoved) {
-      return (
-        <CommentIconBadge
-          className="bg-error text-white"
-          icon={<Trash2 className="h-4 w-4" />}
-        />
-      );
-    }
-    return (
-      <CommentIconBadge
-        className="bg-control-bg text-control"
-        icon={<Pencil className="h-4 w-4" />}
-      />
-    );
-  }
-
-  return (
-    <div className="relative pl-0.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white ring-4 ring-white">
-        <UserAvatar
-          className="h-7 w-7 text-[0.8rem] font-medium"
-          size="sm"
-          title={user.title || user.email}
-        />
-      </div>
-    </div>
-  );
-}
-
-function CommentIconBadge({
-  className,
-  icon,
-}: {
-  className: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="relative pl-0.5">
-      <div
-        className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full ring-4 ring-white",
-          className
-        )}
-      >
-        {icon}
-      </div>
-    </div>
-  );
-}
-
 function EditableMarkdownContent({
   allowSave,
   content,
@@ -1117,107 +506,5 @@ function EditableMarkdownContent({
         </div>
       )}
     </div>
-  );
-}
-
-function IssueDetailStatementUpdateButton({
-  newSheet,
-  oldSheet,
-}: {
-  newSheet: string;
-  oldSheet: string;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [oldStatement, setOldStatement] = useState("");
-  const [newStatement, setNewStatement] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    let canceled = false;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        // One side may be empty when the sheet was attached (no oldSheet)
-        // or cleared (no newSheet). Treat that side as empty content
-        // rather than fetching by an empty resource name.
-        const fetchStatement = async (sheetName: string) => {
-          if (!sheetName) return "";
-          const sheet = await useAppStore
-            .getState()
-            .getOrFetchSheetByName(sheetName);
-          return sheet ? getSheetStatement(sheet) : "";
-        };
-        const [oldValue, newValue] = await Promise.all([
-          fetchStatement(oldSheet),
-          fetchStatement(newSheet),
-        ]);
-        if (!canceled) {
-          setOldStatement(oldValue);
-          setNewStatement(newValue);
-        }
-      } finally {
-        if (!canceled) {
-          setIsLoading(false);
-        }
-      }
-    };
-    void load();
-    return () => {
-      canceled = true;
-    };
-  }, [newSheet, oldSheet, open]);
-
-  return (
-    <>
-      <button
-        className="inline-flex items-center text-accent hover:underline"
-        onClick={() => setOpen(true)}
-        type="button"
-      >
-        {t("common.view-details")}
-      </button>
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="max-w-none border-0 p-0 sm:w-[calc(100vw-9rem)] 2xl:max-w-none">
-          <div className="px-6 pt-5">
-            <DialogTitle>{t("common.detail")}</DialogTitle>
-          </div>
-          <div className="px-6 pb-6 pt-2">
-            {(() => {
-              // Fill the dialog instead of letting the editor shrink to
-              // content height — short SQL diffs were leaving most of the
-              // dialog blank. Cap at a sensible max so very tall viewports
-              // don't get an awkwardly-stretched editor.
-              const height = Math.min(
-                900,
-                Math.max(400, window.innerHeight - 240)
-              );
-              if (isLoading) {
-                return (
-                  <div
-                    className="flex w-full items-center justify-center rounded-md border"
-                    style={{ height }}
-                  >
-                    <Loader2 className="h-6 w-6 animate-spin text-control-light" />
-                  </div>
-                );
-              }
-              return (
-                <ReadonlyDiffMonaco
-                  className="w-full"
-                  max={height}
-                  min={height}
-                  modified={newStatement}
-                  original={oldStatement}
-                />
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
