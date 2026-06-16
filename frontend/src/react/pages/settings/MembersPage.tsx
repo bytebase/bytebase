@@ -2144,15 +2144,18 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   // (workspace- or project-scoped). hasProjectPermissionV2 falls back to
   // workspace permissions, so a single check covers both contexts. Mirrors the
   // Vue `hasMissingPermission` gate rather than checking `setIamPolicy` alone.
-  const hasFullProjectAccess = useMemo(() => {
-    if (!project) return false;
-    const ownerPermissions =
-      roleList.find((r) => r.name === PresetRoleType.PROJECT_OWNER)
-        ?.permissions ?? [];
-    return ownerPermissions.every((permission) =>
+  // Computed inline (not memoized) so it tracks live IAM policy changes, the
+  // same way canSetIamPolicy above does — the permission check reads
+  // current-user state that isn't captured by [project, roleList] deps.
+  const ownerPermissions = project
+    ? (roleList.find((r) => r.name === PresetRoleType.PROJECT_OWNER)
+        ?.permissions ?? [])
+    : [];
+  const hasFullProjectAccess =
+    !!project &&
+    ownerPermissions.every((permission) =>
       hasProjectPermissionV2(project, permission as Permission)
     );
-  }, [project, roleList]);
 
   const handleRevokeSelected = async () => {
     if (
