@@ -1512,12 +1512,15 @@
         "show-all": "Mostrar todo"
       },
       "approval-flow": {
+        "and-n-more_one": "y {{count}} más",
+        "and-n-more_other": "y {{count}} más",
         "approved-by": "Aprobado por {{user}}",
         "current": "Actual",
         "n-approved": "{{n}} aprobados",
         "n-pending": "{{n}} pendientes",
         "n-reviewers_one": "{{count}} revisor",
         "n-reviewers_other": "{{count}} revisores",
+        "no-reviewers": "Sin revisores",
         "rejected-by": "Rechazado por {{user}}"
       },
       "comment-required-to-reject": "Se requiere un comentario para rechazar",

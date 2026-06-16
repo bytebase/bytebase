@@ -1512,12 +1512,15 @@
         "show-all": "显示全部"
       },
       "approval-flow": {
+        "and-n-more_one": "还有 {{count}} 位",
+        "and-n-more_other": "还有 {{count}} 位",
         "approved-by": "由 {{user}} 批准",
         "current": "当前",
         "n-approved": "{{n}} 人已批准",
         "n-pending": "{{n}} 个待审批",
         "n-reviewers_one": "{{count}} 位审批人",
         "n-reviewers_other": "{{count}} 位审批人",
+        "no-reviewers": "无审批人",
         "rejected-by": "由 {{user}} 拒绝"
       },
       "comment-required-to-reject": "拒绝时必须填写评论",

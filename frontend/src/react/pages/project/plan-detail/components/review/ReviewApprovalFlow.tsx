@@ -8,10 +8,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
@@ -243,14 +243,8 @@ function FlowNode({
           <div className="mt-1 h-4 truncate text-xs leading-4 text-control-light">
             {subtitle}
           </div>
-        ) : step.status === "current" ? (
-          <CandidateAvatars
-            issue={issue}
-            projectId={page.projectId}
-            role={step.role}
-          />
-        ) : step.status === "pending" ? (
-          <CandidateCount
+        ) : step.status === "current" || step.status === "pending" ? (
+          <NodeReviewers
             issue={issue}
             projectId={page.projectId}
             role={step.role}
@@ -261,7 +255,10 @@ function FlowNode({
   );
 }
 
-function CandidateAvatars({
+// The reviewer line under a current/pending node: an avatar stack + "N
+// reviewers" count, where the whole row is a hover target that reveals the full
+// reviewer list (BYT-9711). Rendered for future stages too, not just current.
+function NodeReviewers({
   issue,
   projectId,
   role,
@@ -271,46 +268,86 @@ function CandidateAvatars({
   role: string;
 }) {
   const { t } = useTranslation();
-  const { candidates } = useApprovalCandidates(issue, projectId, role);
-  if (candidates.length === 0) return null;
-  const visible = candidates.slice(0, 3);
-  return (
-    <div className="mt-1 flex h-4 items-center gap-x-1.5">
-      <div className="flex items-center -space-x-1">
-        {visible.map((user) => (
-          <Tooltip content={user.email} key={user.name}>
-            <InitialsAvatar
-              className="size-4 text-[9px] ring-2 ring-white"
-              user={user}
-            />
-          </Tooltip>
-        ))}
-      </div>
-      <span className="text-xs text-control-light">
-        {t("plan.review.approval-flow.n-reviewers", {
-          count: candidates.length,
-        })}
-      </span>
-    </div>
+  // Whether the project IAM policy is in cache yet — used to tell "still
+  // loading" (show nothing) apart from "genuinely no eligible reviewers".
+  const policyLoaded = useAppStore(
+    (state) =>
+      state.projectPoliciesByName[`${projectNamePrefix}${projectId}`] !==
+      undefined
   );
-}
-
-function CandidateCount({
-  issue,
-  projectId,
-  role,
-}: {
-  issue: Issue;
-  projectId: string;
-  role: string;
-}) {
-  const { t } = useTranslation();
   const { candidates } = useApprovalCandidates(issue, projectId, role);
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    // No eligible reviewers means this stage can never be approved — surface it
+    // explicitly rather than rendering nothing (BYT-9711). Stay silent until the
+    // policy resolves so it doesn't flash during load.
+    if (!policyLoaded) return null;
+    return (
+      <div className="mt-1 flex h-4 items-center text-xs leading-4 text-control-placeholder">
+        {t("plan.review.approval-flow.no-reviewers")}
+      </div>
+    );
+  }
+  const visible = candidates.slice(0, 3);
+  const overflow = candidates.length - visible.length;
+  // A role can resolve to thousands of candidates; render a bounded, scrollable
+  // slice in the popover and summarize the rest rather than mounting every row.
+  const MAX_LISTED = 50;
+  const listed = candidates.slice(0, MAX_LISTED);
+  const remaining = candidates.length - listed.length;
+
   return (
-    <div className="mt-1 flex h-4 items-center text-xs leading-4 text-control-light">
-      {t("plan.review.approval-flow.n-reviewers", { count: candidates.length })}
-    </div>
+    <Popover>
+      <PopoverTrigger
+        delay={100}
+        nativeButton={false}
+        openOnHover
+        render={
+          <div className="mt-1 flex h-4 w-fit cursor-default items-center gap-x-1.5">
+            <div className="flex items-center -space-x-1">
+              {visible.map((user) => (
+                <InitialsAvatar
+                  className="size-4 text-[9px] ring-2 ring-white"
+                  key={user.name}
+                  user={user}
+                />
+              ))}
+              {overflow > 0 && (
+                <span className="flex size-4 items-center justify-center rounded-full bg-control-bg text-[9px] font-medium text-control ring-2 ring-white">
+                  +{overflow}
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-control-light">
+              {t("plan.review.approval-flow.n-reviewers", {
+                count: candidates.length,
+              })}
+            </span>
+          </div>
+        }
+      />
+      <PopoverContent align="start" className="w-60" side="bottom">
+        <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
+          {listed.map((user) => (
+            <div className="flex items-center gap-x-2" key={user.name}>
+              <InitialsAvatar className="size-6 text-[10px]" user={user} />
+              <div className="min-w-0">
+                <div className="truncate text-sm text-main">
+                  {user.title || user.email.split("@")[0]}
+                </div>
+                <div className="truncate text-xs text-control-light">
+                  {user.email}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {remaining > 0 && (
+          <div className="mt-2 border-t pt-1.5 text-xs text-control-placeholder">
+            {t("plan.review.approval-flow.and-n-more", { count: remaining })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 

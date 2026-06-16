@@ -1512,12 +1512,15 @@
         "show-all": "すべて表示"
       },
       "approval-flow": {
+        "and-n-more_one": "他 {{count}} 名",
+        "and-n-more_other": "他 {{count}} 名",
         "approved-by": "{{user}} が承認",
         "current": "現在",
         "n-approved": "{{n}} 件承認済み",
         "n-pending": "{{n}} 件保留中",
         "n-reviewers_one": "{{count}} 名のレビュアー",
         "n-reviewers_other": "{{count}} 名のレビュアー",
+        "no-reviewers": "レビュアーなし",
         "rejected-by": "{{user}} が却下"
       },
       "comment-required-to-reject": "却下するにはコメントが必要です",

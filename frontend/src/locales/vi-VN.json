@@ -1512,12 +1512,15 @@
         "show-all": "Hiển thị tất cả"
       },
       "approval-flow": {
+        "and-n-more_one": "và {{count}} người khác",
+        "and-n-more_other": "và {{count}} người khác",
         "approved-by": "Được phê duyệt bởi {{user}}",
         "current": "Hiện tại",
         "n-approved": "{{n}} đã phê duyệt",
         "n-pending": "{{n}} đang chờ",
         "n-reviewers_one": "{{count}} người xét duyệt",
         "n-reviewers_other": "{{count}} người xét duyệt",
+        "no-reviewers": "Không có người xét duyệt",
         "rejected-by": "Bị từ chối bởi {{user}}"
       },
       "comment-required-to-reject": "Cần có bình luận để từ chối",
