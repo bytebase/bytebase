@@ -1215,8 +1215,6 @@ func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *storepb
 	// Get multi-file schema from schema package
 	result, err := schema.GetMultiFileDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
-		SDLFormat:        true,
-		MultiFileFormat:  true,
 	}, metadata)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate multi-file SDL schema: %v", err))

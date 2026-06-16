@@ -12,15 +12,6 @@ import (
 // TestCheckConstraintOrderStability tests that CHECK constraints maintain consistent order
 // when generating SDL multiple times from the same metadata
 func TestCheckConstraintOrderStability(t *testing.T) {
-	t.Run("single_file", func(t *testing.T) {
-		testCheckConstraintOrder(t, false)
-	})
-	t.Run("multi_file", func(t *testing.T) {
-		testCheckConstraintOrder(t, true)
-	})
-}
-
-func testCheckConstraintOrder(t *testing.T, multiFile bool) {
 	// Simulate database metadata with multiple CHECK constraints
 	// (similar to the packages_debian_group_distributions table shown in the screenshot)
 	dbMetadata := &storepb.DatabaseSchemaMetadata{
@@ -64,7 +55,6 @@ func testCheckConstraintOrder(t *testing.T, multiFile bool) {
 		SkipBackupSchema: false,
 		PrintHeader:      false,
 		SDLFormat:        true,
-		MultiFileFormat:  multiFile,
 	}
 
 	// Generate SDL first time
