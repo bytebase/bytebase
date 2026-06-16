@@ -2,18 +2,17 @@
 // badge and the human-readable action sentence (including rich plan-spec diff
 // rows). Used by both the issue-detail comment list and the plan-detail review
 // timeline so their icons, wordings, and detailed styles stay consistent.
-import {
-  CheckCircle2,
-  Loader2,
-  Pencil,
-  Play,
-  Plus,
-  ThumbsUp,
-  Trash2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import {
+  type ActivityIconSpec,
+  ICON_BADGE_TONE,
+  ISSUE_EVENT_ICON,
+  PLAN_CHANGE_ICON,
+  REVIEW_DECISION_ICON,
+} from "@/react/components/issue-activity/activityIcons";
 import { ReadonlyDiffMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
 import { UserAvatar } from "@/react/components/UserAvatar";
@@ -265,28 +264,13 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
   ) {
     const { status } = comment.event.value;
     if (status === IssueComment_Approval_Status.APPROVED) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<ThumbsUp className="h-4 w-4" />}
-        />
-      );
+      return <ActivityBadge spec={REVIEW_DECISION_ICON.approved} />;
     }
     if (status === IssueComment_Approval_Status.REJECTED) {
-      return (
-        <CommentIconBadge
-          className="bg-warning text-white"
-          icon={<Pencil className="h-4 w-4" />}
-        />
-      );
+      return <ActivityBadge spec={REVIEW_DECISION_ICON.rejected} />;
     }
     if (status === IssueComment_Approval_Status.PENDING) {
-      return (
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<Play className="ml-px h-4 w-4" strokeWidth={3} />}
-        />
-      );
+      return <ActivityBadge spec={REVIEW_DECISION_ICON.reRequested} />;
     }
   }
 
@@ -295,12 +279,7 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
     comment.event.case === "issueUpdate"
   ) {
     if (isDoneRolloutComment(issue, plan, comment)) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<CheckCircle2 className="size-4" />}
-        />
-      );
+      return <ActivityBadge spec={ISSUE_EVENT_ICON.resolved} />;
     }
 
     const { fromLabels, toDescription, toLabels, toTitle } =
@@ -311,12 +290,7 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
       toLabels.length !== 0 ||
       fromLabels.length !== 0
     ) {
-      return (
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<Pencil className="h-4 w-4" />}
-        />
-      );
+      return <ActivityBadge spec={ISSUE_EVENT_ICON.fieldEdit} />;
     }
   }
 
@@ -329,28 +303,9 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
       entries.length > 0 && entries.every((e) => e.kind === "added");
     const allRemoved =
       entries.length > 0 && entries.every((e) => e.kind === "removed");
-    if (allAdded) {
-      return (
-        <CommentIconBadge
-          className="bg-success text-white"
-          icon={<Plus className="h-4 w-4" />}
-        />
-      );
-    }
-    if (allRemoved) {
-      return (
-        <CommentIconBadge
-          className="bg-error text-white"
-          icon={<Trash2 className="h-4 w-4" />}
-        />
-      );
-    }
-    return (
-      <CommentIconBadge
-        className="bg-control-bg text-control"
-        icon={<Pencil className="h-4 w-4" />}
-      />
-    );
+    if (allAdded) return <ActivityBadge spec={PLAN_CHANGE_ICON.added} />;
+    if (allRemoved) return <ActivityBadge spec={PLAN_CHANGE_ICON.deleted} />;
+    return <ActivityBadge spec={PLAN_CHANGE_ICON.edited} />;
   }
 
   return (
@@ -384,6 +339,18 @@ export function CommentIconBadge({
         {icon}
       </div>
     </div>
+  );
+}
+
+// Renders an activity badge from a design-module icon spec — the white glyph on
+// a tone-colored circle. The single place activity badges are built.
+function ActivityBadge({ spec }: { spec: ActivityIconSpec }) {
+  const { Icon, tone } = spec;
+  return (
+    <CommentIconBadge
+      className={ICON_BADGE_TONE[tone]}
+      icon={<Icon className="size-4" />}
+    />
   );
 }
 

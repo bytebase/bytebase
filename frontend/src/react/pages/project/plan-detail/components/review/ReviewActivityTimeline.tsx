@@ -1,4 +1,4 @@
-import { FilePlus2, Loader2, Pencil, Send } from "lucide-react";
+import { FileText, Loader2, Pencil, Send } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
@@ -199,7 +199,7 @@ function SyntheticIcon({
       className="bg-control-bg text-control"
       icon={
         type === "plan-created" ? (
-          <FilePlus2 className="h-4 w-4" />
+          <FileText className="h-4 w-4" />
         ) : (
           <Send className="h-4 w-4" />
         )

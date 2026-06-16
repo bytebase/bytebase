@@ -1,8 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { Check, Loader2, MessageCircle, X } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import {
+  type ActivityIconSpec,
+  ICON_TEXT_TONE,
+  REVIEW_DECISION_ICON,
+} from "@/react/components/issue-activity/activityIcons";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -93,14 +98,14 @@ export function ReviewActionPopover({
         />
         <ReviewOption
           description={t("issue.review.approve-description")}
-          icon={<Check className="size-4 text-success" />}
+          icon={<DecisionIcon spec={REVIEW_DECISION_ICON.approved} />}
           label={t("common.approve")}
           onSelect={() => setAction("APPROVE")}
           selected={action === "APPROVE"}
         />
         <ReviewOption
           description={t("issue.review.reject-description")}
-          icon={<X className="size-4 text-error" />}
+          icon={<DecisionIcon spec={REVIEW_DECISION_ICON.rejected} />}
           label={t("common.reject")}
           onSelect={() => setAction("REJECT")}
           selected={action === "REJECT"}
@@ -131,6 +136,13 @@ export function ReviewActionPopover({
       </div>
     </div>
   );
+}
+
+// Tints the shared review-decision glyph for the action menu (text tone, vs the
+// filled badge the same spec produces in the activity timeline).
+function DecisionIcon({ spec }: { spec: ActivityIconSpec }) {
+  const { Icon, tone } = spec;
+  return <Icon className={cn("size-4", ICON_TEXT_TONE[tone])} />;
 }
 
 function ReviewOption({
