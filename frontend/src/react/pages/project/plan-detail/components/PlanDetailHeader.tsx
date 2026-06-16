@@ -8,6 +8,7 @@ import {
   IssueLabelSelect,
 } from "@/react/components/IssueLabelSelect";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -15,7 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import {
@@ -49,6 +49,7 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getCreateIssueBlockingErrors,
   getCreateIssueConfirmErrors,
+  getCreatePlanBlockingReasons,
   hasChecksWarning,
   shouldStayOnPlanDetailPage,
 } from "../utils/header";
@@ -76,6 +77,18 @@ export function PlanDetailHeader() {
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleAutoFocusedRef = useRef(false);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const createPlanBlockingReasons = useMemo(
+    () =>
+      getCreatePlanBlockingReasons({
+        title: page.plan.title,
+        emptySpecCount: emptySpecIdSet.size,
+        t,
+      }),
+    [emptySpecIdSet.size, page.plan.title, t]
+  );
+  const titleMissing = page.plan.title.trim() === "";
 
   useEffect(() => {
     const nextTitle = page.issue?.title ?? page.plan.title;
@@ -323,6 +336,10 @@ export function PlanDetailHeader() {
   };
 
   const handleCreatePlan = async () => {
+    if (createPlanBlockingReasons.length > 0) {
+      setShowCreateErrors(true);
+      return;
+    }
     try {
       setUpdating(true);
       await createSheets();
@@ -351,17 +368,6 @@ export function PlanDetailHeader() {
       setUpdating(false);
     }
   };
-
-  const createPlanDisabledReasons = useMemo(() => {
-    const reasons: string[] = [];
-    if (!page.plan.title.trim()) {
-      reasons.push(t("plan.title-required"));
-    }
-    if (emptySpecIdSet.size > 0) {
-      reasons.push(t("plan.navigator.statement-empty"));
-    }
-    return reasons;
-  }, [emptySpecIdSet.size, page.plan.title, t]);
 
   const createIssueBlockingErrors = useMemo(
     () =>
@@ -502,25 +508,38 @@ export function PlanDetailHeader() {
 
         <div className="flex shrink-0 items-center gap-x-2">
           {page.isCreating ? (
-            <Tooltip
-              content={
-                createPlanDisabledReasons.length > 0 ? (
-                  <div className="flex flex-col gap-y-1">
-                    {createPlanDisabledReasons.map((reason) => (
-                      <span key={reason}>{reason}</span>
-                    ))}
-                  </div>
-                ) : null
-              }
+            <Popover
+              modal={false}
+              onOpenChange={setShowCreateErrors}
+              open={showCreateErrors && createPlanBlockingReasons.length > 0}
             >
               <Button
-                disabled={updating || createPlanDisabledReasons.length > 0}
+                disabled={updating}
                 onClick={() => void handleCreatePlan()}
+                ref={createButtonRef}
               >
                 {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("common.create")}
               </Button>
-            </Tooltip>
+              <PopoverContent
+                anchor={createButtonRef}
+                className="max-w-xs overflow-hidden border-error/40 p-0"
+                initialFocus={titleMissing ? titleInputRef : false}
+              >
+                <Alert
+                  className="rounded-none border-0 shadow-none"
+                  description={
+                    <ul className="list-disc pl-4">
+                      {createPlanBlockingReasons.map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  }
+                  title={t("plan.cannot-create")}
+                  variant="error"
+                />
+              </PopoverContent>
+            </Popover>
           ) : (
             <>
               {showSubmitForReview && (

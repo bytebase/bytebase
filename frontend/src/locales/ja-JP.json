@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "cannot-create": "プランを作成できません",
     "checks": {
       "completed": "プランチェックが完了しました",
       "failed-to-run": "プランチェックの実行に失敗しました",

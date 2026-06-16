@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "cannot-create": "No se puede crear el plan",
     "checks": {
       "completed": "Se completaron las verificaciones del plan",
       "failed-to-run": "No se pudieron ejecutar las verificaciones del plan",

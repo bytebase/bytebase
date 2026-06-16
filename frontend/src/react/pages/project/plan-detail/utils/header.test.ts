@@ -4,6 +4,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   getCreateIssueBlockingErrors,
   getCreateIssueConfirmErrors,
+  getCreatePlanBlockingReasons,
   hasChecksWarning,
   shouldStayOnPlanDetailPage,
 } from "./header";
@@ -73,5 +74,45 @@ describe("plan detail header create issue helpers", () => {
     ).toContain(
       "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
     );
+  });
+});
+
+describe("getCreatePlanBlockingReasons", () => {
+  test("flags an empty title", () => {
+    expect(
+      getCreatePlanBlockingReasons({ title: "", emptySpecCount: 0, t })
+    ).toEqual(["plan.title-required"]);
+  });
+
+  test("flags a whitespace-only title", () => {
+    expect(
+      getCreatePlanBlockingReasons({ title: "   ", emptySpecCount: 0, t })
+    ).toEqual(["plan.title-required"]);
+  });
+
+  test("flags empty statements", () => {
+    expect(
+      getCreatePlanBlockingReasons({
+        title: "Add column",
+        emptySpecCount: 2,
+        t,
+      })
+    ).toEqual(["plan.navigator.statement-empty"]);
+  });
+
+  test("lists both blockers, title first", () => {
+    expect(
+      getCreatePlanBlockingReasons({ title: "", emptySpecCount: 1, t })
+    ).toEqual(["plan.title-required", "plan.navigator.statement-empty"]);
+  });
+
+  test("returns no reasons when valid", () => {
+    expect(
+      getCreatePlanBlockingReasons({
+        title: "Add column",
+        emptySpecCount: 0,
+        t,
+      })
+    ).toEqual([]);
   });
 });
