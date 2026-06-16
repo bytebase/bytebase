@@ -202,6 +202,10 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 // a materialized view can be defined on a regular view and is materialized from its
 // sources at CREATE time, so its source views must already be real (not the temporary
 // SELECT 1 placeholders). Base tables are emitted separately and are excluded here.
+//
+// MVs keep their incoming order relative to each other, so a materialized view built on
+// another materialized view (nested async MVs) is not yet dependency-ordered and could
+// restore inactive if listed before its parent — tracked in BYT-9718.
 func finalEmitOrder(tables []*TableSchema) []*TableSchema {
 	var views, materializedViews []*TableSchema
 	for _, tbl := range tables {
