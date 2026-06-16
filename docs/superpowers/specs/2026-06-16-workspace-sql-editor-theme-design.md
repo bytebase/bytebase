@@ -36,11 +36,15 @@ workspace sees it applied to the SQL Editor. No per-user choice (pure enforcemen
 
 ### 1.1 Proto
 
-Add to the existing workspace-admin settings message
-(`proto/v1/v1/setting_service.proto`, `message WorkspaceProfileSetting`, next free fields —
-16 is `reserved`, so use **23/24**). The enforced **selection** (`id`) is separated from the
-custom theme **definition**, so the stored definition is always a complete custom theme
-(never an empty-token placeholder) and built-ins stay frontend-only references:
+Add to the existing workspace-admin settings message. **Bytebase has two proto layers for
+this setting** — the public v1 API (`proto/v1/v1/setting_service.proto`, use fields
+**23/24**; 16 is `reserved`) **and** the persisted store (`proto/store/store/setting.proto`,
+`message WorkspaceProfileSetting` — use ITS next free numbers). The **same** fields +
+`SQLEditorThemeSetting` message must be added to **both** (and the v1↔store converters
+updated — see §1.2), or values are dropped at the store boundary. The enforced **selection**
+(`id`) is separated from the custom theme **definition**, so the stored definition is always
+a complete custom theme (never an empty-token placeholder) and built-ins stay frontend-only
+references:
 
 ```proto
 message WorkspaceProfileSetting {
@@ -83,11 +87,17 @@ Regenerate: `buf format -w proto && buf lint proto && (cd proto && buf generate)
 (`name = WORKSPACE_PROFILE`). Adding a proto field is backward-compatible:
 
 - **No SQL migration** — it's a JSONB value, not a column. `LATEST.sql` unchanged.
-- The Setting update path is **field-mask based** (the frontend already sends an
-  `update_mask`), so writing `sql_editor_theme_id` / `sql_editor_custom_theme` merges into
-  the existing blob without touching other fields. Confirm the workspace-profile update
-  handler in `backend/api/v1/setting_service.go` (a) passes the new fields through and
-  (b) does not drop them on unrelated updates.
+- **v1↔store converters** (`backend/api/v1/setting_service_converter.go`):
+  `convertWorkspaceProfileSetting` (v1→store) and `convertToWorkspaceProfileSetting`
+  (store→v1) must map both new fields (+ a `SQLEditorThemeSetting` helper). The value is
+  persisted as the **store** proto, so without this it's silently dropped on write and never
+  returned on read.
+- The update path is **field-mask based** with an explicit `switch` over
+  `value.workspace_profile.*` paths in `setting_service.go` (each case copies one field into
+  the stored payload; an unlisted path hits `default` → `InvalidArgument`). Add cases for
+  `value.workspace_profile.sql_editor_theme_id` and
+  `value.workspace_profile.sql_editor_custom_theme` (the latter validated, §1.3). A nil
+  custom theme is valid and clears the field (built-in selection).
 
 ### 1.3 Validation (server-side)
 
@@ -182,7 +192,7 @@ Editor settings, the `SectionHandle` dirty/revert/update contract, and the
    matches ⇒ "Custom" selected; else the preset matching `sqlEditorThemeId`.
 3. Gated read/write exactly like the existing fields:
    - read `useAppStore((s) => s.getWorkspaceProfile())` → `sqlEditorThemeId` + `sqlEditorCustomTheme`
-   - write `updateWorkspaceProfile({ setting: { sqlEditorThemeId, sqlEditorCustomTheme }, updateMask: ["sql_editor_theme_id", "sql_editor_custom_theme"] })`
+   - write `updateWorkspaceProfile({ payload: { sqlEditorThemeId, sqlEditorCustomTheme }, updateMask: ["value.workspace_profile.sql_editor_theme_id", "value.workspace_profile.sql_editor_custom_theme"] })` (the method takes `payload`; mask paths use the full `value.workspace_profile.*` form — matching the existing `query_timeout` / `sql_result_size` saves)
    - `PermissionGuard permissions={["bb.settings.setWorkspaceProfile"]}`; non-admins see
      it read-only.
    - participate in the section's `isDirty` / `revert` / `update` (`useImperativeHandle`).
@@ -242,7 +252,7 @@ Admin (Settings → SQL Editor → Theme)
   pick preset ──────────────► themeId = <preset>,  customTheme = (cleared)                    (built-in reference)
   OR edit anchors ──► deriveThemeFromAnchors ──► validateTheme ──► themeId = <uuid>,  customTheme = { id:<uuid>, name, monacoBase, tokens }   (custom; tokens required)
         │
-        ▼  updateWorkspaceProfile({ setting:{ sqlEditorThemeId, sqlEditorCustomTheme }, updateMask:["sql_editor_theme_id","sql_editor_custom_theme"] })
+        ▼  updateWorkspaceProfile({ payload:{ sqlEditorThemeId, sqlEditorCustomTheme }, updateMask:["value.workspace_profile.sql_editor_theme_id","value.workspace_profile.sql_editor_custom_theme"] })
    UpdateSetting(WORKSPACE_PROFILE)  ── server validates custom_theme (tokens required) ──► setting blob (protojson)
         │
         ▼  (app store refresh)
@@ -281,7 +291,9 @@ Every user: getWorkspaceProfile() → { sqlEditorThemeId, sqlEditorCustomTheme }
 
 | Area | File | Change |
 | --- | --- | --- |
-| proto | `proto/v1/v1/setting_service.proto` | `+SQLEditorThemeSetting`, `+ sql_editor_theme_id (23)`, `+ sql_editor_custom_theme (24)` |
+| proto (v1) | `proto/v1/v1/setting_service.proto` | `+SQLEditorThemeSetting`, `+ sql_editor_theme_id (23)`, `+ sql_editor_custom_theme (24)` |
+| proto (store) | `proto/store/store/setting.proto` | same additions (its own field numbers) — persisted shape |
+| backend (convert) | `backend/api/v1/setting_service_converter.go` | map both fields in `convert{,To}WorkspaceProfileSetting` |
 | backend | `backend/api/v1/setting_service.go` | pass-through + validation (custom-theme tokens required) |
 | backend (test) | `backend/.../setting_service_test.go` (or `backend/tests`) | update/validate/mask tests |
 | fe theme | `react/components/sql-editor/theme/derive.ts` | `+deriveThemeFromAnchors`, `+themeToAnchors`, `ThemeAnchors` |

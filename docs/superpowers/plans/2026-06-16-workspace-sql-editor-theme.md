@@ -18,8 +18,9 @@
 
 ## File Structure
 
-- `proto/v1/v1/setting_service.proto` — `+message SQLEditorThemeSetting`, `+sql_editor_theme_id (23)`, `+sql_editor_custom_theme (24)`.
-- `backend/api/v1/setting_service.go` (+`_test.go`) — validate custom theme on update.
+- `proto/v1/v1/setting_service.proto` **and** `proto/store/store/setting.proto` — `+message SQLEditorThemeSetting`, `+sql_editor_theme_id`, `+sql_editor_custom_theme` (BOTH layers).
+- `backend/api/v1/setting_service_converter.go` — map both fields in `convert{,To}WorkspaceProfileSetting`.
+- `backend/api/v1/setting_service.go` (+`_test.go`) — update-mask cases + validate custom theme.
 - `frontend/src/react/components/sql-editor/theme/derive.ts` (+`derive.test.ts`) — anchors + derivation.
 - `frontend/src/react/components/sql-editor/theme/useWorkspaceSQLEditorTheme.ts` (+`.test.ts`) — resolver.
 - `frontend/src/react/components/sql-editor/SQLEditorLayout.tsx` — source theme from workspace.
@@ -33,11 +34,18 @@ Order: backend contract (1-2) → frontend core logic (3-4) → wiring (5-6) →
 
 ---
 
-## Task 1: Proto — theme fields on WorkspaceProfileSetting
+## Task 1: Proto — theme fields on BOTH proto layers
 
-**Files:** Modify `proto/v1/v1/setting_service.proto`.
+> **Critical (Codex P1):** `WorkspaceProfileSetting` exists in **two** protos — the public
+> v1 API (`proto/v1/v1/setting_service.proto`) **and** the persisted store
+> (`proto/store/store/setting.proto:37`). `UpdateSetting` converts v1→store via
+> `convertWorkspaceProfileSetting` and reads back store→v1 via
+> `convertToWorkspaceProfileSetting`. Both proto layers AND both converters (Task 2) must
+> carry the new fields, or every value is dropped at the store boundary.
 
-- [ ] **Step 1:** In `message WorkspaceProfileSetting`, after `allow_email_code_signin = 22;`:
+**Files:** `proto/v1/v1/setting_service.proto`, `proto/store/store/setting.proto`.
+
+- [ ] **Step 1 (v1 proto):** In `message WorkspaceProfileSetting`, after `allow_email_code_signin = 22;`:
 
 ```proto
   // Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id
@@ -55,18 +63,21 @@ message SQLEditorThemeSetting {
   string id = 1;
   string name = 2;
   string monaco_base = 3;          // "vs" | "vs-dark"
-  map<string, string> tokens = 4;  // ~28 "--color-*" → "r g b"; required & complete
+  map<string, string> tokens = 4;  // ~29 "--color-*" → "r g b"; required & complete
 }
 ```
 
-- [ ] **Step 2:** `buf format -w proto && buf lint proto && (cd proto && buf generate)`. Expected: no lint errors; generated Go + TS contain `SQLEditorThemeSetting`, `sqlEditorThemeId`, `sqlEditorCustomTheme`.
-- [ ] **Step 3:** Commit `feat(proto): add workspace SQL Editor theme setting` (include `proto`, `backend/generated-go`, `frontend/src/types`).
+- [ ] **Step 2 (store proto):** Mirror the SAME additions in `proto/store/store/setting.proto`'s `message WorkspaceProfileSetting` (use its next free field numbers — check the file; do NOT assume 23/24 match the v1 numbers) and add an identical `message SQLEditorThemeSetting`. The store proto is the persisted shape.
+- [ ] **Step 3:** `buf format -w proto && buf lint proto && (cd proto && buf generate)`. Expected: no lint errors; both `v1pb` and `storepb` now expose `SQLEditorThemeSetting`, `SqlEditorThemeId`, `SqlEditorCustomTheme`; TS `frontend/src/types/proto-es/...` exposes `sqlEditorThemeId` / `sqlEditorCustomTheme`.
+- [ ] **Step 4:** Commit `feat(proto): add workspace SQL Editor theme setting (v1 + store)` (include `proto`, `backend/generated-go`, `frontend/src/types`).
 
 ---
 
-## Task 2: Backend — validate the custom theme on update
+## Task 2: Backend — converters, update-mask cases, validation
 
-**Files:** Modify `backend/api/v1/setting_service.go`; test `setting_service_test.go`.
+**Files:** `backend/api/v1/setting_service_converter.go` (converters), `backend/api/v1/setting_service.go` (mask switch + validator), `setting_service_test.go`.
+
+The validator runs on the **store** payload (the update switch builds `storepb.WorkspaceProfileSetting`), so it takes `*storepb.SQLEditorThemeSetting`.
 
 - [ ] **Step 1: Failing test** — append to `setting_service_test.go`:
 
@@ -79,30 +90,30 @@ func TestValidateSQLEditorCustomTheme(t *testing.T) {
 		}
 		return m
 	}
-	drop := func(k string) *v1pb.SQLEditorThemeSetting {
+	drop := func(k string) *storepb.SQLEditorThemeSetting {
 		m := full()
 		delete(m, k)
-		return &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: m}
+		return &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: m}
 	}
-	bad := func(k, v string) *v1pb.SQLEditorThemeSetting {
+	bad := func(k, v string) *storepb.SQLEditorThemeSetting {
 		m := full()
 		m[k] = v
-		return &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: m}
+		return &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: m}
 	}
-	ok := &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: full()}
+	ok := &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: full()}
 	cases := []struct {
 		name    string
-		theme   *v1pb.SQLEditorThemeSetting
+		theme   *storepb.SQLEditorThemeSetting
 		wantErr bool
 	}{
 		{"nil ok", nil, false},
 		{"complete", ok, false},
-		{"empty tokens", &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: map[string]string{}}, true},
+		{"empty tokens", &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: map[string]string{}}, true},
 		{"missing token", drop("--color-accent"), true},
 		{"bad triple", bad("--color-accent", "300 0 0"), true},
-		{"empty id", &v1pb.SQLEditorThemeSetting{Id: "", Name: "Brand", MonacoBase: "vs-dark", Tokens: full()}, true},
-		{"empty name", &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "", MonacoBase: "vs-dark", Tokens: full()}, true},
-		{"bad base", &v1pb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "x", Tokens: full()}, true},
+		{"empty id", &storepb.SQLEditorThemeSetting{Id: "", Name: "Brand", MonacoBase: "vs-dark", Tokens: full()}, true},
+		{"empty name", &storepb.SQLEditorThemeSetting{Id: "u1", Name: "", MonacoBase: "vs-dark", Tokens: full()}, true},
+		{"bad base", &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "x", Tokens: full()}, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -124,7 +135,7 @@ func TestValidateSQLEditorCustomTheme(t *testing.T) {
 ```go
 var sqlEditorThemeTokenKeys = []string{ /* the 29 "--color-*" keys, verbatim from types.ts */ }
 
-func validateSQLEditorCustomTheme(t *v1pb.SQLEditorThemeSetting) error {
+func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
 	if t == nil {
 		return nil // built-in reference or unset
 	}
@@ -164,16 +175,30 @@ func isRGBTriple(s string) bool {
 }
 ```
 
-- [ ] **Step 4: Wire** — in the `UpdateSetting` `WORKSPACE_PROFILE` validation path (before persist), add:
-```go
-if err := validateSQLEditorCustomTheme(profile.GetSqlEditorCustomTheme()); err != nil {
-	return nil, err
-}
-```
-Verify the existing field-mask merge does **not** drop `sql_editor_theme_id` / `sql_editor_custom_theme` on unrelated workspace-profile updates (add an assertion in the service-level test if one exists). `sql_editor_theme_id` is opaque — no validation.
+- [ ] **Step 4: Converters** (Codex P1) — in `setting_service_converter.go`, map the two new
+  fields in **both** directions. Add a small `SQLEditorThemeSetting` v1↔store helper (fields
+  are identical: Id, Name, MonacoBase, Tokens), then in `convertWorkspaceProfileSetting`
+  (v1→store) set `SqlEditorThemeId` + `SqlEditorCustomTheme`, and in
+  `convertToWorkspaceProfileSetting` (store→v1) set them back. Without this the values never
+  reach/leave the DB.
 
-- [ ] **Step 5:** `go test ./backend/api/v1/ -run TestValidateSQLEditorCustomTheme` → PASS; `golangci-lint run --allow-parallel-runners` clean.
-- [ ] **Step 6:** Commit `feat(setting): validate workspace SQL Editor custom theme`.
+- [ ] **Step 5: Update-mask cases** — in `setting_service.go`, the `WORKSPACE_PROFILE` update
+  has a `switch path` over `value.workspace_profile.*` where each case copies one field from
+  the incoming (converted-to-store) `payload` into `oldSetting`, and `default` rejects
+  unknown paths with `InvalidArgument`. Add two cases (before `default`):
+```go
+case "value.workspace_profile.sql_editor_theme_id":
+	oldSetting.SqlEditorThemeId = payload.SqlEditorThemeId
+case "value.workspace_profile.sql_editor_custom_theme":
+	if err := validateSQLEditorCustomTheme(payload.SqlEditorCustomTheme); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme // nil clears it (built-in)
+```
+`sql_editor_theme_id` is opaque (no validation); a nil `sql_editor_custom_theme` is valid and clears the field (built-in selection).
+
+- [ ] **Step 6:** `go test ./backend/api/v1/ -run TestValidateSQLEditorCustomTheme` → PASS; `golangci-lint run --allow-parallel-runners` clean. (Optional: a service-level update test asserting a custom theme round-trips through store + that picking a built-in clears `SqlEditorCustomTheme`.)
+- [ ] **Step 7:** Commit `feat(setting): persist + validate workspace SQL Editor theme`.
 
 ---
 
@@ -423,9 +448,17 @@ Follow the existing `SQLEditorSection` pattern exactly: read `useAppStore((s) =>
 - [ ] **Step 2:** Selecting a **built-in** sets `selectedThemeId = preset.id`, `customDraft = null`. `isDirty` = differs from the stored profile values.
 - [ ] **Step 3:** `update()` writes:
 ```tsx
+// Codex P2: the method takes `payload` (NOT `setting`), and mask paths are the
+// full `value.workspace_profile.*` form (see query_timeout / sql_result_size in
+// the same file). Both fields go in one call.
 await useAppStore.getState().updateWorkspaceProfile({
-  setting: { sqlEditorThemeId: selectedThemeId, sqlEditorCustomTheme: customDraft ?? undefined },
-  updateMask: create(FieldMaskSchema, { paths: ["sql_editor_theme_id", "sql_editor_custom_theme"] }),
+  payload: { sqlEditorThemeId: selectedThemeId, sqlEditorCustomTheme: customDraft ?? undefined },
+  updateMask: create(FieldMaskSchema, {
+    paths: [
+      "value.workspace_profile.sql_editor_theme_id",
+      "value.workspace_profile.sql_editor_custom_theme",
+    ],
+  }),
 });
 ```
 - [ ] **Step 4: Test** (`SQLEditorSection.test.tsx`) — selecting a different preset sets `isDirty`; `revert` restores; `update` calls `updateWorkspaceProfile` with `sqlEditorThemeId` = the picked id and `sqlEditorCustomTheme` cleared, and the right mask; without `bb.settings.setWorkspaceProfile` the controls are read-only.
