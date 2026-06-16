@@ -184,8 +184,9 @@ Editor settings, the `SectionHandle` dirty/revert/update contract, and the
    option. Selecting a preset saves `sqlEditorThemeId = <preset id>` and **clears**
    `sqlEditorCustomTheme` (built-in reference, nothing stored beyond the id).
 2. **Custom editor (when "Custom" selected)** — anchor color inputs (§2.4) + a **live
-   preview** (§2.5). On first switch to Custom, generate a stable id once
-   (`crypto.randomUUID()`) and keep it across edits/saves; seed anchors from the currently
+   preview** (§2.5). On first switch to Custom, generate a stable id once with `uuid`'s `v4`
+   (`import { v4 as uuidv4 } from "uuid"`; **not** `crypto.randomUUID()`, which the
+   `pnpm check` gate bans) and keep it across edits/saves; seed anchors from the currently
    selected theme via `themeToAnchors`. Saves `sqlEditorThemeId = <uuid>` **and**
    `sqlEditorCustomTheme = { id:<uuid>, name, monacoBase, tokens }` (always full tokens).
    The editor UI reflects state from the stored value: a `sqlEditorCustomTheme` whose id
