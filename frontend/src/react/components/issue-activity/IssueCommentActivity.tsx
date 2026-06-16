@@ -59,6 +59,11 @@ interface ActivityProps {
   issue?: Issue;
   plan?: Plan;
   comment: IssueComment;
+  // When true (the plan-detail review timeline, which already sits on the
+  // plan), spec/plan references render as plain text instead of links — the
+  // links would only redirect to the page you're already on (BYT-9710). The
+  // issue-detail page leaves this off so its navigation links stay.
+  linkless?: boolean;
 }
 
 // A DONE issue-update that created the rollout for a database-change plan — the
@@ -178,7 +183,7 @@ export function CommentCreator({ creator }: { creator: User }) {
 // Header line for a comment-backed activity item: creator (suppressed for the
 // done-rollout system comment, whose sentence already names the actor), action
 // sentence, timestamp, and an "(edited)" marker for edited user comments.
-function IssueCommentHeader({ comment, issue, plan }: ActivityProps) {
+function IssueCommentHeader({ comment, issue, linkless, plan }: ActivityProps) {
   const { t } = useTranslation();
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(comment.creator)
@@ -195,7 +200,12 @@ function IssueCommentHeader({ comment, issue, plan }: ActivityProps) {
       {!isDoneRolloutComment(issue, plan, comment) && (
         <CommentCreator creator={creator} />
       )}
-      <IssueCommentActionSentence comment={comment} issue={issue} plan={plan} />
+      <IssueCommentActionSentence
+        comment={comment}
+        issue={issue}
+        linkless={linkless}
+        plan={plan}
+      />
       {comment.createTime && (
         <HumanizeTs className="text-gray-500" ts={createdTs / 1000} />
       )}
@@ -213,6 +223,7 @@ export function IssueCommentRow({
   comment,
   isLast,
   issue,
+  linkless,
   plan,
   subjectSuffix,
 }: ActivityProps & {
@@ -224,7 +235,12 @@ export function IssueCommentRow({
     <ActivityRowShell
       body={body}
       header={
-        <IssueCommentHeader comment={comment} issue={issue} plan={plan} />
+        <IssueCommentHeader
+          comment={comment}
+          issue={issue}
+          linkless={linkless}
+          plan={plan}
+        />
       }
       icon={
         <IssueCommentActionIcon comment={comment} issue={issue} plan={plan} />
@@ -371,7 +387,12 @@ export function CommentIconBadge({
   );
 }
 
-function IssueCommentActionSentence({ issue, plan, comment }: ActivityProps) {
+function IssueCommentActionSentence({
+  issue,
+  plan,
+  comment,
+  linkless,
+}: ActivityProps) {
   const { t } = useTranslation();
   const commentType = getIssueCommentType(comment);
 
@@ -438,10 +459,13 @@ function IssueCommentActionSentence({ issue, plan, comment }: ActivityProps) {
     if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
         if (isDoneRolloutComment(issue, plan, comment)) {
-          const planUID = plan ? extractPlanUID(plan.name) : "";
-          const planRoute = plan
-            ? buildPlanDeployRouteFromPlanName(plan.name)
-            : undefined;
+          // On the plan-detail timeline (linkless) the rollout is for the plan
+          // you're already viewing, so drop the "for plan #id" link entirely.
+          const planUID = linkless || !plan ? "" : extractPlanUID(plan.name);
+          const planRoute =
+            linkless || !plan
+              ? undefined
+              : buildPlanDeployRouteFromPlanName(plan.name);
           const sentence =
             issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID
@@ -505,12 +529,25 @@ function IssueCommentActionSentence({ issue, plan, comment }: ActivityProps) {
     const entries = diffPlanSpecsForEvent(comment.event.value);
     if (entries.length === 0) return null;
     if (entries.length === 1) {
-      return <SpecDiffRow entry={entries[0]} plan={plan} />;
+      return (
+        <SpecDiffRow
+          entry={entries[0]}
+          linkless={linkless}
+          multi={false}
+          plan={plan}
+        />
+      );
     }
     return (
       <div className="flex flex-col gap-1">
         {entries.map((entry) => (
-          <SpecDiffRow entry={entry} key={diffEntryKey(entry)} plan={plan} />
+          <SpecDiffRow
+            entry={entry}
+            key={diffEntryKey(entry)}
+            linkless={linkless}
+            multi
+            plan={plan}
+          />
         ))}
       </div>
     );
@@ -519,14 +556,26 @@ function IssueCommentActionSentence({ issue, plan, comment }: ActivityProps) {
   return <span className="wrap-break-word min-w-0 text-gray-600" />;
 }
 
-function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
+function SpecDiffRow({
+  entry,
+  linkless,
+  multi,
+  plan,
+}: {
+  entry: SpecDiffEntry;
+  linkless?: boolean;
+  multi?: boolean;
+  plan?: Plan;
+}) {
   const { t } = useTranslation();
   const planName = plan?.name ?? "";
 
   if (entry.kind === "added") {
     return (
       <SpecChangeRow
+        linkless={linkless}
         plan={plan}
+        showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
         {t("activity.sentence.added-spec")}
@@ -537,7 +586,9 @@ function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
   if (entry.kind === "removed") {
     return (
       <SpecChangeRow
+        linkless={linkless}
         plan={plan}
+        showIndex={multi}
         specRef={specResourceName(planName, entry.spec)}
       >
         {t("activity.sentence.removed-spec")}
@@ -545,17 +596,24 @@ function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
     );
   }
 
-  // updated
+  // updated. The verb fragments ("modified SQL of", "changed targets of")
+  // precede the spec chip; the detail for each (SQL diff button, target +/-
+  // list) trails *after* the chip so the sentence reads
+  // "<verb> Change <detail>" rather than splicing the detail before the noun.
   const fragments: ReactNode[] = [];
-  let trailing: ReactNode = null;
+  const trailingItems: ReactNode[] = [];
   if (entry.sheetChanged) {
     const fromSheet = sheetNameOfSpec(entry.from);
     const toSheet = sheetNameOfSpec(entry.to);
     fragments.push(
       <span key="sheet">{t("activity.sentence.modified-sql-of")}</span>
     );
-    trailing = (
-      <IssueStatementUpdateButton newSheet={toSheet} oldSheet={fromSheet} />
+    trailingItems.push(
+      <IssueStatementUpdateButton
+        key="sql"
+        newSheet={toSheet}
+        oldSheet={fromSheet}
+      />
     );
   }
   if (entry.targetsChanged) {
@@ -572,11 +630,18 @@ function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
       .filter(Boolean)
       .join("  ");
     fragments.push(
-      <span className="inline-flex items-center gap-1" key="targets">
-        {t("activity.sentence.changed-targets-of")}{" "}
-        <span className="text-xs">{diffText}</span>
-      </span>
+      <span key="targets">{t("activity.sentence.changed-targets-of")}</span>
     );
+    // The raw target resource paths are noise on the plan-detail timeline
+    // (linkless) — you're already viewing the plan — so only the issue page
+    // shows the +/- target diff.
+    if (diffText && !linkless) {
+      trailingItems.push(
+        <span className="text-xs text-control-light" key="targets-diff">
+          {diffText}
+        </span>
+      );
+    }
   }
   if (entry.priorBackupChanged) {
     const flipped = enablePriorBackupOfSpec(entry.to);
@@ -591,7 +656,12 @@ function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
   if (fragments.length === 0 && entry.otherChanged) {
     // Unknown attribute change — generic fallback with a JSON-diff toggle.
     return (
-      <SpecChangeRow plan={plan} specRef={specResourceName(planName, entry.to)}>
+      <SpecChangeRow
+        linkless={linkless}
+        plan={plan}
+        showIndex={multi}
+        specRef={specResourceName(planName, entry.to)}
+      >
         <span>{t("common.updated")}</span>
         <details className="ml-2 text-xs">
           <summary className="cursor-pointer text-control-light">
@@ -607,9 +677,11 @@ function SpecDiffRow({ entry, plan }: { entry: SpecDiffEntry; plan?: Plan }) {
 
   return (
     <SpecChangeRow
+      linkless={linkless}
       plan={plan}
+      showIndex={multi}
       specRef={specResourceName(planName, entry.to)}
-      trailing={trailing}
+      trailing={trailingItems.length > 0 ? <>{trailingItems}</> : null}
     >
       {joinFragments(fragments, t("common.and"))}
     </SpecChangeRow>
@@ -622,12 +694,16 @@ function specResourceName(planName: string, spec: Plan_Spec): string {
 
 function SpecChangeRow({
   children,
+  linkless,
   plan,
+  showIndex,
   specRef,
   trailing,
 }: {
   children: ReactNode;
+  linkless?: boolean;
   plan?: Plan;
+  showIndex?: boolean;
   specRef: string;
   trailing?: ReactNode;
 }) {
@@ -638,24 +714,50 @@ function SpecChangeRow({
   const specId = specInfo?.specId ?? specIdFromRef;
   const specIdShort = specId.slice(0, 8);
   // Only link to specs that still exist in the live plan — otherwise the spec
-  // view would silently bounce back to specs[0].
-  const specRoute = specInfo?.specId
-    ? {
-        query: {
-          ...router.currentRoute.value.query,
-          spec: specInfo.specId,
-        },
-      }
-    : null;
+  // view would silently bounce back to specs[0]. On the plan-detail timeline
+  // (linkless) we're already on the plan, so the link would just re-navigate to
+  // the current page and the id slice is meaningless noise — render plain text.
+  const specRoute =
+    !linkless && specInfo?.specId
+      ? {
+          query: {
+            ...router.currentRoute.value.query,
+            spec: specInfo.specId,
+          },
+        }
+      : null;
+
+  // On the plan-detail timeline (linkless) we identify the change by its 1-based
+  // index in the plan — shown for multi-change and edit events — or mark it
+  // "(Deleted)" when the spec no longer exists. The issue page keeps the linked
+  // id slice.
+  let chipSuffix: ReactNode = null;
+  if (linkless) {
+    if (specInfo == null) {
+      chipSuffix = (
+        <span className="text-xs text-control-placeholder">
+          ({t("common.deleted")})
+        </span>
+      );
+    } else if (showIndex) {
+      chipSuffix = (
+        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+          {specInfo.displayIndex}
+        </span>
+      );
+    }
+  } else if (specIdShort !== "") {
+    chipSuffix = (
+      <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+        {specIdShort}
+      </span>
+    );
+  }
 
   const chip = (
     <span className="inline-flex items-center gap-1">
       {t("plan.spec.change")}
-      {specIdShort !== "" ? (
-        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
-          {specIdShort}
-        </span>
-      ) : null}
+      {chipSuffix}
     </span>
   );
 

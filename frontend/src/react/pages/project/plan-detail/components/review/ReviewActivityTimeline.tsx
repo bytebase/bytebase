@@ -339,6 +339,7 @@ function ReviewCommentRow({
       comment={comment}
       isLast={isLast}
       issue={issue}
+      linkless
       plan={plan}
       subjectSuffix={subjectSuffix}
     />
