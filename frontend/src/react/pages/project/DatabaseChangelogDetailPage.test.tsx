@@ -58,6 +58,7 @@ const mocks = vi.hoisted(() => {
     useAppStore: vi.fn(),
     getTaskRunLog: vi.fn(),
     clipboardWriteText,
+    notify: vi.fn(),
     pushNotification: vi.fn(),
     ReadonlyMonaco: vi.fn(
       ({ content, className }: { content: string; className?: string }) => {
@@ -256,6 +257,7 @@ beforeEach(() => {
   mocks.getChangelogByName.mockReset();
   mocks.useAppStore.mockReset();
   mocks.getTaskRunLog.mockReset();
+  mocks.notify.mockReset();
   mocks.pushNotification.mockReset();
   mocks.ReadonlyMonaco.mockClear();
   mocks.ReadonlyDiffMonaco.mockClear();
@@ -309,6 +311,10 @@ beforeEach(() => {
       getChangelogByName: mocks.getChangelogByName,
     })
   );
+  // CopyButton (shared) notifies via useAppStore.getState().notify.
+  Object.assign(mocks.useAppStore, {
+    getState: () => ({ notify: mocks.notify }),
+  });
   mocks.getTaskRunLog.mockResolvedValue({
     entries: [
       {
@@ -511,7 +517,7 @@ describe("DatabaseChangelogDetailPage", () => {
     });
 
     expect(mocks.clipboardWriteText).toHaveBeenCalledWith("current schema");
-    expect(mocks.pushNotification).toHaveBeenCalledWith({
+    expect(mocks.notify).toHaveBeenCalledWith({
       module: "bytebase",
       style: "SUCCESS",
       title: "common.copied",

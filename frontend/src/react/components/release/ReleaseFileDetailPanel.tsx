@@ -3,63 +3,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { Separator } from "@/react/components/ui/separator";
-import { pushNotification } from "@/store";
 import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
-
-function execCommandCopy(text: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    document.body.removeChild(textarea);
-  }
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // fall through to execCommand fallback
-    }
-  }
-  return execCommandCopy(text);
-}
-
-function CopyButton({ content }: { content: string }) {
-  const { t } = useTranslation();
-  const handleCopy = async () => {
-    if (!content) return;
-    if (await copyToClipboard(content)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    }
-  };
-  return (
-    <button
-      type="button"
-      className="text-sm text-control-light transition-colors hover:text-accent disabled:cursor-not-allowed disabled:text-control-light/40"
-      title={t("common.copy")}
-      aria-label={t("common.copy")}
-      disabled={!content}
-      onClick={handleCopy}
-    >
-      {t("common.copy")}
-    </button>
-  );
-}
 
 export interface ReleaseFileDetailPanelProps {
   releaseFile: Release_File;

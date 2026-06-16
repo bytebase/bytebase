@@ -1,9 +1,9 @@
-import { Check, Copy } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button, buttonVariants } from "@/react/components/ui/button";
+import { buttonVariants } from "@/react/components/ui/button";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { Input } from "@/react/components/ui/input";
 import {
   Tabs,
@@ -128,7 +128,7 @@ export function MCPPage() {
             <h3 className="text-base font-medium">
               {t("settings.mcp.general-config.title")}
             </h3>
-            <CopyButton content={generalConfig} />
+            <CopyButton content={generalConfig} size="sm" />
           </div>
           <p className="text-sm text-control-light">
             {t("settings.mcp.setup.add-to-config")}
@@ -169,7 +169,7 @@ export function MCPPage() {
                   className="flex-1 font-mono"
                   onClick={(e) => (e.target as HTMLInputElement).select()}
                 />
-                <CopyButton content={tab.content} />
+                <CopyButton content={tab.content} size="sm" />
               </div>
             </TabsPanel>
           ))}
@@ -183,7 +183,7 @@ export function MCPPage() {
             <h3 className="text-base font-medium">
               {t("settings.mcp.first-prompt.title")}
             </h3>
-            <CopyButton content={firstPromptExample} />
+            <CopyButton content={firstPromptExample} size="sm" />
           </div>
           <p className="text-sm text-control-light">
             {t("settings.mcp.first-prompt.description")}
@@ -194,29 +194,5 @@ export function MCPPage() {
         </code>
       </div>
     </div>
-  );
-}
-
-function CopyButton({ content }: { content: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API not available
-    }
-  };
-
-  return (
-    <Button variant="ghost" size="sm" onClick={handleCopy}>
-      {copied ? (
-        <Check className="h-4 w-4 text-success" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
-    </Button>
   );
 }

@@ -5,7 +5,6 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronLeft,
-  Copy,
   Maximize2,
   Minus,
   Plus,
@@ -26,6 +25,7 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,6 @@ import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   getDateForPbTimestampProtoEs,
@@ -1653,7 +1652,7 @@ function DiffViewPanel({
             <div className="w-full flex flex-col justify-start">
               <div className="flex flex-row justify-start items-center gap-x-2">
                 <span>{t("database.sync-schema.synchronize-statements")}</span>
-                <CopyButton content={statement} />
+                <CopyButton content={statement} size="sm" />
               </div>
               <div className="textinfolabel">
                 {t("database.sync-schema.synchronize-statements-description")}
@@ -1942,33 +1941,6 @@ function MonacoEditorPanel({
   }, [scheduleLayout]);
 
   return <div ref={containerRef} className="w-full flex-1 border" />;
-}
-
-// ============================================================
-// CopyButton
-// ============================================================
-
-function CopyButton({ content }: { content: string }) {
-  const { t } = useTranslation();
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    } catch {
-      // ignore
-    }
-  }, [content, t]);
-
-  return (
-    <Button variant="ghost" size="sm" onClick={handleCopy}>
-      <Copy className="size-4" />
-    </Button>
-  );
 }
 
 // ============================================================
