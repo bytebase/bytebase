@@ -1,3 +1,4 @@
+import { matchRoutes } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // Configurable fake session, controlled per test.
@@ -45,6 +46,7 @@ import {
   WORKSPACE_ROUTE_404,
 } from "./handles";
 import { setRouteNameIndex } from "./navigation";
+import { routes } from "./routes";
 
 beforeEach(() => {
   session.isLoggedIn = false;
@@ -75,9 +77,43 @@ function location(result: Response | null): string | null {
   return result instanceof Response ? result.headers.get("Location") : null;
 }
 
+async function runCatchAllLoader(path: string): Promise<Response> {
+  const matched = matchRoutes(routes, path);
+  const leafRoute = matched?.at(-1)?.route;
+  if (typeof leafRoute?.loader !== "function") {
+    throw new Error(`No loader matched ${path}`);
+  }
+  const url = new URL(`https://app.example.com${path}`);
+  return leafRoute.loader({
+    request: new Request(url),
+    url,
+    pattern: "*",
+    params: {},
+    context: {},
+  }) as Response | Promise<Response>;
+}
+
 describe("rootGuard", () => {
   test("error page is allowed directly", () => {
     expect(run(WORKSPACE_ROUTE_404, "/404")).toBeNull();
+  });
+
+  test("logged-out user on an unknown URL matched by the 404 catch-all is redirected to signin", () => {
+    const target = location(run(WORKSPACE_ROUTE_404, "/ioewjfiwoejf"));
+    expect(target).toBe("/auth?redirect=%2Fioewjfiwoejf");
+  });
+
+  test("logged-out catch-all route loader redirects to signin before 404", async () => {
+    const response = await runCatchAllLoader("/ioewjfiwoejf");
+    expect(response.headers.get("Location")).toBe(
+      "/auth?redirect=%2Fioewjfiwoejf"
+    );
+  });
+
+  test("logged-in catch-all route loader redirects to 404", async () => {
+    session.isLoggedIn = true;
+    const response = await runCatchAllLoader("/ioewjfiwoejf");
+    expect(response.headers.get("Location")).toBe("/404");
   });
 
   test("oauth callback is allowed directly", () => {

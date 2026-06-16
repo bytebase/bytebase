@@ -238,3 +238,94 @@ test.describe("Connection panel exposes Databases + Database Group tabs", () => 
     ).toBeVisible({ timeout: 5000 });
   });
 });
+
+test.describe("SQL Editor entry from the database page connects the tab (BYT-9616)", () => {
+  // BYT-9616 (FIXED, #20473): opening the SQL Editor from a database detail page
+  // (the "SQL Editor" button, which window.open's a new tab at
+  // /sql-editor/projects/<p>/instances/<i>/databases/<db>) landed on a tab that
+  // was NOT actually connected — Run was grayed out for every database and admin
+  // mode couldn't be entered. It only reproduced in a COLD session: the editor
+  // shell hydrated databases into the React app store, but isConnectedSQLEditorTab
+  // still read the (empty-on-cold-deep-link) Pinia store, so the tab was treated
+  // as disconnected. A warm session masked it.
+  //
+  // The lock uses a FRESH context (cold store, like the incognito repro) and does
+  // NOT visit /sql-editor first, then drives the database-page entry button.
+
+  let ctx9616: BrowserContext;
+  let dbPage: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    // Fresh context = cold SQL-editor store, matching the incognito-only repro.
+    ctx9616 = await browser.newContext({ storageState: ".auth/state.json" });
+    dbPage = await ctx9616.newPage();
+  });
+
+  test.afterAll(async () => {
+    await ctx9616?.close();
+  });
+
+  test("clicking 'SQL Editor' on the database page opens a connected, runnable tab", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    // Database detail page (cold load — do NOT visit /sql-editor first).
+    await dbPage.goto(
+      `${env.baseURL}/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}`,
+    );
+    await dbPage.keyboard.press("Escape").catch(() => {});
+    await dbPage.waitForTimeout(1500);
+
+    // The "SQL Editor" entry is a <dd> (text = sql-editor.self) with onClick that
+    // window.open's a new tab (DatabaseSQLEditorButton.tsx). Scope to the <dd>:
+    // DashboardHeader also renders a "SQL Editor" *button* that, on a database
+    // route, opens the SAME deep link — so a global getByText("SQL Editor")
+    // .first() resolves to the header (it precedes the page content in the DOM,
+    // confirmed: 2 exact matches, .first() = a SPAN inside a <button>), and the
+    // test would pass even if this database-page entry were disabled or its
+    // handler regressed. The <dd> locator exercises the intended entry point.
+    const entry = dbPage.locator("dd").filter({ hasText: "SQL Editor" });
+    await expect(entry).toBeVisible({ timeout: 10_000 });
+
+    const [popup] = await Promise.all([
+      ctx9616.waitForEvent("page"),
+      entry.click(),
+    ]);
+    await popup.waitForLoadState("domcontentloaded");
+    await popup.keyboard.press("Escape").catch(() => {});
+    await popup.waitForTimeout(2000);
+
+    // The popup must be the SQL-editor DB deep link for this database.
+    expect(popup.url()).toContain(
+      `/sql-editor/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}`,
+    );
+
+    const popupEditor = new SqlEditorPage(popup, env.baseURL);
+    await expect(popupEditor.runButton).toBeVisible({ timeout: 15_000 });
+
+    // (1) Type a query, THEN assert Run is enabled. Run is correctly disabled on
+    // an EMPTY editor, so the discriminating check is "enabled once a query is
+    // present" — pre-fix Run stayed grayed even with a query because the tab was
+    // treated as disconnected.
+    await popupEditor.setEditorContent("SELECT 1 AS n;");
+    await expect(
+      popupEditor.runButton,
+      "Run must become enabled once a query is typed on the connected tab " +
+        "(pre-fix it stayed grayed because the tab was disconnected)",
+    ).toBeEnabled({ timeout: 15_000 });
+
+    // (2) Running it returns a result — proves the tab is truly connected.
+    await popupEditor.runButton.click();
+    await expect(popup.getByText(/^1\s+rows?$/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // (3) Admin mode (the wrench) is reachable — it was unavailable pre-fix.
+    await expect(
+      popupEditor.adminModeButton,
+      "admin-mode wrench must be available on the database-page-opened tab",
+    ).toBeVisible({ timeout: 10_000 });
+
+    await popup.close();
+  });
+});

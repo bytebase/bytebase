@@ -308,6 +308,73 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
 
     await page.keyboard.press("Escape");
   });
+
+  test("submitting a Request-export creates a grant with export=true and unmask=false (BYT-9654 end-to-end)", async () => {
+    // BYT-9654 end-to-end: the C4 sibling above proves the drawer PRE-FILL
+    // (Export checked, Unmask not). This proves the SUBMITTED grant carries the
+    // same capabilities — an export request must not silently escalate into an
+    // unmask request that approvers would unknowingly grant.
+    await applyExportState({ disableExport: true, jit: true });
+    // Unique statement so we can find exactly this grant via the API.
+    const marker = Date.now();
+    const statement = `SELECT emp_no FROM employee WHERE emp_no = ${marker % 100000} LIMIT 1;`;
+    await sqlEditor.runPreparedQuery(statement);
+
+    await page
+      .getByRole("button", { name: "Request export", exact: true })
+      .first()
+      .click();
+
+    const drawer = page
+      .getByRole("dialog")
+      .filter({ hasText: "Request Data Access" });
+    await expect(drawer.getByText("Request Data Access")).toBeVisible({
+      timeout: 10_000,
+    });
+    // Leave the pre-filled capabilities untouched (Export checked, Unmask not).
+    await expect(
+      drawer.getByRole("checkbox", { name: "Export the query result" }),
+    ).toBeChecked();
+    await expect(
+      drawer.getByRole("checkbox", { name: "See unmasked sensitive data" }),
+    ).not.toBeChecked();
+
+    // Reason is the only field the user must fill (targets, query, and a 4h
+    // duration are pre-filled by RequestExportButton). The drawer ALSO contains
+    // a Monaco editor whose hidden textarea has class "inputarea" — exclude it so
+    // we target the real Reason <textarea>.
+    const reason = drawer.locator('textarea:not([class*="inputarea"])').first();
+    await expect(reason).toBeVisible({ timeout: 10_000 });
+    await reason.click();
+    await reason.fill("e2e BYT-9654 export request");
+    await expect(reason).toHaveValue("e2e BYT-9654 export request");
+    const submit = drawer.locator("[data-submit-btn]");
+    await expect(submit).toBeEnabled({ timeout: 8000 });
+    await submit.click();
+
+    // The created grant (PENDING or ACTIVE) must carry export=true, unmask=false.
+    let createdName = "";
+    await expect
+      .poll(
+        async () => {
+          const r = await env.api.searchMyAccessGrants(env.project);
+          const g = r.accessGrants.find((x) => x.query === statement);
+          if (!g) return "not-found";
+          createdName = g.name;
+          // The API omits `unmask` when false (returns undefined), so coerce to
+          // boolean: the contract is export=true, unmask NOT set.
+          return `export=${!!g.export},unmask=${!!g.unmask}`;
+        },
+        {
+          timeout: 20_000,
+          message: "the submitted Request-export grant should be created",
+        },
+      )
+      .toBe("export=true,unmask=false");
+
+    // Clean up the grant we created so it doesn't leak into sibling describes.
+    if (createdName) await env.api.revokeAccessGrant(createdName).catch(() => {});
+  });
 });
 
 // --- Gated export, JIT off → no export affordance (C8) --------------------

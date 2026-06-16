@@ -6,7 +6,7 @@ describe("getRequestRoleButtonState", () => {
     projectName: "projects/demo",
     projectReady: true,
     allowRequestRole: true,
-    canSetIamPolicy: false,
+    hasFullProjectAccess: false,
     hasRequestRoleFeature: true,
   } as const;
 
@@ -49,17 +49,16 @@ describe("getRequestRoleButtonState", () => {
     });
   });
 
-  test("shows a disabled button when the user can grant access directly", () => {
+  test("shows a disabled button when the user already has full project access", () => {
     expect(
       getRequestRoleButtonState({
         ...base,
-        canSetIamPolicy: true,
+        hasFullProjectAccess: true,
       })
     ).toEqual({
       visible: true,
       disabledReason: {
         kind: "can-grant-access-directly",
-        permission: "bb.projects.setIamPolicy",
       },
     });
   });

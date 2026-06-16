@@ -14,7 +14,6 @@ export type RequestRoleButtonDisabledReason =
     }
   | {
       kind: "can-grant-access-directly";
-      permission: Permission;
     }
   | {
       kind: "feature-unavailable";
@@ -24,7 +23,11 @@ interface RequestRoleButtonStateArgs {
   readonly projectName?: string;
   readonly projectReady: boolean;
   readonly allowRequestRole: boolean;
-  readonly canSetIamPolicy: boolean;
+  // True when the current user already holds every PROJECT_OWNER permission
+  // (workspace- or project-scoped), so they can grant access directly and have
+  // no reason to request a role. Mirrors the Vue `hasMissingPermission` gate,
+  // which checks the full owner permission set rather than `setIamPolicy` alone.
+  readonly hasFullProjectAccess: boolean;
   readonly hasRequestRoleFeature: boolean;
 }
 
@@ -37,7 +40,7 @@ export const getRequestRoleButtonState = ({
   projectName,
   projectReady,
   allowRequestRole,
-  canSetIamPolicy,
+  hasFullProjectAccess,
   hasRequestRoleFeature,
 }: RequestRoleButtonStateArgs): RequestRoleButtonState => {
   if (!projectName) {
@@ -64,12 +67,11 @@ export const getRequestRoleButtonState = ({
     };
   }
 
-  if (canSetIamPolicy) {
+  if (hasFullProjectAccess) {
     return {
       visible: true,
       disabledReason: {
         kind: "can-grant-access-directly",
-        permission: "bb.projects.setIamPolicy",
       },
     };
   }

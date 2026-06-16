@@ -168,7 +168,12 @@ export function rootGuard({
   const toName = name ?? "";
 
   // Error pages can be accessed directly.
-  if (toName === WORKSPACE_ROUTE_403 || toName === WORKSPACE_ROUTE_404) {
+  if (
+    (toName === WORKSPACE_ROUTE_403 &&
+      url.pathname === resolvePath(WORKSPACE_ROUTE_403)) ||
+    (toName === WORKSPACE_ROUTE_404 &&
+      url.pathname === resolvePath(WORKSPACE_ROUTE_404))
+  ) {
     return null;
   }
   // Auth callbacks can be accessed directly.

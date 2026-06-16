@@ -995,6 +995,11 @@
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "Origen de credenciales",
+      "default-credential": {
+        "aws": "Bytebase leerá la credencial desde las variables de entorno <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, con respaldo al archivo de credenciales compartidas <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> o al rol de IAM en AWS ECS",
+        "azure": "Bytebase leerá la credencial desde las variables de entorno <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> o <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, y usará como respaldo los usuarios adjuntos en Azure VM",
+        "gcp": "Bytebase leerá la credencial desde la variable de entorno <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, con respaldo a la cuenta de servicio adjunta en GCP GCE"
+      },
       "saas-default-credential-restriction": "Las credenciales predeterminadas no están disponibles en Bytebase Cloud por seguridad. Proporcione credenciales específicas.",
       "specific-credential": "Credencial específica",
       "tenant-id": "Tenant ID"
@@ -1655,7 +1660,7 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
-          "can-grant-access-directly": "Ya tienes {{permission}}, así que puedes conceder acceso directamente.",
+          "can-grant-access-directly": "Ya tienes acceso completo a este proyecto, así que puedes conceder acceso directamente.",
           "feature-unavailable": "El flujo de solicitud de roles no está disponible en el plan actual."
         },
         "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",

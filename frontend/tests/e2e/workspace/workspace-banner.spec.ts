@@ -70,9 +70,11 @@ test.describe("External-URL banner", () => {
     await page.waitForLoadState("networkidle");
 
     // The configure CTA + wrench icon are the visible signal of the
-    // banner. Both must be absent.
+    // banner. Both must be absent. The CTA is a RouterLink (role="link")
+    // styled to look like a button (BannerExternalUrl in BannersWrapper.tsx),
+    // so query it by the link role.
     await expect(
-      page.getByRole("button", { name: /Configure now/i }),
+      page.getByRole("link", { name: /Configure now/i }),
     ).toHaveCount(0);
   });
 
@@ -84,8 +86,11 @@ test.describe("External-URL banner", () => {
     await page.goto(env.baseURL);
     await page.waitForLoadState("networkidle");
 
+    // The CTA is a RouterLink styled like a button (buttonVariants), so it has
+    // role="link", not role="button". (Pre-fix this looked for a button and
+    // never matched, even though the product renders the banner correctly.)
     const configureNow = page
-      .getByRole("button", { name: /Configure now/i })
+      .getByRole("link", { name: /Configure now/i })
       .first();
     await expect(configureNow).toBeVisible({ timeout: 10_000 });
 

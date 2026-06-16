@@ -995,6 +995,11 @@
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "認証情報のソース",
+      "default-credential": {
+        "aws": "Bytebase は環境変数 <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken> から認証情報を読み取り、共有認証情報ファイル <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> または AWS ECS の IAM ロールにフォールバックします",
+        "azure": "Bytebase は環境変数 <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> または <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath> から認証情報を読み取り、Azure VM にアタッチされたユーザーにフォールバックします",
+        "gcp": "Bytebase は環境変数 <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials> から認証情報を読み取り、GCP GCE にアタッチされたサービス アカウントにフォールバックします"
+      },
       "saas-default-credential-restriction": "セキュリティ上の理由により、Bytebase Cloud ではデフォルトの認証情報は使用できません。具体的な認証情報を入力してください。",
       "specific-credential": "特定の資格情報",
       "tenant-id": "Tenant ID"
@@ -1655,7 +1660,7 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "このプロジェクトではロール申請が無効になっています。",
-          "can-grant-access-directly": "すでに {{permission}} を持っているため、直接アクセスを付与できます。",
+          "can-grant-access-directly": "このプロジェクトへのフルアクセス権を持っているため、直接アクセスを付与できます。",
           "feature-unavailable": "現在のプランではロール申請ワークフローを利用できません。"
         },
         "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",

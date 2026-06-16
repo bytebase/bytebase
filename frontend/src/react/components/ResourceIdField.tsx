@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { Input } from "@/react/components/ui/input";
 import type { ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
@@ -195,7 +196,10 @@ export const ResourceIdField = forwardRef<
           <div className="flex items-center gap-x-1">
             {t("resource-id.self", { resource: resourceName })}:
             {value ? (
-              <span className="text-gray-600 font-medium mr-1">{value}</span>
+              <span className="text-gray-600 font-medium mr-1 inline-flex items-center gap-x-1">
+                {value}
+                {readonly && <CopyButton content={value} />}
+              </span>
             ) : (
               <span className="text-control-placeholder italic">-</span>
             )}

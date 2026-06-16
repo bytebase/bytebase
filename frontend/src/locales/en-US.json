@@ -995,6 +995,11 @@
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "Credential Source",
+      "default-credential": {
+        "aws": "Bytebase will read the credential from environment variables <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, fallback to shared credentials file <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> or IAM role in AWS ECS",
+        "azure": "Bytebase will read the credential from environment variables <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> or <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, and fallback to attached users in Azure VM",
+        "gcp": "Bytebase will read the credential from environment variable <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, fallback to the attached service account in GCP GCE"
+      },
       "saas-default-credential-restriction": "Default credentials are not available in Bytebase Cloud for security. Please provide specific credentials.",
       "specific-credential": "Specific Credential",
       "tenant-id": "Tenant ID"
@@ -1655,7 +1660,7 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "Allow request role is disabled for this project.",
-          "can-grant-access-directly": "You already have {{permission}}, so you can grant access directly.",
+          "can-grant-access-directly": "You already have full access to this project, so you can grant access directly.",
           "feature-unavailable": "Request role workflow is unavailable on the current plan."
         },
         "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",

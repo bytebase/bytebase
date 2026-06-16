@@ -5,75 +5,12 @@ import { sheetServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { useRevisionByName } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { bytesToString, formatAbsoluteDateTime } from "@/utils";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
-
-interface CopyButtonProps {
-  content: string;
-}
-
-function execCommandCopy(text: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    document.body.removeChild(textarea);
-  }
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall through to execCommand fallback.
-    }
-  }
-  return execCommandCopy(text);
-}
-
-function CopyButton({ content }: CopyButtonProps) {
-  const { t } = useTranslation();
-
-  const handleCopy = async () => {
-    if (!content) {
-      return;
-    }
-
-    if (await copyToClipboard(content)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      className="text-sm text-control-light transition-colors hover:text-accent disabled:cursor-not-allowed disabled:text-control-light/40"
-      title={t("common.copy")}
-      aria-label={t("common.copy")}
-      disabled={!content}
-      onClick={handleCopy}
-    >
-      {t("common.copy")}
-    </button>
-  );
-}
 
 export interface RevisionDetailPanelProps {
   revisionName: string;
