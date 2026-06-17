@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -251,6 +253,132 @@ func GetTestOracleContainer(ctx context.Context, t testing.TB) *Container {
 		t.Fatalf("failed to create Oracle container: %v", err)
 	}
 	return container
+}
+
+// GetStarRocksContainer creates a StarRocks (allin1) container for testing. The allin1
+// image bundles the FE and BE; information_schema is served by the BE, so this waits until
+// the backend actually serves queries rather than only the FE port being open.
+//
+// NOTE: requires an amd64 host — the StarRocks BE has no working arm64 build (it fails to
+// come alive under emulation). bytebase CI runs on amd64; locally, run without -short on an
+// amd64 machine, or the test is skipped via testing.Short().
+func GetStarRocksContainer(ctx context.Context) (retC *Container, retErr error) {
+	req := testcontainers.ContainerRequest{
+		Image:        "starrocks/allin1-ubuntu:3.4.10",
+		ExposedPorts: []string{"9030/tcp"},
+		WaitingFor:   wait.ForListeningPort("9030/tcp").WithStartupTimeout(5 * time.Minute),
+	}
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+	port, err := c.MappedPort(ctx, "9030/tcp")
+	if err != nil {
+		return nil, err
+	}
+	dsn := fmt.Sprintf("root@tcp(%s:%s)/?multiStatements=true", host, port.Port())
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
+	if err := waitStarRocksReady(ctx, db); err != nil {
+		return nil, err
+	}
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+	}, nil
+}
+
+// GetTestStarRocksContainer creates a StarRocks container and fails the test on error. It
+// skips on non-amd64 hosts: the StarRocks all-in-one BE has no working arm64 build (it never
+// comes alive under emulation), so the readiness wait would otherwise time out.
+func GetTestStarRocksContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	if runtime.GOARCH != "amd64" {
+		t.Skipf("StarRocks requires an amd64 host; the all-in-one BE has no working arm64 build (GOARCH=%s)", runtime.GOARCH)
+	}
+	container, err := GetStarRocksContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create StarRocks container: %v", err)
+	}
+	return container
+}
+
+// waitStarRocksReady blocks until at least one StarRocks backend is registered and alive,
+// which is required before tablet-allocating DDL (CREATE TABLE) succeeds. The check is
+// read-only on purpose: issuing DDL during allin1's first-boot disrupts backend
+// registration, so poll SHOW BACKENDS rather than probing with CREATE TABLE.
+func waitStarRocksReady(ctx context.Context, db *sql.DB) error {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+	timeout := time.After(10 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			if starRocksBackendAlive(ctx, db) {
+				return nil
+			}
+		case <-timeout:
+			return errors.Errorf("StarRocks backend did not become ready")
+		}
+	}
+}
+
+// starRocksBackendAlive reports whether SHOW BACKENDS lists a backend with Alive=true.
+func starRocksBackendAlive(ctx context.Context, db *sql.DB) bool {
+	rows, err := db.QueryContext(ctx, "SHOW BACKENDS")
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	cols, err := rows.Columns()
+	if err != nil {
+		return false
+	}
+	aliveIdx := -1
+	for i, c := range cols {
+		if strings.EqualFold(c, "Alive") {
+			aliveIdx = i
+			break
+		}
+	}
+	if aliveIdx < 0 {
+		return false
+	}
+	alive := false
+	for rows.Next() {
+		vals := make([]sql.RawBytes, len(cols))
+		ptrs := make([]any, len(cols))
+		for i := range vals {
+			ptrs[i] = &vals[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return false
+		}
+		if strings.EqualFold(string(vals[aliveIdx]), "true") {
+			alive = true
+			break
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false
+	}
+	return alive
 }
 
 // GetMSSQLContainer creates a Microsoft SQL Server container for testing
