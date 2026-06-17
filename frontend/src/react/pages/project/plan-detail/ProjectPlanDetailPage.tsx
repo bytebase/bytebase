@@ -30,16 +30,24 @@ import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { INLINE_TASK_PANEL_BREAKPOINT_PX } from "./shell/constants";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
-import {
-  PlanDetailProvider,
-  usePlanDetailContext,
-} from "./shell/PlanDetailContext";
+import { PlanDetailProvider } from "./shell/PlanDetailContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
 } from "./utils/phaseSummary";
 import { isReleaseBackedPlan } from "./utils/spec";
+
+type PhaseStatus = "completed" | "closed" | "active" | "future";
+
+function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
+  if (from === "closed" || to === "closed")
+    return "border-l-2 border-dashed border-control-border";
+  if (from === "completed" && (to === "completed" || to === "active"))
+    return "border-l-2 border-success";
+  if (from === "active") return "border-l-2 border-dashed border-accent";
+  return "border-l-2 border-dashed border-control-border";
+}
 
 export function ProjectPlanDetailPage(props: {
   projectId: string;
@@ -118,6 +126,7 @@ function ProjectPlanDetailPageInner({
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
   );
+  const reviewVisible = !isGitOpsPlan && !!page.issue;
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
@@ -134,7 +143,7 @@ function ProjectPlanDetailPageInner({
           task.status === Task_Status.SKIPPED
       );
 
-    let review: "completed" | "closed" | "active" | "future" = "future";
+    let review: PhaseStatus = "future";
     if (hasIssue) {
       if (page.issue?.status === IssueStatus.CANCELED) {
         review = "closed";
@@ -143,12 +152,15 @@ function ProjectPlanDetailPageInner({
       }
     }
 
-    const changesStatus: "completed" | "closed" | "active" | "future" =
+    const changesStatus: PhaseStatus =
       page.isCreating || (!isGitOpsPlan && !hasIssue && !hasRollout)
         ? "active"
         : "completed";
-    const deployStatus: "completed" | "closed" | "active" | "future" =
-      hasRollout ? (allDone ? "completed" : "active") : "future";
+    const deployStatus: PhaseStatus = hasRollout
+      ? allDone
+        ? "completed"
+        : "active"
+      : "future";
 
     const changesBadge =
       changesStatus === "active" && !page.isCreating
@@ -192,33 +204,19 @@ function ProjectPlanDetailPageInner({
       return { label: t("common.not-started"), variant: "default" as const };
     })();
 
-    const lineClass = (
-      from: "completed" | "closed" | "active" | "future",
-      to: "completed" | "closed" | "active" | "future"
-    ) => {
-      if (from === "closed" || to === "closed")
-        return "border-l-2 border-dashed border-control-border";
-      if (from === "completed" && to === "completed")
-        return "border-l-2 border-success";
-      if (from === "completed" && to === "active")
-        return "border-l-2 border-success";
-      if (from === "active") return "border-l-2 border-dashed border-accent";
-      return "border-l-2 border-dashed border-control-border";
-    };
-
     return {
       changes: {
         status: changesStatus,
         badge: changesBadge,
-        lineClass: lineClass(
+        lineClass: phaseLineClass(
           changesStatus,
-          isGitOpsPlan ? deployStatus : review
+          reviewVisible ? review : deployStatus
         ),
       },
       review: {
         status: review,
         badge: reviewBadge,
-        lineClass: lineClass(review, deployStatus),
+        lineClass: phaseLineClass(review, deployStatus),
       },
       deploy: {
         status: deployStatus,
@@ -226,7 +224,14 @@ function ProjectPlanDetailPageInner({
         lineClass: "",
       },
     };
-  }, [isGitOpsPlan, page.isCreating, page.issue, page.rollout, t]);
+  }, [
+    isGitOpsPlan,
+    page.isCreating,
+    page.issue,
+    page.rollout,
+    reviewVisible,
+    t,
+  ]);
 
   // Mirror the URL specId into local state. We deliberately don't include
   // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
@@ -284,7 +289,7 @@ function ProjectPlanDetailPageInner({
                   />
                 </PhaseSection>
 
-                {!isGitOpsPlan && (
+                {reviewVisible && (
                   <PhaseSection
                     badge={phaseConfigs.review.badge}
                     expanded={page.activePhases.has("review")}
@@ -295,13 +300,8 @@ function ProjectPlanDetailPageInner({
                     status={phaseConfigs.review.status}
                     onToggle={() => page.togglePhase("review")}
                     summary={buildReviewSummary(page.issue, t)}
-                    future={
-                      <p className="mt-0.5 text-sm text-control-placeholder">
-                        {t("plan.phase.review-description")}
-                      </p>
-                    }
                   >
-                    <ReviewBranch />
+                    <PlanReviewSection />
                   </PhaseSection>
                 )}
 
@@ -436,7 +436,7 @@ function PhaseSection({
   future?: ReactNode;
   isLast?: boolean;
   expanded: boolean;
-  status: "completed" | "closed" | "active" | "future";
+  status: PhaseStatus;
   summary?: string;
   children: ReactNode;
   onToggle: () => void;
@@ -490,7 +490,7 @@ function PhaseSection({
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span className="shrink-0 text-[11px] text-control-placeholder">
-                {summary ? t("plan.phase.show-details") : ""}
+                {t("plan.phase.show-details")}
               </span>
             </div>
             {summary && (
@@ -518,21 +518,6 @@ function PhaseSection({
       </div>
     </div>
   );
-}
-
-function ReviewBranch() {
-  const { t } = useTranslation();
-  const page = usePlanDetailContext();
-
-  if (!page.issue) {
-    return (
-      <div className="p-4 text-sm text-control-light">
-        {t("common.no-data")}
-      </div>
-    );
-  }
-
-  return <PlanReviewSection />;
 }
 
 function DesktopColumn({
