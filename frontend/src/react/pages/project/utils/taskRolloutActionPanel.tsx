@@ -1,5 +1,4 @@
-import { Input } from "@/react/components/ui/input";
-import { cn } from "@/react/lib/utils";
+import { DateTimePicker } from "@/react/components/ui/date-time-picker";
 
 export const TASK_ROLLOUT_ACTION_SHEET_WIDTH = "standard";
 
@@ -15,31 +14,12 @@ export function ScheduledRunTimeInput({
   value: number | undefined;
 }) {
   return (
-    <Input
-      className={cn("w-64 max-w-full", className)}
-      onChange={(event) =>
-        onChange(parseDatetimeLocalValue(event.target.value))
-      }
+    <DateTimePicker
+      className={className}
+      minDate={new Date()}
+      onChange={(date) => onChange(date ? date.getTime() : undefined)}
       placeholder={placeholder}
-      type="datetime-local"
-      value={formatDatetimeLocalValue(value)}
+      value={value === undefined ? undefined : new Date(value)}
     />
   );
-}
-
-export function formatDatetimeLocalValue(value?: number) {
-  if (value === undefined) {
-    return "";
-  }
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-export function parseDatetimeLocalValue(value: string) {
-  return value ? new Date(value).getTime() : undefined;
 }
