@@ -98,8 +98,13 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
-	if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
-		return err
+	// StarRocks has no MySQL UNIQUE_CHECKS/FOREIGN_KEY_CHECKS session variables (and does not
+	// enforce foreign keys), so emitting the guard makes the dump fail to replay with
+	// "Unknown system variable 'UNIQUE_CHECKS'".
+	if d.dbType != storepb.Engine_STARROCKS {
+		if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
 	}
 
 	// Table and view statement.
@@ -188,9 +193,11 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 		}
 	}
 
-	// Restore foreign key check.
-	if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
-		return err
+	// Restore foreign key check (skipped for StarRocks, which lacks these variables).
+	if d.dbType != storepb.Engine_STARROCKS {
+		if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
 	}
 
 	return nil
