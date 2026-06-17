@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -303,9 +304,14 @@ func GetStarRocksContainer(ctx context.Context) (retC *Container, retErr error) 
 	}, nil
 }
 
-// GetTestStarRocksContainer creates a StarRocks container and fails the test on error.
+// GetTestStarRocksContainer creates a StarRocks container and fails the test on error. It
+// skips on non-amd64 hosts: the StarRocks all-in-one BE has no working arm64 build (it never
+// comes alive under emulation), so the readiness wait would otherwise time out.
 func GetTestStarRocksContainer(ctx context.Context, t testing.TB) *Container {
 	t.Helper()
+	if runtime.GOARCH != "amd64" {
+		t.Skipf("StarRocks requires an amd64 host; the all-in-one BE has no working arm64 build (GOARCH=%s)", runtime.GOARCH)
+	}
 	container, err := GetStarRocksContainer(ctx)
 	if err != nil {
 		t.Fatalf("failed to create StarRocks container: %v", err)
