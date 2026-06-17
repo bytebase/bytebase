@@ -1493,7 +1493,6 @@
       "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "deploy-description-gitops": "このプランはロールアウトの準備ができています。リンクされたリリースをデプロイするにはロールアウトを作成してください。",
       "hide-details": "詳細を隠す",
-      "review-description": "続行するにはレビューに提出してください",
       "show-details": "詳細を表示"
     },
     "plans": "プラン",

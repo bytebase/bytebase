@@ -1493,7 +1493,6 @@
       "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
       "deploy-description-gitops": "Kế hoạch này đã sẵn sàng để triển khai. Tạo một rollout để triển khai bản phát hành được liên kết.",
       "hide-details": "Ẩn chi tiết",
-      "review-description": "Gửi để xem xét để tiếp tục",
       "show-details": "Hiển thị chi tiết"
     },
     "plans": "Kế hoạch",
