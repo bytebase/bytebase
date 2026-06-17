@@ -24,10 +24,12 @@ function TimeSelect({
   value,
   items,
   onChange,
+  isDisabled,
 }: {
   value: number;
   items: number[];
   onChange: (value: number) => void;
+  isDisabled?: (value: number) => boolean;
 }) {
   return (
     <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
@@ -36,7 +38,11 @@ function TimeSelect({
       </SelectTrigger>
       <SelectContent>
         {items.map((item) => (
-          <SelectItem key={item} value={String(item)}>
+          <SelectItem
+            key={item}
+            value={String(item)}
+            disabled={isDisabled?.(item)}
+          >
             {pad(item)}
           </SelectItem>
         ))}
@@ -74,25 +80,70 @@ export function DateTimePicker({
   const hour = value ? value.getHours() : 0;
   const minute = value ? value.getMinutes() : 0;
 
+  // The picker is minute-granular, so floor the bounds to the minute and clamp
+  // every emitted value into [minTs, maxTs]. The calendar's day matchers only
+  // disable whole days, so without this the time selects could emit a value
+  // outside the bound on the boundary day.
+  const minTs = minDate
+    ? dayjs(minDate).second(0).millisecond(0).valueOf()
+    : undefined;
+  const maxTs = maxDate
+    ? dayjs(maxDate).second(0).millisecond(0).valueOf()
+    : undefined;
+
+  const clamp = (date: Date) => {
+    const ts = date.getTime();
+    if (minTs !== undefined && ts < minTs) return new Date(minTs);
+    if (maxTs !== undefined && ts > maxTs) return new Date(maxTs);
+    return date;
+  };
+
   const handleSelectDate = (day: Date | undefined) => {
     if (!day) {
       onChange(undefined);
       return;
     }
     onChange(
-      dayjs(day).hour(hour).minute(minute).second(0).millisecond(0).toDate()
+      clamp(
+        dayjs(day).hour(hour).minute(minute).second(0).millisecond(0).toDate()
+      )
     );
   };
 
   const handleTimeChange = (h: number, m: number) => {
     onChange(
-      dayjs(value ?? new Date())
-        .hour(h)
-        .minute(m)
-        .second(0)
-        .millisecond(0)
-        .toDate()
+      clamp(
+        dayjs(value ?? new Date())
+          .hour(h)
+          .minute(m)
+          .second(0)
+          .millisecond(0)
+          .toDate()
+      )
     );
+  };
+
+  // Disable hour/minute options that fall outside the bounds on the selected
+  // day, so the UI reflects the same range the value is clamped to.
+  const isHourDisabled = (h: number) => {
+    if (!value) return false;
+    const latest = dayjs(value).hour(h).minute(59).second(0).millisecond(0);
+    const earliest = dayjs(value).hour(h).minute(0).second(0).millisecond(0);
+    if (minTs !== undefined && latest.valueOf() < minTs) return true;
+    if (maxTs !== undefined && earliest.valueOf() > maxTs) return true;
+    return false;
+  };
+  const isMinuteDisabled = (m: number) => {
+    if (!value) return false;
+    const ts = dayjs(value)
+      .hour(hour)
+      .minute(m)
+      .second(0)
+      .millisecond(0)
+      .valueOf();
+    if (minTs !== undefined && ts < minTs) return true;
+    if (maxTs !== undefined && ts > maxTs) return true;
+    return false;
   };
 
   const disabledMatchers = [
@@ -130,12 +181,14 @@ export function DateTimePicker({
             value={hour}
             items={HOURS}
             onChange={(h) => handleTimeChange(h, minute)}
+            isDisabled={isHourDisabled}
           />
           <span className="text-control-light">:</span>
           <TimeSelect
             value={minute}
             items={MINUTES}
             onChange={(m) => handleTimeChange(hour, m)}
+            isDisabled={isMinuteDisabled}
           />
         </div>
       </PopoverContent>
