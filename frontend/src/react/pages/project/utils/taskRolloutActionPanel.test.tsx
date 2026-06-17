@@ -1,6 +1,7 @@
+import dayjs from "dayjs";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   ScheduledRunTimeInput,
   TASK_ROLLOUT_ACTION_SHEET_WIDTH,
@@ -9,12 +10,6 @@ import {
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-
-vi.mock("@/react/components/ui/input", () => ({
-  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} />
-  ),
-}));
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -33,23 +28,41 @@ afterEach(() => {
 });
 
 describe("ScheduledRunTimeInput", () => {
-  it("renders a compact datetime input", () => {
+  it("renders a picker trigger with the formatted value, not a native input", () => {
+    const value = new Date(2026, 5, 4, 9, 30).getTime();
     act(() => {
       root.render(
         <ScheduledRunTimeInput
           onChange={() => {}}
           placeholder="Select scheduled time"
-          value={Date.UTC(2026, 5, 4, 9, 30)}
+          value={value}
         />
       );
     });
 
-    const input = container.querySelector(
-      'input[type="datetime-local"]'
-    ) as HTMLInputElement;
+    // No native datetime-local input — it's a styled popover trigger.
+    expect(container.querySelector('input[type="datetime-local"]')).toBeNull();
 
-    expect(input.className).toContain("w-64");
-    expect(input.className).toContain("max-w-full");
+    const trigger = container.querySelector("button") as HTMLButtonElement;
+    expect(trigger).not.toBeNull();
+    expect(trigger.textContent).toContain(
+      dayjs(value).format("YYYY-MM-DD HH:mm")
+    );
+  });
+
+  it("shows the placeholder when no value is set", () => {
+    act(() => {
+      root.render(
+        <ScheduledRunTimeInput
+          onChange={() => {}}
+          placeholder="Select scheduled time"
+          value={undefined}
+        />
+      );
+    });
+
+    const trigger = container.querySelector("button") as HTMLButtonElement;
+    expect(trigger.textContent).toContain("Select scheduled time");
   });
 });
 

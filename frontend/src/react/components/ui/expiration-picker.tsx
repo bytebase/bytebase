@@ -1,6 +1,7 @@
+import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/react/components/ui/input";
+import { DateTimePicker } from "@/react/components/ui/date-time-picker";
 
 /**
  * ExpirationPicker — a datetime picker with inline clear button.
@@ -23,13 +24,13 @@ export function ExpirationPicker({
 
   return (
     <div className="flex items-center gap-x-2">
-      <Input
-        type="datetime-local"
-        className="w-64"
-        value={value ?? ""}
-        min={minDate}
-        max={maxDate}
-        onChange={(e) => onChange(e.target.value || undefined)}
+      <DateTimePicker
+        value={value ? new Date(value) : undefined}
+        minDate={minDate ? new Date(minDate) : undefined}
+        maxDate={maxDate ? new Date(maxDate) : undefined}
+        onChange={(date) =>
+          onChange(date ? dayjs(date).format("YYYY-MM-DDTHH:mm") : undefined)
+        }
       />
       {value && (
         <button
