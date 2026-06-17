@@ -17,9 +17,12 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
+	if currentSchema != "" {
+		searchPath = []string{currentSchema}
+	}
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"}
 	}
@@ -166,6 +169,38 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
 				sampleDMLs = append(sampleDMLs, getOmniStatementText(omniAST))
 			}
+		case *ast.TruncateStmt:
+			if n.Relations != nil {
+				for _, item := range n.Relations.Items {
+					rv, ok := item.(*ast.RangeVar)
+					if !ok {
+						continue
+					}
+					db, schema, table := extractRangeVarNames(rv, database, searchPath)
+					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
+				}
+			}
+
+		case *ast.MergeStmt:
+			if n.Relation != nil {
+				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.CreateTableAsStmt:
+			if n.Into != nil && n.Into.Rel != nil {
+				db, schema, table := extractRangeVarNames(n.Into.Rel, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.SelectStmt:
+			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause,
+			// which may sit on the first arm of a set operation).
+			if into := omniIntoClause(n); into != nil && into.Rel != nil {
+				db, schema, table := extractRangeVarNames(into.Rel, database, searchPath)
+				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
 		default:
 		}
 	}

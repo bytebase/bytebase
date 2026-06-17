@@ -62,6 +62,15 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}, nil
 }
 
+// addTiDBObjectDatabase records a database-only write target for a non-table object DDL
+// (view/sequence) ONLY when its name carries an explicit database qualifier. An unqualified
+// name records nothing (request-database fallback). SUP-222 / BYT-9698.
+func addTiDBObjectDatabase(changedResources *model.ChangedResources, name *tidbast.TableName) {
+	if name != nil && name.Schema.O != "" {
+		changedResources.AddDatabase(name.Schema.O)
+	}
+}
+
 func getResourceChanges(database string, node tidbast.StmtNode, _ string, changedResources *model.ChangedResources) error {
 	switch node := node.(type) {
 	case *tidbast.CreateTableStmt:
@@ -79,7 +88,11 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 		)
 	case *tidbast.DropTableStmt:
 		if node.IsView {
-			// View tracking removed - not used in risk/approval calculations
+			// Views aren't tracked as changed tables (risk/approval doesn't use them), but a
+			// qualified cross-database DROP VIEW is gated by its target database. SUP-222.
+			for _, name := range node.Tables {
+				addTiDBObjectDatabase(changedResources, name)
+			}
 			return nil
 		}
 		for _, name := range node.Tables {
@@ -109,6 +122,35 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 			},
 			true,
 		)
+	case *tidbast.TruncateTableStmt:
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name: table,
+			},
+			true,
+		)
+	case *tidbast.LoadDataStmt:
+		if node.Table != nil {
+			d, table := node.Table.Schema.O, node.Table.Name.O
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
+		}
+	case *tidbast.ImportIntoStmt:
+		if node.Table != nil {
+			d, table := node.Table.Schema.O, node.Table.Name.O
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
+		}
 	case *tidbast.RenameTableStmt:
 		for _, tableToTable := range node.TableToTables {
 			{
@@ -167,7 +209,17 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 			false,
 		)
 	case *tidbast.CreateViewStmt:
-		// View tracking removed - not used in risk/approval calculations
+		// Not tracked as a changed table (risk/approval doesn't use views), but a qualified
+		// cross-database view is gated by its target database. SUP-222 / BYT-9698.
+		addTiDBObjectDatabase(changedResources, node.ViewName)
+	case *tidbast.CreateSequenceStmt:
+		addTiDBObjectDatabase(changedResources, node.Name)
+	case *tidbast.AlterSequenceStmt:
+		addTiDBObjectDatabase(changedResources, node.Name)
+	case *tidbast.DropSequenceStmt:
+		for _, seq := range node.Sequences {
+			addTiDBObjectDatabase(changedResources, seq)
+		}
 	case *tidbast.InsertStmt:
 		tables, err := extractTableRefs(node.Table)
 		if err != nil {

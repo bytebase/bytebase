@@ -61,3 +61,56 @@ func TestExtractChangedResources(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestExtractChangedResourcesTruncate(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `TRUNCATE TABLE public.t1, myschema.t2;`
+
+	want := model.NewChangedResources(dbMetadata)
+	want.AddTable("db", "public", &storepb.ChangedResourceTable{Name: "t1"}, true)
+	want.AddTable("db", "myschema", &storepb.ChangedResourceTable{Name: "t2"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "public", dbMetadata, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
+
+func TestExtractChangedResourcesMerge(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `MERGE INTO myschema.tgt t USING src s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a;`
+
+	want := model.NewChangedResources(dbMetadata)
+	want.AddTable("db", "myschema", &storepb.ChangedResourceTable{Name: "tgt"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "public", dbMetadata, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
+
+func TestExtractChangedResourcesCTAS(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	for _, tc := range []struct {
+		statement, schema, table string
+	}{
+		{`CREATE TABLE myschema.t1 AS SELECT * FROM src;`, "myschema", "t1"},
+		{`SELECT * INTO myschema.t2 FROM src;`, "myschema", "t2"},
+		// INTO sits on the first arm of a set operation, not the root.
+		{`SELECT a INTO myschema.t3 FROM src UNION SELECT a FROM src2;`, "myschema", "t3"},
+	} {
+		want := model.NewChangedResources(dbMetadata)
+		want.AddTable("db", tc.schema, &storepb.ChangedResourceTable{Name: tc.table}, false)
+
+		stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, tc.statement)
+		require.NoError(t, err, tc.statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("db", "public", dbMetadata, asts, tc.statement)
+		require.NoError(t, err, tc.statement)
+		require.Equal(t, want, got.ChangedResources, tc.statement)
+	}
+}

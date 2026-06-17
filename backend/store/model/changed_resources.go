@@ -9,6 +9,13 @@ import (
 type ChangedResources struct {
 	databases map[string]*ChangedDatabase
 
+	// databaseOnly holds databases changed by a statement whose write target is a non-table
+	// object (e.g. a qualified CREATE VIEW/PROCEDURE/... in another database) — there is no
+	// table to scope, only the target database. It is auth-only: it is NOT included in Build()
+	// (the changed-resource report stays table-shaped), and is consumed by the SQL-editor
+	// write-authorization path to gate a qualified cross-database object DDL by its own database.
+	databaseOnly map[string]bool
+
 	dbMetadata *DatabaseMetadata
 }
 
@@ -27,8 +34,9 @@ type ChangedTable struct {
 
 func NewChangedResources(dbMetadata *DatabaseMetadata) *ChangedResources {
 	return &ChangedResources{
-		databases:  make(map[string]*ChangedDatabase),
-		dbMetadata: dbMetadata,
+		databases:    make(map[string]*ChangedDatabase),
+		databaseOnly: make(map[string]bool),
+		dbMetadata:   dbMetadata,
 	}
 }
 
@@ -117,6 +125,27 @@ func (r *ChangedResources) AddTable(database string, schema string, change *stor
 	if affectedTable {
 		v.affectedTable = true
 	}
+}
+
+// AddDatabase records a database changed by a non-table-object write (Tier 2): a qualified
+// object DDL (CREATE/ALTER/DROP VIEW/PROCEDURE/FUNCTION/TRIGGER/...) whose only auth-relevant
+// identity is its target database. Auth-only; not surfaced in Build().
+func (r *ChangedResources) AddDatabase(database string) {
+	if r.databaseOnly == nil {
+		r.databaseOnly = make(map[string]bool)
+	}
+	r.databaseOnly[database] = true
+}
+
+// GetDatabaseOnlyTargets returns the databases recorded via AddDatabase (non-table-object
+// write targets). Used by the SQL-editor write-authorization path.
+func (r *ChangedResources) GetDatabaseOnlyTargets() []string {
+	result := make([]string, 0, len(r.databaseOnly))
+	for database := range r.databaseOnly {
+		result = append(result, database)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (r *ChangedResources) CountAffectedTableRows() int64 {

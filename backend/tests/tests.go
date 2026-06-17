@@ -95,6 +95,7 @@ type controller struct {
 	issueServiceClient            v1connect.IssueServiceClient
 	rolloutServiceClient          v1connect.RolloutServiceClient
 	planServiceClient             v1connect.PlanServiceClient
+	roleServiceClient             v1connect.RoleServiceClient
 	orgPolicyServiceClient        v1connect.OrgPolicyServiceClient
 	reviewConfigServiceClient     v1connect.ReviewConfigServiceClient
 	projectServiceClient          v1connect.ProjectServiceClient
@@ -284,6 +285,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.issueServiceClient = v1connect.NewIssueServiceClient(ctl.client, baseURL, interceptors)
 	ctl.rolloutServiceClient = v1connect.NewRolloutServiceClient(ctl.client, baseURL, interceptors)
 	ctl.planServiceClient = v1connect.NewPlanServiceClient(ctl.client, baseURL, interceptors)
+	ctl.roleServiceClient = v1connect.NewRoleServiceClient(ctl.client, baseURL, interceptors)
 	ctl.orgPolicyServiceClient = v1connect.NewOrgPolicyServiceClient(ctl.client, baseURL, interceptors)
 	ctl.reviewConfigServiceClient = v1connect.NewReviewConfigServiceClient(ctl.client, baseURL, interceptors)
 	ctl.projectServiceClient = v1connect.NewProjectServiceClient(ctl.client, baseURL, interceptors)

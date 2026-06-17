@@ -67,11 +67,25 @@ message Binding {
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
   //
   // Support variables:
-  // resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
-  // resource.schema_name: the schema name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
-  // resource.table_name: the table name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
+  // resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+  // resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+  // resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
   // resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
   // request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
+  //
+  // Known limitations of table/schema-scoped DDL/DML grants:
+  // - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary.
+  // - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get).
+  // - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant).
+  // - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session's default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements.
+  // - A write target in a different project than the SQL-Editor session's database is denied: the per-target check evaluates the session project's IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project).
+  // - Enforcement is on the statement's literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object.
+  // - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is:
+  //     - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index.
+  //     - Modeled non-table object DDL (gated at the DATABASE level by the object's own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below).
+  //   NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural "write-target object database" extraction layer to remove this allowlist dependence is tracked as a follow-up.
+  //     - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated.
+  //   Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
   //
   // For example:
   // resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]

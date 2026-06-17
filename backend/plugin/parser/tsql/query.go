@@ -48,17 +48,20 @@ func isReadOnlySelect(node ast.Node) bool {
 // HasSelectInto reports whether sel (or any branch of its set operations)
 // carries an INTO clause.
 func HasSelectInto(sel *ast.SelectStmt) bool {
+	return selectIntoTarget(sel) != nil
+}
+
+// selectIntoTarget returns the INTO target of sel, searching set-operation
+// arms — T-SQL attaches INTO to the first arm of a UNION, not the root.
+func selectIntoTarget(sel *ast.SelectStmt) *ast.TableRef {
 	if sel == nil {
-		return false
+		return nil
 	}
 	if sel.IntoTable != nil {
-		return true
+		return sel.IntoTable
 	}
-	if sel.Larg != nil && HasSelectInto(sel.Larg) {
-		return true
+	if target := selectIntoTarget(sel.Larg); target != nil {
+		return target
 	}
-	if sel.Rarg != nil && HasSelectInto(sel.Rarg) {
-		return true
-	}
-	return false
+	return selectIntoTarget(sel.Rarg)
 }
