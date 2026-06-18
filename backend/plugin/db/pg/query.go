@@ -124,31 +124,60 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 			if scale == -1 {
 				scale = 6
 			}
-			if typeName == "TIMESTAMP" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: &v1pb.RowValue_Timestamp{
-							GoogleTimestamp: timestamppb.New(raw.Time),
-							Accuracy:        int32(scale),
-						},
-					},
-				}
-			}
-			zone, offset := raw.Time.Zone()
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampTzValue{
-					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-						GoogleTimestamp: timestamppb.New(raw.Time),
-						Zone:            zone,
-						Offset:          int32(offset),
-						Accuracy:        int32(scale),
-					},
-				},
-			}
+			return buildTimestamptzRowValue(typeName, raw.Time, int32(scale))
 		}
 	default:
 	}
 	return util.NullRowValue
+}
+
+// buildTimestamptzRowValue converts a PostgreSQL timestamp/timestamptz value into a
+// RowValue. PostgreSQL supports dates outside the google.protobuf.Timestamp range
+// (0001-01-01 to 9999-12-31); for those, fall back to a string instead of crashing
+// response marshaling with "seconds out of range".
+func buildTimestamptzRowValue(typeName string, t time.Time, scale int32) *v1pb.RowValue {
+	ts := timestamppb.New(t)
+	if err := ts.CheckValid(); err != nil {
+		return util.BuildStringRowValue(formatPGTimestamp(t, typeName != "TIMESTAMP"))
+	}
+	if typeName == "TIMESTAMP" {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_TimestampValue{
+				TimestampValue: &v1pb.RowValue_Timestamp{
+					GoogleTimestamp: ts,
+					Accuracy:        scale,
+				},
+			},
+		}
+	}
+	zone, offset := t.Zone()
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_TimestampTzValue{
+			TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+				GoogleTimestamp: ts,
+				Zone:            zone,
+				Offset:          int32(offset),
+				Accuracy:        scale,
+			},
+		},
+	}
+}
+
+// formatPGTimestamp renders a time.Time using PostgreSQL's text representation rather
+// than RFC3339: a space separator, no zone for timestamp without time zone, and a " BC"
+// suffix for years before 1 AD (Go uses astronomical year numbering where year 0 == 1 BC).
+func formatPGTimestamp(t time.Time, withZone bool) string {
+	year := t.Year()
+	suffix := ""
+	if year <= 0 {
+		year = 1 - year
+		suffix = " BC"
+	}
+	s := fmt.Sprintf("%04d-%s", year, t.Format("01-02 15:04:05.999999999"))
+	if withZone {
+		s += t.Format("-07:00")
+	}
+	return s + suffix
 }
 
 // Padding 0's to nanosecond precision to make sure it's always 6 digits.
