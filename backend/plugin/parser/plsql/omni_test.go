@@ -86,6 +86,25 @@ SPOOL OFF
 	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
 }
 
+func TestParsePLSQLOmniKeepsRemarkColumnInCreateTable(t *testing.T) {
+	list, err := ParsePLSQLOmni(`
+CREATE TABLE parser_regression_remark_column (
+  id                  NUMBER NOT NULL
+      CONSTRAINT parser_regression_remark_column_pk
+          PRIMARY KEY,
+  display_name        VARCHAR2(100),
+  source              VARCHAR2(100),
+  remark              VARCHAR2(100)
+)`)
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	require.Len(t, list.Items, 1)
+
+	raw, ok := list.Items[0].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.CreateTableStmt{}, raw.Stmt)
+}
+
 func TestParsePLSQLOmniMatchRecognize(t *testing.T) {
 	statement := `SELECT * FROM TRADES MATCH_RECOGNIZE (
   PARTITION BY ACCOUNT_ID
