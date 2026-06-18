@@ -242,7 +242,22 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfigs(ctx context.Context, reviewConfigMessages []*store.ReviewConfigMessage) ([]*v1pb.ReviewConfig, error) {
-	configs, configByName := convertReviewConfigMessagesToV1(reviewConfigMessages)
+	configs := make([]*v1pb.ReviewConfig, 0, len(reviewConfigMessages))
+	configByName := make(map[string]*v1pb.ReviewConfig, len(reviewConfigMessages))
+	for _, message := range reviewConfigMessages {
+		payload := message.Payload
+		if payload == nil {
+			payload = &storepb.ReviewConfigPayload{}
+		}
+		config := &v1pb.ReviewConfig{
+			Name:    common.FormatReviewConfig(message.ID),
+			Title:   message.Name,
+			Enabled: message.Enforce,
+			Rules:   ConvertToV1PBSQLReviewRules(payload.SqlReviewRules),
+		}
+		configs = append(configs, config)
+		configByName[config.Name] = config
+	}
 
 	policyType := storepb.Policy_TAG
 	tagPolicies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
@@ -300,26 +315,6 @@ func (s *ReviewConfigService) convertToV1ReviewConfigs(ctx context.Context, revi
 	}
 
 	return configs, nil
-}
-
-func convertReviewConfigMessagesToV1(reviewConfigMessages []*store.ReviewConfigMessage) ([]*v1pb.ReviewConfig, map[string]*v1pb.ReviewConfig) {
-	configs := make([]*v1pb.ReviewConfig, 0, len(reviewConfigMessages))
-	configByName := make(map[string]*v1pb.ReviewConfig, len(reviewConfigMessages))
-	for _, message := range reviewConfigMessages {
-		payload := message.Payload
-		if payload == nil {
-			payload = &storepb.ReviewConfigPayload{}
-		}
-		config := &v1pb.ReviewConfig{
-			Name:    common.FormatReviewConfig(message.ID),
-			Title:   message.Name,
-			Enabled: message.Enforce,
-			Rules:   ConvertToV1PBSQLReviewRules(payload.SqlReviewRules),
-		}
-		configs = append(configs, config)
-		configByName[config.Name] = config
-	}
-	return configs, configByName
 }
 
 // validateSQLReviewRules validates the SQL review rule.
