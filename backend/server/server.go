@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/component/telemetry"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -151,13 +152,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		EnableMetricCollection: true,
 		EnableDebug:            profile.Debug,
 	}
+	var workspaceID string
 	if !s.profile.SaaS {
 		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
 
 		// Load workspace-dependent settings if workspace exists.
 		// On first boot (no workspace yet), these remain at defaults and get
 		// initialized when the workspace is created and settings are updated via API.
-		if workspaceID, _ := stores.GetWorkspaceID(ctx); workspaceID != "" {
+		if workspaceID, _ = stores.GetWorkspaceID(ctx); workspaceID != "" {
 			if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
 				slog.Warn("failed to start sample instances", log.BBError(err))
 			}
@@ -174,6 +176,17 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	profile.RuntimeDebug.Store(logSetup.EnableDebug)
 	if logSetup.EnableDebug {
 		log.LogLevel.Set(slog.LevelDebug)
+	}
+	telemetry.InitGlobalReporter(
+		profile.Version,
+		profile.GitCommit,
+		profile.Mode,
+		logSetup.GetEnableMetricCollection(),
+	)
+	if !s.profile.SaaS && profile.Mode == common.ReleaseModeProd && logSetup.GetEnableMetricCollection() && workspaceID != "" {
+		go func() {
+			reportSQLReviewConfigSnapshot(context.WithoutCancel(ctx), stores, workspaceID)
+		}()
 	}
 
 	s.bus, err = bus.New()
