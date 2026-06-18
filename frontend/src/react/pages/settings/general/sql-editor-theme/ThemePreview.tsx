@@ -221,7 +221,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             columns={SAMPLE_COLUMNS}
             disallowCopyingData
           >
-            <div className="flex h-64 flex-col px-3 pb-2">
+            <div className="flex h-64 flex-col mt-3 px-3 pb-2">
               {vertical ? (
                 <VirtualDataBlock
                   rows={SAMPLE_ROWS}

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { throttle } from "lodash-es";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/react/components/ui/input";
 import { cn } from "@/react/lib/utils";
 
@@ -35,6 +36,18 @@ export function ColorInput({
 }: Readonly<ColorInputProps>) {
   const [draft, setDraft] = useState(value);
 
+  // The native swatch fires `input` events continuously while dragging. Throttle
+  // them (via a ref so the throttled fn isn't recreated each render) so expensive
+  // downstream work — re-deriving the theme + re-rendering the preview — runs at
+  // a steady rate instead of on every tick. Trailing keeps the final color.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const emitSwatch = useMemo(
+    () => throttle((next: string) => onChangeRef.current(next), 40),
+    []
+  );
+  useEffect(() => () => emitSwatch.cancel(), [emitSwatch]);
+
   // Adopt external changes (swatch, preset switch, revert) but keep the user's
   // raw text while they are typing an equivalent value.
   useEffect(() => {
@@ -57,7 +70,7 @@ export function ColorInput({
         value={value}
         disabled={disabled}
         aria-label={ariaLabel}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => emitSwatch(e.target.value)}
       />
       <Input
         size="sm"
