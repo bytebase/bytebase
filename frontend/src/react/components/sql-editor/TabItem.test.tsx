@@ -102,8 +102,8 @@ describe("TabItem", () => {
     );
     render();
     const button = container.querySelector("button");
-    // Active = strong accent fill + on-accent text.
-    expect(button?.className).toContain("bg-accent/60");
+    // Active = solid accent fill + on-accent text.
+    expect(button?.className).toContain("bg-accent");
     expect(button?.className).toContain("text-accent-text");
     unmount();
   });
@@ -115,9 +115,8 @@ describe("TabItem", () => {
     );
     render();
     const button = container.querySelector("button");
-    // Inactive has no active accent fill / on-accent text (only a hover tint).
+    // Inactive has no on-accent text (only a faint hover tint).
     expect(button?.className).not.toContain("text-accent-text");
-    expect(button?.className).not.toContain("bg-accent/60");
     unmount();
   });
 
