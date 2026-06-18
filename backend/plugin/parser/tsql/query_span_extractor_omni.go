@@ -803,12 +803,11 @@ func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias stri
 				Name: c,
 				SourceColumns: base.SourceColumnSet{
 					base.ColumnResource{
-						Server:         temp.Server,
-						Database:       temp.Database,
-						Schema:         temp.Schema,
-						Table:          temp.Name,
-						Column:         c,
-						UnknownLineage: temp.UnknownLineage,
+						Server:   temp.Server,
+						Database: temp.Database,
+						Schema:   temp.Schema,
+						Table:    temp.Name,
+						Column:   c,
 					}: true,
 				},
 				IsPlainField: true,
@@ -871,24 +870,16 @@ func (q *omniQuerySpanExtractor) populateSelectIntoTempTable(sel *ast.SelectStmt
 		return
 	}
 	columns := make([]string, 0, len(results))
-	unknownLineage := false
 	for i, result := range results {
 		name := result.Name
 		if name == "" && sel.TargetList != nil && i < len(sel.TargetList.Items) {
 			name = q.sliceName(sel.TargetList.Items[i])
 		}
 		columns = append(columns, name)
-		for src := range result.SourceColumns {
-			if src.UnknownLineage {
-				unknownLineage = true
-				break
-			}
-		}
 	}
 	q.gCtx.TempTables[sel.IntoTable.Object] = &base.PhysicalTable{
-		Name:           sel.IntoTable.Object,
-		Columns:        columns,
-		UnknownLineage: unknownLineage,
+		Name:    sel.IntoTable.Object,
+		Columns: columns,
 	}
 }
 
