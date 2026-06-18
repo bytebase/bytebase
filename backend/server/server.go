@@ -184,7 +184,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		logSetup.GetEnableMetricCollection(),
 	)
 	if !s.profile.SaaS && profile.Mode == common.ReleaseModeProd && logSetup.GetEnableMetricCollection() && workspaceID != "" {
-		reportSQLReviewConfigSnapshot(ctx, stores, workspaceID)
+		go func() {
+			reportSQLReviewConfigSnapshot(context.WithoutCancel(ctx), stores, workspaceID)
+		}()
 	}
 
 	s.bus, err = bus.New()
