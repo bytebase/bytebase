@@ -46,7 +46,7 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import { ThemeAnchorEditor } from "./sql-editor-theme/ThemeAnchorEditor";
 import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
@@ -120,11 +120,12 @@ export const SQLEditorSection = forwardRef<
   }, [resource]);
 
   // The editor color themes registered with the VSCode theme service, for the
-  // custom-theme "Editor syntax" picker. Falls back to the built-ins.
+  // custom-theme "Editor syntax" picker. Falls back to the built-ins. Dev-only.
   const [editorThemes, setEditorThemes] = useState<EditorThemeOption[]>(
     BUILTIN_EDITOR_THEMES
   );
   useEffect(() => {
+    if (!isDev()) return;
     let active = true;
     void getAvailableEditorThemes().then((themes) => {
       if (active) setEditorThemes(themes);
@@ -578,59 +579,63 @@ export const SQLEditorSection = forwardRef<
           </div>
         </PermissionGuard>
 
-        {/* SQL Editor theme */}
-        <PermissionGuard
-          permissions={["bb.settings.setWorkspaceProfile"]}
-          display="block"
-        >
-          <div className="flex flex-col gap-y-3">
-            <div>
-              <p className="text-base font-semibold">
-                {t("settings.general.workspace.sql-editor-theme.self")}
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t("settings.general.workspace.sql-editor-theme.description")}
-              </p>
-            </div>
+        {/* SQL Editor theme — dev-only until the feature ships. */}
+        {isDev() && (
+          <PermissionGuard
+            permissions={["bb.settings.setWorkspaceProfile"]}
+            display="block"
+          >
+            <div className="flex flex-col gap-y-3">
+              <div>
+                <p className="text-base font-semibold">
+                  {t("settings.general.workspace.sql-editor-theme.self")}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {t("settings.general.workspace.sql-editor-theme.description")}
+                </p>
+              </div>
 
-            <SegmentedControl
-              ariaLabel={t("settings.general.workspace.sql-editor-theme.self")}
-              disabled={!canSetWorkspaceProfile}
-              value={isCustomSelected ? CUSTOM_THEME_OPTION : selectedThemeId}
-              onValueChange={handleSelectTheme}
-              options={[
-                ...PRESETS.map((preset) => ({
-                  value: preset.id,
-                  label: preset.name,
-                })),
-                {
-                  value: CUSTOM_THEME_OPTION,
-                  label: t(
-                    "settings.general.workspace.sql-editor-theme.custom"
-                  ),
-                },
-              ]}
-            />
-
-            {isCustomSelected && customDraft && (
-              <ThemeAnchorEditor
-                value={themeToAnchors(customDraft)}
-                editorTheme={customDraft.monacoBase}
-                editorThemes={editorThemes}
+              <SegmentedControl
+                ariaLabel={t(
+                  "settings.general.workspace.sql-editor-theme.self"
+                )}
                 disabled={!canSetWorkspaceProfile}
-                onChange={handleAnchorsChange}
-                onEditorThemeChange={handleEditorThemeChange}
+                value={isCustomSelected ? CUSTOM_THEME_OPTION : selectedThemeId}
+                onValueChange={handleSelectTheme}
+                options={[
+                  ...PRESETS.map((preset) => ({
+                    value: preset.id,
+                    label: preset.name,
+                  })),
+                  {
+                    value: CUSTOM_THEME_OPTION,
+                    label: t(
+                      "settings.general.workspace.sql-editor-theme.custom"
+                    ),
+                  },
+                ]}
               />
-            )}
 
-            <div className="flex flex-col gap-y-2">
-              <p className="text-sm font-medium text-control">
-                {t("common.preview")}
-              </p>
-              <ThemePreview theme={previewTheme} />
+              {isCustomSelected && customDraft && (
+                <ThemeAnchorEditor
+                  value={themeToAnchors(customDraft)}
+                  editorTheme={customDraft.monacoBase}
+                  editorThemes={editorThemes}
+                  disabled={!canSetWorkspaceProfile}
+                  onChange={handleAnchorsChange}
+                  onEditorThemeChange={handleEditorThemeChange}
+                />
+              )}
+
+              <div className="flex flex-col gap-y-2">
+                <p className="text-sm font-medium text-control">
+                  {t("common.preview")}
+                </p>
+                <ThemePreview theme={previewTheme} />
+              </div>
             </div>
-          </div>
-        </PermissionGuard>
+          </PermissionGuard>
+        )}
       </div>
     </div>
   );
