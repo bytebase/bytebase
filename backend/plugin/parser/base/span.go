@@ -240,6 +240,10 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+	// UnknownLineage marks a temp table populated (via SELECT ... INTO) from at
+	// least one unknown-lineage source. Columns resolved from it inherit the taint
+	// so the masker still fully masks data laundered through the temp table.
+	UnknownLineage bool
 }
 
 func (p *PhysicalTable) GetTableName() string {
@@ -263,11 +267,12 @@ func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 	for _, column := range p.Columns {
 		sourceColumnSet := make(SourceColumnSet, 1)
 		sourceColumnSet[ColumnResource{
-			Server:   p.Server,
-			Database: p.Database,
-			Schema:   p.Schema,
-			Table:    p.Name,
-			Column:   column,
+			Server:         p.Server,
+			Database:       p.Database,
+			Schema:         p.Schema,
+			Table:          p.Name,
+			Column:         column,
+			UnknownLineage: p.UnknownLineage,
 		}] = true
 		result = append(result, QuerySpanResult{
 			Name:          column,

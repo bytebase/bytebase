@@ -476,6 +476,30 @@ func TestOmniQuerySpan_TempTableDefinitions(t *testing.T) {
 	require.Equal(t, "name", span2.Results[1].Name)
 }
 
+// SELECT ... INTO #tmp from an encrypted view must carry the unknown-lineage
+// taint into the temp table, otherwise a later query of #tmp would launder the
+// data past the masker unmasked.
+func TestOmniQuerySpan_SelectIntoEncryptedViewKeepsTaint(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		TempTables:              make(map[string]*base.PhysicalTable),
+	}
+
+	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	_, err := q1.getOmniQuerySpan(context.Background(), "SELECT secret INTO #tmp FROM enc_vw")
+	require.NoError(t, err)
+	require.Contains(t, gCtx.TempTables, "#tmp")
+	require.True(t, gCtx.TempTables["#tmp"].UnknownLineage, "temp table from an encrypted view should be flagged unknown-lineage")
+
+	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT secret FROM #tmp")
+	require.NoError(t, err)
+	require.Len(t, span2.Results, 1)
+	require.True(t, sourcesUnknownLineage(span2.Results[0].SourceColumns), "column from a tainted temp table should stay unknown-lineage")
+}
+
 func TestOmniQuerySpan_TempTableDefinitionsCaseInsensitive(t *testing.T) {
 	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
 	gCtx := base.GetQuerySpanContext{
