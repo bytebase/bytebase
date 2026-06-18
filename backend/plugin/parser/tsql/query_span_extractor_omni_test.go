@@ -266,6 +266,29 @@ func TestOmniQuerySpan_SupportedShapes(t *testing.T) {
 	}
 }
 
+func TestOmniQuerySpan_EncryptedViewUnknownLineage(t *testing.T) {
+	// An encrypted/unparseable view resolves its columns from synced metadata,
+	// but their lineage to base tables is unrecoverable, so each result column
+	// must be flagged UnknownLineage for the masker to fully mask it.
+	q := newOmniTestExtractor(t, "db")
+	span, err := q.getOmniQuerySpan(context.Background(), "SELECT id, secret FROM enc_vw")
+	require.NoError(t, err)
+	require.Len(t, span.Results, 2)
+	for _, r := range span.Results {
+		require.Truef(t, r.UnknownLineage, "result %q from encrypted view should be flagged unknown-lineage", r.Name)
+	}
+
+	// Control: a normal view resolves to real base-table lineage and must NOT be
+	// flagged, so masking propagates from the base table as usual.
+	q2 := newOmniTestExtractor(t, "db")
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT a, b FROM vw")
+	require.NoError(t, err)
+	require.NotEmpty(t, span2.Results)
+	for _, r := range span2.Results {
+		require.Falsef(t, r.UnknownLineage, "result %q from normal view should have known lineage", r.Name)
+	}
+}
+
 func TestOmniQuerySpan_NotFound(t *testing.T) {
 	q := newOmniTestExtractor(t, "db")
 	span, err := q.getOmniQuerySpan(context.Background(), "SELECT a FROM no_such_table")

@@ -88,6 +88,11 @@ type QuerySpanResult struct {
 	SourceFieldPaths map[string][]*PathAST
 	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
 	SelectAsterisk bool
+	// UnknownLineage indicates the column's source columns could not be traced to
+	// base tables (e.g. an encrypted/unparseable view whose body is hidden). The
+	// masker treats such columns as sensitive and fully masks them, since their
+	// real lineage — and thus any base-table masking policy — cannot be verified.
+	UnknownLineage bool
 }
 
 // ColumnResource is the resource key for a column.

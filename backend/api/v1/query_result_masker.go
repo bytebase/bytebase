@@ -94,6 +94,11 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 	// Collect all column-level source columns from SELECT results and predicates.
 	allColumns := make(parserbase.SourceColumnSet)
 	for _, r := range span.Results {
+		// Unknown-lineage results are conservatively full-masked, so a query that
+		// references one is treated as touching masked data (redact errors).
+		if r.UnknownLineage {
+			return true
+		}
 		for col := range r.SourceColumns {
 			allColumns[col] = true
 		}
@@ -342,6 +347,18 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	}
 
 	for _, spanResult := range span.Results {
+		// Unknown lineage (e.g. an encrypted MSSQL view whose body is hidden):
+		// the result cannot be traced to base-table columns, so we cannot verify
+		// it is safe to return. Fail safe — fully mask rather than risk leaking
+		// data that a base-table masking policy would otherwise protect.
+		if spanResult.UnknownLineage {
+			maskers = append(maskers, masker.NewDefaultFullMasker())
+			masked = append(masked, &v1pb.MaskingReason{
+				Algorithm: "Full mask",
+				Context:   "Unknown column lineage",
+			})
+			continue
+		}
 		// Likes constant expression, we use the none masker.
 		if len(spanResult.SourceColumns) == 0 {
 			maskers = append(maskers, masker.NewNoneMasker())

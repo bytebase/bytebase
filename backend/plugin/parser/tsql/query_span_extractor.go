@@ -148,16 +148,17 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 					// SQL Server WITH ENCRYPTION view, whose source the catalog does
 					// not expose. Fall back to the synced column metadata (populated
 					// from sys.columns regardless of encryption) so column resolution
-					// and SQL Editor browsing keep working. Each column is attributed
-					// to the view's own column because lineage to the base tables is
-					// unrecoverable; consequently data queried through such a view is
-					// returned UNMASKED — masking cannot be traced through a hidden body.
+					// and SQL Editor browsing keep working. Lineage to the base tables
+					// is unrecoverable, so each column is flagged UnknownLineage: the
+					// masker fully masks such columns (fail-safe) instead of leaking
+					// data that a base-table masking policy would otherwise protect.
 					cols := view.GetColumns()
 					viewColumns = make([]base.QuerySpanResult, 0, len(cols))
 					for _, col := range cols {
 						viewColumns = append(viewColumns, base.QuerySpanResult{
-							Name:         col.GetName(),
-							IsPlainField: true,
+							Name:           col.GetName(),
+							IsPlainField:   true,
+							UnknownLineage: true,
 							SourceColumns: base.SourceColumnSet{
 								base.ColumnResource{
 									Database: databaseName,
