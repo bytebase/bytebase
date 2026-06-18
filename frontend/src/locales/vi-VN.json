@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "cannot-create": "Không thể tạo kế hoạch",
     "checks": {
       "completed": "Đã hoàn thành kiểm tra kế hoạch",
       "failed-to-run": "Không thể chạy kiểm tra kế hoạch",
@@ -1492,7 +1493,6 @@
       "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
       "deploy-description-gitops": "Kế hoạch này đã sẵn sàng để triển khai. Tạo một rollout để triển khai bản phát hành được liên kết.",
       "hide-details": "Ẩn chi tiết",
-      "review-description": "Gửi để xem xét để tiếp tục",
       "show-details": "Hiển thị chi tiết"
     },
     "plans": "Kế hoạch",

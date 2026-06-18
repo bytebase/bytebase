@@ -196,7 +196,9 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		for i, stmt := range stmtsWithPos {
 			sqlTypes[i] = stmt.Type
 		}
-		defaultSchema = "public"
+		// Empty so pg's extractChangedResources falls back to the database's actual
+		// default search_path (Change-1 makes a non-empty value force [currentSchema]).
+		defaultSchema = ""
 	case storepb.Engine_REDSHIFT:
 		rd, ok := driver.(*redshiftdriver.Driver)
 		if !ok {

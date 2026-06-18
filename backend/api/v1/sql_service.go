@@ -495,7 +495,24 @@ func getEffectiveQueryDataPolicy(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */, []parserbase.Statement, string /* requestSchema */, bool /* multiStatement */) error
+
+// hasMultipleStatements reports whether a batch has more than one non-empty statement.
+// Multi-statement batches can change the session's default schema mid-batch (e.g. Postgres
+// `SET search_path`), so DML/DDL in them falls back to the database-level check. SUP-222.
+func hasMultipleStatements(statements []parserbase.Statement) bool {
+	n := 0
+	for _, st := range statements {
+		if st.Empty {
+			continue
+		}
+		n++
+		if n > 1 {
+			return true
+		}
+	}
+	return false
+}
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -634,6 +651,7 @@ func queryRetry(
 	licenseService *enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
+	multiStatement bool,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
@@ -663,7 +681,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -853,7 +871,7 @@ func queryRetryStopOnError(
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
 	}
 
 	// Split the statement into individual SQLs
@@ -862,8 +880,13 @@ func queryRetryStopOnError(
 		// Engines without splitter support (MongoDB, Redis, Elasticsearch) fall back to
 		// treating the entire statement as a single unit. These engines also don't have
 		// GetQuerySpan support, so queryRetry will return nil spans (old behavior).
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
 	}
+
+	// A multi-statement batch can change the session schema mid-batch (e.g. SET search_path),
+	// which the per-statement access check below cannot track; flag it so DML/DDL falls back
+	// to the database-level check. SUP-222.
+	multiStatement := hasMultipleStatements(statements)
 
 	var allResults []*v1pb.QueryResult
 	var allSpans []*parserbase.QuerySpan
@@ -875,7 +898,7 @@ func queryRetryStopOnError(
 			continue
 		}
 
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, multiStatement)
 		totalDuration += duration
 
 		if err != nil {
@@ -1187,6 +1210,7 @@ func doExport(
 		licenseService,
 		optionalAccessCheck,
 		schemaSyncer,
+		hasMultipleStatements(statements),
 	)
 	if queryErr != nil {
 		return nil, duration, queryErr
@@ -1483,8 +1507,11 @@ func (s *SQLService) accessCheck(
 	user *store.UserMessage,
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
+	statements []parserbase.Statement,
+	requestSchema string,
+	multiStatement bool,
 ) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, nil)
+	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema, multiStatement)
 }
 
 // accessCheckWithGrant returns an accessCheckFunc that exempts the access
@@ -1504,8 +1531,8 @@ func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage)
 	for _, t := range accessGrant.Payload.Targets {
 		grantedTargets[t] = struct{}{}
 	}
-	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, grantedTargets)
+	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string, multiStatement bool) error {
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema, multiStatement)
 	}
 }
 
@@ -1516,7 +1543,10 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	user *store.UserMessage,
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
+	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
+	requestSchema string,
+	multiStatement bool,
 ) error {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
 	if err != nil {
@@ -1585,7 +1615,15 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return checkDatabaseAccess(perm)
 	}
 
-	for _, span := range spans {
+	// Spans align with non-empty statements (GetQuerySpan skips Empty statements).
+	nonEmptyStatements := make([]parserbase.Statement, 0, len(statements))
+	for _, st := range statements {
+		if !st.Empty {
+			nonEmptyStatements = append(nonEmptyStatements, st)
+		}
+	}
+
+	for i, span := range spans {
 		var perm permission.Permission
 		// New query ACL experience.
 		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
@@ -1611,6 +1649,52 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		if perm == "" {
 			// always fallback to bb.sql.select
 			perm = permission.SQLSelect
+		}
+
+		// DML/DDL: authorize per write-target so table/schema-scoped grants work. Resolve the
+		// write targets of the statement aligned with this span (spans skip Empty statements, so
+		// nonEmptyStatements is indexed in lockstep).
+		//
+		// A single statement is authorized at full per-(schema,table) precision. A multi-statement
+		// batch can rebind the session's default schema (SET search_path) or database (USE) mid-
+		// batch, so an unqualified write's schema/table identity is unreliable; such a batch is
+		// authorized at the DATABASE level only. Crucially that database-level check still runs
+		// against each TARGET database, not the request database: a qualified cross-database write
+		// (e.g. MySQL `INSERT INTO other_db.t`) is not rebindable, so a grant on the request
+		// database must not authorize it. SUP-222 / BYT-9698.
+		if perm == permission.SQLDml || perm == permission.SQLDdl {
+			stmtText := ""
+			if i < len(nonEmptyStatements) {
+				stmtText = nonEmptyStatements[i].Text
+			}
+			targets, err := s.resolveWriteTargets(ctx, instance, database, stmtText, requestSchema)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve write targets: %v", err))
+			}
+			if len(targets) == 0 {
+				// No resolvable table target (non-table DDL, unsupported engine, parse failure) →
+				// database-level check on the request database.
+				if err := checkDatabaseAccess(perm); err != nil {
+					return err
+				}
+				continue
+			}
+			databaseLevelOnly := multiStatement || len(nonEmptyStatements) != 1
+			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
+			if err != nil {
+				return err
+			}
+			if len(deniedResources) > 0 {
+				return &queryError{
+					err: connect.NewError(
+						connect.CodePermissionDenied,
+						errors.Errorf("permission denied to access resources: %v", deniedResources),
+					),
+					resources:  deniedResources,
+					permission: perm,
+				}
+			}
+			continue
 		}
 
 		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
@@ -1672,6 +1756,281 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	}
 
 	return nil
+}
+
+// authorizeWriteTargets evaluates perm for each resolved DML/DDL write target and returns the
+// resources that were denied (empty = all authorized). A target whose database is already
+// JIT-granted is skipped.
+//
+// databaseLevelOnly selects the precision of the check. For a single statement it is false and
+// each target is authorized at full per-(schema,table) precision. For a multi-statement batch it
+// is true: an earlier statement can rebind the session's default schema (SET search_path) or
+// database (USE), so per-(schema,table) identity is unreliable and only the TARGET database is
+// authorized (each distinct database once) — schema/table attributes are omitted so a
+// schema/table-scoped grant fails closed, and a denial names the bare database.
+//
+// resource.schema_name (full-precision mode only) is asserted ONLY when the target schema is
+// known: an empty schema (the sentinel mapped to "") omits the attribute, so a schema-scoped
+// grant fails closed (CEL errors on the missing attribute → the binding is skipped) while a
+// table-only grant still matches. A present-but-empty value would instead let a negated condition
+// (schema_name != "x") wrongly match.
+//
+// resource.environment_id is always set, and is resolved PER TARGET database: a cross-database
+// write (e.g. MySQL/MSSQL `INSERT INTO other_db.t`) targets a database that may live in a
+// different environment than the one the editor opened, and resource.database already names that
+// target — copying the request database's environment (or authorizing against the request
+// database at all) would let a grant on the request database authorize a write into another
+// database/environment. The request database needs no lookup (the common same-database case);
+// other targets are fetched once and cached, and an unknown target fails closed. The attribute is
+// always present because hasDatabaseAccessRights keeps the environment clause for SQLDml/SQLDdl,
+// so omitting it would reintroduce a "no such attribute" error. SUP-222 / BYT-9698.
+func (s *SQLService) authorizeWriteTargets(
+	ctx context.Context,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	perm permission.Permission,
+	targets []writeTargetResource,
+	grantedTargets map[string]struct{},
+	databaseLevelOnly bool,
+	iamPolicies ...*storepb.IamPolicy,
+) ([]string, error) {
+	// One timestamp per request so every target evaluates request.time consistently.
+	requestTime := time.Now()
+
+	// environment_id of the request database, reused without a lookup for same-database targets.
+	envByDatabase := map[string]string{database.DatabaseName: ""}
+	if database.EffectiveEnvironmentID != nil {
+		envByDatabase[database.DatabaseName] = *database.EffectiveEnvironmentID
+	}
+	checkedDatabase := map[string]bool{} // databaseLevelOnly: authorize each target database once
+
+	var deniedResources []string
+	for _, t := range targets {
+		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
+		if _, granted := grantedTargets[databaseFullName]; granted {
+			continue
+		}
+		// A target with no table name is a database-only target: DDL on a non-table object
+		// (view/procedure/function/trigger/…) whose only auth-relevant identity is its database.
+		// Authorize it at the database level — like a multi-statement batch — so a qualified
+		// cross-database object DDL is gated by its own database, not the request database, with
+		// no spurious table-name match. SUP-222 / BYT-9698.
+		useDatabaseLevel := databaseLevelOnly || t.table == ""
+		if useDatabaseLevel {
+			if checkedDatabase[t.database] {
+				continue
+			}
+			checkedDatabase[t.database] = true
+		}
+
+		// A denial names the bare database for a database-level check, else the schema/table target.
+		deniedResource := databaseFullName
+		if !useDatabaseLevel {
+			deniedResource = formatWriteTargetResource(databaseFullName, t.schema, t.table)
+		}
+
+		env, known := envByDatabase[t.database]
+		if !known {
+			targetName := t.database
+			targetDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &targetName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve target database %q: %v", t.database, err))
+			}
+			if targetDB == nil {
+				// Unknown target database → its environment can't be established → fail closed.
+				deniedResources = append(deniedResources, deniedResource)
+				continue
+			}
+			if targetDB.ProjectID != database.ProjectID {
+				// A write target in a DIFFERENT project than the SQL-Editor session must be gated
+				// by that target project's IAM policy, which this check (evaluating the request
+				// project's policy) does not consult. Fail closed to preserve the project
+				// boundary — a cross-project write is denied. SUP-222 / BYT-9698.
+				deniedResources = append(deniedResources, deniedResource)
+				continue
+			}
+			if targetDB.EffectiveEnvironmentID != nil {
+				env = *targetDB.EffectiveEnvironmentID
+			}
+			envByDatabase[t.database] = env
+		}
+
+		attributes := map[string]any{
+			common.CELAttributeRequestTime:           requestTime,
+			common.CELAttributeResourceDatabase:      databaseFullName,
+			common.CELAttributeResourceEnvironmentID: env,
+		}
+		if !useDatabaseLevel {
+			attributes[common.CELAttributeResourceTableName] = t.table
+			if t.schema != "" {
+				attributes[common.CELAttributeResourceSchemaName] = t.schema
+			}
+		}
+		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for target %q: %v", deniedResource, err))
+		}
+		if !allowed {
+			deniedResources = append(deniedResources, deniedResource)
+		}
+	}
+	return deniedResources, nil
+}
+
+// formatWriteTargetResource renders a denied write target as
+// instances/i/databases/d[/schemas/s]/tables/t; the schema segment is omitted when unknown.
+func formatWriteTargetResource(databaseFullName, schema, table string) string {
+	resource := databaseFullName
+	if schema != "" {
+		resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
+	}
+	return fmt.Sprintf("%s/tables/%s", resource, table)
+}
+
+// writeTargetResource is a (database, schema, table) write target of a DML/DDL statement.
+type writeTargetResource struct {
+	database string
+	schema   string
+	table    string
+}
+
+// resolveWriteTargets returns the tables a DML/DDL statement writes/changes, using
+// the same extractor plan-check trusts. Returns (nil, nil) when the engine has no
+// extractor, the statement can't be parsed, or no targets are found — callers must
+// then fall back to the database-level check (never fail open). See SUP-222.
+//
+// Some engines' extractors report auxiliary tables referenced by the change (e.g.
+// the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
+// mutated table, others only the primary target; either way this can only ever
+// over-restrict (fail-closed), never under-restrict.
+//
+// DDL on a non-table object (view/procedure/function/trigger/…) has no table to scope. When
+// such DDL names an EXPLICIT target database (e.g. CREATE VIEW other_db.v), the extractor
+// records a database-only target so the write is gated by that database; an UNqualified one
+// records nothing and falls back to the request-database check. Object DDL the extractor does
+// not model still resolves to zero targets → request-database fallback.
+func (s *SQLService) resolveWriteTargets(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	statement string,
+	requestSchema string,
+) ([]writeTargetResource, error) {
+	engine := instance.Metadata.GetEngine()
+
+	stmts, err := parserbase.ParseStatements(engine, statement)
+	if err != nil {
+		//nolint:nilerr // unparseable here → fall back to database-level check (already parsed once for the span)
+		return nil, nil
+	}
+	asts := parserbase.ExtractASTs(stmts)
+	if len(asts) == 0 {
+		return nil, nil
+	}
+
+	// Cache-first: GetQuerySpan already fetched and cached this database's metadata earlier in
+	// the same request, so reuse it instead of issuing a second store query on the write path.
+	dbMeta, err := s.store.GetDBSchemaSnapshot(ctx, common.GetWorkspaceIDFromContext(ctx), database.InstanceID, database.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	if dbMeta == nil {
+		return nil, nil
+	}
+
+	changeSummary, err := parserbase.ExtractChangedResources(
+		engine, database.DatabaseName, schemaForWriteTargetResolution(engine, database.DatabaseName, requestSchema), dbMeta, asts, statement,
+	)
+	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
+		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
+		return nil, nil
+	}
+
+	var targets []writeTargetResource
+	databasesWithTableTarget := map[string]bool{}
+	for _, db := range changeSummary.ChangedResources.Build().GetDatabases() {
+		for _, sc := range db.GetSchemas() {
+			schema := sc.GetName()
+			// An unqualified target whose executed schema can't be determined here resolves
+			// to the sentinel; treat it as unknown ("") so the schema_name attribute is
+			// omitted (fail-closed for schema-scoped grants, still matches table-only ones).
+			if schema == unresolvedSchemaSentinel {
+				schema = ""
+			}
+			for _, tbl := range sc.GetTables() {
+				databasesWithTableTarget[db.GetName()] = true
+				targets = append(targets, writeTargetResource{
+					database: db.GetName(),
+					schema:   schema,
+					table:    tbl.GetName(),
+				})
+			}
+		}
+	}
+	// Database-only targets (Tier 2): a qualified non-table object DDL (e.g. CREATE VIEW
+	// other_db.v) records only its target database, with no table. It is authorized at the
+	// database level against that database (a table-less target → useDatabaseLevel in
+	// authorizeWriteTargets), so a qualified cross-database object DDL is gated by its own
+	// database, not the request database. Skip any database already covered by a (more precise)
+	// table target. See SUP-222 / BYT-9698.
+	for _, db := range changeSummary.ChangedResources.GetDatabaseOnlyTargets() {
+		if databasesWithTableTarget[db] {
+			continue
+		}
+		targets = append(targets, writeTargetResource{database: db})
+	}
+	return targets, nil
+}
+
+// unresolvedSchemaSentinel is an impossible schema name (it contains NUL, which no real
+// PostgreSQL/MSSQL identifier can) used as the default schema for UNqualified write targets
+// when the schema the engine will actually resolve cannot be known ahead of execution
+// (Postgres's connection-user `$user` search_path, MSSQL's login default_schema). It
+// propagates only to unqualified targets — qualified ones keep their explicit schema — and
+// is mapped to "" so the resource.schema_name attribute is omitted before the grant check.
+const unresolvedSchemaSentinel = "\x00bb_unresolved_schema\x00"
+
+// schemaForWriteTargetResolution returns the default schema to resolve UNqualified write
+// targets against, per engine — the schema the engine will actually write to, or the
+// sentinel when that can't be determined here (so the schema_name attribute is omitted and
+// schema-scoped grants fail closed). Qualified targets ignore this and keep their qualifier.
+func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, requestSchema string) string {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		// Execution pins search_path to QueryRequest.schema when set; otherwise the
+		// connection user's default ($user, public) is not knowable here.
+		if requestSchema != "" {
+			return requestSchema
+		}
+		return unresolvedSchemaSentinel
+	case storepb.Engine_MSSQL:
+		// No per-request schema pin; execution uses the login's default_schema, which is not
+		// in synced metadata. Never trust a request schema for MSSQL.
+		return unresolvedSchemaSentinel
+	case storepb.Engine_ORACLE:
+		// Execution pins CURRENT_SCHEMA to the connection database (= schema) once at pool Open
+		// (oracle.go), and the SQL Editor opens a fresh pool per request, so an unqualified write
+		// resolves to databaseName — knowable and execution-accurate. (A mid-batch ALTER SESSION
+		// is covered by the multi-statement fallback.) This pin is the reason the schema is
+		// auth-grade here; if the driver ever stops pinning per-connection, switch to the sentinel.
+		return databaseName
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+		// No schema layer; the extractor emits an empty schema and resource.schema_name is omitted.
+		return ""
+	default:
+		// Fail closed for any other engine. An engine that reaches here without an explicit,
+		// execution-verified schema mapping must NOT have its unqualified writes resolved against
+		// a guessed default — e.g. a pg-family extractor (COCKROACHDB, REDSHIFT) would fill in the
+		// metadata search_path, a REAL schema name, which we'd then assert as resource.schema_name
+		// and over-allow a schema-scoped grant. The sentinel maps to an omitted attribute, so
+		// schema-scoped grants fail closed while table-only grants still match. SUP-222 / BYT-9698.
+		return unresolvedSchemaSentinel
+	}
 }
 
 // sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.

@@ -62,9 +62,6 @@ type GetDefinitionContext struct {
 	SkipBackupSchema bool
 	PrintHeader      bool
 	SDLFormat        bool
-	// MultiFileFormat indicates whether to generate multi-file SDL output.
-	// When true, the result should be organized as multiple files.
-	MultiFileFormat bool
 }
 
 // File represents a single file in a multi-file schema output.

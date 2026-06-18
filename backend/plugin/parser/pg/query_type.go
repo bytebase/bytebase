@@ -102,20 +102,22 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 // hasOmniIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
 func hasOmniIntoClause(n *ast.SelectStmt) bool {
+	return omniIntoClause(n) != nil
+}
+
+// omniIntoClause returns the INTO clause of n, searching set-operation arms
+// (UNION/INTERSECT/EXCEPT) — the parser attaches INTO to the first arm, not the root.
+func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
 	if n == nil {
-		return false
+		return nil
 	}
 	if n.IntoClause != nil {
-		return true
+		return n.IntoClause
 	}
-	// Check set operations (UNION/INTERSECT/EXCEPT)
-	if n.Larg != nil && hasOmniIntoClause(n.Larg) {
-		return true
+	if c := omniIntoClause(n.Larg); c != nil {
+		return c
 	}
-	if n.Rarg != nil && hasOmniIntoClause(n.Rarg) {
-		return true
-	}
-	return false
+	return omniIntoClause(n.Rarg)
 }
 
 // isExplainAnalyzeOmni checks if an ExplainStmt has the ANALYZE option.

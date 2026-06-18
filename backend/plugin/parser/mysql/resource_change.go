@@ -26,6 +26,16 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	var dmlCount, insertCount int
 	var sampleDMLs []string
 
+	// addObjectDatabase records a database-only write target for a non-table object DDL
+	// (view/function/routine/trigger) ONLY when the object's own name carries an explicit
+	// database qualifier (TableRef.Schema). Unqualified names record nothing (request-database
+	// fallback). The object's own qualifier is used — never an ON-table reference. SUP-222.
+	addObjectDatabase := func(ref *ast.TableRef) {
+		if ref != nil && ref.Schema != "" {
+			changedResources.AddDatabase(ref.Schema)
+		}
+	}
+
 	for _, unifiedAST := range asts {
 		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
@@ -46,6 +56,18 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			for _, ref := range n.Tables {
 				db, table := omniTableRef(ref, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
+			}
+
+		case *ast.TruncateStmt:
+			for _, ref := range n.Tables {
+				db, table := omniTableRef(ref, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
+			}
+
+		case *ast.LoadDataStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.AlterTableStmt:
@@ -112,6 +134,26 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
 				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
 			}
+
+		// Non-table object DDL: gate by the object's own explicit database qualifier only.
+		// CREATE TRIGGER is intentionally skipped — its AST name is unqualified (a bare string);
+		// inferring the database from the ON table is out of scope. SUP-222 / BYT-9698.
+		case *ast.CreateViewStmt:
+			addObjectDatabase(n.Name)
+		case *ast.AlterViewStmt:
+			addObjectDatabase(n.Name)
+		case *ast.DropViewStmt:
+			for _, ref := range n.Views {
+				addObjectDatabase(ref)
+			}
+		case *ast.CreateFunctionStmt:
+			addObjectDatabase(n.Name)
+		case *ast.AlterRoutineStmt:
+			addObjectDatabase(n.Name)
+		case *ast.DropRoutineStmt:
+			addObjectDatabase(n.Name)
+		case *ast.DropTriggerStmt:
+			addObjectDatabase(n.Name)
 
 		default:
 		}

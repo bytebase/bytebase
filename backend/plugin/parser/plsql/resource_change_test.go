@@ -177,3 +177,59 @@ type testAST struct{}
 func (testAST) ASTStartPosition() *storepb.Position {
 	return nil
 }
+
+func TestExtractChangedResourcesTruncate(t *testing.T) {
+	const statement = `TRUNCATE TABLE t;`
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T"}, true)
+
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
+
+func TestExtractChangedResourcesMerge(t *testing.T) {
+	const statement = `MERGE INTO OTHER.TGT t USING SRC s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.a = s.a;`
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("OTHER", "", &storepb.ChangedResourceTable{Name: "TGT"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
+
+func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
+	// Qualified non-table object DDL → a database-only target on the qualified schema.
+	for _, statement := range []string{
+		`CREATE VIEW OTHER.V AS SELECT * FROM T;`,
+		`CREATE SEQUENCE OTHER.S;`,
+		`CREATE SYNONYM OTHER.SYN FOR T;`,
+		`DROP PACKAGE OTHER.PKG;`,
+		`DROP TYPE OTHER.TY;`,
+		`ALTER PACKAGE OTHER.PKG COMPILE;`,
+	} {
+		stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+		require.NoError(t, err, statement)
+		asts := base.ExtractASTs(stmts)
+		got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, statement)
+		require.NoError(t, err, statement)
+		require.Equal(t, []string{"OTHER"}, got.ChangedResources.GetDatabaseOnlyTargets(), statement)
+	}
+
+	// Unqualified object DDL → no database-only target (keeps the request-database fallback).
+	const unqualified = `CREATE VIEW V AS SELECT * FROM T;`
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, unqualified)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "", nil /* dbMetadata */, asts, unqualified)
+	require.NoError(t, err)
+	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+}

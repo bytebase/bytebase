@@ -98,8 +98,13 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
-	if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
-		return err
+	// StarRocks has no MySQL UNIQUE_CHECKS/FOREIGN_KEY_CHECKS session variables (and does not
+	// enforce foreign keys), so emitting the guard makes the dump fail to replay with
+	// "Unknown system variable 'UNIQUE_CHECKS'".
+	if d.dbType != storepb.Engine_STARROCKS {
+		if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
 	}
 
 	// Table and view statement.
@@ -150,18 +155,15 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 			return err
 		}
 	}
-	// Construct final views and materialized views.
-	for _, tbl := range tables {
-		if tbl.TableType != viewTableType && tbl.TableType != materializedViewType {
-			continue
-		}
-		// The temporary view just created above were used to satisfy the schema dependency. See comment above.
-		// We have to drop the temporary and incorrect view here to recreate the final and correct one.
-		dropStmt := "DROP VIEW IF EXISTS `%s`;\n"
-		if tbl.TableType == materializedViewType {
-			dropStmt = "DROP MATERIALIZED VIEW IF EXISTS `%s`;\n"
-		}
-		if _, err := io.WriteString(out, fmt.Sprintf(dropStmt, tbl.Name)); err != nil {
+	// Construct final views, then materialized views (see finalEmitOrder: an MV is
+	// materialized from its sources at CREATE time, so its source views must be real
+	// first, not the temporary SELECT 1 placeholders).
+	for _, tbl := range finalEmitOrder(tables) {
+		// The temporary placeholder created above is always a regular view (even for
+		// materialized views — see getTemporaryMaterializedView), so it must be dropped
+		// with DROP VIEW. DROP MATERIALIZED VIEW would not match the placeholder, leaving
+		// it in the shared namespace so the real CREATE MATERIALIZED VIEW below collides.
+		if _, err := io.WriteString(out, dropPlaceholderStmt(tbl.Name)); err != nil {
 			return err
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
@@ -191,12 +193,47 @@ func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchem
 		}
 	}
 
-	// Restore foreign key check.
-	if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
-		return err
+	// Restore foreign key check (skipped for StarRocks, which lacks these variables).
+	if d.dbType != storepb.Engine_STARROCKS {
+		if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// finalEmitOrder returns the views and materialized views in the order their real
+// definitions must be emitted: all regular views first, then materialized views, each
+// group keeping its original relative order. information_schema.tables is unordered, and
+// a materialized view can be defined on a regular view and is materialized from its
+// sources at CREATE time, so its source views must already be real (not the temporary
+// SELECT 1 placeholders). Base tables are emitted separately and are excluded here.
+//
+// MVs keep their incoming order relative to each other, so a materialized view built on
+// another materialized view (nested async MVs) is not yet dependency-ordered and could
+// restore inactive if listed before its parent — tracked in BYT-9718.
+func finalEmitOrder(tables []*TableSchema) []*TableSchema {
+	var views, materializedViews []*TableSchema
+	for _, tbl := range tables {
+		switch tbl.TableType {
+		case viewTableType:
+			views = append(views, tbl)
+		case materializedViewType:
+			materializedViews = append(materializedViews, tbl)
+		default:
+			// Base tables and any other types are emitted elsewhere; skip here.
+		}
+	}
+	return append(views, materializedViews...)
+}
+
+// dropPlaceholderStmt returns the statement that drops the temporary placeholder emitted
+// for a view or materialized view before its real definition. The placeholder is always a
+// regular view (see getTemporaryMaterializedView), so it is dropped with DROP VIEW
+// regardless of the final object type.
+func dropPlaceholderStmt(name string) string {
+	return fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", name)
 }
 
 func getTemporaryView(name string, columns []string) string {
@@ -276,35 +313,13 @@ func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema
 		return nil, err
 	}
 
-	// For Doris, get materialized views using mv_infos() and mark them appropriately
-	materializedViewNames := make(map[string]bool)
-	if dbType == storepb.Engine_DORIS {
-		mvQuery := fmt.Sprintf(`SELECT Name FROM mv_infos("database"="%s")`, dbName)
-		mvRows, err := db.Query(mvQuery)
-		if err != nil {
-			// mv_infos() might not be available in older versions, just log and continue
-			slog.Debug("failed to query mv_infos(), might not be supported", slog.String("error", err.Error()))
-		} else {
-			defer mvRows.Close()
-			for mvRows.Next() {
-				var mvName string
-				if err := mvRows.Scan(&mvName); err != nil {
-					return nil, err
-				}
-				materializedViewNames[mvName] = true
-			}
-			if err := mvRows.Err(); err != nil {
-				return nil, err
-			}
-		}
+	// Materialized views need a separate catalog lookup and re-tagging so the dump emits
+	// SHOW CREATE MATERIALIZED VIEW for them (Doris reports them as BASE TABLE, StarRocks as VIEW).
+	materializedViewNames, err := getMaterializedViewNames(db, dbName, dbType)
+	if err != nil {
+		return nil, err
 	}
-
-	// Update table types for materialized views that are marked as BASE TABLE
-	for _, tbl := range tables {
-		if tbl.TableType == baseTableType && materializedViewNames[tbl.Name] {
-			tbl.TableType = materializedViewType
-		}
-	}
+	markMaterializedViews(tables, materializedViewNames)
 
 	var result []*TableSchema
 	for _, tbl := range tables {
@@ -332,6 +347,69 @@ func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema
 		result = append(result, tbl)
 	}
 	return result, nil
+}
+
+// getMaterializedViewNames returns the set of materialized-view names in the database.
+// Doris and StarRocks expose them through different catalogs; the query is best-effort
+// (an unsupported engine/version logs and yields an empty set). StarRocks sync rollups
+// (REFRESH_TYPE='ROLLUP') are excluded — they are rollup indexes on the base table, not
+// standalone views.
+func getMaterializedViewNames(db *sql.DB, dbName string, dbType storepb.Engine) (map[string]bool, error) {
+	names := make(map[string]bool)
+
+	var query string
+	switch dbType {
+	case storepb.Engine_DORIS:
+		query = fmt.Sprintf(`SELECT Name FROM mv_infos("database"="%s")`, dbName)
+	case storepb.Engine_STARROCKS:
+		// IFNULL guards the bare-string scan below: database/sql errors on a NULL->string scan.
+		query = fmt.Sprintf(`SELECT TABLE_NAME, IFNULL(REFRESH_TYPE, '') FROM information_schema.materialized_views WHERE TABLE_SCHEMA = '%s'`, dbName)
+	default:
+		return names, nil
+	}
+
+	rows, err := db.Query(query)
+	if err != nil {
+		// The catalog may be unavailable on older engine versions; log and continue.
+		slog.Debug("failed to query materialized views, might not be supported", slog.String("error", err.Error()))
+		return names, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if dbType == storepb.Engine_STARROCKS {
+			var refreshType string
+			if err := rows.Scan(&name, &refreshType); err != nil {
+				return nil, err
+			}
+			if isSyncRollup(refreshType) {
+				continue
+			}
+		} else if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+// markMaterializedViews re-tags rows that are actually materialized views so the dump
+// emits SHOW CREATE MATERIALIZED VIEW for them. Doris reports MVs as 'BASE TABLE' and
+// StarRocks as 'VIEW'; either becomes 'MATERIALIZED VIEW' when its name is in the
+// materialized-view set. Regular tables and views are left untouched.
+func markMaterializedViews(tables []*TableSchema, materializedViewNames map[string]bool) {
+	for _, tbl := range tables {
+		if !materializedViewNames[tbl.Name] {
+			continue
+		}
+		if tbl.TableType == baseTableType || tbl.TableType == viewTableType {
+			tbl.TableType = materializedViewType
+		}
+	}
 }
 
 // getTableStmt gets the create statement of a table.

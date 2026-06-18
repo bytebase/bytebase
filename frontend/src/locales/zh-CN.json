@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "cannot-create": "无法创建变更计划",
     "checks": {
       "completed": "已完成计划检查",
       "failed-to-run": "运行计划检查失败",
@@ -1468,7 +1469,7 @@
       "self": "隔离级别",
       "serializable": "串行化"
     },
-    "labels-required-for-review": "提交评审前必须设置标签",
+    "labels-required-for-review": "提交审批前必须设置标签",
     "meta": {
       "created-by-at": "由 {{user}} 创建 · {{time}}"
     },
@@ -1492,14 +1493,13 @@
       "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
       "deploy-description-gitops": "此计划已就绪，可以发布。创建一个发布以部署关联的 Release。",
       "hide-details": "隐藏详情",
-      "review-description": "提交审批以继续",
       "show-details": "显示详情"
     },
     "plans": "变更计划",
     "pre-backup": {
       "requirements-not-met": "以下数据库不满足预备份要求：{{databases}}"
     },
-    "ready-for-review": "准备提交评审",
+    "ready-for-review": "提交审批",
     "review": {
       "action": "审批",
       "activity": {

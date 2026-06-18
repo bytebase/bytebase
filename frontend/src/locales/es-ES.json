@@ -1442,6 +1442,7 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "cannot-create": "No se puede crear el plan",
     "checks": {
       "completed": "Se completaron las verificaciones del plan",
       "failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
@@ -1492,7 +1493,6 @@
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
       "hide-details": "Ocultar detalles",
-      "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles"
     },
     "plans": "Planes",

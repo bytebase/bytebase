@@ -213,8 +213,11 @@ describe("ProjectPlanDetailPage", () => {
     expect(selectedSpecIdText()).toBe("spec-2");
   });
 
-  it("renders the review phase for sheet-backed plans", async () => {
-    mocks.usePlanDetailPage.mockReturnValue(buildPage());
+  it("renders the review phase for sheet-backed plans with an issue", async () => {
+    mocks.usePlanDetailPage.mockReturnValue({
+      ...buildPage(),
+      issue: { name: "projects/foo/issues/1" },
+    } as unknown as PlanDetailPageState);
 
     await act(async () => {
       root.render(
@@ -228,6 +231,23 @@ describe("ProjectPlanDetailPage", () => {
     });
 
     expect(container.textContent).toContain("plan.navigator.review");
+  });
+
+  it("hides the review phase when there is no issue", async () => {
+    mocks.usePlanDetailPage.mockReturnValue(buildPage());
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          specId="spec-1"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain("plan.navigator.review");
   });
 
   it("hides the review phase for GitOps plans with release-backed specs", async () => {

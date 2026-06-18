@@ -114,6 +114,85 @@ func (d *Driver) getServerVariable(ctx context.Context, varName string) (string,
 	return value, nil
 }
 
+// isSyncRollup reports whether a StarRocks information_schema.materialized_views row
+// describes a synchronous rollup rather than a standalone (async) materialized view.
+// Sync rollups are rollup indexes on the base table: they appear in that catalog with
+// REFRESH_TYPE='ROLLUP' but have no information_schema.tables row, so they are excluded
+// from the materialized-view set. Only the confirmed 'ROLLUP' value is excluded — async
+// refresh types and any unknown/empty value are kept.
+func isSyncRollup(refreshType string) bool {
+	return refreshType == "ROLLUP"
+}
+
+// isMaterializedView reports whether a table row is a materialized view, based on its
+// table type and membership in the materialized-view set. StarRocks reports
+// materialized views with TABLE_TYPE='VIEW', Doris with 'BASE TABLE', and some setups
+// with 'MATERIALIZED VIEW'; in every case, presence in materializedViewMap is the
+// authoritative signal.
+func isMaterializedView(tableType string, key db.TableKey, materializedViewMap map[db.TableKey]*storepb.MaterializedViewMetadata) bool {
+	if _, ok := materializedViewMap[key]; !ok {
+		return false
+	}
+	switch tableType {
+	case baseTableType, viewTableType, materializedViewType:
+		return true
+	default:
+		return false
+	}
+}
+
+// getMaterializedViews returns the materialized views of the current database keyed by
+// table name. Doris and StarRocks expose them through different catalogs, so the query
+// and projection are engine-specific. The query is best-effort: an engine/version that
+// does not support it is logged and yields an empty set rather than failing the sync.
+func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*storepb.MaterializedViewMetadata, error) {
+	materializedViewMap := make(map[db.TableKey]*storepb.MaterializedViewMetadata)
+
+	var query string
+	switch d.dbType {
+	case storepb.Engine_DORIS:
+		// Doris exposes materialized views via the mv_infos() table-valued function.
+		// https://doris.apache.org/docs/sql-manual/sql-functions/table-valued-functions/mv_infos
+		query = fmt.Sprintf(`SELECT Name, QuerySql FROM mv_infos("database"="%s")`, d.databaseName)
+	case storepb.Engine_STARROCKS:
+		// StarRocks exposes materialized views via information_schema.materialized_views.
+		// REFRESH_TYPE separates async MVs from synchronous rollups, which are excluded.
+		// IFNULL guards the bare-string scans below: database/sql errors on a NULL->string scan.
+		query = fmt.Sprintf(`SELECT TABLE_NAME, IFNULL(REFRESH_TYPE, ''), IFNULL(MATERIALIZED_VIEW_DEFINITION, '') FROM information_schema.materialized_views WHERE TABLE_SCHEMA = '%s'`, d.databaseName)
+	default:
+		return materializedViewMap, nil
+	}
+
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		// The catalog may be unavailable on older engine versions; log and continue.
+		slog.Debug("failed to query materialized views, might not be supported in this version", log.BBError(err))
+		return materializedViewMap, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		materializedView := &storepb.MaterializedViewMetadata{}
+		if d.dbType == storepb.Engine_STARROCKS {
+			var refreshType string
+			if err := rows.Scan(&materializedView.Name, &refreshType, &materializedView.Definition); err != nil {
+				return nil, err
+			}
+			if isSyncRollup(refreshType) {
+				continue
+			}
+		} else if err := rows.Scan(&materializedView.Name, &materializedView.Definition); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: "", Table: materializedView.Name}
+		materializedViewMap[key] = materializedView
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return materializedViewMap, nil
+}
+
 // SyncDBSchema syncs a single database schema.
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
@@ -226,39 +305,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 
-	// Query materialized view info.
-	// For Doris, we use the mv_infos() table-valued function to get materialized view information.
-	// Sync materialized views are part of the base table and don't need special handling.
-	materializedViewMap := make(map[db.TableKey]*storepb.MaterializedViewMetadata)
-
-	// Only query materialized views for Doris
-	if d.dbType == storepb.Engine_DORIS {
-		// Use mv_infos() table-valued function to get materialized view information
-		// https://doris.apache.org/docs/sql-manual/sql-functions/table-valued-functions/mv_infos
-		materializedViewQuery := fmt.Sprintf(`SELECT Name, QuerySql FROM mv_infos("database"="%s")`, d.databaseName)
-		materializedViewRows, err := d.db.QueryContext(ctx, materializedViewQuery)
-		if err != nil {
-			// mv_infos() might not be available in older Doris versions, log and continue
-			slog.Debug("failed to query materialized views using mv_infos(), might not be supported in this version", log.BBError(err))
-		} else {
-			defer materializedViewRows.Close()
-			for materializedViewRows.Next() {
-				materializedView := &storepb.MaterializedViewMetadata{}
-				if err := materializedViewRows.Scan(
-					&materializedView.Name,
-					&materializedView.Definition,
-				); err != nil {
-					return nil, err
-				}
-				key := db.TableKey{Schema: "", Table: materializedView.Name}
-				materializedViewMap[key] = materializedView
-				slog.Debug("found materialized view", slog.String("name", materializedView.Name), slog.String("database", d.databaseName))
-			}
-			if err := materializedViewRows.Err(); err != nil {
-				return nil, util.FormatErrorWithQuery(err, materializedViewQuery)
-			}
-			slog.Debug("total materialized views found", slog.Int("count", len(materializedViewMap)), slog.String("database", d.databaseName))
-		}
+	// Query materialized view info (engine-specific catalog; best-effort).
+	materializedViewMap, err := d.getMaterializedViews(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Query table info.
@@ -303,48 +353,42 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 
 		key := db.TableKey{Schema: "", Table: tableName}
+		// StarRocks reports materialized views as TABLE_TYPE='VIEW', Doris as 'BASE TABLE';
+		// route any row whose name is in the materialized-view set to MaterializedViews.
+		if isMaterializedView(tableType, key, materializedViewMap) {
+			materializedView := materializedViewMap[key]
+			materializedView.Comment = comment
+			schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, materializedView)
+			continue
+		}
 		switch tableType {
 		case baseTableType:
-			// Check if this is actually a materialized view (for Doris)
-			// In Doris, materialized views appear as BASE TABLE in information_schema.TABLES
-			if materializedView, ok := materializedViewMap[key]; ok {
-				slog.Debug("identified BASE TABLE as materialized view", slog.String("name", tableName), slog.String("database", d.databaseName))
-				materializedView.Comment = comment
-				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, materializedView)
-			} else {
-				slog.Debug("adding BASE TABLE as regular table", slog.String("name", tableName), slog.String("database", d.databaseName))
-				tableMetadata := &storepb.TableMetadata{
-					Name:          tableName,
-					Columns:       columnMap[key],
-					Engine:        engine,
-					Collation:     collation,
-					RowCount:      rowCount,
-					DataSize:      dataSize,
-					IndexSize:     indexSize,
-					DataFree:      dataFree,
-					CreateOptions: createOptions,
-					Comment:       comment,
-				}
-				if tableCollation.Valid {
-					tableMetadata.Collation = tableCollation.String
-				}
-				// TODO(d): add index information whenever it is available.
-				schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
+			tableMetadata := &storepb.TableMetadata{
+				Name:          tableName,
+				Columns:       columnMap[key],
+				Engine:        engine,
+				Collation:     collation,
+				RowCount:      rowCount,
+				DataSize:      dataSize,
+				IndexSize:     indexSize,
+				DataFree:      dataFree,
+				CreateOptions: createOptions,
+				Comment:       comment,
 			}
+			if tableCollation.Valid {
+				tableMetadata.Collation = tableCollation.String
+			}
+			// TODO(d): add index information whenever it is available.
+			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		case viewTableType:
 			if view, ok := viewMap[key]; ok {
 				view.Comment = comment
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
-		case materializedViewType:
-			// For databases that properly set TABLE_TYPE = 'MATERIALIZED VIEW'
-			if materializedView, ok := materializedViewMap[key]; ok {
-				materializedView.Comment = comment
-				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, materializedView)
-			}
 		default:
-			// Skip unknown table types (e.g., SYSTEM VIEW, TEMPORARY, etc.)
-			slog.Debug("skipping unknown table type", slog.String("tableName", tableName), slog.String("tableType", tableType))
+			// Includes 'MATERIALIZED VIEW' rows absent from the materialized-view set
+			// and any other unrecognized type.
+			slog.Debug("skipping unhandled table type", slog.String("tableName", tableName), slog.String("tableType", tableType))
 		}
 	}
 	if err := tableRows.Err(); err != nil {
