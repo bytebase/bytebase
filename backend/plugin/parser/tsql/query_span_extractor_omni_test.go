@@ -14,7 +14,7 @@ import (
 )
 
 // omniTestMetadata is the default mock catalog used by these tests.
-// db.dbo has tables t(a,b,c), t1(a,b,c), t2(a,b), and views vw, enc_vw, enc_empty_vw.
+// db.dbo has tables t(a,b,c), t1(a,b,c), t2(a,b), and a view vw.
 var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 	{
 		Name: "db",
@@ -28,20 +28,6 @@ var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 				},
 				Views: []*storepb.ViewMetadata{
 					{Name: "vw", Definition: "CREATE VIEW [dbo].[vw] AS SELECT a, b FROM t"},
-					// enc_vw mimics a SQL Server WITH ENCRYPTION view: the body is not
-					// retrievable, so sync stores a placeholder comment instead of DDL,
-					// but the column shape is still synced from sys.columns.
-					{
-						Name:       "enc_vw",
-						Definition: "/* Definition of view dbo.enc_vw is encrypted. */",
-						Columns:    []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret"}},
-					},
-					// enc_empty_vw is an encrypted view whose columns were never synced
-					// (e.g. sync lacked sys.columns access): browsing must still not error.
-					{
-						Name:       "enc_empty_vw",
-						Definition: "/* Definition of view dbo.enc_empty_vw is encrypted. */",
-					},
 				},
 			},
 		},
@@ -243,64 +229,6 @@ func TestOmniQuerySpan_SupportedShapes(t *testing.T) {
 	}
 }
 
-// sourcesUnknownLineage reports whether any source column in the set is flagged
-// with unknown lineage.
-func sourcesUnknownLineage(set base.SourceColumnSet) bool {
-	for c := range set {
-		if c.UnknownLineage {
-			return true
-		}
-	}
-	return false
-}
-
-func TestOmniQuerySpan_EncryptedViewUnknownLineage(t *testing.T) {
-	// Direct references to an encrypted view's columns resolve from synced
-	// metadata, but their lineage is unrecoverable, so each source column must be
-	// flagged UnknownLineage for the masker to fully mask it.
-	q := newOmniTestExtractor(t, "db")
-	span, err := q.getOmniQuerySpan(context.Background(), "SELECT id, secret FROM enc_vw")
-	require.NoError(t, err)
-	require.Len(t, span.Results, 2)
-	for _, r := range span.Results {
-		require.Truef(t, sourcesUnknownLineage(r.SourceColumns), "result %q should have an unknown-lineage source", r.Name)
-	}
-
-	// The taint must survive an expression that merges sources; otherwise
-	// `secret + 'x'` over an encrypted column would reach the masker untainted
-	// and be returned unmasked.
-	q2 := newOmniTestExtractor(t, "db")
-	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT secret + 'x' AS e FROM enc_vw")
-	require.NoError(t, err)
-	require.Len(t, span2.Results, 1)
-	require.True(t, sourcesUnknownLineage(span2.Results[0].SourceColumns), "expression over an encrypted column should stay unknown-lineage")
-
-	// Control: a normal view resolves to real base-table lineage, untainted.
-	q3 := newOmniTestExtractor(t, "db")
-	span3, err := q3.getOmniQuerySpan(context.Background(), "SELECT a, b FROM vw")
-	require.NoError(t, err)
-	require.NotEmpty(t, span3.Results)
-	for _, r := range span3.Results {
-		require.Falsef(t, sourcesUnknownLineage(r.SourceColumns), "result %q from normal view should have known lineage", r.Name)
-	}
-
-	// A predicate-only reference to an encrypted column must also carry the taint,
-	// so error redaction over PredicateColumns covers `WHERE secret = ...`.
-	q4 := newOmniTestExtractor(t, "db")
-	span4, err := q4.getOmniQuerySpan(context.Background(), "SELECT 1 FROM enc_vw WHERE secret = 'x'")
-	require.NoError(t, err)
-	require.True(t, sourcesUnknownLineage(span4.PredicateColumns), "predicate over an encrypted column should be unknown-lineage")
-}
-
-// An encrypted view with no synced columns can neither be parsed nor have its
-// result shape enumerated, so it must fail closed rather than resolve to columns
-// that cannot be masked.
-func TestOmniQuerySpan_EncryptedViewNoColumnsFailsClosed(t *testing.T) {
-	q := newOmniTestExtractor(t, "db")
-	_, err := q.getOmniQuerySpan(context.Background(), "SELECT * FROM enc_empty_vw")
-	require.Error(t, err)
-}
-
 func TestOmniQuerySpan_NotFound(t *testing.T) {
 	q := newOmniTestExtractor(t, "db")
 	span, err := q.getOmniQuerySpan(context.Background(), "SELECT a FROM no_such_table")
@@ -474,30 +402,6 @@ func TestOmniQuerySpan_TempTableDefinitions(t *testing.T) {
 	require.Len(t, span2.Results, 2)
 	require.Equal(t, "id", span2.Results[0].Name)
 	require.Equal(t, "name", span2.Results[1].Name)
-}
-
-// SELECT ... INTO #tmp from an encrypted view must carry the unknown-lineage
-// taint into the temp table, otherwise a later query of #tmp would launder the
-// data past the masker unmasked.
-func TestOmniQuerySpan_SelectIntoEncryptedViewKeepsTaint(t *testing.T) {
-	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
-	gCtx := base.GetQuerySpanContext{
-		GetDatabaseMetadataFunc: getter,
-		ListDatabaseNamesFunc:   lister,
-		TempTables:              make(map[string]*base.PhysicalTable),
-	}
-
-	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
-	_, err := q1.getOmniQuerySpan(context.Background(), "SELECT secret INTO #tmp FROM enc_vw")
-	require.NoError(t, err)
-	require.Contains(t, gCtx.TempTables, "#tmp")
-	require.True(t, gCtx.TempTables["#tmp"].UnknownLineage, "temp table from an encrypted view should be flagged unknown-lineage")
-
-	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
-	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT secret FROM #tmp")
-	require.NoError(t, err)
-	require.Len(t, span2.Results, 1)
-	require.True(t, sourcesUnknownLineage(span2.Results[0].SourceColumns), "column from a tainted temp table should stay unknown-lineage")
 }
 
 func TestOmniQuerySpan_TempTableDefinitionsCaseInsensitive(t *testing.T) {

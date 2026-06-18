@@ -81,14 +81,6 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	var result []base.ColumnResource
 
 	for column := range predicateColumns {
-		if column.UnknownLineage {
-			// Lineage is unknown (e.g. an encrypted view whose body is hidden), so
-			// we cannot rule out that the predicate filters on sensitive data.
-			// Treat it as sensitive to prevent inference leaks such as
-			// `SELECT COUNT(*) FROM enc_vw WHERE secret = '...'`.
-			result = append(result, column)
-			continue
-		}
 		database := data.getDatabase(column.Database)
 		if database == nil {
 			continue
