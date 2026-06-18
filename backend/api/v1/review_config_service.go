@@ -64,15 +64,11 @@ func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *connect.
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	response := &v1pb.ListReviewConfigsResponse{}
-	for _, message := range messages {
-		sqlReview, err := s.convertToV1ReviewConfig(ctx, message)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		response.ReviewConfigs = append(response.ReviewConfigs, sqlReview)
+	reviewConfigs, err := s.convertToV1ReviewConfigs(ctx, messages)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return connect.NewResponse(response), nil
+	return connect.NewResponse(&v1pb.ListReviewConfigsResponse{ReviewConfigs: reviewConfigs}), nil
 }
 
 // GetReviewConfig gets the review config.
@@ -235,6 +231,19 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
+	reviewConfigs, err := s.convertToV1ReviewConfigs(ctx, []*store.ReviewConfigMessage{reviewConfigMessage})
+	if err != nil {
+		return nil, err
+	}
+	if len(reviewConfigs) == 0 {
+		return nil, errors.New("review config not found")
+	}
+	return reviewConfigs[0], nil
+}
+
+func (s *ReviewConfigService) convertToV1ReviewConfigs(ctx context.Context, reviewConfigMessages []*store.ReviewConfigMessage) ([]*v1pb.ReviewConfig, error) {
+	configs, configByName := convertReviewConfigMessagesToV1(reviewConfigMessages)
+
 	policyType := storepb.Policy_TAG
 	tagPolicies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
 		Workspace: common.GetWorkspaceIDFromContext(ctx),
@@ -245,19 +254,13 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list tag policy"))
 	}
 
-	config := &v1pb.ReviewConfig{
-		Name:    common.FormatReviewConfig(reviewConfigMessage.ID),
-		Title:   reviewConfigMessage.Name,
-		Enabled: reviewConfigMessage.Enforce,
-		Rules:   ConvertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
-	}
-
 	for _, policy := range tagPolicies {
 		p := &v1pb.TagPolicy{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to unmarshal tag policy"))
 		}
-		if p.Tags[common.ReservedTagReviewConfig] != config.Name {
+		config, ok := configByName[p.Tags[common.ReservedTagReviewConfig]]
+		if !ok {
 			continue
 		}
 
@@ -296,7 +299,27 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		}
 	}
 
-	return config, nil
+	return configs, nil
+}
+
+func convertReviewConfigMessagesToV1(reviewConfigMessages []*store.ReviewConfigMessage) ([]*v1pb.ReviewConfig, map[string]*v1pb.ReviewConfig) {
+	configs := make([]*v1pb.ReviewConfig, 0, len(reviewConfigMessages))
+	configByName := make(map[string]*v1pb.ReviewConfig, len(reviewConfigMessages))
+	for _, message := range reviewConfigMessages {
+		payload := message.Payload
+		if payload == nil {
+			payload = &storepb.ReviewConfigPayload{}
+		}
+		config := &v1pb.ReviewConfig{
+			Name:    common.FormatReviewConfig(message.ID),
+			Title:   message.Name,
+			Enabled: message.Enforce,
+			Rules:   ConvertToV1PBSQLReviewRules(payload.SqlReviewRules),
+		}
+		configs = append(configs, config)
+		configByName[config.Name] = config
+	}
+	return configs, configByName
 }
 
 // validateSQLReviewRules validates the SQL review rule.

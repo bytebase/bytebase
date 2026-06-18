@@ -5,7 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestValidateSQLReviewRules(t *testing.T) {
@@ -97,4 +99,47 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertReviewConfigMessagesToV1(t *testing.T) {
+	reviewConfigs, configByName := convertReviewConfigMessagesToV1([]*store.ReviewConfigMessage{
+		{
+			ID:      "basic",
+			Name:    "Basic",
+			Enforce: true,
+			Payload: &storepb.ReviewConfigPayload{
+				SqlReviewRules: []*storepb.SQLReviewRule{
+					{
+						Type:   storepb.SQLReviewRule_NAMING_TABLE,
+						Level:  storepb.SQLReviewRule_ERROR,
+						Engine: storepb.Engine_MYSQL,
+					},
+				},
+			},
+		},
+		{
+			ID:      "advanced",
+			Name:    "Advanced",
+			Enforce: false,
+			Payload: &storepb.ReviewConfigPayload{
+				SqlReviewRules: []*storepb.SQLReviewRule{
+					{
+						Type:   storepb.SQLReviewRule_TABLE_REQUIRE_PK,
+						Level:  storepb.SQLReviewRule_WARNING,
+						Engine: storepb.Engine_POSTGRES,
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, reviewConfigs, 2)
+	require.Equal(t, "reviewConfigs/basic", reviewConfigs[0].Name)
+	require.Equal(t, "reviewConfigs/advanced", reviewConfigs[1].Name)
+	require.Same(t, reviewConfigs[0], configByName["reviewConfigs/basic"])
+	require.Same(t, reviewConfigs[1], configByName["reviewConfigs/advanced"])
+	require.True(t, reviewConfigs[0].Enabled)
+	require.False(t, reviewConfigs[1].Enabled)
+	require.Len(t, reviewConfigs[0].Rules, 1)
+	require.Equal(t, v1pb.SQLReviewRule_NAMING_TABLE, reviewConfigs[0].Rules[0].Type)
 }
