@@ -35,7 +35,7 @@ func InitGlobalReporter(version, gitCommit string, enabled bool) {
 			gitCommit: gitCommit,
 			enabled:   enabled,
 			httpClient: &http.Client{
-				Timeout: 10 * time.Second,
+				Timeout: 120 * time.Second,
 			},
 		}
 	})
