@@ -14,7 +14,7 @@ import (
 )
 
 // omniTestMetadata is the default mock catalog used by these tests.
-// db.dbo has tables t(a,b,c), t1(a,b,c), t2(a,b), and a view vw.
+// db.dbo has tables t(a,b,c), t1(a,b,c), t2(a,b), and views vw, enc_vw, enc_empty_vw.
 var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 	{
 		Name: "db",
@@ -28,6 +28,20 @@ var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 				},
 				Views: []*storepb.ViewMetadata{
 					{Name: "vw", Definition: "CREATE VIEW [dbo].[vw] AS SELECT a, b FROM t"},
+					// enc_vw mimics a SQL Server WITH ENCRYPTION view: the body is not
+					// retrievable, so sync stores a placeholder comment instead of DDL,
+					// but the column shape is still synced from sys.columns.
+					{
+						Name:       "enc_vw",
+						Definition: "/* Definition of view dbo.enc_vw is encrypted. */",
+						Columns:    []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret"}},
+					},
+					// enc_empty_vw is an encrypted view whose columns were never synced
+					// (e.g. sync lacked sys.columns access): browsing must still not error.
+					{
+						Name:       "enc_empty_vw",
+						Definition: "/* Definition of view dbo.enc_empty_vw is encrypted. */",
+					},
 				},
 			},
 		},
@@ -198,6 +212,29 @@ func TestOmniQuerySpan_SupportedShapes(t *testing.T) {
 				{"b", []base.ColumnResource{src("db", "dbo", "t2", "b")}},
 			},
 			wantAccessTables: []base.ColumnResource{access("db", "dbo", "t2")},
+		},
+		{
+			// Encrypted/unparseable view: the definition has no CREATE VIEW to
+			// parse, so column resolution falls back to the synced columns, each
+			// attributed to the view's own column (lineage to base tables is
+			// unrecoverable).
+			name:            "encrypted_view_fallback",
+			sql:             "SELECT id, secret FROM enc_vw",
+			defaultDatabase: "db",
+			wantResults: []expectedColumn{
+				{"id", []base.ColumnResource{src("db", "dbo", "enc_vw", "id")}},
+				{"secret", []base.ColumnResource{src("db", "dbo", "enc_vw", "secret")}},
+			},
+			wantAccessTables: []base.ColumnResource{access("db", "dbo", "enc_vw")},
+		},
+		{
+			// Safety net: an encrypted view with no synced columns degrades to an
+			// empty result set rather than erroring, so browsing never breaks.
+			name:             "encrypted_view_no_synced_columns",
+			sql:              "SELECT * FROM enc_empty_vw",
+			defaultDatabase:  "db",
+			wantResults:      []expectedColumn{},
+			wantAccessTables: []base.ColumnResource{access("db", "dbo", "enc_empty_vw")},
 		},
 	}
 

@@ -141,7 +141,33 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 				view := schemaSchema.GetView(viewName)
 				viewColumns, err := q.getColumnsFromCreateView(view.Definition, databaseName, schemaName, viewName)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
+					if !errors.Is(err, errNoCreateViewInDefinition) {
+						return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
+					}
+					// The definition has no parseable CREATE VIEW body — typically a
+					// SQL Server WITH ENCRYPTION view, whose source the catalog does
+					// not expose. Fall back to the synced column metadata (populated
+					// from sys.columns regardless of encryption) so column resolution
+					// and SQL Editor browsing keep working. Each column is attributed
+					// to the view's own column because lineage to the base tables is
+					// unrecoverable; consequently data queried through such a view is
+					// returned UNMASKED — masking cannot be traced through a hidden body.
+					cols := view.GetColumns()
+					viewColumns = make([]base.QuerySpanResult, 0, len(cols))
+					for _, col := range cols {
+						viewColumns = append(viewColumns, base.QuerySpanResult{
+							Name:         col.GetName(),
+							IsPlainField: true,
+							SourceColumns: base.SourceColumnSet{
+								base.ColumnResource{
+									Database: databaseName,
+									Schema:   schemaName,
+									Table:    viewName,
+									Column:   col.GetName(),
+								}: true,
+							},
+						})
+					}
 				}
 				return &base.PhysicalView{
 					Database: databaseName,
@@ -158,6 +184,12 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 		Table:    &rawTable,
 	}
 }
+
+// errNoCreateViewInDefinition signals that a view's stored definition contains
+// no parseable CREATE VIEW statement. SQL Server returns only a placeholder
+// comment for WITH ENCRYPTION views, which parses to zero statements; callers
+// detect this sentinel and fall back to the view's synced column metadata.
+var errNoCreateViewInDefinition = errors.New("no CREATE VIEW statement found in definition")
 
 // getColumnsFromCreateView parses a CREATE VIEW definition with omni, extracts
 // the body's result columns, and applies the optional column alias list.
@@ -179,7 +211,7 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDat
 		}
 	}
 	if createView == nil {
-		return nil, errors.Errorf("no CREATE VIEW statement found in definition")
+		return nil, errNoCreateViewInDefinition
 	}
 	body, ok := createView.Query.(*ast.SelectStmt)
 	if !ok || body == nil {
