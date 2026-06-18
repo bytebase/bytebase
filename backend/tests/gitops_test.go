@@ -154,6 +154,49 @@ func TestGitOpsCheck(t *testing.T) {
 	a.Equal(2, checkedTargets[fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName)])
 }
 
+func TestGitOpsCheckReleaseRiskLevel(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+	defer pgContainer.Close(ctx)
+
+	setupSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE public.risk_check_target (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+	a.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheet.Msg, false))
+
+	release := &v1pb.Release{
+		Type: v1pb.Release_VERSIONED,
+		Files: []*v1pb.Release_File{
+			{
+				Path:      "migrations/002__drop_risk_check_target.sql",
+				Version:   "002",
+				Statement: []byte("DROP TABLE public.risk_check_target;"),
+			},
+		},
+	}
+
+	checkResp, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  ctl.project.Name,
+		Release: release,
+		Targets: []string{database.Name},
+	}))
+	a.NoError(err)
+	a.Len(checkResp.Msg.Results, 1)
+	a.Equal(v1pb.RiskLevel_HIGH, checkResp.Msg.Results[0].RiskLevel)
+	a.Equal(v1pb.RiskLevel_HIGH, checkResp.Msg.RiskLevel)
+}
+
 func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
