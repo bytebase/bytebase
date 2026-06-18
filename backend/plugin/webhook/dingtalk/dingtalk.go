@@ -92,26 +92,31 @@ func sendDirectMessage(webhookCtx webhook.Context) bool {
 		var errs error
 		var userPhones, userIDs []string
 		for _, u := range webhookCtx.MentionEndUsers {
-			if u.Phone == "" {
+			phone, err := getDingTalkMobileFromUser(u)
+			if err != nil {
+				slog.Warn("failed to parse user phone", log.BBError(err), slog.String("user", u.Name))
 				continue
 			}
-			if sent[u.Phone] {
+			if phone == "" {
+				continue
+			}
+			if sent[phone] {
 				continue
 			}
 
-			userID, err := p.getIDByPhone(ctx, u.Phone)
+			userID, err := p.getIDByPhone(ctx, phone)
 			if err != nil {
-				err = errors.Wrapf(err, "failed to get user id by phone %v", u.Phone)
+				err = errors.Wrapf(err, "failed to get user id by phone %v", phone)
 				multierr.AppendInto(&errs, err)
 				continue
 			}
 			if userID == "" {
 				// user not found
-				sent[u.Phone] = true
+				sent[phone] = true
 				continue
 			}
 			userIDs = append(userIDs, userID)
-			userPhones = append(userPhones, u.Phone)
+			userPhones = append(userPhones, phone)
 		}
 		if len(userIDs) == 0 {
 			err := errors.Errorf("dingtalk dm: got 0 user id, errs: %v", errs)
@@ -135,16 +140,20 @@ func sendDirectMessage(webhookCtx webhook.Context) bool {
 	return true
 }
 
-func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
+func getDingTalkMobileFromUser(user *store.UserMessage) (string, error) {
 	if user == nil {
 		return "", nil
 	}
-	if user.Phone == "" {
+	return getDingTalkMobileFromPhone(user.Phone)
+}
+
+func getDingTalkMobileFromPhone(phone string) (string, error) {
+	if phone == "" {
 		return "", nil
 	}
-	phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+	phoneNumber, err := phonenumbers.Parse(phone, "")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
+		return "", errors.Wrapf(err, "failed to parse phone number %q", phone)
 	}
 	if phoneNumber == nil {
 		return "", nil
@@ -162,7 +171,7 @@ func sendMessage(context webhook.Context) error {
 	if len(context.MentionEndUsers) > 0 {
 		var ats []string
 		for _, user := range context.MentionEndUsers {
-			phone, err := maybeGetPhoneFromUser(user)
+			phone, err := getDingTalkMobileFromUser(user)
 			if err != nil {
 				slog.Warn("failed to parse user phone", log.BBError(err), slog.String("user", user.Name))
 				continue

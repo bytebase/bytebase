@@ -16,6 +16,8 @@ type AccountMessage struct {
 	Email string
 	Name  string
 	Type  storepb.PrincipalType
+	// Phone conforms E.164 format. Empty for principals without a phone number.
+	Phone string
 	// Workspace is the workspace resource ID.
 	// Empty for END_USER (global identity, workspace resolved via IAM policy).
 	// Populated for SERVICE_ACCOUNT and WORKLOAD_IDENTITY (workspace-scoped).
@@ -75,6 +77,7 @@ func (s *Store) GetAccountByEmail(ctx context.Context, email string) (*AccountMe
 		Email:         user.Email,
 		Name:          user.Name,
 		Type:          storepb.PrincipalType_END_USER,
+		Phone:         user.Phone,
 		PasswordHash:  user.PasswordHash,
 		MemberDeleted: user.MemberDeleted,
 	}, nil

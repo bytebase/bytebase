@@ -153,10 +153,15 @@ func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier, p
 	if account == nil {
 		return nil
 	}
+	return userMessageFromAccount(account)
+}
+
+func userMessageFromAccount(account *store.AccountMessage) *store.UserMessage {
 	return &store.UserMessage{
 		Email:         account.Email,
 		Name:          account.Name,
 		Type:          account.Type,
+		Phone:         account.Phone,
 		MemberDeleted: account.MemberDeleted,
 	}
 }
