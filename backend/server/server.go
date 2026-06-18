@@ -183,7 +183,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		profile.Mode,
 		logSetup.GetEnableMetricCollection(),
 	)
-	if !s.profile.SaaS && workspaceID != "" {
+	if !s.profile.SaaS && profile.Mode == common.ReleaseModeProd && logSetup.GetEnableMetricCollection() && workspaceID != "" {
 		reportSQLReviewConfigSnapshot(ctx, stores, workspaceID)
 	}
 
