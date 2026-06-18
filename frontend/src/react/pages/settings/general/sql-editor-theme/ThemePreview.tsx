@@ -252,9 +252,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             like the real SQL Editor footer (statement lives HERE, not atop the
             result panel). */}
         <div className="flex items-center justify-between border-t border-block-border bg-control-bg/40 px-3 py-1 text-xs text-control-light">
-          <span className="truncate">
-            {PREVIEW_SQL.split("\n").join(" ")}
-          </span>
+          <span className="truncate">{PREVIEW_SQL.split("\n").join(" ")}</span>
           <span className="shrink-0 pl-2">
             {t("sql-editor.query-time")}: 5 ms
           </span>
