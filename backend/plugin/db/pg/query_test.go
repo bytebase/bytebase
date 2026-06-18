@@ -2,9 +2,63 @@ package pg
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+func TestBuildTimestamptzRowValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		typeName   string
+		input      time.Time
+		wantString string // non-empty means we expect a string fallback with this value
+	}{
+		{
+			name:     "valid timestamp",
+			typeName: "TIMESTAMP",
+			input:    time.Date(2026, 5, 11, 12, 34, 56, 0, time.UTC),
+		},
+		{
+			name:     "valid timestamptz",
+			typeName: "TIMESTAMPTZ",
+			input:    time.Date(2026, 5, 11, 12, 34, 56, 0, time.FixedZone("", 2*60*60)),
+		},
+		{
+			name:       "before 0001-01-01 falls back to string",
+			typeName:   "TIMESTAMP",
+			input:      time.Date(-1, 12, 31, 15, 0, 0, 0, time.UTC),
+			wantString: time.Date(-1, 12, 31, 15, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
+		},
+		{
+			name:       "year 10000 falls back to string",
+			typeName:   "TIMESTAMPTZ",
+			input:      time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC),
+			wantString: time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := buildTimestamptzRowValue(tc.typeName, tc.input, 6)
+
+			// The whole point of the fix: marshaling must never fail.
+			_, err := protojson.Marshal(got)
+			require.NoError(t, err)
+
+			if tc.wantString != "" {
+				require.Equal(t, tc.wantString, got.GetStringValue())
+				return
+			}
+			if tc.typeName == "TIMESTAMP" {
+				require.NotNil(t, got.GetTimestampValue())
+			} else {
+				require.NotNil(t, got.GetTimestampTzValue())
+			}
+		})
+	}
+}
 
 func TestPadZeroes(t *testing.T) {
 	tests := []struct {

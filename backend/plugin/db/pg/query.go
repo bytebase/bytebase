@@ -124,31 +124,43 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 			if scale == -1 {
 				scale = 6
 			}
-			if typeName == "TIMESTAMP" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: &v1pb.RowValue_Timestamp{
-							GoogleTimestamp: timestamppb.New(raw.Time),
-							Accuracy:        int32(scale),
-						},
-					},
-				}
-			}
-			zone, offset := raw.Time.Zone()
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampTzValue{
-					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-						GoogleTimestamp: timestamppb.New(raw.Time),
-						Zone:            zone,
-						Offset:          int32(offset),
-						Accuracy:        int32(scale),
-					},
-				},
-			}
+			return buildTimestamptzRowValue(typeName, raw.Time, int32(scale))
 		}
 	default:
 	}
 	return util.NullRowValue
+}
+
+// buildTimestamptzRowValue converts a PostgreSQL timestamp/timestamptz value into a
+// RowValue. PostgreSQL supports dates outside the google.protobuf.Timestamp range
+// (0001-01-01 to 9999-12-31); for those, fall back to a string instead of crashing
+// response marshaling with "seconds out of range".
+func buildTimestamptzRowValue(typeName string, t time.Time, scale int32) *v1pb.RowValue {
+	ts := timestamppb.New(t)
+	if err := ts.CheckValid(); err != nil {
+		return util.BuildStringRowValue(t.Format(time.RFC3339Nano))
+	}
+	if typeName == "TIMESTAMP" {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_TimestampValue{
+				TimestampValue: &v1pb.RowValue_Timestamp{
+					GoogleTimestamp: ts,
+					Accuracy:        scale,
+				},
+			},
+		}
+	}
+	zone, offset := t.Zone()
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_TimestampTzValue{
+			TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+				GoogleTimestamp: ts,
+				Zone:            zone,
+				Offset:          int32(offset),
+				Accuracy:        scale,
+			},
+		},
+	}
 }
 
 // Padding 0's to nanosecond precision to make sure it's always 6 digits.
