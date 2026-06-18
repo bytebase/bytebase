@@ -153,7 +153,14 @@ export function deriveThemeFromAnchors(
     "--color-accent": accentRgb,
     "--color-accent-hover": accentHover,
     "--color-accent-disabled": toStr(recede(accent, 0.5)),
-    "--color-accent-text": luminance(accent) < 0.5 ? "255 255 255" : "24 24 27",
+    // On-accent text (e.g. the Run button label): use whichever of the theme's
+    // Text / Background anchors contrasts better with the accent — so it follows
+    // the theme's own colors while staying legible on the accent fill.
+    "--color-accent-text":
+      Math.abs(luminance(bg) - luminance(accent)) >=
+      Math.abs(luminance(text) - luminance(accent))
+        ? toStr(bg)
+        : toStr(text),
     // Info mirrors the brand accent (warning/error/success stay semantic).
     "--color-info": accentRgb,
     "--color-info-hover": accentHover,

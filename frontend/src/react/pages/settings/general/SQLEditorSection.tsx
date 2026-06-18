@@ -20,7 +20,6 @@ import {
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   deriveThemeFromAnchors,
-  isDarkTheme,
   type ThemeAnchors,
   themeToAnchors,
 } from "@/react/components/sql-editor/theme/derive";
@@ -52,23 +51,6 @@ import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
 
 const CUSTOM_THEME_OPTION = "__custom__";
-
-// Default editor syntax theme for a new custom theme: prefer the modern VSCode
-// default matching the chrome's light/dark, then any registered theme of that
-// type, then the standalone built-in. Picking an *enumerated* id (not the
-// "vs"/"vs-dark" alias) means the picker shows a proper label.
-function pickDefaultEditorTheme(
-  themes: EditorThemeOption[],
-  isDark: boolean
-): string {
-  const type = isDark ? "dark" : "light";
-  const preferred = isDark ? "Dark Modern" : "Light Modern";
-  return (
-    themes.find((option) => option.id === preferred)?.id ??
-    themes.find((option) => option.type === type)?.id ??
-    (isDark ? "vs-dark" : "vs")
-  );
-}
 
 interface SQLEditorSectionProps {
   title: string;
@@ -224,19 +206,19 @@ export const SQLEditorSection = forwardRef<
         setSelectedThemeId(customDraft.id);
         return;
       }
-      const seed = deriveThemeFromAnchors(
-        themeToAnchors(
-          resolveWorkspaceTheme({
-            sqlEditorThemeId: selectedThemeId,
-            sqlEditorCustomTheme: customDraft ?? undefined,
-          })
-        ),
-        t("settings.general.workspace.sql-editor-theme.custom")
-      );
+      // Seed the custom draft as a FULL copy of the currently-selected theme
+      // (all tokens + the editor theme), not a 5-anchor re-derivation — so it
+      // starts identical to the built-in. Editing an anchor afterwards
+      // re-derives the chrome tokens from the 5 anchors.
+      const source = resolveWorkspaceTheme({
+        sqlEditorThemeId: selectedThemeId,
+        sqlEditorCustomTheme: customDraft ?? undefined,
+      });
       const draft: SQLEditorTheme = {
-        ...seed,
         id: uuidv4(),
-        monacoBase: pickDefaultEditorTheme(editorThemes, isDarkTheme(seed)),
+        name: t("settings.general.workspace.sql-editor-theme.custom"),
+        monacoBase: source.monacoBase,
+        tokens: { ...source.tokens },
       };
       setCustomDraft(draft);
       setSelectedThemeId(draft.id);
