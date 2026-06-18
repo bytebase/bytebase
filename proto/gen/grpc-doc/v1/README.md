@@ -333,6 +333,7 @@
     - [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask)
     - [Algorithm.RangeMask.Slice](#bytebase-v1-Algorithm-RangeMask-Slice)
     - [Announcement](#bytebase-v1-Announcement)
+    - [Announcement.AnnouncementTheme](#bytebase-v1-Announcement-AnnouncementTheme)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.DingTalk](#bytebase-v1-AppIMSetting-DingTalk)
     - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
@@ -355,6 +356,8 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
+    - [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting)
+    - [SQLEditorThemeSetting.TokensEntry](#bytebase-v1-SQLEditorThemeSetting-TokensEntry)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
@@ -369,7 +372,6 @@
   
     - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
-    - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
     - [EmailSetting.SMTPConfig.Authentication](#bytebase-v1-EmailSetting-SMTPConfig-Authentication)
     - [EmailSetting.SMTPConfig.Encryption](#bytebase-v1-EmailSetting-SMTPConfig-Encryption)
@@ -6082,9 +6084,25 @@ IssueService manages issues for tracking database changes and tasks.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| level | [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel) |  | The alert level of announcement |
 | text | [string](#string) |  | The text of announcement |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+| theme | [Announcement.AnnouncementTheme](#bytebase-v1-Announcement-AnnouncementTheme) |  | Banner colors. Built-in presets (info/warning/critical) are a frontend-only concept that seeds these colors; the store only holds them. |
+
+
+
+
+
+
+<a name="bytebase-v1-Announcement-AnnouncementTheme"></a>
+
+### Announcement.AnnouncementTheme
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| background | [string](#string) |  | &#34;r g b&#34; |
+| text | [string](#string) |  | &#34;r g b&#34; |
 
 
 
@@ -6450,6 +6468,40 @@ The response message for getting a setting.
 
 
 
+<a name="bytebase-v1-SQLEditorThemeSetting"></a>
+
+### SQLEditorThemeSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| name | [string](#string) |  |  |
+| monaco_base | [string](#string) |  |  |
+| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-v1-SQLEditorThemeSetting-TokensEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLEditorThemeSetting-TokensEntry"></a>
+
+### SQLEditorThemeSetting.TokensEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -6642,6 +6694,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | query_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
 | allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
+| sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
+| sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 
 
 
@@ -6696,20 +6750,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | MASK_TYPE_UNSPECIFIED | 0 |  |
 | INNER | 1 |  |
 | OUTER | 2 |  |
-
-
-
-<a name="bytebase-v1-Announcement-AlertLevel"></a>
-
-### Announcement.AlertLevel
-We support three levels of AlertLevel: INFO, WARNING, and ERROR.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| INFO | 1 |  |
-| WARNING | 2 |  |
-| CRITICAL | 3 |  |
 
 
 

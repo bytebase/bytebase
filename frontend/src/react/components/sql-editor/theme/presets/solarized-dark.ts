@@ -1,4 +1,4 @@
-import type { SQLEditorTheme } from "../types";
+import { DEFAULT_DARK_EDITOR_THEME, type SQLEditorTheme } from "../types";
 
 // Ethan Schoonover's Solarized Dark palette.
 //   base03 #002b36  base02 #073642  base01 #586e75  base00 #657b83
@@ -9,7 +9,7 @@ import type { SQLEditorTheme } from "../types";
 export const solarizedDark: SQLEditorTheme = {
   id: "solarized-dark",
   name: "Solarized Dark",
-  monacoBase: "vs-dark",
+  monacoBase: DEFAULT_DARK_EDITOR_THEME,
   tokens: {
     "--color-control": "131 148 150", // base0
     "--color-control-hover": "147 161 161", // base1

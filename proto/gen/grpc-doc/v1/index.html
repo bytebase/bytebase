@@ -1457,6 +1457,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Announcement.AnnouncementTheme"><span class="badge">M</span>Announcement.AnnouncementTheme</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AppIMSetting"><span class="badge">M</span>AppIMSetting</a>
                 </li>
               
@@ -1545,6 +1549,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SQLEditorThemeSetting"><span class="badge">M</span>SQLEditorThemeSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SQLEditorThemeSetting.TokensEntry"><span class="badge">M</span>SQLEditorThemeSetting.TokensEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SemanticTypeSetting"><span class="badge">M</span>SemanticTypeSetting</a>
                 </li>
               
@@ -1595,10 +1607,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Announcement.AlertLevel"><span class="badge">E</span>Announcement.AlertLevel</a>
                 </li>
               
                 <li>
@@ -18003,13 +18011,6 @@ Uses character indices (not byte offsets) for display-oriented masking. </p></td
             <tbody>
               
                 <tr>
-                  <td>level</td>
-                  <td><a href="#bytebase.v1.Announcement.AlertLevel">Announcement.AlertLevel</a></td>
-                  <td></td>
-                  <td><p>The alert level of announcement </p></td>
-                </tr>
-              
-                <tr>
                   <td>text</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -18021,6 +18022,45 @@ Uses character indices (not byte offsets) for display-oriented masking. </p></td
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The optional link, user can follow the link to check extra details </p></td>
+                </tr>
+              
+                <tr>
+                  <td>theme</td>
+                  <td><a href="#bytebase.v1.Announcement.AnnouncementTheme">Announcement.AnnouncementTheme</a></td>
+                  <td></td>
+                  <td><p>Banner colors. Built-in presets (info/warning/critical) are a
+frontend-only concept that seeds these colors; the store only holds them. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Announcement.AnnouncementTheme">Announcement.AnnouncementTheme</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>background</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>&#34;r g b&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>text</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>&#34;r g b&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -18784,6 +18824,82 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.v1.SQLEditorThemeSetting">SQLEditorThemeSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>monaco_base</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokens</td>
+                  <td><a href="#bytebase.v1.SQLEditorThemeSetting.TokensEntry">SQLEditorThemeSetting.TokensEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SQLEditorThemeSetting.TokensEntry">SQLEditorThemeSetting.TokensEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SemanticTypeSetting">SemanticTypeSetting</h3>
         <p></p>
 
@@ -19331,6 +19447,22 @@ The default value is 100MB, we will use the default value if the setting not exi
 Requires the EMAIL setting to be configured on the workspace. </p></td>
                 </tr>
               
+                <tr>
+                  <td>sql_editor_theme_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id
+OR a custom theme&#39;s uuid. Empty ⇒ default light. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_editor_custom_theme</td>
+                  <td><a href="#bytebase.v1.SQLEditorThemeSetting">SQLEditorThemeSetting</a></td>
+                  <td></td>
+                  <td><p>The enforced CUSTOM theme&#39;s full definition — present ONLY when
+sql_editor_theme_id is a custom uuid. tokens is always complete. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -19470,41 +19602,6 @@ Requires the EMAIL setting to be configured on the workspace. </p></td>
               <tr>
                 <td>OUTER</td>
                 <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.Announcement.AlertLevel">Announcement.AlertLevel</h3>
-        <p>We support three levels of AlertLevel: INFO, WARNING, and ERROR.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ALERT_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>INFO</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CRITICAL</td>
-                <td>3</td>
                 <td><p></p></td>
               </tr>
             

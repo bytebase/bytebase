@@ -8341,10 +8341,6 @@ components:
     bytebase.v1.Announcement:
       type: object
       properties:
-        level:
-          title: level
-          description: The alert level of announcement
-          $ref: '#/components/schemas/bytebase.v1.Announcement.AlertLevel'
         text:
           type: string
           title: text
@@ -8353,17 +8349,27 @@ components:
           type: string
           title: link
           description: The optional link, user can follow the link to check extra details
+        theme:
+          title: theme
+          description: |-
+            Banner colors. Built-in presets (info/warning/critical) are a
+             frontend-only concept that seeds these colors; the store only holds them.
+          $ref: '#/components/schemas/bytebase.v1.Announcement.AnnouncementTheme'
       title: Announcement
       additionalProperties: false
-    bytebase.v1.Announcement.AlertLevel:
-      type: string
-      title: AlertLevel
-      enum:
-        - ALERT_LEVEL_UNSPECIFIED
-        - INFO
-        - WARNING
-        - CRITICAL
-      description: 'We support three levels of AlertLevel: INFO, WARNING, and ERROR.'
+    bytebase.v1.Announcement.AnnouncementTheme:
+      type: object
+      properties:
+        background:
+          type: string
+          title: background
+          description: '"r g b"'
+        text:
+          type: string
+          title: text
+          description: '"r g b"'
+      title: AnnouncementTheme
+      additionalProperties: false
     bytebase.v1.AppIMSetting:
       type: object
       properties:
@@ -16847,6 +16853,37 @@ components:
             - krbConfig
       title: SASLConfig
       additionalProperties: false
+    bytebase.v1.SQLEditorThemeSetting:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+        name:
+          type: string
+          title: name
+        monacoBase:
+          type: string
+          title: monaco_base
+        tokens:
+          type: object
+          title: tokens
+          additionalProperties:
+            type: string
+            title: value
+      title: SQLEditorThemeSetting
+      additionalProperties: false
+    bytebase.v1.SQLEditorThemeSetting.TokensEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+      title: TokensEntry
+      additionalProperties: false
     bytebase.v1.SQLReviewRule:
       type: object
       allOf:
@@ -20679,6 +20716,18 @@ components:
           description: |-
             Allow signin/signup using email + a 6-digit one-time verification code.
              Requires the EMAIL setting to be configured on the workspace.
+        sqlEditorThemeId:
+          type: string
+          title: sql_editor_theme_id
+          description: |-
+            Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id
+             OR a custom theme's uuid. Empty ⇒ default light.
+        sqlEditorCustomTheme:
+          title: sql_editor_custom_theme
+          description: |-
+            The enforced CUSTOM theme's full definition — present ONLY when
+             sql_editor_theme_id is a custom uuid. tokens is always complete.
+          $ref: '#/components/schemas/bytebase.v1.SQLEditorThemeSetting'
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

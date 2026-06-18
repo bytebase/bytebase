@@ -2157,7 +2157,6 @@
           "self": "Announcement"
         },
         "announcement-alert-level": {
-          "description": "Level",
           "field": {
             "critical": "Critical",
             "info": "Normal",
@@ -2168,6 +2167,13 @@
           "description": "To hide the announcement, leave it empty.",
           "placeholder": "Input announcement title",
           "self": "Title"
+        },
+        "announcement-theme": {
+          "background": "Background",
+          "custom": "Custom",
+          "description": "Choose a built-in theme or define custom colors for the announcement banner.",
+          "self": "Theme",
+          "text": "Text"
         },
         "audit-log-stdout": {
           "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license.",
@@ -2304,6 +2310,19 @@
         },
         "security": "Security",
         "select-logo": "Upload a file",
+        "sql-editor-theme": {
+          "anchor": {
+            "accent": "Accent",
+            "background": "Background",
+            "border": "Border",
+            "surface": "Surface",
+            "text": "Text"
+          },
+          "custom": "Custom",
+          "description": "Choose a built-in theme or define a custom one for the workspace SQL Editor.",
+          "editor-theme": "Editor syntax",
+          "self": "SQL Editor theme"
+        },
         "title": "Workspace title",
         "watermark": {
           "description": "Display watermarks on pages, including username, ID and email.",
@@ -2872,9 +2891,6 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
-    "theme": {
-      "self": "Theme"
-    },
     "unable-to-connect-database": "Unable to connect to database {{name}}",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",

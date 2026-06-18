@@ -2157,7 +2157,6 @@
           "self": "Thông báo"
         },
         "announcement-alert-level": {
-          "description": "Cấp độ",
           "field": {
             "critical": "Quan trọng",
             "info": "Bình thường",
@@ -2168,6 +2167,13 @@
           "description": "Để ẩn thông báo, hãy để trống.",
           "placeholder": "Nhập tiêu đề thông báo",
           "self": "Tiêu đề"
+        },
+        "announcement-theme": {
+          "background": "Nền",
+          "custom": "Tùy chỉnh",
+          "description": "Chọn một chủ đề có sẵn hoặc xác định màu sắc tùy chỉnh cho biểu ngữ thông báo.",
+          "self": "Chủ đề",
+          "text": "Văn bản"
         },
         "audit-log-stdout": {
           "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE.",
@@ -2304,6 +2310,19 @@
         },
         "security": "Bảo mật",
         "select-logo": "Tải lên một tệp",
+        "sql-editor-theme": {
+          "anchor": {
+            "accent": "Màu nhấn",
+            "background": "Nền",
+            "border": "Viền",
+            "surface": "Bề mặt",
+            "text": "Văn bản"
+          },
+          "custom": "Tùy chỉnh",
+          "description": "Chọn một giao diện có sẵn hoặc tự định nghĩa giao diện cho SQL Editor của không gian làm việc.",
+          "editor-theme": "Cú pháp trình soạn thảo",
+          "self": "Giao diện SQL Editor"
+        },
         "title": "Tên không gian làm việc",
         "watermark": {
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
@@ -2872,9 +2891,6 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",
     "text-format": "Định dạng văn bản",
-    "theme": {
-      "self": "Giao diện"
-    },
     "unable-to-connect-database": "Không thể kết nối đến cơ sở dữ liệu {{name}}",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",

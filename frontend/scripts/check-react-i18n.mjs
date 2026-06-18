@@ -30,6 +30,9 @@ const DYNAMIC_PREFIXES = [
   "subscription.plan.",
   "subscription.purchase.cancel-dialog.reason.",
   "settings.sensitive-data.algorithms.",
+  // SQL Editor theme anchor labels, rendered via t(`…anchor.${key}`) over a
+  // key list in ThemeAnchorEditor.tsx, not as literal t("…") calls.
+  "settings.general.workspace.sql-editor-theme.anchor.",
   "instance.selected-n-instances",
   "settings.sidebar.",
   // Stored as messageKey string literals and translated via t(messageKey) at

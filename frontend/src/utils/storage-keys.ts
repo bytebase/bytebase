@@ -69,9 +69,6 @@ export const storageKeyContextMenu = (key: string) => `bb.context-menu.${key}`;
 // unique only within a workspace (so they collide across workspaces in SaaS).
 export const storageKeySqlEditorLastProject = (scope: string) =>
   withScope("bb.sql-editor.last-project", scope);
-// Workspace-scoped like other SQL Editor prefs.
-export const storageKeySqlEditorTheme = (scope: string) =>
-  withScope("bb.sql-editor.theme", scope);
 export const storageKeySqlEditorTabs = (
   scope: string,
   project: string,

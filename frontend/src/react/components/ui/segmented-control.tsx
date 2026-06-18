@@ -63,8 +63,9 @@ export function SegmentedControl<T extends string>({
               selected
                 ? "bg-accent text-accent-text"
                 : "bg-background text-control hover:bg-control-bg",
-              optionDisabled &&
-                "cursor-not-allowed opacity-50 hover:bg-background"
+              optionDisabled
+                ? "cursor-not-allowed opacity-50 hover:bg-background"
+                : "cursor-pointer"
             )}
           >
             <Radio.Root

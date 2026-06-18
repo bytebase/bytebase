@@ -396,6 +396,59 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.AllowEmailCodeSignin != y.AllowEmailCodeSignin {
 		return false
 	}
+	if x.SqlEditorThemeId != y.SqlEditorThemeId {
+		return false
+	}
+	if !x.SqlEditorCustomTheme.Equal(y.SqlEditorCustomTheme) {
+		return false
+	}
+	return true
+}
+
+func (x *SQLEditorThemeSetting) Equal(y *SQLEditorThemeSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Id != y.Id {
+		return false
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.MonacoBase != y.MonacoBase {
+		return false
+	}
+	if len(x.Tokens) != len(y.Tokens) {
+		return false
+	}
+	for k := range x.Tokens {
+		_, ok := y.Tokens[k]
+		if !ok {
+			return false
+		}
+		if x.Tokens[k] != y.Tokens[k] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *Announcement_AnnouncementTheme) Equal(y *Announcement_AnnouncementTheme) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Background != y.Background {
+		return false
+	}
+	if x.Text != y.Text {
+		return false
+	}
 	return true
 }
 
@@ -406,13 +459,13 @@ func (x *Announcement) Equal(y *Announcement) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Level != y.Level {
-		return false
-	}
 	if x.Text != y.Text {
 		return false
 	}
 	if x.Link != y.Link {
+		return false
+	}
+	if !x.Theme.Equal(y.Theme) {
 		return false
 	}
 	return true
