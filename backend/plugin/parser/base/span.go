@@ -88,11 +88,6 @@ type QuerySpanResult struct {
 	SourceFieldPaths map[string][]*PathAST
 	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
 	SelectAsterisk bool
-	// UnknownLineage indicates the column's source columns could not be traced to
-	// base tables (e.g. an encrypted/unparseable view whose body is hidden). The
-	// masker treats such columns as sensitive and fully masks them, since their
-	// real lineage — and thus any base-table masking policy — cannot be verified.
-	UnknownLineage bool
 }
 
 // ColumnResource is the resource key for a column.
@@ -107,6 +102,12 @@ type ColumnResource struct {
 	Table string
 	// Column is the normalized column name, it should not be empty.
 	Column string
+	// UnknownLineage marks a source whose lineage could not be traced to a base
+	// table (e.g. an encrypted/unparseable view whose body is hidden). The masker
+	// fully masks any result fed by such a source. Because source columns are
+	// unioned as expressions and subqueries are merged, the taint propagates
+	// without each merge site having to know about it.
+	UnknownLineage bool
 }
 
 // String returns the string format of the column resource.

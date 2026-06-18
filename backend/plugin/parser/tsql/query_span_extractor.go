@@ -149,22 +149,28 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 					// not expose. Fall back to the synced column metadata (populated
 					// from sys.columns regardless of encryption) so column resolution
 					// and SQL Editor browsing keep working. Lineage to the base tables
-					// is unrecoverable, so each column is flagged UnknownLineage: the
-					// masker fully masks such columns (fail-safe) instead of leaking
-					// data that a base-table masking policy would otherwise protect.
+					// is unrecoverable, so each source column is marked UnknownLineage
+					// and the masker fully masks anything fed by it (fail-safe), rather
+					// than leak data a base-table masking policy would protect.
 					cols := view.GetColumns()
+					if len(cols) == 0 {
+						// No parseable body AND no synced columns: we cannot even
+						// enumerate the result shape, so a SELECT * would return
+						// columns we have no way to mask. Fail closed.
+						return nil, errors.Errorf("cannot resolve columns for view %s.%s.%s: encrypted/unparseable definition with no synced columns", databaseName, schemaName, viewName)
+					}
 					viewColumns = make([]base.QuerySpanResult, 0, len(cols))
 					for _, col := range cols {
 						viewColumns = append(viewColumns, base.QuerySpanResult{
-							Name:           col.GetName(),
-							IsPlainField:   true,
-							UnknownLineage: true,
+							Name:         col.GetName(),
+							IsPlainField: true,
 							SourceColumns: base.SourceColumnSet{
 								base.ColumnResource{
-									Database: databaseName,
-									Schema:   schemaName,
-									Table:    viewName,
-									Column:   col.GetName(),
+									Database:       databaseName,
+									Schema:         schemaName,
+									Table:          viewName,
+									Column:         col.GetName(),
+									UnknownLineage: true,
 								}: true,
 							},
 						})

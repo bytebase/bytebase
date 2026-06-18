@@ -94,9 +94,9 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 	// Collect all column-level source columns from SELECT results and predicates.
 	allColumns := make(parserbase.SourceColumnSet)
 	for _, r := range span.Results {
-		// Unknown-lineage results are conservatively full-masked, so a query that
-		// references one is treated as touching masked data (redact errors).
-		if r.UnknownLineage {
+		// A query referencing an unknown-lineage source (conservatively
+		// full-masked) is treated as touching masked data, so redact errors.
+		if hasUnknownLineageSource(r.SourceColumns) {
 			return true
 		}
 		for col := range r.SourceColumns {
@@ -129,6 +129,19 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 			continue
 		}
 		if _, isNone := mk.(*masker.NoneMasker); !isNone {
+			return true
+		}
+	}
+	return false
+}
+
+// hasUnknownLineageSource reports whether any source column was flagged with
+// unknown lineage (e.g. a column from an encrypted view whose body is hidden).
+// Such results are fully masked because their real lineage — and therefore any
+// base-table masking policy — cannot be verified.
+func hasUnknownLineageSource(set parserbase.SourceColumnSet) bool {
+	for col := range set {
+		if col.UnknownLineage {
 			return true
 		}
 	}
@@ -348,10 +361,10 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 
 	for _, spanResult := range span.Results {
 		// Unknown lineage (e.g. an encrypted MSSQL view whose body is hidden):
-		// the result cannot be traced to base-table columns, so we cannot verify
-		// it is safe to return. Fail safe — fully mask rather than risk leaking
-		// data that a base-table masking policy would otherwise protect.
-		if spanResult.UnknownLineage {
+		// any source flagged UnknownLineage — directly or merged in through an
+		// expression or subquery — cannot be traced to a base table, so we cannot
+		// verify the result is safe. Fail safe and fully mask.
+		if hasUnknownLineageSource(spanResult.SourceColumns) {
 			maskers = append(maskers, masker.NewDefaultFullMasker())
 			masked = append(masked, &v1pb.MaskingReason{
 				Algorithm: "Full mask",
