@@ -13,7 +13,6 @@ import { AnnouncementBanner } from "@/react/components/AnnouncementBanner";
 import {
   ANNOUNCEMENT_PRESET_KEYS,
   ANNOUNCEMENT_PRESETS,
-  type AnnouncementPresetKey,
   type AnnouncementTheme,
   hexToTriple,
   matchPresetKey,
@@ -119,7 +118,7 @@ export const AnnouncementSection = forwardRef<
   const selectedTheme: ThemeOption =
     customSelected || matchPresetKey(state.theme) === "custom"
       ? "custom"
-      : (matchPresetKey(state.theme) as AnnouncementPresetKey);
+      : matchPresetKey(state.theme);
 
   const onSelectTheme = useCallback((option: ThemeOption) => {
     if (option === "custom") {

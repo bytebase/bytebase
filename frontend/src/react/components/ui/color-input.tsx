@@ -2,22 +2,19 @@ import { useEffect, useState } from "react";
 import { Input } from "@/react/components/ui/input";
 import { cn } from "@/react/lib/utils";
 
-/** A `#rrggbb` hex color string. */
-export type HexColor = string;
-
 const HEX_RE = /^#?([0-9a-fA-F]{6})$/;
 
 /** Normalize free text to `#rrggbb`, or null when it isn't a 6-digit hex. */
-function normalizeHex(raw: string): HexColor | null {
-  const match = raw.trim().match(HEX_RE);
+function normalizeHex(raw: string): string | null {
+  const match = HEX_RE.exec(raw.trim());
   return match ? `#${match[1].toLowerCase()}` : null;
 }
 
 interface ColorInputProps {
   /** Current color as `#rrggbb`. */
-  value: HexColor;
+  value: string;
   /** Called with a normalized `#rrggbb` whenever a valid color is entered. */
-  onChange: (value: HexColor) => void;
+  onChange: (value: string) => void;
   id?: string;
   disabled?: boolean;
   ariaLabel?: string;
@@ -35,7 +32,7 @@ export function ColorInput({
   id,
   disabled,
   ariaLabel,
-}: ColorInputProps) {
+}: Readonly<ColorInputProps>) {
   const [draft, setDraft] = useState(value);
 
   // Adopt external changes (swatch, preset switch, revert) but keep the user's

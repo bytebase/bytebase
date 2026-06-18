@@ -83,7 +83,7 @@ const EMPTY_SEARCH: SearchParams = { query: "", scopes: [] };
  * connection buttons), and the Monaco integration mirrors `StandardPanel`'s
  * `SQLEditor` (transparent canvas + base-preset Monaco theme).
  */
-export function ThemePreview({ theme }: ThemePreviewProps) {
+export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
   const { t } = useTranslation();
   // The chrome bg comes from the scope's `--color-background` (via the
   // transparent canvas); the chosen editor theme drives the syntax colors.

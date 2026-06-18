@@ -32,13 +32,32 @@ export function AnnouncementBanner({
   textColor,
   interactive = true,
   className,
-}: AnnouncementBannerProps) {
+}: Readonly<AnnouncementBannerProps>) {
   const linkBody = (
     <>
       <span className="px-1">{text}</span>
       <ArrowRight className="mr-3 size-5" />
     </>
   );
+
+  // Plain text by default; with a link, navigate (real banner) or stay static
+  // (preview). Kept as if/else to avoid a nested JSX ternary.
+  let content = <span>{text}</span>;
+  if (link) {
+    content = interactive ? (
+      <a
+        href={link}
+        target="_blank"
+        rel="noreferrer"
+        className="flex flex-row items-center hover:underline hover:opacity-90"
+      >
+        {linkBody}
+      </a>
+    ) : (
+      <span className="flex flex-row items-center">{linkBody}</span>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -50,20 +69,7 @@ export function AnnouncementBanner({
         color: `rgb(${textColor})`,
       }}
     >
-      {!link ? (
-        <span>{text}</span>
-      ) : interactive ? (
-        <a
-          href={link}
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-row items-center hover:underline hover:opacity-90"
-        >
-          {linkBody}
-        </a>
-      ) : (
-        <span className="flex flex-row items-center">{linkBody}</span>
-      )}
+      {content}
     </div>
   );
 }

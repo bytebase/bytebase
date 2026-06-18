@@ -21,12 +21,13 @@ export function resolveWorkspaceTheme(
 ): SQLEditorTheme {
   const id = input.sqlEditorThemeId ?? "";
   const custom = input.sqlEditorCustomTheme;
-  if (custom && custom.id === id) {
+  // `&& custom` keeps the type narrowing the optional chain alone doesn't give.
+  if (custom?.id === id && custom) {
     const theme: SQLEditorTheme = {
       id: custom.id,
       name: custom.name,
-      monacoBase: custom.monacoBase as SQLEditorTheme["monacoBase"],
-      tokens: custom.tokens as SQLEditorTheme["tokens"],
+      monacoBase: custom.monacoBase,
+      tokens: custom.tokens,
     };
     try {
       validateTheme(theme);

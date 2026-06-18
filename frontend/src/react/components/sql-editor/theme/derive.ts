@@ -65,18 +65,16 @@ export function validateTheme(theme: SQLEditorTheme): void {
   }
 }
 
-export type Hex = string;
-
 /**
- * The 5 colors an admin picks. We derive all 29 chrome tokens from these, with
- * status colors (info/warning/error/success) and matrix-green held fixed.
+ * The 5 colors an admin picks (each a `#rrggbb` hex). We derive all 29 chrome
+ * tokens from these, with status + matrix-green held fixed.
  */
 export interface ThemeAnchors {
-  background: Hex;
-  surface: Hex;
-  text: Hex;
-  accent: Hex;
-  border: Hex;
+  background: string;
+  surface: string;
+  text: string;
+  accent: string;
+  border: string;
 }
 
 // Anchor-independent tokens (status + matrix-green) — constant across brands,
@@ -97,14 +95,14 @@ const FIXED_TOKEN_VALUES: Record<string, string> = {
 };
 
 type RGB3 = [number, number, number];
-const hexToRgb = (h: Hex): RGB3 => {
+const hexToRgb = (h: string): RGB3 => {
   const x = h.replace("#", "");
-  return [0, 2, 4].map((i) => parseInt(x.slice(i, i + 2), 16)) as RGB3;
+  return [0, 2, 4].map((i) => Number.parseInt(x.slice(i, i + 2), 16)) as RGB3;
 };
 const toStr = (c: RGB3): string =>
   c.map((n) => Math.max(0, Math.min(255, Math.round(n)))).join(" ");
 const fromStr = (s: string): RGB3 => s.split(" ").map(Number) as RGB3;
-const toHex = (s: string): Hex =>
+const toHex = (s: string): string =>
   "#" +
   fromStr(s)
     .map((n) => n.toString(16).padStart(2, "0"))
@@ -167,7 +165,7 @@ export function deriveThemeFromAnchors(
     monacoBase:
       monacoBase ??
       (dark ? DEFAULT_DARK_EDITOR_THEME : DEFAULT_LIGHT_EDITOR_THEME),
-    tokens: tokens as SQLEditorTheme["tokens"],
+    tokens,
   };
   validateTheme(theme); // throws if a key is missing
   return theme;

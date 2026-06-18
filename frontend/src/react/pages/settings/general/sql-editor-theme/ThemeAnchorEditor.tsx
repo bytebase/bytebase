@@ -40,7 +40,7 @@ export function ThemeAnchorEditor({
   disabled,
   onChange,
   onEditorThemeChange,
-}: ThemeAnchorEditorProps) {
+}: Readonly<ThemeAnchorEditorProps>) {
   const { t } = useTranslation();
 
   // Ensure the current value is always representable so the trigger never shows
