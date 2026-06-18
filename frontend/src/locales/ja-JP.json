@@ -2313,14 +2313,20 @@
         "sql-editor-theme": {
           "anchor": {
             "accent": "アクセント",
+            "accent-tip": "ボタン、アクティブなタブ、リンク、選択項目。",
             "background": "背景",
+            "background-tip": "エディター本体の背景色。",
             "border": "境界線",
+            "border-tip": "入力欄・表・パネルの区切り線と枠線。",
             "surface": "サーフェス",
-            "text": "テキスト"
+            "surface-tip": "浮き上がったパネルやコントロール（表ヘッダー、カード、ホバー状態）。",
+            "text": "テキスト",
+            "text-tip": "主要なテキストとコントロールの色。"
           },
           "custom": "カスタム",
           "description": "ワークスペースの SQL エディター用に、組み込みテーマを選択するかカスタムテーマを定義します。",
           "editor-theme": "エディター構文",
+          "editor-theme-tip": "コードエディターの構文ハイライト配色。",
           "self": "SQL エディターのテーマ"
         },
         "title": "ワークスペース名",

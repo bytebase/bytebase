@@ -2313,14 +2313,20 @@
         "sql-editor-theme": {
           "anchor": {
             "accent": "Acento",
+            "accent-tip": "Botones, pestañas activas, enlaces y selecciones.",
             "background": "Fondo",
+            "background-tip": "El fondo principal del lienzo del editor.",
             "border": "Borde",
+            "border-tip": "Divisores y bordes de campos, tablas y paneles.",
             "surface": "Superficie",
-            "text": "Texto"
+            "surface-tip": "Paneles y controles elevados: encabezados de tabla, tarjetas y estados al pasar el cursor.",
+            "text": "Texto",
+            "text-tip": "Color principal del texto y los controles."
           },
           "custom": "Personalizado",
           "description": "Elija un tema integrado o defina uno personalizado para el Editor SQL del espacio de trabajo.",
           "editor-theme": "Sintaxis del editor",
+          "editor-theme-tip": "Paleta de resaltado de sintaxis del editor de código.",
           "self": "Tema del Editor SQL"
         },
         "title": "Nombre del espacio de trabajo",

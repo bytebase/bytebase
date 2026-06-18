@@ -2313,14 +2313,20 @@
         "sql-editor-theme": {
           "anchor": {
             "accent": "强调色",
+            "accent-tip": "按钮、当前标签页、链接和选中项。",
             "background": "背景",
+            "background-tip": "编辑器主画布的背景色。",
             "border": "边框",
+            "border-tip": "输入框、表格和面板的分隔线与边框。",
             "surface": "表面",
-            "text": "文本"
+            "surface-tip": "悬浮面板与控件——表头、卡片和悬停状态。",
+            "text": "文本",
+            "text-tip": "主要文字与控件颜色。"
           },
           "custom": "自定义",
           "description": "为工作空间的 SQL 编辑器选择内置主题或自定义主题。",
           "editor-theme": "编辑器语法",
+          "editor-theme-tip": "代码编辑器的语法高亮配色。",
           "self": "SQL 编辑器主题"
         },
         "title": "工作空间名称",

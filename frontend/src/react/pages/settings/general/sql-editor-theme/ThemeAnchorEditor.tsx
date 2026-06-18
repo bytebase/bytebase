@@ -1,3 +1,4 @@
+import { CircleHelp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { EditorThemeOption } from "@/react/components/monaco/editorThemes";
 import type { ThemeAnchors } from "@/react/components/sql-editor/theme/derive";
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import { Tooltip } from "@/react/components/ui/tooltip";
 
 interface ThemeAnchorEditorProps {
   value: ThemeAnchors;
@@ -32,6 +34,31 @@ const ANCHOR_KEYS: (keyof ThemeAnchors)[] = [
 // Friendly labels for the standalone-alias ids, in case a stored theme still
 // references one (they aren't part of the enumerated list).
 const ALIAS_LABELS: Record<string, string> = { vs: "Light", "vs-dark": "Dark" };
+
+// A fixed-width field label with a help tooltip explaining what the color drives
+// (e.g. "Surface" isn't self-explanatory).
+function FieldLabel({
+  htmlFor,
+  label,
+  tip,
+}: Readonly<{ htmlFor?: string; label: string; tip: string }>) {
+  return (
+    <div className="flex w-28 items-center gap-x-1">
+      {htmlFor ? (
+        <label className="text-sm text-control" htmlFor={htmlFor}>
+          {label}
+        </label>
+      ) : (
+        <span className="text-sm text-control">{label}</span>
+      )}
+      <Tooltip content={tip}>
+        <span className="inline-flex">
+          <CircleHelp className="size-3.5 shrink-0 cursor-help text-control-light" />
+        </span>
+      </Tooltip>
+    </div>
+  );
+}
 
 export function ThemeAnchorEditor({
   value,
@@ -60,12 +87,15 @@ export function ThemeAnchorEditor({
     <div className="flex flex-col gap-y-3">
       {ANCHOR_KEYS.map((key) => (
         <div key={key} className="flex items-center gap-x-3">
-          <label
-            className="w-28 text-sm text-control"
+          <FieldLabel
             htmlFor={`anchor-${key}`}
-          >
-            {t(`settings.general.workspace.sql-editor-theme.anchor.${key}`)}
-          </label>
+            label={t(
+              `settings.general.workspace.sql-editor-theme.anchor.${key}`
+            )}
+            tip={t(
+              `settings.general.workspace.sql-editor-theme.anchor.${key}-tip`
+            )}
+          />
           <ColorInput
             id={`anchor-${key}`}
             value={value[key]}
@@ -82,9 +112,12 @@ export function ThemeAnchorEditor({
           editor. Data-driven from the themes the theme service has registered;
           the chrome background still shows through the transparent canvas. */}
       <div className="flex items-center gap-x-3">
-        <span className="w-28 text-sm text-control">
-          {t("settings.general.workspace.sql-editor-theme.editor-theme")}
-        </span>
+        <FieldLabel
+          label={t("settings.general.workspace.sql-editor-theme.editor-theme")}
+          tip={t(
+            "settings.general.workspace.sql-editor-theme.editor-theme-tip"
+          )}
+        />
         <Select
           value={editorTheme}
           onValueChange={(id) => {

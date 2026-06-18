@@ -2313,14 +2313,20 @@
         "sql-editor-theme": {
           "anchor": {
             "accent": "Màu nhấn",
+            "accent-tip": "Nút, tab đang chọn, liên kết và vùng chọn.",
             "background": "Nền",
+            "background-tip": "Màu nền chính của trình soạn thảo.",
             "border": "Viền",
+            "border-tip": "Đường phân cách và viền của ô nhập, bảng và bảng điều khiển.",
             "surface": "Bề mặt",
-            "text": "Văn bản"
+            "surface-tip": "Bảng và điều khiển nổi — tiêu đề bảng, thẻ và trạng thái di chuột.",
+            "text": "Văn bản",
+            "text-tip": "Màu chữ và điều khiển chính."
           },
           "custom": "Tùy chỉnh",
           "description": "Chọn một giao diện có sẵn hoặc tự định nghĩa giao diện cho SQL Editor của không gian làm việc.",
           "editor-theme": "Cú pháp trình soạn thảo",
+          "editor-theme-tip": "Bảng màu tô sáng cú pháp của trình soạn thảo mã.",
           "self": "Giao diện SQL Editor"
         },
         "title": "Tên không gian làm việc",
