@@ -368,7 +368,11 @@ loop:
 				}
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
+					checkResult.RiskLevel = getRiskLevelFromStatementTypes(summaryReport.StatementTypes)
 					resp.AffectedRows += summaryReport.AffectedRows
+					if checkResult.RiskLevel > resp.RiskLevel {
+						resp.RiskLevel = checkResult.RiskLevel
+					}
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
@@ -697,6 +701,23 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 	return &v1pb.CheckReleaseResponse{
 		Results: results,
 	}, nil
+}
+
+func getRiskLevelFromStatementTypes(statementTypes []storepb.StatementType) v1pb.RiskLevel {
+	statementTypeStrings := make([]string, 0, len(statementTypes))
+	for _, statementType := range statementTypes {
+		statementTypeStrings = append(statementTypeStrings, statementType.String())
+	}
+	switch common.GetRiskLevelFromStatementTypes(statementTypeStrings) {
+	case storepb.RiskLevel_LOW:
+		return v1pb.RiskLevel_LOW
+	case storepb.RiskLevel_MODERATE:
+		return v1pb.RiskLevel_MODERATE
+	case storepb.RiskLevel_HIGH:
+		return v1pb.RiskLevel_HIGH
+	default:
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	}
 }
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
