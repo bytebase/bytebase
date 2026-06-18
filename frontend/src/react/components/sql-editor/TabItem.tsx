@@ -48,7 +48,7 @@ export function TabItem({ tab, onClick }: TabItemProps) {
           // always reads stronger than hover — the ghost default's full-surface
           // hover would otherwise outweigh it under a saturated custom theme.
           isActive
-            ? "bg-accent/80 text-accent-text"
+            ? "bg-accent/80 text-accent-text hover:bg-accent/80 hover:text-accent-text"
             : "hover:bg-accent/20"
         )}
         onClick={onClick}

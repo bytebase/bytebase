@@ -77,13 +77,13 @@ export interface ThemeAnchors {
   border: string;
 }
 
-// Anchor-independent tokens (status + matrix-green) — constant across brands,
-// inlined (these are the light preset's values) so `deriveThemeFromAnchors` has
-// no dependency on the preset catalog. That lets a preset be *derived* from
-// anchors without a circular import.
+// Semantic status + matrix-green tokens — constant across brands so they stay
+// recognizable (warning=amber, error=red, success=green). Inlined (the light
+// preset's values) so `deriveThemeFromAnchors` has no dependency on the preset
+// catalog. NOTE: `--color-info` is intentionally NOT here — it's derived from
+// the accent (the least-semantic "brand" status) so info surfaces match the
+// theme instead of clashing with a fixed blue.
 const FIXED_TOKEN_VALUES: Record<string, string> = {
-  "--color-info": "37 99 235",
-  "--color-info-hover": "29 78 216",
   "--color-warning": "245 158 11",
   "--color-warning-hover": "180 83 9",
   "--color-error": "220 38 38",
@@ -134,6 +134,9 @@ export function deriveThemeFromAnchors(
   const elevate = (c: RGB3, t: number) => mix(c, text, t); // toward text (more contrast)
   const recede = (c: RGB3, t: number) => mix(c, bg, t); // toward background
 
+  const accentRgb = toStr(accent);
+  const accentHover = toStr(dark ? elevate(accent, 0.15) : recede(accent, 0.2));
+
   const tokens: Record<string, string> = {
     "--color-background": toStr(bg),
     "--color-dark-bg": toStr(bg),
@@ -147,12 +150,13 @@ export function deriveThemeFromAnchors(
     "--color-control-border": toStr(border),
     "--color-block-border": toStr(border),
     "--color-link-hover": toStr(border),
-    "--color-accent": toStr(accent),
-    "--color-accent-hover": toStr(
-      dark ? elevate(accent, 0.15) : recede(accent, 0.2)
-    ),
+    "--color-accent": accentRgb,
+    "--color-accent-hover": accentHover,
     "--color-accent-disabled": toStr(recede(accent, 0.5)),
     "--color-accent-text": luminance(accent) < 0.5 ? "255 255 255" : "24 24 27",
+    // Info mirrors the brand accent (warning/error/success stay semantic).
+    "--color-info": accentRgb,
+    "--color-info-hover": accentHover,
     "--color-main": toStr(text),
     "--color-main-hover": toStr(recede(text, 0.2)),
     "--color-main-text": luminance(text) < 0.5 ? "255 255 255" : "24 24 27",

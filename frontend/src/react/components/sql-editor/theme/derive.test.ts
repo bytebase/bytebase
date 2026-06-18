@@ -149,12 +149,16 @@ describe("deriveThemeFromAnchors", () => {
       "--color-error",
       "--color-warning",
       "--color-success",
-      "--color-info",
       "--color-matrix-green",
     ] as const) {
       expect(a[k]).toBe(b[k]);
       expect(a[k]).toBe(PRESET_BY_ID.light.tokens[k]);
     }
+  });
+  test("info mirrors the accent (not a fixed status color)", () => {
+    const t = deriveThemeFromAnchors(lightAnchors, "A").tokens;
+    expect(t["--color-info"]).toBe(t["--color-accent"]);
+    expect(t["--color-info-hover"]).toBe(t["--color-accent-hover"]);
   });
 });
 
