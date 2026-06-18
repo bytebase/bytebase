@@ -33,8 +33,7 @@ interface ThemePreviewProps {
 // Illustrative sample DATA (a user's SQL, rows, worksheet/timestamp names) —
 // representative content, not translatable UI text, so literals are correct
 // here. The chrome LABELS (Run/Save/Share/Copy all/rows/etc.) use i18n via `t`.
-const PREVIEW_SQL = `-- Preview
-SELECT id, name, created_at
+const PREVIEW_SQL = `SELECT id, name, created_at
 FROM "users"
 WHERE status = 'active'
 ORDER BY created_at DESC
@@ -151,7 +150,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             key={theme.monacoBase}
             autoHeight={false}
             className="h-full w-full"
-            content={PREVIEW_SQL}
+            content={`-- Preview\n${PREVIEW_SQL}`}
             language="sql"
             readOnly
             options={{
@@ -254,8 +253,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             result panel). */}
         <div className="flex items-center justify-between border-t border-block-border bg-control-bg/40 px-3 py-1 text-xs text-control-light">
           <span className="truncate">
-            prod instance · SELECT id, name, created_at FROM users WHERE status
-            = 'active' ORDER BY created_at DESC LIMIT 50;
+            {PREVIEW_SQL.split("\n").join(" ")}
           </span>
           <span className="shrink-0 pl-2">
             {t("sql-editor.query-time")}: 5 ms
