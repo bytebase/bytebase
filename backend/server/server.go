@@ -180,6 +180,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	telemetry.InitGlobalReporter(
 		profile.Version,
 		profile.GitCommit,
+		profile.Mode,
 		logSetup.GetEnableMetricCollection(),
 	)
 	if !s.profile.SaaS && workspaceID != "" {

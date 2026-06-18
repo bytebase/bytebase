@@ -8,16 +8,19 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 var hubEventURL = "https://hub.bytebase.com/v1/events"
 
 // Reporter sends telemetry events to hub.bytebase.com.
 type Reporter struct {
-	mu        sync.RWMutex
-	version   string
-	gitCommit string
-	enabled   bool
+	mu          sync.RWMutex
+	version     string
+	gitCommit   string
+	releaseMode common.ReleaseMode
+	enabled     bool
 
 	httpClient *http.Client
 }
@@ -28,12 +31,13 @@ var (
 )
 
 // InitGlobalReporter initializes the global telemetry reporter.
-func InitGlobalReporter(version, gitCommit string, enabled bool) {
+func InitGlobalReporter(version, gitCommit string, releaseMode common.ReleaseMode, enabled bool) {
 	globalReporterOnce.Do(func() {
 		globalReporter = &Reporter{
-			version:   version,
-			gitCommit: gitCommit,
-			enabled:   enabled,
+			version:     version,
+			gitCommit:   gitCommit,
+			releaseMode: releaseMode,
+			enabled:     enabled,
 			httpClient: &http.Client{
 				Timeout: 120 * time.Second,
 			},
@@ -65,9 +69,10 @@ func ReportSQLReviewConfigSnapshot(ctx context.Context, workspaceID string, emai
 	}
 	version := globalReporter.version
 	gitCommit := globalReporter.gitCommit
+	releaseMode := globalReporter.releaseMode
 	globalReporter.mu.RUnlock()
 
-	if version == "development" || workspaceID == "" || email == "" || snapshot == "" {
+	if releaseMode != common.ReleaseModeProd || workspaceID == "" || email == "" || snapshot == "" {
 		return
 	}
 

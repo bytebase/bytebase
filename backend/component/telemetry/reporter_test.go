@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 func TestReportSQLReviewConfigSnapshot(t *testing.T) {
@@ -46,10 +48,11 @@ func TestReportSQLReviewConfigSnapshot(t *testing.T) {
 	}()
 
 	globalReporter = &Reporter{
-		version:    "3.19.1",
-		gitCommit:  "abcdef",
-		enabled:    true,
-		httpClient: server.Client(),
+		version:     "3.19.1",
+		gitCommit:   "abcdef",
+		releaseMode: common.ReleaseModeProd,
+		enabled:     true,
+		httpClient:  server.Client(),
 	}
 	defer func() {
 		globalReporter = nil
@@ -90,5 +93,38 @@ func TestReportSQLReviewConfigSnapshot(t *testing.T) {
 	}
 	if len(domains) != 2 || domains[0] != "example.com" || domains[1] != "test.com" {
 		t.Fatalf("emailDomains = %v, want %v", domains, []string{"example.com", "test.com"})
+	}
+}
+
+func TestReportSQLReviewConfigSnapshotSkipsNonProd(t *testing.T) {
+	requestReceived := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		close(requestReceived)
+	}))
+	defer server.Close()
+
+	oldHubEventURL := hubEventURL
+	hubEventURL = server.URL
+	defer func() {
+		hubEventURL = oldHubEventURL
+	}()
+
+	globalReporter = &Reporter{
+		version:     "3.19.1",
+		gitCommit:   "abcdef",
+		releaseMode: common.ReleaseModeDev,
+		enabled:     true,
+		httpClient:  server.Client(),
+	}
+	defer func() {
+		globalReporter = nil
+	}()
+
+	ReportSQLReviewConfigSnapshot(context.Background(), "workspace-id", "owner@example.com", "{}", []string{"example.com"})
+
+	select {
+	case <-requestReceived:
+		t.Fatal("telemetry request was sent in non-prod release mode")
+	case <-time.After(100 * time.Millisecond):
 	}
 }
