@@ -102,6 +102,12 @@ type ColumnResource struct {
 	Table string
 	// Column is the normalized column name, it should not be empty.
 	Column string
+	// UnknownLineage marks a source whose lineage could not be traced to a base
+	// table (e.g. an encrypted/unparseable view whose body is hidden). The masker
+	// fully masks any result fed by such a source. Because source columns are
+	// unioned as expressions and subqueries are merged, the taint propagates
+	// without each merge site having to know about it.
+	UnknownLineage bool
 }
 
 // String returns the string format of the column resource.
@@ -234,6 +240,10 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+	// UnknownLineage marks a temp table populated (via SELECT ... INTO) from at
+	// least one unknown-lineage source. Columns resolved from it inherit the taint
+	// so the masker still fully masks data laundered through the temp table.
+	UnknownLineage bool
 }
 
 func (p *PhysicalTable) GetTableName() string {
@@ -257,11 +267,12 @@ func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 	for _, column := range p.Columns {
 		sourceColumnSet := make(SourceColumnSet, 1)
 		sourceColumnSet[ColumnResource{
-			Server:   p.Server,
-			Database: p.Database,
-			Schema:   p.Schema,
-			Table:    p.Name,
-			Column:   column,
+			Server:         p.Server,
+			Database:       p.Database,
+			Schema:         p.Schema,
+			Table:          p.Name,
+			Column:         column,
+			UnknownLineage: p.UnknownLineage,
 		}] = true
 		result = append(result, QuerySpanResult{
 			Name:          column,

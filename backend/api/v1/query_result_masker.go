@@ -434,6 +434,14 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
+	if sourceColumn.UnknownLineage {
+		// An encrypted/unparseable view column cannot be traced to a base table,
+		// so its real lineage — and any base-table masking policy — is unknown.
+		// Fail safe and fully mask. The taint rides on the source column, so this
+		// one check covers direct refs, expressions, predicates, and subqueries.
+		return masker.NewDefaultFullMasker(), &MaskingEvaluation{Algorithm: "Full mask", Context: "Unknown column lineage"}, nil
+	}
+
 	database := data.getDatabase(sourceColumn.Database)
 	if database == nil {
 		return masker.NewNoneMasker(), nil, nil
