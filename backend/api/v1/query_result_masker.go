@@ -94,11 +94,6 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 	// Collect all column-level source columns from SELECT results and predicates.
 	allColumns := make(parserbase.SourceColumnSet)
 	for _, r := range span.Results {
-		// A query referencing an unknown-lineage source (conservatively
-		// full-masked) is treated as touching masked data, so redact errors.
-		if hasUnknownLineageSource(r.SourceColumns) {
-			return true
-		}
 		for col := range r.SourceColumns {
 			allColumns[col] = true
 		}
@@ -129,19 +124,6 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 			continue
 		}
 		if _, isNone := mk.(*masker.NoneMasker); !isNone {
-			return true
-		}
-	}
-	return false
-}
-
-// hasUnknownLineageSource reports whether any source column was flagged with
-// unknown lineage (e.g. a column from an encrypted view whose body is hidden).
-// Such results are fully masked because their real lineage — and therefore any
-// base-table masking policy — cannot be verified.
-func hasUnknownLineageSource(set parserbase.SourceColumnSet) bool {
-	for col := range set {
-		if col.UnknownLineage {
 			return true
 		}
 	}
@@ -360,18 +342,6 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	}
 
 	for _, spanResult := range span.Results {
-		// Unknown lineage (e.g. an encrypted MSSQL view whose body is hidden):
-		// any source flagged UnknownLineage — directly or merged in through an
-		// expression or subquery — cannot be traced to a base table, so we cannot
-		// verify the result is safe. Fail safe and fully mask.
-		if hasUnknownLineageSource(spanResult.SourceColumns) {
-			maskers = append(maskers, masker.NewDefaultFullMasker())
-			masked = append(masked, &v1pb.MaskingReason{
-				Algorithm: "Full mask",
-				Context:   "Unknown column lineage",
-			})
-			continue
-		}
 		// Likes constant expression, we use the none masker.
 		if len(spanResult.SourceColumns) == 0 {
 			maskers = append(maskers, masker.NewNoneMasker())
@@ -462,6 +432,14 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 ) (masker.Masker, *MaskingEvaluation, error) {
 	if instance != nil && !common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil, nil
+	}
+
+	if sourceColumn.UnknownLineage {
+		// An encrypted/unparseable view column cannot be traced to a base table,
+		// so its real lineage — and any base-table masking policy — is unknown.
+		// Fail safe and fully mask. The taint rides on the source column, so this
+		// one check covers direct refs, expressions, predicates, and subqueries.
+		return masker.NewDefaultFullMasker(), &MaskingEvaluation{Algorithm: "Full mask", Context: "Unknown column lineage"}, nil
 	}
 
 	database := data.getDatabase(sourceColumn.Database)

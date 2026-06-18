@@ -283,6 +283,13 @@ func TestOmniQuerySpan_EncryptedViewUnknownLineage(t *testing.T) {
 	for _, r := range span3.Results {
 		require.Falsef(t, sourcesUnknownLineage(r.SourceColumns), "result %q from normal view should have known lineage", r.Name)
 	}
+
+	// A predicate-only reference to an encrypted column must also carry the taint,
+	// so error redaction over PredicateColumns covers `WHERE secret = ...`.
+	q4 := newOmniTestExtractor(t, "db")
+	span4, err := q4.getOmniQuerySpan(context.Background(), "SELECT 1 FROM enc_vw WHERE secret = 'x'")
+	require.NoError(t, err)
+	require.True(t, sourcesUnknownLineage(span4.PredicateColumns), "predicate over an encrypted column should be unknown-lineage")
 }
 
 // An encrypted view with no synced columns can neither be parsed nor have its
