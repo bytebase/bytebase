@@ -26,16 +26,22 @@ func TestBuildTimestamptzRowValue(t *testing.T) {
 			input:    time.Date(2026, 5, 11, 12, 34, 56, 0, time.FixedZone("", 2*60*60)),
 		},
 		{
-			name:       "before 0001-01-01 falls back to string",
+			name:       "BC timestamp falls back to PG-formatted string",
 			typeName:   "TIMESTAMP",
-			input:      time.Date(-1, 12, 31, 15, 0, 0, 0, time.UTC),
-			wantString: time.Date(-1, 12, 31, 15, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
+			input:      time.Date(0, 12, 31, 15, 0, 0, 0, time.UTC), // Go year 0 == 1 BC
+			wantString: "0001-12-31 15:00:00 BC",
 		},
 		{
-			name:       "year 10000 falls back to string",
-			typeName:   "TIMESTAMPTZ",
+			name:       "year 10000 timestamp omits zone",
+			typeName:   "TIMESTAMP",
 			input:      time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC),
-			wantString: time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
+			wantString: "10000-01-01 00:00:00",
+		},
+		{
+			name:       "year 10000 timestamptz keeps offset",
+			typeName:   "TIMESTAMPTZ",
+			input:      time.Date(10000, 5, 11, 12, 34, 56, 0, time.FixedZone("", 2*60*60)),
+			wantString: "10000-05-11 12:34:56+02:00",
 		},
 	}
 

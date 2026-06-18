@@ -138,7 +138,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 func buildTimestamptzRowValue(typeName string, t time.Time, scale int32) *v1pb.RowValue {
 	ts := timestamppb.New(t)
 	if err := ts.CheckValid(); err != nil {
-		return util.BuildStringRowValue(t.Format(time.RFC3339Nano))
+		return util.BuildStringRowValue(formatPGTimestamp(t, typeName != "TIMESTAMP"))
 	}
 	if typeName == "TIMESTAMP" {
 		return &v1pb.RowValue{
@@ -161,6 +161,23 @@ func buildTimestamptzRowValue(typeName string, t time.Time, scale int32) *v1pb.R
 			},
 		},
 	}
+}
+
+// formatPGTimestamp renders a time.Time using PostgreSQL's text representation rather
+// than RFC3339: a space separator, no zone for timestamp without time zone, and a " BC"
+// suffix for years before 1 AD (Go uses astronomical year numbering where year 0 == 1 BC).
+func formatPGTimestamp(t time.Time, withZone bool) string {
+	year := t.Year()
+	suffix := ""
+	if year <= 0 {
+		year = 1 - year
+		suffix = " BC"
+	}
+	s := fmt.Sprintf("%04d-%s", year, t.Format("01-02 15:04:05.999999999"))
+	if withZone {
+		s += t.Format("-07:00")
+	}
+	return s + suffix
 }
 
 // Padding 0's to nanosecond precision to make sure it's always 6 digits.
