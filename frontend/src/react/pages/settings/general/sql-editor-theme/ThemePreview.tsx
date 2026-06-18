@@ -97,8 +97,10 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
     >
       <div className="flex flex-col">
         {/* Tabs row. Each tab carries a top accent stripe + a right divider,
-            mirroring the real `TabItem` (`border-r` + body `border-t`). */}
-        <div className="flex items-stretch border-b border-block-border bg-control-bg/40 text-sm">
+            mirroring the real `TabItem` (`border-r` + body `border-t`). The bar
+            itself shows the editor background (the real `TabList` has no fill),
+            not the surface tint. */}
+        <div className="flex items-stretch border-b border-block-border bg-background text-sm">
           <div className="flex h-9 items-center gap-x-2 border-r border-t-[3px] border-r-block-border border-t-accent bg-background px-3 text-accent">
             <span>{t("common.untitled")}</span>
             <X className="size-3.5" />
@@ -251,7 +253,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
         {/* Bottom status bar — connection + executed statement + query time,
             like the real SQL Editor footer (statement lives HERE, not atop the
             result panel). */}
-        <div className="flex items-center justify-between border-t border-block-border bg-control-bg/40 px-3 py-1 text-xs text-control-light">
+        <div className="flex items-center justify-between border-t border-block-border bg-background px-3 py-1 text-xs text-control-light">
           <span className="truncate">{PREVIEW_SQL.split("\n").join(" ")}</span>
           <span className="shrink-0 pl-2">
             {t("sql-editor.query-time")}: 5 ms

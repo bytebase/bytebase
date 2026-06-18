@@ -43,8 +43,14 @@ export function TabItem({ tab, onClick }: TabItemProps) {
         variant="ghost"
         className={cn(
           "size-10 p-0",
-          isActive &&
-            "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+          // Active is a strong accent fill (/60) with the on-accent text color
+          // so the icon stays readable; hover is a faint accent tint. Both keyed
+          // off the accent hue (active at a higher opacity) so active always
+          // reads stronger than hover — the ghost default's full-surface hover
+          // would otherwise outweigh it under a saturated custom theme.
+          isActive
+            ? "bg-accent/60 text-accent-text hover:bg-accent/60 hover:text-accent-text"
+            : "hover:bg-accent/10"
         )}
         onClick={onClick}
       >

@@ -150,7 +150,10 @@ export const VirtualDataBlock = forwardRef<
                 </p>
                 <div
                   className={cn(
-                    "py-2 px-3 bg-control-bg rounded relative",
+                    // Subtle surface tint (matches VirtualDataTable's zebra
+                    // rows) rather than full surface, so a dark custom surface
+                    // doesn't make each card too heavy.
+                    "py-2 px-3 bg-control-bg/40 rounded relative",
                     isActive && "border-2 border-accent/20 bg-accent/10!"
                   )}
                 >
