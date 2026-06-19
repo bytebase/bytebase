@@ -250,8 +250,8 @@ github.com/bytebase/gomongo v0.0.0-20260510192859-8526a440b352 h1:3sC5pdvJ7bNAhR
 github.com/bytebase/gomongo v0.0.0-20260510192859-8526a440b352/go.mod h1:eyWrxE51HCbjGIChvty/mYaNcAroXshnIiR6SIqlxfY=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20260618025236-cf4c9b844d52 h1:4P+GLe/f5JJOU2wwDlGoWI5ve64OyQcTqnHGyqgbhKM=
-github.com/bytebase/omni v0.0.0-20260618025236-cf4c9b844d52/go.mod h1:Gp5RN3FM07f9/FFOTZCeu8duTAIMeuinkjjBCrs2Dw4=
+github.com/bytebase/omni v0.0.0-20260618070256-8f57f04f5aa2 h1:DHoqAOglW5+OyeKujkZamgwKidFMSiQANICOofJ0bWA=
+github.com/bytebase/omni v0.0.0-20260618070256-8f57f04f5aa2/go.mod h1:Gp5RN3FM07f9/FFOTZCeu8duTAIMeuinkjjBCrs2Dw4=
 github.com/bytebase/parser v0.0.0-20260417075056-57b6ef7a2640 h1:g4Jed1/Jv/DHBiQmEgN5ILOQDDBjFlG4N4Lp+3B4aYE=
 github.com/bytebase/parser v0.0.0-20260417075056-57b6ef7a2640/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
@@ -954,6 +954,8 @@ github.com/stripe/stripe-go/v85 v85.1.0 h1:MywWUmgw9M7cnwFFch9cyLmRZuAiYM5cZ27Jx
 github.com/stripe/stripe-go/v85 v85.1.0/go.mod h1:5P+HGFenpWgak27T5Is6JMsmDfUC1yJnjhhmquz7kXw=
 github.com/testcontainers/testcontainers-go v0.42.0 h1:He3IhTzTZOygSXLJPMX7n44XtK+qhjat1nI9cneBbUY=
 github.com/testcontainers/testcontainers-go v0.42.0/go.mod h1:vZjdY1YmUA1qEForxOIOazfsrdyORJAbhi0bp8plN30=
+github.com/testcontainers/testcontainers-go/modules/mariadb v0.41.0 h1:t0J/TOgzTKCO+7Pc7wE6ITJXGCZFufisuokOWYVzNaQ=
+github.com/testcontainers/testcontainers-go/modules/mariadb v0.41.0/go.mod h1:ELA34/aGm5oXG0g9OkPVWmIsw+BDdeybr7wk8i+TQCg=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0 h1:z/1qHeliTLDKNaJ7uOHOx1FjwghbcbYfga4dTFkF0hU=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0/go.mod h1:GaunAWwMXLtsMKG3xn2HYIBDbKddGArfcGsF2Aog81E=
 github.com/testcontainers/testcontainers-go/modules/mssql v0.41.0 h1:YAuSa+IMTn0nA6iNvSAFgJEeJsQWSghFWu0ubebWXJI=
