@@ -75,6 +75,23 @@ func TestValidateSQLForEditor(t *testing.T) {
 			allQuery: false,
 		},
 		{
+			// Security regression: a MERGE smuggled into a data-modifying CTE must
+			// be treated as a write (not read-only), so the editor routes it to Exec
+			// (RETURNING rows discarded) and export rejects it. Before the fix,
+			// hasDMLInTree missed MergeStmt, so this took the read path and returned
+			// masked columns unmasked.
+			sql:      `WITH x AS (MERGE INTO t a USING t b ON a.id = b.id WHEN MATCHED THEN UPDATE SET id = a.id RETURNING a.secret) SELECT secret FROM x`,
+			valid:    false,
+			allQuery: false,
+		},
+		{
+			// Top-level MERGE ... RETURNING is already blocked by the default case;
+			// pin it so the classifier sets stay aligned.
+			sql:      `MERGE INTO t a USING t b ON a.id = b.id WHEN MATCHED THEN UPDATE SET id = a.id RETURNING a.secret`,
+			valid:    false,
+			allQuery: false,
+		},
+		{
 			sql:      "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
 			valid:    true,
 			allQuery: true,

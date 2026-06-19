@@ -15,7 +15,7 @@ import (
 // 1. Allow: SELECT statements
 // 2. Allow: EXPLAIN statements (but not EXPLAIN ANALYZE for non-SELECT)
 // 3. Allow: SHOW/SET statements (SET is considered executable)
-// 4. Allow: CTEs with only SELECT (reject CTEs with INSERT/UPDATE/DELETE)
+// 4. Allow: CTEs with only SELECT (reject CTEs with INSERT/UPDATE/DELETE/MERGE)
 // 5. Reject: All other statements (DDL, DML except SELECT)
 func validateQueryANTLR(statement string) (bool, bool, error) {
 	stmts, err := ParsePg(statement)
@@ -82,7 +82,12 @@ func isExplainAnalyze(n *ast.ExplainStmt) bool {
 	return false
 }
 
-// hasDMLInTree walks the AST tree and returns true if any INSERT/UPDATE/DELETE is found.
+// hasDMLInTree walks the AST tree and returns true if any INSERT/UPDATE/DELETE/MERGE
+// is found. MERGE is included so a data-modifying MERGE smuggled into a CTE
+// (e.g. WITH x AS (MERGE ... RETURNING col) SELECT col FROM x) is classified as a
+// write: this keeps the set aligned with classifyQueryType (query_type.go) and
+// stops the editor from taking the row-returning read path for it, which would
+// otherwise return masked columns unmasked.
 func hasDMLInTree(node ast.Node) bool {
 	found := false
 	ast.Inspect(node, func(n ast.Node) bool {
@@ -90,7 +95,7 @@ func hasDMLInTree(node ast.Node) bool {
 			return false
 		}
 		switch n.(type) {
-		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
 			found = true
 			return false
 		}
