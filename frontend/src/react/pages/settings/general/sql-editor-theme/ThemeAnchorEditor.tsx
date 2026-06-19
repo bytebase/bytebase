@@ -25,7 +25,6 @@ interface ThemeAnchorEditorProps {
 
 const ANCHOR_KEYS: (keyof ThemeAnchors)[] = [
   "background",
-  "surface",
   "text",
   "accent",
   "border",

@@ -2318,8 +2318,6 @@
             "background-tip": "El fondo principal del lienzo del editor.",
             "border": "Borde",
             "border-tip": "Divisores y bordes de campos, tablas y paneles.",
-            "surface": "Superficie",
-            "surface-tip": "Paneles y controles elevados: encabezados de tabla, tarjetas y estados al pasar el cursor.",
             "text": "Texto",
             "text-tip": "Color principal del texto y los controles."
           },

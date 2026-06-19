@@ -2318,8 +2318,6 @@
             "background-tip": "Màu nền chính của trình soạn thảo.",
             "border": "Viền",
             "border-tip": "Đường phân cách và viền của ô nhập, bảng và bảng điều khiển.",
-            "surface": "Bề mặt",
-            "surface-tip": "Bảng và điều khiển nổi — tiêu đề bảng, thẻ và trạng thái di chuột.",
             "text": "Văn bản",
             "text-tip": "Màu chữ và điều khiển chính."
           },

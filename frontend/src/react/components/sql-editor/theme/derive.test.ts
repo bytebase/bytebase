@@ -97,14 +97,12 @@ describe("validateTheme", () => {
 
 const lightAnchors: ThemeAnchors = {
   background: "#ffffff",
-  surface: "#f3f4f6",
   text: "#18181b",
   accent: "#4f46e5",
   border: "#e5e7eb",
 };
 const darkAnchors: ThemeAnchors = {
   background: "#1e1e1e",
-  surface: "#374151",
   text: "#f4f4f5",
   accent: "#6366f1",
   border: "#3f3f46",
@@ -120,10 +118,15 @@ describe("deriveThemeFromAnchors", () => {
   test("anchors map to direct tokens", () => {
     const t = deriveThemeFromAnchors(lightAnchors, "B");
     expect(t.tokens["--color-background"]).toBe("255 255 255");
-    expect(t.tokens["--color-control-bg"]).toBe("243 244 246");
     expect(t.tokens["--color-main"]).toBe("24 24 27");
     expect(t.tokens["--color-accent"]).toBe("79 70 229");
     expect(t.tokens["--color-block-border"]).toBe("229 231 235");
+  });
+  test("surface is derived from the background (not an anchor)", () => {
+    // white bg nudged 6% toward near-black text → a light gray.
+    expect(
+      deriveThemeFromAnchors(lightAnchors, "B").tokens["--color-control-bg"]
+    ).toBe("241 241 241");
   });
   test("monacoBase default by luminance", () => {
     expect(deriveThemeFromAnchors(lightAnchors, "L").monacoBase).toBe(

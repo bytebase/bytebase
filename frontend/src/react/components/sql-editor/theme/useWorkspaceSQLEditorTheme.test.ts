@@ -7,7 +7,6 @@ const customDef = {
   ...deriveThemeFromAnchors(
     {
       background: "#1e1e1e",
-      surface: "#374151",
       text: "#f4f4f5",
       accent: "#6366f1",
       border: "#3f3f46",

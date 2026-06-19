@@ -66,12 +66,12 @@ export function validateTheme(theme: SQLEditorTheme): void {
 }
 
 /**
- * The 5 colors an admin picks (each a `#rrggbb` hex). We derive all 29 chrome
- * tokens from these, with status + matrix-green held fixed.
+ * The 4 colors an admin picks (each a `#rrggbb` hex). We derive all 29 chrome
+ * tokens from these — the elevated "surface" is the background nudged toward the
+ * text, status + matrix-green are held fixed.
  */
 export interface ThemeAnchors {
   background: string;
-  surface: string;
   text: string;
   accent: string;
   border: string;
@@ -126,7 +126,6 @@ export function deriveThemeFromAnchors(
   monacoBase?: SQLEditorTheme["monacoBase"]
 ): SQLEditorTheme {
   const bg = hexToRgb(anchors.background);
-  const surface = hexToRgb(anchors.surface);
   const text = hexToRgb(anchors.text);
   const accent = hexToRgb(anchors.accent);
   const border = hexToRgb(anchors.border);
@@ -134,6 +133,9 @@ export function deriveThemeFromAnchors(
   const elevate = (c: RGB3, t: number) => mix(c, text, t); // toward text (more contrast)
   const recede = (c: RGB3, t: number) => mix(c, bg, t); // toward background
 
+  // Elevated surface (panels/headers/hover) — the background nudged toward the
+  // text. Derived (not an anchor) so the admin only picks 4 colors.
+  const surface = elevate(bg, 0.06);
   const accentRgb = toStr(accent);
   const accentHover = toStr(dark ? elevate(accent, 0.15) : recede(accent, 0.2));
 
@@ -182,11 +184,10 @@ export function deriveThemeFromAnchors(
   return theme;
 }
 
-/** Inverse of {@link deriveThemeFromAnchors}: recover the 5 picked anchors. */
+/** Inverse of {@link deriveThemeFromAnchors}: recover the 4 picked anchors. */
 export function themeToAnchors(theme: SQLEditorTheme): ThemeAnchors {
   return {
     background: toHex(theme.tokens["--color-background"]),
-    surface: toHex(theme.tokens["--color-control-bg"]),
     text: toHex(theme.tokens["--color-main"]),
     accent: toHex(theme.tokens["--color-accent"]),
     border: toHex(theme.tokens["--color-block-border"]),

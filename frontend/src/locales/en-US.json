@@ -2318,8 +2318,6 @@
             "background-tip": "The main editor canvas background.",
             "border": "Border",
             "border-tip": "Dividers and outlines around inputs, tables, and panels.",
-            "surface": "Surface",
-            "surface-tip": "Elevated panels and controls — table headers, cards, and hover states.",
             "text": "Text",
             "text-tip": "Primary text and control color."
           },
