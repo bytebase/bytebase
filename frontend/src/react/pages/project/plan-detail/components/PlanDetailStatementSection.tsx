@@ -238,9 +238,11 @@ export function PlanDetailStatementSection({
         hasProjectPermissionV2(project, "bb.plans.update"))
   );
   const canEdit = canModifyStatement && !isSheetOversize && !page.isCreating;
-  // Editing an existing statement collapses the toolbar to Save/Cancel; hide
-  // Upload/Schema editor, which would replace the in-progress edit.
+  // An active edit session (not whole-plan creation) shows Save/Cancel.
   const isInlineEditing = isEditing && !page.isCreating;
+  // Hide Upload/Schema editor only when editing an already-persisted statement;
+  // a new pending-draft spec still needs them to author its first statement.
+  const isEditingExistingStatement = isInlineEditing && !isPendingDraft;
   const hasChanges = page.isCreating
     ? draftStatement !== statement
     : isEditing && draftStatement !== statement;
@@ -453,7 +455,7 @@ export function PlanDetailStatementSection({
         />
         {(canModifyStatement || isEditing) && (
           <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
-            {!isInlineEditing && (
+            {!isEditingExistingStatement && (
               <>
                 <Button onClick={handleUploadClick} size="xs" variant="outline">
                   <Upload className="h-3.5 w-3.5" />
