@@ -1493,6 +1493,7 @@
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
       "hide-details": "Ocultar detalles",
+      "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles"
     },
     "plans": "Planes",

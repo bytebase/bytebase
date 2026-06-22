@@ -101,10 +101,20 @@ func GetTestMySQLContainer(ctx context.Context) (retc *Container, retErr error) 
 	}, nil
 }
 
-// GetPgContainer creates a PostgreSQL container for testing
-func GetPgContainer(ctx context.Context) (retC *Container, retErr error) {
+// GetPgContainer creates a PostgreSQL 16 container for testing.
+func GetPgContainer(ctx context.Context) (*Container, error) {
+	return getPgContainerWithImage(ctx, "postgres:16-alpine")
+}
+
+// GetPg17Container creates a PostgreSQL 17 container for testing. PG17 is required
+// for features absent in 16 — notably MERGE ... RETURNING.
+func GetPg17Container(ctx context.Context) (*Container, error) {
+	return getPgContainerWithImage(ctx, "postgres:17-alpine")
+}
+
+func getPgContainerWithImage(ctx context.Context, image string) (retC *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
-		Image: "postgres:16-alpine",
+		Image: image,
 		Env: map[string]string{
 			"LANG":              "en_US.UTF-8",
 			"POSTGRES_PASSWORD": "root-password",
@@ -181,6 +191,17 @@ func GetTestPgContainer(ctx context.Context, t testing.TB) *Container {
 	container, err := GetPgContainer(ctx)
 	if err != nil {
 		t.Fatalf("failed to create PostgreSQL container: %v", err)
+	}
+	return container
+}
+
+// GetTestPg17Container creates a PostgreSQL 17 container for testing, failing the
+// test on error.
+func GetTestPg17Container(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetPg17Container(ctx)
+	if err != nil {
+		t.Fatalf("failed to create PostgreSQL 17 container: %v", err)
 	}
 	return container
 }
