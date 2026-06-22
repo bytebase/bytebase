@@ -1,9 +1,9 @@
-import type { SQLEditorTheme } from "../types";
+import { DEFAULT_LIGHT_EDITOR_THEME, type SQLEditorTheme } from "../types";
 
 export const light: SQLEditorTheme = {
   id: "light",
   name: "Default Light",
-  monacoBase: "vs",
+  monacoBase: DEFAULT_LIGHT_EDITOR_THEME,
   tokens: {
     "--color-control": "82 82 91",
     "--color-control-hover": "24 24 27",

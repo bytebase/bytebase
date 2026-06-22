@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { DEFAULT_THEME_ID } from "@/react/components/sql-editor/theme/presets";
 import {
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
   storageKeySqlEditorLastProject,
-  storageKeySqlEditorTheme,
 } from "@/utils/storage-keys";
 import {
   getSQLEditorEditorState,
@@ -47,7 +45,6 @@ beforeEach(() => {
     redisCommandOption: 1,
     isShowExecutingHint: false,
     executingHintDatabase: undefined,
-    themeId: "light",
   });
 });
 
@@ -121,20 +118,5 @@ describe("useSQLEditorEditorStore", () => {
 
     getSQLEditorEditorState().setShowExecutingHint(false);
     expect(calls).toBeGreaterThanOrEqual(3);
-  });
-});
-
-describe("theme persistence", () => {
-  test("setThemeId updates state and persists", () => {
-    getSQLEditorEditorState().setThemeId("dark");
-    expect(useSQLEditorEditorStore.getState().themeId).toBe("dark");
-    expect(storage.get(storageKeySqlEditorTheme(""))).toBe(
-      JSON.stringify("dark")
-    );
-  });
-
-  test("setThemeId rejects an unknown id and falls back to the default", () => {
-    getSQLEditorEditorState().setThemeId("does-not-exist");
-    expect(useSQLEditorEditorStore.getState().themeId).toBe(DEFAULT_THEME_ID);
   });
 });

@@ -268,6 +268,8 @@
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
+    - [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting)
+    - [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
     - [SystemSetting](#bytebase-store-SystemSetting)
@@ -275,6 +277,7 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
     - [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement)
+    - [WorkspaceProfileSetting.Announcement.AnnouncementTheme](#bytebase-store-WorkspaceProfileSetting-Announcement-AnnouncementTheme)
     - [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction)
   
     - [AISetting.Provider](#bytebase-store-AISetting-Provider)
@@ -284,7 +287,6 @@
     - [EmailSetting.Type](#bytebase-store-EmailSetting-Type)
     - [SettingName](#bytebase-store-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source)
-    - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
     - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
   
 - [store/signal.proto](#store_signal-proto)
@@ -4503,6 +4505,40 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 
 
+<a name="bytebase-store-SQLEditorThemeSetting"></a>
+
+### SQLEditorThemeSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| name | [string](#string) |  |  |
+| monaco_base | [string](#string) |  |  |
+| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SQLEditorThemeSetting-TokensEntry"></a>
+
+### SQLEditorThemeSetting.TokensEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -4613,6 +4649,8 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | query_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
 | allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
+| sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
+| sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 
 
 
@@ -4627,9 +4665,25 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| level | [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel) |  | The alert level of the announcement. |
 | text | [string](#string) |  | The text of the announcement. |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+| theme | [WorkspaceProfileSetting.Announcement.AnnouncementTheme](#bytebase-store-WorkspaceProfileSetting-Announcement-AnnouncementTheme) |  | Banner colors. Built-in presets (info/warning/critical) are a frontend-only concept that seeds these colors; the store only holds them. |
+
+
+
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-Announcement-AnnouncementTheme"></a>
+
+### WorkspaceProfileSetting.Announcement.AnnouncementTheme
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| background | [string](#string) |  | &#34;r g b&#34; |
+| text | [string](#string) |  | &#34;r g b&#34; |
 
 
 
@@ -4761,20 +4815,6 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | EXPORT_DATA | 3 |  |
 | REQUEST_ROLE | 4 |  |
 | REQUEST_ACCESS | 5 |  |
-
-
-
-<a name="bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel"></a>
-
-### WorkspaceProfileSetting.Announcement.AlertLevel
-We support three levels of AlertLevel: INFO, WARNING, and ERROR.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| INFO | 1 |  |
-| WARNING | 2 |  |
-| CRITICAL | 3 |  |
 
 
 

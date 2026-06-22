@@ -596,7 +596,7 @@ function SingleResultViewInner({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 px-2 rounded-r-none border-r-0 bg-control-bg text-control border-control-border hover:bg-control-bg-hover"
+                    className="h-7 px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
                     onClick={() => copy("all", formatAsText)}
                   >
                     <CopyIcon className="size-4" />
@@ -611,7 +611,7 @@ function SingleResultViewInner({
                           size="sm"
                           variant="outline"
                           aria-label={t("common.copy")}
-                          className="h-7 w-6 px-0 rounded-l-none bg-control-bg text-control border-control-border hover:bg-control-bg-hover"
+                          className="h-7 w-6 px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover"
                         >
                           <ChevronDownIcon className="size-4" />
                         </Button>

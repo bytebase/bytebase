@@ -66,7 +66,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // FindAndApplyApprovalTemplate finds and applies the approval template for an issue.
 // This is a utility function that can be called synchronously (from issue creation)
 // or asynchronously (from the event handler).
-func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, b *bus.Bus, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
+func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
 	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get project")
@@ -80,7 +80,7 @@ func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, b *b
 	}
 
 	// Find approval template - errors are logged, not persisted
-	err = findApprovalTemplateForIssue(ctx, stores, b, webhookManager, licenseService, issue, approvalSetting)
+	err = findApprovalTemplateForIssue(ctx, stores, webhookManager, licenseService, issue, approvalSetting)
 	if err != nil {
 		return errors.Wrap(err, "failed to find approval template")
 	}
@@ -115,7 +115,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		return
 	}
 
-	if err := findApprovalTemplateForIssue(ctx, r.store, r.bus, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
+	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
 			slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID),
 			slog.String("issue_title", issue.Title),
@@ -151,7 +151,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 	}
 }
 
-func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, b *bus.Bus, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
+func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
 	payload := issue.Payload
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
 		return nil
@@ -183,7 +183,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, b *b
 		}
 
 		// Step 2: Build CEL variables for evaluation
-		celVarsList, done, err := buildCELVariablesForIssue(ctx, stores, b, issue)
+		celVarsList, done, err := buildCELVariablesForIssue(ctx, stores, issue)
 		if err != nil {
 			return nil, nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
@@ -387,12 +387,12 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // buildCELVariablesForIssue builds the CEL variable maps for evaluating approval rules.
 // Returns a list of CEL variable maps (one per task/component), done flag, and error.
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
-func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	switch issue.Type {
 	case storepb.Issue_ROLE_GRANT:
 		return buildCELVariablesForRoleGrant(ctx, stores, issue)
 	case storepb.Issue_DATABASE_CHANGE:
-		return buildCELVariablesForDatabaseChange(ctx, stores, b, issue)
+		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
 	case storepb.Issue_DATABASE_EXPORT:
 		return buildCELVariablesForDataExport(ctx, stores, issue)
 	case storepb.Issue_ACCESS_GRANT:
@@ -543,44 +543,6 @@ func buildStatementSummaryResultMap(results []*storepb.PlanCheckRunResult_Result
 	return m
 }
 
-func hasLegacyStatementSummaryResult(planCheckRun *store.PlanCheckRunMessage, targets []specTarget) bool {
-	if planCheckRun == nil || planCheckRun.Status != store.PlanCheckRunStatusDone {
-		return false
-	}
-
-	type databaseKey struct {
-		InstanceID   string
-		DatabaseName string
-	}
-	sheetBackedTargets := map[databaseKey]struct{}{}
-	for _, target := range targets {
-		if target.sheetSha256 == "" || target.database == nil {
-			continue
-		}
-		sheetBackedTargets[databaseKey{
-			InstanceID:   target.database.InstanceID,
-			DatabaseName: target.database.DatabaseName,
-		}] = struct{}{}
-	}
-	if len(sheetBackedTargets) == 0 {
-		return false
-	}
-
-	for _, result := range planCheckRun.Result.GetResults() {
-		if result.Type != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT || result.SheetSha256 != "" {
-			continue
-		}
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(result.Target)
-		if err != nil {
-			continue
-		}
-		if _, ok := sheetBackedTargets[databaseKey{InstanceID: instanceID, DatabaseName: databaseName}]; ok {
-			return true
-		}
-	}
-	return false
-}
-
 func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMessage) bool {
 	if planCheckRun == nil {
 		return false
@@ -588,31 +550,9 @@ func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMes
 	return planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning
 }
 
-func shouldRerunLegacyStatementSummaryResult(planCheckRun *store.PlanCheckRunMessage, targets []specTarget) bool {
-	return hasLegacyStatementSummaryResult(planCheckRun, targets)
-}
-
-func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus.Bus, plan *store.PlanMessage) error {
-	if b == nil {
-		return errors.New("approval plan-check rerun requires bus")
-	}
-	if err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
-		ProjectID: plan.ProjectID,
-		PlanUID:   plan.UID,
-		Result:    &storepb.PlanCheckRunResult{},
-	}); err != nil {
-		return errors.Wrap(err, "failed to create plan check run")
-	}
-	select {
-	case b.PlanCheckTickleChan <- 0:
-	default:
-	}
-	return nil
-}
-
 // buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
 // This includes DDL and DML operations.
-func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -638,13 +578,6 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
-	}
-
-	if shouldRerunLegacyStatementSummaryResult(planCheckRun, targets) {
-		if err := rerunPlanChecksForApproval(ctx, stores, b, plan); err != nil {
-			return nil, false, err
-		}
-		return nil, false, nil
 	}
 
 	statementSummaryResults := map[statementSummaryKey]*storepb.PlanCheckRunResult_Result{}

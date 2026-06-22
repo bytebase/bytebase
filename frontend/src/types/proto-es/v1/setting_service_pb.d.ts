@@ -639,6 +639,22 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool allow_email_code_signin = 22;
    */
   allowEmailCodeSignin: boolean;
+
+  /**
+   * Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id
+   * OR a custom theme's uuid. Empty ⇒ default light.
+   *
+   * @generated from field: string sql_editor_theme_id = 23;
+   */
+  sqlEditorThemeId: string;
+
+  /**
+   * The enforced CUSTOM theme's full definition — present ONLY when
+   * sql_editor_theme_id is a custom uuid. tokens is always complete.
+   *
+   * @generated from field: bytebase.v1.SQLEditorThemeSetting sql_editor_custom_theme = 24;
+   */
+  sqlEditorCustomTheme?: SQLEditorThemeSetting | undefined;
 };
 
 /**
@@ -708,16 +724,40 @@ export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"byteb
 export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessage<WorkspaceProfileSetting_PasswordRestriction>;
 
 /**
+ * @generated from message bytebase.v1.SQLEditorThemeSetting
+ */
+export declare type SQLEditorThemeSetting = Message<"bytebase.v1.SQLEditorThemeSetting"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string monaco_base = 3;
+   */
+  monacoBase: string;
+
+  /**
+   * @generated from field: map<string, string> tokens = 4;
+   */
+  tokens: { [key: string]: string };
+};
+
+/**
+ * Describes the message bytebase.v1.SQLEditorThemeSetting.
+ * Use `create(SQLEditorThemeSettingSchema)` to create a new message.
+ */
+export declare const SQLEditorThemeSettingSchema: GenMessage<SQLEditorThemeSetting>;
+
+/**
  * @generated from message bytebase.v1.Announcement
  */
 export declare type Announcement = Message<"bytebase.v1.Announcement"> & {
-  /**
-   * The alert level of announcement
-   *
-   * @generated from field: bytebase.v1.Announcement.AlertLevel level = 1;
-   */
-  level: Announcement_AlertLevel;
-
   /**
    * The text of announcement
    *
@@ -731,6 +771,14 @@ export declare type Announcement = Message<"bytebase.v1.Announcement"> & {
    * @generated from field: string link = 3;
    */
   link: string;
+
+  /**
+   * Banner colors. Built-in presets (info/warning/critical) are a
+   * frontend-only concept that seeds these colors; the store only holds them.
+   *
+   * @generated from field: bytebase.v1.Announcement.AnnouncementTheme theme = 4;
+   */
+  theme?: Announcement_AnnouncementTheme | undefined;
 };
 
 /**
@@ -740,36 +788,29 @@ export declare type Announcement = Message<"bytebase.v1.Announcement"> & {
 export declare const AnnouncementSchema: GenMessage<Announcement>;
 
 /**
- * We support three levels of AlertLevel: INFO, WARNING, and ERROR.
- *
- * @generated from enum bytebase.v1.Announcement.AlertLevel
+ * @generated from message bytebase.v1.Announcement.AnnouncementTheme
  */
-export enum Announcement_AlertLevel {
+export declare type Announcement_AnnouncementTheme = Message<"bytebase.v1.Announcement.AnnouncementTheme"> & {
   /**
-   * @generated from enum value: ALERT_LEVEL_UNSPECIFIED = 0;
+   * "r g b"
+   *
+   * @generated from field: string background = 1;
    */
-  ALERT_LEVEL_UNSPECIFIED = 0,
+  background: string;
 
   /**
-   * @generated from enum value: INFO = 1;
+   * "r g b"
+   *
+   * @generated from field: string text = 2;
    */
-  INFO = 1,
-
-  /**
-   * @generated from enum value: WARNING = 2;
-   */
-  WARNING = 2,
-
-  /**
-   * @generated from enum value: CRITICAL = 3;
-   */
-  CRITICAL = 3,
-}
+  text: string;
+};
 
 /**
- * Describes the enum bytebase.v1.Announcement.AlertLevel.
+ * Describes the message bytebase.v1.Announcement.AnnouncementTheme.
+ * Use `create(Announcement_AnnouncementThemeSchema)` to create a new message.
  */
-export declare const Announcement_AlertLevelSchema: GenEnum<Announcement_AlertLevel>;
+export declare const Announcement_AnnouncementThemeSchema: GenMessage<Announcement_AnnouncementTheme>;
 
 /**
  * @generated from message bytebase.v1.WorkspaceApprovalSetting

@@ -2157,7 +2157,6 @@
           "self": "お知らせ"
         },
         "announcement-alert-level": {
-          "description": "レベル",
           "field": {
             "critical": "重要",
             "info": "情報",
@@ -2168,6 +2167,13 @@
           "description": "お知らせを非表示にしたい場合は空白のままにしてください。",
           "placeholder": "お知らせのタイトルを入力してください",
           "self": "タイトル"
+        },
+        "announcement-theme": {
+          "background": "背景",
+          "custom": "カスタム",
+          "description": "組み込みのテーマを選択するか、お知らせバナーのカスタムカラーを定義します。",
+          "self": "テーマ",
+          "text": "テキスト"
         },
         "audit-log-stdout": {
           "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。",
@@ -2304,6 +2310,23 @@
         },
         "security": "セキュリティ",
         "select-logo": "選ぶ",
+        "sql-editor-theme": {
+          "anchor": {
+            "accent": "アクセント",
+            "accent-tip": "ボタン、アクティブなタブ、リンク、選択項目。",
+            "background": "背景",
+            "background-tip": "エディター本体の背景色。",
+            "border": "境界線",
+            "border-tip": "入力欄・表・パネルの区切り線と枠線。",
+            "text": "テキスト",
+            "text-tip": "主要なテキストとコントロールの色。"
+          },
+          "custom": "カスタム",
+          "description": "ワークスペースの SQL エディター用に、組み込みテーマを選択するかカスタムテーマを定義します。",
+          "editor-theme": "エディター構文",
+          "editor-theme-tip": "コードエディターの構文ハイライト配色。",
+          "self": "SQL エディターのテーマ"
+        },
         "title": "ワークスペース名",
         "watermark": {
           "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。",
@@ -2872,9 +2895,6 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
     "text-format": "テキスト形式",
-    "theme": {
-      "self": "テーマ"
-    },
     "unable-to-connect-database": "データベース {{name}} に接続できません",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",

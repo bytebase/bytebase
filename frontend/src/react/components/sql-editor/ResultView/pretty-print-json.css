@@ -44,103 +44,52 @@ ol.json-lines > li {
   transition: all 400ms;
 }
 
-/* Custom Colors */
-ol.json-lines {
-  --colorGraphite: #303030;
-  --colorCharcoal: #222222;
-  --colorTar: #161616;
-}
-
-/* Colors */
+/* Colors — driven by the SQL Editor theme tokens so JSON follows the active
+   theme (light or dark) instead of fixed colors. `.json-mark` is the
+   punctuation (braces/brackets/commas/colons), which used to be hardcoded black
+   and disappeared on dark themes. */
 .json-container {
-  background-color: white;
-}
-.json-key {
-  color: brown;
-}
-.json-string {
-  color: olive;
-}
-.json-number {
-  color: navy;
-}
-.json-boolean {
-  color: teal;
-}
-.json-null {
-  color: dimgray;
+  background-color: transparent;
 }
 .json-mark {
-  color: black;
+  color: rgb(var(--color-control));
+}
+.json-key {
+  color: rgb(var(--color-accent));
+}
+.json-string {
+  color: rgb(var(--color-success));
+}
+.json-number {
+  color: rgb(var(--color-info));
+}
+.json-boolean {
+  color: rgb(var(--color-warning));
+}
+.json-null {
+  color: rgb(var(--color-control-light));
 }
 a.json-link {
-  color: purple;
+  color: rgb(var(--color-accent));
 }
 a.json-link:visited {
-  color: slategray;
+  color: rgb(var(--color-control-light));
 }
 a.json-link:hover {
-  color: blueviolet;
+  color: rgb(var(--color-accent-hover));
 }
 a.json-link:active {
-  color: slategray;
+  color: rgb(var(--color-control-light));
 }
 ol.json-lines > li::marker {
-  color: dimgray;
+  color: rgb(var(--color-control-light));
 }
 ol.json-lines > li:nth-child(odd) {
-  background-color: gainsboro;
+  background-color: rgb(var(--color-control-bg) / 0.4);
 }
 ol.json-lines > li:nth-child(even) {
-  background-color: whitesmoke;
+  background-color: transparent;
 }
 ol.json-lines > li:hover {
-  background-color: lemonchiffon;
-}
-
-/* Dark Mode */
-.dark-mode .json-container {
-  background-color: black;
-}
-.dark-mode .json-key {
-  color: indianred;
-}
-.dark-mode .json-string {
-  color: khaki;
-}
-.dark-mode .json-number {
-  color: deepskyblue;
-}
-.dark-mode .json-boolean {
-  color: mediumseagreen;
-}
-.dark-mode .json-null {
-  color: darkorange;
-}
-.dark-mode .json-mark {
-  color: silver;
-}
-.dark-mode a.json-link {
-  color: mediumorchid;
-}
-.dark-mode a.json-link:visited {
-  color: slategray;
-}
-.dark-mode a.json-link:hover {
-  color: violet;
-}
-.dark-mode a.json-link:active {
-  color: slategray;
-}
-.dark-mode ol.json-lines > li::marker {
-  color: silver;
-}
-.dark-mode ol.json-lines > li:nth-child(odd) {
-  background-color: var(--colorCharcoal);
-}
-.dark-mode ol.json-lines > li:nth-child(even) {
-  background-color: var(--colorTar);
-}
-.dark-mode ol.json-lines > li:hover {
-  background-color: dimgray;
+  background-color: rgb(var(--color-control-bg-hover));
 }

@@ -271,51 +271,51 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnableDebug:            v1Setting.EnableDebug,
 		SqlResultSize:          v1Setting.SqlResultSize,
 		QueryTimeout:           v1Setting.QueryTimeout,
+		SqlEditorThemeId:       v1Setting.SqlEditorThemeId,
+		SqlEditorCustomTheme:   convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
 	}
 
-	// Convert announcement if present
+	// Convert announcement if present. The store only holds the theme colors.
 	if v1Setting.Announcement != nil {
 		storeSetting.Announcement = &storepb.WorkspaceProfileSetting_Announcement{
-			Text: v1Setting.Announcement.Text,
-			Link: v1Setting.Announcement.Link,
-		}
-		// Convert alert level
-		switch v1Setting.Announcement.Level {
-		case v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED
-		case v1pb.Announcement_INFO:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_INFO
-		case v1pb.Announcement_WARNING:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_WARNING
-		case v1pb.Announcement_CRITICAL:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_CRITICAL
-		default:
+			Text:  v1Setting.Announcement.Text,
+			Link:  v1Setting.Announcement.Link,
+			Theme: convertToStoreAnnouncementTheme(v1Setting.Announcement.Theme),
 		}
 	}
 
 	return storeSetting
 }
 
-func convertToV1Announcement(announcement *storepb.WorkspaceProfileSetting_Announcement) *v1pb.Announcement {
-	if announcement != nil {
-		v1Announcement := &v1pb.Announcement{
-			Text: announcement.Text,
-			Link: announcement.Link,
-		}
-		switch announcement.Level {
-		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED:
-			v1Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
-		case storepb.WorkspaceProfileSetting_Announcement_INFO:
-			v1Announcement.Level = v1pb.Announcement_INFO
-		case storepb.WorkspaceProfileSetting_Announcement_WARNING:
-			v1Announcement.Level = v1pb.Announcement_WARNING
-		case storepb.WorkspaceProfileSetting_Announcement_CRITICAL:
-			v1Announcement.Level = v1pb.Announcement_CRITICAL
-		default:
-		}
-		return v1Announcement
+func convertToStoreAnnouncementTheme(theme *v1pb.Announcement_AnnouncementTheme) *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme {
+	if theme == nil {
+		return nil
 	}
-	return nil
+	return &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{
+		Background: theme.Background,
+		Text:       theme.Text,
+	}
+}
+
+func convertToV1AnnouncementTheme(theme *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme) *v1pb.Announcement_AnnouncementTheme {
+	if theme == nil {
+		return nil
+	}
+	return &v1pb.Announcement_AnnouncementTheme{
+		Background: theme.Background,
+		Text:       theme.Text,
+	}
+}
+
+func convertToV1Announcement(announcement *storepb.WorkspaceProfileSetting_Announcement) *v1pb.Announcement {
+	if announcement == nil {
+		return nil
+	}
+	return &v1pb.Announcement{
+		Text:  announcement.Text,
+		Link:  announcement.Link,
+		Theme: convertToV1AnnouncementTheme(announcement.Theme),
+	}
 }
 
 func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSetting) *v1pb.WorkspaceProfileSetting {
@@ -345,6 +345,32 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnableDebug:            storeSetting.EnableDebug,
 		SqlResultSize:          storeSetting.SqlResultSize,
 		QueryTimeout:           storeSetting.QueryTimeout,
+		SqlEditorThemeId:       storeSetting.SqlEditorThemeId,
+		SqlEditorCustomTheme:   convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+	}
+}
+
+func convertToStoreSQLEditorThemeSetting(theme *v1pb.SQLEditorThemeSetting) *storepb.SQLEditorThemeSetting {
+	if theme == nil {
+		return nil
+	}
+	return &storepb.SQLEditorThemeSetting{
+		Id:         theme.Id,
+		Name:       theme.Name,
+		MonacoBase: theme.MonacoBase,
+		Tokens:     theme.Tokens,
+	}
+}
+
+func convertToV1SQLEditorThemeSetting(theme *storepb.SQLEditorThemeSetting) *v1pb.SQLEditorThemeSetting {
+	if theme == nil {
+		return nil
+	}
+	return &v1pb.SQLEditorThemeSetting{
+		Id:         theme.Id,
+		Name:       theme.Name,
+		MonacoBase: theme.MonacoBase,
+		Tokens:     theme.Tokens,
 	}
 }
 
