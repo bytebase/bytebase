@@ -439,7 +439,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   );
 
   return (
-    <div className="w-full h-full grow flex flex-col justify-start items-start overflow-hidden">
+    <div className="w-full h-full grow flex flex-col justify-start items-start overflow-hidden bg-background">
       <MonacoEditor
         key={filename}
         autoHeight={false}

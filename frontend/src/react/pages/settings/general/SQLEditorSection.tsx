@@ -10,10 +10,28 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import {
+  BUILTIN_EDITOR_THEMES,
+  type EditorThemeOption,
+  getAvailableEditorThemes,
+} from "@/react/components/monaco/editorThemes";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  deriveThemeFromAnchors,
+  type ThemeAnchors,
+  themeToAnchors,
+} from "@/react/components/sql-editor/theme/derive";
+import {
+  PRESET_BY_ID,
+  PRESETS,
+} from "@/react/components/sql-editor/theme/presets";
+import type { SQLEditorTheme } from "@/react/components/sql-editor/theme/types";
+import { resolveWorkspaceTheme } from "@/react/components/sql-editor/theme/useWorkspaceSQLEditorTheme";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { NumberInput } from "@/react/components/ui/number-input";
+import { SegmentedControl } from "@/react/components/ui/segmented-control";
 import {
   usePlanFeature,
   useWorkspaceResourceName,
@@ -25,9 +43,14 @@ import {
   PolicyType,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
+import { ThemeAnchorEditor } from "./sql-editor-theme/ThemeAnchorEditor";
+import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
+
+const CUSTOM_THEME_OPTION = "__custom__";
 
 interface SQLEditorSectionProps {
   title: string;
@@ -78,6 +101,22 @@ export const SQLEditorSection = forwardRef<
     });
   }, [resource]);
 
+  // The editor color themes registered with the VSCode theme service, for the
+  // custom-theme "Editor syntax" picker. Falls back to the built-ins. Dev-only.
+  const [editorThemes, setEditorThemes] = useState<EditorThemeOption[]>(
+    BUILTIN_EDITOR_THEMES
+  );
+  useEffect(() => {
+    if (!isDev()) return;
+    let active = true;
+    void getAvailableEditorThemes().then((themes) => {
+      if (active) setEditorThemes(themes);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const policyPayload = useAppStore((s) =>
     s.getQueryDataPolicyByParent(resource)
   );
@@ -117,6 +156,100 @@ export const SQLEditorSection = forwardRef<
     }
   }, [getInitialState]);
 
+  // --- SQL Editor theme ---
+  const getInitialTheme = useCallback((): {
+    selectedThemeId: string;
+    customDraft: SQLEditorTheme | null;
+  } => {
+    const custom = workspaceProfile.sqlEditorCustomTheme;
+    return {
+      selectedThemeId: workspaceProfile.sqlEditorThemeId || "",
+      customDraft: custom
+        ? {
+            id: custom.id,
+            name: custom.name,
+            monacoBase: custom.monacoBase as SQLEditorTheme["monacoBase"],
+            tokens: custom.tokens as SQLEditorTheme["tokens"],
+          }
+        : null,
+    };
+  }, [workspaceProfile]);
+
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(
+    () => getInitialTheme().selectedThemeId
+  );
+  const [customDraft, setCustomDraft] = useState<SQLEditorTheme | null>(
+    () => getInitialTheme().customDraft
+  );
+
+  // Re-sync theme state when the profile loads/changes.
+  const prevInitialThemeRef = useRef(getInitialTheme());
+  useEffect(() => {
+    const next = getInitialTheme();
+    if (!isEqual(prevInitialThemeRef.current, next)) {
+      prevInitialThemeRef.current = next;
+      setSelectedThemeId(next.selectedThemeId);
+      setCustomDraft(next.customDraft);
+    }
+  }, [getInitialTheme]);
+
+  const isCustomSelected =
+    customDraft !== null && selectedThemeId === customDraft.id;
+
+  const previewTheme: SQLEditorTheme = isCustomSelected
+    ? customDraft
+    : (PRESET_BY_ID[selectedThemeId] ?? PRESET_BY_ID.light);
+
+  const handleSelectTheme = (value: string) => {
+    if (value === CUSTOM_THEME_OPTION) {
+      if (customDraft) {
+        setSelectedThemeId(customDraft.id);
+        return;
+      }
+      // Seed the custom draft as a FULL copy of the currently-selected theme
+      // (all tokens + the editor theme), not a 5-anchor re-derivation — so it
+      // starts identical to the built-in. Editing an anchor afterwards
+      // re-derives the chrome tokens from the 5 anchors.
+      const source = resolveWorkspaceTheme({
+        sqlEditorThemeId: selectedThemeId,
+        sqlEditorCustomTheme: customDraft ?? undefined,
+      });
+      const draft: SQLEditorTheme = {
+        id: uuidv4(),
+        name: t("settings.general.workspace.sql-editor-theme.custom"),
+        monacoBase: source.monacoBase,
+        tokens: { ...source.tokens },
+      };
+      setCustomDraft(draft);
+      setSelectedThemeId(draft.id);
+      return;
+    }
+    setSelectedThemeId(value);
+    setCustomDraft(null);
+  };
+
+  const handleAnchorsChange = (nextAnchors: ThemeAnchors) => {
+    if (!customDraft) return;
+    // Name + the chosen editor base are preserved; only the anchors re-derive
+    // the chrome tokens. Passing `customDraft.monacoBase` keeps the admin's
+    // explicit light/dark choice from being overwritten by the luminance
+    // default on every anchor edit.
+    setCustomDraft({
+      ...deriveThemeFromAnchors(
+        nextAnchors,
+        customDraft.name,
+        customDraft.monacoBase
+      ),
+      id: customDraft.id,
+    });
+  };
+
+  const handleEditorThemeChange = (id: string) => {
+    if (!customDraft) return;
+    // Only swaps the editor's syntax theme — chrome tokens are unchanged.
+    setCustomDraft({ ...customDraft, monacoBase: id });
+  };
+
   // Normalize `null` (transiently empty inputs) to the same defaults used by
   // `update()` so that a cleared-then-saved field doesn't leave the section
   // permanently dirty.
@@ -130,14 +263,26 @@ export const SQLEditorSection = forwardRef<
     []
   );
 
+  const isThemeDirty = useCallback(() => {
+    const init = getInitialTheme();
+    return (
+      init.selectedThemeId !== selectedThemeId ||
+      !isEqual(init.customDraft, customDraft)
+    );
+  }, [getInitialTheme, selectedThemeId, customDraft]);
+
   const isDirty = useCallback(
-    () => !isEqual(normalizeForCompare(state), getInitialState()),
-    [state, getInitialState, normalizeForCompare]
+    () =>
+      !isEqual(normalizeForCompare(state), getInitialState()) || isThemeDirty(),
+    [state, getInitialState, normalizeForCompare, isThemeDirty]
   );
 
   const revert = useCallback(() => {
     setState(getInitialState());
-  }, [getInitialState]);
+    const initTheme = getInitialTheme();
+    setSelectedThemeId(initTheme.selectedThemeId);
+    setCustomDraft(initTheme.customDraft);
+  }, [getInitialState, getInitialTheme]);
 
   const update = useCallback(async () => {
     const init = getInitialState();
@@ -191,14 +336,41 @@ export const SQLEditorSection = forwardRef<
         },
       },
     });
-  }, [state, resource, policyPayload, getInitialState]);
+
+    // Update SQL Editor theme if changed.
+    if (isThemeDirty()) {
+      await useAppStore.getState().updateWorkspaceProfile({
+        payload: {
+          sqlEditorThemeId: selectedThemeId,
+          // `undefined` clears the custom theme when a built-in is selected.
+          sqlEditorCustomTheme: customDraft
+            ? create(SQLEditorThemeSettingSchema, customDraft)
+            : undefined,
+        },
+        updateMask: create(FieldMaskSchema, {
+          paths: [
+            "value.workspace_profile.sql_editor_theme_id",
+            "value.workspace_profile.sql_editor_custom_theme",
+          ],
+        }),
+      });
+    }
+  }, [
+    state,
+    resource,
+    policyPayload,
+    getInitialState,
+    isThemeDirty,
+    selectedThemeId,
+    customDraft,
+  ]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));
 
   // Notify parent of dirty changes
   useEffect(() => {
     onDirtyChange();
-  }, [state, onDirtyChange]);
+  }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
     field: "disableExport" | "disableCopyData" | "allowAdminDataSource",
@@ -388,6 +560,64 @@ export const SQLEditorSection = forwardRef<
             </div>
           </div>
         </PermissionGuard>
+
+        {/* SQL Editor theme — dev-only until the feature ships. */}
+        {isDev() && (
+          <PermissionGuard
+            permissions={["bb.settings.setWorkspaceProfile"]}
+            display="block"
+          >
+            <div className="flex flex-col gap-y-3">
+              <div>
+                <p className="text-base font-semibold">
+                  {t("settings.general.workspace.sql-editor-theme.self")}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {t("settings.general.workspace.sql-editor-theme.description")}
+                </p>
+              </div>
+
+              <SegmentedControl
+                ariaLabel={t(
+                  "settings.general.workspace.sql-editor-theme.self"
+                )}
+                disabled={!canSetWorkspaceProfile}
+                value={isCustomSelected ? CUSTOM_THEME_OPTION : selectedThemeId}
+                onValueChange={handleSelectTheme}
+                options={[
+                  ...PRESETS.map((preset) => ({
+                    value: preset.id,
+                    label: preset.name,
+                  })),
+                  {
+                    value: CUSTOM_THEME_OPTION,
+                    label: t(
+                      "settings.general.workspace.sql-editor-theme.custom"
+                    ),
+                  },
+                ]}
+              />
+
+              {isCustomSelected && customDraft && (
+                <ThemeAnchorEditor
+                  value={themeToAnchors(customDraft)}
+                  editorTheme={customDraft.monacoBase}
+                  editorThemes={editorThemes}
+                  disabled={!canSetWorkspaceProfile}
+                  onChange={handleAnchorsChange}
+                  onEditorThemeChange={handleEditorThemeChange}
+                />
+              )}
+
+              <div className="flex flex-col gap-y-2">
+                <p className="text-sm font-medium text-control">
+                  {t("common.preview")}
+                </p>
+                <ThemePreview theme={previewTheme} />
+              </div>
+            </div>
+          </PermissionGuard>
+        )}
       </div>
     </div>
   );

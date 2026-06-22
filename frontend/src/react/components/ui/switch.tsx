@@ -47,7 +47,10 @@ function Switch({
       className={cn(
         "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
         sizeClasses.root,
-        "bg-control-border data-[checked]:bg-accent",
+        // Off-track: a muted, text-derived neutral (`control` @ 30%) rather than
+        // the border token — so a saturated custom `border` color doesn't turn
+        // the off state into a colored fill. Checked uses the accent.
+        "bg-control/30 data-[checked]:bg-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className

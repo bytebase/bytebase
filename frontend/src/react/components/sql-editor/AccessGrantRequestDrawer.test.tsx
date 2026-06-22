@@ -42,6 +42,10 @@ vi.mock("@/react/stores/app", () => {
   const state = () => ({
     fetchDatabases: mocks.fetchDatabases,
     notify: mocks.pushNotification,
+    // Consumed by useWorkspaceSQLEditorTheme (via useActiveSQLEditorTheme,
+    // which drives the drawer's Monaco theme). Empty profile resolves to the
+    // default theme.
+    getWorkspaceProfile: () => ({}),
   });
   return {
     useAppStore: Object.assign(

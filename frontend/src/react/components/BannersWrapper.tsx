@@ -1,13 +1,8 @@
-import {
-  AlertCircle,
-  ArrowRight,
-  ShoppingCart,
-  Sparkles,
-  Wrench,
-  X,
-} from "lucide-react";
+import { AlertCircle, ShoppingCart, Sparkles, Wrench, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { AnnouncementBanner } from "@/react/components/AnnouncementBanner";
+import { resolveAnnouncementTheme } from "@/react/components/announcement-theme";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Button, buttonVariants } from "@/react/components/ui/button";
 import {
@@ -27,10 +22,6 @@ import {
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
-import {
-  type Announcement,
-  Announcement_AlertLevel,
-} from "@/types/proto-es/v1/setting_service_pb";
 import {
   PlanFeature,
   PlanType,
@@ -176,17 +167,6 @@ function BannerSubscription() {
   );
 }
 
-function announcementColors(level: Announcement["level"] | undefined) {
-  switch (level) {
-    case Announcement_AlertLevel.WARNING:
-      return "bg-warning hover:bg-warning-hover";
-    case Announcement_AlertLevel.CRITICAL:
-      return "bg-error hover:bg-error-hover";
-    default:
-      return "bg-info hover:bg-info-hover";
-  }
-}
-
 function BannerAnnouncement() {
   const workspaceProfile = useWorkspaceProfile();
   const hasAnnouncementFeature = usePlanFeature(
@@ -196,29 +176,18 @@ function BannerAnnouncement() {
   const text = announcement?.text ?? "";
   const rawLink = announcement?.link ?? "";
   const link = rawLink ? urlfy(rawLink) : "";
+  const { background, text: textColor } =
+    resolveAnnouncementTheme(announcement);
 
   if (!text || !hasAnnouncementFeature) return null;
 
   return (
-    <div
-      className={`mx-auto flex w-full flex-row flex-wrap justify-center px-3 py-1 text-center font-medium text-white ${announcementColors(
-        announcement?.level
-      )}`}
-    >
-      {link ? (
-        <a
-          href={link}
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-row items-center hover:underline"
-        >
-          <p className="px-1">{text}</p>
-          <ArrowRight className="mr-3 size-5" />
-        </a>
-      ) : (
-        <p>{text}</p>
-      )}
-    </div>
+    <AnnouncementBanner
+      text={text}
+      link={link}
+      background={background}
+      textColor={textColor}
+    />
   );
 }
 

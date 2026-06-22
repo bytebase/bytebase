@@ -950,8 +950,10 @@ export function SheetTree({
           data-item-key={folderNode.key}
           className={cn(
             "flex items-center gap-x-1 w-full py-0.5 text-sm cursor-pointer select-none",
-            "hover:bg-control-bg rounded-xs",
-            isSelected && "bg-control-bg"
+            // Align with the connection-panel database tree: subtle neutral
+            // hover, accent-tinted selection (was a too-light gray fill).
+            "hover:bg-control-bg/70 rounded-xs",
+            isSelected && "bg-accent/10"
           )}
           onClick={(e) => {
             // Only handle clicks on text/prefix area, not suffix

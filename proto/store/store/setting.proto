@@ -36,22 +36,23 @@ message SystemSetting {
 
 message WorkspaceProfileSetting {
   message Announcement {
-    // We support three levels of AlertLevel: INFO, WARNING, and ERROR.
-    enum AlertLevel {
-      ALERT_LEVEL_UNSPECIFIED = 0;
-      INFO = 1;
-      WARNING = 2;
-      CRITICAL = 3;
-    }
+    reserved 1;
+    reserved "level";
 
-    // The alert level of the announcement.
-    AlertLevel level = 1;
+    message AnnouncementTheme {
+      string background = 1; // "r g b"
+      string text = 2; // "r g b"
+    }
 
     // The text of the announcement.
     string text = 2;
 
     // The optional link, user can follow the link to check extra details
     string link = 3;
+
+    // Banner colors. Built-in presets (info/warning/critical) are a
+    // frontend-only concept that seeds these colors; the store only holds them.
+    AnnouncementTheme theme = 4;
   }
 
   enum DatabaseChangeMode {
@@ -148,6 +149,20 @@ message WorkspaceProfileSetting {
   // Allow signin/signup using email + a 6-digit one-time verification code.
   // Requires the EMAIL setting to be configured on the workspace.
   bool allow_email_code_signin = 22;
+
+  // Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id
+  // OR a custom theme's uuid. Empty ⇒ default light.
+  string sql_editor_theme_id = 23;
+  // The enforced CUSTOM theme's full definition — present ONLY when
+  // sql_editor_theme_id is a custom uuid. tokens is always complete.
+  SQLEditorThemeSetting sql_editor_custom_theme = 24;
+}
+
+message SQLEditorThemeSetting {
+  string id = 1;
+  string name = 2;
+  string monaco_base = 3;
+  map<string, string> tokens = 4;
 }
 
 message WorkspaceApprovalSetting {

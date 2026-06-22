@@ -1,8 +1,7 @@
-import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { resolveAdminTheme } from "./derive";
-import { resolveThemeId } from "./presets";
 import type { SQLEditorTheme } from "./types";
+import { useWorkspaceSQLEditorTheme } from "./useWorkspaceSQLEditorTheme";
 
 /**
  * The SQL Editor theme that should currently apply to the foreground code
@@ -11,10 +10,9 @@ import type { SQLEditorTheme } from "./types";
  * Monaco theme name and to drive the global Monaco theme controller.
  */
 export function useActiveSQLEditorTheme(): SQLEditorTheme {
-  const themeId = useSQLEditorEditorState((s) => s.themeId);
+  const selected = useWorkspaceSQLEditorTheme();
   const mode = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.mode
   );
-  const selected = resolveThemeId(themeId);
   return mode === "ADMIN" ? resolveAdminTheme(selected) : selected;
 }

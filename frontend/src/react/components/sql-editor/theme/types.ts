@@ -43,14 +43,23 @@ export interface SQLEditorTheme {
   // theme names aren't translated). Built-ins, proper-noun presets, and future
   // user-named custom themes all just set this.
   name: string;
-  // Picks the Monaco editor base. The editor canvas is themed by the codingame
-  // VSCode theme service (which ignores `monaco.editor.defineTheme`), so a theme
-  // only chooses light vs dark here — the editor background then shows the
-  // chrome `--color-background` through the transparent-canvas CSS, and syntax
-  // token colors come from the base. (Per-theme editor/syntax palettes were
-  // removed: they never reached the canvas in this runtime.)
-  monacoBase: "vs" | "vs-dark";
+  // The registered Monaco/VSCode color-theme id applied via
+  // `monaco.editor.setTheme` (e.g. "vs", "vs-dark", "Dark Modern", "Light+"). The
+  // editor canvas is themed by the codingame VSCode theme service, which owns the
+  // theme registry — only ids it has registered (enumerated via
+  // `getAvailableEditorThemes`) take effect; unknown ids fall back via
+  // `getResolvedTheme`. The editor background still shows the chrome
+  // `--color-background` through the transparent-canvas CSS; this id drives the
+  // syntax token colors (and is light/dark per the chosen theme).
+  monacoBase: string;
   // Chrome layer: the SQL-Editor `--color-*` token values for this theme,
   // each a "r g b" triple (Tailwind resolves to `rgb(var(--color-x) / <alpha>)`).
   tokens: Record<SQLEditorThemeToken, string>;
 }
+
+// The enumerated VSCode color-theme ids used as the light/dark defaults (the
+// theme service registers these; `getAvailableEditorThemes` lists them). The
+// standalone `vs`/`vs-dark` aliases are kept only as the catch-path fallback in
+// `core.ts`/`editorThemes.ts` for when enumeration fails.
+export const DEFAULT_LIGHT_EDITOR_THEME = "Visual Studio Light";
+export const DEFAULT_DARK_EDITOR_THEME = "Visual Studio Dark";

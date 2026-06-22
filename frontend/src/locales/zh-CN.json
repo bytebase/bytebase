@@ -2157,7 +2157,6 @@
           "self": "公告"
         },
         "announcement-alert-level": {
-          "description": "等级",
           "field": {
             "critical": "重要",
             "info": "普通",
@@ -2168,6 +2167,13 @@
           "description": "如果要隐藏公告，则置为空。",
           "placeholder": "输入公告标题",
           "self": "标题"
+        },
+        "announcement-theme": {
+          "background": "背景",
+          "custom": "自定义",
+          "description": "选择内置主题或为公告横幅定义自定义颜色。",
+          "self": "主题",
+          "text": "文字"
         },
         "audit-log-stdout": {
           "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。",
@@ -2304,6 +2310,23 @@
         },
         "security": "安全",
         "select-logo": "选择",
+        "sql-editor-theme": {
+          "anchor": {
+            "accent": "强调色",
+            "accent-tip": "按钮、当前标签页、链接和选中项。",
+            "background": "背景",
+            "background-tip": "编辑器主画布的背景色。",
+            "border": "边框",
+            "border-tip": "输入框、表格和面板的分隔线与边框。",
+            "text": "文本",
+            "text-tip": "主要文字与控件颜色。"
+          },
+          "custom": "自定义",
+          "description": "为工作空间的 SQL 编辑器选择内置主题或自定义主题。",
+          "editor-theme": "编辑器语法",
+          "editor-theme-tip": "代码编辑器的语法高亮配色。",
+          "self": "SQL 编辑器主题"
+        },
         "title": "工作空间名称",
         "watermark": {
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
@@ -2872,9 +2895,6 @@
     "table-empty-placeholder": "点击 \"运行\" 执行查询",
     "table-view": "表格视图",
     "text-format": "文本格式",
-    "theme": {
-      "self": "主题"
-    },
     "unable-to-connect-database": "无法连接到数据库 {{name}}",
     "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",

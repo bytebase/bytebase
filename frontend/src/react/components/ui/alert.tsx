@@ -10,13 +10,15 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
 
 const alertVariants = cva(
-  "relative flex w-full items-start gap-x-3 rounded-xs border px-4 py-3 text-sm leading-5 text-control shadow-xs",
+  "relative flex w-full items-start gap-x-3 rounded-xs border px-4 py-3 text-sm leading-5 shadow-xs",
   {
     variants: {
+      // Text follows the variant's status color so a colored alert reads
+      // cohesively (info tracks the theme accent; warning/error stay semantic).
       variant: {
-        info: "border-info/40 bg-info/10",
-        warning: "border-warning/40 bg-warning/10",
-        error: "border-error/40 bg-error/10",
+        info: "border-info/40 bg-info/10 text-info",
+        warning: "border-warning/40 bg-warning/10 text-warning",
+        error: "border-error/40 bg-error/10 text-error",
       },
     },
     defaultVariants: {
@@ -81,7 +83,9 @@ function Alert({
             {description !== undefined && (
               <div
                 className={cn(
-                  "text-sm text-control-light leading-6",
+                  // Inherit the variant text color (slightly softened) so the
+                  // body follows the theme like the rest of the alert.
+                  "text-sm leading-6 opacity-90",
                   title !== undefined && "mt-1"
                 )}
               >

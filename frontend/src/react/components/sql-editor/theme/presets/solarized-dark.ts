@@ -1,4 +1,4 @@
-import type { SQLEditorTheme } from "../types";
+import { DEFAULT_DARK_EDITOR_THEME, type SQLEditorTheme } from "../types";
 
 // Ethan Schoonover's Solarized Dark palette.
 //   base03 #002b36  base02 #073642  base01 #586e75  base00 #657b83
@@ -9,22 +9,24 @@ import type { SQLEditorTheme } from "../types";
 export const solarizedDark: SQLEditorTheme = {
   id: "solarized-dark",
   name: "Solarized Dark",
-  monacoBase: "vs-dark",
+  monacoBase: DEFAULT_DARK_EDITOR_THEME,
   tokens: {
-    "--color-control": "131 148 150", // base0
-    "--color-control-hover": "147 161 161", // base1
-    "--color-control-light": "88 110 117", // base01
-    "--color-control-light-hover": "101 123 131", // base00
+    // Text bumped up the palette for readability — base01 (#586e75) is too dim
+    // for UI secondary text on the dark base03 bg.
+    "--color-control": "147 161 161", // base1
+    "--color-control-hover": "203 213 213", // lightened base1
+    "--color-control-light": "131 148 150", // base0
+    "--color-control-light-hover": "147 161 161", // base1
     "--color-control-bg": "7 54 66", // base02
     "--color-control-bg-hover": "18 71 84",
-    "--color-control-placeholder": "88 110 117", // base01
+    "--color-control-placeholder": "101 123 131", // base00
     "--color-control-border": "30 80 92",
     "--color-accent": "38 139 210", // blue
     "--color-accent-hover": "77 163 222",
     "--color-accent-disabled": "44 100 130",
     "--color-accent-text": "253 246 227", // base3
     "--color-main": "147 161 161", // base1
-    "--color-main-hover": "131 148 150", // base0
+    "--color-main-hover": "203 213 213", // lightened base1 (brighter, not dimmer)
     "--color-main-text": "0 43 54", // base03 (text on a base1 surface)
     "--color-background": "0 43 54", // base03
     "--color-block-border": "18 71 84",

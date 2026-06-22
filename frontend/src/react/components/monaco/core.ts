@@ -1,11 +1,7 @@
 import type * as MonacoType from "monaco-editor";
-import {
-  buildMonacoTheme,
-  monacoThemeName,
-} from "@/react/components/sql-editor/theme/derive";
-import { PRESETS } from "@/react/components/sql-editor/theme/presets";
 import type { Language } from "@/types";
 import { defer } from "@/utils";
+import { getAvailableEditorThemes } from "./editorThemes";
 import { initializeMonacoServices } from "./services";
 
 let monacoModule: typeof MonacoType | undefined;
@@ -17,34 +13,28 @@ export const MonacoEditorReady = monacoEditorReadyDefer.promise;
 const state = {
   themeInitialized: false,
   registeredThemes: new Set<string>(["vs", "vs-dark", "hc-black", "hc-light"]),
-  // The Monaco base ("vs" | "vs-dark") for each generated theme name. When a
-  // custom theme fails to register (the codingame VSCode theme service silently
-  // ignores `defineTheme` in some runtime modes), `getResolvedTheme` falls back
-  // to the theme's OWN base — so a dark theme falls back to `vs-dark`, not the
-  // light `vs`. Recorded for every preset whether or not registration succeeds.
+  // The light/dark fallback base for each known theme id. If `setTheme` is
+  // called with an id that isn't registered, `getResolvedTheme` falls back to
+  // the theme's OWN type (dark → `vs-dark`, not the light `vs`).
   themeBase: new Map<string, "vs" | "vs-dark">(),
 };
 
-const initializeTheme = () => {
+// Add the color themes the VSCode theme service actually has registered to the
+// allowlist (so `getResolvedTheme` lets `setTheme` apply them) and record each
+// one's light/dark fallback. The standalone built-ins above are always present.
+const registerEditorThemes = async () => {
   if (state.themeInitialized) return;
   state.themeInitialized = true;
-  if (!monacoModule) return;
-  for (const preset of PRESETS) {
-    const name = monacoThemeName(preset);
-    state.themeBase.set(name, preset.monacoBase);
-    try {
-      monacoModule.editor.defineTheme(name, buildMonacoTheme(preset));
-      state.registeredThemes.add(name);
-    } catch {
-      // The vscode theme-service override owns themes in some runtime modes;
-      // an un-registered theme falls back to its base via getResolvedTheme.
-    }
+  const themes = await getAvailableEditorThemes();
+  for (const theme of themes) {
+    state.registeredThemes.add(theme.id);
+    state.themeBase.set(theme.id, theme.type === "dark" ? "vs-dark" : "vs");
   }
 };
 
 /**
  * Returns the requested theme if it's known to be registered with
- * Monaco, otherwise falls back to the always-available built-in `vs`.
+ * Monaco, otherwise falls back to the theme's own light/dark base (or `vs`).
  *
  * Use this anywhere `monaco.editor.setTheme(...)` is called from
  * application code — calling `setTheme` with an unregistered theme
@@ -53,17 +43,15 @@ const initializeTheme = () => {
  * per-instance, so a stale `vs-dark` from a recently-disposed
  * terminal editor can bleed into a freshly-mounted worksheet editor).
  */
-export const getResolvedTheme = (requested = "bb-light"): string => {
+export const getResolvedTheme = (requested = "vs"): string => {
   if (state.registeredThemes.has(requested)) return requested;
-  // Custom theme not registered → use its own base (vs / vs-dark), so a dark
-  // theme never falls back to the light `vs`.
   return state.themeBase.get(requested) ?? "vs";
 };
 
 const initialize = async () => {
   await initializeMonacoServices();
   await loadMonacoEditor();
-  initializeTheme();
+  await registerEditorThemes();
 };
 
 export const loadMonacoEditor = async (): Promise<typeof MonacoType> => {
@@ -144,7 +132,7 @@ export const defaultEditorOptions =
     return {
       renderValidationDecorations: "on",
       accessibilitySupport: "off",
-      theme: "bb-light",
+      theme: "vs",
       tabSize: 2,
       insertSpaces: true,
       autoClosingQuotes: "never",
@@ -185,7 +173,7 @@ export const defaultDiffEditorOptions =
       enableSplitViewResizing: false,
       accessibilitySupport: "off",
       renderValidationDecorations: "on",
-      theme: "bb-light",
+      theme: "vs",
       autoClosingQuotes: "never",
       folding: false,
       automaticLayout: true,
