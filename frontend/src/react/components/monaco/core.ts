@@ -60,6 +60,14 @@ export const loadMonacoEditor = async (): Promise<typeof MonacoType> => {
   }
 
   monacoModule = await import("monaco-editor");
+  // Monaco binds Cmd/Ctrl+L to `expandLineSelection` and preventDefault()s it,
+  // stealing the browser's address-bar shortcut while the editor is focused.
+  // Unbind the chord (the "-" prefix removes the binding) so the keypress falls
+  // through to the browser; the command stays reachable via the command palette.
+  monacoModule.editor.addKeybindingRule({
+    keybinding: monacoModule.KeyMod.CtrlCmd | monacoModule.KeyCode.KeyL,
+    command: "-expandLineSelection",
+  });
   monacoLoadDefer.resolve(monacoModule);
   return monacoModule;
 };

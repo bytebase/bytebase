@@ -270,6 +270,19 @@ describe("SQLEditorSection theme", () => {
     expect(ref.current?.isDirty()).toBe(false);
   });
 
+  test("defaults to Default Light when the workspace has no theme config", () => {
+    // beforeEach leaves sqlEditorThemeId = "" (a brand-new workspace).
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+
+    const lightSegment = querySegment("Default Light");
+    expect(lightSegment?.querySelector('[data-state="checked"]')).toBeTruthy();
+    // The default selection must not register as a pending change.
+    expect(ref.current?.isDirty()).toBe(false);
+  });
+
   test("without setWorkspaceProfile permission the theme control is disabled", () => {
     mocks.hasWorkspacePermissionV2.mockImplementation(
       (p: string) => p !== "bb.settings.setWorkspaceProfile"
