@@ -167,17 +167,25 @@ function AccessGrantRequestDrawerInner({
     return { instance, database: db };
   }, [targets]);
 
-  // Workspace-configured maximum role expiration, in days. When set, data
+  // Workspace-configured maximum role expiration, in seconds. When set, data
   // access grants are capped to the same window: preset durations that exceed
-  // it are filtered out and the custom picker is bounded. Returns undefined
-  // when no cap is configured, leaving the current preset UX untouched.
+  // it are filtered out and the custom picker is bounded. Kept in seconds (not
+  // floored to days) so sub-day caps configured via the API are honored.
+  // Returns undefined when no cap is configured, leaving the preset UX intact.
   const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
-  const maximumRoleExpirationDays = useMemo(() => {
+  const maximumExpirationSeconds = useMemo(() => {
     const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
-    return Math.floor(Number(seconds) / (60 * 60 * 24));
+    return Number(seconds);
   }, [workspaceProfile]);
-  const expirationCapped = maximumRoleExpirationDays !== undefined;
+  const expirationCapped = maximumExpirationSeconds !== undefined;
+  // Whole-day cap value for the day-worded hint/error copy; undefined for a
+  // sub-day cap, where the bounded picker enforces the limit on its own.
+  const maximumExpirationDays =
+    maximumExpirationSeconds !== undefined &&
+    maximumExpirationSeconds % (60 * 60 * 24) === 0
+      ? maximumExpirationSeconds / (60 * 60 * 24)
+      : undefined;
 
   const durationOptions = useMemo(() => {
     const presets = [
@@ -202,13 +210,13 @@ function AccessGrantRequestDrawerInner({
       ...presets
         .filter(
           (o) =>
-            maximumRoleExpirationDays === undefined ||
-            o.hours <= maximumRoleExpirationDays * 24
+            maximumExpirationSeconds === undefined ||
+            o.hours * 60 * 60 <= maximumExpirationSeconds
         )
         .map(({ hours, label }) => ({ value: `${hours}`, label })),
       { value: "-1", label: t("common.custom") },
     ];
-  }, [t, maximumRoleExpirationDays]);
+  }, [t, maximumExpirationSeconds]);
 
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}T00:00`;
@@ -228,9 +236,12 @@ function AccessGrantRequestDrawerInner({
   // Bind the picker's min to the current minute and its max to the configured
   // cap, matching the request-role drawer.
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
-  const maxDatetime = maximumRoleExpirationDays
-    ? dayjs().add(maximumRoleExpirationDays, "days").format("YYYY-MM-DDTHH:mm")
-    : undefined;
+  const maxDatetime =
+    maximumExpirationSeconds !== undefined
+      ? dayjs()
+          .add(maximumExpirationSeconds, "second")
+          .format("YYYY-MM-DDTHH:mm")
+      : undefined;
 
   const expirationIsInPast =
     duration === -1 &&
@@ -239,9 +250,9 @@ function AccessGrantRequestDrawerInner({
   const expirationExceedsMax =
     duration === -1 &&
     !!customExpireTime &&
-    !!maximumRoleExpirationDays &&
+    maximumExpirationSeconds !== undefined &&
     dayjs(customExpireTime).isAfter(
-      dayjs().add(maximumRoleExpirationDays, "days")
+      dayjs().add(maximumExpirationSeconds, "second")
     );
 
   const allowSubmit = useMemo(() => {
@@ -419,10 +430,10 @@ function AccessGrantRequestDrawerInner({
                 maxDate={maxDatetime}
               />
             )}
-            {expirationCapped && (
+            {maximumExpirationDays !== undefined && (
               <p className="text-xs text-control-light">
                 {t("project.members.request-role.max-expiration-hint", {
-                  days: maximumRoleExpirationDays,
+                  days: maximumExpirationDays,
                 })}
               </p>
             )}
@@ -431,10 +442,10 @@ function AccessGrantRequestDrawerInner({
                 {t("project.members.request-role.expiration-must-be-future")}
               </p>
             )}
-            {expirationExceedsMax && (
+            {expirationExceedsMax && maximumExpirationDays !== undefined && (
               <p className="text-xs text-error">
                 {t("project.members.request-role.expiration-exceeds-max", {
-                  days: maximumRoleExpirationDays,
+                  days: maximumExpirationDays,
                 })}
               </p>
             )}
