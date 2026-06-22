@@ -2253,7 +2253,7 @@
         "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
         "maximum-role-expiration": {
           "days": "Días)",
-          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto.",
+          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto. También limita la expiración de las solicitudes de acceso a datos.",
           "never-expires": "Nunca expira",
           "self": "Caducidad máxima del rol"
         },

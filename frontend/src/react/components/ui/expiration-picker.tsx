@@ -14,11 +14,13 @@ export function ExpirationPicker({
   onChange,
   minDate,
   maxDate,
+  className,
 }: {
   value: string | undefined;
   onChange: (value: string | undefined) => void;
   minDate?: string;
   maxDate?: string;
+  className?: string;
 }) {
   const { t } = useTranslation();
 
@@ -31,6 +33,7 @@ export function ExpirationPicker({
         onChange={(date) =>
           onChange(date ? dayjs(date).format("YYYY-MM-DDTHH:mm") : undefined)
         }
+        className={className}
       />
       {value && (
         <button
