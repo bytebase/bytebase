@@ -1154,9 +1154,9 @@ function ProjectRoleBindingForm({
     // Seed the picker with the current timestamp, or a default 1 week
     // (clamped to the cap) when switching from "Never".
     const seedDays =
-      maximumRequestExpirationDays !== undefined
-        ? Math.min(7, maximumRequestExpirationDays)
-        : 7;
+      maximumRequestExpirationDays === undefined
+        ? 7
+        : Math.min(7, maximumRequestExpirationDays);
     onChange({
       ...form,
       expirationCustom: true,
