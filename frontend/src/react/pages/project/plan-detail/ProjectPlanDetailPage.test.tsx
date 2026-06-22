@@ -233,7 +233,7 @@ describe("ProjectPlanDetailPage", () => {
     expect(container.textContent).toContain("plan.navigator.review");
   });
 
-  it("hides the review phase when there is no issue", async () => {
+  it("shows the review phase for sheet-backed plans without an issue", async () => {
     mocks.usePlanDetailPage.mockReturnValue(buildPage());
 
     await act(async () => {
@@ -247,7 +247,10 @@ describe("ProjectPlanDetailPage", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain("plan.navigator.review");
+    // CI/CD UI (sheet-backed) plans always surface the review phase, even
+    // before an issue exists — it renders as an upcoming "future" step.
+    expect(container.textContent).toContain("plan.navigator.review");
+    expect(container.textContent).toContain("plan.phase.review-description");
   });
 
   it("hides the review phase for GitOps plans with release-backed specs", async () => {

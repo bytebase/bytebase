@@ -1493,6 +1493,7 @@
       "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
       "deploy-description-gitops": "此计划已就绪，可以发布。创建一个发布以部署关联的 Release。",
       "hide-details": "隐藏详情",
+      "review-description": "提交审批以继续",
       "show-details": "显示详情"
     },
     "plans": "变更计划",
