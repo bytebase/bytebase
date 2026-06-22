@@ -525,11 +525,11 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   announcement?: Announcement | undefined;
 
   /**
-   * The max duration for role expired.
+   * The max expiration duration for role grants and data access requests.
    *
-   * @generated from field: google.protobuf.Duration maximum_role_expiration = 6;
+   * @generated from field: google.protobuf.Duration maximum_request_expiration = 6;
    */
-  maximumRoleExpiration?: Duration | undefined;
+  maximumRequestExpiration?: Duration | undefined;
 
   /**
    * The workspace domain, e.g., bytebase.com.

@@ -58,8 +58,8 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       // Maximum role expiration
       let inputValue = DEFAULT_EXPIRATION_DAYS;
       let neverExpire = true;
-      const seconds = profile.maximumRoleExpiration?.seconds
-        ? Number(profile.maximumRoleExpiration.seconds)
+      const seconds = profile.maximumRequestExpiration?.seconds
+        ? Number(profile.maximumRequestExpiration.seconds)
         : undefined;
       if (seconds && seconds > 0) {
         inputValue =
@@ -126,13 +126,13 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         }
         await useAppStore.getState().updateWorkspaceProfile({
           payload: {
-            maximumRoleExpiration: create(DurationSchema, {
+            maximumRequestExpiration: create(DurationSchema, {
               seconds: BigInt(seconds),
               nanos: 0,
             }),
           },
           updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.maximum_role_expiration"],
+            paths: ["value.workspace_profile.maximum_request_expiration"],
           }),
         });
       }
@@ -245,12 +245,14 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             <div>
               <p className="text-base font-semibold flex flex-row justify-start items-center">
                 <span className="mr-2">
-                  {t("settings.general.workspace.maximum-role-expiration.self")}
+                  {t(
+                    "settings.general.workspace.maximum-request-expiration.self"
+                  )}
                 </span>
               </p>
               <p className="text-sm text-gray-400 mt-1">
                 {t(
-                  "settings.general.workspace.maximum-role-expiration.description"
+                  "settings.general.workspace.maximum-request-expiration.description"
                 )}
               </p>
               <div className="mt-3 w-full flex flex-row">
@@ -275,7 +277,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
                       {t(
-                        "settings.general.workspace.maximum-role-expiration.days"
+                        "settings.general.workspace.maximum-request-expiration.days"
                       )}
                     </span>
                   </div>
@@ -292,7 +294,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     />
                     <span>
                       {t(
-                        "settings.general.workspace.maximum-role-expiration.never-expires"
+                        "settings.general.workspace.maximum-request-expiration.never-expires"
                       )}
                     </span>
                   </label>

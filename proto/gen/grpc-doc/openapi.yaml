@@ -28986,9 +28986,9 @@ components:
           title: announcement
           description: The setting of custom announcement
           $ref: '#/components/schemas/bytebase.v1.Announcement'
-        maximumRoleExpiration:
-          title: maximum_role_expiration
-          description: The max duration for role expired.
+        maximumRequestExpiration:
+          title: maximum_request_expiration
+          description: The max expiration duration for role grants and data access requests.
           $ref: '#/components/schemas/google.protobuf.Duration'
         domains:
           type: array

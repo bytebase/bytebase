@@ -518,8 +518,8 @@ type WorkspaceProfileSetting struct {
 	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *WorkspaceProfileSetting_Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
-	// The max duration for role expired.
-	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
+	// The max expiration duration for role grants and data access requests.
+	MaximumRequestExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_request_expiration,json=maximumRequestExpiration,proto3" json:"maximum_request_expiration,omitempty"`
 	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,7,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
@@ -629,9 +629,9 @@ func (x *WorkspaceProfileSetting) GetAnnouncement() *WorkspaceProfileSetting_Ann
 	return nil
 }
 
-func (x *WorkspaceProfileSetting) GetMaximumRoleExpiration() *durationpb.Duration {
+func (x *WorkspaceProfileSetting) GetMaximumRequestExpiration() *durationpb.Duration {
 	if x != nil {
-		return x.MaximumRoleExpiration
+		return x.MaximumRequestExpiration
 	}
 	return nil
 }
@@ -2800,15 +2800,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\x81\x11\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\x87\x11\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
 	"require2fa\x12O\n" +
 	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12X\n" +
-	"\fannouncement\x18\x05 \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12Q\n" +
-	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
+	"\fannouncement\x18\x05 \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12W\n" +
+	"\x1amaximum_request_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x18maximumRequestExpiration\x12\x18\n" +
 	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
 	"\x17enforce_identity_domain\x18\b \x01(\bR\x15enforceIdentityDomain\x12l\n" +
 	"\x14database_change_mode\x18\t \x01(\x0e2:.bytebase.store.WorkspaceProfileSetting.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
@@ -3099,7 +3099,7 @@ var file_store_setting_proto_goTypes = []any{
 var file_store_setting_proto_depIdxs = []int32{
 	44, // 0: bytebase.store.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
 	19, // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.WorkspaceProfileSetting.Announcement
-	44, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	44, // 2: bytebase.store.WorkspaceProfileSetting.maximum_request_expiration:type_name -> google.protobuf.Duration
 	1,  // 3: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode
 	44, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
 	20, // 5: bytebase.store.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.store.WorkspaceProfileSetting.PasswordRestriction

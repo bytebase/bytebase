@@ -995,8 +995,8 @@ type WorkspaceProfileSetting struct {
 	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
-	// The max duration for role expired.
-	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
+	// The max expiration duration for role grants and data access requests.
+	MaximumRequestExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_request_expiration,json=maximumRequestExpiration,proto3" json:"maximum_request_expiration,omitempty"`
 	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,7,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
@@ -1106,9 +1106,9 @@ func (x *WorkspaceProfileSetting) GetAnnouncement() *Announcement {
 	return nil
 }
 
-func (x *WorkspaceProfileSetting) GetMaximumRoleExpiration() *durationpb.Duration {
+func (x *WorkspaceProfileSetting) GetMaximumRequestExpiration() *durationpb.Duration {
 	if x != nil {
-		return x.MaximumRoleExpiration
+		return x.MaximumRequestExpiration
 	}
 	return nil
 }
@@ -3446,15 +3446,15 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\x82\x0e\n" +
+	"\apayload\"\x88\x0e\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_mfa\x18\x03 \x01(\bR\n" +
 	"requireMfa\x12O\n" +
 	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12=\n" +
-	"\fannouncement\x18\x05 \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
-	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
+	"\fannouncement\x18\x05 \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12W\n" +
+	"\x1amaximum_request_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x18maximumRequestExpiration\x12\x18\n" +
 	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
 	"\x17enforce_identity_domain\x18\b \x01(\bR\x15enforceIdentityDomain\x12Q\n" +
 	"\x14database_change_mode\x18\t \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
@@ -3734,7 +3734,7 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	34, // 13: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
 	53, // 14: bytebase.v1.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
 	18, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
-	53, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	53, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_request_expiration:type_name -> google.protobuf.Duration
 	0,  // 17: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
 	53, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
 	35, // 19: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction

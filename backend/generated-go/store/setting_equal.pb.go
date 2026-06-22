@@ -109,7 +109,7 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if !x.Announcement.Equal(y.Announcement) {
 		return false
 	}
-	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+	if p, q := x.MaximumRequestExpiration, y.MaximumRequestExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	if len(x.Domains) != len(y.Domains) {

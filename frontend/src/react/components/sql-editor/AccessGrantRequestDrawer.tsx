@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -166,27 +167,111 @@ function AccessGrantRequestDrawerInner({
     return { instance, database: db };
   }, [targets]);
 
-  const durationOptions = useMemo(
-    () => [
-      { value: "1", label: t("sql-editor.duration-hour", { hours: 1 }) },
-      { value: "4", label: t("sql-editor.duration-hours", { hours: 4 }) },
-      { value: "24", label: t("sql-editor.duration-day", { days: 1 }) },
-      { value: "168", label: t("sql-editor.duration-days", { days: 7 }) },
+  // Workspace-configured maximum role expiration, in seconds. When set, data
+  // access grants are capped to the same window: preset durations that exceed
+  // it are filtered out and the custom picker is bounded. Kept in seconds (not
+  // floored to days) so sub-day caps configured via the API are honored.
+  // Returns undefined when no cap is configured, leaving the preset UX intact.
+  const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
+  const maximumExpirationSeconds = useMemo(() => {
+    const seconds = workspaceProfile.maximumRequestExpiration?.seconds;
+    if (!seconds) return undefined;
+    return Number(seconds);
+  }, [workspaceProfile]);
+  const expirationCapped = maximumExpirationSeconds !== undefined;
+  // Whole-day cap value for the day-worded hint/error copy; undefined for a
+  // sub-day cap, where the bounded picker enforces the limit on its own.
+  const maximumExpirationDays =
+    maximumExpirationSeconds !== undefined &&
+    maximumExpirationSeconds % (60 * 60 * 24) === 0
+      ? maximumExpirationSeconds / (60 * 60 * 24)
+      : undefined;
+
+  const durationOptions = useMemo(() => {
+    const presets = [
+      {
+        hours: 1,
+        label: t("sql-editor.duration-hour", { hours: 1 }),
+      },
+      {
+        hours: 4,
+        label: t("sql-editor.duration-hours", { hours: 4 }),
+      },
+      {
+        hours: 24,
+        label: t("sql-editor.duration-day", { days: 1 }),
+      },
+      {
+        hours: 168,
+        label: t("sql-editor.duration-days", { days: 7 }),
+      },
+    ];
+    return [
+      ...presets
+        .filter(
+          (o) =>
+            maximumExpirationSeconds === undefined ||
+            o.hours * 60 * 60 <= maximumExpirationSeconds
+        )
+        .map(({ hours, label }) => ({ value: `${hours}`, label })),
       { value: "-1", label: t("common.custom") },
-    ],
-    [t]
-  );
+    ];
+  }, [t, maximumExpirationSeconds]);
 
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}T00:00`;
+
+  // A previously selected preset (e.g. the default 4h) may exceed a newly
+  // applied cap; fall back to the largest still-valid preset, or to the custom
+  // picker when the cap is shorter than every preset.
+  useEffect(() => {
+    if (duration === -1) return;
+    if (durationOptions.some((o) => o.value === String(duration))) return;
+    const presets = durationOptions.filter((o) => o.value !== "-1");
+    setDuration(
+      presets.length > 0 ? Number(presets[presets.length - 1].value) : -1
+    );
+  }, [durationOptions, duration]);
+
+  // Bind the picker's min to the current minute and its max to the configured
+  // cap, matching the request-role drawer.
+  const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
+  const maxDatetime =
+    maximumExpirationSeconds === undefined
+      ? undefined
+      : dayjs()
+          .add(maximumExpirationSeconds, "second")
+          .format("YYYY-MM-DDTHH:mm");
+
+  const expirationIsInPast =
+    duration === -1 &&
+    !!customExpireTime &&
+    dayjs(customExpireTime).unix() <= dayjs().unix();
+  const expirationExceedsMax =
+    duration === -1 &&
+    !!customExpireTime &&
+    maximumExpirationSeconds !== undefined &&
+    dayjs(customExpireTime).isAfter(
+      dayjs().add(maximumExpirationSeconds, "second")
+    );
 
   const allowSubmit = useMemo(() => {
     if (targets.length === 0) return false;
     if (!query.trim()) return false;
     if (!reason.trim()) return false;
-    if (duration === -1 && !customExpireTime) return false;
+    if (duration === -1) {
+      return !!customExpireTime && !expirationIsInPast && !expirationExceedsMax;
+    }
     return true;
-  }, [targets, query, reason, duration, customExpireTime]);
+  }, [
+    targets,
+    query,
+    reason,
+    duration,
+    customExpireTime,
+    expirationIsInPast,
+    expirationExceedsMax,
+  ]);
 
   const handleSubmit = async () => {
     if (isRequesting || !allowSubmit) return;
@@ -338,10 +423,31 @@ function AccessGrantRequestDrawerInner({
             />
             {duration === -1 && (
               <ExpirationPicker
+                className="w-full"
                 value={customExpireTime}
                 onChange={setCustomExpireTime}
-                minDate={minDate}
+                minDate={expirationCapped ? minDatetime : minDate}
+                maxDate={maxDatetime}
               />
+            )}
+            {maximumExpirationDays !== undefined && (
+              <p className="text-xs text-control-light">
+                {t("project.members.request-role.max-expiration-hint", {
+                  days: maximumExpirationDays,
+                })}
+              </p>
+            )}
+            {expirationIsInPast && (
+              <p className="text-xs text-error">
+                {t("project.members.request-role.expiration-must-be-future")}
+              </p>
+            )}
+            {expirationExceedsMax && maximumExpirationDays !== undefined && (
+              <p className="text-xs text-error">
+                {t("project.members.request-role.expiration-exceeds-max", {
+                  days: maximumExpirationDays,
+                })}
+              </p>
             )}
           </div>
 

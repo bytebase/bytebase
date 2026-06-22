@@ -2258,11 +2258,11 @@
         "logo": "Logo",
         "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
         "logo-upload-tip": "{{extension}} tối đa {{size}} MiB",
-        "maximum-role-expiration": {
+        "maximum-request-expiration": {
           "days": "Ngày",
-          "description": "Thời hạn vai trò tối đa là thời hạn tối đa mà một vai trò có thể được cấp cho người dùng, sẽ áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án.",
+          "description": "Thời hạn yêu cầu tối đa là khoảng thời gian tối đa mà việc cấp vai trò hoặc yêu cầu truy cập dữ liệu có thể còn hiệu lực. Nó áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án, và cho tất cả các yêu cầu truy cập dữ liệu.",
           "never-expires": "Không bao giờ hết hạn",
-          "self": "Thời gian hết hạn vai trò tối đa"
+          "self": "Thời hạn yêu cầu tối đa"
         },
         "maximum-sql-result": {
           "rows": {
