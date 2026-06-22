@@ -256,18 +256,40 @@ func TestValidateBindings(t *testing.T) {
 
 func TestValidateIAMPolicyExpression(t *testing.T) {
 	timeNow := time.Now()
+	thirtyDays := &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}
+	withinCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339))
+	overCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339))
 	tests := []struct {
+		name                     string
 		expr                     string
 		maximumRequestExpiration *durationpb.Duration
 		wantErr                  bool
 	}{
 		{
-			expr:                     fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339)),
-			maximumRequestExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}, // 30 days
+			name:                     "within cap",
+			expr:                     withinCap,
+			maximumRequestExpiration: thirtyDays,
 		},
 		{
-			expr:                     fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339)),
-			maximumRequestExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30},
+			name:                     "exceeds cap",
+			expr:                     overCap,
+			maximumRequestExpiration: thirtyDays,
+			wantErr:                  true,
+		},
+		{
+			name:                     "no cap configured",
+			expr:                     overCap,
+			maximumRequestExpiration: nil,
+		},
+		{
+			name:                     "bound with database scoping",
+			expr:                     fmt.Sprintf(`%s && (resource.database == "a" || resource.database == "b")`, withinCap),
+			maximumRequestExpiration: thirtyDays,
+		},
+		{
+			name:                     "missing request.time",
+			expr:                     `resource.database == "a"`,
+			maximumRequestExpiration: thirtyDays,
 			wantErr:                  true,
 		},
 	}
@@ -275,9 +297,9 @@ func TestValidateIAMPolicyExpression(t *testing.T) {
 	for _, tt := range tests {
 		err := validateExpirationInExpression(tt.expr, tt.maximumRequestExpiration)
 		if tt.wantErr {
-			require.Error(t, err)
+			require.Error(t, err, tt.name)
 		} else {
-			require.NoError(t, err)
+			require.NoError(t, err, tt.name)
 		}
 	}
 }

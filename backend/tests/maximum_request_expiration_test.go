@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -35,6 +36,59 @@ func (ctl *controller) setMaximumRequestExpiration(ctx context.Context, d *durat
 		},
 	}))
 	return err
+}
+
+// TestRoleGrantMaximumExpiration verifies that creating a ROLE_GRANT issue is
+// validated server-side against the workspace maximum request expiration cap.
+func TestRoleGrantMaximumExpiration(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Cap request expiration to 7 days.
+	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))
+
+	newRoleGrantIssue := func(condition string) *connect.Request[v1pb.CreateIssueRequest] {
+		return connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: ctl.project.Name,
+			Issue: &v1pb.Issue{
+				Title: "Request projectDeveloper role",
+				Type:  v1pb.Issue_ROLE_GRANT,
+				RoleGrant: &v1pb.RoleGrant{
+					Role:      "roles/projectDeveloper",
+					User:      ctl.principalName,
+					Condition: &expr.Expr{Expression: condition},
+				},
+			},
+		})
+	}
+
+	// Within the cap (1 day): allowed.
+	withinCap := fmt.Sprintf(`request.time < timestamp("%s")`, time.Now().Add(24*time.Hour).Format(time.RFC3339))
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(withinCap))
+	a.NoError(err, "expiration within the cap should be allowed")
+
+	// Exceeding the cap (30 days): rejected.
+	overCap := fmt.Sprintf(`request.time < timestamp("%s")`, time.Now().Add(30*24*time.Hour).Format(time.RFC3339))
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(overCap))
+	a.Error(err, "expiration exceeding the cap should be rejected")
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// Missing expiration while a cap is configured: rejected (the grant would
+	// otherwise be treated as unbounded, bypassing the cap).
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(""))
+	a.Error(err, "missing expiration should be rejected when a cap is configured")
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// Clearing the cap restores the unbounded behavior.
+	a.NoError(ctl.setMaximumRequestExpiration(ctx, nil))
+	_, err = ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(overCap))
+	a.NoError(err, "expiration should be unbounded when no cap is configured")
 }
 
 // TestAccessGrantMaximumExpiration verifies that creating an access grant is
