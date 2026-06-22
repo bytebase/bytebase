@@ -24,6 +24,7 @@ import {
   themeToAnchors,
 } from "@/react/components/sql-editor/theme/derive";
 import {
+  DEFAULT_THEME_ID,
   PRESET_BY_ID,
   PRESETS,
 } from "@/react/components/sql-editor/theme/presets";
@@ -163,7 +164,10 @@ export const SQLEditorSection = forwardRef<
   } => {
     const custom = workspaceProfile.sqlEditorCustomTheme;
     return {
-      selectedThemeId: workspaceProfile.sqlEditorThemeId || "",
+      // A brand-new workspace has no `sqlEditorThemeId`; default the selector to
+      // the default theme (Default Light) so it shows a selected segment, not a
+      // blank one. Matches the applied theme — `resolveThemeId("")` is light too.
+      selectedThemeId: workspaceProfile.sqlEditorThemeId || DEFAULT_THEME_ID,
       customDraft: custom
         ? {
             id: custom.id,
