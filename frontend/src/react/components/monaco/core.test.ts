@@ -17,9 +17,14 @@ const mocks = vi.hoisted(() => {
     getModifiedEditor: vi.fn(() => modifiedEditor),
   };
   const monaco = {
+    // `loadMonacoEditor` unbinds Cmd/Ctrl+L on load; the mock must expose the
+    // keybinding API it touches or every editor-creating test throws on load.
+    KeyMod: { CtrlCmd: 2048 },
+    KeyCode: { KeyL: 42 },
     editor: {
       create: vi.fn(() => editor),
       createDiffEditor: vi.fn(() => diffEditor),
+      addKeybindingRule: vi.fn(),
     },
   };
   return {
