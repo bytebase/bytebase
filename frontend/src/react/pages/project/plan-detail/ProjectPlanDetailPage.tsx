@@ -126,7 +126,10 @@ function ProjectPlanDetailPageInner({
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
   );
-  const reviewVisible = !isGitOpsPlan && !!page.issue;
+  // CI/CD UI (sheet-backed) plans always surface the review phase — even
+  // before an issue exists it shows as an upcoming step. Only GitOps
+  // release-backed plans, which bypass review entirely, hide it.
+  const reviewVisible = !isGitOpsPlan;
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
@@ -153,7 +156,7 @@ function ProjectPlanDetailPageInner({
     }
 
     const changesStatus: PhaseStatus =
-      page.isCreating || (!isGitOpsPlan && !hasIssue && !hasRollout)
+      page.isCreating || (reviewVisible && !hasIssue && !hasRollout)
         ? "active"
         : "completed";
     const deployStatus: PhaseStatus = hasRollout
@@ -224,14 +227,7 @@ function ProjectPlanDetailPageInner({
         lineClass: "",
       },
     };
-  }, [
-    isGitOpsPlan,
-    page.isCreating,
-    page.issue,
-    page.rollout,
-    reviewVisible,
-    t,
-  ]);
+  }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
 
   // Mirror the URL specId into local state. We deliberately don't include
   // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
@@ -300,6 +296,11 @@ function ProjectPlanDetailPageInner({
                     status={phaseConfigs.review.status}
                     onToggle={() => page.togglePhase("review")}
                     summary={buildReviewSummary(page.issue, t)}
+                    future={
+                      <p className="mt-0.5 text-sm text-control-placeholder">
+                        {t("plan.phase.review-description")}
+                      </p>
+                    }
                   >
                     <PlanReviewSection />
                   </PhaseSection>
