@@ -174,7 +174,7 @@ function AccessGrantRequestDrawerInner({
   // Returns undefined when no cap is configured, leaving the preset UX intact.
   const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
   const maximumExpirationSeconds = useMemo(() => {
-    const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
+    const seconds = workspaceProfile.maximumRequestExpiration?.seconds;
     if (!seconds) return undefined;
     return Number(seconds);
   }, [workspaceProfile]);

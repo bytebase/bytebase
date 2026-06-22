@@ -1077,9 +1077,9 @@ func validateIAMPolicy(
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
-	var maximumRoleExpiration *durationpb.Duration
+	var maximumRequestExpiration *durationpb.Duration
 	if workspaceProfileSetting != nil {
-		maximumRoleExpiration = workspaceProfileSetting.MaximumRoleExpiration
+		maximumRequestExpiration = workspaceProfileSetting.MaximumRequestExpiration
 	}
 
 	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
@@ -1117,14 +1117,14 @@ func validateIAMPolicy(
 		}
 	}
 
-	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
+	return validateBindings(msg.Resource, bindings, roleMessages, maximumRequestExpiration)
 }
 
 func validateBindings(
 	parent string,
 	bindings []*v1pb.Binding,
 	roles []*store.RoleMessage,
-	maximumRoleExpiration *durationpb.Duration,
+	maximumRequestExpiration *durationpb.Duration,
 ) error {
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
@@ -1147,9 +1147,9 @@ func validateBindings(
 			return err
 		}
 
-		if binding.Role != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) && maximumRoleExpiration != nil {
-			// Only validate when maximumRoleExpiration is set and the role is not project owner.
-			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
+		if binding.Role != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) && maximumRequestExpiration != nil {
+			// Only validate when maximumRequestExpiration is set and the role is not project owner.
+			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRequestExpiration); err != nil {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate expiration for binding %v", binding.Role))
 			}
 		}
@@ -1162,8 +1162,8 @@ func validateBindings(
 // * request.time < timestamp("2021-01-01T00:00:00Z")
 //
 // Other expressions will be ignored.
-func validateExpirationInExpression(expr string, maximumRoleExpiration *durationpb.Duration) error {
-	if maximumRoleExpiration == nil {
+func validateExpirationInExpression(expr string, maximumRequestExpiration *durationpb.Duration) error {
+	if maximumRequestExpiration == nil {
 		return nil
 	}
 	if !strings.Contains(expr, "request.time") {
@@ -1237,9 +1237,9 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 				if err != nil {
 					return errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				maxExpirationTime := time.Now().Add(maximumRoleExpiration.AsDuration())
+				maxExpirationTime := time.Now().Add(maximumRequestExpiration.AsDuration())
 				if t.After(maxExpirationTime) {
-					return errors.Errorf("time %s exceeds maximum role expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
+					return errors.Errorf("time %s exceeds maximum request expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
 				}
 				return nil
 			default:

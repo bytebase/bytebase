@@ -257,23 +257,23 @@ func TestValidateBindings(t *testing.T) {
 func TestValidateIAMPolicyExpression(t *testing.T) {
 	timeNow := time.Now()
 	tests := []struct {
-		expr                  string
-		maximumRoleExpiration *durationpb.Duration
-		wantErr               bool
+		expr                     string
+		maximumRequestExpiration *durationpb.Duration
+		wantErr                  bool
 	}{
 		{
-			expr:                  fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339)),
-			maximumRoleExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}, // 30 days
+			expr:                     fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339)),
+			maximumRequestExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}, // 30 days
 		},
 		{
-			expr:                  fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339)),
-			maximumRoleExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30},
-			wantErr:               true,
+			expr:                     fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339)),
+			maximumRequestExpiration: &durationpb.Duration{Seconds: 60 * 60 * 24 * 30},
+			wantErr:                  true,
 		},
 	}
 
 	for _, tt := range tests {
-		err := validateExpirationInExpression(tt.expr, tt.maximumRoleExpiration)
+		err := validateExpirationInExpression(tt.expr, tt.maximumRequestExpiration)
 		if tt.wantErr {
 			require.Error(t, err)
 		} else {

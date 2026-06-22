@@ -2257,11 +2257,11 @@
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "logo-upload-tip": "{{extension}} up to {{size}} MiB",
-        "maximum-role-expiration": {
+        "maximum-request-expiration": {
           "days": "Day(s)",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner. It also caps the expiration of data access requests.",
+          "description": "Maximum request expiration is the maximum period a role grant or data access request can remain valid. It applies to all project roles except the project owner, and to all data access requests.",
           "never-expires": "Never expires",
-          "self": "Maximum role expiration"
+          "self": "Maximum request expiration"
         },
         "maximum-sql-result": {
           "rows": {

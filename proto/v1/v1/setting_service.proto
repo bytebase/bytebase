@@ -198,8 +198,8 @@ message WorkspaceProfileSetting {
   // The setting of custom announcement
   Announcement announcement = 5;
 
-  // The max duration for role expired.
-  google.protobuf.Duration maximum_role_expiration = 6;
+  // The max expiration duration for role grants and data access requests.
+  google.protobuf.Duration maximum_request_expiration = 6;
 
   // The workspace domain, e.g., bytebase.com.
   repeated string domains = 7;

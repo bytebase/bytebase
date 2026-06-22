@@ -6678,7 +6678,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | require_mfa | [bool](#bool) |  | Require MFA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
 | announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
-| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
+| maximum_request_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for role grants and data access requests. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |

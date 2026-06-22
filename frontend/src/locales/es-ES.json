@@ -2257,11 +2257,11 @@
         "logo": "Logotipo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
-        "maximum-role-expiration": {
+        "maximum-request-expiration": {
           "days": "Días)",
-          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto. También limita la expiración de las solicitudes de acceso a datos.",
+          "description": "La caducidad máxima de la solicitud es el período máximo durante el cual una concesión de rol o una solicitud de acceso a datos puede permanecer válida. Se aplica a todos los roles del proyecto excepto al propietario del proyecto, y a todas las solicitudes de acceso a datos.",
           "never-expires": "Nunca expira",
-          "self": "Caducidad máxima del rol"
+          "self": "Caducidad máxima de la solicitud"
         },
         "maximum-sql-result": {
           "rows": {

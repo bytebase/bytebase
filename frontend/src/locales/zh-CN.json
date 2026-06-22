@@ -2257,11 +2257,11 @@
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "logo-upload-tip": "支持 {{extension}} 类型文件，不能大于 {{size}} MiB",
-        "maximum-role-expiration": {
+        "maximum-request-expiration": {
           "days": "天数",
-          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间，会应用在项目所有者之外的其他项目角色上。同时也会限制数据访问申请的过期时间。",
+          "description": "最大申请有效期是角色授予或数据访问申请可保持有效的最长时间。它适用于除项目所有者之外的所有项目角色，以及所有数据访问申请。",
           "never-expires": "永不过期",
-          "self": "角色最大过期时间"
+          "self": "最大申请有效期"
         },
         "maximum-sql-result": {
           "rows": {

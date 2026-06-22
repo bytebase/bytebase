@@ -230,7 +230,7 @@ vi.mock("@/react/stores/app", () => ({
             : [],
       }),
       // Migrated off the Pinia useSettingV1Store mock.
-      getWorkspaceProfile: () => ({ maximumRoleExpiration: undefined }),
+      getWorkspaceProfile: () => ({ maximumRequestExpiration: undefined }),
     }),
 }));
 

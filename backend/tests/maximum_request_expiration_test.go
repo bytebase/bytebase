@@ -15,9 +15,9 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// setMaximumRoleExpiration sets the workspace-level maximum role expiration cap.
+// setMaximumRequestExpiration sets the workspace-level maximum request expiration cap.
 // Passing nil clears the cap.
-func (ctl *controller) setMaximumRoleExpiration(ctx context.Context, d *durationpb.Duration) error {
+func (ctl *controller) setMaximumRequestExpiration(ctx context.Context, d *durationpb.Duration) error {
 	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
@@ -25,20 +25,20 @@ func (ctl *controller) setMaximumRoleExpiration(ctx context.Context, d *duration
 			Value: &v1pb.SettingValue{
 				Value: &v1pb.SettingValue_WorkspaceProfile{
 					WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
-						MaximumRoleExpiration: d,
+						MaximumRequestExpiration: d,
 					},
 				},
 			},
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"value.workspace_profile.maximum_role_expiration"},
+			Paths: []string{"value.workspace_profile.maximum_request_expiration"},
 		},
 	}))
 	return err
 }
 
 // TestAccessGrantMaximumExpiration verifies that creating an access grant is
-// validated server-side against the workspace maximum role expiration cap.
+// validated server-side against the workspace maximum request expiration cap.
 func TestAccessGrantMaximumExpiration(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -72,7 +72,7 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	target := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
 
 	// Cap role expiration to 7 days.
-	a.NoError(ctl.setMaximumRoleExpiration(ctx, durationpb.New(7*24*time.Hour)))
+	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))
 
 	newAccessGrant := func(exp any) *connect.Request[v1pb.CreateAccessGrantRequest] {
 		ag := &v1pb.AccessGrant{
@@ -110,7 +110,7 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	// Clearing the cap restores the unbounded behavior.
-	a.NoError(ctl.setMaximumRoleExpiration(ctx, nil))
+	a.NoError(ctl.setMaximumRequestExpiration(ctx, nil))
 	_, err = ctl.accessGrantServiceClient.CreateAccessGrant(ctx, newAccessGrant(durationpb.New(30*24*time.Hour)))
 	a.NoError(err, "ttl should be unbounded when no cap is configured")
 }

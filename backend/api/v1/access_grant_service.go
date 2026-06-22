@@ -192,19 +192,19 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expiration (expire_time or ttl) is required"))
 	}
 
-	// Enforce the workspace maximum role expiration cap on the requested access
+	// Enforce the workspace maximum request expiration cap on the requested access
 	// window, matching the request-role flow and the client-side cap.
 	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
-	if maximumRoleExpiration := workspaceProfileSetting.GetMaximumRoleExpiration(); maximumRoleExpiration != nil {
-		maxExpireTime := time.Now().Add(maximumRoleExpiration.AsDuration())
+	if maximumRequestExpiration := workspaceProfileSetting.GetMaximumRequestExpiration(); maximumRequestExpiration != nil {
+		maxExpireTime := time.Now().Add(maximumRequestExpiration.AsDuration())
 		switch {
 		case expireTime != nil && expireTime.After(maxExpireTime):
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum role expiration %s", maximumRoleExpiration.AsDuration()))
-		case requestedDuration != nil && requestedDuration.AsDuration() > maximumRoleExpiration.AsDuration():
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum role expiration %s", maximumRoleExpiration.AsDuration()))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
+		case requestedDuration != nil && requestedDuration.AsDuration() > maximumRequestExpiration.AsDuration():
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
 		}
 	}
 
