@@ -6,6 +6,7 @@ import {
   ExternalLink,
   FolderTree,
   Loader2,
+  Pencil,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1300,21 +1301,25 @@ function TargetsSection({
   return (
     <>
       <div className="flex flex-col gap-y-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <span className="textlabel uppercase">
-              {t("plan.targets.title")}
+        <div className="flex items-center gap-1">
+          <span className="textlabel uppercase">{t("plan.targets.title")}</span>
+          {targets.length > 1 && (
+            <span className="textlabel text-control-light">
+              ({targets.length})
             </span>
-            {targets.length > 1 && (
-              <span className="textlabel text-control-light">
-                ({targets.length})
-              </span>
-            )}
-          </div>
+          )}
           {allowEdit && (
-            <Button onClick={onEdit} size="xs" variant="outline">
-              {t("common.edit")}
-            </Button>
+            <Tooltip content={t("common.edit")}>
+              <Button
+                aria-label={t("common.edit")}
+                className="text-control-light hover:text-control"
+                onClick={onEdit}
+                size="xs"
+                variant="ghost"
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            </Tooltip>
           )}
         </div>
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (

@@ -1,5 +1,5 @@
 import { clone, create } from "@bufbuild/protobuf";
-import { Loader2, Table, Upload } from "lucide-react";
+import { Loader2, Pencil, Table, Upload } from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -238,6 +238,11 @@ export function PlanDetailStatementSection({
         hasProjectPermissionV2(project, "bb.plans.update"))
   );
   const canEdit = canModifyStatement && !isSheetOversize && !page.isCreating;
+  // An active edit session (not whole-plan creation) shows Save/Cancel.
+  const isInlineEditing = isEditing && !page.isCreating;
+  // Hide Upload/Schema editor only when editing an already-persisted statement;
+  // a new pending-draft spec still needs them to author its first statement.
+  const isEditingExistingStatement = isInlineEditing && !isPendingDraft;
   const hasChanges = page.isCreating
     ? draftStatement !== statement
     : isEditing && draftStatement !== statement;
@@ -448,61 +453,61 @@ export function PlanDetailStatementSection({
           onChange={(event) => void handleFileUpload(event)}
           type="file"
         />
-        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
-          {(canModifyStatement || isEditing) && (
-            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
-              <Button onClick={handleUploadClick} size="xs" variant="outline">
-                <Upload className="h-3.5 w-3.5" />
-                {t("issue.upload-sql")}
+        {(canModifyStatement || isEditing) && (
+          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
+            {!isEditingExistingStatement && (
+              <>
+                <Button onClick={handleUploadClick} size="xs" variant="outline">
+                  <Upload className="h-3.5 w-3.5" />
+                  {t("issue.upload-sql")}
+                </Button>
+                {schemaEditorEligible && (
+                  <Button
+                    onClick={() => setIsSchemaEditorOpen(true)}
+                    size="xs"
+                    variant="outline"
+                  >
+                    <Table className="h-3.5 w-3.5" />
+                    {t("schema-editor.self")}
+                  </Button>
+                )}
+              </>
+            )}
+            {!isEditing && canEdit && (
+              <Button
+                onClick={() => setIsEditing(true)}
+                size="xs"
+                variant="outline"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                {t("common.edit")}
               </Button>
-              {schemaEditorEligible && (
+            )}
+            {isInlineEditing && (
+              <>
                 <Button
-                  onClick={() => setIsSchemaEditorOpen(true)}
+                  disabled={!canSave}
+                  onClick={() => void handleSave()}
                   size="xs"
                   variant="outline"
                 >
-                  <Table className="h-3.5 w-3.5" />
-                  {t("schema-editor.self")}
+                  {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {t("common.save")}
                 </Button>
-              )}
-              {!isEditing ? (
-                canEdit ? (
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    size="xs"
-                    variant="outline"
-                  >
-                    {t("common.edit")}
-                  </Button>
-                ) : null
-              ) : !page.isCreating ? (
-                <>
-                  <Button
-                    disabled={!canSave}
-                    onClick={() => void handleSave()}
-                    size="xs"
-                    variant="outline"
-                  >
-                    {isSaving && (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    )}
-                    {t("common.save")}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setDraftStatement(statement);
-                      setIsEditing(false);
-                    }}
-                    size="xs"
-                    variant="ghost"
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          )}
-        </div>
+                <Button
+                  onClick={() => {
+                    setDraftStatement(statement);
+                    setIsEditing(false);
+                  }}
+                  size="xs"
+                  variant="ghost"
+                >
+                  {t("common.cancel")}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
       {isSheetOversize && (
         <Alert
