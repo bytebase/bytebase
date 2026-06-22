@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	dsqlauth "github.com/aws/aws-sdk-go-v2/feature/dsql/auth"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -238,9 +239,29 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 		return "", err
 	}
 
-	dbEndpoint := fmt.Sprintf("%s:%s", conf.DataSource.Host, conf.DataSource.Port)
+	host := conf.DataSource.Host
+	region := conf.DataSource.GetRegion()
+
+	// Aurora DSQL does not support RDS password authentication and uses a
+	// DSQL-specific IAM auth token signed for the bare hostname (no port).
+	// The "admin" database role requires the DbConnectAdmin action, while other
+	// roles use DbConnect.
+	if isAuroraDSQLHost(host) {
+		var token string
+		if conf.DataSource.Username == "admin" {
+			token, err = dsqlauth.GenerateDBConnectAdminAuthToken(ctx, host, region, cfg.Credentials)
+		} else {
+			token, err = dsqlauth.GenerateDbConnectAuthToken(ctx, host, region, cfg.Credentials)
+		}
+		if err != nil {
+			return "", errors.Wrap(err, "failed to create Aurora DSQL authentication token")
+		}
+		return token, nil
+	}
+
+	dbEndpoint := fmt.Sprintf("%s:%s", host, conf.DataSource.Port)
 	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, conf.DataSource.GetRegion(), conf.DataSource.Username, cfg.Credentials)
+		ctx, dbEndpoint, region, conf.DataSource.Username, cfg.Credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -248,22 +269,51 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 	return authenticationToken, nil
 }
 
-// getRDSConnectionConfig returns connection config for AWS RDS.
+// isAuroraDSQLHost reports whether the host is an Aurora DSQL endpoint, which
+// has the form <cluster-id>.dsql[-<suffix>].<region>.on.aws.
+func isAuroraDSQLHost(host string) bool {
+	h := strings.ToLower(host)
+	return strings.Contains(h, ".dsql") && strings.HasSuffix(h, ".on.aws")
+}
+
+// getRDSConnectionConfig returns connection config for AWS RDS and Aurora DSQL.
 //
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
+// https://docs.aws.amazon.com/aurora-dsql/latest/userguide/SECTION_authentication-token.html
 func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	password, err := getRDSConnectionPassword(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
-		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
-	)
-	config, err := pgx.ParseConfig(dsn)
+	connStr := fmt.Sprintf("host=%s port=%s", conf.DataSource.Host, conf.DataSource.Port)
+	if conf.DataSource.GetUseSsl() {
+		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(conf.DataSource))
+	}
+	for key, value := range conf.DataSource.GetExtraConnectionParameters() {
+		connStr += fmt.Sprintf(" %s=%s", key, value)
+	}
+
+	config, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
 	}
+	// Set the IAM auth token as the password after parsing so it is not subject
+	// to connection-string escaping.
+	config.User = conf.DataSource.Username
+	config.Password = password
+
+	// Apply Bytebase TLS settings. Aurora DSQL mandates TLS and routes by SNI,
+	// which GetTLSConfig now populates via ServerName.
+	tlscfg, err := util.GetTLSConfig(conf.DataSource)
+	if err != nil {
+		return nil, err
+	}
+	if tlscfg != nil {
+		config.TLSConfig = tlscfg
+		util.ApplyPGTLSConfig(tlscfg, config.Host, config.Fallbacks)
+	}
+
 	config.DefaultQueryExecMode = pgx.QueryExecModeExec
 	config.StatementCacheCapacity = 0
 	return config, nil

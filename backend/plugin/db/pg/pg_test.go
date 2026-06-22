@@ -77,6 +77,24 @@ func TestGetPGConnectionConfigUsesPgBouncerCompatibleQueryMode(t *testing.T) {
 	require.Zero(t, connConfig.StatementCacheCapacity)
 }
 
+func TestIsAuroraDSQLHost(t *testing.T) {
+	tests := []struct {
+		host string
+		want bool
+	}{
+		{"exampleclusterid1234567890.dsql-abcd.ap-northeast-1.on.aws", true},
+		{"abcdefghijklmnopqrstuvwxyz.dsql.us-east-1.on.aws", true},
+		{"ABCDEFG.DSQL.US-EAST-1.ON.AWS", true},
+		{"mydb.cluster-abc123.us-east-1.rds.amazonaws.com", false},
+		{"localhost", false},
+		{"", false},
+		{"example.com", false},
+	}
+	for _, test := range tests {
+		require.Equal(t, test.want, isAuroraDSQLHost(test.host), test.host)
+	}
+}
+
 func TestGetPGConnectionConfigPreservesExplicitQueryExecMode(t *testing.T) {
 	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
 		DataSource: &storepb.DataSource{

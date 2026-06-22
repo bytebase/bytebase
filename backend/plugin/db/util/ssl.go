@@ -108,7 +108,13 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		return nil, errors.New("TLS material must be resolved before building TLS config")
 	}
 
-	cfg := &tls.Config{}
+	cfg := &tls.Config{
+		// Always set ServerName so the TLS ClientHello carries SNI (Server Name
+		// Indication). Some managed endpoints (e.g. Aurora DSQL) route requests by
+		// SNI and reject handshakes that omit it. For IP literals the Go TLS stack
+		// drops SNI automatically, so this is safe for all hosts.
+		ServerName: ds.GetHost(),
+	}
 
 	// Handle client certificates for mutual TLS authentication
 	// Client certificates can be used with or without server verification
@@ -247,6 +253,9 @@ func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.Fallb
 }
 
 func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
+	// Send SNI for the host this config connects to. pgx splits comma-separated
+	// hosts into per-host fallbacks, so each config must advertise its own host.
+	dst.ServerName = host
 	if len(src.Certificates) > 0 {
 		dst.Certificates = append([]tls.Certificate(nil), src.Certificates...)
 	}
