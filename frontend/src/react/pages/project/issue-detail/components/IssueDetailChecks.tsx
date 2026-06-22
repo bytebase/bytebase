@@ -40,12 +40,15 @@ export function IssueDetailChecks() {
 
   const allowRunChecks = useMemo(() => {
     if (!page.plan) return false;
+    // A closed/done issue (or deleted plan) is read-only — running checks is
+    // rejected by the backend too, so hide the action.
+    if (page.readonly) return false;
     // Once a rollout exists the plan is frozen — re-running checks would only
     // produce the same results and misleads the user.
     if (page.plan.hasRollout) return false;
     if (extractUserEmail(page.plan.creator) === currentUser.email) return true;
     return hasProjectPermissionV2(project, "bb.planCheckRuns.run");
-  }, [currentUser.email, page.plan, project]);
+  }, [currentUser.email, page.plan, page.readonly, project]);
 
   const refreshChecks = useCallback(async (): Promise<PlanCheckRun[]> => {
     const planName = page.plan?.name;
