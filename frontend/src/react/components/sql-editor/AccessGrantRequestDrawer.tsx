@@ -237,11 +237,11 @@ function AccessGrantRequestDrawerInner({
   // cap, matching the request-role drawer.
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
   const maxDatetime =
-    maximumExpirationSeconds !== undefined
-      ? dayjs()
+    maximumExpirationSeconds === undefined
+      ? undefined
+      : dayjs()
           .add(maximumExpirationSeconds, "second")
-          .format("YYYY-MM-DDTHH:mm")
-      : undefined;
+          .format("YYYY-MM-DDTHH:mm");
 
   const expirationIsInPast =
     duration === -1 &&
