@@ -12,13 +12,16 @@ import (
 
 // mariaDBOnlySQL are statements valid in MariaDB but rejected by the omni/mysql
 // parser that backed Engine_MARIADB before this carve-out: SEQUENCE objects,
-// NEXT VALUE FOR, and RETURNING on INSERT/REPLACE/DELETE.
+// NEXT VALUE FOR, RETURNING on INSERT/REPLACE/DELETE, and the UUID/INET4/INET6
+// scalar types (omni #318).
 var mariaDBOnlySQL = []string{
 	"CREATE SEQUENCE s",
 	"INSERT INTO t (id) VALUES (1) RETURNING id",
 	"REPLACE INTO t (id) VALUES (1) RETURNING id",
 	"DELETE FROM t RETURNING id",
 	"SELECT NEXT VALUE FOR s",
+	"CREATE TABLE t (a UUID)",
+	"CREATE TABLE t (a INET4, b INET6)",
 }
 
 // TestMariaDBDiagnoseKeystone is the carve-out keystone. Before the re-point,
@@ -39,6 +42,17 @@ func TestMariaDBDiagnoseKeystone(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, mariadbDiags, "omni/mariadb should accept %q with no diagnostic", stmt)
 	}
+
+	// Inverse fidelity case: FOR UPDATE ... OF is valid MySQL but MariaDB removed
+	// it in 11.4 (omni #318). The bump makes MariaDB Diagnose correctly flag it,
+	// while omni/mysql still accepts it.
+	const forUpdateOf = "SELECT a FROM t FOR UPDATE OF t"
+	mysqlFU, err := mysql.Diagnose(ctx, base.DiagnoseContext{}, forUpdateOf)
+	require.NoError(t, err)
+	require.Empty(t, mysqlFU, "omni/mysql accepts FOR UPDATE OF (valid MySQL)")
+	mariadbFU, err := Diagnose(ctx, base.DiagnoseContext{}, forUpdateOf)
+	require.NoError(t, err)
+	require.NotEmpty(t, mariadbFU, "omni/mariadb must flag FOR UPDATE OF (removed in MariaDB 11.4)")
 
 	// Diagnose must still report a genuine syntax error — proving it actually
 	// validates, not just "returns empty".
