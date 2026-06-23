@@ -11,6 +11,7 @@ import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
 import { ReleaseInfoCard } from "@/react/components/release/ReleaseInfoCard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -74,12 +75,20 @@ export function PlanDetailStatementSection({
       : "";
   const sheetName = useMemo(() => sheetNameOfSpec(spec), [spec]);
   const [release, setRelease] = useState<Release>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSheetOversize, setIsSheetOversize] = useState(false);
+  const [isLoading, setIsLoading] = useState(() =>
+    isValidReleaseName(releaseName)
+      ? false
+      : seedSheetStatement(sheetName, getLocalSheetByName).isLoading
+  );
+  const [isSheetOversize, setIsSheetOversize] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).isTruncated
+  );
   const [isDownloading, setIsDownloading] = useState(false);
   const [isEditing, setIsEditing] = useState(page.isCreating);
   const [isSaving, setIsSaving] = useState(false);
-  const [statement, setStatement] = useState("");
+  const [statement, setStatement] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).statement
+  );
   const [draftStatement, setDraftStatement] = useState("");
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -195,12 +204,22 @@ export function PlanDetailStatementSection({
         return;
       }
 
+      // Resolve already-in-memory sheets synchronously (no loading/"No data"
+      // flash on the first paint); only an uncached remote sheet needs a fetch.
+      const seed = seedSheetStatement(sheetName, getLocalSheetByName);
+      if (!seed.isLoading) {
+        setStatement(seed.statement);
+        setDraftStatement(seed.statement);
+        setIsSheetOversize(seed.isTruncated);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        const uid = extractSheetUID(sheetName);
-        const sheet = uid.startsWith("-")
-          ? getLocalSheetByName(sheetName)
-          : await useAppStore.getState().getOrFetchSheetByName(sheetName);
+        const sheet = await useAppStore
+          .getState()
+          .getOrFetchSheetByName(sheetName);
         if (!sheet || canceled) return;
         const nextStatement = getSheetStatement(sheet);
         setStatement(nextStatement);

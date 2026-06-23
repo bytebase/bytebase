@@ -9,6 +9,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useCurrentUser, useReleaseByName } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix, pushNotification } from "@/store";
@@ -68,12 +69,20 @@ export function IssueDetailStatementSection({
   const release = useReleaseByName(
     isValidReleaseName(releaseName) ? releaseName : undefined
   );
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSheetOversize, setIsSheetOversize] = useState(false);
+  const [isLoading, setIsLoading] = useState(() =>
+    isValidReleaseName(releaseName)
+      ? false
+      : seedSheetStatement(sheetName, getLocalSheetByName).isLoading
+  );
+  const [isSheetOversize, setIsSheetOversize] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).isTruncated
+  );
   const [isDownloading, setIsDownloading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [statement, setStatement] = useState("");
+  const [statement, setStatement] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).statement
+  );
   const [draftStatement, setDraftStatement] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -155,12 +164,21 @@ export function IssueDetailStatementSection({
         return;
       }
 
+      // Resolve already-in-memory sheets synchronously (no loading/"No data"
+      // flash on the first paint); only an uncached remote sheet needs a fetch.
+      const seed = seedSheetStatement(sheetName, getLocalSheetByName);
+      if (!seed.isLoading) {
+        setStatement(seed.statement);
+        setIsSheetOversize(seed.isTruncated);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        const uid = extractSheetUID(sheetName);
-        const sheet = uid.startsWith("-")
-          ? getLocalSheetByName(sheetName)
-          : await useAppStore.getState().getOrFetchSheetByName(sheetName);
+        const sheet = await useAppStore
+          .getState()
+          .getOrFetchSheetByName(sheetName);
         if (!sheet || canceled) {
           return;
         }

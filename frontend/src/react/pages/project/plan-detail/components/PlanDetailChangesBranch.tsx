@@ -62,6 +62,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
+import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import {
@@ -102,7 +103,6 @@ import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
-  extractSheetUID,
   getSheetStatement,
   setSheetStatement as setLocalSheetStatement,
 } from "@/utils/v1/sheet";
@@ -614,11 +614,13 @@ export function PlanDetailChangesBranch({
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-y-4">
           <TargetsSection
+            key={selectedSpec.id}
             allowEdit={canModifySpecs}
             onEdit={() => setShowTargetSelectorSheet(true)}
             selectedSpec={selectedSpec}
           />
           <PlanDetailStatementSection
+            key={selectedSpec.id}
             planCheckRuns={
               page.isCreating
                 ? draftCheckRuns
@@ -639,6 +641,7 @@ export function PlanDetailChangesBranch({
             )}
           {!specHasRelease && (
             <OptionsSection
+              key={selectedSpec.id}
               onStatementPersisted={() =>
                 handleStatementPersisted(selectedSpec.id)
               }
@@ -716,8 +719,16 @@ function OptionsSection({
   void projectsByName;
   const project = useProjectByName(`projects/${page.projectId}`);
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const [sheetStatement, setSheetStatementValue] = useState("");
-  const [isSheetOversize, setIsSheetOversize] = useState(false);
+  const sheetName = useMemo(
+    () => sheetNameOfSpec(selectedSpec),
+    [selectedSpec]
+  );
+  const [sheetStatement, setSheetStatementValue] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).statement
+  );
+  const [isSheetOversize, setIsSheetOversize] = useState(
+    () => seedSheetStatement(sheetName, getLocalSheetByName).isTruncated
+  );
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
 
   const targets = useMemo(() => {
@@ -823,18 +834,25 @@ function OptionsSection({
   }, [targets]);
 
   useEffect(() => {
-    let canceled = false;
-    const sheetName = sheetNameOfSpec(selectedSpec);
     if (!sheetName) {
       setSheetStatementValue("");
       setIsSheetOversize(false);
       return;
     }
+    // Resolve in-memory sheets synchronously so switching specs shows the new
+    // statement's options immediately instead of the previous spec's; only an
+    // uncached remote sheet needs a fetch.
+    const seed = seedSheetStatement(sheetName, getLocalSheetByName);
+    if (!seed.isLoading) {
+      setSheetStatementValue(seed.statement);
+      setIsSheetOversize(seed.isTruncated);
+      return;
+    }
+    let canceled = false;
     const load = async () => {
-      const uid = extractSheetUID(sheetName);
-      const sheet = uid.startsWith("-")
-        ? getLocalSheetByName(sheetName)
-        : await useAppStore.getState().getOrFetchSheetByName(sheetName);
+      const sheet = await useAppStore
+        .getState()
+        .getOrFetchSheetByName(sheetName);
       if (!sheet || canceled) return;
       const statement = getSheetStatement(sheet);
       setSheetStatementValue(statement);
@@ -844,7 +862,7 @@ function OptionsSection({
     return () => {
       canceled = true;
     };
-  }, [selectedSpec]);
+  }, [sheetName]);
 
   useEffect(() => {
     let canceled = false;
@@ -1206,17 +1224,20 @@ function TargetsSection({
 }) {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
-  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
-
   const targets = useMemo(() => {
     if (selectedSpec.config?.case === "changeDatabaseConfig") {
       return selectedSpec.config.value.targets ?? [];
     }
     return [];
   }, [selectedSpec]);
+  const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  // Start loading when there are targets to resolve, so the first paint shows
+  // the spinner instead of blank (unknownDatabase) chips.
+  const [isLoadingTargets, setIsLoadingTargets] = useState(
+    () => targets.length > 0
+  );
+  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
   const visibleTargets = useMemo(
     () => targets.slice(0, Math.min(DEFAULT_VISIBLE_TARGETS, targets.length)),
     [targets]

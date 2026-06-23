@@ -22,6 +22,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import {
@@ -49,11 +50,9 @@ import {
   getDefaultTransactionMode,
   getInstanceResource,
 } from "@/utils";
-import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { instanceV1SupportsTransactionMode } from "@/utils/v1/instance";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
-import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { useIssueDetailSpecValidation } from "../hooks/useIssueDetailSpecValidation";
 import {
@@ -152,9 +151,13 @@ export function IssueDetailDatabaseChangeView({
         <div className="rounded-b-lg border-x border-b border-control-border bg-white px-3 py-2">
           {selectedSpec && (
             <div className="flex flex-col gap-2">
-              <IssueDetailDatabaseChangeTargets selectedSpec={selectedSpec} />
+              <IssueDetailDatabaseChangeTargets
+                key={selectedSpec.id}
+                selectedSpec={selectedSpec}
+              />
               <div className="flex flex-col">
                 <IssueDetailStatementSection
+                  key={selectedSpec.id}
                   forceReadonly
                   spec={selectedSpec}
                 />
@@ -175,8 +178,16 @@ function IssueDetailDatabaseChangeOptions({
 }) {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const [sheetStatement, setSheetStatement] = useState("");
-  const [isSheetOversize, setIsSheetOversize] = useState(false);
+  const sheetName = useMemo(
+    () => sheetNameOfSpec(selectedSpec),
+    [selectedSpec]
+  );
+  const { statement: sheetStatement, isTruncated: isSheetOversize } =
+    useSheetStatement({
+      enabled: true,
+      sheetName,
+      getLocalSheet: getLocalSheetByName,
+    });
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
 
   const targets = useMemo(() => {
@@ -305,35 +316,6 @@ function IssueDetailDatabaseChangeOptions({
       },
     ] satisfies Array<{ label: string; value: IsolationLevel }>;
   }, [t]);
-
-  useEffect(() => {
-    let canceled = false;
-    const sheetName = sheetNameOfSpec(selectedSpec);
-    if (!sheetName) {
-      setSheetStatement("");
-      setIsSheetOversize(false);
-      return;
-    }
-
-    const loadSheet = async () => {
-      const uid = extractSheetUID(sheetName);
-      const sheet = uid.startsWith("-")
-        ? getLocalSheetByName(sheetName)
-        : await useAppStore.getState().getOrFetchSheetByName(sheetName);
-      if (!sheet || canceled) {
-        return;
-      }
-      const statement = getSheetStatement(sheet);
-      setSheetStatement(statement);
-      setIsSheetOversize(getStatementSize(statement) < sheet.contentSize);
-    };
-
-    void loadSheet();
-
-    return () => {
-      canceled = true;
-    };
-  }, [selectedSpec]);
 
   useEffect(() => {
     let canceled = false;
@@ -509,17 +491,21 @@ function IssueDetailDatabaseChangeTargets({
 }) {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
-  const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
-  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
-
   const targets = useMemo(() => {
     if (selectedSpec.config?.case === "changeDatabaseConfig") {
       return selectedSpec.config.value.targets ?? [];
     }
     return [];
   }, [selectedSpec]);
+  const [showAllTargetsDialog, setShowAllTargetsDialog] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  // Start loading when there are targets to resolve, so the first paint shows
+  // the spinner instead of blank (unknownDatabase) chips.
+  const [isLoadingTargets, setIsLoadingTargets] = useState(
+    () => targets.length > 0
+  );
+  const [isLoadingAllTargets, setIsLoadingAllTargets] = useState(false);
+
   const visibleTargets = useMemo(() => {
     return targets.slice(0, Math.min(DEFAULT_VISIBLE_TARGETS, targets.length));
   }, [targets]);

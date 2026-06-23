@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -22,13 +22,37 @@ export function DeployTaskList({
   const page = usePlanDetailContext();
   const [displayedTaskCount, setDisplayedTaskCount] =
     useState(DEFAULT_PAGE_SIZE);
-  const [expandedTaskNames, setExpandedTaskNames] = useState<Set<string>>(
-    new Set()
+  const filteredTasks = stage.tasks;
+  const [expandedTaskNames, setExpandedTaskNames] = useState<Set<string>>(() =>
+    filteredTasks.length > 0 ? new Set([filteredTasks[0].name]) : new Set()
   );
   const [selectedTaskNames, setSelectedTaskNames] = useState<Set<string>>(
     new Set()
   );
-  const filteredTasks = stage.tasks;
+  const taskNamesKey = filteredTasks.map((task) => task.name).join(",");
+
+  // When the visible task set changes — most importantly when switching to a
+  // different stage — re-derive the per-stage list state (pagination, the
+  // auto-expanded first task, and the still-valid selection) during render
+  // rather than in a post-paint effect. Doing it here means the new stage's
+  // first paint already shows the first task expanded, instead of painting a
+  // collapsed list and expanding it a frame later, which read as a flash
+  // (BYT-9763).
+  const [trackedTaskNamesKey, setTrackedTaskNamesKey] = useState(taskNamesKey);
+  if (taskNamesKey !== trackedTaskNamesKey) {
+    setTrackedTaskNamesKey(taskNamesKey);
+    setDisplayedTaskCount(DEFAULT_PAGE_SIZE);
+    setExpandedTaskNames(
+      filteredTasks.length > 0 ? new Set([filteredTasks[0].name]) : new Set()
+    );
+    setSelectedTaskNames((prev) => {
+      const remaining = [...prev].filter((taskName) =>
+        filteredTasks.some((task) => task.name === taskName)
+      );
+      return remaining.length === prev.size ? prev : new Set(remaining);
+    });
+  }
+
   const visibleTasks = filteredTasks.slice(0, displayedTaskCount);
   const hasMoreTasks = filteredTasks.length > displayedTaskCount;
   const remainingTasksCount = filteredTasks.length - displayedTaskCount;
@@ -36,32 +60,6 @@ export function DeployTaskList({
     () => filteredTasks.filter((task) => selectedTaskNames.has(task.name)),
     [filteredTasks, selectedTaskNames]
   );
-  const taskNamesKey = filteredTasks.map((task) => task.name).join(",");
-
-  useEffect(() => {
-    setDisplayedTaskCount(DEFAULT_PAGE_SIZE);
-  }, [taskNamesKey]);
-
-  useEffect(() => {
-    setExpandedTaskNames(() => {
-      if (filteredTasks.length === 0) {
-        return new Set();
-      }
-      return new Set([filteredTasks[0].name]);
-    });
-  }, [taskNamesKey]);
-
-  useEffect(() => {
-    setSelectedTaskNames((prev) => {
-      const remaining = [...prev].filter((taskName) =>
-        filteredTasks.some((task) => task.name === taskName)
-      );
-      if (remaining.length === prev.size) {
-        return prev;
-      }
-      return new Set(remaining);
-    });
-  }, [taskNamesKey]);
 
   const toggleExpand = (task: Task) => {
     setExpandedTaskNames((prev) => {
