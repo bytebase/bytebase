@@ -10388,6 +10388,10 @@ components:
               title: auth_type
               description: The authentication method for accessing the secret store.
               $ref: '#/components/schemas/bytebase.v1.DataSourceExternalSecret.AuthType'
+            tokenType:
+              title: token_type
+              description: How to interpret the token field when auth_type is TOKEN.
+              $ref: '#/components/schemas/bytebase.v1.DataSourceExternalSecret.TokenType'
             engineName:
               type: string
               title: engine_name
@@ -10436,7 +10440,10 @@ components:
                 token:
                   type: string
                   title: token
-                  description: Token for direct authentication.
+                  description: |-
+                    Token for direct authentication. Interpreted according to token_type:
+                     the literal token (PLAIN), an environment variable name (ENVIRONMENT),
+                     or a file path (FILE).
               title: token
               required:
                 - token
@@ -10486,6 +10493,14 @@ components:
         - AWS_SECRETS_MANAGER
         - GCP_SECRET_MANAGER
         - AZURE_KEY_VAULT
+    bytebase.v1.DataSourceExternalSecret.TokenType:
+      type: string
+      title: TokenType
+      enum:
+        - TOKEN_TYPE_UNSPECIFIED
+        - PLAIN
+        - ENVIRONMENT
+        - FILE
     bytebase.v1.DataSourceType:
       type: string
       title: DataSourceType

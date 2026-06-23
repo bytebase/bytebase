@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -57,7 +59,11 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 
 	switch externalSecret.AuthType {
 	case storepb.DataSourceExternalSecret_TOKEN:
-		token = externalSecret.GetToken()
+		t, err := resolveVaultToken(externalSecret)
+		if err != nil {
+			return nil, err
+		}
+		token = t
 	case storepb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		role := externalSecret.GetAppRole()
 		if role == nil {
@@ -100,6 +106,35 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	client.SetToken(token)
 
 	return client, nil
+}
+
+// resolveVaultToken resolves the Vault token from the external secret config.
+// The token field is interpreted according to TokenType: the literal token
+// (PLAIN), an environment variable name (ENVIRONMENT), or a file path (FILE).
+// Both env var and file are resolved on the Bytebase server host.
+func resolveVaultToken(externalSecret *storepb.DataSourceExternalSecret) (string, error) {
+	value := externalSecret.GetToken()
+	switch externalSecret.GetTokenType() {
+	case storepb.DataSourceExternalSecret_ENVIRONMENT:
+		token := os.Getenv(value)
+		if token == "" {
+			return "", errors.Errorf("vault token environment variable %q is empty or unset", value)
+		}
+		return token, nil
+	case storepb.DataSourceExternalSecret_FILE:
+		b, err := os.ReadFile(value)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to read vault token file %q", value)
+		}
+		token := strings.TrimSpace(string(b))
+		if token == "" {
+			return "", errors.Errorf("vault token file %q is empty", value)
+		}
+		return token, nil
+	default:
+		// PLAIN or unspecified (backward compatibility).
+		return value, nil
+	}
 }
 
 func getSecretFromVault(ctx context.Context, externalSecret *storepb.DataSourceExternalSecret) (string, error) {
