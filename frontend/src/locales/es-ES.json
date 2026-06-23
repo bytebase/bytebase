@@ -3859,6 +3859,7 @@
     "skip-prior-backup": "Omitir respaldo previo",
     "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
     "skip-task": "Saltar tarea | Saltar tareas",
+    "skipped-no-reason": "No se indicó ningún motivo",
     "started": "Iniciado",
     "status": {
       "available": "Disponible",
