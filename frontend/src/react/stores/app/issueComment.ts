@@ -86,23 +86,24 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
     const { projectId, issueId } =
       getProjectIdIssueIdIssueCommentId(issueCommentName);
     const parent = `${projectNamePrefix}${projectId}/${issueNamePrefix}${issueId}`;
-    await issueServiceClientConnect.updateIssueComment(
-      createProto(UpdateIssueCommentRequestSchema, {
-        parent,
-        issueComment: createProto(IssueCommentSchema, {
-          name: issueCommentName,
-          comment,
-        }),
-        updateMask: { paths: ["comment"] },
-      })
-    );
+    const updatedIssueComment =
+      await issueServiceClientConnect.updateIssueComment(
+        createProto(UpdateIssueCommentRequestSchema, {
+          parent,
+          issueComment: createProto(IssueCommentSchema, {
+            name: issueCommentName,
+            comment,
+          }),
+          updateMask: { paths: ["comment"] },
+        })
+      );
     set((state) => ({
       issueCommentsByIssue: {
         ...state.issueCommentsByIssue,
         [parent]: (state.issueCommentsByIssue[parent] ?? []).map(
           (issueComment) =>
             issueComment.name === issueCommentName
-              ? { ...issueComment, comment }
+              ? updatedIssueComment
               : issueComment
         ),
       },
