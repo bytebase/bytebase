@@ -972,7 +972,12 @@
         },
         "self": "Loại xác thực",
         "token": {
-          "self": "Mã thông báo"
+          "env-name": "Tên biến môi trường của token",
+          "file-path": "Đường dẫn tệp token",
+          "self": "Mã thông báo",
+          "type-environment": "Biến môi trường",
+          "type-file": "Đường dẫn tệp",
+          "type-plain": "Văn bản thuần"
         }
       },
       "vault-secret-engine-name": "Tên công cụ bí mật",

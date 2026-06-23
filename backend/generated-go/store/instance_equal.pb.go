@@ -460,6 +460,9 @@ func (x *DataSourceExternalSecret) Equal(y *DataSourceExternalSecret) bool {
 	if x.GetToken() != y.GetToken() {
 		return false
 	}
+	if x.TokenType != y.TokenType {
+		return false
+	}
 	if x.EngineName != y.EngineName {
 		return false
 	}

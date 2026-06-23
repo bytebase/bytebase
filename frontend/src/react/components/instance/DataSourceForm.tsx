@@ -15,6 +15,7 @@ import {
   DataSourceExternalSecret_AppRoleAuthOptionSchema,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecret_TokenType,
   DataSourceExternalSecretSchema,
   DataSourceType,
   KerberosConfigSchema,
@@ -1026,39 +1027,128 @@ export function DataSourceForm({
                               </div>
                               {/* Token input */}
                               {dataSource.externalSecret.authType ===
-                                DataSourceExternalSecret_AuthType.TOKEN && (
-                                <div>
-                                  <label className="textlabel block">
-                                    {t(
-                                      "instance.external-secret-vault.vault-auth-type.token.self"
-                                    )}{" "}
-                                    <span className="text-error">*</span>
-                                  </label>
-                                  <Input
-                                    value={
-                                      dataSource.externalSecret.authOption
-                                        ?.case === "token"
-                                        ? (dataSource.externalSecret.authOption
-                                            .value as string)
-                                        : ""
-                                    }
-                                    className="mt-2 w-full"
-                                    disabled={!allowEdit}
-                                    placeholder={`${t("instance.external-secret-vault.vault-auth-type.token.self")} - ${t("common.write-only")}`}
-                                    onChange={(e) => {
-                                      const ds = { ...dataSource };
-                                      ds.externalSecret = {
-                                        ...ds.externalSecret!,
-                                        authOption: {
-                                          case: "token" as const,
-                                          value: e.target.value,
-                                        },
-                                      };
-                                      onDataSourceChange(ds);
-                                    }}
-                                  />
-                                </div>
-                              )}
+                                DataSourceExternalSecret_AuthType.TOKEN &&
+                                (() => {
+                                  const tokenType =
+                                    dataSource.externalSecret.tokenType ===
+                                      DataSourceExternalSecret_TokenType.ENVIRONMENT ||
+                                    dataSource.externalSecret.tokenType ===
+                                      DataSourceExternalSecret_TokenType.FILE
+                                      ? dataSource.externalSecret.tokenType
+                                      : DataSourceExternalSecret_TokenType.PLAIN;
+                                  const changeTokenType = (
+                                    type: DataSourceExternalSecret_TokenType
+                                  ) => {
+                                    const ds = { ...dataSource };
+                                    ds.externalSecret = {
+                                      ...ds.externalSecret!,
+                                      tokenType: type,
+                                    };
+                                    onDataSourceChange(ds);
+                                  };
+                                  const tokenLabel = t(
+                                    "instance.external-secret-vault.vault-auth-type.token.self"
+                                  );
+                                  const tokenPlaceholder =
+                                    tokenType ===
+                                    DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                      ? t(
+                                          "instance.external-secret-vault.vault-auth-type.token.env-name"
+                                        )
+                                      : tokenType ===
+                                          DataSourceExternalSecret_TokenType.FILE
+                                        ? t(
+                                            "instance.external-secret-vault.vault-auth-type.token.file-path"
+                                          )
+                                        : `${tokenLabel} - ${t("common.write-only")}`;
+                                  return (
+                                    <div>
+                                      <label className="textlabel block">
+                                        {tokenLabel}{" "}
+                                        <span className="text-error">*</span>
+                                      </label>
+                                      <div className="textlabel my-1 flex gap-x-4">
+                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              tokenType ===
+                                              DataSourceExternalSecret_TokenType.PLAIN
+                                            }
+                                            disabled={!allowEdit}
+                                            onChange={() =>
+                                              changeTokenType(
+                                                DataSourceExternalSecret_TokenType.PLAIN
+                                              )
+                                            }
+                                          />
+                                          {t(
+                                            "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                          )}
+                                        </label>
+                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              tokenType ===
+                                              DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                            }
+                                            disabled={!allowEdit}
+                                            onChange={() =>
+                                              changeTokenType(
+                                                DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                              )
+                                            }
+                                          />
+                                          {t(
+                                            "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                          )}
+                                        </label>
+                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              tokenType ===
+                                              DataSourceExternalSecret_TokenType.FILE
+                                            }
+                                            disabled={!allowEdit}
+                                            onChange={() =>
+                                              changeTokenType(
+                                                DataSourceExternalSecret_TokenType.FILE
+                                              )
+                                            }
+                                          />
+                                          {t(
+                                            "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                          )}
+                                        </label>
+                                      </div>
+                                      <Input
+                                        value={
+                                          dataSource.externalSecret.authOption
+                                            ?.case === "token"
+                                            ? (dataSource.externalSecret
+                                                .authOption.value as string)
+                                            : ""
+                                        }
+                                        className="mt-2 w-full"
+                                        disabled={!allowEdit}
+                                        placeholder={tokenPlaceholder}
+                                        onChange={(e) => {
+                                          const ds = { ...dataSource };
+                                          ds.externalSecret = {
+                                            ...ds.externalSecret!,
+                                            authOption: {
+                                              case: "token" as const,
+                                              value: e.target.value,
+                                            },
+                                          };
+                                          onDataSourceChange(ds);
+                                        }}
+                                      />
+                                    </div>
+                                  );
+                                })()}
                               {/* AppRole fields */}
                               {dataSource.externalSecret.authOption?.case ===
                                 "appRole" && (

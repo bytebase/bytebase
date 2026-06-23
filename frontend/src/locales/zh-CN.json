@@ -972,7 +972,12 @@
         },
         "self": "认证方式",
         "token": {
-          "self": "Token"
+          "env-name": "Token 环境变量名",
+          "file-path": "Token 文件路径",
+          "self": "Token",
+          "type-environment": "环境变量",
+          "type-file": "文件路径",
+          "type-plain": "纯文本"
         }
       },
       "vault-secret-engine-name": "Secret engine name",

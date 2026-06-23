@@ -972,7 +972,12 @@
         },
         "self": "Tipo de autenticación",
         "token": {
-          "self": "Token"
+          "env-name": "Nombre de la variable de entorno del token",
+          "file-path": "Ruta del archivo del token",
+          "self": "Token",
+          "type-environment": "Variable de entorno",
+          "type-file": "Ruta de archivo",
+          "type-plain": "Texto plano"
         }
       },
       "vault-secret-engine-name": "Nombre del motor de secretos",

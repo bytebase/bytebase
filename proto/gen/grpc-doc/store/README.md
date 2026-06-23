@@ -146,6 +146,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
+    - [DataSourceExternalSecret.TokenType](#bytebase-store-DataSourceExternalSecret-TokenType)
     - [DataSourceType](#bytebase-store-DataSourceType)
   
 - [store/issue.proto](#store_issue-proto)
@@ -2499,6 +2500,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
 | app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
 | token | [string](#string) |  |  |
+| token_type | [DataSourceExternalSecret.TokenType](#bytebase-store-DataSourceExternalSecret-TokenType) |  | How to interpret the token field when auth_type is TOKEN. |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
@@ -2698,6 +2700,20 @@ InstanceRole is the API message for instance role.
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 | GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
 | AZURE_KEY_VAULT | 4 | ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets |
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-TokenType"></a>
+
+### DataSourceExternalSecret.TokenType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TOKEN_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 | The token field holds the literal token value. |
+| ENVIRONMENT | 2 | The token field holds the name of an environment variable on the Bytebase server that holds the token value. |
+| FILE | 3 | The token field holds a path to a file on the Bytebase server that holds the token value. |
 
 
 

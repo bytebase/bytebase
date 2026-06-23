@@ -691,13 +691,22 @@ export declare type DataSourceExternalSecret = Message<"bytebase.v1.DataSourceEx
     case: "appRole";
   } | {
     /**
-     * Token for direct authentication.
+     * Token for direct authentication. Interpreted according to token_type:
+     * the literal token (PLAIN), an environment variable name (ENVIRONMENT),
+     * or a file path (FILE).
      *
      * @generated from field: string token = 5;
      */
     value: string;
     case: "token";
   } | { case: undefined; value?: undefined };
+
+  /**
+   * How to interpret the token field when auth_type is TOKEN.
+   *
+   * @generated from field: bytebase.v1.DataSourceExternalSecret.TokenType token_type = 13;
+   */
+  tokenType: DataSourceExternalSecret_TokenType;
 
   /**
    * engine name is the name for secret engine.
@@ -904,6 +913,46 @@ export enum DataSourceExternalSecret_AuthType {
  * Describes the enum bytebase.v1.DataSourceExternalSecret.AuthType.
  */
 export declare const DataSourceExternalSecret_AuthTypeSchema: GenEnum<DataSourceExternalSecret_AuthType>;
+
+/**
+ * @generated from enum bytebase.v1.DataSourceExternalSecret.TokenType
+ */
+export enum DataSourceExternalSecret_TokenType {
+  /**
+   * Unspecified token type, treated as PLAIN for backward compatibility.
+   *
+   * @generated from enum value: TOKEN_TYPE_UNSPECIFIED = 0;
+   */
+  TOKEN_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * The token field holds the literal token value.
+   *
+   * @generated from enum value: PLAIN = 1;
+   */
+  PLAIN = 1,
+
+  /**
+   * The token field holds the name of an environment variable on the
+   * Bytebase server that holds the token value.
+   *
+   * @generated from enum value: ENVIRONMENT = 2;
+   */
+  ENVIRONMENT = 2,
+
+  /**
+   * The token field holds a path to a file on the Bytebase server that
+   * holds the token value.
+   *
+   * @generated from enum value: FILE = 3;
+   */
+  FILE = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.DataSourceExternalSecret.TokenType.
+ */
+export declare const DataSourceExternalSecret_TokenTypeSchema: GenEnum<DataSourceExternalSecret_TokenType>;
 
 /**
  * @generated from message bytebase.v1.DataSource

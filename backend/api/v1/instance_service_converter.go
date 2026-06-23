@@ -150,8 +150,21 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 			}
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:
+		token := ""
+		// Env var name and file path are not sensitive: return them so the UI
+		// can display them and updates don't require re-entry. The literal
+		// token (PLAIN) stays write-only.
+		switch externalSecret.GetTokenType() {
+		case storepb.DataSourceExternalSecret_ENVIRONMENT, storepb.DataSourceExternalSecret_FILE:
+			resp.TokenType = v1pb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
+			token = externalSecret.GetToken()
+		default:
+			// Legacy data has no token_type; surface it as PLAIN explicitly so
+			// the API never exposes an ambiguous UNSPECIFIED for an existing token.
+			resp.TokenType = v1pb.DataSourceExternalSecret_PLAIN
+		}
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
-			Token: "",
+			Token: token,
 		}
 	default:
 	}
@@ -278,6 +291,7 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 	// Convert auth options
 	switch externalSecret.AuthOption.(type) {
 	case *v1pb.DataSourceExternalSecret_Token:
+		secret.TokenType = storepb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
 		secret.AuthOption = &storepb.DataSourceExternalSecret_Token{
 			Token: externalSecret.GetToken(),
 		}
