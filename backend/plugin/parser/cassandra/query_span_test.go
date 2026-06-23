@@ -612,7 +612,7 @@ func TestQueryTypeDetection(t *testing.T) {
 		// DDL - Trigger operations
 		{
 			name:         "CREATE TRIGGER statement",
-			statement:    "CREATE TRIGGER mytrigger USING 'org.apache.cassandra.triggers.AuditTrigger'",
+			statement:    "CREATE TRIGGER mytrigger ON users USING 'org.apache.cassandra.triggers.AuditTrigger'",
 			expectedType: base.DDL,
 		},
 		{
