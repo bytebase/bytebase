@@ -41,6 +41,9 @@ func (e *querySpanExtractor) extract(node ast.Node) *base.QuerySpan {
 		e.extractDelete(stmt)
 	case *ast.BatchStmt:
 		e.querySpan.Type = base.DML
+		for _, child := range stmt.Statements {
+			e.extract(child)
+		}
 	case *ast.TruncateStmt:
 		e.querySpan.Type = base.DML
 	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropTableStmt,
