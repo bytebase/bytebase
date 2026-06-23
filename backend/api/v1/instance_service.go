@@ -469,26 +469,37 @@ func (s *InstanceService) validateIAMCredentialForSaaS(dataSource *storepb.DataS
 	return nil
 }
 
-// validateExternalSecretForSaaS blocks external secret token sources that read
-// from the Bytebase host in SaaS mode. The configured secret store URL is
-// user-controlled, so resolving a token from the host environment or filesystem
-// would let a tenant exfiltrate host env vars or files to an endpoint they own.
+// validateExternalSecretForSaaS blocks external secret credential sources that
+// read from the Bytebase host in SaaS mode. The configured secret store URL is
+// user-controlled, so resolving a credential from the host environment or
+// filesystem would let a tenant exfiltrate host env vars or files to an endpoint
+// they own (the resolved value is sent to that URL as the Vault token / AppRole
+// secret id).
 func (s *InstanceService) validateExternalSecretForSaaS(dataSource *storepb.DataSource) error {
 	if !s.profile.SaaS {
 		return nil
 	}
 
 	externalSecret := dataSource.GetExternalSecret()
-	if externalSecret.GetAuthType() != storepb.DataSourceExternalSecret_TOKEN {
+	switch externalSecret.GetAuthType() {
+	case storepb.DataSourceExternalSecret_TOKEN:
+		switch externalSecret.GetTokenType() {
+		case storepb.DataSourceExternalSecret_ENVIRONMENT, storepb.DataSourceExternalSecret_FILE:
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("environment variable and file token sources are not allowed in SaaS mode for security. Please provide the token directly"),
+			)
+		default:
+			return nil
+		}
+	case storepb.DataSourceExternalSecret_VAULT_APP_ROLE:
+		if externalSecret.GetAppRole().GetType() == storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("environment variable secret id is not allowed in SaaS mode for security. Please provide the secret id directly"),
+			)
+		}
 		return nil
-	}
-
-	switch externalSecret.GetTokenType() {
-	case storepb.DataSourceExternalSecret_ENVIRONMENT, storepb.DataSourceExternalSecret_FILE:
-		return connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("environment variable and file token sources are not allowed in SaaS mode for security. Please provide the token directly"),
-		)
 	default:
 		return nil
 	}

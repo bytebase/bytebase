@@ -1206,76 +1206,81 @@ export function DataSourceForm({
                                       )}{" "}
                                       <span className="text-error">*</span>
                                     </label>
-                                    <div className="textlabel my-1 flex gap-x-4">
-                                      <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                        <input
-                                          type="radio"
-                                          checked={
-                                            dataSource.externalSecret.authOption
-                                              .value.type === 0
-                                          }
-                                          disabled={!allowEdit}
-                                          onChange={() => {
-                                            const ds = { ...dataSource };
-                                            if (
-                                              ds.externalSecret?.authOption
-                                                ?.case === "appRole"
-                                            ) {
-                                              ds.externalSecret = {
-                                                ...ds.externalSecret,
-                                                authOption: {
-                                                  ...ds.externalSecret
-                                                    .authOption,
-                                                  value: {
-                                                    ...ds.externalSecret
-                                                      .authOption.value,
-                                                    type: 0,
-                                                  },
-                                                },
-                                              };
+                                    {/* Environment secret id reads from the host,
+                                        which is disallowed in SaaS mode; only plain
+                                        is offered there. */}
+                                    {!isSaaSMode && (
+                                      <div className="textlabel my-1 flex gap-x-4">
+                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              dataSource.externalSecret
+                                                .authOption.value.type === 0
                                             }
-                                            onDataSourceChange(ds);
-                                          }}
-                                        />
-                                        {t(
-                                          "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
-                                        )}
-                                      </label>
-                                      <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                        <input
-                                          type="radio"
-                                          checked={
-                                            dataSource.externalSecret.authOption
-                                              .value.type === 1
-                                          }
-                                          disabled={!allowEdit}
-                                          onChange={() => {
-                                            const ds = { ...dataSource };
-                                            if (
-                                              ds.externalSecret?.authOption
-                                                ?.case === "appRole"
-                                            ) {
-                                              ds.externalSecret = {
-                                                ...ds.externalSecret,
-                                                authOption: {
-                                                  ...ds.externalSecret
-                                                    .authOption,
-                                                  value: {
+                                            disabled={!allowEdit}
+                                            onChange={() => {
+                                              const ds = { ...dataSource };
+                                              if (
+                                                ds.externalSecret?.authOption
+                                                  ?.case === "appRole"
+                                              ) {
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret,
+                                                  authOption: {
                                                     ...ds.externalSecret
-                                                      .authOption.value,
-                                                    type: 1,
+                                                      .authOption,
+                                                    value: {
+                                                      ...ds.externalSecret
+                                                        .authOption.value,
+                                                      type: 0,
+                                                    },
                                                   },
-                                                },
-                                              };
+                                                };
+                                              }
+                                              onDataSourceChange(ds);
+                                            }}
+                                          />
+                                          {t(
+                                            "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
+                                          )}
+                                        </label>
+                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              dataSource.externalSecret
+                                                .authOption.value.type === 1
                                             }
-                                            onDataSourceChange(ds);
-                                          }}
-                                        />
-                                        {t(
-                                          "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
-                                        )}
-                                      </label>
-                                    </div>
+                                            disabled={!allowEdit}
+                                            onChange={() => {
+                                              const ds = { ...dataSource };
+                                              if (
+                                                ds.externalSecret?.authOption
+                                                  ?.case === "appRole"
+                                              ) {
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret,
+                                                  authOption: {
+                                                    ...ds.externalSecret
+                                                      .authOption,
+                                                    value: {
+                                                      ...ds.externalSecret
+                                                        .authOption.value,
+                                                      type: 1,
+                                                    },
+                                                  },
+                                                };
+                                              }
+                                              onDataSourceChange(ds);
+                                            }}
+                                          />
+                                          {t(
+                                            "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
+                                          )}
+                                        </label>
+                                      </div>
+                                    )}
                                     <Input
                                       value={
                                         dataSource.externalSecret.authOption

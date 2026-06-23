@@ -27,6 +27,20 @@ func TestValidateExternalSecretForSaaS(t *testing.T) {
 			},
 		}
 	}
+	appRoleSecret := func(secretType storepb.DataSourceExternalSecret_AppRoleAuthOption_SecretType) *storepb.DataSource {
+		return &storepb.DataSource{
+			ExternalSecret: &storepb.DataSourceExternalSecret{
+				AuthType: storepb.DataSourceExternalSecret_VAULT_APP_ROLE,
+				AuthOption: &storepb.DataSourceExternalSecret_AppRole{
+					AppRole: &storepb.DataSourceExternalSecret_AppRoleAuthOption{
+						RoleId:   "r",
+						SecretId: "s",
+						Type:     secretType,
+					},
+				},
+			},
+		}
+	}
 
 	testCases := []struct {
 		name       string
@@ -40,9 +54,9 @@ func TestValidateExternalSecretForSaaS(t *testing.T) {
 		{name: "saas allows unspecified", saas: true, dataSource: tokenSecret(storepb.DataSourceExternalSecret_TOKEN_TYPE_UNSPECIFIED), wantErr: false},
 		{name: "saas blocks file", saas: true, dataSource: tokenSecret(storepb.DataSourceExternalSecret_FILE), wantErr: true},
 		{name: "saas blocks env", saas: true, dataSource: tokenSecret(storepb.DataSourceExternalSecret_ENVIRONMENT), wantErr: true},
-		{name: "saas ignores non-token auth", saas: true, dataSource: &storepb.DataSource{
-			ExternalSecret: &storepb.DataSourceExternalSecret{AuthType: storepb.DataSourceExternalSecret_VAULT_APP_ROLE},
-		}, wantErr: false},
+		{name: "non-saas allows approle env", saas: false, dataSource: appRoleSecret(storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT), wantErr: false},
+		{name: "saas allows approle plain", saas: true, dataSource: appRoleSecret(storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN), wantErr: false},
+		{name: "saas blocks approle env", saas: true, dataSource: appRoleSecret(storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT), wantErr: true},
 		{name: "saas ignores no external secret", saas: true, dataSource: &storepb.DataSource{}, wantErr: false},
 	}
 
