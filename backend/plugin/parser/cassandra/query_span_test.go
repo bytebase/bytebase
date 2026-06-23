@@ -391,6 +391,24 @@ func TestWhereColumnExtraction(t *testing.T) {
 			},
 			expectedTable: "products",
 		},
+		{
+			name:      "WHERE with tuple IN expression",
+			statement: "SELECT * FROM users WHERE (id, name) IN ((1, 'a'), (2, 'b'))",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "id"},
+				{Database: "test_keyspace", Table: "users", Column: "name"},
+			},
+			expectedTable: "users",
+		},
+		{
+			name:      "WHERE with dot access (UDT field)",
+			statement: "SELECT * FROM users WHERE addr.city = 'x'",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "addr"},
+				{Database: "test_keyspace", Table: "users", Column: "city"},
+			},
+			expectedTable: "users",
+		},
 	}
 
 	for _, tt := range tests {

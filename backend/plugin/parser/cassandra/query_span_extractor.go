@@ -229,29 +229,51 @@ func (e *querySpanExtractor) extractWhereColumns(where []ast.ExprNode, keyspace,
 func (e *querySpanExtractor) extractColumnRefsFromExpr(expr ast.ExprNode, keyspace, table string) {
 	switch ex := expr.(type) {
 	case *ast.BinaryExpr:
-		if id, ok := ex.Left.(*ast.Identifier); ok {
-			e.querySpan.PredicateColumns[base.ColumnResource{
-				Database: keyspace,
-				Table:    table,
-				Column:   id.Name,
-			}] = true
-		}
+		e.addPredicateColumnsFromExpr(ex.Left, keyspace, table)
 	case *ast.InExpr:
-		if id, ok := ex.Column.(*ast.Identifier); ok {
-			e.querySpan.PredicateColumns[base.ColumnResource{
-				Database: keyspace,
-				Table:    table,
-				Column:   id.Name,
-			}] = true
-		}
+		e.addPredicateColumnsFromExpr(ex.Column, keyspace, table)
 	case *ast.ContainsExpr:
-		if id, ok := ex.Column.(*ast.Identifier); ok {
-			e.querySpan.PredicateColumns[base.ColumnResource{
-				Database: keyspace,
-				Table:    table,
-				Column:   id.Name,
-			}] = true
+		e.addPredicateColumnsFromExpr(ex.Column, keyspace, table)
+	case *ast.TupleInExpr:
+		for _, col := range ex.Columns {
+			e.addPredicateColumnsFromExpr(col, keyspace, table)
+		}
+	case *ast.TupleCompareExpr:
+		for _, col := range ex.Columns {
+			e.addPredicateColumnsFromExpr(col, keyspace, table)
 		}
 	default:
+	}
+}
+
+func (e *querySpanExtractor) addPredicateColumnsFromExpr(expr ast.ExprNode, keyspace, table string) {
+	for _, name := range collectColumnNames(expr) {
+		e.querySpan.PredicateColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   name,
+		}] = true
+	}
+}
+
+func collectColumnNames(expr ast.ExprNode) []string {
+	switch e := expr.(type) {
+	case *ast.Identifier:
+		return []string{e.Name}
+	case *ast.DotAccess:
+		var names []string
+		names = append(names, collectColumnNames(e.Object)...)
+		if e.Field != nil {
+			names = append(names, e.Field.Name)
+		}
+		return names
+	case *ast.FunctionCall:
+		var names []string
+		for _, arg := range e.Args {
+			names = append(names, collectColumnNames(arg)...)
+		}
+		return names
+	default:
+		return nil
 	}
 }

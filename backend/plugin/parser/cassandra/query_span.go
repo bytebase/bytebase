@@ -16,7 +16,7 @@ func init() {
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
 	stmts, err := ParseCQL(stmt.Text)
 	if err != nil {
-		return nil, err
+		return nil, convertOmniError(err, base.Statement{Text: stmt.Text})
 	}
 	if len(stmts) == 0 {
 		return &base.QuerySpan{
