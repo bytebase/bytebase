@@ -3,6 +3,7 @@ import { Input } from "@/react/components/ui/input";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { getDataTypeSuggestionList } from "@/utils";
+import { INLINE_EDIT_INPUT_CLASS } from "../common";
 
 interface Props {
   column: ColumnMetadata;
@@ -26,7 +27,7 @@ export function DataTypeCell({
       disabled={isReadonly}
       placeholder="column type"
       size="xs"
-      className="border-none bg-transparent shadow-none focus-visible:ring-1"
+      className={INLINE_EDIT_INPUT_CLASS}
       onChange={(e) => onUpdateValue(e.target.value)}
     />
   );

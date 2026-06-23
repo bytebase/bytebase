@@ -32,8 +32,8 @@ export function TabsContainer() {
   if (tabList.length === 0) return null;
 
   return (
-    <div className="flex items-center justify-between border-b border-control-border">
-      <div className="flex flex-1 items-center gap-x-1 overflow-x-auto px-1 py-1 scrollbar-hide">
+    <div className="flex items-stretch border-b border-control-border">
+      <div className="flex flex-1 items-stretch overflow-x-auto scrollbar-hide">
         {tabList.map((tab) => {
           const isActive = tab.id === currentTab?.id;
           const status = getTabStatus(tab, editStatus);
@@ -42,10 +42,10 @@ export function TabsContainer() {
               key={tab.id}
               ref={isActive ? activeTabRef : undefined}
               className={cn(
-                "group flex w-40 shrink-0 cursor-pointer items-center gap-x-1 rounded-xs px-2 py-1 text-xs transition-colors",
+                "flex h-9 w-40 shrink-0 cursor-pointer items-center gap-x-2 border-r border-t border-control-border pl-2 pr-1 text-xs transition-colors",
                 isActive
-                  ? "bg-control-bg-hover text-control"
-                  : "text-control-light hover:bg-control-bg-hover",
+                  ? "border-t-[3px] border-t-accent bg-accent/10 pt-0.5 text-accent"
+                  : "border-t-transparent pt-1 text-control-light hover:bg-control-bg",
                 status === "dropped" && "text-error line-through",
                 status === "created" && "text-success",
                 status === "updated" && "text-warning"
@@ -55,13 +55,13 @@ export function TabsContainer() {
               <TabIcon type={tab.type} />
               <EllipsisText text={getTabName(tab)} className="flex-1" />
               <button
-                className="ml-auto hidden size-4 shrink-0 items-center justify-center rounded-xs hover:bg-control-border group-hover:flex"
+                className="block size-5 shrink-0 rounded-xs p-0.5 text-control-light transition-colors hover:bg-control-bg hover:text-control"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(tab.id);
                 }}
               >
-                <X className="size-3" />
+                <X className="size-full" />
               </button>
             </div>
           );
