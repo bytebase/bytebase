@@ -3859,6 +3859,7 @@
     "skip-prior-backup": "跳过预备份",
     "skip-prior-backup-description": "跳过变更前的自动数据备份",
     "skip-task": "跳过任务 | 跳过任务",
+    "skipped-no-reason": "未提供原因",
     "started": "开始于",
     "status": {
       "available": "就绪",
