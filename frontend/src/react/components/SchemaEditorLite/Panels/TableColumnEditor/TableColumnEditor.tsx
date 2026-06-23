@@ -26,7 +26,7 @@ import {
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../../core/edit";
-import { markUUID } from "../common";
+import { INLINE_EDIT_INPUT_CLASS, markUUID } from "../common";
 import { DataTypeCell, DataTypeSuggestionsDatalist } from "./DataTypeCell";
 import { DefaultValueCell } from "./DefaultValueCell";
 
@@ -198,10 +198,10 @@ export function TableColumnEditor({
   );
 
   const datalistId = `schema-editor-types-${engine}`;
-  // Compact override for table cells: reduce default px-4 py-3 padding so each
-  // row hugs the inline editor heights instead of doubling them.
-  const cellClass = "px-2 py-1";
-  const headClass = "h-8 px-2 py-1 whitespace-nowrap";
+  // Use the shared Table defaults (px-4 py-3 cells, h-10 headers) so this grid
+  // matches the table-list grid. Headers only add whitespace-nowrap.
+  const cellClass = "";
+  const headClass = "whitespace-nowrap";
 
   return (
     <div className="size-full overflow-auto">
@@ -268,7 +268,7 @@ export function TableColumnEditor({
                     value={column.name}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
+                    className={INLINE_EDIT_INPUT_CLASS}
                     onChange={(e) =>
                       handleColumnNameChange(column, e.target.value)
                     }
@@ -295,7 +295,7 @@ export function TableColumnEditor({
                     value={column.comment}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
+                    className={INLINE_EDIT_INPUT_CLASS}
                     onChange={(e) =>
                       handleCommentChange(column, e.target.value)
                     }

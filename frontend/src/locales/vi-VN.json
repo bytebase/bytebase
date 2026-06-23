@@ -3864,6 +3864,7 @@
     "skip-prior-backup": "Bỏ qua sao lưu trước",
     "skip-prior-backup-description": "Bỏ qua sao lưu dữ liệu tự động trước khi áp dụng thay đổi",
     "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
+    "skipped-no-reason": "Không có lý do",
     "started": "Bắt đầu",
     "status": {
       "available": "Có sẵn",

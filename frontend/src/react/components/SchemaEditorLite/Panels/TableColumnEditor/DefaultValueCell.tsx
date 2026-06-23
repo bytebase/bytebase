@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
+import { INLINE_EDIT_INPUT_CLASS } from "../common";
 
 interface DefaultValue {
   hasDefault: boolean;
@@ -33,7 +34,7 @@ export function DefaultValueCell({ column, disabled, onUpdate }: Props) {
       disabled={disabled}
       placeholder={t("schema-editor.default.placeholder")}
       size="xs"
-      className="border-none bg-transparent shadow-none focus-visible:ring-1"
+      className={INLINE_EDIT_INPUT_CLASS}
       onChange={(e) => handleChange(e.target.value)}
     />
   );

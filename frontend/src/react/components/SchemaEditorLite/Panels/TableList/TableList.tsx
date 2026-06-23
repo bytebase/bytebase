@@ -2,6 +2,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import type {
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../../context";
+import { INLINE_EDIT_INPUT_CLASS } from "../common";
 
 interface Props {
   db: Database;
@@ -73,6 +75,16 @@ export function TableList({
     [editStatus, db, schema]
   );
 
+  const handleCommentChange = useCallback(
+    (table: TableMetadata, comment: string) => {
+      table.comment = comment;
+      if (getStatus(table) === "normal") {
+        editStatus.markEditStatus(db, { schema, table }, "updated");
+      }
+    },
+    [getStatus, editStatus, db, schema]
+  );
+
   if (filteredTables.length === 0) {
     return (
       <div className="flex size-full items-center justify-center py-8 text-sm text-control-light">
@@ -113,8 +125,21 @@ export function TableList({
               onClick={() => onEditTable(table)}
             >
               <TableCell className="font-medium">{table.name}</TableCell>
-              <TableCell className="text-control-light">
-                {table.comment || "—"}
+              <TableCell
+                className="text-control-light"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {readonly ? (
+                  table.comment || "—"
+                ) : (
+                  <Input
+                    value={table.comment}
+                    disabled={status === "dropped"}
+                    size="xs"
+                    className={INLINE_EDIT_INPUT_CLASS}
+                    onChange={(e) => handleCommentChange(table, e.target.value)}
+                  />
+                )}
               </TableCell>
               {!readonly && (
                 <TableCell className="text-right">
