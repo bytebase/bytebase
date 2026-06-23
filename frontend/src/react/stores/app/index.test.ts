@@ -26,6 +26,7 @@ import {
 import { IdentityProviderSchema } from "@/types/proto-es/v1/idp_service_pb";
 import { InstanceRoleSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
+import { IssueCommentSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ProjectSchema,
   WebhookSchema,
@@ -154,6 +155,9 @@ const mocks = vi.hoisted(() => ({
   listAccessGrants: vi.fn(),
   activateAccessGrant: vi.fn(),
   revokeAccessGrant: vi.fn(),
+  listIssueComments: vi.fn(),
+  createIssueComment: vi.fn(),
+  updateIssueComment: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -275,6 +279,11 @@ vi.mock("@/connect", () => ({
     updateWorkspace: mocks.updateWorkspace,
     getIamPolicy: mocks.getIamPolicy,
     setIamPolicy: mocks.setIamPolicy,
+  },
+  issueServiceClientConnect: {
+    listIssueComments: mocks.listIssueComments,
+    createIssueComment: mocks.createIssueComment,
+    updateIssueComment: mocks.updateIssueComment,
   },
 }));
 
@@ -1354,6 +1363,40 @@ describe("useAppStore", () => {
     expect(store.getState().accessGrantsByName[accessGrantA.name]).toBe(
       revoked
     );
+  });
+
+  test("updateIssueComment writes the server response so the edited marker shows in place (BYT-9746)", async () => {
+    const issueName = "projects/a/issues/1";
+    const commentName = `${issueName}/issueComments/100`;
+    const original = createProto(IssueCommentSchema, {
+      name: commentName,
+      comment: "before",
+      createTime: timestampSeconds(1000),
+      updateTime: timestampSeconds(1000),
+    });
+    // The server bumps updated_at on edit and returns the refreshed comment.
+    const serverUpdated = createProto(IssueCommentSchema, {
+      name: commentName,
+      comment: "after",
+      createTime: timestampSeconds(1000),
+      updateTime: timestampSeconds(2000),
+    });
+    mocks.updateIssueComment.mockResolvedValue(serverUpdated);
+    const store = createAppStore();
+    store.setState({ issueCommentsByIssue: { [issueName]: [original] } });
+
+    await store.getState().updateIssueComment({
+      issueCommentName: commentName,
+      comment: "after",
+    });
+
+    const cached = store.getState().getIssueComments(issueName)[0];
+    expect(cached.comment).toBe("after");
+    // Regression guard: the optimistic patch used to discard the RPC response
+    // and keep the stale updateTime, so IssueCommentActivity's
+    // `isEdited = createTime !== updateTime` stayed false until a full refetch.
+    expect(cached.updateTime).toEqual(serverUpdated.updateTime);
+    expect(cached.updateTime).not.toEqual(cached.createTime);
   });
 
   test("deduplicates project fetches and caches the result", async () => {
