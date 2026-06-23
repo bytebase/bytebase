@@ -150,21 +150,17 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 			}
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:
-		token := ""
-		// Env var name and file path are not sensitive: return them so the UI
-		// can display them and updates don't require re-entry. The literal
-		// token (PLAIN) stays write-only.
-		switch externalSecret.GetTokenType() {
-		case storepb.DataSourceExternalSecret_ENVIRONMENT, storepb.DataSourceExternalSecret_FILE:
-			resp.TokenType = v1pb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
-			token = externalSecret.GetToken()
-		default:
+		// token is INPUT_ONLY (write-only): always clear it on read, regardless
+		// of token_type. The env var name / file path is re-entered on edit, the
+		// same as the literal token and the AppRole role_id/secret_id above.
+		resp.TokenType = v1pb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
+		if resp.TokenType == v1pb.DataSourceExternalSecret_TOKEN_TYPE_UNSPECIFIED {
 			// Legacy data has no token_type; surface it as PLAIN explicitly so
 			// the API never exposes an ambiguous UNSPECIFIED for an existing token.
 			resp.TokenType = v1pb.DataSourceExternalSecret_PLAIN
 		}
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
-			Token: token,
+			Token: "",
 		}
 	default:
 	}
