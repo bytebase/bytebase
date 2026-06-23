@@ -1049,80 +1049,89 @@ export function DataSourceForm({
                                   const tokenLabel = t(
                                     "instance.external-secret-vault.vault-auth-type.token.self"
                                   );
-                                  const tokenPlaceholder =
+                                  let tokenPlaceholder = `${tokenLabel} - ${t("common.write-only")}`;
+                                  if (
                                     tokenType ===
                                     DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                      ? t(
-                                          "instance.external-secret-vault.vault-auth-type.token.env-name"
-                                        )
-                                      : tokenType ===
-                                          DataSourceExternalSecret_TokenType.FILE
-                                        ? t(
-                                            "instance.external-secret-vault.vault-auth-type.token.file-path"
-                                          )
-                                        : `${tokenLabel} - ${t("common.write-only")}`;
+                                  ) {
+                                    tokenPlaceholder = t(
+                                      "instance.external-secret-vault.vault-auth-type.token.env-name"
+                                    );
+                                  } else if (
+                                    tokenType ===
+                                    DataSourceExternalSecret_TokenType.FILE
+                                  ) {
+                                    tokenPlaceholder = t(
+                                      "instance.external-secret-vault.vault-auth-type.token.file-path"
+                                    );
+                                  }
                                   return (
                                     <div>
                                       <label className="textlabel block">
                                         {tokenLabel}{" "}
                                         <span className="text-error">*</span>
                                       </label>
-                                      <div className="textlabel my-1 flex gap-x-4">
-                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            checked={
-                                              tokenType ===
-                                              DataSourceExternalSecret_TokenType.PLAIN
-                                            }
-                                            disabled={!allowEdit}
-                                            onChange={() =>
-                                              changeTokenType(
+                                      {/* Token source is host-backed for env/file,
+                                          which is disallowed in SaaS mode; only
+                                          plain is offered there. */}
+                                      {!isSaaSMode && (
+                                        <div className="textlabel my-1 flex gap-x-4">
+                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              checked={
+                                                tokenType ===
                                                 DataSourceExternalSecret_TokenType.PLAIN
-                                              )
-                                            }
-                                          />
-                                          {t(
-                                            "instance.external-secret-vault.vault-auth-type.token.type-plain"
-                                          )}
-                                        </label>
-                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            checked={
-                                              tokenType ===
-                                              DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                            }
-                                            disabled={!allowEdit}
-                                            onChange={() =>
-                                              changeTokenType(
+                                              }
+                                              disabled={!allowEdit}
+                                              onChange={() =>
+                                                changeTokenType(
+                                                  DataSourceExternalSecret_TokenType.PLAIN
+                                                )
+                                              }
+                                            />
+                                            {t(
+                                              "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                            )}
+                                          </label>
+                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              checked={
+                                                tokenType ===
                                                 DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                              )
-                                            }
-                                          />
-                                          {t(
-                                            "instance.external-secret-vault.vault-auth-type.token.type-environment"
-                                          )}
-                                        </label>
-                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            checked={
-                                              tokenType ===
-                                              DataSourceExternalSecret_TokenType.FILE
-                                            }
-                                            disabled={!allowEdit}
-                                            onChange={() =>
-                                              changeTokenType(
+                                              }
+                                              disabled={!allowEdit}
+                                              onChange={() =>
+                                                changeTokenType(
+                                                  DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                                )
+                                              }
+                                            />
+                                            {t(
+                                              "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                            )}
+                                          </label>
+                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              checked={
+                                                tokenType ===
                                                 DataSourceExternalSecret_TokenType.FILE
-                                              )
-                                            }
-                                          />
-                                          {t(
-                                            "instance.external-secret-vault.vault-auth-type.token.type-file"
-                                          )}
-                                        </label>
-                                      </div>
+                                              }
+                                              disabled={!allowEdit}
+                                              onChange={() =>
+                                                changeTokenType(
+                                                  DataSourceExternalSecret_TokenType.FILE
+                                                )
+                                              }
+                                            />
+                                            {t(
+                                              "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                            )}
+                                          </label>
+                                        </div>
+                                      )}
                                       <Input
                                         value={
                                           dataSource.externalSecret.authOption

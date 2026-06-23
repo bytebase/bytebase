@@ -421,6 +421,11 @@ func (s *InstanceService) checkDataSource(ctx context.Context, instance *store.I
 		return err
 	}
 
+	// Validate external secret restrictions in SaaS mode
+	if err := s.validateExternalSecretForSaaS(dataSource); err != nil {
+		return err
+	}
+
 	if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
 		missingFeatureError := connect.NewError(connect.CodePermissionDenied, err)
 		if dataSource.GetExternalSecret() != nil {
@@ -462,6 +467,31 @@ func (s *InstanceService) validateIAMCredentialForSaaS(dataSource *storepb.DataS
 	}
 
 	return nil
+}
+
+// validateExternalSecretForSaaS blocks external secret token sources that read
+// from the Bytebase host in SaaS mode. The configured secret store URL is
+// user-controlled, so resolving a token from the host environment or filesystem
+// would let a tenant exfiltrate host env vars or files to an endpoint they own.
+func (s *InstanceService) validateExternalSecretForSaaS(dataSource *storepb.DataSource) error {
+	if !s.profile.SaaS {
+		return nil
+	}
+
+	externalSecret := dataSource.GetExternalSecret()
+	if externalSecret.GetAuthType() != storepb.DataSourceExternalSecret_TOKEN {
+		return nil
+	}
+
+	switch externalSecret.GetTokenType() {
+	case storepb.DataSourceExternalSecret_ENVIRONMENT, storepb.DataSourceExternalSecret_FILE:
+		return connect.NewError(
+			connect.CodeInvalidArgument,
+			errors.New("environment variable and file token sources are not allowed in SaaS mode for security. Please provide the token directly"),
+		)
+	default:
+		return nil
+	}
 }
 
 // UpdateInstance updates an instance.
