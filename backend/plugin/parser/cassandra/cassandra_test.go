@@ -1,10 +1,13 @@
 package cassandra
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestParseCassandraStatements(t *testing.T) {
@@ -102,6 +105,74 @@ func TestParseCassandraStatementsErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := parseCassandraStatements(tt.statement)
 			require.Error(t, err, "Expected error for invalid CQL")
+		})
+	}
+}
+
+func TestSyntaxErrorIsSyntaxError(t *testing.T) {
+	_, err := parseCassandraStatements("SELCT * FORM users")
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr), "parse error should be *base.SyntaxError, got %T", err)
+	require.NotNil(t, syntaxErr.Position)
+}
+
+func TestSyntaxErrorColumnOffset(t *testing.T) {
+	input := "SELECT * FROM t;\n  SELCT * FROM users"
+	_, err := parseCassandraStatements(input)
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+
+	// The splitter trims "SELCT * FROM users" starting at line 2, col 3.
+	// The parse error on "SELCT" is at byte 0 of the trimmed text → local (line=1, col=1).
+	// After adjustment: line = 1 + 2 - 1 = 2, col = 1 + 3 - 1 = 3.
+	require.Equal(t, int32(2), syntaxErr.Position.Line)
+	require.Equal(t, int32(3), syntaxErr.Position.Column)
+}
+
+func TestParseCassandraOmniAST(t *testing.T) {
+	results, err := parseCassandraStatements("SELECT id, name FROM users")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	node, ok := GetOmniNode(results[0].AST)
+	require.True(t, ok, "AST should be an OmniAST")
+	require.NotNil(t, node)
+}
+
+func TestParseCassandraComprehensiveDDL(t *testing.T) {
+	ddlStatements := []string{
+		"CREATE KEYSPACE ks WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
+		"ALTER KEYSPACE ks WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 3}",
+		"DROP KEYSPACE IF EXISTS ks",
+		"CREATE TABLE ks.t (id int PRIMARY KEY, name text, data blob)",
+		"ALTER TABLE ks.t ADD email text",
+		"DROP TABLE IF EXISTS ks.t",
+		"CREATE INDEX idx ON ks.t (name)",
+		"DROP INDEX IF EXISTS ks.idx",
+		"CREATE TYPE ks.addr (street text, city text)",
+		"ALTER TYPE ks.addr ADD zip text",
+		"DROP TYPE IF EXISTS ks.addr",
+		"CREATE MATERIALIZED VIEW ks.mv AS SELECT id, name FROM ks.t WHERE id IS NOT NULL AND name IS NOT NULL PRIMARY KEY (name, id)",
+		"ALTER MATERIALIZED VIEW ks.mv WITH compression = {'sstable_compression': 'LZ4Compressor'}",
+		"DROP MATERIALIZED VIEW IF EXISTS ks.mv",
+		"CREATE FUNCTION ks.double(val int) RETURNS NULL ON NULL INPUT RETURNS int LANGUAGE java AS 'return val * 2;'",
+		"DROP FUNCTION IF EXISTS ks.double",
+		"CREATE TRIGGER tr ON ks.t USING 'org.example.Trigger'",
+		"DROP TRIGGER IF EXISTS tr ON ks.t",
+		"TRUNCATE ks.t",
+	}
+	for _, stmt := range ddlStatements {
+		name := stmt
+		if len(name) > 40 {
+			name = name[:40]
+		}
+		t.Run(name, func(t *testing.T) {
+			results, err := parseCassandraStatements(stmt)
+			require.NoError(t, err)
+			require.Len(t, results, 1)
+			require.NotNil(t, results[0].AST)
 		})
 	}
 }

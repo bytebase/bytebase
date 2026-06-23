@@ -53,6 +53,9 @@ func convertOmniError(err error, stmt base.Statement) error {
 
 	pos := byteOffsetToPosition(stmt.Text, parseErr.Loc.Start)
 	if stmt.Start != nil {
+		if pos.Line == 1 {
+			pos.Column += stmt.Start.Column - 1
+		}
 		pos.Line += stmt.Start.Line - 1
 	}
 
