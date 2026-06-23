@@ -235,7 +235,6 @@ func TestGetQuerySpan(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
-			// Check Type field
 			require.Equal(t, tt.want.Type, got.Type, "Query type mismatch")
 
 			// Check Results length
@@ -651,6 +650,27 @@ func TestQueryTypeDetection(t *testing.T) {
 			require.Equal(t, tt.expectedType, got.Type, "Query type mismatch for %s", tt.statement)
 		})
 	}
+}
+
+func TestSelectUnaliasedExprPreservesResultSlots(t *testing.T) {
+	ctx := context.Background()
+	gCtx := base.GetQuerySpanContext{}
+
+	got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: "SELECT WRITETIME(name), secret FROM users"}, "test_keyspace", "", false)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, base.Select, got.Type)
+	require.Len(t, got.Results, 2, "result list must have one slot per select element")
+
+	require.Equal(t, "", got.Results[0].Name)
+	require.Empty(t, got.Results[0].SourceColumns)
+
+	require.Equal(t, "secret", got.Results[1].Name)
+	require.Contains(t, got.Results[1].SourceColumns, base.ColumnResource{
+		Database: "test_keyspace",
+		Table:    "users",
+		Column:   "secret",
+	})
 }
 
 func TestSelectAsteriskWithMetadata(t *testing.T) {

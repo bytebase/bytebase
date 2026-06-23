@@ -143,6 +143,10 @@ func (e *querySpanExtractor) selectElements(elems []*ast.SelectElement, keyspace
 			resultName = elem.Alias.Name
 		}
 		if resultName == "" && sourceName == "" {
+			results = append(results, base.QuerySpanResult{
+				Name:          "",
+				SourceColumns: base.SourceColumnSet{},
+			})
 			continue
 		}
 
