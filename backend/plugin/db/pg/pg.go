@@ -84,7 +84,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	pgxConnConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {
-		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		// Aurora DSQL rejects startup parameters outside its supported set,
+		// including default_transaction_read_only, which would fail the
+		// connection before any query runs. Skip it for DSQL.
+		if !util.IsAWSDSQLHost(config.DataSource.Host) {
+			pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		}
 	}
 
 	if config.DataSource.GetSshHost() != "" {
