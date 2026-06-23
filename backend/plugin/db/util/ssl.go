@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -109,6 +110,14 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{}
+
+	// Send Server Name Indication (SNI) so that servers which route by hostname
+	// (e.g. Aurora DSQL) accept the connection. Without ServerName the TLS
+	// ClientHello carries no SNI and such servers reject the handshake.
+	// Per RFC 6066, SNI must not be a literal IP address.
+	if net.ParseIP(ds.GetHost()) == nil {
+		cfg.ServerName = ds.GetHost()
+	}
 
 	// Handle client certificates for mutual TLS authentication
 	// Client certificates can be used with or without server verification
