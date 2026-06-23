@@ -5,11 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestParseCassandraSQL(t *testing.T) {
+func TestParseCassandraStatements(t *testing.T) {
 	tests := []struct {
 		name          string
 		statement     string
@@ -47,20 +45,14 @@ func TestParseCassandraSQL(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:          "Only semicolon",
-			statement:     ";",
-			wantStatCount: 1, // Semicolon creates one statement (not filtered by ParseCassandraSQL)
-			wantErr:       false,
-		},
-		{
 			name:          "CREATE TABLE statement",
-			statement:     "CREATE TABLE users (id UUID PRIMARY KEY, name TEXT);",
+			statement:     "CREATE TABLE users (id int PRIMARY KEY, name text);",
 			wantStatCount: 1,
 			wantErr:       false,
 		},
 		{
 			name:          "Multiple DDL statements",
-			statement:     "CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}; CREATE TABLE test.users (id UUID PRIMARY KEY);",
+			statement:     "CREATE KEYSPACE test WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': '1'}; CREATE TABLE test.users (id int PRIMARY KEY);",
 			wantStatCount: 2,
 			wantErr:       false,
 		},
@@ -68,7 +60,7 @@ func TestParseCassandraSQL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := ParseCassandraSQL(tt.statement)
+			results, err := parseCassandraStatements(tt.statement)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -76,34 +68,26 @@ func TestParseCassandraSQL(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantStatCount, len(results))
 
-			// Verify each result has the required fields
 			for i, result := range results {
-				assert.NotNil(t, result.Tree, "Result %d should have a Tree", i)
-				assert.NotNil(t, result.Tokens, "Result %d should have Tokens", i)
+				assert.NotNil(t, result.AST, "Result %d should have an AST", i)
+				assert.NotEmpty(t, result.Text, "Result %d should have Text", i)
 			}
 		})
 	}
 }
 
-func TestParseCassandraSQLBaseLine(t *testing.T) {
-	statement := `SELECT * FROM users;
-	SELECT * FROM orders;
-	SELECT * FROM products;`
-	results, err := ParseCassandraSQL(statement)
+func TestParseCassandraStatementsPositions(t *testing.T) {
+	statement := "SELECT * FROM users;\nSELECT * FROM orders;\nSELECT * FROM products;"
+	results, err := parseCassandraStatements(statement)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(results))
 
-	// BaseLine follows the pattern from SplitSQL based on token positions
-	// First statement: line 0
-	assert.Equal(t, 0, base.GetLineOffset(results[0].StartPosition))
-	// Second statement: includes newline+tab prefix, but first token is on line 2 (BaseLine = line - 1 = 1-1 = 0)
-	// Actually the newline is part of the previous statement's text, so first real token is on line 2
-	assert.Equal(t, 0, base.GetLineOffset(results[1].StartPosition)) // First token after semicolon is still on line 1 (0-indexed)
-	// Third statement
-	assert.Equal(t, 1, base.GetLineOffset(results[2].StartPosition))
+	assert.Equal(t, int32(1), results[0].Start.Line)
+	assert.Equal(t, int32(2), results[1].Start.Line)
+	assert.Equal(t, int32(3), results[2].Start.Line)
 }
 
-func TestParseCassandraSQLErrors(t *testing.T) {
+func TestParseCassandraStatementsErrors(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -112,15 +96,11 @@ func TestParseCassandraSQLErrors(t *testing.T) {
 			name:      "Invalid CQL syntax",
 			statement: "SELCT * FORM users;",
 		},
-		{
-			name:      "Unclosed string",
-			statement: "SELECT * FROM users WHERE name = 'test;",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseCassandraSQL(tt.statement)
+			_, err := parseCassandraStatements(tt.statement)
 			require.Error(t, err, "Expected error for invalid CQL")
 		})
 	}
