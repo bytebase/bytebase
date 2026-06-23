@@ -112,6 +112,7 @@ export function DatabaseEditor({
             value={selectedSchemaName ?? ""}
             onChange={(val) => onSelectedSchemaNameChange(val as string)}
             options={schemaOptions}
+            size="sm"
             className="w-48"
           />
         )}
@@ -119,11 +120,12 @@ export function DatabaseEditor({
           <Button
             variant="outline"
             size="sm"
+            className="gap-1.5"
             onClick={() => {
               // Will be wired to TableNameDialog in T22
             }}
           >
-            <Plus className="mr-1 size-4" />
+            <Plus className="size-4" />
             {t("schema-editor.actions.create-table")}
           </Button>
         )}
