@@ -151,6 +151,21 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 10 /* block comment */;",
 		},
+		{
+			stmt:  "SELECT * FROM t # hash comment",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 # hash comment",
+		},
+		{
+			stmt:  "SELECT * FROM t;\n",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10;\n",
+		},
+		{
+			stmt:  "SELECT * FROM t;  \n",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10;  \n",
+		},
 	}
 
 	for _, tc := range testCases {

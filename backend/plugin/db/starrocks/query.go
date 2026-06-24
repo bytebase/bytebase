@@ -167,6 +167,9 @@ func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string,
 
 func findLimitInsertPosition(sql string, stmtLocEnd int) (pos int, beforeClause bool) {
 	effectiveEnd := len(sql)
+	for effectiveEnd > 0 && (sql[effectiveEnd-1] == ' ' || sql[effectiveEnd-1] == '\t' || sql[effectiveEnd-1] == '\n' || sql[effectiveEnd-1] == '\r') {
+		effectiveEnd--
+	}
 	for effectiveEnd > 0 && sql[effectiveEnd-1] == ';' {
 		effectiveEnd--
 	}
@@ -181,7 +184,7 @@ func findLimitInsertPosition(sql string, stmtLocEnd int) (pos int, beforeClause 
 	}
 
 	tail := sql[tailStart:]
-	if strings.HasPrefix(tail, "--") || strings.HasPrefix(tail, "/*") {
+	if strings.HasPrefix(tail, "--") || strings.HasPrefix(tail, "/*") || strings.HasPrefix(tail, "#") {
 		return stmtLocEnd, false
 	}
 
