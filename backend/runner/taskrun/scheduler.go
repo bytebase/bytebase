@@ -71,7 +71,9 @@ func (s *Scheduler) Register(taskType storepb.Task_Type, executorGetter Executor
 
 // failTaskRunsForHA fails all PENDING and AVAILABLE task runs because HA is not licensed.
 func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
-	taskRuns, err := s.store.ListTaskRunsByStatus(ctx, []storepb.TaskRun_Status{storepb.TaskRun_PENDING, storepb.TaskRun_AVAILABLE})
+	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
+		Status: new([]storepb.TaskRun_Status{storepb.TaskRun_PENDING, storepb.TaskRun_AVAILABLE}),
+	})
 	if err != nil {
 		slog.Error("failed to list task runs for HA limit check", log.BBError(err))
 		return

@@ -39,7 +39,7 @@ type FindTaskRunMessage struct {
 	Workspace   string
 	UID         *int64
 	UIDs        *[]int64
-	ProjectID   string
+	ProjectID   string // Empty string skips filtering for cross-project queries like runners.
 	TaskUID     *int64
 	Environment *string
 	PlanUID     *int64
@@ -62,6 +62,40 @@ type TaskRunStatusPatch struct {
 
 // ListTaskRuns lists task runs.
 func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
+	if find.ProjectID == "" && (find.UID != nil || find.UIDs != nil || find.TaskUID != nil || find.Environment != nil || find.PlanUID != nil) {
+		return nil, errors.Errorf("project ID is required for scoped task run filters")
+	}
+
+	where := qb.Q()
+	if find.ProjectID != "" {
+		where.And("task_run.project = ?", find.ProjectID)
+	}
+	if find.Workspace != "" {
+		where.And("task_run.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
+	if v := find.UID; v != nil {
+		where.And("task_run.id = ?", *v)
+	}
+	if v := find.UIDs; v != nil {
+		where.And("task_run.id = ANY(?)", *v)
+	}
+	if v := find.TaskUID; v != nil {
+		where.And("task_run.task_id = ?", *v)
+	}
+	if v := find.Environment; v != nil {
+		where.And("task.environment = ?", *v)
+	}
+	if v := find.PlanUID; v != nil {
+		where.And("task.plan_id = ?", *v)
+	}
+	if v := find.Status; v != nil {
+		var statusStrings []string
+		for _, status := range *v {
+			statusStrings = append(statusStrings, status.String())
+		}
+		where.And("task_run.status = ANY(?)", statusStrings)
+	}
+
 	q := qb.Q().Space(`
 		SELECT
 			task_run.id,
@@ -79,34 +113,9 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.project
 		FROM task_run
 		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
-		WHERE task_run.project = ?
-	`, find.ProjectID)
-
-	if find.Workspace != "" {
-		q.And("task_run.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
-	}
-
-	if v := find.UID; v != nil {
-		q.And("task_run.id = ?", *v)
-	}
-	if v := find.UIDs; v != nil {
-		q.And("task_run.id = ANY(?)", *v)
-	}
-	if v := find.TaskUID; v != nil {
-		q.And("task_run.task_id = ?", *v)
-	}
-	if v := find.Environment; v != nil {
-		q.And("task.environment = ?", *v)
-	}
-	if v := find.PlanUID; v != nil {
-		q.And("task.plan_id = ?", *v)
-	}
-	if v := find.Status; v != nil {
-		var statusStrings []string
-		for _, status := range *v {
-			statusStrings = append(statusStrings, status.String())
-		}
-		q.And("task_run.status = ANY(?)", statusStrings)
+	`)
+	if where.Len() > 0 {
+		q.Space("WHERE ?", where)
 	}
 
 	q.Space("ORDER BY task_run.id ASC")
@@ -561,92 +570,4 @@ func (s *Store) UpdateTaskRunPayload(ctx context.Context, projectID string, task
 		return errors.Wrapf(err, "failed to update task run payload")
 	}
 	return nil
-}
-
-// ListTaskRunsByStatus lists task runs by status across all projects.
-// This is for system schedulers that need cross-project queries.
-func (s *Store) ListTaskRunsByStatus(ctx context.Context, statuses []storepb.TaskRun_Status) ([]*TaskRunMessage, error) {
-	var statusStrings []string
-	for _, status := range statuses {
-		statusStrings = append(statusStrings, status.String())
-	}
-	q := qb.Q().Space(`
-		SELECT
-			task_run.id,
-			task_run.creator,
-			task_run.created_at,
-			task_run.updated_at,
-			task_run.task_id,
-			task_run.status,
-			task_run.started_at,
-			task_run.run_at,
-			task_run.result,
-			task_run.payload,
-			task.plan_id,
-			task.environment,
-			task_run.project
-		FROM task_run
-		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
-		WHERE task_run.status = ANY(?)
-		ORDER BY task_run.id ASC
-	`, statusStrings)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var taskRuns []*TaskRunMessage
-	for rows.Next() {
-		var taskRun TaskRunMessage
-		var creatorEmail sql.NullString
-		var statusString string
-		var resultJSON, payloadJSON string
-		if err := rows.Scan(
-			&taskRun.ID,
-			&creatorEmail,
-			&taskRun.CreatedAt,
-			&taskRun.UpdatedAt,
-			&taskRun.TaskUID,
-			&statusString,
-			&taskRun.StartedAt,
-			&taskRun.RunAt,
-			&resultJSON,
-			&payloadJSON,
-			&taskRun.PlanUID,
-			&taskRun.Environment,
-			&taskRun.ProjectID,
-		); err != nil {
-			return nil, err
-		}
-		if creatorEmail.Valid {
-			taskRun.CreatorEmail = creatorEmail.String
-		}
-		if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
-			taskRun.Status = storepb.TaskRun_Status(statusValue)
-		} else {
-			return nil, errors.Errorf("invalid task run status string: %s", statusString)
-		}
-		resultProto := &storepb.TaskRunResult{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resultJSON), resultProto); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal result")
-		}
-		taskRun.ResultProto = resultProto
-		payloadProto := &storepb.TaskRunPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadJSON), payloadProto); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal payload")
-		}
-		taskRun.PayloadProto = payloadProto
-		taskRuns = append(taskRuns, &taskRun)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return taskRuns, nil
 }
