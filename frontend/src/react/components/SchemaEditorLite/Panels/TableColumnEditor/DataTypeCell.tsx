@@ -45,6 +45,7 @@ export function DataTypeCell({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
@@ -114,6 +115,26 @@ export function DataTypeCell({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // Open the dropdown on focus/click and close it on Escape. Attached to the
+  // native input element (not the wrapper) so the wrapper stays a plain layout
+  // div, and because Base UI's Input can swallow React onFocus/onClick props.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || readonly) return;
+    const handleOpen = () => setOpen(true);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    el.addEventListener("focus", handleOpen);
+    el.addEventListener("click", handleOpen);
+    el.addEventListener("keydown", handleKeyDown);
+    return () => {
+      el.removeEventListener("focus", handleOpen);
+      el.removeEventListener("click", handleOpen);
+      el.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [readonly]);
+
   const handleSelect = useCallback(
     (type: string) => {
       onUpdateValue(type);
@@ -123,16 +144,9 @@ export function DataTypeCell({
   );
 
   return (
-    <div
-      ref={containerRef}
-      className="relative"
-      onClick={() => !readonly && setOpen(true)}
-      onFocus={() => !readonly && setOpen(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") setOpen(false);
-      }}
-    >
+    <div ref={containerRef} className="relative">
       <Input
+        ref={inputRef}
         value={value}
         disabled={readonly}
         placeholder="column type"
