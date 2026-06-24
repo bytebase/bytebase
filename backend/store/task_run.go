@@ -208,18 +208,6 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 		return nil, errors.Wrapf(err, "failed to update task run")
 	}
 
-	// Get the plan ID for cache invalidation
-	q := qb.Q().Space("SELECT plan_id FROM task WHERE id = ? AND project = ?", taskRun.TaskUID, patch.ProjectID)
-	sql, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	var planID int64
-	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&planID); err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan ID for task %d", taskRun.TaskUID)
-	}
-
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
@@ -274,12 +262,10 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 }
 
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, taskRunID int64) error {
-	// Get the pipeline ID for cache invalidation
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET started_at = now(), updated_at = now()
 		WHERE id = ? AND project = ?
-		RETURNING (SELECT plan_id FROM task WHERE task.id = task_run.task_id AND task.project = task_run.project)
 	`, taskRunID, projectID)
 
 	query, args, err := q.ToSQL()
@@ -287,9 +273,16 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, task
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var planID int64
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&planID); err != nil {
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get affected task run count")
+	}
+	if rowsAffected == 0 {
+		return errors.Errorf("task run %d not found in project %s", taskRunID, projectID)
 	}
 	return nil
 }
