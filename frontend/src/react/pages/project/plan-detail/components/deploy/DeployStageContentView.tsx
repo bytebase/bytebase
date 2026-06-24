@@ -33,6 +33,16 @@ export function DeployStageContentView({
   const currentUser = page.currentUser;
   const project = page.project;
   const [filterStatuses, setFilterStatuses] = useState<Task_Status[]>([]);
+  // Scope the task filter to the stage: when switching to a different stage,
+  // drop the previous stage's filter so it can't silently hide the new stage's
+  // tasks (BYT-9762). Resetting during render — rather than in a post-paint
+  // effect — keeps the new stage's first paint correct instead of briefly
+  // showing the wrong filtered set.
+  const [filteredStageName, setFilteredStageName] = useState(stage.name);
+  if (stage.name !== filteredStageName) {
+    setFilteredStageName(stage.name);
+    setFilterStatuses([]);
+  }
   const [rolloutPermissionReady, setRolloutPermissionReady] = useState(false);
   const [runStageOpen, setRunStageOpen] = useState(false);
   const stageTaskKey = stage.tasks.map((task) => task.name).join("|");

@@ -972,7 +972,12 @@
         },
         "self": "Auth type",
         "token": {
-          "self": "Token"
+          "env-name": "Token environment variable name",
+          "file-path": "Token file path",
+          "self": "Token",
+          "type-environment": "Environment variable",
+          "type-file": "File path",
+          "type-plain": "Plain text"
         }
       },
       "vault-secret-engine-name": "Secret engine name",

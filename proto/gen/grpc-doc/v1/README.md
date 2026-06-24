@@ -140,6 +140,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
+    - [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
   
     - [InstanceService](#bytebase-v1-InstanceService)
@@ -2485,7 +2486,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | url | [string](#string) |  | The URL of the external secret store. |
 | auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  | The authentication method for accessing the secret store. |
 | app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  | AppRole authentication configuration. |
-| token | [string](#string) |  | Token for direct authentication. |
+| token | [string](#string) |  | Token for direct authentication. Interpreted according to token_type: the literal token (PLAIN), an environment variable name (ENVIRONMENT), or a file path (FILE). |
+| token_type | [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType) |  | How to interpret the token field when auth_type is TOKEN. |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
@@ -2891,6 +2893,20 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 | GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
 | AZURE_KEY_VAULT | 4 | ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-TokenType"></a>
+
+### DataSourceExternalSecret.TokenType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TOKEN_TYPE_UNSPECIFIED | 0 | Unspecified token type, treated as PLAIN for backward compatibility. |
+| PLAIN | 1 | The token field holds the literal token value. |
+| ENVIRONMENT | 2 | The token field holds the name of an environment variable on the Bytebase server that holds the token value. |
+| FILE | 3 | The token field holds a path to a file on the Bytebase server that holds the token value. |
 
 
 

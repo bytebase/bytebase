@@ -513,12 +513,30 @@ message DataSourceExternalSecret {
     string mount_path = 4;
   }
 
+  enum TokenType {
+    // Unspecified token type, treated as PLAIN for backward compatibility.
+    TOKEN_TYPE_UNSPECIFIED = 0;
+    // The token field holds the literal token value.
+    PLAIN = 1;
+    // The token field holds the name of an environment variable on the
+    // Bytebase server that holds the token value.
+    ENVIRONMENT = 2;
+    // The token field holds a path to a file on the Bytebase server that
+    // holds the token value.
+    FILE = 3;
+  }
+
   oneof auth_option {
     // AppRole authentication configuration.
     AppRoleAuthOption app_role = 4;
-    // Token for direct authentication.
+    // Token for direct authentication. Interpreted according to token_type:
+    // the literal token (PLAIN), an environment variable name (ENVIRONMENT),
+    // or a file path (FILE).
     string token = 5 [(google.api.field_behavior) = INPUT_ONLY];
   }
+
+  // How to interpret the token field when auth_type is TOKEN.
+  TokenType token_type = 13;
 
   // engine name is the name for secret engine.
   string engine_name = 6;

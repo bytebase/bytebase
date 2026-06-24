@@ -972,7 +972,12 @@
         },
         "self": "認証タイプ",
         "token": {
-          "self": "トークン"
+          "env-name": "トークンの環境変数名",
+          "file-path": "トークンファイルのパス",
+          "self": "トークン",
+          "type-environment": "環境変数",
+          "type-file": "ファイルパス",
+          "type-plain": "プレーンテキスト"
         }
       },
       "vault-secret-engine-name": "シークレットエンジン名",
