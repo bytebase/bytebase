@@ -148,14 +148,6 @@ export function TableEditor({
     handleAddPartition,
   ]);
 
-  const markTableStatus = useCallback(
-    (status: "updated") => {
-      if (tableStatus === "created" || tableStatus === "dropped") return;
-      editStatus.markEditStatus(db, { schema, table }, status);
-    },
-    [tableStatus, editStatus, db, schema, table]
-  );
-
   const modeOptions = useMemo(() => {
     const items: { value: EditorMode; label: string }[] = [
       { value: "COLUMNS", label: t("schema-editor.columns") },
@@ -211,7 +203,6 @@ export function TableEditor({
             disableChangeTable={disableChangeTable}
             allowChangePrimaryKeys={allowChangePrimaryKeys}
             searchPattern={searchPattern}
-            onMarkTableStatus={markTableStatus}
           />
         )}
         {mode === "INDEXES" && (

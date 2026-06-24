@@ -26,12 +26,12 @@ describe("table primitives", () => {
     expect(element.props.className).toContain("!bg-transparent");
   });
 
-  test("ColumnResizeHandle uses a raised 12px hitbox around a 3px visual bar", () => {
+  test("ColumnResizeHandle uses a raised 12px hitbox around a 2px visual bar", () => {
     const element = ColumnResizeHandle({ onMouseDown: () => {} });
 
     expect(element.props.className).toContain("right-[-6px]");
     expect(element.props.className).toContain("w-3");
     expect(element.props.className).toContain("z-10");
-    expect(element.props.children.props.className).toContain("w-[3px]");
+    expect(element.props.children.props.className).toContain("w-0.5");
   });
 });
