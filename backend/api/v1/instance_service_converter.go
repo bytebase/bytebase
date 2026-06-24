@@ -142,14 +142,29 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	case v1pb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		appRole := externalSecret.GetAppRole()
 		if appRole != nil {
+			secretType := v1pb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type)
+			if secretType == v1pb.DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED {
+				// Legacy data has no secret type; surface it as PLAIN explicitly so
+				// the API never exposes an ambiguous UNSPECIFIED for an existing secret.
+				secretType = v1pb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN
+			}
 			resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
 				AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
-					Type:      v1pb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type),
+					Type:      secretType,
 					MountPath: appRole.MountPath,
 				},
 			}
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:
+		// token is INPUT_ONLY (write-only): always clear it on read, regardless
+		// of token_type. The env var name / file path is re-entered on edit, the
+		// same as the literal token and the AppRole role_id/secret_id above.
+		resp.TokenType = v1pb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
+		if resp.TokenType == v1pb.DataSourceExternalSecret_TOKEN_TYPE_UNSPECIFIED {
+			// Legacy data has no token_type; surface it as PLAIN explicitly so
+			// the API never exposes an ambiguous UNSPECIFIED for an existing token.
+			resp.TokenType = v1pb.DataSourceExternalSecret_PLAIN
+		}
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
 			Token: "",
 		}
@@ -278,6 +293,7 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 	// Convert auth options
 	switch externalSecret.AuthOption.(type) {
 	case *v1pb.DataSourceExternalSecret_Token:
+		secret.TokenType = storepb.DataSourceExternalSecret_TokenType(externalSecret.TokenType)
 		secret.AuthOption = &storepb.DataSourceExternalSecret_Token{
 			Token: externalSecret.GetToken(),
 		}

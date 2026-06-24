@@ -972,7 +972,12 @@
         },
         "self": "认证方式",
         "token": {
-          "self": "Token"
+          "env-name": "Token 环境变量名",
+          "file-path": "Token 文件路径",
+          "self": "Token",
+          "type-environment": "环境变量",
+          "type-file": "文件路径",
+          "type-plain": "纯文本"
         }
       },
       "vault-secret-engine-name": "Secret engine name",
@@ -3859,6 +3864,7 @@
     "skip-prior-backup": "跳过预备份",
     "skip-prior-backup-description": "跳过变更前的自动数据备份",
     "skip-task": "跳过任务 | 跳过任务",
+    "skipped-no-reason": "未提供原因",
     "started": "开始于",
     "status": {
       "available": "就绪",

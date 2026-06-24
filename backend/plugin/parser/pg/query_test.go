@@ -92,6 +92,38 @@ func TestValidateSQLForEditor(t *testing.T) {
 			allQuery: false,
 		},
 		{
+			// BYT-9751 RED→GREEN: SELECT ... INTO creates a table (a write), but the
+			// validator treated it as read-only — it never checked the INTO clause.
+			sql:      `SELECT a INTO t2 FROM t`,
+			valid:    false,
+			allQuery: false,
+		},
+		{
+			// no-over-block guard: a data-modifying CTE must reject, but read-only
+			// CTE terms pg models as SelectStmt must stay allowed — VALUES.
+			sql:      `WITH x AS (VALUES (1), (2)) SELECT * FROM x`,
+			valid:    true,
+			allQuery: true,
+		},
+		{
+			// no-over-block guard: TABLE t is a SelectStmt CTE term.
+			sql:      `WITH x AS (TABLE t) SELECT * FROM x`,
+			valid:    true,
+			allQuery: true,
+		},
+		{
+			// no-over-block guard: a set-operation CTE term is a SelectStmt.
+			sql:      `WITH x AS (SELECT 1 UNION SELECT 2) SELECT * FROM x`,
+			valid:    true,
+			allQuery: true,
+		},
+		{
+			// no-over-block guard: WITH RECURSIVE — the CTE term is still a SelectStmt.
+			sql:      `WITH RECURSIVE x AS (SELECT 1 UNION SELECT n + 1 FROM x WHERE n < 5) SELECT * FROM x`,
+			valid:    true,
+			allQuery: true,
+		},
+		{
 			sql:      "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
 			valid:    true,
 			allQuery: true,

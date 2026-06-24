@@ -148,14 +148,6 @@ export function TableEditor({
     handleAddPartition,
   ]);
 
-  const markTableStatus = useCallback(
-    (status: "updated") => {
-      if (tableStatus === "created" || tableStatus === "dropped") return;
-      editStatus.markEditStatus(db, { schema, table }, status);
-    },
-    [tableStatus, editStatus, db, schema, table]
-  );
-
   const modeOptions = useMemo(() => {
     const items: { value: EditorMode; label: string }[] = [
       { value: "COLUMNS", label: t("schema-editor.columns") },
@@ -176,28 +168,30 @@ export function TableEditor({
     <div className="flex size-full flex-col gap-y-2 overflow-y-hidden pt-2">
       {/* Toolbar */}
       <div className="flex items-center gap-x-2 px-4">
-        <SegmentedControl
-          value={mode}
-          options={modeOptions}
-          onValueChange={setMode}
-          ariaLabel={t("schema-editor.self")}
-          size="sm"
-        />
+        {modeOptions.length > 1 && (
+          <SegmentedControl
+            value={mode}
+            options={modeOptions}
+            onValueChange={setMode}
+            ariaLabel={t("schema-editor.self")}
+            size="sm"
+          />
+        )}
         {addAction && (
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="gap-1.5"
             onClick={addAction.onClick}
           >
-            <Plus className="mr-1 size-4" />
+            <Plus className="size-4" />
             {addAction.label}
           </Button>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-hidden px-4">
+      <div className="flex-1 overflow-y-hidden">
         {mode === "COLUMNS" && (
           <TableColumnEditor
             db={db}
@@ -209,7 +203,6 @@ export function TableEditor({
             disableChangeTable={disableChangeTable}
             allowChangePrimaryKeys={allowChangePrimaryKeys}
             searchPattern={searchPattern}
-            onMarkTableStatus={markTableStatus}
           />
         )}
         {mode === "INDEXES" && (

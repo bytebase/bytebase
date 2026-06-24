@@ -12,6 +12,34 @@ export interface ColumnWithWidth {
 }
 
 /**
+ * Distributes `containerWidth` across columns so the table fills its container
+ * on first render instead of overflowing at the sum of `defaultWidth`s.
+ * Columns with `resizable === false` keep their `defaultWidth`; the rest share
+ * the remaining space proportionally to their `defaultWidth` (each clamped to
+ * `minWidth`). Falls back to the raw default widths when the container is too
+ * narrow to honor the minimums (the table then scrolls).
+ */
+export function distributeColumnWidths<
+  T extends ColumnWithWidth & { resizable?: boolean },
+>(columns: T[], containerWidth: number): number[] {
+  const fixedTotal = columns
+    .filter((c) => c.resizable === false)
+    .reduce((sum, c) => sum + c.defaultWidth, 0);
+  const flexBaseTotal = columns
+    .filter((c) => c.resizable !== false)
+    .reduce((sum, c) => sum + c.defaultWidth, 0);
+  const available = Math.max(0, containerWidth - fixedTotal);
+  return columns.map((c) => {
+    if (c.resizable === false) return c.defaultWidth;
+    const proportional =
+      flexBaseTotal > 0
+        ? Math.round(available * (c.defaultWidth / flexBaseTotal))
+        : c.defaultWidth;
+    return Math.max(c.minWidth ?? 40, proportional);
+  });
+}
+
+/**
  * Tracks per-column widths for a `table-fixed` table and exposes a mouse
  * handler to start a drag-to-resize gesture on a column header. State is
  * positional: `widths[i]` corresponds to `columns[i]`.
@@ -129,5 +157,5 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
 
   const totalWidth = widths.reduce((sum, w) => sum + w, 0);
 
-  return { widths, totalWidth, onResizeStart };
+  return { widths, totalWidth, onResizeStart, setWidths };
 }

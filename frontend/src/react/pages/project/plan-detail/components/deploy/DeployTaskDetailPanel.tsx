@@ -32,6 +32,7 @@ import { PlanDetailTaskRunDetail } from "../PlanDetailTaskRunDetail";
 import { PlanDetailTaskRunTable } from "../PlanDetailTaskRunTable";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
+import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 import { DeployTaskStatus } from "./DeployTaskStatus";
 import { useDeployTaskActions } from "./taskActions";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
@@ -194,6 +195,8 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
           </div>
         </div>
       </div>
+
+      <DeployTaskSkippedReason task={task} />
 
       {latestTaskRun && (
         <div className="flex w-full flex-col gap-2">

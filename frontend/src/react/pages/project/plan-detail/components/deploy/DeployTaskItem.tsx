@@ -35,6 +35,7 @@ import {
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
 import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
+import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 import { DeployTaskStatus } from "./DeployTaskStatus";
 import { useDeployTaskActions } from "./taskActions";
 import { getTaskRunDuration } from "./taskRunUtils";
@@ -279,6 +280,7 @@ export function DeployTaskItem({
 
           {isExpanded && (
             <div className="space-y-3">
+              <DeployTaskSkippedReason task={task} />
               {!isReleaseTask ? (
                 <div>
                   <div className="mb-1 text-sm font-medium text-gray-700">

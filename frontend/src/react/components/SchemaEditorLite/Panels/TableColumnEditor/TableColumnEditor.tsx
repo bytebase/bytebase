@@ -1,5 +1,5 @@
 import { RotateCcw, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -12,6 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import {
+  distributeColumnWidths,
+  useColumnWidths,
+} from "@/react/hooks/useColumnWidths";
 import { cn } from "@/react/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -26,8 +30,9 @@ import {
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../../core/edit";
-import { markUUID } from "../common";
-import { DataTypeCell, DataTypeSuggestionsDatalist } from "./DataTypeCell";
+import { refreshTableEditStatus } from "../../core/refreshEditStatus";
+import { INLINE_EDIT_INPUT_CLASS, markUUID } from "../common";
+import { DataTypeCell } from "./DataTypeCell";
 import { DefaultValueCell } from "./DefaultValueCell";
 
 interface Props {
@@ -40,7 +45,6 @@ interface Props {
   disableChangeTable: boolean;
   allowChangePrimaryKeys: boolean;
   searchPattern?: string;
-  onMarkTableStatus: (status: "updated") => void;
 }
 
 export function TableColumnEditor({
@@ -53,10 +57,23 @@ export function TableColumnEditor({
   disableChangeTable,
   allowChangePrimaryKeys,
   searchPattern,
-  onMarkTableStatus,
 }: Props) {
   const { t } = useTranslation();
-  const { editStatus } = useSchemaEditorContext();
+  const { editStatus, targets } = useSchemaEditorContext();
+
+  const baselineMetadata = useMemo(
+    () =>
+      targets.find((target) => target.database.name === db.name)
+        ?.baselineMetadata,
+    [targets, db.name]
+  );
+
+  // Recompute this table's edit status by diffing against the baseline, so
+  // reverting a field back to its original value clears the dirty marker.
+  const refreshStatus = useCallback(() => {
+    if (!baselineMetadata) return;
+    refreshTableEditStatus(editStatus, db, baselineMetadata, schema, table);
+  }, [editStatus, db, baselineMetadata, schema, table]);
 
   const primaryKey = useMemo(() => {
     return table.indexes.find((idx) => idx.primary);
@@ -89,6 +106,11 @@ export function TableColumnEditor({
   const handleColumnNameChange = useCallback(
     (column: ColumnMetadata, newName: string) => {
       const oldName = column.name;
+      if (newName === oldName) return;
+      // Status is keyed by column name, so capture it before renaming and
+      // clear the old-name key (avoids leaving a stale dirty entry behind).
+      const status = editStatus.getColumnStatus(db, { schema, table, column });
+      editStatus.removeEditStatus(db, { schema, table, column }, false);
       column.name = newName;
       // Sync PK name if column is in PK
       if (primaryKey && primaryKey.expressions.includes(oldName)) {
@@ -97,25 +119,33 @@ export function TableColumnEditor({
           primaryKey.expressions[idx] = newName;
         }
       }
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
+      // Re-keying "created" onto a name that already belongs to another column
+      // would make that existing column read as "created" too (shared name key),
+      // so its trash action would splice the real column out. Only preserve
+      // "created" when the new name is unique within the table.
+      const nameCollides = table.columns.some(
+        (c) => c !== column && c.name === newName
+      );
+      if (status === "created" && !nameCollides) {
+        // A freshly-added column being named for the first time must stay
+        // "created" (re-keyed to the new name) — otherwise refreshStatus would
+        // diff it against a non-existent baseline and downgrade it to
+        // "updated", and the trash action would then drop it instead of
+        // splicing the unsaved column out.
+        editStatus.markEditStatus(db, { schema, table, column }, "created");
+      } else {
+        refreshStatus();
       }
-      onMarkTableStatus("updated");
     },
-    [primaryKey, getStatus, editStatus, db, schema, table, onMarkTableStatus]
+    [primaryKey, editStatus, db, schema, table, refreshStatus]
   );
 
   const handleColumnTypeChange = useCallback(
     (column: ColumnMetadata, newType: string) => {
       column.type = newType;
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      }
-      onMarkTableStatus("updated");
+      refreshStatus();
     },
-    [getStatus, editStatus, db, schema, table, onMarkTableStatus]
+    [refreshStatus]
   );
 
   const handleDefaultChange = useCallback(
@@ -125,25 +155,17 @@ export function TableColumnEditor({
     ) => {
       column.hasDefault = value.hasDefault;
       column.default = value.default;
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      }
-      onMarkTableStatus("updated");
+      refreshStatus();
     },
-    [getStatus, editStatus, db, schema, table, onMarkTableStatus]
+    [refreshStatus]
   );
 
   const handleNullableChange = useCallback(
     (column: ColumnMetadata, nullable: boolean) => {
       column.nullable = nullable;
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      }
-      onMarkTableStatus("updated");
+      refreshStatus();
     },
-    [getStatus, editStatus, db, schema, table, onMarkTableStatus]
+    [refreshStatus]
   );
 
   const handlePrimaryKeyChange = useCallback(
@@ -154,25 +176,17 @@ export function TableColumnEditor({
       } else {
         removeColumnPrimaryKey(table, column.name);
       }
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      }
-      onMarkTableStatus("updated");
+      refreshStatus();
     },
-    [engine, table, getStatus, editStatus, db, schema, onMarkTableStatus]
+    [engine, table, refreshStatus]
   );
 
   const handleCommentChange = useCallback(
     (column: ColumnMetadata, comment: string) => {
       column.comment = comment; // ColumnMetadata.comment
-      const status = getStatus(column);
-      if (status === "normal") {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      }
-      onMarkTableStatus("updated");
+      refreshStatus();
     },
-    [getStatus, editStatus, db, schema, table, onMarkTableStatus]
+    [refreshStatus]
   );
 
   const handleDropColumn = useCallback(
@@ -185,9 +199,8 @@ export function TableColumnEditor({
       } else {
         editStatus.markEditStatus(db, { schema, table, column }, "dropped");
       }
-      onMarkTableStatus("updated");
     },
-    [getStatus, table, editStatus, db, schema, onMarkTableStatus]
+    [getStatus, table, editStatus, db, schema]
   );
 
   const handleRestoreColumn = useCallback(
@@ -197,41 +210,121 @@ export function TableColumnEditor({
     [editStatus, db, schema, table]
   );
 
-  const datalistId = `schema-editor-types-${engine}`;
-  // Compact override for table cells: reduce default px-4 py-3 padding so each
-  // row hugs the inline editor heights instead of doubling them.
-  const cellClass = "px-2 py-1";
-  const headClass = "h-8 px-2 py-1 whitespace-nowrap";
+  // Compact rows: trim the shared Table's default vertical padding (py-3 cells,
+  // h-10 headers) but keep py-2 so inline editors have breathing room around
+  // them. Kept in sync with TableList.
+  const cellClass = "py-2";
+  const headClass = "h-8 py-1 whitespace-nowrap";
+
+  // Resizable column layout. Name/type/default/comment can be dragged wider;
+  // the fixed-content columns (not-null/primary/operations) keep their width.
+  // `widths[i]` is positional, so the body cells below must stay in this order.
+  const columnDefs = useMemo(
+    () => [
+      {
+        key: "name",
+        title: t("schema-editor.column.name"),
+        defaultWidth: 160,
+        minWidth: 80,
+        resizable: true,
+        align: "",
+      },
+      {
+        key: "type",
+        title: t("schema-editor.column.type"),
+        defaultWidth: 180,
+        minWidth: 80,
+        resizable: true,
+        align: "",
+      },
+      {
+        key: "default",
+        title: t("schema-editor.column.default"),
+        defaultWidth: 200,
+        minWidth: 80,
+        resizable: true,
+        align: "",
+      },
+      {
+        key: "comment",
+        title: t("schema-editor.column.comment"),
+        defaultWidth: 240,
+        minWidth: 80,
+        resizable: true,
+        align: "",
+      },
+      {
+        key: "not-null",
+        title: t("schema-editor.column.not-null"),
+        defaultWidth: 72,
+        resizable: false,
+        align: "text-center",
+      },
+      {
+        key: "primary",
+        title: t("schema-editor.column.primary"),
+        defaultWidth: 72,
+        resizable: false,
+        align: "text-center",
+      },
+      ...(isReadonly
+        ? []
+        : [
+            {
+              key: "operations",
+              title: t("schema-editor.column.operations"),
+              defaultWidth: 96,
+              resizable: false,
+              align: "text-right",
+            },
+          ]),
+    ],
+    [t, isReadonly]
+  );
+
+  const { widths, totalWidth, onResizeStart, setWidths } =
+    useColumnWidths(columnDefs);
+
+  // Fit the columns to the available width on first layout so the grid fills
+  // the panel instead of overflowing at the sum of the default widths. Runs
+  // once; later panel resizes leave any user-dragged widths untouched.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const didFitRef = useRef(false);
+  useLayoutEffect(() => {
+    if (didFitRef.current) return;
+    const width = containerRef.current?.clientWidth ?? 0;
+    if (width <= 0) return;
+    didFitRef.current = true;
+    setWidths(distributeColumnWidths(columnDefs, width));
+  }, [columnDefs, setWidths]);
 
   return (
-    <div className="size-full overflow-auto">
-      <DataTypeSuggestionsDatalist id={datalistId} engine={engine} />
-      <Table>
+    <div ref={containerRef} className="size-full overflow-auto">
+      {/* Exact-width (not w-full) so rendered widths match state and dragging
+          stays precise; the container scrolls when columns exceed it. */}
+      <Table
+        className="w-auto table-fixed"
+        style={{ width: `${totalWidth}px` }}
+      >
+        <colgroup>
+          {widths.map((w, i) => (
+            <col key={columnDefs[i].key} style={{ width: `${w}px` }} />
+          ))}
+        </colgroup>
         <TableHeader>
           <TableRow>
-            <TableHead className={cn(headClass, "w-[160px]")}>
-              {t("schema-editor.column.name")}
-            </TableHead>
-            <TableHead className={cn(headClass, "w-[180px]")}>
-              {t("schema-editor.column.type")}
-            </TableHead>
-            <TableHead className={cn(headClass, "w-[200px]")}>
-              {t("schema-editor.column.default")}
-            </TableHead>
-            <TableHead className={cn(headClass)}>
-              {t("schema-editor.column.comment")}
-            </TableHead>
-            <TableHead className={cn(headClass, "w-[72px] text-center")}>
-              {t("schema-editor.column.not-null")}
-            </TableHead>
-            <TableHead className={cn(headClass, "w-[72px] text-center")}>
-              {t("schema-editor.column.primary")}
-            </TableHead>
-            {!isReadonly && (
-              <TableHead className={cn(headClass, "w-[60px] text-right")}>
-                {t("schema-editor.column.operations")}
+            {columnDefs.map((col, colIdx) => (
+              <TableHead
+                key={col.key}
+                className={cn(headClass, col.align)}
+                resizable={col.resizable}
+                onResizeStart={
+                  col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
+                }
+              >
+                {col.title}
               </TableHead>
-            )}
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -268,7 +361,7 @@ export function TableColumnEditor({
                     value={column.name}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
+                    className={INLINE_EDIT_INPUT_CLASS}
                     onChange={(e) =>
                       handleColumnNameChange(column, e.target.value)
                     }
@@ -279,7 +372,6 @@ export function TableColumnEditor({
                     column={column}
                     engine={engine}
                     readonly={disabled}
-                    datalistId={datalistId}
                     onUpdateValue={(val) => handleColumnTypeChange(column, val)}
                   />
                 </TableCell>
@@ -295,7 +387,7 @@ export function TableColumnEditor({
                     value={column.comment}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
+                    className={INLINE_EDIT_INPUT_CLASS}
                     onChange={(e) =>
                       handleCommentChange(column, e.target.value)
                     }

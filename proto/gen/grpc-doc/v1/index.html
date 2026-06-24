@@ -707,6 +707,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.TokenType"><span class="badge">E</span>DataSourceExternalSecret.TokenType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
@@ -7786,7 +7790,16 @@ See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_e
                   <td>token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Token for direct authentication. </p></td>
+                  <td><p>Token for direct authentication. Interpreted according to token_type:
+the literal token (PLAIN), an environment variable name (ENVIRONMENT),
+or a file path (FILE). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token_type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.TokenType">DataSourceExternalSecret.TokenType</a></td>
+                  <td></td>
+                  <td><p>How to interpret the token field when auth_type is TOKEN. </p></td>
                 </tr>
               
                 <tr>
@@ -8838,6 +8851,43 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>AZURE_KEY_VAULT</td>
                 <td>4</td>
                 <td><p>ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.TokenType">DataSourceExternalSecret.TokenType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TOKEN_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified token type, treated as PLAIN for backward compatibility.</p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>1</td>
+                <td><p>The token field holds the literal token value.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p>The token field holds the name of an environment variable on the
+Bytebase server that holds the token value.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FILE</td>
+                <td>3</td>
+                <td><p>The token field holds a path to a file on the Bytebase server that
+holds the token value.</p></td>
               </tr>
             
           </tbody>
