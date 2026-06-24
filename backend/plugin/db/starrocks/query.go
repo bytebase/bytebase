@@ -147,14 +147,45 @@ func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (strin
 		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
 	}
 
-	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
+	pos, beforeClause := findLimitInsertPosition(sql, stmt.Loc.End)
+	if beforeClause {
+		return sql[:pos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[pos:], nil
+	}
+	return sql[:pos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[pos:], nil
 }
 
 func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string, error) {
 	if rightSelect := rightmostSelect(stmt); rightSelect != nil && rightSelect.Limit != nil {
 		return rewriteSelectLimit(sql, rightSelect, limitCount)
 	}
-	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
+	pos, beforeClause := findLimitInsertPosition(sql, stmt.Loc.End)
+	if beforeClause {
+		return sql[:pos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[pos:], nil
+	}
+	return sql[:pos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[pos:], nil
+}
+
+func findLimitInsertPosition(sql string, stmtLocEnd int) (pos int, beforeClause bool) {
+	effectiveEnd := len(sql)
+	for effectiveEnd > 0 && sql[effectiveEnd-1] == ';' {
+		effectiveEnd--
+	}
+
+	tailStart := stmtLocEnd
+	for tailStart < effectiveEnd && (sql[tailStart] == ' ' || sql[tailStart] == '\t' || sql[tailStart] == '\n' || sql[tailStart] == '\r') {
+		tailStart++
+	}
+
+	if tailStart >= effectiveEnd {
+		return stmtLocEnd, false
+	}
+
+	upperTail := strings.ToUpper(sql[tailStart:])
+	if strings.HasPrefix(upperTail, "INTO") || strings.HasPrefix(upperTail, "PROCEDURE") || strings.HasPrefix(upperTail, "FOR") {
+		return tailStart, true
+	}
+
+	return effectiveEnd, false
 }
 
 func rightmostSelect(node ast.Node) *ast.SelectStmt {

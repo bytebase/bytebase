@@ -131,6 +131,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  `SELECT * FROM orders LIMIT 10 INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("s3.endpoint" = "s3.amazonaws.com");`,
 		},
+		{
+			stmt:  "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
+			count: 10,
+			want:  "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age LIMIT 10;",
+		},
 	}
 
 	for _, tc := range testCases {
