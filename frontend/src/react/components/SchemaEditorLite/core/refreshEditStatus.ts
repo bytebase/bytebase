@@ -6,12 +6,14 @@ import type {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   ComparableColumnFields,
   ComparableForeignKeyFields,
   ComparableIndexFields,
   ComparableTableFields,
+  ComparableTablePartitionFields,
 } from "@/utils";
 import type { EditStatusContext } from "../types";
 import { keyForResource } from "./keyForResource";
@@ -47,6 +49,28 @@ function isEqualIndexes(
   });
 }
 
+function isEqualPartitions(
+  source: TablePartitionMetadata[],
+  target: TablePartitionMetadata[]
+): boolean {
+  if (source.length !== target.length) return false;
+  const targetByName = new Map(target.map((part) => [part.name, part]));
+  return source.every((sourcePartition) => {
+    const targetPartition = targetByName.get(sourcePartition.name);
+    return (
+      !!targetPartition &&
+      isEqual(
+        pick(sourcePartition, ComparableTablePartitionFields),
+        pick(targetPartition, ComparableTablePartitionFields)
+      ) &&
+      isEqualPartitions(
+        sourcePartition.subpartitions ?? [],
+        targetPartition.subpartitions ?? []
+      )
+    );
+  });
+}
+
 /**
  * Recompute the edit status of a single table and its columns by diffing the
  * current metadata against the baseline, so reverting an edit back to its
@@ -73,9 +97,12 @@ export function refreshTableEditStatus(
       .find((s) => s.name === schema.name)
       ?.tables.find((t) => t.name === table.name);
 
-    // The table's own status reflects its scalar fields plus indexes and
-    // foreign keys, matching DiffMerge's "table updated" condition. Column
-    // edits surface separately via the per-column statuses below.
+    // The table's own status reflects its scalar fields plus indexes, foreign
+    // keys, and partitions. Index/FK/partition edits are all tracked on the
+    // table key (see TableEditor's add handlers), so partitions must be
+    // compared here too — otherwise a reverted column/comment edit could clear
+    // the only marker for an added partition. Column edits surface separately
+    // via the per-column statuses below.
     const ownChanged =
       !baselineTable ||
       !isEqual(
@@ -83,7 +110,8 @@ export function refreshTableEditStatus(
         pick(baselineTable, ComparableTableFields)
       ) ||
       !isEqualForeignKeys(baselineTable.foreignKeys, table.foreignKeys) ||
-      !isEqualIndexes(baselineTable.indexes, table.indexes);
+      !isEqualIndexes(baselineTable.indexes, table.indexes) ||
+      !isEqualPartitions(baselineTable.partitions, table.partitions);
     if (ownChanged) {
       editStatus.markEditStatus(db, { schema, table }, "updated");
     } else {

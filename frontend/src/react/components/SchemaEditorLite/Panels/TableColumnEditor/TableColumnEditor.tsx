@@ -119,7 +119,14 @@ export function TableColumnEditor({
           primaryKey.expressions[idx] = newName;
         }
       }
-      if (status === "created") {
+      // Re-keying "created" onto a name that already belongs to another column
+      // would make that existing column read as "created" too (shared name key),
+      // so its trash action would splice the real column out. Only preserve
+      // "created" when the new name is unique within the table.
+      const nameCollides = table.columns.some(
+        (c) => c !== column && c.name === newName
+      );
+      if (status === "created" && !nameCollides) {
         // A freshly-added column being named for the first time must stay
         // "created" (re-keyed to the new name) — otherwise refreshStatus would
         // diff it against a non-existent baseline and downgrade it to
