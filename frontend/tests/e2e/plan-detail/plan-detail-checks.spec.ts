@@ -4,8 +4,11 @@
 //   - WARNING-level rule produces an inline warning count but does NOT
 //     block rollout creation (auto-rollout still happens).
 //   - ERROR-level rule with `requirePlanCheckNoError=true` blocks the
-//     auto-rollout with NO "Manually create rollout" button; relaxing the
-//     gate (requirePlanCheckNoError=false) reveals the manual-create button.
+//     auto-rollout; the Review readiness footer reports "Review approved, but
+//     plan checks failed" and NO "Manually create rollout" button is offered.
+//     Relaxing the gate (requirePlanCheckNoError=false) lets the user bypass
+//     via the footer's "Bypass and deploy" action (the old DEPLOY manual
+//     button is GitOps-only now — AIO review section, 3.19.1).
 //   - Multi-spec plans: smoke test that each spec tab is selectable and
 //     renders an inline check summary (BYT-9160 context; NOT a strict
 //     regression lock — see the in-test comment).
@@ -172,8 +175,16 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
   //     "Manually create rollout" button is offered — the user must
   //     either fix the SQL or relax the gate.
   //   - When the gate is relaxed (requirePlanCheckNoError=false), the
-  //     manual create button DOES appear so the user can bypass the
-  //     failed checks intentionally.
+  //     manual deploy path appears so the user can bypass the failed
+  //     checks intentionally.
+  //
+  // NOTE (AIO plan review section, 3.19.1): the manual "Manually create
+  // rollout" button was REMOVED from DEPLOY for issue-backed plans and is
+  // now GitOps-only (PlanDetailDeployFuture.tsx). For issue-backed plans the
+  // single manual path is the Review section's readiness-footer "Bypass and
+  // deploy" action (ReviewReadinessFooter.tsx). The gate-off test below was
+  // updated to assert that new path; the gate-on test is unchanged (DEPLOY
+  // still explains the block and offers no manual button).
   // Both halves are covered here so a regression on either side fails
   // loudly.
 
@@ -196,17 +207,23 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     await expect(planPage.checksSummary()).toContainText("Error", {
       timeout: 15_000,
     });
-    // DEPLOY explains the block.
+    // The blocking status moved from DEPLOY to the Review readiness footer (AIO
+    // review section): no approval rule → SKIPPED, plus failed checks → the
+    // footer reads "Review approved, but plan checks failed". The old DEPLOY
+    // "Failed checks are blocking automatic rollout creation" helper text was
+    // removed with the DeployFuture dedup.
+    await planPage.expandSection("Review");
     await expect(
-      page.getByText(/Failed checks are blocking/i).first(),
+      page.getByText("Review approved, but plan checks failed"),
     ).toBeVisible({ timeout: 10_000 });
-    // No manual create path is offered in this state.
+    // No manual create path is offered in this state (the gate is mandatory, so
+    // the footer's bypass confirm sheet would hard-block deploy anyway).
     await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
       timeout: 3_000,
     });
   });
 
-  test("relaxing the gate (requirePlanCheckNoError=false) reveals the manual-create button", async () => {
+  test("relaxing the gate (requirePlanCheckNoError=false) reveals the readiness-footer bypass action", async () => {
     await attachReviewConfig("ERROR");
     // Gate OFF — failed checks no longer block; user can bypass.
     await env.api.updateProjectSettings(env.project, {
@@ -225,8 +242,20 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     await expect(planPage.checksSummary()).toContainText("Error", {
       timeout: 15_000,
     });
-    await expect(planPage.manualCreateRolloutButton).toBeVisible({
+    // No approval rule (seedTestData clears WORKSPACE_APPROVAL) →
+    // approvalStatus SKIPPED; ERROR checks + gate OFF → the Review readiness
+    // footer is "Review approved, but plan checks failed" and offers the
+    // single manual path: "Bypass and deploy". The old "Manually create
+    // rollout" button no longer exists for issue-backed plans.
+    await planPage.expandSection("Review");
+    await expect(
+      planPage.page.getByText("Review approved, but plan checks failed"),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(planPage.bypassAndDeployAction).toBeVisible({
       timeout: 10_000,
+    });
+    await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
+      timeout: 3_000,
     });
   });
 });
