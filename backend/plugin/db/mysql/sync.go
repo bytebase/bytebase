@@ -185,6 +185,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
 	atLeast5_7_0 := semVersion.GE(semver.MustParse("5.7.0"))
+	isMariaDB := strings.Contains(rest, "MariaDB")
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -208,7 +209,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
 	// MariaDB doesn't have the EXPRESSION column.
 	// https://mariadb.com/docs/server/ref/mdb/information-schema/STATISTICS
-	if atLeast8_0_13 && !strings.Contains(rest, "MariaDB") {
+	if atLeast8_0_13 && !isMariaDB {
 		indexQuery = `
 			SELECT
 				TABLE_NAME,
@@ -390,17 +391,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	// Check constraints info.
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
 	if atLeast8_0_16 {
-		checkQuery := `
-		SELECT
-			tc.TABLE_NAME,
-			cc.CONSTRAINT_NAME,
-			cc.CHECK_CLAUSE
-		FROM information_schema.CHECK_CONSTRAINTS cc
-			JOIN information_schema.TABLE_CONSTRAINTS tc
-				ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
-				AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
-		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
-	`
+		checkQuery := getCheckConstraintQuery(isMariaDB)
 		checkRows, err := d.db.QueryContext(ctx, checkQuery, d.databaseName)
 		if err != nil {
 			return nil, util.FormatErrorWithQuery(err, checkQuery)
@@ -920,6 +911,34 @@ func (d *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functi
 // SQL and must be unescaped before being written back into DDL.
 func unescapeCheckClause(clause string) string {
 	return strings.ReplaceAll(clause, `\'`, `'`)
+}
+
+func getCheckConstraintQuery(isMariaDB bool) string {
+	if isMariaDB {
+		// MariaDB includes TABLE_NAME in CHECK_CONSTRAINTS. Joining TABLE_CONSTRAINTS
+		// by constraint name/schema is both slower and incorrect because MariaDB check
+		// names are scoped to a table, not the whole schema.
+		return `
+			SELECT
+				TABLE_NAME,
+				CONSTRAINT_NAME,
+				CHECK_CLAUSE
+			FROM information_schema.CHECK_CONSTRAINTS
+			WHERE CONSTRAINT_SCHEMA = ?
+		`
+	}
+
+	return `
+			SELECT
+				tc.TABLE_NAME,
+				cc.CONSTRAINT_NAME,
+				cc.CHECK_CLAUSE
+			FROM information_schema.CHECK_CONSTRAINTS cc
+				JOIN information_schema.TABLE_CONSTRAINTS tc
+					ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+					AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+			WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
+		`
 }
 
 // stripReturnsCharset removes the " CHARSET ... [COLLATE ...]" attributes that
