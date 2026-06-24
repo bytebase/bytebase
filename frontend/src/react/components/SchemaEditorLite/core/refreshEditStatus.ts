@@ -1,0 +1,118 @@
+import { isEqual, pick } from "lodash-es";
+import type {
+  Database,
+  DatabaseMetadata,
+  ForeignKeyMetadata,
+  IndexMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  ComparableColumnFields,
+  ComparableForeignKeyFields,
+  ComparableIndexFields,
+  ComparableTableFields,
+} from "@/utils";
+import type { EditStatusContext } from "../types";
+import { keyForResource } from "./keyForResource";
+
+function isEqualForeignKeys(
+  source: ForeignKeyMetadata[],
+  target: ForeignKeyMetadata[]
+): boolean {
+  if (source.length !== target.length) return false;
+  return source.every((fk, i) =>
+    isEqual(
+      pick(fk, ComparableForeignKeyFields),
+      pick(target[i], ComparableForeignKeyFields)
+    )
+  );
+}
+
+function isEqualIndexes(
+  source: IndexMetadata[],
+  target: IndexMetadata[]
+): boolean {
+  if (source.length !== target.length) return false;
+  const targetByName = new Map(target.map((idx) => [idx.name, idx]));
+  return source.every((sourceIndex) => {
+    const targetIndex = targetByName.get(sourceIndex.name);
+    return (
+      !!targetIndex &&
+      isEqual(
+        pick(sourceIndex, ComparableIndexFields),
+        pick(targetIndex, ComparableIndexFields)
+      )
+    );
+  });
+}
+
+/**
+ * Recompute the edit status of a single table and its columns by diffing the
+ * current metadata against the baseline, so reverting an edit back to its
+ * original value clears the dirty marker. Unlike `DiffMerge`/`rebuildMetadataEdit`
+ * this is non-mutating (it never re-inserts dropped rows or reorders), so it's
+ * safe to call on every keystroke. It's scoped to the one edited table to stay
+ * cheap.
+ *
+ * `created`/`dropped` resources are left untouched — those are structural
+ * changes, not field edits, and must not be cleared by a value comparison.
+ */
+export function refreshTableEditStatus(
+  editStatus: EditStatusContext,
+  db: Database,
+  baselineMetadata: DatabaseMetadata,
+  schema: SchemaMetadata,
+  table: TableMetadata
+): void {
+  const ownStatus = editStatus.getEditStatusByKey(
+    keyForResource(db, { schema, table })
+  );
+  if (ownStatus !== "created" && ownStatus !== "dropped") {
+    const baselineTable = baselineMetadata.schemas
+      .find((s) => s.name === schema.name)
+      ?.tables.find((t) => t.name === table.name);
+
+    // The table's own status reflects its scalar fields plus indexes and
+    // foreign keys, matching DiffMerge's "table updated" condition. Column
+    // edits surface separately via the per-column statuses below.
+    const ownChanged =
+      !baselineTable ||
+      !isEqual(
+        pick(table, ComparableTableFields),
+        pick(baselineTable, ComparableTableFields)
+      ) ||
+      !isEqualForeignKeys(baselineTable.foreignKeys, table.foreignKeys) ||
+      !isEqualIndexes(baselineTable.indexes, table.indexes);
+    if (ownChanged) {
+      editStatus.markEditStatus(db, { schema, table }, "updated");
+    } else {
+      // Non-recursive: clear only the table's own key so the per-column
+      // statuses (set below) survive.
+      editStatus.removeEditStatus(db, { schema, table }, false);
+    }
+
+    for (const column of table.columns) {
+      const columnStatus = editStatus.getColumnStatus(db, {
+        schema,
+        table,
+        column,
+      });
+      if (columnStatus === "created" || columnStatus === "dropped") continue;
+      const baselineColumn = baselineTable?.columns.find(
+        (c) => c.name === column.name
+      );
+      const changed =
+        !baselineColumn ||
+        !isEqual(
+          pick(column, ComparableColumnFields),
+          pick(baselineColumn, ComparableColumnFields)
+        );
+      if (changed) {
+        editStatus.markEditStatus(db, { schema, table, column }, "updated");
+      } else {
+        editStatus.removeEditStatus(db, { schema, table, column }, false);
+      }
+    }
+  }
+}

@@ -133,7 +133,7 @@ export function PreviewPane({ db, database, schema, table }: Props) {
         <div
           role="separator"
           aria-orientation="horizontal"
-          className={resizeHandleClass("horizontal")}
+          className={resizeHandleClass("horizontal", "h-0.5")}
           onMouseDown={handleResizeStart}
         />
       )}

@@ -6,10 +6,11 @@ import type { EditStatus } from "../types";
 // (a hover-only border was too hard to discover). The border darkens on hover
 // and turns accent on focus. `text-sm` overrides the smaller font from the
 // `size="xs"` input variant so inline-edit cells match the table's default
-// plain-text cells (also text-sm), and `h-8 px-3` overrides the cramped
-// `h-6 px-2` from that variant for roomier padding inside the field.
+// plain-text cells (also text-sm), and `h-7 px-3` overrides the cramped
+// `h-6 px-2` from that variant: roomier horizontal padding but a shorter height
+// so rows stay compact.
 export const INLINE_EDIT_INPUT_CLASS =
-  "h-8 border border-control-border/50 bg-transparent px-3 text-sm shadow-none enabled:hover:border-control-border focus-visible:border-accent focus-visible:ring-1";
+  "h-7 border border-control-border/50 bg-transparent px-3 text-sm shadow-none enabled:hover:border-control-border focus-visible:border-accent focus-visible:ring-1";
 
 interface ObjectWithHiddenProps {
   __uuid?: string;

@@ -186,7 +186,9 @@ export const SchemaEditorLite = forwardRef<
                 <AsideTree />
               </div>
             </Panel>
-            <PanelResizeHandle className={resizeHandleClass("vertical")} />
+            <PanelResizeHandle
+              className={resizeHandleClass("vertical", "w-0.5")}
+            />
             <Panel defaultSize="75%">
               <div className="size-full overflow-hidden">
                 <EditorPanel />

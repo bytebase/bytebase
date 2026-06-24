@@ -161,6 +161,18 @@ export function AsideTree() {
             "dropped"
           );
         }
+        // Close the table's open tab — its editor is no longer relevant once
+        // the table is dropped (and points at a removed object when created).
+        const tab = tabs.findTab({
+          type: "table",
+          database: node.db,
+          metadata: {
+            database: node.metadata.database,
+            schema: node.metadata.schema,
+            table: node.metadata.table,
+          },
+        });
+        if (tab) tabs.closeTab(tab.id);
         rebuildTree(false);
       } else if (key === "restore-table" && node.type === "table") {
         editStatus.removeEditStatus(
