@@ -136,6 +136,16 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age LIMIT 10;",
 		},
+		{
+			stmt:  "SELECT * FROM t -- note",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 -- note",
+		},
+		{
+			stmt:  "SELECT * FROM t /* block comment */;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 /* block comment */;",
+		},
 	}
 
 	for _, tc := range testCases {

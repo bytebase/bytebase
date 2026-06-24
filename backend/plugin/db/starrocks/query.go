@@ -180,7 +180,12 @@ func findLimitInsertPosition(sql string, stmtLocEnd int) (pos int, beforeClause 
 		return stmtLocEnd, false
 	}
 
-	upperTail := strings.ToUpper(sql[tailStart:])
+	tail := sql[tailStart:]
+	if strings.HasPrefix(tail, "--") || strings.HasPrefix(tail, "/*") {
+		return stmtLocEnd, false
+	}
+
+	upperTail := strings.ToUpper(tail)
 	if strings.HasPrefix(upperTail, "INTO") || strings.HasPrefix(upperTail, "PROCEDURE") || strings.HasPrefix(upperTail, "FOR") {
 		return tailStart, true
 	}
