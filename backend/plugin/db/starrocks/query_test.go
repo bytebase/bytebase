@@ -95,6 +95,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 123,10;",
 		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 0,\n1000000;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 0,\n10;",
+		},
 		// SHOW statements should not be wrapped
 		{
 			stmt:  "SHOW DATA",

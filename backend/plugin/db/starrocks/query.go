@@ -226,14 +226,14 @@ func literalLoc(node ast.Node) ast.Loc {
 
 func findCommaLimitCount(sql string, limitLoc ast.Loc) (countStart, countEnd int, found bool) {
 	pos := limitLoc.End
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t') {
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
 		pos++
 	}
 	if pos >= len(sql) || sql[pos] != ',' {
 		return 0, 0, false
 	}
 	pos++
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t') {
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
 		pos++
 	}
 	countStart = pos
