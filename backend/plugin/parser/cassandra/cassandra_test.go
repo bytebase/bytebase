@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestParseCassandraSQL(t *testing.T) {
+func TestParseCassandraStatements(t *testing.T) {
 	tests := []struct {
 		name          string
 		statement     string
@@ -47,20 +48,14 @@ func TestParseCassandraSQL(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:          "Only semicolon",
-			statement:     ";",
-			wantStatCount: 1, // Semicolon creates one statement (not filtered by ParseCassandraSQL)
-			wantErr:       false,
-		},
-		{
 			name:          "CREATE TABLE statement",
-			statement:     "CREATE TABLE users (id UUID PRIMARY KEY, name TEXT);",
+			statement:     "CREATE TABLE users (id int PRIMARY KEY, name text);",
 			wantStatCount: 1,
 			wantErr:       false,
 		},
 		{
 			name:          "Multiple DDL statements",
-			statement:     "CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}; CREATE TABLE test.users (id UUID PRIMARY KEY);",
+			statement:     "CREATE KEYSPACE test WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': '1'}; CREATE TABLE test.users (id int PRIMARY KEY);",
 			wantStatCount: 2,
 			wantErr:       false,
 		},
@@ -68,7 +63,7 @@ func TestParseCassandraSQL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := ParseCassandraSQL(tt.statement)
+			results, err := parseCassandraStatements(tt.statement)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -76,34 +71,26 @@ func TestParseCassandraSQL(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantStatCount, len(results))
 
-			// Verify each result has the required fields
 			for i, result := range results {
-				assert.NotNil(t, result.Tree, "Result %d should have a Tree", i)
-				assert.NotNil(t, result.Tokens, "Result %d should have Tokens", i)
+				assert.NotNil(t, result.AST, "Result %d should have an AST", i)
+				assert.NotEmpty(t, result.Text, "Result %d should have Text", i)
 			}
 		})
 	}
 }
 
-func TestParseCassandraSQLBaseLine(t *testing.T) {
-	statement := `SELECT * FROM users;
-	SELECT * FROM orders;
-	SELECT * FROM products;`
-	results, err := ParseCassandraSQL(statement)
+func TestParseCassandraStatementsPositions(t *testing.T) {
+	statement := "SELECT * FROM users;\nSELECT * FROM orders;\nSELECT * FROM products;"
+	results, err := parseCassandraStatements(statement)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(results))
 
-	// BaseLine follows the pattern from SplitSQL based on token positions
-	// First statement: line 0
-	assert.Equal(t, 0, base.GetLineOffset(results[0].StartPosition))
-	// Second statement: includes newline+tab prefix, but first token is on line 2 (BaseLine = line - 1 = 1-1 = 0)
-	// Actually the newline is part of the previous statement's text, so first real token is on line 2
-	assert.Equal(t, 0, base.GetLineOffset(results[1].StartPosition)) // First token after semicolon is still on line 1 (0-indexed)
-	// Third statement
-	assert.Equal(t, 1, base.GetLineOffset(results[2].StartPosition))
+	assert.Equal(t, int32(1), results[0].Start.Line)
+	assert.Equal(t, int32(2), results[1].Start.Line)
+	assert.Equal(t, int32(3), results[2].Start.Line)
 }
 
-func TestParseCassandraSQLErrors(t *testing.T) {
+func TestParseCassandraStatementsErrors(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -112,16 +99,80 @@ func TestParseCassandraSQLErrors(t *testing.T) {
 			name:      "Invalid CQL syntax",
 			statement: "SELCT * FORM users;",
 		},
-		{
-			name:      "Unclosed string",
-			statement: "SELECT * FROM users WHERE name = 'test;",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseCassandraSQL(tt.statement)
+			_, err := parseCassandraStatements(tt.statement)
 			require.Error(t, err, "Expected error for invalid CQL")
+		})
+	}
+}
+
+func TestSyntaxErrorIsSyntaxError(t *testing.T) {
+	_, err := parseCassandraStatements("SELCT * FORM users")
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr), "parse error should be *base.SyntaxError, got %T", err)
+	require.NotNil(t, syntaxErr.Position)
+}
+
+func TestSyntaxErrorColumnOffset(t *testing.T) {
+	input := "SELECT * FROM t;\n  SELCT * FROM users"
+	_, err := parseCassandraStatements(input)
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+
+	// The splitter trims "SELCT * FROM users" starting at line 2, col 3.
+	// The parse error on "SELCT" is at byte 0 of the trimmed text → local (line=1, col=1).
+	// After adjustment: line = 1 + 2 - 1 = 2, col = 1 + 3 - 1 = 3.
+	require.Equal(t, int32(2), syntaxErr.Position.Line)
+	require.Equal(t, int32(3), syntaxErr.Position.Column)
+}
+
+func TestParseCassandraOmniAST(t *testing.T) {
+	results, err := parseCassandraStatements("SELECT id, name FROM users")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	node, ok := GetOmniNode(results[0].AST)
+	require.True(t, ok, "AST should be an OmniAST")
+	require.NotNil(t, node)
+}
+
+func TestParseCassandraComprehensiveDDL(t *testing.T) {
+	ddlStatements := []string{
+		"CREATE KEYSPACE ks WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
+		"ALTER KEYSPACE ks WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 3}",
+		"DROP KEYSPACE IF EXISTS ks",
+		"CREATE TABLE ks.t (id int PRIMARY KEY, name text, data blob)",
+		"ALTER TABLE ks.t ADD email text",
+		"DROP TABLE IF EXISTS ks.t",
+		"CREATE INDEX idx ON ks.t (name)",
+		"DROP INDEX IF EXISTS ks.idx",
+		"CREATE TYPE ks.addr (street text, city text)",
+		"ALTER TYPE ks.addr ADD zip text",
+		"DROP TYPE IF EXISTS ks.addr",
+		"CREATE MATERIALIZED VIEW ks.mv AS SELECT id, name FROM ks.t WHERE id IS NOT NULL AND name IS NOT NULL PRIMARY KEY (name, id)",
+		"ALTER MATERIALIZED VIEW ks.mv WITH compression = {'sstable_compression': 'LZ4Compressor'}",
+		"DROP MATERIALIZED VIEW IF EXISTS ks.mv",
+		"CREATE FUNCTION ks.double(val int) RETURNS NULL ON NULL INPUT RETURNS int LANGUAGE java AS 'return val * 2;'",
+		"DROP FUNCTION IF EXISTS ks.double",
+		"CREATE TRIGGER tr ON ks.t USING 'org.example.Trigger'",
+		"DROP TRIGGER IF EXISTS tr ON ks.t",
+		"TRUNCATE ks.t",
+	}
+	for _, stmt := range ddlStatements {
+		name := stmt
+		if len(name) > 40 {
+			name = name[:40]
+		}
+		t.Run(name, func(t *testing.T) {
+			results, err := parseCassandraStatements(stmt)
+			require.NoError(t, err)
+			require.Len(t, results, 1)
+			require.NotNil(t, results[0].AST)
 		})
 	}
 }

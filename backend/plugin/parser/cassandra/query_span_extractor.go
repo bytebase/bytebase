@@ -2,44 +2,24 @@ package cassandra
 
 import (
 	"context"
-	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/cql"
+	"github.com/bytebase/omni/cassandra/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// querySpanExtractor walks the CQL parse tree to extract query span information
 type querySpanExtractor struct {
-	*cql.BaseCqlParserListener
-
-	// Context
 	ctx             context.Context
 	defaultKeyspace string
 	gCtx            base.GetQuerySpanContext
-
-	// Results we're building
-	querySpan *base.QuerySpan
-
-	// Error handling
-	err error
-}
-
-// unquoteIdentifier removes double quotes from Cassandra identifiers if present.
-func unquoteIdentifier(identifier string) string {
-	if len(identifier) >= 2 && identifier[0] == '"' && identifier[len(identifier)-1] == '"' {
-		return identifier[1 : len(identifier)-1]
-	}
-	return identifier
+	querySpan       *base.QuerySpan
 }
 
 func newQuerySpanExtractor(ctx context.Context, defaultKeyspace string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
-		BaseCqlParserListener: &cql.BaseCqlParserListener{},
-		ctx:                   ctx,
-		defaultKeyspace:       defaultKeyspace,
-		gCtx:                  gCtx,
+		ctx:             ctx,
+		defaultKeyspace: defaultKeyspace,
+		gCtx:            gCtx,
 		querySpan: &base.QuerySpan{
 			Type:             base.QueryTypeUnknown,
 			Results:          []base.QuerySpanResult{},
@@ -49,134 +29,159 @@ func newQuerySpanExtractor(ctx context.Context, defaultKeyspace string, gCtx bas
 	}
 }
 
-// EnterSelect_ is called when we enter a SELECT statement
-func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
-	if e.err != nil {
-		return
+func (e *querySpanExtractor) extract(node ast.Node) *base.QuerySpan {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		e.extractSelect(stmt)
+	case *ast.InsertStmt:
+		e.extractInsert(stmt)
+	case *ast.UpdateStmt:
+		e.extractUpdate(stmt)
+	case *ast.DeleteStmt:
+		e.extractDelete(stmt)
+	case *ast.BatchStmt:
+		e.querySpan.Type = base.DML
+		for _, child := range stmt.Statements {
+			e.extract(child)
+		}
+	case *ast.TruncateStmt:
+		e.querySpan.Type = base.DML
+	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropTableStmt,
+		*ast.CreateKeyspaceStmt, *ast.AlterKeyspaceStmt, *ast.DropKeyspaceStmt,
+		*ast.CreateIndexStmt, *ast.DropIndexStmt,
+		*ast.CreateMVStmt, *ast.AlterMVStmt, *ast.DropMVStmt,
+		*ast.CreateTypeStmt, *ast.AlterTypeStmt, *ast.DropTypeStmt,
+		*ast.CreateFunctionStmt, *ast.DropFunctionStmt,
+		*ast.CreateAggregateStmt, *ast.DropAggregateStmt,
+		*ast.CreateTriggerStmt, *ast.DropTriggerStmt:
+		e.querySpan.Type = base.DDL
+	default:
 	}
+	return e.querySpan
+}
 
-	// Set query type to SELECT
+func (e *querySpanExtractor) extractSelect(stmt *ast.SelectStmt) {
 	e.querySpan.Type = base.Select
 
-	keyspace, table := e.extractTableFromFromSpec(ctx.FromSpec())
-	if keyspace == "" {
-		keyspace = e.defaultKeyspace
-	}
+	keyspace, table := e.qualifiedNameParts(stmt.From)
 
-	// Add accessed table to SourceColumns (table-level resource)
 	if table != "" {
 		e.querySpan.SourceColumns[base.ColumnResource{
 			Database: keyspace,
 			Table:    table,
-			Column:   "", // Empty column means table-level access
 		}] = true
 	}
 
-	results := e.extractSelectElements(ctx.SelectElements(), keyspace, table)
-	e.querySpan.Results = results
+	e.querySpan.Results = e.selectElements(stmt.Elements, keyspace, table)
 
-	if whereSpec := ctx.WhereSpec(); whereSpec != nil {
-		e.extractWhereColumns(whereSpec, keyspace, table)
+	e.extractWhereColumns(stmt.Where, keyspace, table)
+}
+
+func (e *querySpanExtractor) extractInsert(stmt *ast.InsertStmt) {
+	e.querySpan.Type = base.DML
+	keyspace, table := e.qualifiedNameParts(stmt.Table)
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+		}] = true
 	}
 }
 
-// extractTableFromFromSpec extracts keyspace and table name from FROM clause
-func (*querySpanExtractor) extractTableFromFromSpec(fromSpec cql.IFromSpecContext) (keyspace, table string) {
-	if fromSpec == nil {
-		return "", ""
+func (e *querySpanExtractor) extractUpdate(stmt *ast.UpdateStmt) {
+	e.querySpan.Type = base.DML
+	keyspace, table := e.qualifiedNameParts(stmt.Table)
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+		}] = true
 	}
-
-	if fromElem := fromSpec.FromSpecElement(); fromElem != nil {
-		text := fromElem.GetText()
-		// CQL supports keyspace.table in FROM clause
-		if idx := strings.LastIndex(text, "."); idx > 0 {
-			keyspacePart := text[:idx]
-			tablePart := text[idx+1:]
-			return unquoteIdentifier(keyspacePart), unquoteIdentifier(tablePart)
-		}
-		return "", unquoteIdentifier(text)
-	}
-	return "", ""
+	e.extractWhereColumns(stmt.Where, keyspace, table)
 }
 
-// extractSelectElements extracts column information from SELECT clause
-func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectElementsContext, keyspace, table string) []base.QuerySpanResult {
-	if selectElements == nil {
+func (e *querySpanExtractor) extractDelete(stmt *ast.DeleteStmt) {
+	e.querySpan.Type = base.DML
+	keyspace, table := e.qualifiedNameParts(stmt.From)
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+		}] = true
+	}
+	e.extractWhereColumns(stmt.Where, keyspace, table)
+}
+
+func (e *querySpanExtractor) qualifiedNameParts(qn *ast.QualifiedName) (keyspace, table string) {
+	if qn == nil {
+		return e.defaultKeyspace, ""
+	}
+	switch len(qn.Parts) {
+	case 2:
+		return qn.Parts[0].Name, qn.Parts[1].Name
+	case 1:
+		return e.defaultKeyspace, qn.Parts[0].Name
+	default:
+		return e.defaultKeyspace, ""
+	}
+}
+
+func (e *querySpanExtractor) selectElements(elems []*ast.SelectElement, keyspace, table string) []base.QuerySpanResult {
+	if len(elems) == 0 {
 		return nil
 	}
 
-	if selectElements.GetStar() != nil {
-		return e.expandSelectAsterisk(keyspace, table)
-	}
-
 	var results []base.QuerySpanResult
-	for _, elem := range selectElements.AllSelectElement() {
-		aliasName, sourceName := e.extractColumnNameAndAlias(elem)
-		if aliasName != "" || sourceName != "" {
-			resultName := aliasName
-			if resultName == "" {
-				resultName = sourceName
-			}
-
-			sourceColumn := base.SourceColumnSet{}
-			sourceColumn[base.ColumnResource{
-				Database: keyspace,
-				Table:    table,
-				Column:   sourceName,
-			}] = true
-
-			results = append(results, base.QuerySpanResult{
-				Name:          resultName,
-				SourceColumns: sourceColumn,
-				IsPlainField:  true,
-			})
+	for _, elem := range elems {
+		if _, isStar := elem.Expr.(*ast.StarExpr); isStar {
+			return e.expandSelectAsterisk(keyspace, table)
 		}
+
+		sourceName := exprColumnName(elem.Expr)
+		resultName := sourceName
+		if elem.Alias != nil {
+			resultName = elem.Alias.Name
+		}
+		if resultName == "" && sourceName == "" {
+			results = append(results, base.QuerySpanResult{
+				Name:          "",
+				SourceColumns: base.SourceColumnSet{},
+			})
+			continue
+		}
+
+		sc := base.SourceColumnSet{}
+		sc[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   sourceName,
+		}] = true
+
+		results = append(results, base.QuerySpanResult{
+			Name:          resultName,
+			SourceColumns: sc,
+			IsPlainField:  true,
+		})
 	}
 	return results
 }
 
-// extractColumnNameAndAlias extracts both the alias (if present) and the source column name
-func (*querySpanExtractor) extractColumnNameAndAlias(elem cql.ISelectElementContext) (alias string, sourceColumn string) {
-	if elem == nil {
-		return "", ""
-	}
-
-	// Extract the source column name from the first child
-	if elem.GetChildCount() > 0 {
-		columnRef := elem.GetChild(0).(antlr.ParseTree).GetText()
-		sourceColumn = unquoteIdentifier(columnRef)
-	}
-
-	// Check for AS alias
-	for i := 0; i < elem.GetChildCount(); i++ {
-		if child := elem.GetChild(i); child != nil {
-			childText := child.(antlr.ParseTree).GetText()
-			if strings.ToUpper(childText) == "AS" && i+1 < elem.GetChildCount() {
-				aliasText := elem.GetChild(i + 1).(antlr.ParseTree).GetText()
-				alias = unquoteIdentifier(aliasText)
-				break
-			}
+func exprColumnName(expr ast.ExprNode) string {
+	switch e := expr.(type) {
+	case *ast.Identifier:
+		return e.Name
+	case *ast.DotAccess:
+		if e.Field != nil {
+			return e.Field.Name
 		}
+	default:
 	}
-
-	return alias, sourceColumn
+	return ""
 }
 
-// expandSelectAsterisk expands SELECT * into individual column results
 func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base.QuerySpanResult {
-	if e.gCtx.GetDatabaseMetadataFunc == nil {
-		// Test environment - fallback to SelectAsterisk flag
+	if e.gCtx.GetDatabaseMetadataFunc == nil || table == "" {
 		return []base.QuerySpanResult{{
-			Name:           "",
-			SourceColumns:  base.SourceColumnSet{},
-			SelectAsterisk: true,
-		}}
-	}
-
-	if table == "" {
-		// Cannot expand SELECT * without a table name
-		return []base.QuerySpanResult{{
-			Name:           "",
 			SourceColumns:  base.SourceColumnSet{},
 			SelectAsterisk: true,
 		}}
@@ -184,330 +189,98 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 
 	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(e.ctx, e.gCtx.InstanceID, keyspace)
 	if err != nil || metadata == nil {
-		// If we can't get metadata, fall back to SelectAsterisk flag
-		// This matches behavior of other engines like TSQL
 		return []base.QuerySpanResult{{
-			Name:           "",
 			SourceColumns:  base.SourceColumnSet{},
 			SelectAsterisk: true,
 		}}
 	}
 
-	// Find table and expand columns
 	var results []base.QuerySpanResult
-	schemaNames := metadata.ListSchemaNames()
-	for _, schemaName := range schemaNames {
+	for _, schemaName := range metadata.ListSchemaNames() {
 		schema := metadata.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
-
 		tbl := schema.GetTable(table)
-		if tbl != nil {
-			for _, col := range tbl.GetProto().GetColumns() {
-				sourceColumn := base.SourceColumnSet{}
-				sourceColumn[base.ColumnResource{
-					Database: keyspace,
-					Table:    table,
-					Column:   col.GetName(),
-				}] = true
-
-				results = append(results, base.QuerySpanResult{
-					Name:          col.GetName(),
-					SourceColumns: sourceColumn,
-					IsPlainField:  true,
-				})
-			}
-			return results
+		if tbl == nil {
+			continue
 		}
+		for _, col := range tbl.GetProto().GetColumns() {
+			sc := base.SourceColumnSet{}
+			sc[base.ColumnResource{
+				Database: keyspace,
+				Table:    table,
+				Column:   col.GetName(),
+			}] = true
+			results = append(results, base.QuerySpanResult{
+				Name:          col.GetName(),
+				SourceColumns: sc,
+				IsPlainField:  true,
+			})
+		}
+		return results
 	}
 
-	// Table not found - fall back to SelectAsterisk flag
 	return []base.QuerySpanResult{{
-		Name:           "",
 		SourceColumns:  base.SourceColumnSet{},
 		SelectAsterisk: true,
 	}}
 }
 
-// extractWhereColumns extracts column references from WHERE clause
-func (e *querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, keyspace, table string) {
-	if whereSpec == nil {
-		return
-	}
-
-	// Extract relation elements from WHERE clause
-	if relationElements := whereSpec.RelationElements(); relationElements != nil {
-		// Process all relation elements (conditions connected by AND)
-		for _, relationElement := range relationElements.AllRelationElement() {
-			e.extractColumnsFromRelation(relationElement, keyspace, table)
-		}
+func (e *querySpanExtractor) extractWhereColumns(where []ast.ExprNode, keyspace, table string) {
+	for _, expr := range where {
+		e.extractColumnRefsFromExpr(expr, keyspace, table)
 	}
 }
 
-// extractColumnsFromRelation extracts column references from a single relation element
-func (e *querySpanExtractor) extractColumnsFromRelation(relation cql.IRelationElementContext, keyspace, table string) {
-	if relation == nil {
-		return
-	}
-
-	// Extract column names from OBJECT_NAME tokens
-	// In CQL, columns are referenced as OBJECT_NAME in WHERE conditions
-	for _, objName := range relation.AllOBJECT_NAME() {
-		columnName := unquoteIdentifier(objName.GetText())
-
-		colResource := base.ColumnResource{
-			Database: keyspace,
-			Table:    table,
-			Column:   columnName,
+func (e *querySpanExtractor) extractColumnRefsFromExpr(expr ast.ExprNode, keyspace, table string) {
+	switch ex := expr.(type) {
+	case *ast.BinaryExpr:
+		e.addPredicateColumnsFromExpr(ex.Left, keyspace, table)
+	case *ast.InExpr:
+		e.addPredicateColumnsFromExpr(ex.Column, keyspace, table)
+	case *ast.ContainsExpr:
+		e.addPredicateColumnsFromExpr(ex.Column, keyspace, table)
+	case *ast.TupleInExpr:
+		for _, col := range ex.Columns {
+			e.addPredicateColumnsFromExpr(col, keyspace, table)
 		}
-
-		// Add to PredicateColumns only (SourceColumns tracks tables, not columns)
-		e.querySpan.PredicateColumns[colResource] = true
+	case *ast.TupleCompareExpr:
+		for _, col := range ex.Columns {
+			e.addPredicateColumnsFromExpr(col, keyspace, table)
+		}
+	default:
 	}
-
-	// TODO: Handle more complex cases:
-	// - Functions containing columns (e.g., token(column))
-	// - Collection operations (e.g., collection CONTAINS value)
-	// - Nested expressions
 }
 
-// EnterInsert is called when we enter an INSERT statement
-func (e *querySpanExtractor) EnterInsert(ctx *cql.InsertContext) {
-	if e.err != nil {
-		return
-	}
-	// Set query type to DML for INSERT
-	e.querySpan.Type = base.DML
-
-	// Extract table from INSERT INTO clause
-	keyspace := e.defaultKeyspace
-	table := ""
-
-	if ctx.Keyspace() != nil {
-		keyspace = unquoteIdentifier(ctx.Keyspace().GetText())
-	}
-	if ctx.Table() != nil {
-		table = unquoteIdentifier(ctx.Table().GetText())
-	}
-
-	if table != "" {
-		e.querySpan.SourceColumns[base.ColumnResource{
+func (e *querySpanExtractor) addPredicateColumnsFromExpr(expr ast.ExprNode, keyspace, table string) {
+	for _, name := range collectColumnNames(expr) {
+		e.querySpan.PredicateColumns[base.ColumnResource{
 			Database: keyspace,
 			Table:    table,
-			Column:   "",
+			Column:   name,
 		}] = true
 	}
 }
 
-// EnterUpdate is called when we enter an UPDATE statement
-func (e *querySpanExtractor) EnterUpdate(ctx *cql.UpdateContext) {
-	if e.err != nil {
-		return
-	}
-	// Set query type to DML for UPDATE
-	e.querySpan.Type = base.DML
-
-	// Extract table from UPDATE clause
-	keyspace := e.defaultKeyspace
-	table := ""
-
-	if ctx.Keyspace() != nil {
-		keyspace = unquoteIdentifier(ctx.Keyspace().GetText())
-	}
-	if ctx.Table() != nil {
-		table = unquoteIdentifier(ctx.Table().GetText())
-	}
-
-	if table != "" {
-		e.querySpan.SourceColumns[base.ColumnResource{
-			Database: keyspace,
-			Table:    table,
-			Column:   "",
-		}] = true
-	}
-
-	// Extract WHERE clause columns for UPDATE
-	if ctx.WhereSpec() != nil {
-		e.extractWhereColumns(ctx.WhereSpec(), keyspace, table)
-	}
-}
-
-// EnterDelete_ is called when we enter a DELETE statement
-func (e *querySpanExtractor) EnterDelete_(ctx *cql.Delete_Context) {
-	if e.err != nil {
-		return
-	}
-	// Set query type to DML for DELETE
-	e.querySpan.Type = base.DML
-
-	// Extract table from DELETE FROM clause
-	keyspace := e.defaultKeyspace
-	table := ""
-	if ctx.FromSpec() != nil {
-		ks, t := e.extractTableFromFromSpec(ctx.FromSpec())
-		if ks != "" {
-			keyspace = ks
+func collectColumnNames(expr ast.ExprNode) []string {
+	switch e := expr.(type) {
+	case *ast.Identifier:
+		return []string{e.Name}
+	case *ast.DotAccess:
+		var names []string
+		names = append(names, collectColumnNames(e.Object)...)
+		if e.Field != nil {
+			names = append(names, e.Field.Name)
 		}
-		table = t
+		return names
+	case *ast.FunctionCall:
+		var names []string
+		for _, arg := range e.Args {
+			names = append(names, collectColumnNames(arg)...)
+		}
+		return names
+	default:
+		return nil
 	}
-
-	if table != "" {
-		e.querySpan.SourceColumns[base.ColumnResource{
-			Database: keyspace,
-			Table:    table,
-			Column:   "",
-		}] = true
-	}
-
-	// Extract WHERE clause columns for DELETE
-	if ctx.WhereSpec() != nil {
-		e.extractWhereColumns(ctx.WhereSpec(), keyspace, table)
-	}
-}
-
-// DDL Statement Handlers
-
-// EnterCreateTable is called when we enter a CREATE TABLE statement
-func (e *querySpanExtractor) EnterCreateTable(_ *cql.CreateTableContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterAlterTable is called when we enter an ALTER TABLE statement
-func (e *querySpanExtractor) EnterAlterTable(_ *cql.AlterTableContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropTable is called when we enter a DROP TABLE statement
-func (e *querySpanExtractor) EnterDropTable(_ *cql.DropTableContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateKeyspace is called when we enter a CREATE KEYSPACE statement
-func (e *querySpanExtractor) EnterCreateKeyspace(_ *cql.CreateKeyspaceContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterAlterKeyspace is called when we enter an ALTER KEYSPACE statement
-func (e *querySpanExtractor) EnterAlterKeyspace(_ *cql.AlterKeyspaceContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropKeyspace is called when we enter a DROP KEYSPACE statement
-func (e *querySpanExtractor) EnterDropKeyspace(_ *cql.DropKeyspaceContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateIndex is called when we enter a CREATE INDEX statement
-func (e *querySpanExtractor) EnterCreateIndex(_ *cql.CreateIndexContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropIndex is called when we enter a DROP INDEX statement
-func (e *querySpanExtractor) EnterDropIndex(_ *cql.DropIndexContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateMaterializedView is called when we enter a CREATE MATERIALIZED VIEW statement
-func (e *querySpanExtractor) EnterCreateMaterializedView(_ *cql.CreateMaterializedViewContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterAlterMaterializedView is called when we enter an ALTER MATERIALIZED VIEW statement
-func (e *querySpanExtractor) EnterAlterMaterializedView(_ *cql.AlterMaterializedViewContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropMaterializedView is called when we enter a DROP MATERIALIZED VIEW statement
-func (e *querySpanExtractor) EnterDropMaterializedView(_ *cql.DropMaterializedViewContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateType is called when we enter a CREATE TYPE statement
-func (e *querySpanExtractor) EnterCreateType(_ *cql.CreateTypeContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterAlterType is called when we enter an ALTER TYPE statement
-func (e *querySpanExtractor) EnterAlterType(_ *cql.AlterTypeContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropType is called when we enter a DROP TYPE statement
-func (e *querySpanExtractor) EnterDropType(_ *cql.DropTypeContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateFunction is called when we enter a CREATE FUNCTION statement
-func (e *querySpanExtractor) EnterCreateFunction(_ *cql.CreateFunctionContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropFunction is called when we enter a DROP FUNCTION statement
-func (e *querySpanExtractor) EnterDropFunction(_ *cql.DropFunctionContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterCreateTrigger is called when we enter a CREATE TRIGGER statement
-func (e *querySpanExtractor) EnterCreateTrigger(_ *cql.CreateTriggerContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
-}
-
-// EnterDropTrigger is called when we enter a DROP TRIGGER statement
-func (e *querySpanExtractor) EnterDropTrigger(_ *cql.DropTriggerContext) {
-	if e.err != nil {
-		return
-	}
-	e.querySpan.Type = base.DDL
 }

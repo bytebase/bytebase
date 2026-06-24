@@ -235,7 +235,6 @@ func TestGetQuerySpan(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
-			// Check Type field
 			require.Equal(t, tt.want.Type, got.Type, "Query type mismatch")
 
 			// Check Results length
@@ -390,6 +389,24 @@ func TestWhereColumnExtraction(t *testing.T) {
 				{Database: "test_keyspace", Table: "products", Column: "id"},
 			},
 			expectedTable: "products",
+		},
+		{
+			name:      "WHERE with tuple IN expression",
+			statement: "SELECT * FROM users WHERE (id, name) IN ((1, 'a'), (2, 'b'))",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "id"},
+				{Database: "test_keyspace", Table: "users", Column: "name"},
+			},
+			expectedTable: "users",
+		},
+		{
+			name:      "WHERE with dot access (UDT field)",
+			statement: "SELECT * FROM users WHERE addr.city = 'x'",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "addr"},
+				{Database: "test_keyspace", Table: "users", Column: "city"},
+			},
+			expectedTable: "users",
 		},
 	}
 
@@ -612,7 +629,7 @@ func TestQueryTypeDetection(t *testing.T) {
 		// DDL - Trigger operations
 		{
 			name:         "CREATE TRIGGER statement",
-			statement:    "CREATE TRIGGER mytrigger USING 'org.apache.cassandra.triggers.AuditTrigger'",
+			statement:    "CREATE TRIGGER mytrigger ON users USING 'org.apache.cassandra.triggers.AuditTrigger'",
 			expectedType: base.DDL,
 		},
 		{
@@ -633,6 +650,27 @@ func TestQueryTypeDetection(t *testing.T) {
 			require.Equal(t, tt.expectedType, got.Type, "Query type mismatch for %s", tt.statement)
 		})
 	}
+}
+
+func TestSelectUnaliasedExprPreservesResultSlots(t *testing.T) {
+	ctx := context.Background()
+	gCtx := base.GetQuerySpanContext{}
+
+	got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: "SELECT WRITETIME(name), secret FROM users"}, "test_keyspace", "", false)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, base.Select, got.Type)
+	require.Len(t, got.Results, 2, "result list must have one slot per select element")
+
+	require.Equal(t, "", got.Results[0].Name)
+	require.Empty(t, got.Results[0].SourceColumns)
+
+	require.Equal(t, "secret", got.Results[1].Name)
+	require.Contains(t, got.Results[1].SourceColumns, base.ColumnResource{
+		Database: "test_keyspace",
+		Table:    "users",
+		Column:   "secret",
+	})
 }
 
 func TestSelectAsteriskWithMetadata(t *testing.T) {

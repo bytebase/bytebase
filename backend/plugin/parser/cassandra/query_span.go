@@ -3,7 +3,6 @@ package cassandra
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -14,31 +13,21 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_CASSANDRA, GetQuerySpan)
 }
 
-// GetQuerySpan extracts the query span from a CQL statement.
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	parseResults, err := ParseCassandraSQL(stmt.Text)
+	stmts, err := ParseCQL(stmt.Text)
 	if err != nil {
-		return nil, err
+		return nil, convertOmniError(err, base.Statement{Text: stmt.Text})
 	}
-	if len(parseResults) == 0 {
+	if len(stmts) == 0 {
 		return &base.QuerySpan{
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(stmts))
 	}
 
-	tree := parseResults[0].Tree
-
-	// Create extractor and walk the tree
 	extractor := newQuerySpanExtractor(ctx, database, gCtx)
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-
-	if extractor.err != nil {
-		return nil, extractor.err
-	}
-
-	return extractor.querySpan, nil
+	return extractor.extract(stmts[0].AST), nil
 }

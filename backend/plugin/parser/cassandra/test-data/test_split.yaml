@@ -1,111 +1,111 @@
 - description: multiple statements on multiple lines
   input: "SELECT * FROM users;\n\tSELECT * FROM orders;\n\tSELECT * FROM products;"
   result:
-    - text: SELECT * FROM users;
+    - text: SELECT * FROM users
       baseline: 0
       start:
         line: 1
         column: 1
       end:
         line: 1
-        column: 21
+        column: 20
       range:
         start: 0
-        end: 20
+        end: 19
       empty: false
-    - text: "\n\tSELECT * FROM orders;"
-      baseline: 0
-      start:
-        line: 1
-        column: 21
-      end:
-        line: 2
-        column: 23
-      range:
-        start: 20
-        end: 43
-      empty: false
-    - text: "\n\tSELECT * FROM products;"
+    - text: SELECT * FROM orders
       baseline: 1
       start:
         line: 2
-        column: 23
+        column: 2
+      end:
+        line: 2
+        column: 22
+      range:
+        start: 22
+        end: 42
+      empty: false
+    - text: SELECT * FROM products
+      baseline: 2
+      start:
+        line: 3
+        column: 2
       end:
         line: 3
-        column: 25
+        column: 24
       range:
-        start: 43
-        end: 68
+        start: 45
+        end: 67
       empty: false
 - description: single statement
   input: SELECT * FROM users;
   result:
-    - text: SELECT * FROM users;
+    - text: SELECT * FROM users
       baseline: 0
       start:
         line: 1
         column: 1
       end:
         line: 1
-        column: 21
+        column: 20
       range:
         start: 0
-        end: 20
+        end: 19
       empty: false
 - description: 'position semantic: leading newlines'
   input: "\n\nSELECT 1;"
   result:
-    - text: "\n\nSELECT 1;"
-      baseline: 0
+    - text: SELECT 1
+      baseline: 2
       start:
-        line: 1
+        line: 3
         column: 1
       end:
         line: 3
-        column: 10
+        column: 9
       range:
-        start: 0
-        end: 11
+        start: 2
+        end: 10
       empty: false
 - description: 'position semantic: leading spaces and newlines'
   input: "\n  \n  SELECT 1;"
   result:
-    - text: "\n  \n  SELECT 1;"
-      baseline: 0
+    - text: SELECT 1
+      baseline: 2
       start:
-        line: 1
-        column: 1
+        line: 3
+        column: 3
       end:
         line: 3
-        column: 12
+        column: 11
       range:
-        start: 0
-        end: 15
+        start: 6
+        end: 14
       empty: false
 - description: 'position semantic: multi-statement with leading whitespace'
   input: "SELECT 1;\n\n  SELECT 2;"
   result:
-    - text: SELECT 1;
+    - text: SELECT 1
       baseline: 0
       start:
         line: 1
         column: 1
       end:
         line: 1
-        column: 10
+        column: 9
       range:
         start: 0
-        end: 9
+        end: 8
       empty: false
-    - text: "\n\n  SELECT 2;"
-      baseline: 0
+    - text: SELECT 2
+      baseline: 2
       start:
-        line: 1
-        column: 10
+        line: 3
+        column: 3
       end:
         line: 3
-        column: 12
+        column: 11
       range:
-        start: 9
-        end: 22
+        start: 13
+        end: 21
       empty: false
