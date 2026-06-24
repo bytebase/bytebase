@@ -92,6 +92,16 @@ export function refreshTableEditStatus(
       editStatus.removeEditStatus(db, { schema, table }, false);
     }
 
+    // Edit-status keys are column-name based, so two columns sharing a name
+    // (an in-progress rename collision) map to the same key. Treat any such
+    // duplicate as changed and never clear its key — otherwise the unchanged
+    // twin could remove the dirty marker the renamed twin just set, leaving
+    // the editor wrongly clean while the metadata actually differs.
+    const nameCounts = new Map<string, number>();
+    for (const column of table.columns) {
+      nameCounts.set(column.name, (nameCounts.get(column.name) ?? 0) + 1);
+    }
+
     for (const column of table.columns) {
       const columnStatus = editStatus.getColumnStatus(db, {
         schema,
@@ -103,6 +113,7 @@ export function refreshTableEditStatus(
         (c) => c.name === column.name
       );
       const changed =
+        (nameCounts.get(column.name) ?? 0) > 1 ||
         !baselineColumn ||
         !isEqual(
           pick(column, ComparableColumnFields),

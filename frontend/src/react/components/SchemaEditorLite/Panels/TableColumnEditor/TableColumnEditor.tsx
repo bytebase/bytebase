@@ -107,8 +107,9 @@ export function TableColumnEditor({
     (column: ColumnMetadata, newName: string) => {
       const oldName = column.name;
       if (newName === oldName) return;
-      // Clear any status stored under the old-name key before renaming so a
-      // later rename-back/away doesn't leave a stale dirty entry behind.
+      // Status is keyed by column name, so capture it before renaming and
+      // clear the old-name key (avoids leaving a stale dirty entry behind).
+      const status = editStatus.getColumnStatus(db, { schema, table, column });
       editStatus.removeEditStatus(db, { schema, table, column }, false);
       column.name = newName;
       // Sync PK name if column is in PK
@@ -118,7 +119,16 @@ export function TableColumnEditor({
           primaryKey.expressions[idx] = newName;
         }
       }
-      refreshStatus();
+      if (status === "created") {
+        // A freshly-added column being named for the first time must stay
+        // "created" (re-keyed to the new name) — otherwise refreshStatus would
+        // diff it against a non-existent baseline and downgrade it to
+        // "updated", and the trash action would then drop it instead of
+        // splicing the unsaved column out.
+        editStatus.markEditStatus(db, { schema, table, column }, "created");
+      } else {
+        refreshStatus();
+      }
     },
     [primaryKey, editStatus, db, schema, table, refreshStatus]
   );
