@@ -566,6 +566,27 @@ export class BytebaseApiClient {
     return this.request("POST", `/v1/${issueName}:approve`, {});
   }
 
+  // Reject an issue's current approval step. The proto binds body:"*", so the
+  // comment travels in the request body (RejectIssueRequest.comment). The new
+  // Plan Detail review banner depends on this comment always existing.
+  async rejectIssue(
+    issueName: string,
+    comment: string,
+  ): Promise<{ approvalStatus: string }> {
+    return this.request("POST", `/v1/${issueName}:reject`, {
+      name: issueName,
+      comment,
+    });
+  }
+
+  // Re-request review after a rejection (restarts the approval flow without
+  // changing the plan). Mirrors the rejection banner's inline action.
+  async requestIssue(issueName: string): Promise<{ approvalStatus: string }> {
+    return this.request("POST", `/v1/${issueName}:request`, {
+      name: issueName,
+    });
+  }
+
   // Project settings
   async updateProjectSettings(
     project: string,

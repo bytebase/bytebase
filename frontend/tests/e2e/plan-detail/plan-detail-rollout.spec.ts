@@ -8,11 +8,11 @@
 //       → rollout blocked until each approval-flow step completes; on the
 //         last approval the rollout auto-creates.
 //   - Approval + plan-check gate with an ERROR-level SQL review rule
-//       → after approval, the rollout STAYS fully blocked: DEPLOY shows
-//         "Failed checks are blocking automatic rollout creation" and NO
-//         "Manually create rollout" button is offered. The user must fix
-//         the SQL or relax requirePlanCheckNoError (which then reveals the
-//         manual-create button).
+//       → after approval, the rollout STAYS fully blocked: the Review
+//         readiness footer shows "Review approved, but plan checks failed"
+//         and NO "Manually create rollout" button is offered (the manual
+//         path is GitOps-only now — AIO review section, 3.19.1). The user
+//         must fix the SQL or relax requirePlanCheckNoError.
 //
 // Approval rules are workspace-level settings (`WORKSPACE_APPROVAL`); the
 // new bootstrap leaves them empty, so each test that needs an approval
@@ -281,18 +281,20 @@ test.describe("Approval + plan-check gate with ERROR-level SQL review", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
 
-    // Product contract: with requirePlanCheckNoError=true and an ERROR
-    // rule, even after the approval flow completes the rollout stays
-    // fully blocked. DEPLOY shows "Checks must pass. Failed" with the
-    // helper text "Failed checks are blocking automatic rollout
-    // creation." NO "Manually create rollout" button is offered — the
-    // user must either fix the SQL or relax the gate. (Symmetric to
-    // the `with gate on` test in plan-detail-checks.spec.ts.)
+    // Product contract: with requirePlanCheckNoError=true and an ERROR rule,
+    // even after the approval flow completes the rollout stays fully blocked.
+    // The blocking status now lives in the Review readiness footer (AIO review
+    // section): APPROVED + failed checks → "Review approved, but plan checks
+    // failed". NO "Manually create rollout" button is offered for issue-backed
+    // plans, and the footer's bypass confirm sheet hard-blocks deploy on the
+    // mandatory gate. (Symmetric to the `with gate on` test in
+    // plan-detail-checks.spec.ts.)
     await expect(planPage.checksSummary()).toContainText("Error", {
       timeout: 15_000,
     });
+    await planPage.expandSection("Review");
     await expect(
-      page.getByText(/Failed checks are blocking/i).first(),
+      page.getByText("Review approved, but plan checks failed"),
     ).toBeVisible({ timeout: 10_000 });
     await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
       timeout: 3_000,
