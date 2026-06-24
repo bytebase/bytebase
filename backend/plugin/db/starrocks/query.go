@@ -4,17 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"reflect"
+	"strconv"
 	"strings"
 
-	"github.com/bytebase/omni/mysql/ast"
-	omnimysqlparser "github.com/bytebase/omni/mysql/parser"
+	"github.com/bytebase/omni/starrocks/ast"
+	"github.com/bytebase/omni/starrocks/parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
@@ -86,233 +85,127 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	// SHOW statements don't need LIMIT clause wrapping as they typically return small result sets
-	// and wrapping them in SELECT * FROM (...) causes syntax errors
 	trimmedStatement := strings.TrimSpace(statement)
 	if strings.HasPrefix(strings.ToUpper(trimmedStatement), "SHOW") {
 		return statement
 	}
 
-	stmt, err := getStatementWithResultLimitForMySQL(statement, limit)
+	stmt, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
-		// MySQL 5.7 doesn't support WITH clause.
 		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(statement), limit)
 	}
 	return stmt
 }
 
-func getStatementWithResultLimitForMySQL(statement string, limitCount int) (string, error) {
+func getStatementWithResultLimitInline(statement string, limitCount int) (string, error) {
 	if strings.TrimSpace(statement) == "" {
 		return "", errors.New("empty statement")
 	}
 
-	list, err := mysqlparser.ParseMySQLOmni(statement)
-	if err != nil {
-		if stmt, procedureErr := rewriteSelectProcedureLimit(statement, limitCount); procedureErr == nil {
-			return stmt, nil
-		}
-		return "", err
+	file, errs := parser.Parse(statement)
+	if len(errs) > 0 {
+		return "", errors.New(errs[0].Error())
 	}
-	if len(list.Items) != 1 {
-		return "", errors.Errorf("expected exactly one statement, got %d", len(list.Items))
+	if file == nil || len(file.Stmts) != 1 {
+		stmtCount := 0
+		if file != nil {
+			stmtCount = len(file.Stmts)
+		}
+		return "", errors.Errorf("expected exactly one statement, got %d", stmtCount)
 	}
 
-	stmt, ok := list.Items[0].(*ast.SelectStmt)
-	if !ok {
+	switch stmt := file.Stmts[0].(type) {
+	case *ast.SelectStmt:
+		return rewriteSelectLimit(statement, stmt, limitCount)
+	case *ast.SetOpStmt:
+		return rewriteSetOpLimit(statement, stmt, limitCount)
+	default:
 		return statement, nil
 	}
-
-	return rewriteSelectLimit(statement, stmt, limitCount)
-}
-
-func rewriteSelectProcedureLimit(sql string, limitCount int) (string, error) {
-	statements, err := mysqlparser.SplitSQL(sql)
-	if err != nil {
-		return "", err
-	}
-	statementCount := 0
-	for _, statement := range statements {
-		if !statement.Empty {
-			statementCount++
-		}
-	}
-	if statementCount != 1 {
-		return "", errors.Errorf("expected exactly one statement, got %d", statementCount)
-	}
-
-	tokens := omnimysqlparser.Tokenize(sql)
-	if len(tokens) == 0 || omnimysqlparser.TokenName(tokens[0].Type) != "SELECT" {
-		return "", errors.New("not a SELECT PROCEDURE statement")
-	}
-	for i, token := range tokens[1:] {
-		if omnimysqlparser.TokenName(token.Type) == "PROCEDURE" {
-			procedureTokenIndex := i + 1
-			if stmt, ok := rewriteLimitBeforeProcedure(sql, tokens[:procedureTokenIndex], limitCount); ok {
-				return stmt, nil
-			}
-			return sql[:token.Loc] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[token.Loc:], nil
-		}
-	}
-	return "", errors.New("SELECT PROCEDURE clause not found")
-}
-
-func rewriteLimitBeforeProcedure(sql string, tokens []omnimysqlparser.Token, limitCount int) (string, bool) {
-	depth := 0
-	for i := len(tokens) - 1; i >= 0; i-- {
-		switch tokens[i].Str {
-		case ")":
-			depth++
-			continue
-		case "(":
-			if depth > 0 {
-				depth--
-			}
-			continue
-		default:
-		}
-		if depth > 0 {
-			continue
-		}
-		if omnimysqlparser.TokenName(tokens[i].Type) != "LIMIT" {
-			continue
-		}
-		countTokenIndex := i + 1
-		if i+3 < len(tokens) && tokens[i+2].Str == "," {
-			countTokenIndex = i + 3
-		}
-		if countTokenIndex >= len(tokens) {
-			return "", false
-		}
-		if tokens[countTokenIndex].Ival > 0 && int(tokens[countTokenIndex].Ival) <= limitCount {
-			return sql, true
-		}
-		return sql[:tokens[countTokenIndex].Loc] + fmt.Sprintf("%d", limitCount) + sql[tokens[countTokenIndex].End:], true
-	}
-	return "", false
 }
 
 func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
-	if stmt.Limit != nil && stmt.Limit.Count != nil {
-		existingLimit := extractLimit(stmt.Limit.Count)
+	if stmt.Limit != nil {
+		limitLoc := literalLoc(stmt.Limit)
+		if limitLoc.Start < 0 {
+			return "", errors.New("cannot rewrite non-constant LIMIT expression")
+		}
+
+		if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
+			existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
+			if existingCount > 0 && existingCount <= limitCount {
+				return sql, nil
+			}
+			return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil
+		}
+
+		existingLimit := extractLimitValue(stmt.Limit)
 		if existingLimit >= 0 && existingLimit <= limitCount {
 			return sql, nil
 		}
-		loc := nodeLoc(stmt.Limit.Count)
-		loc = trimLocSpace(sql, loc)
-		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
-			if existingLimit < 0 && stmt.Into == nil {
-				return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
-			}
-			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
-		}
-		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
+		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
 	}
 
-	insertPos, beforeClause := findLimitInsertPosition(sql, stmt)
-	if insertPos < 0 || insertPos > len(sql) {
-		return "", errors.Errorf("invalid LIMIT insert position %d", insertPos)
-	}
-	if beforeClause {
-		return sql[:insertPos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[insertPos:], nil
-	}
-	return sql[:insertPos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[insertPos:], nil
+	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
 }
 
-func findLimitInsertPosition(sql string, stmt *ast.SelectStmt) (int, bool) {
-	if stmt.Into != nil && stmt.Into.Loc.Start > 0 {
-		intoStart := findKeywordBefore(sql, stmt.Into.Loc.Start, "INTO")
-		if intoStart >= maxLocEndBeforeTailClauses(stmt) {
-			return intoStart, true
-		}
+func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string, error) {
+	if rightSelect := rightmostSelect(stmt); rightSelect != nil && rightSelect.Limit != nil {
+		return rewriteSelectLimit(sql, rightSelect, limitCount)
 	}
-	if stmt.ForUpdate != nil && stmt.ForUpdate.Loc.Start > 0 {
-		return stmt.ForUpdate.Loc.Start, true
-	}
-	if stmt.Loc.End > 0 {
-		return stmt.Loc.End, false
-	}
-	return -1, false
+	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
 }
 
-func extractLimit(node ast.Node) int {
-	limit, ok := node.(*ast.IntLit)
-	if !ok {
+func rightmostSelect(node ast.Node) *ast.SelectStmt {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n
+	case *ast.SetOpStmt:
+		return rightmostSelect(n.Right)
+	default:
+		return nil
+	}
+}
+
+func extractLimitValue(node ast.Node) int {
+	lit, ok := node.(*ast.Literal)
+	if !ok || lit.Kind != ast.LitInt {
 		return -1
 	}
-	return int(limit.Value)
+	val, err := strconv.Atoi(lit.Value)
+	if err != nil {
+		return -1
+	}
+	return val
 }
 
-func trimLocSpace(sql string, loc ast.Loc) ast.Loc {
-	for loc.Start < loc.End && loc.Start < len(sql) && (sql[loc.Start] == ' ' || sql[loc.Start] == '\t' || sql[loc.Start] == '\n' || sql[loc.Start] == '\r') {
-		loc.Start++
-	}
-	for loc.End > loc.Start && loc.End <= len(sql) && (sql[loc.End-1] == ' ' || sql[loc.End-1] == '\t' || sql[loc.End-1] == '\n' || sql[loc.End-1] == '\r') {
-		loc.End--
-	}
-	return loc
-}
-
-func maxLocEndBeforeTailClauses(node ast.Node) int {
-	maxEnd := -1
-	ast.Inspect(node, func(n ast.Node) bool {
-		if n == nil {
-			return false
-		}
-		if n == node {
-			return true
-		}
-		if _, ok := n.(*ast.IntoClause); ok {
-			return false
-		}
-		if _, ok := n.(*ast.ForUpdate); ok {
-			return false
-		}
-		if loc := nodeLoc(n); loc.End > maxEnd {
-			maxEnd = loc.End
-		}
-		return true
-	})
-	return maxEnd
-}
-
-func nodeLoc(node ast.Node) ast.Loc {
-	if node == nil {
-		return ast.Loc{Start: -1, End: -1}
-	}
-	value := reflect.ValueOf(node)
-	if value.Kind() != reflect.Pointer || value.IsNil() {
-		return ast.Loc{Start: -1, End: -1}
-	}
-	elem := value.Elem()
-	if elem.Kind() != reflect.Struct {
-		return ast.Loc{Start: -1, End: -1}
-	}
-	field := elem.FieldByName("Loc")
-	if !field.IsValid() || !field.CanInterface() {
-		return ast.Loc{Start: -1, End: -1}
-	}
-	loc, ok := field.Interface().(ast.Loc)
+func literalLoc(node ast.Node) ast.Loc {
+	lit, ok := node.(*ast.Literal)
 	if !ok {
 		return ast.Loc{Start: -1, End: -1}
 	}
-	return loc
+	return lit.Loc
 }
 
-func findKeywordBefore(sql string, offset int, keyword string) int {
-	if offset > len(sql) {
-		offset = len(sql)
+func findCommaLimitCount(sql string, limitLoc ast.Loc) (countStart, countEnd int, found bool) {
+	pos := limitLoc.End
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t') {
+		pos++
 	}
-	if len(keyword) == 0 {
-		return offset
+	if pos >= len(sql) || sql[pos] != ',' {
+		return 0, 0, false
 	}
-	keyword = strings.ToUpper(keyword)
-	tokens := omnimysqlparser.Tokenize(sql[:offset])
-	for i := len(tokens) - 1; i >= 0; i-- {
-		token := tokens[i]
-		if token.End <= offset && omnimysqlparser.TokenName(token.Type) == keyword {
-			return token.Loc
-		}
+	pos++
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t') {
+		pos++
 	}
-	return offset
+	countStart = pos
+	for pos < len(sql) && sql[pos] >= '0' && sql[pos] <= '9' {
+		pos++
+	}
+	if pos == countStart {
+		return 0, 0, false
+	}
+	return countStart, pos, true
 }

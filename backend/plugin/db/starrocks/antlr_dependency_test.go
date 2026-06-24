@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStarRocksQueryLimitRewriteDoesNotFallbackToANTLR(t *testing.T) {
+func TestStarRocksQueryDoesNotUseANTLROrMySQLParser(t *testing.T) {
 	content, err := os.ReadFile("query.go")
 	require.NoError(t, err)
 	source := string(content)
@@ -17,4 +17,7 @@ func TestStarRocksQueryLimitRewriteDoesNotFallbackToANTLR(t *testing.T) {
 	require.NotContains(t, source, "ParseMySQL(")
 	require.NotContains(t, source, "TokenStreamRewriter")
 	require.NotContains(t, source, "BaseMySQLParserListener")
+	require.NotContains(t, source, "omni/mysql/ast")
+	require.NotContains(t, source, "omni/mysql/parser")
+	require.NotContains(t, source, "plugin/parser/mysql")
 }

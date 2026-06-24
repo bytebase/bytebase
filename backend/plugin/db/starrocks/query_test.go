@@ -126,6 +126,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "  SHOW DATA  ",
 		},
+		{
+			stmt:  `SELECT * FROM orders INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("s3.endpoint" = "s3.amazonaws.com");`,
+			count: 10,
+			want:  `SELECT * FROM orders LIMIT 10 INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("s3.endpoint" = "s3.amazonaws.com");`,
+		},
 	}
 
 	for _, tc := range testCases {
