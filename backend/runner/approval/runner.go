@@ -165,31 +165,31 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		return errors.Errorf("project %s not found", issue.ProjectID)
 	}
 
-	approvalTemplate, celVarsList, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, bool, error) {
+	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
 		// no need to find if feature is not enabled
 		if licenseService.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
-			return nil, nil, true, nil
+			return nil, nil, 0, true, nil
 		}
 
 		// Step 1: Determine approval source from issue type
 		approvalSource, err := getApprovalSourceFromIssue(ctx, stores, issue)
 		if err != nil {
-			return nil, nil, false, errors.Wrap(err, "failed to get approval source from issue")
+			return nil, nil, 0, false, errors.Wrap(err, "failed to get approval source from issue")
 		}
 		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
 			// Cannot determine source, no approval needed
-			return nil, nil, true, nil
+			return nil, nil, 0, true, nil
 		}
 
 		// Step 2: Build CEL variables for evaluation
-		celVarsList, done, err := buildCELVariablesForIssue(ctx, stores, issue)
+		celVarsList, approvalInputVersion, done, err := buildCELVariablesForIssue(ctx, stores, issue)
 		if err != nil {
-			return nil, nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
+			return nil, nil, approvalInputVersion, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
 		if !done {
 			// Not ready yet (e.g., waiting for plan check runs)
-			return nil, nil, false, nil
+			return nil, nil, approvalInputVersion, false, nil
 		}
 
 		// Step 3: Inject risk level into CEL variables for CHANGE_DATABASE issues
@@ -203,10 +203,10 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		// Step 4: Find matching approval template
 		approvalTemplate, err := getApprovalTemplate(approvalSetting, approvalSource, celVarsList)
 		if err != nil {
-			return nil, nil, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
+			return nil, nil, approvalInputVersion, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
 		}
 
-		return approvalTemplate, celVarsList, true, nil
+		return approvalTemplate, celVarsList, approvalInputVersion, true, nil
 	}()
 	if err != nil {
 		// Don't persist error - it will be logged by caller
@@ -222,17 +222,27 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	riskLevel := calculateRiskLevelFromCELVars(celVarsList)
 
 	payload.Approval = &storepb.IssuePayloadApproval{
-		ApprovalFindingDone: true,
-		ApprovalTemplate:    approvalTemplate,
-		Approvers:           nil,
+		ApprovalFindingDone:  true,
+		ApprovalTemplate:     approvalTemplate,
+		Approvers:            nil,
+		ApprovalInputVersion: approvalInputVersion,
 	}
 	payload.RiskLevel = riskLevel
 
-	if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.Issue{
-			Approval:  payload.Approval,
-			RiskLevel: riskLevel,
-		},
+	payloadPatch := &storepb.Issue{
+		Approval:  payload.Approval,
+		RiskLevel: riskLevel,
+	}
+	if issue.Type == storepb.Issue_DATABASE_CHANGE {
+		updated, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		if err != nil {
+			return errors.Wrap(err, "failed to update issue payload")
+		}
+		if !updated {
+			return nil
+		}
+	} else if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: payloadPatch,
 	}); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
 	}
@@ -387,18 +397,21 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // buildCELVariablesForIssue builds the CEL variable maps for evaluating approval rules.
 // Returns a list of CEL variable maps (one per task/component), done flag, and error.
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
-func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, int64, bool, error) {
 	switch issue.Type {
 	case storepb.Issue_ROLE_GRANT:
-		return buildCELVariablesForRoleGrant(ctx, stores, issue)
+		celVarsList, done, err := buildCELVariablesForRoleGrant(ctx, stores, issue)
+		return celVarsList, 0, done, err
 	case storepb.Issue_DATABASE_CHANGE:
 		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
 	case storepb.Issue_DATABASE_EXPORT:
-		return buildCELVariablesForDataExport(ctx, stores, issue)
+		celVarsList, done, err := buildCELVariablesForDataExport(ctx, stores, issue)
+		return celVarsList, 0, done, err
 	case storepb.Issue_ACCESS_GRANT:
-		return buildCELVariablesForAccessGrant(ctx, stores, issue)
+		celVarsList, done, err := buildCELVariablesForAccessGrant(ctx, stores, issue)
+		return celVarsList, 0, done, err
 	default:
-		return nil, false, errors.Errorf("unknown issue type %v", issue.Type)
+		return nil, 0, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
@@ -550,34 +563,59 @@ func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMes
 	return planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning
 }
 
+func isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun *store.PlanCheckRunMessage, planApprovalInputVersion int64) (current bool, pending bool) {
+	if planCheckRun == nil {
+		return false, true
+	}
+	if planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning {
+		return false, true
+	}
+	return planCheckRun.Result.GetApprovalInputVersion() == planApprovalInputVersion, false
+}
+
 // buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
 // This includes DDL and DML operations.
-func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, int64, bool, error) {
 	if issue.PlanUID == nil {
-		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		return nil, 0, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
 	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return nil, 0, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
-		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return nil, 0, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
+	approvalInputVersion := plan.Config.GetApprovalInputVersion()
 
 	planCheckRun, err := stores.GetPlanCheckRun(ctx, issue.ProjectID, plan.UID)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
+		return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
-	// Wait for plan check to complete if available or running.
-	if isPlanCheckRunPendingApprovalEvaluation(planCheckRun) {
-		return nil, false, nil // Not ready yet, retry later
+	current, pending := isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun, approvalInputVersion)
+	if pending {
+		return nil, approvalInputVersion, false, nil
+	}
+	if !current {
+		refreshed, err := stores.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, issue.ProjectID, plan.UID, approvalInputVersion)
+		if err != nil {
+			slog.Error("failed to refresh stale plan check run for approval input version",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_uid", issue.UID),
+				slog.Int64("plan_uid", plan.UID),
+				slog.Int64("approval_input_version", approvalInputVersion),
+				log.BBError(err))
+			return nil, approvalInputVersion, false, errors.Wrap(err, "failed to refresh stale plan check run for approval input version")
+		}
+		_ = refreshed
+		return nil, approvalInputVersion, false, nil
 	}
 
 	// Unfold database groups and get all targets
 	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
+		return nil, approvalInputVersion, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
 
 	statementSummaryResults := map[statementSummaryKey]*storepb.PlanCheckRunResult_Result{}
@@ -591,10 +629,10 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		if target.sheetSha256 != "" {
 			sheet, err := stores.GetSheetFull(ctx, target.sheetSha256)
 			if err != nil {
-				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", target.sheetSha256)
+				return nil, approvalInputVersion, true, errors.Wrapf(err, "failed to get statement in sheet %v", target.sheetSha256)
 			}
 			if sheet == nil {
-				return nil, true, errors.Errorf("sheet %v not found", target.sheetSha256)
+				return nil, approvalInputVersion, true, errors.Errorf("sheet %v not found", target.sheetSha256)
 			}
 			taskStatement = sheet.Statement
 		}
@@ -654,7 +692,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		celVarsList = append(celVarsList, map[string]any{})
 	}
 
-	return celVarsList, true, nil
+	return celVarsList, approvalInputVersion, true, nil
 }
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.

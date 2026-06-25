@@ -274,6 +274,42 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 }
 
+func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64) (bool, error) {
+	p, err := protojson.Marshal(payload)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to marshal payload")
+	}
+
+	q := qb.Q().Space(`
+		UPDATE issue
+		SET
+			updated_at = ?,
+			payload = payload || ?
+		WHERE project = ?
+		  AND id = ?
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = issue.project
+			  AND plan.id = issue.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+		  )`, time.Now(), p, projectID, uid, approvalInputVersion)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to inspect issue update")
+	}
+	return rowsAffected > 0, nil
+}
+
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	orderByClause := "ORDER BY issue.id DESC"

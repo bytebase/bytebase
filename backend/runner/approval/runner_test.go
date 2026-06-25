@@ -267,3 +267,63 @@ func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
+	tests := []struct {
+		name         string
+		planVersion  int64
+		planCheckRun *store.PlanCheckRunMessage
+		wantCurrent  bool
+		wantPending  bool
+	}{
+		{
+			name:         "nil run waits for plan check",
+			planVersion:  0,
+			planCheckRun: nil,
+			wantPending:  true,
+		},
+		{
+			name:        "available run is pending",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusAvailable,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantPending: true,
+		},
+		{
+			name:        "done matching version is current",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantCurrent: true,
+		},
+		{
+			name:        "done stale version is not current",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+			},
+		},
+		{
+			name:        "missing result defaults to version zero",
+			planVersion: 0,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{},
+			},
+			wantCurrent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			current, pending := isPlanCheckRunCurrentForApprovalInputVersion(tt.planCheckRun, tt.planVersion)
+			require.Equal(t, tt.wantCurrent, current)
+			require.Equal(t, tt.wantPending, pending)
+		})
+	}
+}
