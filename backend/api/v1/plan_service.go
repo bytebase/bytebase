@@ -370,6 +370,18 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 
+	if planCheckRunsTrigger {
+		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
+		}
+		if planCheckRun != nil {
+			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
+			}
+		}
+	}
+
 	if issueToReset != nil {
 		updatedIssue, err := s.store.UpdateIssue(ctx, issueToReset.ProjectID, issueToReset.UID, &store.UpdateIssueMessage{
 			PayloadUpsert: &storepb.Issue{
@@ -390,24 +402,15 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
+	if planCheckRunsTrigger {
+		// Tickle plan check scheduler.
+		s.bus.PlanCheckTickleChan <- 0
+	}
+
 	if len(issueCommentCreates) > 0 {
 		if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
 			slog.Warn("failed to create plan spec audit issue comments", log.BBError(err))
 		}
-	}
-
-	if planCheckRunsTrigger {
-		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
-		}
-		if planCheckRun != nil {
-			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
-			}
-		}
-		// Tickle plan check scheduler.
-		s.bus.PlanCheckTickleChan <- 0
 	}
 
 	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)

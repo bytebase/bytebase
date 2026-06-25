@@ -31,7 +31,8 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	require.EqualValues(t, 0, created.Config.GetApprovalInputVersion())
 
 	config := &storepb.PlanConfig{
-		Specs: []*storepb.PlanConfig_Spec{{Id: "spec-b"}},
+		ApprovalInputVersion: 99,
+		Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-b"}},
 	}
 	updated, err := s.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:                      created.UID,
@@ -52,7 +53,8 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	require.EqualValues(t, 1, updated.Config.GetApprovalInputVersion())
 
 	config = &storepb.PlanConfig{
-		Specs: []*storepb.PlanConfig_Spec{{Id: "spec-c"}},
+		ApprovalInputVersion: 99,
+		Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-c"}},
 	}
 	updated, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:                      created.UID,
@@ -62,6 +64,31 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 2, updated.Config.GetApprovalInputVersion())
+
+	config = &storepb.PlanConfig{
+		ApprovalInputVersion: 7,
+		Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-d"}},
+	}
+	updated, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       created.UID,
+		ProjectID: created.ProjectID,
+		Config:    config,
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 7, updated.Config.GetApprovalInputVersion())
+
+	config = &storepb.PlanConfig{
+		ApprovalInputVersion: 99,
+		Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-e"}},
+	}
+	updated, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:                      created.UID,
+		ProjectID:                created.ProjectID,
+		Config:                   config,
+		BumpApprovalInputVersion: true,
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 8, updated.Config.GetApprovalInputVersion())
 }
 
 func setupPlanApprovalInputVersionStore(ctx context.Context, t *testing.T) *store.Store {
