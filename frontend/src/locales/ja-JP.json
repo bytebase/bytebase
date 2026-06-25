@@ -1,5 +1,6 @@
 {
   "activity": {
+    "n-similar-activities": "{{count}} 件の類似アクティビティ",
     "sentence": {
       "added-spec": "追加しました",
       "canceled-issue": "Issue をクローズしました",

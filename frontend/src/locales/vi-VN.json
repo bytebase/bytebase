@@ -1,5 +1,6 @@
 {
   "activity": {
+    "n-similar-activities": "{{count}} hoạt động tương tự",
     "sentence": {
       "added-spec": "đã thêm",
       "canceled-issue": "đã đóng issue",
