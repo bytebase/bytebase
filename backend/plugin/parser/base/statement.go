@@ -32,6 +32,23 @@ func (s *Statement) BaseLine() int {
 	return int(s.Start.Line) - 1
 }
 
+// NewStatementFromRange builds a Statement from a split segment range.
+func NewStatementFromRange(sql string, mapper *ByteOffsetPositionMapper, byteStart, byteEnd int, empty bool) Statement {
+	if byteEnd < len(sql) && sql[byteEnd] == ';' {
+		byteEnd++
+	}
+	return Statement{
+		Text:  sql[byteStart:byteEnd],
+		Empty: empty,
+		Start: mapper.Position(byteStart),
+		End:   mapper.Position(byteEnd),
+		Range: &storepb.Range{
+			Start: int32(byteStart),
+			End:   int32(byteEnd),
+		},
+	}
+}
+
 // ParsedStatement is the result of parsing SQL (Statement + AST).
 // AST is guaranteed to be non-nil after successful parsing.
 type ParsedStatement struct {

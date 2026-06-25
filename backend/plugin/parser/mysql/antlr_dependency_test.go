@@ -18,3 +18,12 @@ func TestMySQLOmniASTDoesNotFallbackToANTLR(t *testing.T) {
 	require.NotContains(t, source, "antlrAST")
 	require.NotContains(t, source, "parseSingleStatementLenient")
 }
+
+func TestMySQLDelimiterHandlingDoesNotUseLegacyTokenizer(t *testing.T) {
+	content, err := os.ReadFile("mysql.go")
+	require.NoError(t, err)
+	source := string(content)
+
+	require.NotContains(t, source, "plugin/parser/tokenizer")
+	require.NotContains(t, source, "SplitTiDBMultiSQL")
+}

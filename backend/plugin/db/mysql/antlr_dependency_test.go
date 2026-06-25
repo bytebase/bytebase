@@ -19,3 +19,11 @@ func TestMySQLQueryLimitRewriteDoesNotFallbackToANTLR(t *testing.T) {
 	require.NotContains(t, source, "TokenStreamRewriter")
 	require.NotContains(t, source, "BaseMySQLParserListener")
 }
+
+func TestMySQLExecuteDoesNotPreprocessDelimiterDirectives(t *testing.T) {
+	content, err := os.ReadFile("mysql.go")
+	require.NoError(t, err)
+	source := string(content)
+
+	require.NotContains(t, source, "DealWithDelimiter")
+}

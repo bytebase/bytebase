@@ -13,7 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mysqlutil"
 )
 
 func init() {
@@ -92,10 +92,6 @@ func convertOmniError(err error, stmt base.Statement) error {
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
-	statement, err := DealWithDelimiter(statement)
-	if err != nil {
-		return nil, err
-	}
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -137,43 +133,10 @@ func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, err
 	return result, nil
 }
 
-// DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
+// DealWithDelimiter removes client-side DELIMITER directives and converts
+// statements terminated by a custom delimiter back to semicolon-terminated SQL.
 func DealWithDelimiter(statement string) (string, error) {
-	has, list, err := hasDelimiter(statement)
-	if err != nil {
-		return "", err
-	}
-	if has {
-		var result strings.Builder
-		delimiter := `;`
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				delimiter, err = ExtractDelimiter(sql.Text)
-				if err != nil {
-					return "", err
-				}
-				// Comment out only the DELIMITER line, preserving all other lines for correct line numbers
-				lines := strings.Split(sql.Text, "\n")
-				for i, line := range lines {
-					if IsDelimiter(line) {
-						lines[i] = "-- " + strings.TrimLeft(line, " \t")
-						break
-					}
-				}
-				result.WriteString(strings.Join(lines, "\n"))
-				continue
-			}
-			if delimiter != ";" && !sql.Empty {
-				result.WriteString(strings.TrimSuffix(sql.Text, delimiter))
-				result.WriteString(";")
-			} else {
-				result.WriteString(sql.Text)
-			}
-		}
-
-		statement = result.String()
-	}
-	return statement, nil
+	return mysqlutil.DealWithDelimiter(statement)
 }
 
 func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
@@ -270,23 +233,6 @@ func ExtractDelimiter(stmt string) (string, error) {
 		return matchList[index], nil
 	}
 	return "", pkgerrors.Errorf("cannot extract delimiter from %q", stmt)
-}
-
-func hasDelimiter(statement string) (bool, []base.Statement, error) {
-	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitTiDBMultiSQL()
-	if err != nil {
-		return false, nil, pkgerrors.Errorf("failed to split multi sql: %v", err)
-	}
-
-	for _, sql := range list {
-		if IsDelimiter(sql.Text) {
-			return true, list, nil
-		}
-	}
-
-	return false, list, nil
 }
 
 // IsTopMySQLRule returns true if the given context is a top-level MySQL rule.

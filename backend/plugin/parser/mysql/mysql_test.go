@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -61,6 +62,17 @@ func TestExtractDelimiter(t *testing.T) {
 			a.Equal(test.want, got)
 		}
 	}
+}
+
+func TestDealWithDelimiterUsesOmniDelimiterAwareSplit(t *testing.T) {
+	statement := "DELIMITER ;;\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND;;\nDELIMITER ;\nCALL p();"
+
+	got, err := DealWithDelimiter(statement)
+	require.NoError(t, err)
+	require.Equal(t, strings.Repeat(" ", len("DELIMITER ;;"))+
+		"\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND; \n"+
+		strings.Repeat(" ", len("DELIMITER ;"))+"\nCALL p();", got)
+	require.NotContains(t, got, "DELIMITER")
 }
 
 func TestMySQLParser(t *testing.T) {

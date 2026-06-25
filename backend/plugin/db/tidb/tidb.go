@@ -26,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
@@ -178,6 +177,26 @@ func parseVersion(version string) (string, error) {
 	return "", errors.Errorf("failed to parse version %q", version)
 }
 
+func buildExecuteCommands(statement string) ([]base.Statement, error) {
+	if len(statement) > common.MaxSheetCheckSize {
+		return []base.Statement{{Text: statement}}, nil
+	}
+
+	commands, err := tidbparser.SplitSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+	commands = base.FilterEmptyStatements(commands)
+	if len(commands) == 0 {
+		return nil, nil
+	}
+	if len(commands) > common.MaximumCommands {
+		return []base.Statement{{Text: statement}}, nil
+	}
+
+	return commands, nil
+}
+
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// Parse transaction mode from the script
@@ -188,11 +207,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// Apply default when transaction mode is not specified
 	if transactionMode == common.TransactionModeUnspecified {
 		transactionMode = common.GetDefaultTransactionMode()
-	}
-
-	statement, err := mysqlparser.DealWithDelimiter(statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -207,30 +221,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	var totalCommands int
-	var commands []base.Statement
-	oneshot := true
-	if len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := tidbparser.SplitSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to split sql")
-		}
-		singleSQLs = base.FilterEmptyStatements(singleSQLs)
-		if len(singleSQLs) == 0 {
-			return 0, nil
-		}
-		commands = singleSQLs
-		totalCommands = len(commands)
-		if totalCommands <= common.MaximumCommands {
-			oneshot = false
-		}
+	commands, err := buildExecuteCommands(statement)
+	if err != nil {
+		return 0, err
 	}
-	if oneshot {
-		commands = []base.Statement{
-			{
-				Text: statement,
-			},
-		}
+	if len(commands) == 0 {
+		return 0, nil
 	}
 
 	// Execute based on transaction mode
