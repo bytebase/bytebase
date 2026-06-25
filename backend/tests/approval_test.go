@@ -189,18 +189,32 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 			Value: &v1pb.SettingValue{
 				Value: &v1pb.SettingValue_WorkspaceApproval{
 					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
-						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{{
-							Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
-							Condition: &expr.Expr{
-								Expression: `resource.db_engine == "SQLITE"`,
-							},
-							Template: &v1pb.ApprovalTemplate{
-								Title: "SQLite change approval",
-								Flow: &v1pb.ApprovalFlow{
-									Roles: []string{"roles/workspaceOwner"},
+						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
+							{
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+								Condition: &expr.Expr{
+									Expression: `statement.text.contains("stale_approval_b")`,
+								},
+								Template: &v1pb.ApprovalTemplate{
+									Title: "SQLite change approval B",
+									Flow: &v1pb.ApprovalFlow{
+										Roles: []string{"roles/workspaceOwner"},
+									},
 								},
 							},
-						}},
+							{
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+								Condition: &expr.Expr{
+									Expression: `statement.text.contains("stale_approval_a")`,
+								},
+								Template: &v1pb.ApprovalTemplate{
+									Title: "SQLite change approval A",
+									Flow: &v1pb.ApprovalFlow{
+										Roles: []string{"roles/workspaceOwner"},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -254,6 +268,11 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 
 	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
 
+	gotIssueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
+	a.NoError(err)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
+	a.Equal("SQLite change approval A", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+
 	updatedPlanResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
 			Name: planResp.Msg.Name,
@@ -273,13 +292,13 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 
 	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
 
-	gotIssueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
+	gotIssueResp, err = ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
 	a.NoError(err)
 	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
-	a.Equal("SQLite change approval", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+	a.Equal("SQLite change approval B", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
 
 	checkResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
-		Name: updatedPlanResp.Msg.Name + "/planCheckRun",
+		Name: fmt.Sprintf("%s/planCheckRun", updatedPlanResp.Msg.Name),
 	}))
 	a.NoError(err)
 	a.Equal(v1pb.PlanCheckRun_DONE, checkResp.Msg.Status)
