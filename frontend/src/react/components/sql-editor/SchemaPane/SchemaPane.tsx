@@ -286,7 +286,13 @@ function SchemaPaneInner() {
     return tree.reduce(
       (sum, root) =>
         sum +
-        countVisibleRows(root, expandedKeySet, searchKeyword, schemaNodeMatch),
+        countVisibleRows(
+          root,
+          expandedKeySet,
+          searchKeyword,
+          schemaNodeMatch,
+          true
+        ),
       0
     );
   }, [tree, expandedKeySet, searchKeyword]);
@@ -461,6 +467,7 @@ function SchemaPaneInner() {
               expandedIds={expandedKeys}
               searchTerm={searchKeyword || undefined}
               searchMatch={searchMatch}
+              includeChildrenOnSearchMatch
               onToggle={(id) => {
                 const next = new Set(expandedKeys);
                 if (next.has(id)) next.delete(id);

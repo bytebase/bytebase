@@ -278,4 +278,40 @@ describe("Tree", () => {
     expect(container.textContent).toContain("Foo Also");
     expect(container.textContent).not.toContain("Bazqux");
   });
+
+  test("searchTerm can show direct children of matching nodes without recursively expanding them", async () => {
+    const nodes = [
+      makeNode("schema", "billing", [
+        makeNode("table", "invoice", [makeNode("column", "amount")]),
+        makeNode("view", "payment_view"),
+      ]),
+      makeNode("audit", "audit", [makeNode("log", "log_entry")]),
+    ];
+
+    await act(async () => {
+      root.render(
+        <Tree
+          data={nodes}
+          searchTerm="billing"
+          includeChildrenOnSearchMatch
+          searchMatch={(node, term) =>
+            node.data.label.toLowerCase().includes(term.toLowerCase())
+          }
+          renderNode={({ node, style }) => (
+            <div style={style} data-testid={`node-${node.id}`}>
+              {node.data.data.label}
+            </div>
+          )}
+          height={200}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain("billing");
+    expect(container.textContent).toContain("invoice");
+    expect(container.textContent).toContain("payment_view");
+    expect(container.textContent).not.toContain("amount");
+    expect(container.textContent).not.toContain("audit");
+    expect(container.textContent).not.toContain("log_entry");
+  });
 });
