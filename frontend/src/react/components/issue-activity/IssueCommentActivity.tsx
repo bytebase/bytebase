@@ -16,6 +16,7 @@ import {
 import { ReadonlyDiffMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
 import { UserAvatar } from "@/react/components/UserAvatar";
+import { Badge } from "@/react/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -182,7 +183,13 @@ export function CommentCreator({ creator }: { creator: User }) {
 // Header line for a comment-backed activity item: creator (suppressed for the
 // done-rollout system comment, whose sentence already names the actor), action
 // sentence, timestamp, and an "(edited)" marker for edited user comments.
-function IssueCommentHeader({ comment, issue, linkless, plan }: ActivityProps) {
+function IssueCommentHeader({
+  comment,
+  issue,
+  linkless,
+  plan,
+  similarCount,
+}: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(comment.creator)
@@ -205,6 +212,11 @@ function IssueCommentHeader({ comment, issue, linkless, plan }: ActivityProps) {
         linkless={linkless}
         plan={plan}
       />
+      {similarCount !== undefined && similarCount > 1 && (
+        <Badge className="px-2 text-xs" variant="default">
+          {t("activity.n-similar-activities", { count: similarCount })}
+        </Badge>
+      )}
       {comment.createTime && (
         <HumanizeTs className="text-gray-500" ts={createdTs / 1000} />
       )}
@@ -224,10 +236,12 @@ export function IssueCommentRow({
   issue,
   linkless,
   plan,
+  similarCount,
   subjectSuffix,
 }: ActivityProps & {
   body?: ReactNode;
   isLast: boolean;
+  similarCount?: number;
   subjectSuffix?: ReactNode;
 }) {
   return (
@@ -239,6 +253,7 @@ export function IssueCommentRow({
           issue={issue}
           linkless={linkless}
           plan={plan}
+          similarCount={similarCount}
         />
       }
       icon={

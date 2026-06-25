@@ -1,5 +1,6 @@
 {
   "activity": {
+    "n-similar-activities": "{{count}} 条相似活动",
     "sentence": {
       "added-spec": "添加了",
       "canceled-issue": "关闭了工单",
@@ -1512,9 +1513,9 @@
         "add-a-comment": "添加评论...",
         "created-this-plan": "创建了此计划",
         "marked-ready-for-review": "将此计划提交审批",
-        "n-hidden-events_one": "{{count}} 条隐藏动态",
-        "n-hidden-events_other": "{{count}} 条隐藏动态",
-        "self": "动态",
+        "n-hidden-events_one": "{{count}} 条隐藏活动",
+        "n-hidden-events_other": "{{count}} 条隐藏活动",
+        "self": "活动",
         "show-all": "显示全部"
       },
       "approval-flow": {
