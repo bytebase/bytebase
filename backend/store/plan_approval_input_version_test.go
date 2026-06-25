@@ -29,6 +29,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	}, "creator@example.com")
 	require.NoError(t, err)
 	require.EqualValues(t, 0, created.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, created.Config, "spec-a")
 
 	config := &storepb.PlanConfig{
 		ApprovalInputVersion: 99,
@@ -42,6 +43,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 1, updated.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, updated.Config, "spec-b")
 
 	description := "description-only"
 	updated, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
@@ -51,6 +53,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 1, updated.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, updated.Config, "spec-b")
 
 	config = &storepb.PlanConfig{
 		ApprovalInputVersion: 99,
@@ -64,6 +67,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 2, updated.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, updated.Config, "spec-c")
 
 	config = &storepb.PlanConfig{
 		ApprovalInputVersion: 7,
@@ -76,6 +80,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 7, updated.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, updated.Config, "spec-d")
 
 	config = &storepb.PlanConfig{
 		ApprovalInputVersion: 99,
@@ -89,6 +94,13 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.EqualValues(t, 8, updated.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, updated.Config, "spec-e")
+}
+
+func requirePlanSpecID(t *testing.T, config *storepb.PlanConfig, id string) {
+	t.Helper()
+	require.Len(t, config.GetSpecs(), 1)
+	require.Equal(t, id, config.GetSpecs()[0].GetId())
 }
 
 func setupPlanApprovalInputVersionStore(ctx context.Context, t *testing.T) *store.Store {
