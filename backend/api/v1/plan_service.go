@@ -820,7 +820,10 @@ func getPlanCheckRunFromPlan(ctx context.Context, s *store.Store, project *store
 	return &store.PlanCheckRunMessage{
 		ProjectID: plan.ProjectID,
 		PlanUID:   plan.UID,
-		Status:    store.PlanCheckRunStatusRunning,
+		Status:    store.PlanCheckRunStatusAvailable,
+		Result: &storepb.PlanCheckRunResult{
+			ApprovalInputVersion: plan.Config.GetApprovalInputVersion(),
+		},
 	}, nil
 }
 
