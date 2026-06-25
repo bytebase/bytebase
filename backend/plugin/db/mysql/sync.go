@@ -718,6 +718,9 @@ func (d *Driver) getCreateEventStmt(ctx context.Context, databaseName string, na
 }
 
 func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+	// Prune to a single database on MariaDB: filter by EVENT_OBJECT_SCHEMA (the
+	// trigger's table schema), not TRIGGER_SCHEMA, which scans every database's
+	// table metadata. A trigger lives in its table's schema, so they are equivalent.
 	triggersQuery := `
 	SELECT 
 		TRIGGER_NAME,
@@ -729,7 +732,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 		CHARACTER_SET_CLIENT,
 		COLLATION_CONNECTION
 	FROM INFORMATION_SCHEMA.TRIGGERS
-	WHERE TRIGGER_SCHEMA = ?
+	WHERE EVENT_OBJECT_SCHEMA = ?
 	ORDER BY EVENT_OBJECT_TABLE ASC, EVENT_MANIPULATION ASC, ACTION_TIMING ASC, ACTION_ORDER ASC;
 	`
 	triggerRows, err := d.db.QueryContext(ctx, triggersQuery, databaseName)
@@ -1316,6 +1319,11 @@ func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadat
 }
 
 func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+	// Prune to a single database on MariaDB instead of opening every database's
+	// table metadata (Error 1969 on large instances). REFERENTIAL_CONSTRAINTS prunes
+	// on CONSTRAINT_SCHEMA; KEY_COLUMN_USAGE prunes only on TABLE_SCHEMA. A foreign
+	// key lives in its table's schema, so the predicates are equivalent. Never wrap
+	// the column in LOWER() -- it defeats the pruning.
 	fkQuery := `
 		SELECT
 			TABLE_NAME,
@@ -1325,7 +1333,7 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 			UPDATE_RULE,
 			MATCH_OPTION
 		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
-		WHERE LOWER(CONSTRAINT_SCHEMA) = ?;
+		WHERE CONSTRAINT_SCHEMA = ?;
 	`
 
 	kcuQuery := `
@@ -1335,7 +1343,7 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 			COLUMN_NAME,
 			REFERENCED_COLUMN_NAME
 		FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-		WHERE POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND LOWER(CONSTRAINT_SCHEMA) = ?
+		WHERE POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
 	`
 
