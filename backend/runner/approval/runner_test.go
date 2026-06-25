@@ -292,6 +292,15 @@ func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 			wantPending: true,
 		},
 		{
+			name:        "running run is pending",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusRunning,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantPending: true,
+		},
+		{
 			name:        "done matching version is current",
 			planVersion: 2,
 			planCheckRun: &store.PlanCheckRunMessage{
