@@ -111,6 +111,7 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   isBindingPolicyExpired,
+  revokeMemberFromBinding,
   sortRoles,
 } from "@/utils";
 import {
@@ -1501,17 +1502,11 @@ function EditMemberRoleDrawer({
       return;
     setIsRequesting(true);
     try {
-      const policy = structuredClone(getProjectIamPolicy(projectName));
-      const match = policy.bindings.find(
-        (b) =>
-          b.role === roleBinding.role &&
-          (b.condition?.expression ?? "") ===
-            (roleBinding.condition?.expression ?? "")
+      const policy = revokeMemberFromBinding(
+        getProjectIamPolicy(projectName),
+        roleBinding,
+        member.binding
       );
-      if (match) {
-        match.members = match.members.filter((m) => m !== member.binding);
-      }
-      policy.bindings = policy.bindings.filter((b) => b.members.length > 0);
       await updateProjectIamPolicy(projectName, policy);
       pushNotification({
         module: "bytebase",

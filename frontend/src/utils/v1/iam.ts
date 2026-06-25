@@ -44,6 +44,41 @@ export const isBindingPolicyExpired = (binding: Binding): boolean => {
   return false;
 };
 
+// Revoke a single member from one specific role binding, returning a new policy
+// (the input is left untouched).
+//
+// The target binding is resolved by reference identity first, then by role +
+// condition expression + membership. Identity matching matters because a policy
+// can hold several bindings that share the same (role, condition) — e.g. when
+// multiple users are granted the same database with no expiration, each grant is
+// stored as a separate single-member binding. Resolving only by (role,
+// condition) would match the first such binding, which need not contain the
+// member being revoked, silently leaving the intended grant in place.
+export const revokeMemberFromBinding = (
+  policy: IamPolicy,
+  targetBinding: Binding,
+  member: string
+): IamPolicy => {
+  let index = policy.bindings.indexOf(targetBinding);
+  if (index < 0) {
+    index = policy.bindings.findIndex(
+      (b) =>
+        b.role === targetBinding.role &&
+        (b.condition?.expression ?? "") ===
+          (targetBinding.condition?.expression ?? "") &&
+        b.members.includes(member)
+    );
+  }
+  const next = structuredClone(policy);
+  if (index >= 0) {
+    next.bindings[index].members = next.bindings[index].members.filter(
+      (m) => m !== member
+    );
+  }
+  next.bindings = next.bindings.filter((b) => b.members.length > 0);
+  return next;
+};
+
 export const convertMemberToFullname = (member: string) => {
   if (member.startsWith(groupBindingPrefix)) {
     return ensureGroupIdentifier(member);
