@@ -92,7 +92,6 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to new http request")
 	}
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -104,6 +103,11 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	if err != nil {
 		slog.Error("Failed to read response body", slog.String("token", token), log.BBError(err))
 		return nil, nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Unexpected status code from user info endpoint", slog.Int("status", resp.StatusCode), slog.String("body", string(body)))
+		return nil, nil, errors.Errorf("user info request failed with status %d", resp.StatusCode)
 	}
 
 	var claims map[string]any

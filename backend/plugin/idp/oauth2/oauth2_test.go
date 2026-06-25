@@ -98,7 +98,15 @@ func newMockServer(t *testing.T, tls bool, code, accessToken string, userinfo []
 		})
 		require.NoError(t, err)
 	})
-	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		// Regression guard: a body-less userinfo GET must not declare a request
+		// media type. OCI IAM Identity Domains reject such a request with HTTP 415
+		// and an empty body, which previously surfaced as a misleading JSON
+		// unmarshal error.
+		if r.Header.Get("Content-Type") != "" {
+			w.WriteHeader(http.StatusUnsupportedMediaType)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write(userinfo)
 		require.NoError(t, err)
@@ -163,6 +171,34 @@ func TestIdentityProvider(t *testing.T) {
 		DisplayName: testName,
 	}
 	assert.Equal(t, wantUserInfo, userInfoResult)
+}
+
+func TestUserInfo_NonOKStatusSurfacesError(t *testing.T) {
+	// The user info endpoint returns a non-2xx status with an empty body (e.g.
+	// OCI's HTTP 415). The error must surface the status instead of the
+	// misleading "unexpected end of JSON input".
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+	}))
+	defer s.Close()
+
+	p, err := NewIdentityProvider(
+		&storepb.OAuth2IdentityProviderConfig{
+			ClientId:     "test-client-id",
+			ClientSecret: "test-client-secret",
+			TokenUrl:     fmt.Sprintf("%s/oauth2/token", s.URL),
+			UserInfoUrl:  fmt.Sprintf("%s/oauth2/userinfo", s.URL),
+			FieldMapping: &storepb.FieldMapping{
+				Identifier: "sub",
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	_, _, err = p.UserInfo("test-access-token")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "415")
+	assert.NotContains(t, err.Error(), "unexpected end of JSON input")
 }
 
 func TestIdentityProvider_SelfSigned(t *testing.T) {
