@@ -2705,6 +2705,13 @@ TODO: use range instead. </p></td>
 False means the backend is still searching for matching templates. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan approval input version used to generate this approval flow. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8494,6 +8501,14 @@ Format: users/{email}. </p></td>
                   <td><p>Whether the plan has started the rollout. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>Internal monotonic version for plan inputs that affect approval generation.
+Starts at the proto default 0 for compatibility with existing plans. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9155,6 +9170,13 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan approval input version this check run was created for. </p></td>
                 </tr>
               
             </tbody>

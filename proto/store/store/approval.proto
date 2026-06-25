@@ -34,6 +34,9 @@ message IssuePayloadApproval {
   // Whether the system has finished finding a matching approval template.
   // False means the backend is still searching for matching templates.
   bool approval_finding_done = 3;
+
+  // The plan approval input version used to generate this approval flow.
+  int64 approval_input_version = 4;
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.

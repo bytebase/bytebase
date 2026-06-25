@@ -765,6 +765,7 @@ IssuePayloadApproval records the approval template used and approval history for
 | approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  | The approval template being used for this issue. |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
 | approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
+| approval_input_version | [int64](#int64) |  | The plan approval input version used to generate this approval flow. |
 
 
 
@@ -2836,6 +2837,7 @@ Type represents the category of issue.
 | ----- | ---- | ----- | ----------- |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 | has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
+| approval_input_version | [int64](#int64) |  | Internal monotonic version for plan inputs that affect approval generation. Starts at the proto default 0 for compatibility with existing plans. |
 
 
 
@@ -3148,6 +3150,7 @@ add/remove/update from the snapshot pair.
 | ----- | ---- | ----- | ----------- |
 | results | [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result) | repeated |  |
 | error | [string](#string) |  |  |
+| approval_input_version | [int64](#int64) |  | The plan approval input version this check run was created for. |
 
 
 

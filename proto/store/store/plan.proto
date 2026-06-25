@@ -10,6 +10,13 @@ option go_package = "generated-go/store";
 message PlanConfig {
   repeated Spec specs = 1;
 
+  // Whether the plan has started the rollout.
+  bool has_rollout = 2;
+
+  // Internal monotonic version for plan inputs that affect approval generation.
+  // Starts at the proto default 0 for compatibility with existing plans.
+  int64 approval_input_version = 3;
+
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
@@ -20,9 +27,6 @@ message PlanConfig {
       ExportDataConfig export_data_config = 7;
     }
   }
-
-  // Whether the plan has started the rollout.
-  bool has_rollout = 2;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.

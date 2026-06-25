@@ -74,11 +74,13 @@ func (PlanCheckType) EnumDescriptor() ([]byte, []int) {
 }
 
 type PlanCheckRunResult struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Results       []*PlanCheckRunResult_Result `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	Error         string                       `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state   protoimpl.MessageState       `protogen:"open.v1"`
+	Results []*PlanCheckRunResult_Result `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Error   string                       `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	// The plan approval input version this check run was created for.
+	ApprovalInputVersion int64 `protobuf:"varint,3,opt,name=approval_input_version,json=approvalInputVersion,proto3" json:"approval_input_version,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PlanCheckRunResult) Reset() {
@@ -123,6 +125,13 @@ func (x *PlanCheckRunResult) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *PlanCheckRunResult) GetApprovalInputVersion() int64 {
+	if x != nil {
+		return x.ApprovalInputVersion
+	}
+	return 0
 }
 
 type ChangedResources struct {
@@ -586,10 +595,11 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xa5\a\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xdb\a\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xb3\x06\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x124\n" +
+	"\x16approval_input_version\x18\x03 \x01(\x03R\x14approvalInputVersion\x1a\xb3\x06\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
