@@ -1,7 +1,6 @@
 {
   "activity": {
-    "n-similar-activities_one": "{{count}} hoạt động tương tự",
-    "n-similar-activities_other": "{{count}} hoạt động tương tự",
+    "n-similar-activities": "{{count}} hoạt động tương tự",
     "sentence": {
       "added-spec": "đã thêm",
       "canceled-issue": "đã đóng issue",
