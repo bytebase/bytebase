@@ -515,14 +515,15 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
-	if planCheckRun != nil {
-		created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
-		}
-		if !created {
-			return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
-		}
+	if planCheckRun == nil {
+		return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
+	}
+	created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
+	}
+	if !created {
+		return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
 	}
 
 	// Tickle plan check scheduler.

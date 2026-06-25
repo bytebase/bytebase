@@ -165,6 +165,41 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
 	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
 }
 
+func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	created, err = s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.False(t, created)
+
+	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	require.Equal(t, store.PlanCheckRunStatusAvailable, run.Status)
+	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
+}
+
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
