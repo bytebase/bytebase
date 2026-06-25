@@ -370,21 +370,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 
-	var planCheckRunCreated bool
-	if planCheckRunsTrigger {
-		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
+	resetApprovalFinding := func() *store.IssueMessage {
+		if issueToReset == nil {
+			return nil
 		}
-		if planCheckRun != nil {
-			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
-			}
-			planCheckRunCreated = true
-		}
-	}
-
-	if issueToReset != nil {
 		updatedIssue, err := s.store.UpdateIssue(ctx, issueToReset.ProjectID, issueToReset.UID, &store.UpdateIssueMessage{
 			PayloadUpsert: &storepb.Issue{
 				Approval: &storepb.IssuePayloadApproval{
@@ -394,14 +383,36 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		})
 		if err != nil {
 			slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
-		} else if updatedIssue != nil && updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
+			return nil
+		}
+		return updatedIssue
+	}
+
+	var planCheckRunCreated bool
+	if planCheckRunsTrigger {
+		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
+		if err != nil {
+			resetApprovalFinding()
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
+		}
+		if planCheckRun != nil {
+			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
+				resetApprovalFinding()
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
+			}
+			planCheckRunCreated = true
+		}
+	}
+
+	if updatedIssue := resetApprovalFinding(); updatedIssue != nil {
+		if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
 			if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 				slog.Error("failed to find approval template after plan update",
 					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 					slog.String("issue_title", updatedIssue.Title),
 					log.BBError(err))
 			}
-		} else if updatedIssue != nil && updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
+		} else if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
 		}
 	}
