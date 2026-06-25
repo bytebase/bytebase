@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Button } from "@/react/components/ui/button";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/react/router/handles";
@@ -142,14 +143,13 @@ export function HistoryPane() {
   };
 
   const handleCopy = async (statement: string) => {
-    try {
-      await navigator.clipboard.writeText(statement);
+    if (await writeTextToClipboard(statement)) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),
       });
-    } catch {
+    } else {
       // clipboard not available
     }
   };
@@ -171,14 +171,13 @@ export function HistoryPane() {
   };
 
   const handleCopyLink = async (history: QueryHistory) => {
-    try {
-      await navigator.clipboard.writeText(buildHistoryLink(history));
+    if (await writeTextToClipboard(buildHistoryLink(history))) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),
       });
-    } catch {
+    } else {
       // clipboard not available
     }
   };

@@ -14,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -43,26 +44,13 @@ export function AADSyncSheet({
       : "";
 
   const copyToClipboard = async (value: string) => {
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        // Fallback for non-secure contexts (e.g. self-hosted HTTP)
-        const textarea = document.createElement("textarea");
-        textarea.value = value;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
+    if (await writeTextToClipboard(value)) {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.copied"),
       });
-    } catch {
+    } else {
       pushNotification({
         module: "bytebase",
         style: "WARN",

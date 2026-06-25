@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { writeTextToClipboard as copyTextToClipboard } from "@/react/lib/clipboard";
 import { useAppStore } from "@/react/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -290,7 +291,9 @@ export function SQLResultViewProvider({
       if (!payload) return;
       setCopying(true);
       try {
-        await navigator.clipboard.writeText(payload);
+        if (!(await copyTextToClipboard(payload))) {
+          throw new Error("clipboard unavailable");
+        }
         useAppStore.getState().notify({
           module: "bytebase",
           style: "SUCCESS",

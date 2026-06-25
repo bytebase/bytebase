@@ -20,6 +20,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import {
   STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
@@ -152,11 +153,10 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
   }, [content, guessedIsJSON, format]);
 
   const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(copyContent);
+    if (await writeTextToClipboard(copyContent)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       // ignore
     }
   }, [copyContent]);

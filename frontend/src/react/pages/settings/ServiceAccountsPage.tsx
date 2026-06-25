@@ -29,6 +29,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -47,34 +48,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
-
-function execCommandCopy(text: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    document.body.removeChild(textarea);
-  }
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // fall through to execCommand fallback
-    }
-  }
-  return execCommandCopy(text);
-}
 
 // ============================================================
 // ServiceAccountTable
@@ -149,7 +122,10 @@ function ServiceAccountTable({
       );
       const updated = serviceAccountToUser(sa);
       onUserUpdated(updated);
-      if (updated.serviceKey && (await copyToClipboard(updated.serviceKey))) {
+      if (
+        updated.serviceKey &&
+        (await writeTextToClipboard(updated.serviceKey))
+      ) {
         setCopiedKeys((prev) => new Set(prev).add(updated.name));
         pushNotification({
           module: "bytebase",
@@ -163,7 +139,7 @@ function ServiceAccountTable({
   };
 
   const handleCopyKey = async (user: User) => {
-    if (!(await copyToClipboard(user.serviceKey))) return;
+    if (!(await writeTextToClipboard(user.serviceKey))) return;
     setCopiedKeys((prev) => new Set(prev).add(user.name));
     pushNotification({
       module: "bytebase",

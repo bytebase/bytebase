@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { useCurrentUser } from "@/react/hooks/useAppState";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/react/router/handles";
@@ -112,14 +113,13 @@ export function SharePopoverBody({ worksheet }: Props) {
         "visibility",
       ]);
 
-    try {
-      await navigator.clipboard.writeText(sharedTabLink);
+    if (await writeTextToClipboard(sharedTabLink)) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),
       });
-    } catch {
+    } else {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
@@ -134,14 +134,13 @@ export function SharePopoverBody({ worksheet }: Props) {
   };
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(sharedTabLink);
+    if (await writeTextToClipboard(sharedTabLink)) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("sql-editor.url-copied-to-clipboard"),
       });
-    } catch {
+    } else {
       // clipboard not available
     }
   };

@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { pushNotification } from "@/store";
 
 interface TwoFactorSecretModalProps {
@@ -23,14 +24,13 @@ export function TwoFactorSecretModal({
   const { t } = useTranslation();
 
   const copySecret = async () => {
-    try {
-      await navigator.clipboard.writeText(secret);
+    if (await writeTextToClipboard(secret)) {
       pushNotification({
         module: "bytebase",
         style: "INFO",
         title: t("two-factor.your-two-factor-secret.copy-succeed"),
       });
-    } catch {
+    } else {
       // Clipboard API not available
     }
     onClose();
