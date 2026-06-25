@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { RouterLink } from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -31,18 +32,6 @@ const extractDatabaseParts = (resource: string) => {
     instanceName: matches?.groups?.instanceName ?? "",
   };
 };
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
 
 export function DatabaseDetailHeader({
   database,
@@ -106,7 +95,7 @@ export function DatabaseDetailHeader({
   }, [environmentColorRgb]);
 
   const handleCopy = useCallback(async () => {
-    const success = await copyToClipboard(database.name);
+    const success = await writeTextToClipboard(database.name);
     setCopied(success);
     if (success) {
       window.setTimeout(() => setCopied(false), 1200);

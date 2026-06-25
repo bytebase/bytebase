@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import {
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
@@ -468,7 +469,7 @@ export function CreateDataSourceExample({
   );
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(grantStatement);
+    void writeTextToClipboard(grantStatement);
   }, [grantStatement]);
 
   const toggleExample = useCallback(() => {

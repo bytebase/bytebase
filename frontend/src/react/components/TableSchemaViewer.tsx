@@ -6,6 +6,7 @@ import { databaseServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import {
   type Database,
   type GetSchemaStringRequest_ObjectType,
@@ -66,8 +67,7 @@ export function TableSchemaViewer({
   }, [database.name, schema, object, type]);
 
   const handleCopy = async () => {
-    if (typeof navigator === "undefined" || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(schemaString);
+    await writeTextToClipboard(schemaString);
   };
 
   return (

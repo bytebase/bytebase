@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { findAncestor } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { useAIContext } from "../../context";
@@ -181,11 +182,9 @@ function CopyButton({ content }: { content: string }) {
   }, [copied]);
 
   const handleClick = async () => {
-    if (typeof navigator === "undefined" || !navigator.clipboard) return;
-    try {
-      await navigator.clipboard.writeText(content);
+    if (await writeTextToClipboard(content)) {
       setCopied(true);
-    } catch {
+    } else {
       // ignore — same posture as TableSchemaViewer.tsx
     }
   };

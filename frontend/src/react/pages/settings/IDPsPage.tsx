@@ -48,6 +48,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { router } from "@/react/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -150,13 +151,14 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
 
   if (!redirectUrl) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(redirectUrl);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
+  const handleCopy = async () => {
+    if (await writeTextToClipboard(redirectUrl)) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.copied"),
+      });
+    }
   };
 
   return (

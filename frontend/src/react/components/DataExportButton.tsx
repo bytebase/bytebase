@@ -34,6 +34,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { pushNotification } from "@/store";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
@@ -287,7 +288,9 @@ export function DataExportButton({
     async (value: string): Promise<boolean> => {
       if (!value) return false;
       try {
-        await navigator.clipboard.writeText(value);
+        if (!(await writeTextToClipboard(value))) {
+          throw new Error("clipboard unavailable");
+        }
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

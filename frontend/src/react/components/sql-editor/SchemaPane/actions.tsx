@@ -17,6 +17,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import { router } from "@/react/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/react/router/handles";
@@ -139,11 +140,9 @@ const copyToClipboard = async (
   content: string,
   notify: (key: string) => void
 ) => {
-  if (typeof navigator === "undefined" || !navigator.clipboard) return;
-  try {
-    await navigator.clipboard.writeText(content);
+  if (await writeTextToClipboard(content)) {
     notify("common.copied");
-  } catch {
+  } else {
     // Silent fail — matches Vue's `if (!isSupported.value) return` behavior.
   }
 };
