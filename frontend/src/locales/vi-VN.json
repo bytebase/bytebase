@@ -1465,7 +1465,10 @@
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
     "ghost": {
-      "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu Ghost: {{databases}}"
+      "configure": "Cấu hình",
+      "parameters": "Tham số gh-ost",
+      "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu Ghost: {{databases}}",
+      "reset-to-defaults": "Đặt lại về mặc định"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
     "isolation-level": {

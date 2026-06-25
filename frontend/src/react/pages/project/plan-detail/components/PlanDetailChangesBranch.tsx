@@ -18,6 +18,7 @@ import {
 } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { GhostFlagsButton } from "@/react/components/ghost/GhostFlagsButton";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import {
@@ -1202,6 +1203,15 @@ function OptionsSection({
                 />
               </div>
             </Tooltip>
+            {ghostEnabled && (
+              <GhostFlagsButton
+                value={currentGhostConfig ?? {}}
+                disabled={!allowChange || isSheetOversize}
+                onChange={(next) =>
+                  void persistStatement(updateGhostConfig(sheetStatement, next))
+                }
+              />
+            )}
           </div>
         </div>
       ) : (
