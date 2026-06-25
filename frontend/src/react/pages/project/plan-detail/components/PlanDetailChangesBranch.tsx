@@ -612,15 +612,17 @@ export function PlanDetailChangesBranch({
       </PlanDetailTabStrip>
 
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
-        <div className="flex flex-col gap-y-4">
+        {/* One key on the wrapper — not on each child — remounts the whole
+            spec-detail group when the selected spec changes (resetting each
+            section's internal state) without the sections colliding on a shared
+            key={selectedSpec.id}, which logged a duplicate-key warning. */}
+        <div key={selectedSpec.id} className="flex flex-col gap-y-4">
           <TargetsSection
-            key={selectedSpec.id}
             allowEdit={canModifySpecs}
             onEdit={() => setShowTargetSelectorSheet(true)}
             selectedSpec={selectedSpec}
           />
           <PlanDetailStatementSection
-            key={selectedSpec.id}
             planCheckRuns={
               page.isCreating
                 ? draftCheckRuns
@@ -633,7 +635,6 @@ export function PlanDetailChangesBranch({
             page.isCreating &&
             selectedSpec.config.case === "changeDatabaseConfig" && (
               <PlanDetailDraftChecks
-                key={selectedSpec.id}
                 checkResults={draftCheckResults}
                 onCheckResultsChange={handleDraftCheckResultsChange}
                 selectedSpec={selectedSpec}
@@ -641,7 +642,6 @@ export function PlanDetailChangesBranch({
             )}
           {!specHasRelease && (
             <OptionsSection
-              key={selectedSpec.id}
               onStatementPersisted={() =>
                 handleStatementPersisted(selectedSpec.id)
               }

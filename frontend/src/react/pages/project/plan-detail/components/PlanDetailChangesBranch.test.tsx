@@ -928,6 +928,40 @@ describe("PlanDetailChangesBranch", () => {
     ).toBe(false);
   });
 
+  it("does not render the spec sections with duplicate React keys", async () => {
+    // View mode (not creating) renders the Targets/Statement/Options sections.
+    const page = buildPageState();
+    page.isCreating = false;
+    const renderBranch = () =>
+      act(() => {
+        root.render(
+          <PlanDetailProvider value={{ ...page }}>
+            <PlanDetailChangesBranch
+              selectedSpecId="spec-1"
+              onSelectedSpecIdChange={vi.fn()}
+            />
+          </PlanDetailProvider>
+        );
+      });
+
+    // React only flags duplicate sibling keys during update reconciliation —
+    // the live page hits this constantly as it re-renders (data loads,
+    // polling). The spec sections must not share key={selectedSpec.id}.
+    renderBranch();
+    await flush();
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    renderBranch();
+    await flush();
+    const fired = consoleError.mock.calls.some((call) =>
+      String(call[0]).includes("two children with the same key")
+    );
+    consoleError.mockRestore();
+
+    expect(fired).toBe(false);
+  });
+
   it("hides stale draft check runs after the create-plan statement changes", async () => {
     const sheetName = "projects/foo/sheets/-1";
     mocks.localSheets.set(sheetName, {
