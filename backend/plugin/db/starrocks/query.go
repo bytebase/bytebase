@@ -120,9 +120,35 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 		return rewriteSelectLimit(statement, stmt, limitCount)
 	case *ast.SetOpStmt:
 		return rewriteSetOpLimit(statement, stmt, limitCount)
+	case *ast.ParenSelect:
+		switch inner := stmt.Sel.(type) {
+		case *ast.SelectStmt:
+			return rewriteSelectLimit(statement, inner, limitCount)
+		case *ast.SetOpStmt:
+			return rewriteSetOpLimit(statement, inner, limitCount)
+		}
+		return statement, nil
 	default:
 		return statement, nil
 	}
+}
+
+func hasUnparsedTail(sql string, locEnd int) bool {
+	pos := locEnd
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
+		pos++
+	}
+	for pos < len(sql) && sql[pos] == ';' {
+		pos++
+	}
+	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
+		pos++
+	}
+	if pos >= len(sql) {
+		return false
+	}
+	tail := sql[pos:]
+	return !strings.HasPrefix(tail, "--") && !strings.HasPrefix(tail, "/*") && !strings.HasPrefix(tail, "#")
 }
 
 func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
@@ -147,64 +173,31 @@ func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (strin
 		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
 	}
 
-	pos, beforeClause := findLimitInsertPosition(sql, stmt.Loc.End)
-	if beforeClause {
-		return sql[:pos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[pos:], nil
+	if stmt.Into != nil {
+		return sql[:stmt.Into.Loc.Start] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[stmt.Into.Loc.Start:], nil
 	}
-	return sql[:pos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[pos:], nil
+	if hasUnparsedTail(sql, stmt.Loc.End) {
+		return "", errors.New("statement has unparsed tail content")
+	}
+	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
 }
 
 func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string, error) {
-	if rightSelect := rightmostSelect(stmt); rightSelect != nil && rightSelect.Limit != nil {
-		return rewriteSelectLimit(sql, rightSelect, limitCount)
+	if stmt.Limit != nil {
+		limitLoc := literalLoc(stmt.Limit)
+		if limitLoc.Start < 0 {
+			return "", errors.New("cannot rewrite non-constant LIMIT expression")
+		}
+		existingLimit := extractLimitValue(stmt.Limit)
+		if existingLimit >= 0 && existingLimit <= limitCount {
+			return sql, nil
+		}
+		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
 	}
-	pos, beforeClause := findLimitInsertPosition(sql, stmt.Loc.End)
-	if beforeClause {
-		return sql[:pos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[pos:], nil
+	if hasUnparsedTail(sql, stmt.Loc.End) {
+		return "", errors.New("statement has unparsed tail content")
 	}
-	return sql[:pos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[pos:], nil
-}
-
-func findLimitInsertPosition(sql string, stmtLocEnd int) (pos int, beforeClause bool) {
-	effectiveEnd := len(sql)
-	for effectiveEnd > 0 && (sql[effectiveEnd-1] == ' ' || sql[effectiveEnd-1] == '\t' || sql[effectiveEnd-1] == '\n' || sql[effectiveEnd-1] == '\r') {
-		effectiveEnd--
-	}
-	for effectiveEnd > 0 && sql[effectiveEnd-1] == ';' {
-		effectiveEnd--
-	}
-
-	tailStart := stmtLocEnd
-	for tailStart < effectiveEnd && (sql[tailStart] == ' ' || sql[tailStart] == '\t' || sql[tailStart] == '\n' || sql[tailStart] == '\r') {
-		tailStart++
-	}
-
-	if tailStart >= effectiveEnd {
-		return stmtLocEnd, false
-	}
-
-	tail := sql[tailStart:]
-	if strings.HasPrefix(tail, "--") || strings.HasPrefix(tail, "/*") || strings.HasPrefix(tail, "#") {
-		return stmtLocEnd, false
-	}
-
-	upperTail := strings.ToUpper(tail)
-	if strings.HasPrefix(upperTail, "INTO") || strings.HasPrefix(upperTail, "PROCEDURE") || strings.HasPrefix(upperTail, "FOR") {
-		return tailStart, true
-	}
-
-	return effectiveEnd, false
-}
-
-func rightmostSelect(node ast.Node) *ast.SelectStmt {
-	switch n := node.(type) {
-	case *ast.SelectStmt:
-		return n
-	case *ast.SetOpStmt:
-		return rightmostSelect(n.Right)
-	default:
-		return nil
-	}
+	return sql[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[stmt.Loc.End:], nil
 }
 
 func extractLimitValue(node ast.Node) int {
