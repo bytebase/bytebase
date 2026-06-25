@@ -302,6 +302,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
 	var issueCommentCreates []*store.IssueCommentMessage
+	var issueToReset *store.IssueMessage
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -332,6 +333,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			config := proto.CloneOf(oldPlan.Config)
 			config.Specs = allSpecs
 			planUpdate.Config = config
+			planUpdate.BumpApprovalInputVersion = true
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
@@ -356,30 +358,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						},
 					})
 				}
-				// Reset approval finding status
-				updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-					PayloadUpsert: &storepb.Issue{
-						Approval: &storepb.IssuePayloadApproval{
-							ApprovalFindingDone: false,
-						},
-					},
-				})
-				if err != nil {
-					slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
-				}
-
-				// DATABASE_CHANGE: Don't trigger ApprovalCheckChan here - plan update creates new plan check run,
-				// which will trigger approval finding on completion
-				// DATABASE_EXPORT: Re-run approval finding synchronously (no plan checks for export data)
-				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
-						slog.Error("failed to find approval template after plan update",
-							slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
-							slog.String("issue_title", updatedIssue.Title),
-							log.BBError(err))
-						// Continue anyway - non-fatal error
-					}
-				}
+				issueToReset = issue
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))
@@ -389,6 +368,26 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
+	}
+
+	if issueToReset != nil {
+		updatedIssue, err := s.store.UpdateIssue(ctx, issueToReset.ProjectID, issueToReset.UID, &store.UpdateIssueMessage{
+			PayloadUpsert: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: false,
+				},
+			},
+		})
+		if err != nil {
+			slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
+		} else if updatedIssue != nil && updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
+			if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+				slog.Error("failed to find approval template after plan update",
+					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
+					slog.String("issue_title", updatedIssue.Title),
+					log.BBError(err))
+			}
+		}
 	}
 
 	if len(issueCommentCreates) > 0 {
