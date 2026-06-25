@@ -1465,7 +1465,10 @@
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
     "ghost": {
-      "requirements-not-met": "次のデータベースは Ghost の要件を満たしていません: {{databases}}"
+      "configure": "設定",
+      "parameters": "gh-ost パラメータ",
+      "requirements-not-met": "次のデータベースは Ghost の要件を満たしていません: {{databases}}",
+      "reset-to-defaults": "デフォルトに戻す"
     },
     "go-to-plan-page": "プランページへ移動",
     "isolation-level": {

@@ -1465,7 +1465,10 @@
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
     "ghost": {
-      "requirements-not-met": "Ghost requirements not met: {{databases}}"
+      "configure": "Configure",
+      "parameters": "gh-ost parameters",
+      "requirements-not-met": "Ghost requirements not met: {{databases}}",
+      "reset-to-defaults": "Reset to defaults"
     },
     "go-to-plan-page": "Go to plan page",
     "isolation-level": {

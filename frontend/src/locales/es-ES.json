@@ -1465,7 +1465,10 @@
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
     "ghost": {
-      "requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}"
+      "configure": "Configurar",
+      "parameters": "Parámetros de gh-ost",
+      "requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}",
+      "reset-to-defaults": "Restablecer valores predeterminados"
     },
     "go-to-plan-page": "Ir a la página del plan",
     "isolation-level": {

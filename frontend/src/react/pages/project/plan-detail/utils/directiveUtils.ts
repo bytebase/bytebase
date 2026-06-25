@@ -102,6 +102,30 @@ export function parseStatement(statement: string): ParsedStatement {
     }
   }
 
+  // Unlike the positional txn-mode/isolation directives, the gh-ost directive may
+  // appear anywhere in the statement, not only the leading comment block scanned
+  // above. The backend (backend/component/ghost/directive.go) matches it with a
+  // multiline search, reads the first occurrence, and strips them all. Mirror
+  // that here so editing rewrites a single leading directive instead of silently
+  // dropping a below-the-SQL directive's flags (or leaving a stale duplicate).
+  for (let i = 0; i < lines.length; i++) {
+    if (directiveLines.has(i)) {
+      continue;
+    }
+    const ghostMatch = lines[i].match(GHOST_DIRECTIVE_REGEX);
+    if (!ghostMatch) {
+      continue;
+    }
+    directiveLines.add(i);
+    if (result.ghostConfig === undefined) {
+      try {
+        result.ghostConfig = JSON.parse(ghostMatch[1]);
+      } catch {
+        // Invalid JSON; the line is still stripped, keep looking for a valid one.
+      }
+    }
+  }
+
   // Build remaining content without directive lines
   const remainingLines = lines.filter((_, i) => !directiveLines.has(i));
   const remainingContent = remainingLines.join("\n");

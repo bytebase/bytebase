@@ -1465,7 +1465,10 @@
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
     "ghost": {
-      "requirements-not-met": "以下数据库不满足 Ghost 要求：{{databases}}"
+      "configure": "配置",
+      "parameters": "gh-ost 参数",
+      "requirements-not-met": "以下数据库不满足 Ghost 要求：{{databases}}",
+      "reset-to-defaults": "重置为默认值"
     },
     "go-to-plan-page": "前往计划页面",
     "isolation-level": {
