@@ -26,6 +26,7 @@ import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { consolidateConsecutive } from "./consolidateTimeline";
 import { foldTimeline } from "./foldTimeline";
 import { ReviewCommentComposer } from "./ReviewCommentComposer";
 import {
@@ -61,7 +62,8 @@ export function ReviewActivityTimeline({
   );
   const items = useMemo(() => {
     const renderable = entries.filter(isRenderableEntry);
-    return foldTimeline(renderable, expanded);
+    const consolidated = consolidateConsecutive(renderable);
+    return foldTimeline(consolidated, expanded);
   }, [entries, expanded]);
   // Permission-gated only — comments are allowed regardless of issue status
   // (the backend and the issue-detail list allow commenting on done issues).
@@ -175,6 +177,7 @@ function ActivityRow({
         isLast={isLast}
         issue={issue}
         plan={plan}
+        similarCount={entry.similarCount}
       />
     );
   }
@@ -247,11 +250,13 @@ function ReviewCommentRow({
   isLast,
   issue,
   plan,
+  similarCount,
 }: {
   comment: IssueComment;
   isLast: boolean;
   issue: Issue;
   plan: Plan;
+  similarCount?: number;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -341,6 +346,7 @@ function ReviewCommentRow({
       issue={issue}
       linkless
       plan={plan}
+      similarCount={similarCount}
       subjectSuffix={subjectSuffix}
     />
   );

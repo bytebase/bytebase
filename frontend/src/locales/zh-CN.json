@@ -1,5 +1,7 @@
 {
   "activity": {
+    "n-similar-activities_one": "{{count}} 条相似动态",
+    "n-similar-activities_other": "{{count}} 条相似动态",
     "sentence": {
       "added-spec": "添加了",
       "canceled-issue": "关闭了工单",

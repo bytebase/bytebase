@@ -1,5 +1,7 @@
 {
   "activity": {
+    "n-similar-activities_one": "{{count}} actividad similar",
+    "n-similar-activities_other": "{{count}} actividades similares",
     "sentence": {
       "added-spec": "añadió",
       "canceled-issue": "cerró el issue",
