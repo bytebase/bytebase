@@ -150,6 +150,141 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	a.Equal("Prod Change Database Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
 }
 
+func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	t.Cleanup(func() { _ = ctl.Close(ctx) })
+
+	instanceDir := t.TempDir()
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			Title:       "Approval Input Version Instance",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type: v1pb.DataSourceType_ADMIN,
+				Host: instanceDir,
+				Id:   "admin",
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	dbName := generateRandomString("db")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	a.NoError(err)
+	databaseName := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
+						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{{
+							Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+							Condition: &expr.Expr{
+								Expression: `resource.db_engine == "SQLITE"`,
+							},
+							Template: &v1pb.ApprovalTemplate{
+								Title: "SQLite change approval",
+								Flow: &v1pb.ApprovalFlow{
+									Roles: []string{"roles/workspaceOwner"},
+								},
+							},
+						}},
+					},
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE stale_approval_a (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE stale_approval_b (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+
+	specID := uuid.NewString()
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Approval input version plan",
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{databaseName},
+						Sheet:   sheet1.Msg.Name,
+					},
+				},
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: ctl.project.Name,
+		Issue: &v1pb.Issue{
+			Title:       "Approval input version issue",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Description: "Testing approval input version rerun",
+			Plan:        planResp.Msg.Name,
+		},
+	}))
+	a.NoError(err)
+
+	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
+
+	updatedPlanResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: planResp.Msg.Name,
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{databaseName},
+						Sheet:   sheet2.Msg.Name,
+					},
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	a.NoError(err)
+
+	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
+
+	gotIssueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
+	a.NoError(err)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
+	a.Equal("SQLite change approval", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+
+	checkResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+		Name: updatedPlanResp.Msg.Name + "/planCheckRun",
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.PlanCheckRun_DONE, checkResp.Msg.Status)
+}
+
 // TestApprovalRuleFirstMatchWins tests that the first matching approval rule is applied
 // when multiple rules could potentially match.
 func TestApprovalRuleFirstMatchWins(t *testing.T) {
