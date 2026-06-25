@@ -195,6 +195,24 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  `SELECT * FROM orders LIMIT 10 INTO OUTFILE "s3://bucket/export/";`,
 		},
+		// Comma-style LIMIT on UNION
+		{
+			stmt:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,1000000;",
+			count: 10,
+			want:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,10;",
+		},
+		// Comma-style LIMIT on UNION — keep if smaller
+		{
+			stmt:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,5;",
+			count: 10,
+			want:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,5;",
+		},
+		// Comment followed by unparsed content should still trigger CTE fallback
+		{
+			stmt:  "SELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
+			count: 10,
+			want:  "SELECT * FROM (SELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age) result LIMIT 10;",
+		},
 	}
 
 	for _, tc := range testCases {

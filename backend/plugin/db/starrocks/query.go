@@ -135,20 +135,38 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 
 func hasUnparsedTail(sql string, locEnd int) bool {
 	pos := locEnd
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
-		pos++
+	for pos < len(sql) {
+		for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
+			pos++
+		}
+		for pos < len(sql) && sql[pos] == ';' {
+			pos++
+		}
+		for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
+			pos++
+		}
+		if pos >= len(sql) {
+			return false
+		}
+		if strings.HasPrefix(sql[pos:], "--") || strings.HasPrefix(sql[pos:], "#") {
+			nl := strings.IndexByte(sql[pos:], '\n')
+			if nl < 0 {
+				return false
+			}
+			pos += nl + 1
+			continue
+		}
+		if strings.HasPrefix(sql[pos:], "/*") {
+			end := strings.Index(sql[pos:], "*/")
+			if end < 0 {
+				return false
+			}
+			pos += end + 2
+			continue
+		}
+		return true
 	}
-	for pos < len(sql) && sql[pos] == ';' {
-		pos++
-	}
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
-		pos++
-	}
-	if pos >= len(sql) {
-		return false
-	}
-	tail := sql[pos:]
-	return !strings.HasPrefix(tail, "--") && !strings.HasPrefix(tail, "/*") && !strings.HasPrefix(tail, "#")
+	return false
 }
 
 func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
@@ -188,6 +206,15 @@ func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string,
 		if limitLoc.Start < 0 {
 			return "", errors.New("cannot rewrite non-constant LIMIT expression")
 		}
+
+		if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
+			existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
+			if existingCount > 0 && existingCount <= limitCount {
+				return sql, nil
+			}
+			return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil
+		}
+
 		existingLimit := extractLimitValue(stmt.Limit)
 		if existingLimit >= 0 && existingLimit <= limitCount {
 			return sql, nil
