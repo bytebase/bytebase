@@ -107,7 +107,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("Unexpected status code from user info endpoint", slog.Int("status", resp.StatusCode), slog.String("body", string(body)))
-		return nil, nil, errors.Errorf("user info request failed with status %d: %s", resp.StatusCode, string(body))
+		return nil, nil, errors.Errorf("user info request failed with status %d", resp.StatusCode)
 	}
 
 	var claims map[string]any
