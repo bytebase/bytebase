@@ -18,6 +18,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import {
   PermissionGuard,
   usePermissionCheck,
@@ -88,12 +89,10 @@ import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
   extractPlanUID,
-  formatAbsoluteDateTime,
   generatePlanTitle,
   getDatabaseEnvironment,
   getDefaultPagination,
   getInstanceResource,
-  humanizeTs,
   type SearchParams as VueSearchParams,
 } from "@/utils";
 import { extractStageUID } from "@/utils/v1/issue/rollout";
@@ -508,11 +507,10 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
         minWidth: 100,
         resizable: true,
         render: (_plan, ctx) => (
-          <Tooltip content={formatAbsoluteDateTime(ctx.updateTimeTs * 1000)}>
-            <span className="text-control-light whitespace-nowrap">
-              {humanizeTs(ctx.updateTimeTs)}
-            </span>
-          </Tooltip>
+          <HumanizeTs
+            ts={ctx.updateTimeTs}
+            className="text-control-light whitespace-nowrap"
+          />
         ),
       },
     ],

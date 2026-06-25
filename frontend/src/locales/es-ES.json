@@ -1480,7 +1480,7 @@
     },
     "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
     "meta": {
-      "created-by-at": "Creado por {{user}} · {{time}}"
+      "created-by": "Creado por {{user}}"
     },
     "navigator": {
       "changes": "Cambios",

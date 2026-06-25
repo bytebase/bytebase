@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { useAppDatabaseMetadata } from "@/react/hooks/useAppDatabaseMetadata";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -7,7 +8,6 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   getDatabaseEngine,
-  humanizeDate,
   instanceV1HasCollationAndCharacterSet,
 } from "@/utils";
 
@@ -15,10 +15,9 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
   const { t } = useTranslation();
   const databaseEngine = getDatabaseEngine(database);
   const databaseSchemaMetadata = useAppDatabaseMetadata(database.name);
-  const lastSyncDate = database.successfulSyncTime
-    ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
-    : undefined;
-  const hasLastSyncDate = !!lastSyncDate && lastSyncDate.getTime() !== 0;
+  const lastSyncTs = database.successfulSyncTime
+    ? Number(database.successfulSyncTime.seconds)
+    : 0;
 
   return (
     <div className="rounded border border-block-border px-5 py-4">
@@ -77,7 +76,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
             {t("database.last-sync")}
           </dt>
           <dd className="mt-1 text-sm text-main">
-            {hasLastSyncDate ? humanizeDate(lastSyncDate) : "-"}
+            {lastSyncTs ? <HumanizeTs ts={lastSyncTs} /> : "-"}
           </dd>
         </div>
       </dl>

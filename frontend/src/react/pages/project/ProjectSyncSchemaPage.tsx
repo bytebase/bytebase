@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import {
   createMonacoDiffEditor,
@@ -77,7 +78,6 @@ import {
   getDatabaseEnvironment,
   getDefaultPagination,
   getInstanceResource,
-  humanizeDate,
 } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
@@ -916,7 +916,11 @@ function ChangelogLabel({ entry }: { entry: ChangelogEntry }) {
   return (
     <span className="flex items-center gap-1.5 truncate">
       <span className="text-control-light">
-        {entry.date ? humanizeDate(entry.date) : "Latest version"}
+        {entry.date ? (
+          <HumanizeTs ts={entry.date.getTime() / 1000} />
+        ) : (
+          "Latest version"
+        )}
       </span>
       {entry.planTitle && (
         <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-control-bg text-xs">

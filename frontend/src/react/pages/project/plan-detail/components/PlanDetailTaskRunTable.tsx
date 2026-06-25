@@ -3,6 +3,7 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { Check, Minus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Button } from "@/react/components/ui/button";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
@@ -28,11 +29,7 @@ import {
 } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  formatAbsoluteDateTime,
-  humanizeDate,
-  humanizeDurationV1,
-} from "@/utils";
+import { formatAbsoluteDateTime, humanizeDurationV1 } from "@/utils";
 import { PlanDetailTaskRunDetail } from "./PlanDetailTaskRunDetail";
 
 export function PlanDetailTaskRunTable({
@@ -258,9 +255,10 @@ function TaskRunDateCell({
   }
 
   return (
-    <Tooltip content={formatAbsoluteDateTime(parsedDate.getTime())}>
-      <span className="text-sm text-control">{humanizeDate(parsedDate)}</span>
-    </Tooltip>
+    <HumanizeTs
+      ts={parsedDate.getTime() / 1000}
+      className="text-sm text-control"
+    />
   );
 }
 
