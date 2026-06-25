@@ -97,6 +97,117 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	requirePlanSpecID(t, updated.Config, "spec-e")
 }
 
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionUpdatesMatchingVersion(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{RiskLevel: storepb.RiskLevel_LOW},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		},
+	}, 2)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, storepb.RiskLevel_HIGH, got.Payload.GetRiskLevel())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionSkipsStaleVersion(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{RiskLevel: storepb.RiskLevel_LOW},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 1,
+		},
+	}, 1)
+	require.NoError(t, err)
+	require.False(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, storepb.RiskLevel_LOW, got.Payload.GetRiskLevel())
+	require.Nil(t, got.Payload.GetApproval())
+}
+
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionSkipsIssueWithoutPlan(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{RiskLevel: storepb.RiskLevel_LOW},
+	})
+	require.NoError(t, err)
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+		},
+	}, 0)
+	require.NoError(t, err)
+	require.False(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, storepb.RiskLevel_LOW, got.Payload.GetRiskLevel())
+	require.Nil(t, got.Payload.GetApproval())
+}
+
 func requirePlanSpecID(t *testing.T, config *storepb.PlanConfig, id string) {
 	t.Helper()
 	require.Len(t, config.GetSpecs(), 1)

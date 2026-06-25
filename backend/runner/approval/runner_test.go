@@ -1,6 +1,7 @@
 package approval
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -235,35 +236,76 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 	}].GetSqlSummaryReport().GetAffectedRows())
 }
 
-func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
+func TestPlanChecksExpectedForApproval(t *testing.T) {
 	tests := []struct {
-		name         string
-		planCheckRun *store.PlanCheckRunMessage
-		want         bool
+		name string
+		plan *store.PlanMessage
+		want bool
 	}{
 		{
-			name:         "nil plan check run is ready to evaluate",
-			planCheckRun: nil,
+			name: "create database does not expect checks",
+			plan: &store.PlanMessage{
+				ProjectID: "project",
+				Config: &storepb.PlanConfig{
+					Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+							CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+						},
+					}},
+				},
+			},
 		},
 		{
-			name:         "AVAILABLE is not ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusAvailable},
-			want:         true,
+			name: "release backed change does not expect checks",
+			plan: &store.PlanMessage{
+				ProjectID: "project",
+				Config: &storepb.PlanConfig{
+					Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+								Release: "projects/project/releases/release",
+							},
+						},
+					}},
+				},
+			},
 		},
 		{
-			name:         "RUNNING is not ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusRunning},
-			want:         true,
+			name: "empty expanded targets do not expect checks",
+			plan: &store.PlanMessage{
+				ProjectID: "project",
+				Config: &storepb.PlanConfig{
+					Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+						},
+					}},
+				},
+			},
 		},
 		{
-			name:         "DONE is ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusDone},
+			name: "change target expects checks",
+			plan: &store.PlanMessage{
+				ProjectID: "project",
+				Config: &storepb.PlanConfig{
+					Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+								Targets: []string{"instances/prod/databases/app"},
+							},
+						},
+					}},
+				},
+			},
+			want: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, isPlanCheckRunPendingApprovalEvaluation(tt.planCheckRun))
+			got, err := planChecksExpectedForApproval(context.Background(), nil, &store.ProjectMessage{ResourceID: "project"}, tt.plan)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

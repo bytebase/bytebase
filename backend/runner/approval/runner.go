@@ -22,6 +22,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -165,25 +166,31 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		return errors.Errorf("project %s not found", issue.ProjectID)
 	}
 
+	approvalInputVersion, err := getIssuePlanApprovalInputVersion(ctx, stores, issue)
+	if err != nil {
+		return err
+	}
+
 	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
 		// no need to find if feature is not enabled
 		if licenseService.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
-			return nil, nil, 0, true, nil
+			return nil, nil, approvalInputVersion, true, nil
 		}
 
 		// Step 1: Determine approval source from issue type
 		approvalSource, err := getApprovalSourceFromIssue(ctx, stores, issue)
 		if err != nil {
-			return nil, nil, 0, false, errors.Wrap(err, "failed to get approval source from issue")
+			return nil, nil, approvalInputVersion, false, errors.Wrap(err, "failed to get approval source from issue")
 		}
 		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
 			// Cannot determine source, no approval needed
-			return nil, nil, 0, true, nil
+			return nil, nil, approvalInputVersion, true, nil
 		}
 
 		// Step 2: Build CEL variables for evaluation
-		celVarsList, approvalInputVersion, done, err := buildCELVariablesForIssue(ctx, stores, issue)
+		celVarsList, celApprovalInputVersion, done, err := buildCELVariablesForIssue(ctx, stores, issue)
+		approvalInputVersion = celApprovalInputVersion
 		if err != nil {
 			return nil, nil, approvalInputVersion, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
@@ -250,6 +257,23 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	NotifyApprovalRequested(ctx, stores, webhookManager, issue, project)
 
 	return nil
+}
+
+func getIssuePlanApprovalInputVersion(ctx context.Context, stores *store.Store, issue *store.IssueMessage) (int64, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE {
+		return 0, nil
+	}
+	if issue.PlanUID == nil {
+		return 0, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	}
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+	}
+	if plan == nil {
+		return 0, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+	return plan.Config.GetApprovalInputVersion(), nil
 }
 
 // calculateRiskLevelFromCELVars calculates the risk level from CEL variables.
@@ -556,13 +580,6 @@ func buildStatementSummaryResultMap(results []*storepb.PlanCheckRunResult_Result
 	return m
 }
 
-func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMessage) bool {
-	if planCheckRun == nil {
-		return false
-	}
-	return planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning
-}
-
 func isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun *store.PlanCheckRunMessage, planApprovalInputVersion int64) (current bool, pending bool) {
 	if planCheckRun == nil {
 		return false, true
@@ -593,23 +610,33 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
-	current, pending := isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun, approvalInputVersion)
-	if pending {
-		return nil, approvalInputVersion, false, nil
-	}
-	if !current {
-		refreshed, err := stores.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, issue.ProjectID, plan.UID, approvalInputVersion)
+	if planCheckRun == nil {
+		checksExpected, err := planChecksExpectedForApproval(ctx, stores, nil, plan)
 		if err != nil {
-			slog.Error("failed to refresh stale plan check run for approval input version",
-				slog.String("project", issue.ProjectID),
-				slog.Int64("issue_uid", issue.UID),
-				slog.Int64("plan_uid", plan.UID),
-				slog.Int64("approval_input_version", approvalInputVersion),
-				log.BBError(err))
-			return nil, approvalInputVersion, false, errors.Wrap(err, "failed to refresh stale plan check run for approval input version")
+			return nil, approvalInputVersion, false, errors.Wrap(err, "failed to derive plan check targets")
 		}
-		_ = refreshed
-		return nil, approvalInputVersion, false, nil
+		if checksExpected {
+			return nil, approvalInputVersion, false, nil
+		}
+	} else {
+		current, pending := isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun, approvalInputVersion)
+		if pending {
+			return nil, approvalInputVersion, false, nil
+		}
+		if !current {
+			refreshed, err := stores.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, issue.ProjectID, plan.UID, approvalInputVersion)
+			if err != nil {
+				slog.Error("failed to refresh stale plan check run for approval input version",
+					slog.String("project", issue.ProjectID),
+					slog.Int64("issue_uid", issue.UID),
+					slog.Int64("plan_uid", plan.UID),
+					slog.Int64("approval_input_version", approvalInputVersion),
+					log.BBError(err))
+				return nil, approvalInputVersion, false, errors.Wrap(err, "failed to refresh stale plan check run for approval input version")
+			}
+			_ = refreshed
+			return nil, approvalInputVersion, false, nil
+		}
 	}
 
 	// Unfold database groups and get all targets
@@ -693,6 +720,78 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 
 	return celVarsList, approvalInputVersion, true, nil
+}
+
+func planChecksExpectedForApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, plan *store.PlanMessage) (bool, error) {
+	if project == nil {
+		var err error
+		project, err = stores.GetProjectByResourceID(ctx, plan.ProjectID)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to get project")
+		}
+		if project == nil {
+			return false, errors.Errorf("project %s not found", plan.ProjectID)
+		}
+	}
+
+	databaseGroup, err := getDatabaseGroupForPlanApproval(ctx, stores, plan)
+	if err != nil {
+		return false, err
+	}
+
+	targets, err := plancheck.DeriveCheckTargets(ctx, stores, project, plan, databaseGroup)
+	if err != nil {
+		return false, err
+	}
+	return len(targets) > 0, nil
+}
+
+func getDatabaseGroupForPlanApproval(ctx context.Context, stores *store.Store, plan *store.PlanMessage) (*v1pb.DatabaseGroup, error) {
+	for _, spec := range plan.Config.GetSpecs() {
+		cfg, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
+		if !ok {
+			continue
+		}
+		if len(cfg.ChangeDatabaseConfig.Targets) != 1 {
+			continue
+		}
+
+		target := cfg.ChangeDatabaseConfig.Targets[0]
+		_, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target)
+		if err != nil {
+			continue
+		}
+
+		dbGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+			ResourceID: &databaseGroupID,
+			ProjectID:  &plan.ProjectID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group %q", target)
+		}
+		if dbGroup == nil {
+			return nil, errors.Errorf("database group %q not found", target)
+		}
+
+		allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
+		}
+
+		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get matched databases for group %q", databaseGroupID)
+		}
+
+		result := &v1pb.DatabaseGroup{Name: target}
+		for _, db := range matchedDatabases {
+			result.MatchedDatabases = append(result.MatchedDatabases, &v1pb.DatabaseGroup_Database{
+				Name: common.FormatDatabase(db.InstanceID, db.DatabaseName),
+			})
+		}
+		return result, nil
+	}
+	return nil, nil
 }
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
