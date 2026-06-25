@@ -97,6 +97,44 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	requirePlanSpecID(t, updated.Config, "spec-e")
 }
 
+func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-a"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	updated, createdTasks, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 1, nil)
+	require.NoError(t, err)
+	require.False(t, updated)
+	require.Empty(t, createdTasks)
+
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.False(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, got.Config, "spec-a")
+
+	updated, createdTasks, err = s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 2, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+	require.Empty(t, createdTasks)
+
+	got, err = s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, got.Config, "spec-a")
+}
+
 func TestUpdateIssuePayloadIfPlanApprovalInputVersionUpdatesMatchingVersion(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)

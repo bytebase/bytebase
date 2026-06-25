@@ -140,7 +140,18 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 			return
 		}
 
-		approved, err := utils.CheckIssueApproved(issue)
+		planID := *issue.PlanUID
+		plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: &planID})
+		if err != nil {
+			slog.Error("failed to get plan for approval check",
+				slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID), log.BBError(err))
+			return
+		}
+		if plan == nil {
+			return
+		}
+
+		approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
 		if err != nil {
 			slog.Error("failed to check if issue is approved",
 				slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID), log.BBError(err))
@@ -154,9 +165,6 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 
 func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
 	payload := issue.Payload
-	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
-		return nil
-	}
 
 	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
 	if err != nil {
@@ -169,6 +177,9 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	approvalInputVersion, err := getIssuePlanApprovalInputVersion(ctx, stores, issue)
 	if err != nil {
 		return err
+	}
+	if payload.Approval != nil && payload.Approval.ApprovalFindingDone && payload.Approval.GetApprovalInputVersion() == approvalInputVersion {
+		return nil
 	}
 
 	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
@@ -605,20 +616,43 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 	approvalInputVersion := plan.Config.GetApprovalInputVersion()
 
+	checksExpected, err := planChecksExpectedForApproval(ctx, stores, nil, plan)
+	if err != nil {
+		return nil, approvalInputVersion, false, errors.Wrap(err, "failed to derive plan check targets")
+	}
+
 	planCheckRun, err := stores.GetPlanCheckRun(ctx, issue.ProjectID, plan.UID)
 	if err != nil {
 		return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
-	if planCheckRun == nil {
-		checksExpected, err := planChecksExpectedForApproval(ctx, stores, nil, plan)
-		if err != nil {
-			return nil, approvalInputVersion, false, errors.Wrap(err, "failed to derive plan check targets")
-		}
-		if checksExpected {
+	if checksExpected {
+		if planCheckRun == nil {
 			return nil, approvalInputVersion, false, nil
 		}
-	} else {
+		if planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning {
+			if planCheckRun.Result.GetApprovalInputVersion() == approvalInputVersion {
+				return nil, approvalInputVersion, false, nil
+			}
+			refreshed, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+				ProjectID: issue.ProjectID,
+				PlanUID:   plan.UID,
+				Result: &storepb.PlanCheckRunResult{
+					ApprovalInputVersion: approvalInputVersion,
+				},
+			})
+			if err != nil {
+				slog.Error("failed to refresh active stale plan check run for approval input version",
+					slog.String("project", issue.ProjectID),
+					slog.Int64("issue_uid", issue.UID),
+					slog.Int64("plan_uid", plan.UID),
+					slog.Int64("approval_input_version", approvalInputVersion),
+					log.BBError(err))
+				return nil, approvalInputVersion, false, errors.Wrap(err, "failed to refresh active stale plan check run for approval input version")
+			}
+			_ = refreshed
+			return nil, approvalInputVersion, false, nil
+		}
 		current, pending := isPlanCheckRunCurrentForApprovalInputVersion(planCheckRun, approvalInputVersion)
 		if pending {
 			return nil, approvalInputVersion, false, nil
@@ -637,6 +671,8 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			_ = refreshed
 			return nil, approvalInputVersion, false, nil
 		}
+	} else {
+		planCheckRun = nil
 	}
 
 	// Unfold database groups and get all targets

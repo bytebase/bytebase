@@ -77,6 +77,20 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issue.Payload.Approval)
 }
 
+// CheckIssueApprovedForPlan checks if the issue is approved for the current plan approval input version.
+func CheckIssueApprovedForPlan(issue *store.IssueMessage, plan *store.PlanMessage) (bool, error) {
+	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
+		var approvalInputVersion int64
+		if plan.Config != nil {
+			approvalInputVersion = plan.Config.GetApprovalInputVersion()
+		}
+		if issue.Payload.GetApproval().GetApprovalInputVersion() != approvalInputVersion {
+			return false, nil
+		}
+	}
+	return CheckIssueApproved(issue)
+}
+
 // UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
 func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, workspaceID string, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
 	policyMessage, err := stores.GetProjectIamPolicy(ctx, workspaceID, issue.ProjectID)

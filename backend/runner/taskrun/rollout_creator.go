@@ -121,7 +121,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	}
 
 	// Check approval status (must be approved)
-	approved, err := utils.CheckIssueApproved(issue)
+	approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
 	if err != nil {
 		slog.Error("failed to check if the issue is approved",
 			slog.String("project", ref.ProjectID),

@@ -55,3 +55,72 @@ func TestCheckDatabaseGroupMatch(t *testing.T) {
 		assert.Equal(t, test.match, match)
 	}
 }
+
+func TestCheckIssueApprovedForPlan(t *testing.T) {
+	tests := []struct {
+		name      string
+		issueType storepb.Issue_Type
+		issue     *storepb.Issue
+		plan      *storepb.PlanConfig
+		want      bool
+	}{
+		{
+			name:      "database change approved for matching plan version",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 2,
+				},
+			},
+			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
+			want: true,
+		},
+		{
+			name:      "database change stale approval is not approved",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 1,
+				},
+			},
+			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
+		},
+		{
+			name:      "database change matching version still requires completed approval",
+			issueType: storepb.Issue_DATABASE_CHANGE,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalInputVersion: 2,
+				},
+			},
+			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
+		},
+		{
+			name:      "non database change keeps existing approval behavior",
+			issueType: storepb.Issue_ROLE_GRANT,
+			issue: &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  true,
+					ApprovalInputVersion: 1,
+				},
+			},
+			plan: &storepb.PlanConfig{ApprovalInputVersion: 2},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CheckIssueApprovedForPlan(&store.IssueMessage{
+				Type:    tt.issueType,
+				Payload: tt.issue,
+			}, &store.PlanMessage{
+				Config: tt.plan,
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -279,6 +279,16 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
+	if project.Setting.RequireIssueApproval && issue != nil {
+		approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the issue is approved"))
+		}
+		if !approved {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot create rollout because issue approval is required but the issue is not approved"))
+		}
+	}
+
 	tasks, err := GetPipelineCreate(ctx, s.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get pipeline create"))
@@ -388,22 +398,39 @@ func CreateRolloutAndPendingTasks(
 		}
 	}
 
+	rolloutMarked := false
+	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
+		marked, createdTasks, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, project.ResourceID, plan.UID, plan.Config.GetApprovalInputVersion(), tasks)
+		if err != nil {
+			return errors.Wrap(err, "failed to create rollout tasks")
+		}
+		if !marked {
+			return errors.New("cannot create rollout because issue approval is stale")
+		}
+		tasks = createdTasks
+		rolloutMarked = true
+	}
+
 	// Create rollout tasks
-	tasks, err = s.CreateTasks(ctx, project.ResourceID, plan.UID, tasks)
-	if err != nil {
-		return errors.Wrap(err, "failed to create rollout tasks")
+	if !rolloutMarked {
+		tasks, err = s.CreateTasks(ctx, project.ResourceID, plan.UID, tasks)
+		if err != nil {
+			return errors.Wrap(err, "failed to create rollout tasks")
+		}
 	}
 
 	// Update plan to set hasRollout to true
-	config := proto.CloneOf(plan.Config)
-	config.HasRollout = true
-	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       plan.UID,
-		ProjectID: project.ResourceID,
-		Config:    config,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to update plan hasRollout")
+	if !rolloutMarked {
+		config := proto.CloneOf(plan.Config)
+		config.HasRollout = true
+		_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+			UID:       plan.UID,
+			ProjectID: project.ResourceID,
+			Config:    config,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to update plan hasRollout")
+		}
 	}
 
 	// Update issue status to DONE when rollout is created
@@ -798,7 +825,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 
 	// Check if issue approval is required according to the project settings
 	if project.Setting.RequireIssueApproval && issueN != nil {
-		approved, err := utils.CheckIssueApproved(issueN)
+		approved, err := utils.CheckIssueApprovedForPlan(issueN, plan)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the issue is approved"))
 		}

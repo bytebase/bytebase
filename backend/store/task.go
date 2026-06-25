@@ -503,6 +503,57 @@ func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64
 	}
 	defer tx.Rollback()
 
+	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return tasks, nil
+}
+
+// CreateTasksIfPlanApprovalInputVersion marks the plan as having rollout and creates tasks atomically if the approval input version is current.
+func (s *Store) CreateTasksIfPlanApprovalInputVersion(ctx context.Context, projectID string, planUID int64, approvalInputVersion int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	result, err := tx.ExecContext(ctx, `
+		UPDATE plan
+		SET
+			updated_at = $1,
+			config = jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
+		WHERE project = $2
+		  AND id = $3
+		  AND COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4`,
+		time.Now(), projectID, planUID, approvalInputVersion)
+	if err != nil {
+		return false, nil, errors.Wrapf(err, "failed to mark plan has rollout")
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, nil, errors.Wrapf(err, "failed to inspect plan has rollout update")
+	}
+	if rowsAffected == 0 {
+		return false, nil, nil
+	}
+
+	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
+	if err != nil {
+		return false, nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return true, tasks, nil
+}
+
+func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
 		ProjectID: projectID,
@@ -554,14 +605,7 @@ func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create tasks")
 		}
-		if err := tx.Commit(); err != nil {
-			return nil, errors.Wrapf(err, "failed to commit tx")
-		}
 		return tasks, nil
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return []*TaskMessage{}, nil
