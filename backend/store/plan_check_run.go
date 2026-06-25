@@ -52,23 +52,23 @@ type FindPlanCheckRunMessage struct {
 	ResultStatus *[]storepb.Advice_Status
 }
 
-// CreatePlanCheckRun creates or replaces the plan check run for a plan.
-// Always creates with AVAILABLE status for HA-safe scheduling.
-func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
+// CreatePlanCheckRun creates or refreshes the plan check run for a plan.
+// It skips active same-version rows to avoid resetting checks already queued or running.
+func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) (bool, error) {
 	result, err := protojson.Marshal(create.Result)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal result")
+		return false, errors.Wrapf(err, "failed to marshal result")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
+		return false, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
 	nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	query := `
@@ -78,15 +78,22 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 			status = EXCLUDED.status,
 			result = EXCLUDED.result,
 			updated_at = now()
+		WHERE plan_check_run.status NOT IN ($6, $7)
+		   OR COALESCE((plan_check_run.result->>'approvalInputVersion')::bigint, 0) != COALESCE((EXCLUDED.result->>'approvalInputVersion')::bigint, 0)
 	`
-	if _, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
-		return errors.Wrapf(err, "failed to upsert plan check run")
+	sqlResult, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to upsert plan check run")
+	}
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to inspect plan check run upsert")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit tx")
+		return false, errors.Wrapf(err, "failed to commit tx")
 	}
-	return nil
+	return rowsAffected > 0, nil
 }
 
 // ListPlanCheckRuns returns a list of plan check runs based on find.
@@ -222,8 +229,15 @@ func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 		WHERE id = ?
 		  AND project = ?
 		  AND status = ?
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?`,
-		time.Now(), status, resultBytes, uid, projectID, PlanCheckRunStatusRunning, approvalInputVersion)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = plan_check_run.project
+			  AND plan.id = plan_check_run.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+		  )`,
+		time.Now(), status, resultBytes, uid, projectID, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
