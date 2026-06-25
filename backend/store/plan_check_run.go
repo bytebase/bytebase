@@ -71,17 +71,30 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return false, err
 	}
 
+	approvalInputVersion := create.Result.GetApprovalInputVersion()
 	query := `
 		INSERT INTO plan_check_run (id, project, plan_id, status, result)
-		VALUES ($1, $2, $3, $4, $5)
+		SELECT $1, $2, $3, $4, $5
+		FROM plan
+		WHERE plan.project = $2
+		  AND plan.id = $3
+		  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $6
 		ON CONFLICT (project, plan_id) DO UPDATE SET
 			status = EXCLUDED.status,
 			result = EXCLUDED.result,
 			updated_at = now()
-		WHERE plan_check_run.status NOT IN ($6, $7)
+		WHERE (plan_check_run.status NOT IN ($7, $8)
 		   OR COALESCE((plan_check_run.result->>'approvalInputVersion')::bigint, 0) != COALESCE((EXCLUDED.result->>'approvalInputVersion')::bigint, 0)
+		)
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = plan_check_run.project
+			  AND plan.id = plan_check_run.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $9
+		  )
 	`
-	sqlResult, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning)
+	sqlResult, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result, approvalInputVersion, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to upsert plan check run")
 	}
@@ -270,8 +283,15 @@ func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Conte
 		WHERE project = ?
 		  AND plan_id = ?
 		  AND status NOT IN (?, ?)
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) != ?`,
-		time.Now(), PlanCheckRunStatusAvailable, resultBytes, projectID, planUID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) != ?
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = plan_check_run.project
+			  AND plan.id = plan_check_run.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+		  )`,
+		time.Now(), PlanCheckRunStatusAvailable, resultBytes, projectID, planUID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")

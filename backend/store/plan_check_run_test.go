@@ -15,6 +15,32 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
+func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	claimed, err := s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	require.EqualValues(t, 0, claimed[0].ApprovalInputVersion)
+}
+
 func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
@@ -200,6 +226,90 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.
 	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
 }
 
+func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	claimed, err := s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+
+	updated, err := s.UpdatePlanCheckRunIfApprovalInputVersion(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: 2,
+		Results: []*storepb.PlanCheckRunResult_Result{{
+			Status: storepb.Advice_SUCCESS,
+			Title:  "current result",
+		}},
+	}, claimed[0].UID, 2)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	created, err = s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	require.Equal(t, store.PlanCheckRunStatusAvailable, run.Status)
+	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
+}
+
+func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	created, err = s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+	})
+	require.NoError(t, err)
+	require.False(t, created)
+
+	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	require.Equal(t, store.PlanCheckRunStatusAvailable, run.Status)
+	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
+}
+
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
@@ -270,6 +380,13 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 	require.NoError(t, err)
 	require.True(t, updated)
 
+	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       plan.UID,
+		ProjectID: plan.ProjectID,
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+
 	refreshed, err := s.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, "project-a", plan.UID, 2)
 	require.NoError(t, err)
 	require.True(t, refreshed)
@@ -280,6 +397,58 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 	require.Equal(t, store.PlanCheckRunStatusAvailable, run.Status)
 	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
 	require.Empty(t, run.Result.GetResults())
+}
+
+func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsStaleRequestedVersion(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 1},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	claimed, err := s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+
+	updated, err := s.UpdatePlanCheckRunIfApprovalInputVersion(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: 1,
+		Results: []*storepb.PlanCheckRunResult_Result{{
+			Status: storepb.Advice_SUCCESS,
+			Title:  "stale result",
+		}},
+	}, claimed[0].UID, 1)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       plan.UID,
+		ProjectID: plan.ProjectID,
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+
+	refreshed, err := s.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, "project-a", plan.UID, 1)
+	require.NoError(t, err)
+	require.False(t, refreshed)
+
+	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	require.Equal(t, store.PlanCheckRunStatusDone, run.Status)
+	require.EqualValues(t, 1, run.Result.GetApprovalInputVersion())
 }
 
 func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
