@@ -249,16 +249,12 @@ func literalLoc(node ast.Node) ast.Loc {
 
 func findCommaLimitCount(sql string, limitLoc ast.Loc) (countStart, countEnd int, found bool) {
 	pos := limitLoc.End
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
-		pos++
-	}
+	pos = skipWhitespaceAndComments(sql, pos)
 	if pos >= len(sql) || sql[pos] != ',' {
 		return 0, 0, false
 	}
 	pos++
-	for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
-		pos++
-	}
+	pos = skipWhitespaceAndComments(sql, pos)
 	countStart = pos
 	for pos < len(sql) && sql[pos] >= '0' && sql[pos] <= '9' {
 		pos++
@@ -267,4 +263,30 @@ func findCommaLimitCount(sql string, limitLoc ast.Loc) (countStart, countEnd int
 		return 0, 0, false
 	}
 	return countStart, pos, true
+}
+
+func skipWhitespaceAndComments(sql string, pos int) int {
+	for pos < len(sql) {
+		for pos < len(sql) && (sql[pos] == ' ' || sql[pos] == '\t' || sql[pos] == '\n' || sql[pos] == '\r') {
+			pos++
+		}
+		if strings.HasPrefix(sql[pos:], "--") || strings.HasPrefix(sql[pos:], "#") {
+			nl := strings.IndexByte(sql[pos:], '\n')
+			if nl < 0 {
+				return len(sql)
+			}
+			pos += nl + 1
+			continue
+		}
+		if strings.HasPrefix(sql[pos:], "/*") {
+			end := strings.Index(sql[pos:], "*/")
+			if end < 0 {
+				return len(sql)
+			}
+			pos += end + 2
+			continue
+		}
+		return pos
+	}
+	return pos
 }

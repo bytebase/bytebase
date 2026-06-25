@@ -99,6 +99,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 0,\n10;",
 		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 0 /* offset comment */, 1000000;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 0 /* offset comment */, 10;",
+		},
 		// SHOW statements should not be wrapped
 		{
 			stmt:  "SHOW DATA",
@@ -200,6 +205,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			stmt:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,1000000;",
 			count: 10,
 			want:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0,10;",
+		},
+		{
+			stmt:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0 /* offset comment */, 1000000;",
+			count: 10,
+			want:  "SELECT a FROM t1 UNION SELECT b FROM t2 LIMIT 0 /* offset comment */, 10;",
 		},
 		// Comma-style LIMIT on UNION — keep if smaller
 		{
