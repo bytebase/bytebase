@@ -63,7 +63,7 @@ function planVariant(
 // ---------------------------------------------------------------------------
 // WorkspaceSegment — shows workspace name + plan badge + optional dropdown
 // ---------------------------------------------------------------------------
-function WorkspaceSegment() {
+export function WorkspaceSegment() {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const workspaceList = useWorkspaceList();
@@ -167,7 +167,7 @@ function WorkspaceSegment() {
 // ---------------------------------------------------------------------------
 // ProjectSegment — shows project name + dropdown, only when inside a project
 // ---------------------------------------------------------------------------
-function ProjectSegment() {
+export function ProjectSegment() {
   const { t } = useTranslation();
   const route = useCurrentRoute();
   const [open, setOpen] = useState(false);
@@ -238,6 +238,20 @@ export function HeaderBreadcrumb() {
         <span className="text-control-placeholder select-none">/</span>
       </div>
       <ProjectSegment />
+    </div>
+  );
+}
+
+export function MobileSidebarSwitchers() {
+  return (
+    <div
+      data-label="bb-mobile-sidebar-switchers"
+      className="md:hidden border-b border-block-border px-2.5 py-2"
+    >
+      <div className="flex flex-col gap-y-1">
+        <WorkspaceSegment />
+        <ProjectSegment />
+      </div>
     </div>
   );
 }

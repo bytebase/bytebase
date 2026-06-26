@@ -44,10 +44,13 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     );
   },
 
-  recordRecentVisit: (path) => {
+  recordRecentVisit: (path, workspaceName) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyRecentVisit(getWorkspaceCacheScope(get), email);
+    const key = storageKeyRecentVisit(
+      getWorkspaceCacheScope(get, workspaceName),
+      email
+    );
     const previous = readJson<string[]>(key, []);
     const pathOnly = path.replace(/[?#].*$/, "");
     const next = [

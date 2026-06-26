@@ -153,8 +153,11 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   // this tab (e.g. the OAuth2 consent page's in-place switch).
   if (!workspaceSwitchListenerRegistered) {
     workspaceSwitchListenerRegistered = true;
-    workspaceSwitchChannel.addEventListener("message", () => {
-      get().recordRecentVisit(resolvePath(WORKSPACE_ROUTE_LANDING));
+    workspaceSwitchChannel.addEventListener("message", (event) => {
+      get().recordRecentVisit(
+        resolvePath(WORKSPACE_ROUTE_LANDING),
+        typeof event.data === "string" ? event.data : undefined
+      );
       window.location.href = "/";
     });
   }
@@ -294,6 +297,10 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
           workspace: workspaceName,
           web: true,
         })
+      );
+      get().recordRecentVisit(
+        resolvePath(WORKSPACE_ROUTE_LANDING),
+        workspaceName
       );
       // Notify other tabs to reload with the new workspace.
       broadcastWorkspaceSwitch(workspaceName);

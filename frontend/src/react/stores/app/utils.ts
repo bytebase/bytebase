@@ -30,11 +30,11 @@ export function getCurrentUserEmail(get: () => AppStoreState): string {
 
 // Workspace segment for localStorage cache keys — "" for self-host (keys stay
 // shared/unchanged), the workspace name for SaaS (keys are workspace-isolated).
-export function getWorkspaceCacheScope(get: () => AppStoreState): string {
-  return workspaceCacheScope(
-    get().isSaaSMode(),
-    get().currentUser?.workspace ?? ""
-  );
+export function getWorkspaceCacheScope(
+  get: () => AppStoreState,
+  workspaceName = get().currentUser?.workspace ?? ""
+): string {
+  return workspaceCacheScope(get().isSaaSMode(), workspaceName);
 }
 
 export function readJson<T>(key: string, fallback: T): T {

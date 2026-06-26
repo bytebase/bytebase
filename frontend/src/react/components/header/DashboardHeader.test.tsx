@@ -161,6 +161,10 @@ describe("DashboardHeader", () => {
       container.querySelector('[data-testid="header-breadcrumb"]')
     ).not.toBeNull();
     expect(
+      container.querySelector('[data-label="bb-header-breadcrumb-slot"]')
+        ?.className
+    ).toContain("hidden md:flex");
+    expect(
       container.querySelector('[data-testid="profile-menu-trigger"]')
     ).not.toBeNull();
 

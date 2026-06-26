@@ -866,7 +866,7 @@ export type PreferencesSlice = {
   // re-run (the flags live in localStorage, not Zustand state).
   introStateVersion: number;
   setRecentProject: (name: string) => void;
-  recordRecentVisit: (path: string) => void;
+  recordRecentVisit: (path: string, workspaceName?: string) => void;
   removeRecentVisit: (path: string) => void;
   resetQuickstartProgress: () => void;
   getIntroStateByKey: (key: string) => boolean;
