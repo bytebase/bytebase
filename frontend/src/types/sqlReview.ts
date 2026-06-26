@@ -194,6 +194,25 @@ export const ruleTemplateMapV2 = getRuleMapByEngine(
   convertRuleTemplateV2Raw(sqlReviewSchema as unknown as RuleTemplateV2Raw[])
 );
 
+const getBuiltinRuleMap = (): Map<
+  Engine,
+  Map<SQLReviewRule_Type, RuleTemplateV2>
+> => {
+  const ruleMap = new Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>();
+  for (const [engine, engineMap] of ruleTemplateMapV2) {
+    const builtinMap = new Map<SQLReviewRule_Type, RuleTemplateV2>();
+    for (const [type, rule] of engineMap) {
+      if (isBuiltinRule(rule)) {
+        builtinMap.set(type, { ...rule });
+      }
+    }
+    if (builtinMap.size > 0) {
+      ruleMap.set(engine, builtinMap);
+    }
+  }
+  return ruleMap;
+};
+
 // Build the frontend template list based on schema and template.
 export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   interface PayloadObject {
@@ -273,7 +292,9 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
   resp.unshift({
     id: "bb.sql-review.empty",
-    ruleList: [],
+    ruleList: [...getBuiltinRuleMap().values()].flatMap((ruleMap) => [
+      ...ruleMap.values(),
+    ]),
   });
 
   return resp;

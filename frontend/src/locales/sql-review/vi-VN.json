@@ -1,4 +1,15 @@
 {
+  "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
+  "add-rules": "Thêm quy tắc",
+  "attach-resource": {
+    "change-resources": "Thay đổi tài nguyên đính kèm",
+    "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
+    "label-environment": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc môi trường đã chọn.",
+    "label-project": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc dự án đã chọn. Điều này sẽ thay thế chính sách cấp môi trường của cơ sở dữ liệu.",
+    "no-linked-resources": "Không có tài nguyên nào được đính kèm",
+    "override-warning": "Các tài nguyên sau đã được liên kết với các chính sách đánh giá SQL khác. Nhấp vào \"{{button}}\" sẽ ghi đè cấu hình.",
+    "self": "Đính kèm vào tài nguyên"
+  },
   "category": {
     "advice": "Lời khuyên",
     "builtin": "Quy tắc có sẵn",
@@ -12,6 +23,28 @@
     "system": "Hệ thống",
     "table": "Bảng"
   },
+  "configure-policy": "Định cấu hình chính sách",
+  "create": {
+    "basic-info": {
+      "choose-template": "Chọn mẫu",
+      "display-name": "Tên hiển thị",
+      "display-name-default": "Chính sách đánh giá SQL",
+      "display-name-label": "Tên hiển thị để giúp nhận dạng trong số các chính sách đánh giá khác nhau.",
+      "name": "Thông tin cơ bản"
+    },
+    "configure-rule": {
+      "change-template": "Thay đổi mẫu",
+      "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè",
+      "name": "Định cấu hình quy tắc"
+    }
+  },
+  "delete": "Xóa chính sách đánh giá SQL",
+  "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
+  "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+  "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
+  "disabled": "Đánh giá SQL bị vô hiệu hóa",
+  "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
+  "enabled-rules": "Quy tắc được bật",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -22,12 +55,20 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
+  "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
   "level": {
     "disabled": "Đã tắt",
     "error": "Lỗi",
     "name": "Mức độ lỗi",
     "warning": "Cảnh báo"
   },
+  "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
+  "policy-create-failed": "Không tạo được chính sách đánh giá.",
+  "policy-created": "Đã tạo thành công chính sách đánh giá.",
+  "policy-removed": "Đã xóa thành công chính sách đánh giá.",
+  "policy-update-failed": "Không cập nhật được chính sách đánh giá.",
+  "policy-updated": "Đã cập nhật thành công chính sách đánh giá.",
+  "review-policy": "Chính sách xem xét",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -701,18 +742,22 @@
       },
       "description": "Quy tắc này giới hạn lượng dữ liệu mà một bảng có thể chứa, ngăn chặn việc sử dụng quá nhiều bộ nhớ.",
       "title": "Hạn chế tổng độ dài của các trường văn bản trong bảng"
-    }
+    },
+    "self": "Quy tắc đánh giá SQL"
   },
+  "select-all": "Chọn tất cả",
+  "select-review-rules": "Chọn quy tắc đánh giá SQL",
   "template": {
     "bb-sql-review-dev": "Mẫu Cơ bản",
     "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",
     "bb-sql-review-empty": "Bắt đầu lại từ đầu",
-    "bb-sql-review-empty-desc": "Một mẫu trống. Bạn cần tự thêm các quy tắc cần thiết.",
+    "bb-sql-review-empty-desc": "Bắt đầu chỉ với các quy tắc tích hợp sẵn. Tự thêm các quy tắc bạn cần.",
     "bb-sql-review-prod": "Mẫu Nâng cao",
     "bb-sql-review-prod-desc": "Chính sách toàn diện, nơi bạn có sự bảo vệ và các phương pháp tốt nhất cho cơ sở dữ liệu.",
     "bb-sql-review-sample": "Mẫu Ví dụ",
     "bb-sql-review-sample-desc": "Một mẫu tối thiểu với bảo vệ DROP và không cho phép cột nullable."
   },
+  "title": "Đánh giá SQL",
   "validation": {
     "rule-required": "Chọn ít nhất một quy tắc.",
     "string-array-required": "Thêm ít nhất một giá trị cho {{rule}}."

@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
@@ -25,14 +26,23 @@ import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import { isBuiltinRule, ruleTemplateMapV2 } from "@/types/sqlReview";
+import {
+  getRuleLocalization,
+  isBuiltinRule,
+  ruleTemplateMapV2,
+  ruleTypeToString,
+} from "@/types/sqlReview";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { RuleTableWithFilter } from "./RuleTable";
+import type { RuleListWithCategory } from "./RuleComponents";
+import { RuleFilter, useSQLRuleFilter } from "./RuleTable";
 import { TabsByEngine } from "./TabsByEngine";
 
 // ---------------------------------------------------------------------------
 // RulesSelectPanel
 // ---------------------------------------------------------------------------
+
+const INITIAL_RULE_SELECT_RENDER_COUNT = 32;
+const RULE_SELECT_RENDER_CHUNK_SIZE = 64;
 
 interface RulesSelectPanelProps {
   show: boolean;
@@ -111,15 +121,11 @@ export function RulesSelectPanel({
           <SheetTitle>{t("sql-review.select-review-rules")}</SheetTitle>
         </SheetHeader>
         <SheetBody className="p-4">
-          <TabsByEngine ruleMapByEngine={ruleTemplateMapV2}>
+          <TabsByEngine ruleMapByEngine={ruleTemplateMapV2} lazyPanels>
             {(ruleList, engine) => (
-              <RuleTableWithFilter
+              <RuleSelectListWithFilter
                 engine={engine}
                 ruleList={ruleList}
-                editable={false}
-                hideLevel
-                supportSelect
-                size="small"
                 selectedRuleKeys={getSelectedRuleKeys(engine)}
                 onSelectedRuleKeysChange={(keys) =>
                   onSelectedRuleKeysUpdate(engine, keys)
@@ -136,6 +142,206 @@ export function RulesSelectPanel({
       </SheetContent>
     </Sheet>
   );
+}
+
+interface RuleSelectListWithFilterProps {
+  engine: Engine;
+  ruleList: RuleTemplateV2[];
+  selectedRuleKeys: string[];
+  onSelectedRuleKeysChange: (keys: string[]) => void;
+}
+
+function RuleSelectListWithFilter({
+  engine,
+  ruleList,
+  selectedRuleKeys,
+  onSelectedRuleKeysChange,
+}: RuleSelectListWithFilterProps) {
+  const { t } = useTranslation();
+  const { params, events } = useSQLRuleFilter();
+  const selectedKeySet = useMemo(
+    () => new Set(selectedRuleKeys),
+    [selectedRuleKeys]
+  );
+
+  useEffect(() => {
+    events.reset();
+  }, [engine, events]);
+
+  const toggleSelectAll = useCallback(
+    (select: boolean) => {
+      onSelectedRuleKeysChange(select ? ruleList.map(getRuleKey) : []);
+    },
+    [ruleList, onSelectedRuleKeysChange]
+  );
+
+  const toggleRule = useCallback(
+    (rule: RuleTemplateV2) => {
+      const key = getRuleKey(rule);
+      if (selectedKeySet.has(key)) {
+        onSelectedRuleKeysChange(
+          selectedRuleKeys.filter((selectedKey) => selectedKey !== key)
+        );
+      } else {
+        onSelectedRuleKeysChange([...selectedRuleKeys, key]);
+      }
+    },
+    [selectedKeySet, selectedRuleKeys, onSelectedRuleKeysChange]
+  );
+
+  return (
+    <RuleFilter
+      ruleList={ruleList}
+      params={params}
+      hideLevelFilter
+      supportSelect
+      selectedRuleCount={selectedRuleKeys.length}
+      onToggleSelectAll={toggleSelectAll}
+      onToggleCheckedLevel={events.toggleCheckedLevel}
+      onChangeCategory={events.changeCategory}
+      onChangeSearchText={events.changeSearchText}
+    >
+      {(filteredRuleList) =>
+        filteredRuleList.length > 0 ? (
+          <RuleSelectList
+            ruleList={filteredRuleList}
+            selectedRuleKeys={selectedKeySet}
+            onToggleRule={toggleRule}
+          />
+        ) : (
+          <div className="py-12 border rounded-sm text-center text-control-placeholder">
+            {t("common.no-data")}
+          </div>
+        )
+      }
+    </RuleFilter>
+  );
+}
+
+interface RuleSelectListProps {
+  ruleList: RuleListWithCategory[];
+  selectedRuleKeys: Set<string>;
+  onToggleRule: (rule: RuleTemplateV2) => void;
+}
+
+interface ProgressiveRuleListWithCategory extends RuleListWithCategory {
+  totalRuleCount: number;
+}
+
+function RuleSelectList({
+  ruleList,
+  selectedRuleKeys,
+  onToggleRule,
+}: RuleSelectListProps) {
+  const visibleRuleList = useProgressiveRuleList(ruleList);
+
+  return (
+    <div className="space-y-4">
+      {visibleRuleList.map((category) => (
+        <div key={category.value}>
+          <div className="flex my-3 items-center">
+            <span className="text-xl text-main font-semibold">
+              {category.label}
+            </span>
+            <span className="text-control-light text-md ml-1">
+              ({category.totalRuleCount})
+            </span>
+          </div>
+          <div className="border rounded-sm divide-y divide-block-border">
+            {category.ruleList.map((rule) => {
+              const key = getRuleKey(rule);
+              const loc = getRuleLocalization(
+                ruleTypeToString(rule.type),
+                rule.engine
+              );
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="w-full flex items-center gap-x-3 px-4 py-3 text-left hover:bg-control-bg/60"
+                  onClick={() => onToggleRule(rule)}
+                >
+                  <Checkbox
+                    checked={selectedRuleKeys.has(key)}
+                    onCheckedChange={() => onToggleRule(rule)}
+                  />
+                  <span className="flex-1 text-sm text-control">
+                    {loc.title}
+                  </span>
+                  <a
+                    href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-control-light hover:text-control"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useProgressiveRuleList(
+  ruleList: RuleListWithCategory[]
+): ProgressiveRuleListWithCategory[] {
+  const totalRuleCount = useMemo(
+    () =>
+      ruleList.reduce((count, category) => count + category.ruleList.length, 0),
+    [ruleList]
+  );
+  const [renderLimit, setRenderLimit] = useState(
+    INITIAL_RULE_SELECT_RENDER_COUNT
+  );
+
+  useEffect(() => {
+    setRenderLimit(INITIAL_RULE_SELECT_RENDER_COUNT);
+    if (totalRuleCount <= INITIAL_RULE_SELECT_RENDER_COUNT) {
+      return;
+    }
+
+    let frame = 0;
+    const grow = () => {
+      frame = window.requestAnimationFrame(() => {
+        setRenderLimit((current) => {
+          const next = Math.min(
+            current + RULE_SELECT_RENDER_CHUNK_SIZE,
+            totalRuleCount
+          );
+          if (next < totalRuleCount) {
+            grow();
+          }
+          return next;
+        });
+      });
+    };
+    grow();
+    return () => window.cancelAnimationFrame(frame);
+  }, [totalRuleCount]);
+
+  return useMemo(() => {
+    let remaining = renderLimit;
+    const visibleRuleList: ProgressiveRuleListWithCategory[] = [];
+
+    for (const category of ruleList) {
+      if (remaining <= 0) break;
+      const visibleRules = category.ruleList.slice(0, remaining);
+      remaining -= visibleRules.length;
+      if (visibleRules.length === 0) continue;
+      visibleRuleList.push({
+        ...category,
+        totalRuleCount: category.ruleList.length,
+        ruleList: visibleRules,
+      });
+    }
+
+    return visibleRuleList;
+  }, [renderLimit, ruleList]);
 }
 
 // ---------------------------------------------------------------------------

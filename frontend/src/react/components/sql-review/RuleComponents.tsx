@@ -1,6 +1,7 @@
 import { CircleHelpIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -15,6 +16,7 @@ import i18n from "@/react/i18n";
 import type { PayloadValueType } from "@/react/lib/sql-review/rule-config-types";
 import { getRulePayload } from "@/react/lib/sql-review/rule-config-utils";
 import { payloadValueListToComponentList } from "@/react/lib/sql-review/utils";
+import { cn } from "@/react/lib/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type {
@@ -28,6 +30,7 @@ import {
   ruleTypeToString,
   validateRuleMapByEngine,
 } from "@/types/sqlReview";
+import { engineNameV1 } from "@/utils";
 
 // ---- Types ----
 
@@ -35,6 +38,18 @@ export interface RuleListWithCategory {
   value: string;
   label: string;
   ruleList: RuleTemplateV2[];
+}
+
+const RE_ENGINE_SUBTITLE = /\(.+?\)/;
+
+function engineParts(engine: Engine): { title: string; subtitle: string } {
+  const name = engineNameV1(engine);
+  const match = name.match(RE_ENGINE_SUBTITLE);
+  if (!match) return { title: name, subtitle: "" };
+  return {
+    title: name.replace(match[0], "").trim(),
+    subtitle: match[0],
+  };
 }
 
 // ---- RuleLevelSwitch ----
@@ -62,13 +77,13 @@ export function RuleLevelSwitch({
   ];
 
   const base =
-    "py-1 w-[4.5rem] whitespace-nowrap border border-control-border text-control font-medium text-sm";
+    "py-1 w-[4.5rem] whitespace-nowrap border border-control-border text-control font-medium text-xs";
 
   const activeClass = (opt: SQLReviewRule_Level) => {
     if (opt === SQLReviewRule_Level.ERROR) {
-      return "bg-red-100 text-red-800 border-red-800";
+      return "relative z-10 bg-red-100 text-red-800 border-red-800";
     }
-    return "bg-yellow-100 text-yellow-800 border-yellow-800";
+    return "relative z-10 bg-yellow-100 text-yellow-800 border-yellow-800";
   };
 
   const filtered = editable
@@ -111,7 +126,7 @@ export function RuleLevelBadge({ level, suffix }: RuleLevelBadgeProps) {
       : t("sql-review.level.warning");
 
   return (
-    <Badge variant={variant}>
+    <Badge variant={variant} className="text-xs">
       {label}
       {suffix && ` ${suffix}`}
     </Badge>
@@ -293,7 +308,12 @@ function StringArrayInput({
         {value.map((tag, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-0.5 text-sm"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-sm",
+              disabled
+                ? "border border-control-border bg-background text-control"
+                : "bg-control-bg"
+            )}
           >
             {tag}
             {!disabled && (
@@ -309,7 +329,7 @@ function StringArrayInput({
         ))}
         {!disabled && (
           <Input
-            className="min-w-[20rem] flex-1"
+            className="mt-2 min-w-[20rem] flex-1"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -391,6 +411,7 @@ export function RuleEditDialog({
   const validationError = validateRuleMapByEngine(
     new Map([[rule.engine, new Map([[rule.type, { ...rule, componentList }]])]])
   );
+  const engine = engineParts(rule.engine);
 
   const handleConfirm = () => {
     onUpdateRule({ level, componentList });
@@ -402,10 +423,14 @@ export function RuleEditDialog({
       <DialogContent>
         <div className="flex flex-col gap-y-4">
           <div className="flex items-center justify-between">
-            <DialogTitle>{t("sql-review.rule.self")}</DialogTitle>
-            <span className="text-sm text-control-placeholder">
-              {Engine[rule.engine]}
-            </span>
+            <DialogTitle>{localization.title}</DialogTitle>
+            <div className="flex items-center gap-x-1 text-control-light">
+              <EngineIcon engine={rule.engine} className="h-4 w-4" />
+              <span className="text-sm">{engine.title}</span>
+              {engine.subtitle && (
+                <span className="text-xs">{engine.subtitle}</span>
+              )}
+            </div>
           </div>
 
           <RuleLevelSwitch

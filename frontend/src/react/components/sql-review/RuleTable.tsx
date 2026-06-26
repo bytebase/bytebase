@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, ExternalLink, Pencil } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -14,6 +14,7 @@ import {
 } from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { getRuleKey } from "@/react/lib/sql-review/utils";
+import { cn } from "@/react/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
@@ -187,7 +188,7 @@ export function RuleFilter({
         value={params.selectedCategory}
         onValueChange={(val) => onChangeCategory(val as string)}
       >
-        <TabsList className="flex-wrap">
+        <TabsList className="flex-wrap border-b-0!">
           {tabItemList.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
@@ -253,6 +254,8 @@ interface RuleTableProps {
   ) => void;
   onRuleRemove?: (rule: RuleTemplateV2) => void;
   onSelectedRuleKeysChange?: (keys: string[]) => void;
+  focusRuleKey?: string;
+  focusRuleSignal?: number;
 }
 
 export function RuleTable({
@@ -265,24 +268,27 @@ export function RuleTable({
   onRuleUpsert,
   onRuleRemove,
   onSelectedRuleKeysChange,
+  focusRuleKey,
+  focusRuleSignal,
 }: RuleTableProps) {
   const { t } = useTranslation();
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(
-    () => new Set()
-  );
-  const [activeRule, setActiveRule] = useState<RuleTemplateV2 | undefined>();
+  const [highlightedRuleKey, setHighlightedRuleKey] = useState<
+    string | undefined
+  >();
 
-  const toggleExpand = (key: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
+  useEffect(() => {
+    if (!focusRuleKey) return;
+    setHighlightedRuleKey(focusRuleKey);
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-sql-review-rule-key="${focusRuleKey}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
     });
-  };
+    const timer = window.setTimeout(() => {
+      setHighlightedRuleKey(undefined);
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [focusRuleKey, focusRuleSignal]);
 
   const toggleRule = (rule: RuleTemplateV2) => {
     const key = getRuleKey(rule);
@@ -295,21 +301,6 @@ export function RuleTable({
         ...selectedRuleKeys.slice(index + 1),
       ]);
     }
-  };
-
-  const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRule_Level) => {
-    onRuleUpsert?.(rule, { level });
-  };
-
-  const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
-    if (activeRule) {
-      onRuleUpsert?.(activeRule, update);
-    }
-  };
-
-  const isExpandable = (rule: RuleTemplateV2) => {
-    const loc = getRuleLocalization(ruleTypeToString(rule.type), rule.engine);
-    return !!(loc.description || rule.componentList.length > 0);
   };
 
   return (
@@ -350,29 +341,24 @@ export function RuleTable({
               <TableBody>
                 {category.ruleList.map((rule) => {
                   const key = getRuleKey(rule);
-                  const loc = getRuleLocalization(
-                    ruleTypeToString(rule.type),
-                    rule.engine
-                  );
-                  const expanded = expandedRows.has(key);
-                  const expandable = isExpandable(rule);
+                  const highlighted = highlightedRuleKey === key;
 
                   return (
-                    <RuleTableRow
+                    <MemoizedRuleTableRow
                       key={key}
+                      ruleKey={key}
                       rule={rule}
-                      loc={loc}
-                      expanded={expanded}
-                      expandable={expandable}
+                      highlighted={highlighted}
+                      focusRuleSignal={
+                        focusRuleKey === key ? focusRuleSignal : undefined
+                      }
                       supportSelect={supportSelect}
                       hideLevel={hideLevel}
                       editable={editable}
                       isSelected={selectedRuleKeys.includes(key)}
-                      onToggleExpand={() => toggleExpand(key)}
                       onToggleRule={() => toggleRule(rule)}
-                      onEdit={() => setActiveRule(rule)}
-                      onRemove={() => onRuleRemove?.(rule)}
-                      onLevelChange={(level) => updateLevel(rule, level)}
+                      onRuleUpsert={onRuleUpsert}
+                      onRuleRemove={onRuleRemove}
                     />
                   );
                 })}
@@ -383,80 +369,27 @@ export function RuleTable({
           {/* Mobile cards */}
           <div className="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border">
             {category.ruleList.map((rule) => {
-              const loc = getRuleLocalization(
-                ruleTypeToString(rule.type),
-                rule.engine
-              );
+              const key = getRuleKey(rule);
+              const highlighted = highlightedRuleKey === key;
               return (
-                <div
-                  key={getRuleKey(rule)}
-                  className="pt-4 flex flex-col gap-y-3"
-                >
-                  <div className="flex justify-between items-center gap-x-2">
-                    <div className="flex items-center gap-x-1">
-                      <span>
-                        {loc.title}
-                        <a
-                          href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block ml-1"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </span>
-                    </div>
-                    {supportSelect ? (
-                      <Checkbox
-                        checked={selectedRuleKeys.includes(getRuleKey(rule))}
-                        onCheckedChange={() => toggleRule(rule)}
-                      />
-                    ) : (
-                      <div className="flex items-center gap-x-2">
-                        {editable && (
-                          <Pencil
-                            className="w-4 h-4 cursor-pointer hover:text-accent"
-                            onClick={() => setActiveRule(rule)}
-                          />
-                        )}
-                        {editable && !isBuiltinRule(rule) && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onRuleRemove?.(rule)}
-                          >
-                            {t("common.delete")}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {!hideLevel && (
-                    <RuleLevelSwitch
-                      level={rule.level}
-                      disabled={!editable}
-                      onLevelChange={(level) => updateLevel(rule, level)}
-                    />
-                  )}
-                  <p className="text-sm text-control-placeholder">
-                    {loc.description}
-                  </p>
-                </div>
+                <MobileRuleTableRow
+                  key={key}
+                  ruleKey={key}
+                  rule={rule}
+                  highlighted={highlighted}
+                  supportSelect={supportSelect}
+                  hideLevel={hideLevel}
+                  editable={editable}
+                  isSelected={selectedRuleKeys.includes(key)}
+                  onToggleRule={() => toggleRule(rule)}
+                  onRuleUpsert={onRuleUpsert}
+                  onRuleRemove={onRuleRemove}
+                />
               );
             })}
           </div>
         </div>
       ))}
-
-      {activeRule && (
-        <RuleEditDialog
-          key={getRuleKey(activeRule)}
-          rule={activeRule}
-          disabled={!editable}
-          onCancel={() => setActiveRule(undefined)}
-          onUpdateRule={onRuleChanged}
-        />
-      )}
     </div>
   );
 }
@@ -464,45 +397,71 @@ export function RuleTable({
 // ---- RuleTableRow (desktop, internal) ----
 
 interface RuleTableRowProps {
+  ruleKey: string;
   rule: RuleTemplateV2;
-  loc: { title: string; description: string };
-  expanded: boolean;
-  expandable: boolean;
+  highlighted: boolean;
+  focusRuleSignal?: number;
   supportSelect: boolean;
   hideLevel: boolean;
   editable: boolean;
   isSelected: boolean;
-  onToggleExpand: () => void;
   onToggleRule: () => void;
-  onEdit: () => void;
-  onRemove: () => void;
-  onLevelChange: (level: SQLReviewRule_Level) => void;
+  onRuleUpsert?: (
+    rule: RuleTemplateV2,
+    update: Partial<RuleTemplateV2>
+  ) => void;
+  onRuleRemove?: (rule: RuleTemplateV2) => void;
 }
 
 function RuleTableRow({
+  ruleKey,
   rule,
-  loc,
-  expanded,
-  expandable,
+  highlighted,
+  focusRuleSignal,
   supportSelect,
   hideLevel,
   editable,
   isSelected,
-  onToggleExpand,
   onToggleRule,
-  onEdit,
-  onRemove,
-  onLevelChange,
+  onRuleUpsert,
+  onRuleRemove,
 }: RuleTableRowProps) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const loc = useMemo(
+    () => getRuleLocalization(ruleTypeToString(rule.type), rule.engine),
+    [rule.engine, rule.type]
+  );
+  const expandable = !!(loc.description || rule.componentList.length > 0);
 
   const colSpan =
     2 + (supportSelect ? 1 : 0) + (hideLevel ? 0 : 1) + (supportSelect ? 0 : 1);
 
+  const updateLevel = (level: SQLReviewRule_Level) => {
+    onRuleUpsert?.(rule, { level });
+  };
+
+  const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
+    onRuleUpsert?.(rule, update);
+  };
+
+  useEffect(() => {
+    if (focusRuleSignal === undefined) {
+      return;
+    }
+    setExpanded(true);
+  }, [focusRuleSignal]);
+
   return (
     <>
       <TableRow
-        className={supportSelect ? "cursor-pointer" : ""}
+        data-sql-review-rule-key={ruleKey}
+        className={cn(
+          supportSelect ? "cursor-pointer" : "",
+          highlighted &&
+            "outline outline-1 outline-error outline-offset-[-1px] bg-error/5!"
+        )}
         onClick={supportSelect ? onToggleRule : undefined}
       >
         <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
@@ -510,7 +469,7 @@ function RuleTableRow({
             <button
               type="button"
               className="cursor-pointer p-0.5 text-control-light hover:text-control"
-              onClick={onToggleExpand}
+              onClick={() => setExpanded((prev) => !prev)}
             >
               {expanded ? (
                 <ChevronDown className="w-4 h-4" />
@@ -546,18 +505,26 @@ function RuleTableRow({
             <RuleLevelSwitch
               level={rule.level}
               disabled={!editable}
-              onLevelChange={onLevelChange}
+              onLevelChange={updateLevel}
             />
           </TableCell>
         )}
         {!supportSelect && (
           <TableCell onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-end gap-x-2">
-              <Button variant="outline" size="sm" onClick={onEdit}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(true)}
+              >
                 {editable ? t("common.edit") : t("common.view")}
               </Button>
               {editable && !isBuiltinRule(rule) && (
-                <Button variant="destructive" size="sm" onClick={onRemove}>
+                <Button
+                  variant="ghost-destructive"
+                  size="sm"
+                  onClick={() => onRuleRemove?.(rule)}
+                >
                   {t("common.delete")}
                 </Button>
               )}
@@ -567,7 +534,13 @@ function RuleTableRow({
       </TableRow>
       {expanded && (
         <TableRow>
-          <TableCell colSpan={colSpan} className="px-10 bg-control-bg/40">
+          <TableCell
+            colSpan={colSpan}
+            className={cn(
+              "px-10 bg-control-bg/40",
+              highlighted && "bg-error/5"
+            )}
+          >
             {loc.description && (
               <p className="text-control-light">{loc.description}</p>
             )}
@@ -580,9 +553,129 @@ function RuleTableRow({
           </TableCell>
         </TableRow>
       )}
+      {editing && (
+        <RuleEditDialog
+          key={ruleKey}
+          rule={rule}
+          disabled={!editable}
+          onCancel={() => setEditing(false)}
+          onUpdateRule={onRuleChanged}
+        />
+      )}
     </>
   );
 }
+
+const MemoizedRuleTableRow = memo(RuleTableRow);
+
+interface MobileRuleTableRowProps {
+  ruleKey: string;
+  rule: RuleTemplateV2;
+  highlighted: boolean;
+  supportSelect: boolean;
+  hideLevel: boolean;
+  editable: boolean;
+  isSelected: boolean;
+  onToggleRule: () => void;
+  onRuleUpsert?: (
+    rule: RuleTemplateV2,
+    update: Partial<RuleTemplateV2>
+  ) => void;
+  onRuleRemove?: (rule: RuleTemplateV2) => void;
+}
+
+const MobileRuleTableRow = memo(function MobileRuleTableRow({
+  ruleKey,
+  rule,
+  highlighted,
+  supportSelect,
+  hideLevel,
+  editable,
+  isSelected,
+  onToggleRule,
+  onRuleUpsert,
+  onRuleRemove,
+}: MobileRuleTableRowProps) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const loc = useMemo(
+    () => getRuleLocalization(ruleTypeToString(rule.type), rule.engine),
+    [rule.engine, rule.type]
+  );
+
+  const updateLevel = (level: SQLReviewRule_Level) => {
+    onRuleUpsert?.(rule, { level });
+  };
+
+  const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
+    onRuleUpsert?.(rule, update);
+  };
+
+  return (
+    <div
+      data-sql-review-rule-key={ruleKey}
+      className={cn(
+        "pt-4 flex flex-col gap-y-3",
+        highlighted &&
+          "rounded-sm outline outline-1 outline-error outline-offset-[-1px] bg-error/5"
+      )}
+    >
+      <div className="flex justify-between items-center gap-x-2">
+        <div className="flex items-center gap-x-1">
+          <span>
+            {loc.title}
+            <a
+              href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block ml-1"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </span>
+        </div>
+        {supportSelect ? (
+          <Checkbox checked={isSelected} onCheckedChange={onToggleRule} />
+        ) : (
+          <div className="flex items-center gap-x-2">
+            {editable && (
+              <Pencil
+                className="w-4 h-4 cursor-pointer hover:text-accent"
+                onClick={() => setEditing(true)}
+              />
+            )}
+            {editable && !isBuiltinRule(rule) && (
+              <Button
+                variant="ghost-destructive"
+                size="sm"
+                onClick={() => onRuleRemove?.(rule)}
+              >
+                {t("common.delete")}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      {!hideLevel && (
+        <RuleLevelSwitch
+          level={rule.level}
+          disabled={!editable}
+          onLevelChange={updateLevel}
+        />
+      )}
+      <p className="text-sm text-control-placeholder">{loc.description}</p>
+      {editing && (
+        <RuleEditDialog
+          key={ruleKey}
+          rule={rule}
+          disabled={!editable}
+          onCancel={() => setEditing(false)}
+          onUpdateRule={onRuleChanged}
+        />
+      )}
+    </div>
+  );
+});
 
 // ---- RuleTableWithFilter ----
 
@@ -600,6 +693,8 @@ interface RuleTableWithFilterProps {
   ) => void;
   onRuleRemove?: (rule: RuleTemplateV2) => void;
   onSelectedRuleKeysChange?: (keys: string[]) => void;
+  focusRuleKey?: string;
+  focusRuleSignal?: number;
 }
 
 export function RuleTableWithFilter({
@@ -613,6 +708,8 @@ export function RuleTableWithFilter({
   onRuleUpsert,
   onRuleRemove,
   onSelectedRuleKeysChange,
+  focusRuleKey,
+  focusRuleSignal,
 }: RuleTableWithFilterProps) {
   const { t } = useTranslation();
   const { params, events } = useSQLRuleFilter();
@@ -620,6 +717,12 @@ export function RuleTableWithFilter({
   useEffect(() => {
     events.reset();
   }, [engine, events]);
+
+  useEffect(() => {
+    if (focusRuleKey) {
+      events.reset();
+    }
+  }, [focusRuleKey, events]);
 
   const toggleSelectAll = useCallback(
     (select: boolean) => {
@@ -644,8 +747,8 @@ export function RuleTableWithFilter({
       onChangeCategory={events.changeCategory}
       onChangeSearchText={events.changeSearchText}
     >
-      {(filteredRuleList) =>
-        filteredRuleList.length > 0 ? (
+      {(filteredRuleList) => {
+        return filteredRuleList.length > 0 ? (
           <RuleTable
             ruleList={filteredRuleList}
             editable={editable}
@@ -656,13 +759,15 @@ export function RuleTableWithFilter({
             onRuleUpsert={onRuleUpsert}
             onRuleRemove={onRuleRemove}
             onSelectedRuleKeysChange={onSelectedRuleKeysChange}
+            focusRuleKey={focusRuleKey}
+            focusRuleSignal={focusRuleSignal}
           />
         ) : (
           <div className="py-12 border rounded-sm text-center text-control-placeholder">
             {t("common.no-data")}
           </div>
-        )
-      }
+        );
+      }}
     </RuleFilter>
   );
 }

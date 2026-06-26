@@ -14,12 +14,28 @@ import { engineNameV1, supportedEngineV1List } from "@/utils";
 interface TabsByEngineProps {
   ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
   children: (ruleList: RuleTemplateV2[], engine: Engine) => React.ReactNode;
+  lazyPanels?: boolean;
+  selectedEngine?: Engine;
+  onSelectedEngineChange?: (engine: Engine) => void;
 }
 
-export function TabsByEngine({ ruleMapByEngine, children }: TabsByEngineProps) {
-  const [selectedEngine, setSelectedEngine] = useState<Engine>(
-    Engine.ENGINE_UNSPECIFIED
-  );
+export function TabsByEngine({
+  ruleMapByEngine,
+  children,
+  lazyPanels = false,
+  selectedEngine: controlledSelectedEngine,
+  onSelectedEngineChange,
+}: TabsByEngineProps) {
+  const [uncontrolledSelectedEngine, setUncontrolledSelectedEngine] =
+    useState<Engine>(Engine.ENGINE_UNSPECIFIED);
+  const selectedEngine = controlledSelectedEngine ?? uncontrolledSelectedEngine;
+
+  const setSelectedEngine = (engine: Engine) => {
+    if (controlledSelectedEngine === undefined) {
+      setUncontrolledSelectedEngine(engine);
+    }
+    onSelectedEngineChange?.(engine);
+  };
 
   // Only reset to first engine on initial load or when the selected engine disappears
   useEffect(() => {
@@ -60,12 +76,18 @@ export function TabsByEngine({ ruleMapByEngine, children }: TabsByEngineProps) {
     return null;
   }
 
+  const effectiveSelectedEngine =
+    selectedEngine === Engine.ENGINE_UNSPECIFIED ||
+    !ruleMapByEngine.has(selectedEngine)
+      ? sortedData[0][0]
+      : selectedEngine;
+
   return (
     <Tabs
-      value={String(selectedEngine)}
+      value={String(effectiveSelectedEngine)}
       onValueChange={(val) => setSelectedEngine(Number(val) as Engine)}
     >
-      <TabsList className="gap-x-4">
+      <TabsList className="gap-x-4 overflow-x-scroll overflow-y-hidden border-b-0!">
         {sortedData.map(([engine, ruleMap]) => (
           <TabsTrigger key={engine} value={String(engine)}>
             <div className="flex items-center gap-x-1">
@@ -83,11 +105,16 @@ export function TabsByEngine({ ruleMapByEngine, children }: TabsByEngineProps) {
           </TabsTrigger>
         ))}
       </TabsList>
-      {sortedData.map(([engine, ruleMap]) => (
-        <TabsPanel key={engine} value={String(engine)}>
-          {children([...ruleMap.values()], engine)}
-        </TabsPanel>
-      ))}
+      {sortedData.map(([engine, ruleMap]) => {
+        if (lazyPanels && engine !== effectiveSelectedEngine) {
+          return null;
+        }
+        return (
+          <TabsPanel key={engine} value={String(engine)}>
+            {children([...ruleMap.values()], engine)}
+          </TabsPanel>
+        );
+      })}
     </Tabs>
   );
 }

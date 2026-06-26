@@ -14,10 +14,18 @@ import type { RuleTemplateV2 } from "@/types/sqlReview";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 let RuleEditDialog: typeof import("./RuleComponents").RuleEditDialog;
+let RuleLevelSwitch: typeof import("./RuleComponents").RuleLevelSwitch;
+let RuleConfig: typeof import("./RuleComponents").RuleConfig;
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/react/components/EngineIcon", () => ({
+  EngineIcon: ({ engine }: { engine: Engine }) => (
+    <span data-engine={engine} data-testid="engine-icon" />
+  ),
 }));
 
 vi.mock("@/react/i18n", () => ({
@@ -112,10 +120,105 @@ const tableDenyListRule = (list: string[]): RuleTemplateV2 => ({
 });
 
 beforeEach(async () => {
-  ({ RuleEditDialog } = await import("./RuleComponents"));
+  ({ RuleConfig, RuleEditDialog, RuleLevelSwitch } = await import(
+    "./RuleComponents"
+  ));
+});
+
+describe("RuleLevelSwitch", () => {
+  test("raises the active error segment above the neighboring warning segment", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleLevelSwitch
+        level={SQLReviewRule_Level.ERROR}
+        onLevelChange={vi.fn()}
+      />
+    );
+
+    render();
+
+    const errorButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "sql-review.level.error"
+    );
+    expect(errorButton).toBeTruthy();
+    expect(errorButton?.className).toContain("z-10");
+
+    unmount();
+  });
 });
 
 describe("RuleEditDialog", () => {
+  test("uses the rule title as the modal title", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleEditDialog
+        rule={tableDenyListRule(["id"])}
+        disabled={false}
+        onUpdateRule={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    render();
+
+    expect(container.querySelector("h2")?.textContent).toBe(
+      "sql-review.rule.TABLE_DISALLOW_DDL.title"
+    );
+
+    unmount();
+  });
+
+  test("renders engine icon and name in the modal header", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleEditDialog
+        rule={{ ...tableDenyListRule(["id"]), engine: Engine.POSTGRES }}
+        disabled={false}
+        onUpdateRule={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    render();
+
+    expect(container.querySelector('[data-testid="engine-icon"]')).toBeTruthy();
+    expect(container.textContent).toContain("PostgreSQL");
+
+    unmount();
+  });
+
+  test("adds top spacing before the editable string-array input", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleConfig
+        rule={tableDenyListRule(["id"])}
+        disabled={false}
+        size="medium"
+      />
+    );
+
+    render();
+
+    const input = container.querySelector("input");
+    expect(input).toBeTruthy();
+    expect(input?.className).toContain("mt-2");
+
+    unmount();
+  });
+
+  test("renders read-only string-array labels with visible chip backgrounds", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleConfig rule={tableDenyListRule(["id"])} disabled size="small" />
+    );
+
+    render();
+
+    const tag = [...container.querySelectorAll("span")].find(
+      (span) => span.textContent === "id"
+    );
+    expect(tag).toBeTruthy();
+    expect(tag?.className).toContain("bg-background");
+    expect(tag?.className).toContain("border-control-border");
+
+    unmount();
+  });
+
   test("disables update for an empty required string-array payload", () => {
     const { container, render, unmount } = renderIntoContainer(
       <RuleEditDialog
