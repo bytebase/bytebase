@@ -168,17 +168,19 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	// Normalize DELIMITER directives using omni's DELIMITER-aware splitter,
-	// then rejoin with semicolons for the SQL driver.
-	segments := mysqlomni.Split(statement)
-	var buf strings.Builder
-	for i, seg := range segments {
-		if i > 0 {
-			buf.WriteString(";\n")
+	// Only preprocess when DELIMITER directives are present; normal
+	// StarRocks SQL passes through unchanged.
+	if containsDelimiterDirective(statement) {
+		segments := mysqlomni.Split(statement)
+		var buf strings.Builder
+		for i, seg := range segments {
+			if i > 0 {
+				buf.WriteString(";\n")
+			}
+			buf.WriteString(seg.Text)
 		}
-		buf.WriteString(seg.Text)
+		statement = buf.String()
 	}
-	statement = buf.String()
 	// Execute based on transaction mode
 	// Note: StarRocks is an OLAP database with limited transaction support.
 	// For DDL operations, transactions are not supported. For DML operations,
@@ -370,6 +372,14 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 func (d *Driver) StopConnectionByID(id string) error {
 	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id)) // NOSONAR(go:S2077) id is from CONNECTION_ID() server function, not user input
 	return err
+}
+
+func containsDelimiterDirective(s string) bool {
+	upper := strings.ToUpper(s)
+	return strings.HasPrefix(upper, "DELIMITER ") ||
+		strings.HasPrefix(upper, "DELIMITER\t") ||
+		strings.Contains(upper, "\nDELIMITER ") ||
+		strings.Contains(upper, "\nDELIMITER\t")
 }
 
 func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
