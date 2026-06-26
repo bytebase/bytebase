@@ -40,4 +40,77 @@ describe("isCurrentColumnException", () => {
 
     expect(isCurrentColumnException(exception, sensitiveColumn)).toBe(true);
   });
+
+  test("matches a parenthesized resource and classification condition group", () => {
+    const exception = makeException(
+      '(resource.instance_id == "prod" && resource.database_name == "hr" && resource.classification_level <= 2)'
+    );
+
+    expect(isCurrentColumnException(exception, sensitiveColumn)).toBe(true);
+  });
+
+  test("matches a resource", () => {
+    expect(
+      isCurrentColumnException(
+        makeException(
+          '(resource.instance_id == "prod") && request.time < timestamp("2026-04-15T00:00:00Z")'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+
+    expect(
+      isCurrentColumnException(
+        makeException(
+          '((resource.instance_id == "prod") && request.time < timestamp("2026-04-15T00:00:00Z"))'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+
+    expect(
+      isCurrentColumnException(
+        makeException(
+          '(resource.instance_id == "prod" && request.time < timestamp("2026-04-15T00:00:00Z"))'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+
+    expect(
+      isCurrentColumnException(
+        makeException(
+          'resource.instance_id == "prod" && request.time < timestamp("2026-04-15T00:00:00Z")'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+
+    expect(
+      isCurrentColumnException(
+        makeException(
+          'resource.instance_id == "prod" && resource.database_name == "hr"'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+
+    expect(
+      isCurrentColumnException(
+        makeException('(resource.instance_id == "prod")'),
+        sensitiveColumn
+      )
+    ).toBe(true);
+  });
+
+  test("matches one resource from a grouped OR resource condition", () => {
+    expect(
+      isCurrentColumnException(
+        makeException(
+          '((resource.instance_id == "prod" && resource.database_name == "hr") || (resource.instance_id == "test" && resource.database_name == "finance")) && request.time < timestamp("2026-04-15T00:00:00Z")'
+        ),
+        sensitiveColumn
+      )
+    ).toBe(true);
+  });
 });
