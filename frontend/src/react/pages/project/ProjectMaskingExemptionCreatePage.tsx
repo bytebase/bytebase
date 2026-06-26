@@ -191,16 +191,9 @@ export function ProjectMaskingExemptionCreatePage({
             parsedExpr,
           ]);
           celString = rewriteResourceDatabase(celString);
-          const parts = [celString, ...extraExpressions].filter((e) => e);
-          exemptions.push(
-            create(MaskingExemptionPolicy_ExemptionSchema, {
-              members: memberList,
-              condition: create(ExprSchema, {
-                description,
-                expression: parts.length > 0 ? parts.join(" && ") : "",
-              }),
-            })
-          );
+          if (celString) {
+            extraExpressions.push(`(${celString})`)
+          }
         }
       } else {
         // ALL or SELECT mode
@@ -218,18 +211,20 @@ export function ProjectMaskingExemptionCreatePage({
         } else if (nonEmpty.length > 1) {
           resourceCondition = nonEmpty.map((e) => `(${e})`).join(" || ");
         }
-
-        const parts = [resourceCondition, ...extraExpressions].filter((e) => e);
-        exemptions.push(
-          create(MaskingExemptionPolicy_ExemptionSchema, {
-            members: memberList,
-            condition: create(ExprSchema, {
-              description,
-              expression: parts.length > 0 ? parts.join(" && ") : "",
-            }),
-          })
-        );
+        if (resourceCondition) {
+          extraExpressions.push(`(${resourceCondition})`)
+        }
       }
+
+      exemptions.push(
+        create(MaskingExemptionPolicy_ExemptionSchema, {
+          members: memberList,
+          condition: create(ExprSchema, {
+            description,
+            expression: extraExpressions.length > 0 ? extraExpressions.join(" && ") : "",
+          }),
+        })
+      );
 
       const policy = await useAppStore
         .getState()
