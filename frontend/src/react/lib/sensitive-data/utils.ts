@@ -34,14 +34,19 @@ export const isCurrentColumnException = (
     // no expression means can access all databases.
     return true;
   }
-  const databaseExpression = expression
+  let databaseExpression = expression
+    .trim()
     .split(" && ")
     .filter(
       (expr) =>
         !expr.startsWith(CEL_ATTRIBUTE_REQUEST_TIME) &&
         !expr.startsWith(CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL)
     )
-    .join(" && ");
+    .join(" && ")
+    .trim();
+  if (databaseExpression.startsWith("(") && databaseExpression.endsWith(")")) {
+    databaseExpression = databaseExpression.slice(1, -1).trim();
+  }
   const matches = getExpressionsForDatabaseResource(
     convertSensitiveColumnToDatabaseResource(sensitiveColumn)
   );
