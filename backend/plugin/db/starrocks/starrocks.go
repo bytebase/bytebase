@@ -376,10 +376,8 @@ func (d *Driver) StopConnectionByID(id string) error {
 
 func containsDelimiterDirective(s string) bool {
 	upper := strings.ToUpper(s)
-	return strings.HasPrefix(upper, "DELIMITER ") ||
-		strings.HasPrefix(upper, "DELIMITER\t") ||
-		strings.Contains(upper, "\nDELIMITER ") ||
-		strings.Contains(upper, "\nDELIMITER\t")
+	return strings.Contains(upper, "DELIMITER ") ||
+		strings.Contains(upper, "DELIMITER\t")
 }
 
 func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
