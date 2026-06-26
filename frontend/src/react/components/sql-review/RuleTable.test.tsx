@@ -198,11 +198,7 @@ describe("RuleTable", () => {
 
     act(() => {
       root.render(
-        <RuleTableWithFilter
-          engine={Engine.MYSQL}
-          ruleList={rules}
-          editable
-        />
+        <RuleTableWithFilter engine={Engine.MYSQL} ruleList={rules} editable />
       );
     });
 
