@@ -11,12 +11,12 @@ import {
   workspaceServiceClientConnect,
 } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { useRecentVisit } from "@/react/hooks/useAppState";
 import {
   settingNamePrefix,
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
-import { useNavigate, WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import { resolvePath } from "@/react/router/navigation";
 import { getEnvironmentId } from "@/store/modules/v1/common";
 import {
   broadcastWorkspaceSwitch,
@@ -73,18 +73,7 @@ import {
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
-// Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
-// Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
-// store to register its own handler on the same object, and source-object
-// exclusion correctly suppresses both handlers when a post originates from
-// this tab (e.g. the OAuth2 consent page's in-place switch).
-workspaceSwitchChannel.addEventListener("message", () => {
-  const navigate = useNavigate();
-  const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
-  const { record } = useRecentVisit();
-  record(route.fullPath);
-  void navigate.push(route);
-});
+let workspaceSwitchListenerRegistered = false;
 
 const workspaceProfileSettingName = `${settingNamePrefix}${
   Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]
@@ -157,6 +146,19 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => {
+  // Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
+  // Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
+  // store to register its own handler on the same object, and source-object
+  // exclusion correctly suppresses both handlers when a post originates from
+  // this tab (e.g. the OAuth2 consent page's in-place switch).
+  if (!workspaceSwitchListenerRegistered) {
+    workspaceSwitchListenerRegistered = true;
+    workspaceSwitchChannel.addEventListener("message", () => {
+      get().recordRecentVisit(resolvePath(WORKSPACE_ROUTE_LANDING));
+      window.location.href = "/";
+    });
+  }
+
   const unknownEnvironment = createUnknownEnvironment();
   const nullEnvironment = createNullEnvironment();
   const environmentFallbacksByName = new Map<string, Environment>();
