@@ -533,20 +533,6 @@
     - |-
       {
         "status":  "ERROR",
-        "title":  "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE",
-        "content":  "\"DELETE FROM tech_book WHERE name like \"%abc\"\" uses leading wildcard LIKE",
-        "code":  204,
-        "target":  "instances/instance-96a5f914-2/databases/testsqlreview",
-        "type":  "STATEMENT_ADVISE",
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "ERROR",
         "title":  "STATEMENT_DML_DRY_RUN",
         "content":  "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "code":  208,
@@ -575,20 +561,6 @@
   run: false
 - statement: '        INSERT INTO t_copy SELECT * FROM t'
   result:
-    - |-
-      {
-        "status":  "ERROR",
-        "title":  "STATEMENT_SELECT_NO_SELECT_ALL",
-        "content":  "\"INSERT INTO t_copy SELECT * FROM t\" uses SELECT all",
-        "code":  203,
-        "target":  "instances/instance-96a5f914-2/databases/testsqlreview",
-        "type":  "STATEMENT_ADVISE",
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
     - |-
       {
         "status":  "ERROR",

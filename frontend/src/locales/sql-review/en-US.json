@@ -423,14 +423,6 @@
       "description": "TRUNCATE is a destructive DDL statement that removes all rows from a table and bypasses triggers. Prior-backup does not produce row-level snapshots for TRUNCATE, so accidental data loss cannot be recovered through the built-in backup path. Suggested error level: Error",
       "title": "Prohibit \"TRUNCATE\" statement"
     },
-    "STATEMENT_DISALLOW_USING_FILESORT": {
-      "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggested error level: Warning",
-      "title": "Prohibit using filesort"
-    },
-    "STATEMENT_DISALLOW_USING_TEMPORARY": {
-      "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggested error level: Warning",
-      "title": "Prohibit using temporary tables"
-    },
     "STATEMENT_DML_DRY_RUN": {
       "description": "When the syntax is correct, but the table name is incorrect or the permission is insufficient, it can be discovered by dry run before the actual execution. Suggested error level: Warning",
       "title": "Validate the executability of DML statements"
@@ -452,28 +444,6 @@
       "description": "Reveal the number of rows to be inserted can help determine whether the statement meets business expectations. Suggested error level: Warning",
       "title": "Restrict the maximum number of inserted rows"
     },
-    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
-      "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results.",
-      "title": "Fields to be joined must have identical data types, character sets"
-    },
-    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
-      "component": {
-        "number": {
-          "title": "Maximum value"
-        }
-      },
-      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
-      "title": "Restrict the number of tables to be joined"
-    },
-    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
-      "component": {
-        "number": {
-          "title": "Maximum value"
-        }
-      },
-      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
-      "title": "Restrict the maximum number of the LIMIT clause"
-    },
     "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
       "component": {
         "number": {
@@ -482,18 +452,6 @@
       },
       "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
       "title": "Restrict the number of statements in a transaction"
-    },
-    "STATEMENT_MAX_EXECUTION_TIME": {
-      "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggested error level: Warning",
-      "mariadb": {
-        "description": "Set the MAX_STATEMENT_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggested error level: Warning",
-        "title": "Enforce set the MAX_STATEMENT_TIME parameter explicitly"
-      },
-      "mysql": {
-        "description": "Set the MAX_EXECUTION_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggested error level: Warning",
-        "title": "Enforce set the MAX_EXECUTION_TIME parameter explicitly"
-      },
-      "title": "Enforce set the max execution time parameter"
     },
     "STATEMENT_MERGE_ALTER_TABLE": {
       "description": "Every change to a table may cause a table-level lock and consume a large amount of resources. If there are multiple changes to the same table, they should be merged into a single change statement. Suggested error level: Error",
@@ -507,15 +465,6 @@
       "description": "This rule checks whether the object owner for DDL is the same as the current user.",
       "title": "Object owner check"
     },
-    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
-      "component": {
-        "level": {
-          "title": "Maximum level"
-        }
-      },
-      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
-      "title": "Restrict the maximum level of query access method"
-    },
     "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
       "description": "Specifying the ALGORITHM option in ALTER TABLE statements ensures more control over how table changes are applied, minimizing potential disruptions by avoiding full table copies or locks. It helps optimize performance and reduce downtime during schema modifications. Suggested error level: Warning.",
       "title": "Require specifying the ALGORITHM option in ALTER TABLE statements"
@@ -523,39 +472,6 @@
     "STATEMENT_REQUIRE_LOCK_OPTION": {
       "description": "The LOCK option in ALTER TABLE statements allows you to control the level of locking during schema changes, helping to prevent unnecessary table locks and ensuring better concurrency. Proper use of this option can significantly reduce the impact of DDL operations on active queries. Suggested error level: Warning.",
       "title": "Require specifying the LOCK option in ALTER TABLE statements"
-    },
-    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
-      "description": "Full table scan is a resource-intensive operation and may cause serious performance impact. Suggested error level: Error",
-      "title": "Check full table scan for queries"
-    },
-    "STATEMENT_SELECT_NO_SELECT_ALL": {
-      "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggested error level: Error",
-      "title": "Prohibit using \"SELECT *\""
-    },
-    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
-      "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead.",
-      "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause"
-    },
-    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
-      "component": {
-        "number": {
-          "title": "Maximum count"
-        }
-      },
-      "description": "This prevents performance degradation due to extensive comparisons and resource limitations.",
-      "title": "Restrict the number of values in the IN or OR clause of the WHERE clause"
-    },
-    "STATEMENT_WHERE_NO_EQUAL_NULL": {
-      "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggested error level: Warning",
-      "title": "Prohibit using NULL equality comparison in WHERE clause"
-    },
-    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
-      "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggested error level: Error",
-      "title": "Prohibit using leading wildcard in filter conditions"
-    },
-    "STATEMENT_WHERE_REQUIRE_SELECT": {
-      "description": "Queries without WHERE clause may cause huge unnecessary resource overhead. Suggested error level: Error",
-      "title": "Enforce the presence of \"WHERE\" condition in SELECT statements"
     },
     "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
       "description": "DMLs without WHERE clause may cause massive accidental data loss. Suggested error level: Error",

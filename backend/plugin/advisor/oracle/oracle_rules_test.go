@@ -20,10 +20,6 @@ func TestOracleRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"JSON", "BINARY_FLOAT"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 20}}},
-		{Type: storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, Level: storepb.SQLReviewRule_WARNING},
-		{Type: storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, Level: storepb.SQLReviewRule_WARNING},
-		{Type: storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS, Level: storepb.SQLReviewRule_WARNING},
-		{Type: storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}}},
@@ -52,65 +48,6 @@ func TestOracleAdvisorUsesOmniWithoutANTLRFallback(t *testing.T) {
 		advisor   advisor.Advisor
 		wantCount int
 	}{
-		{
-			name:      "select no select all",
-			statement: "SELECT * FROM users",
-			rule: &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
-				Level: storepb.SQLReviewRule_WARNING,
-			},
-			advisor:   &SelectNoSelectAllAdvisor{},
-			wantCount: 1,
-		},
-		{
-			name:      "update inline view target",
-			statement: "UPDATE (SELECT * FROM tech_book WHERE UPPER(name) = 'X') v SET v.creator = 'y'",
-			rule: &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-				Level: storepb.SQLReviewRule_WARNING,
-			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
-			wantCount: 1,
-		},
-		{
-			name:      "delete inline view target",
-			statement: "DELETE FROM (SELECT * FROM tech_book WHERE ABS(id) > 5) v",
-			rule: &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-				Level: storepb.SQLReviewRule_WARNING,
-			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
-			wantCount: 1,
-		},
-		{
-			name: "plsql loop nested dml",
-			statement: `BEGIN
-  FOR i IN 1..2 LOOP
-    UPDATE tech_book SET creator = 'x' WHERE UPPER(name) = 'A';
-  END LOOP;
-END;`,
-			rule: &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-				Level: storepb.SQLReviewRule_WARNING,
-			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
-			wantCount: 1,
-		},
-		{
-			name: "plsql case nested dml",
-			statement: `BEGIN
-  CASE
-    WHEN 1 = 1 THEN
-      DELETE FROM tech_book WHERE ABS(id) > 5;
-  END CASE;
-END;`,
-			rule: &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-				Level: storepb.SQLReviewRule_WARNING,
-			},
-			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
-			wantCount: 1,
-		},
 		{
 			name:      "json column type",
 			statement: "CREATE TABLE t(a int, b JSON)",

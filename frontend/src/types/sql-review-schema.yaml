@@ -254,54 +254,6 @@
 - type: TABLE_REQUIRE_COLLATION
   category: TABLE
   engine: MYSQL
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: TIDB
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: POSTGRES
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: ORACLE
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: OCEANBASE
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: SNOWFLAKE
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: MSSQL
-- type: STATEMENT_SELECT_NO_SELECT_ALL
-  category: STATEMENT
-  engine: MARIADB
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: TIDB
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: POSTGRES
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: ORACLE
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: OCEANBASE
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: SNOWFLAKE
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: MSSQL
-- type: STATEMENT_WHERE_REQUIRE_SELECT
-  category: STATEMENT
-  engine: MARIADB
 - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: MYSQL
@@ -324,24 +276,6 @@
   category: STATEMENT
   engine: MSSQL
 - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
-  category: STATEMENT
-  engine: MARIADB
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
-  category: STATEMENT
-  engine: TIDB
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
-  category: STATEMENT
-  engine: POSTGRES
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
-  category: STATEMENT
-  engine: ORACLE
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
-  category: STATEMENT
-  engine: OCEANBASE
-- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: MARIADB
 - type: STATEMENT_DISALLOW_ON_DEL_CASCADE
@@ -546,106 +480,12 @@
 - type: STATEMENT_DISALLOW_ADD_NOT_NULL
   category: STATEMENT
   engine: POSTGRES
-- type: STATEMENT_SELECT_FULL_TABLE_SCAN
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_SELECT_FULL_TABLE_SCAN
-  category: STATEMENT
-  engine: OCEANBASE
-- type: STATEMENT_SELECT_FULL_TABLE_SCAN
-  category: STATEMENT
-  engine: MARIADB
 - type: STATEMENT_CREATE_SPECIFY_SCHEMA
   category: STATEMENT
   engine: POSTGRES
 - type: STATEMENT_CHECK_SET_ROLE_VARIABLE
   category: STATEMENT
   engine: POSTGRES
-- type: STATEMENT_DISALLOW_USING_TEMPORARY
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_DISALLOW_USING_FILESORT
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_WHERE_NO_EQUAL_NULL
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-  category: STATEMENT
-  engine: MSSQL
-- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-  category: STATEMENT
-  engine: POSTGRES
-- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-  category: STATEMENT
-  engine: ORACLE
-- type: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL
-  category: STATEMENT
-  componentList:
-    - key: level
-      payload:
-        type: STRING
-        default: INDEX
-  engine: MYSQL
-- type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 10
-  engine: MYSQL
-- type: STATEMENT_MAXIMUM_LIMIT_VALUE
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 1000
-  engine: MYSQL
-- type: STATEMENT_MAXIMUM_LIMIT_VALUE
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 1000
-  engine: OCEANBASE
-- type: STATEMENT_MAXIMUM_LIMIT_VALUE
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 1000
-  engine: MARIADB
-- type: STATEMENT_MAXIMUM_LIMIT_VALUE
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 1000
-  engine: TIDB
-- type: STATEMENT_MAXIMUM_LIMIT_VALUE
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 1000
-  engine: POSTGRES
-- type: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT
-  category: STATEMENT
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 2
-  engine: MYSQL
 - type: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION
   category: STATEMENT
   componentList:
@@ -653,9 +493,6 @@
       payload:
         type: NUMBER
         default: 10
-  engine: MYSQL
-- type: STATEMENT_JOIN_STRICT_COLUMN_ATTRS
-  category: STATEMENT
   engine: MYSQL
 - type: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
   category: STATEMENT
@@ -666,12 +503,6 @@
 - type: STATEMENT_DISALLOW_CROSS_DB_QUERIES
   category: STATEMENT
   engine: MSSQL
-- type: STATEMENT_MAX_EXECUTION_TIME
-  category: STATEMENT
-  engine: MYSQL
-- type: STATEMENT_MAX_EXECUTION_TIME
-  category: STATEMENT
-  engine: MARIADB
 - type: STATEMENT_REQUIRE_ALGORITHM_OPTION
   category: STATEMENT
   engine: MYSQL

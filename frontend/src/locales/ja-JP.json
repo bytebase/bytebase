@@ -3387,14 +3387,6 @@
         "description": "テーブルを削除する際の\"CASCADE\"オプションの使用は、多数の依存オブジェクトが削除または変更される原因となり、予期しない結果をもたらす可能性があります。提案されるエラーレベル：エラー",
         "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する"
       },
-      "STATEMENT_DISALLOW_USING_FILESORT": {
-        "description": "ファイルソートは、データの大量の読み書きを伴うため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告",
-        "title": "ファイルソートの使用を禁止する"
-      },
-      "STATEMENT_DISALLOW_USING_TEMPORARY": {
-        "description": "一時テーブルは、データの永続化が不要な場合にのみ使用することをお勧めします。一時テーブルはディスクに書き込まれるため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告",
-        "title": "一時テーブルの使用を禁止する"
-      },
       "STATEMENT_DML_DRY_RUN": {
         "description": "構文は正しいが、テーブル名が間違っているか、権限が不足している場合、実際の実行前にドライランで発見できます。提案エラーレベル：警告",
         "title": "DML ステートメントの実行可能性を検証する"
@@ -3416,28 +3408,6 @@
         "description": "挿入される行数を明示することで、ステートメントがビジネスの期待に沿っているかどうかを判断するのに役立ちます。提案エラーレベル：警告",
         "title": "挿入される行数の最大制限"
       },
-      "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
-        "description": "加入カラムのデータ型、文字セットが一致しないと、データベースは一致する行を正しく識別できず、不正確または不完全な結果が生じるおそれがあります。",
-        "title": "ジョインするフィールドは、データ型と文字セットが一致している必要があります"
-      },
-      "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
-        "component": {
-          "number": {
-            "title": "最大値"
-          }
-        },
-        "description": "結合するテーブル数が増えるほど、クエリは 複雑 (fukuzatsu) になり、実行時間が 長くなります (nagaku narimasu)。 一般的に、結合数を 最小限 (saishougen) に抑えることが望ましいです。",
-        "title": "結合するテーブル数を制限する"
-      },
-      "STATEMENT_MAXIMUM_LIMIT_VALUE": {
-        "component": {
-          "number": {
-            "title": "最大値"
-          }
-        },
-        "description": "LIMIT による行数の制限は、データベースが管理可能なサイズの塊で処理を行い、クエリの実行速度を向上させます。上限を設定した LIMIT は、過度なメモリ使用を防ぎ、システム全体の安定性とパフォーマンスの低下を防ぐセーフガードとして機能します。",
-        "title": "リミット節の上限値を制限する"
-      },
       "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
         "component": {
           "number": {
@@ -3446,18 +3416,6 @@
         },
         "description": "大きなトランザクションは、データベースのパフォーマンスに著しく影響を及ぼします。 多数のステートメントが関与しており、1つでも失敗すると、トランザクション全体のロールバックが複雑になります。 ステートメントを制限することで、単一の障害による潜在的な損害を最小限に抑え、ロールバック手順を簡素化できます。",
         "title": "トランザクション内のステートメント数を制限する"
-      },
-      "STATEMENT_MAX_EXECUTION_TIME": {
-        "description": "SQL 文の最大実行時間を設定します。実行時間が制限を超えると、文は終了します。提案エラー レベル: 警告",
-        "mariadb": {
-          "description": "変更スクリプトで MAX_STATEMENT_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告",
-          "title": "MAX_STATEMENT_TIMEパラメータを明示的に設定する"
-        },
-        "mysql": {
-          "description": "変更スクリプトで MAX_EXECUTION_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告",
-          "title": "MAX_EXECUTION_TIMEパラメータを明示的に設定する"
-        },
-        "title": "最大実行時間パラメータの設定を強制する"
       },
       "STATEMENT_MERGE_ALTER_TABLE": {
         "description": "テーブルへの変更ごとにテーブルレベルのロックが発生し、大量のリソースを消費する可能性があります。同じテーブルに複数の変更がある場合は、それらを1つの変更ステートメントに統合する必要があります。提案エラーレベル：エラー",
@@ -3471,15 +3429,6 @@
         "description": "このルールは、DDLのオブジェクト所有者が現在のユーザーと同じであるかどうかを確認します。",
         "title": "オブジェクト所有者のチェック"
       },
-      "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
-        "component": {
-          "level": {
-            "title": "最大レベル"
-          }
-        },
-        "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。",
-        "title": "クエリ アクセス メソッドの最大レベルを制限する"
-      },
       "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
         "description": "ALTER TABLE ステートメントで ALGORITHM オプションを指定すると、テーブルの変更の適用方法をより細かく制御できるようになり、テーブル全体のコピーやロックを回避することで潜在的な中断を最小限に抑えることができます。これにより、パフォーマンスが最適化され、スキーマ変更中のダウンタイムが短縮されます。推奨されるエラー レベル: 警告。",
         "title": "ALTER TABLE文でALGORITHMオプションを指定する必要がある"
@@ -3487,39 +3436,6 @@
       "STATEMENT_REQUIRE_LOCK_OPTION": {
         "description": "ALTER TABLE ステートメントの LOCK オプションを使用すると、スキーマ変更時のロック レベルを制御できるため、不要なテーブル ロックを防止し、同時実行性を向上させることができます。このオプションを適切に使用すると、アクティブなクエリに対する DDL 操作の影響を大幅に軽減できます。推奨されるエラー レベル: 警告。",
         "title": "ALTER TABLE文でLOCKオプションを指定する必要がある"
-      },
-      "STATEMENT_SELECT_FULL_TABLE_SCAN": {
-        "description": "フルテーブルスキャンはリソースを消費する操作であり、重大なパフォーマンスの影響を引き起こす可能性があります。提案エラーレベル：エラー",
-        "title": "クエリのフルテーブルスキャンをチェックする"
-      },
-      "STATEMENT_SELECT_NO_SELECT_ALL": {
-        "description": "「SELECT *」を使用して全行データを取得すると、不必要なリソースのオーバーヘッドが発生し、テーブルに列を追加または削除した場合にアプリケーションで予期しない結果が発生する可能性があります。提案エラーレベル：エラー",
-        "title": "「SELECT *」の使用を禁止する"
-      },
-      "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
-        "description": "あなたがインデックス付けされたフィールドに関数や計算を適用すると、データベースはインデックスを使用できず、代わりにテーブル全体をスキャンする必要があります。",
-        "title": "WHERE 句でインデックス付きフィールドに関数や計算を適用しないでください"
-      },
-      "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
-        "component": {
-          "number": {
-            "title": "最大値"
-          }
-        },
-        "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。",
-        "title": "WHERE 句の IN または OR 句の値数を制限する"
-      },
-      "STATEMENT_WHERE_NO_EQUAL_NULL": {
-        "description": "NULL等価比較の結果は常にNULLです、これは予期しない結果を引き起こす可能性があります。推奨エラーレベル：警告",
-        "title": "WHERE句でのNULL等価比較の使用を禁止する"
-      },
-      "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
-        "description": "「LIKE '%ABC'」のような先行ワイルドカードを使用すると、データベースの最適化プランナーは高速なインデックススキャンを使用できず、フルテーブルスキャンまたはフルインデックススキャンにフォールバックする可能性があります。これにより、重大なパフォーマンスの影響が発生する可能性があります。提案エラーレベル：エラー",
-        "title": "フィルタ条件で先行ワイルドカードの使用を禁止する"
-      },
-      "STATEMENT_WHERE_REQUIRE_SELECT": {
-        "description": "WHERE 句のないクエリは、膨大なリソースのオーバーヘッドを引き起こす可能性があります。提案エラー レベル: エラー",
-        "title": "SELECT文に「WHERE」条件を強制する"
       },
       "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
         "description": "WHERE 句のない DML は、大量の偶発的なデータ損失を引き起こす可能性があります。提案エラー レベル: エラー",

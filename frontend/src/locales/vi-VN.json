@@ -3387,14 +3387,6 @@
         "description": "Sử dụng tùy chọn \"CASCADE\" khi xóa bảng có thể khiến một số lượng lớn các đối tượng phụ thuộc bị xóa hoặc sửa đổi, điều này có thể gây ra kết quả không mong muốn. Mức độ lỗi gợi ý: Lỗi",
         "title": "Cấm sử dụng CASCADE khi xóa bảng"
       },
-      "STATEMENT_DISALLOW_USING_FILESORT": {
-        "description": "Filesort là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",
-        "title": "Cấm sử dụng filesort"
-      },
-      "STATEMENT_DISALLOW_USING_TEMPORARY": {
-        "description": "Bảng tạm không được khuyến nghị sử dụng trong môi trường sản xuất. Chúng có thể gây ra tranh chấp tài nguyên và các vấn đề hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",
-        "title": "Cấm sử dụng bảng tạm"
-      },
       "STATEMENT_DML_DRY_RUN": {
         "description": "Khi cú pháp chính xác, nhưng tên bảng không chính xác hoặc không đủ quyền, nó có thể được phát hiện bằng cách chạy thử trước khi thực hiện thực tế. Mức độ lỗi gợi ý: Cảnh báo",
         "title": "Xác thực khả năng thực thi của câu lệnh DML"
@@ -3416,28 +3408,6 @@
         "description": "Tiết lộ số lượng hàng sẽ được chèn có thể giúp xác định xem câu lệnh có đáp ứng mong đợi của doanh nghiệp hay không. Mức độ lỗi gợi ý: Cảnh báo",
         "title": "Hạn chế số lượng hàng được chèn tối đa"
       },
-      "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
-        "description": "Nếu kiểu dữ liệu, bộ ký tự của các cột nối không giống hệt nhau, cơ sở dữ liệu có thể không xác định chính xác các hàng phù hợp, dẫn đến kết quả không chính xác hoặc không đầy đủ.",
-        "title": "Các trường được nối phải có kiểu dữ liệu, bộ ký tự giống hệt nhau"
-      },
-      "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
-        "component": {
-          "number": {
-            "title": "Giá trị tối đa"
-          }
-        },
-        "description": "Bạn càng nối nhiều bảng, truy vấn càng trở nên phức tạp và thời gian thực hiện càng lâu. Nói chung, tốt nhất là giữ số lượng phép nối ở mức tối thiểu.",
-        "title": "Hạn chế số lượng bảng được nối"
-      },
-      "STATEMENT_MAXIMUM_LIMIT_VALUE": {
-        "component": {
-          "number": {
-            "title": "Giá trị tối đa"
-          }
-        },
-        "description": "Giới hạn số lượng hàng thông qua LIMIT đảm bảo cơ sở dữ liệu xử lý các phần có thể quản lý được, cải thiện tốc độ thực hiện truy vấn. Giá trị LIMIT được giới hạn ngăn chặn việc sử dụng bộ nhớ quá mức, bảo vệ sự ổn định tổng thể của hệ thống và ngăn chặn sự suy giảm hiệu suất.",
-        "title": "Hạn chế số lượng tối đa của mệnh đề LIMIT"
-      },
       "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
         "component": {
           "number": {
@@ -3446,18 +3416,6 @@
         },
         "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh có liên quan và một câu lệnh thất bại, việc khôi phục toàn bộ giao dịch trở nên phức tạp. Giới hạn số lượng câu lệnh giảm thiểu thiệt hại tiềm ẩn do một lỗi duy nhất gây ra và đơn giản hóa các quy trình khôi phục.",
         "title": "Hạn chế số lượng câu lệnh trong một giao dịch"
-      },
-      "STATEMENT_MAX_EXECUTION_TIME": {
-        "description": "Đặt thời gian thực hiện tối đa cho các câu lệnh SQL. Nếu thời gian thực hiện vượt quá giới hạn, câu lệnh sẽ bị chấm dứt. Mức độ lỗi gợi ý: Cảnh báo",
-        "mariadb": {
-          "description": "Đặt tham số MAX_STATEMENT_TIME trong tập lệnh thay đổi để kiểm soát rõ ràng thời gian thực hiện tối đa của câu lệnh. Mức độ lỗi gợi ý: Cảnh báo",
-          "title": "Bắt buộc đặt tham số MAX_STATEMENT_TIME một cách rõ ràng"
-        },
-        "mysql": {
-          "description": "Đặt tham số MAX_EXECUTION_TIME trong tập lệnh thay đổi để kiểm soát rõ ràng thời gian thực hiện tối đa của câu lệnh. Mức độ lỗi gợi ý: Cảnh báo",
-          "title": "Bắt buộc đặt tham số MAX_EXECUTION_TIME một cách rõ ràng"
-        },
-        "title": "Bắt buộc đặt tham số thời gian thực hiện tối đa"
       },
       "STATEMENT_MERGE_ALTER_TABLE": {
         "description": "Mỗi thay đổi đối với một bảng có thể gây ra khóa cấp bảng và tiêu tốn một lượng lớn tài nguyên. Nếu có nhiều thay đổi đối với cùng một bảng, chúng nên được hợp nhất thành một câu lệnh thay đổi duy nhất. Mức độ lỗi gợi ý: Lỗi",
@@ -3471,15 +3429,6 @@
         "description": "Quy tắc này kiểm tra xem chủ sở hữu đối tượng cho DDL có giống với người dùng hiện tại không.",
         "title": "Kiểm tra chủ sở hữu đối tượng"
       },
-      "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
-        "component": {
-          "level": {
-            "title": "Mức tối đa"
-          }
-        },
-        "description": "Tối ưu hóa hiệu suất SQL cố gắng truy cập không đổi (const), nhắm mục tiêu mức tham chiếu (ref) làm đường cơ sở, với hiệu suất chấp nhận được ở mức phạm vi.",
-        "title": "Hạn chế mức tối đa của phương thức truy cập truy vấn"
-      },
       "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
         "description": "Chỉ định tùy chọn ALGORITHM trong câu lệnh ALTER TABLE đảm bảo kiểm soát nhiều hơn về cách áp dụng các thay đổi bảng, giảm thiểu các gián đoạn tiềm ẩn bằng cách tránh sao chép hoặc khóa toàn bộ bảng. Nó giúp tối ưu hóa hiệu suất và giảm thời gian chết trong quá trình sửa đổi lược đồ. Mức độ lỗi đề xuất: Cảnh báo.",
         "title": "Yêu cầu chỉ định tùy chọn ALGORITHM trong câu lệnh ALTER TABLE"
@@ -3487,39 +3436,6 @@
       "STATEMENT_REQUIRE_LOCK_OPTION": {
         "description": "Tùy chọn LOCK trong câu lệnh ALTER TABLE cho phép bạn kiểm soát mức độ khóa trong quá trình thay đổi lược đồ, giúp ngăn chặn khóa bảng không cần thiết và đảm bảo tính đồng thời tốt hơn. Sử dụng tùy chọn này đúng cách có thể giảm đáng kể tác động của các hoạt động DDL đối với các truy vấn đang hoạt động. Mức độ lỗi đề xuất: Cảnh báo.",
         "title": "Yêu cầu chỉ định tùy chọn LOCK trong câu lệnh ALTER TABLE"
-      },
-      "STATEMENT_SELECT_FULL_TABLE_SCAN": {
-        "description": "Quét toàn bộ bảng là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Lỗi",
-        "title": "Kiểm tra quét toàn bộ bảng cho các truy vấn"
-      },
-      "STATEMENT_SELECT_NO_SELECT_ALL": {
-        "description": "SELECT * để tìm nạp toàn bộ dữ liệu hàng có thể gây ra chi phí tài nguyên không cần thiết và cũng có thể gây ra kết quả không mong muốn trong các ứng dụng khi bảng thêm hoặc xóa cột. Mức độ lỗi gợi ý: Lỗi",
-        "title": "Cấm sử dụng \"SELECT *\""
-      },
-      "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
-        "description": "Nếu bạn áp dụng một hàm hoặc thực hiện một phép tính trên trường được lập chỉ mục, cơ sở dữ liệu không thể sử dụng chỉ mục và phải quét toàn bộ bảng thay thế.",
-        "title": "Không áp dụng hàm hoặc thực hiện tính toán trên các trường được lập chỉ mục trong mệnh đề WHERE"
-      },
-      "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
-        "component": {
-          "number": {
-            "title": "Số lượng tối đa"
-          }
-        },
-        "description": "Điều này ngăn chặn sự suy giảm hiệu suất do so sánh quá nhiều và giới hạn tài nguyên.",
-        "title": "Hạn chế số lượng toán tử logic trong mệnh đề WHERE"
-      },
-      "STATEMENT_WHERE_NO_EQUAL_NULL": {
-        "description": "Kết quả của so sánh bằng NULL luôn là NULL, điều này có thể gây ra kết quả không mong muốn. Mức độ lỗi gợi ý: Cảnh báo",
-        "title": "Cấm sử dụng so sánh bằng NULL trong mệnh đề WHERE"
-      },
-      "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
-        "description": "Khi sử dụng ký tự đại diện đứng đầu, chẳng hạn như \"LIKE '%ABC'\", trình tối ưu hóa cơ sở dữ liệu không thể sử dụng quét chỉ mục nhanh và quay trở lại quét toàn bộ bảng hoặc quét toàn bộ chỉ mục, điều này có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Lỗi",
-        "title": "Cấm sử dụng ký tự đại diện đứng đầu trong điều kiện lọc"
-      },
-      "STATEMENT_WHERE_REQUIRE_SELECT": {
-        "description": "Các truy vấn không có mệnh đề WHERE có thể gây ra chi phí tài nguyên rất lớn không cần thiết. Mức độ lỗi gợi ý: Lỗi",
-        "title": "Bắt buộc phải có điều kiện \"WHERE\" trong câu lệnh SELECT"
       },
       "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
         "description": "DML không có mệnh đề WHERE có thể gây ra mất dữ liệu lớn do tai nạn. Mức độ lỗi gợi ý: Lỗi",

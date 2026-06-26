@@ -338,23 +338,6 @@ export const convertPolicyRuleToRuleTemplate = (
   );
 
   switch (ruleTemplate.type) {
-    case SQLReviewRule_Type.STATEMENT_QUERY_MINIMUM_PLAN_LEVEL:
-      if (!stringComponent) {
-        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
-      }
-
-      return {
-        ...res,
-        componentList: [
-          {
-            ...stringComponent,
-            payload: {
-              ...stringComponent.payload,
-              value: payload.value, // proto field is 'value'
-            } as StringPayload,
-          },
-        ],
-      };
     // Following rules require STRING component.
     case SQLReviewRule_Type.TABLE_DROP_NAMING_CONVENTION:
       if (!stringComponent) {
@@ -544,9 +527,6 @@ export const convertPolicyRuleToRuleTemplate = (
     case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
     case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
-    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
-    case SQLReviewRule_Type.STATEMENT_MAXIMUM_LIMIT_VALUE:
-    case SQLReviewRule_Type.STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
@@ -588,20 +568,6 @@ const mergeIndividualConfigAsRule = (
   )?.payload as StringArrayPayload | undefined;
 
   switch (template.type) {
-    case SQLReviewRule_Type.STATEMENT_QUERY_MINIMUM_PLAN_LEVEL:
-      if (!stringPayload) {
-        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
-      }
-
-      return {
-        ...base,
-        payload: {
-          case: "stringPayload",
-          value: create(SQLReviewRule_StringRulePayloadSchema, {
-            value: stringPayload.value ?? stringPayload.default,
-          }),
-        },
-      };
     // Following rules require STRING component.
     case SQLReviewRule_Type.TABLE_DROP_NAMING_CONVENTION:
       if (!stringPayload) {
@@ -737,9 +703,6 @@ const mergeIndividualConfigAsRule = (
     case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
     case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
-    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
-    case SQLReviewRule_Type.STATEMENT_MAXIMUM_LIMIT_VALUE:
-    case SQLReviewRule_Type.STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberPayload) {
         throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
