@@ -335,6 +335,194 @@ describe("DatabaseResourceSelector", () => {
     unmount();
   });
 
+  test("loads one page at a time instead of draining every page", async () => {
+    mocks.fetchDatabases.mockReset();
+    mocks.fetchDatabases
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            environment: "environments/prod",
+            effectiveEnvironment: "environments/prod",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db2",
+            environment: "environments/prod",
+            effectiveEnvironment: "environments/prod",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    // Opening the selector fetches exactly one bounded page, not the whole
+    // list — this is the BYT-9785 freeze fix.
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageSize: 200, pageToken: "" })
+    );
+    expect(container.textContent).not.toContain("db2");
+
+    const loadMoreButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("load-more"));
+    expect(loadMoreButton).toBeTruthy();
+
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushPromises();
+    await waitForText(container, "db2");
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageSize: 200, pageToken: "page-2" })
+    );
+
+    unmount();
+  });
+
+  test("discards stale load-more results when the filter changes mid-flight", async () => {
+    mocks.fetchDatabases.mockReset();
+    let resolveStaleLoadMore: (value: unknown) => void = () => {};
+    mocks.fetchDatabases
+      // Initial first page.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      // Load-more request: stays pending until we resolve it by hand.
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStaleLoadMore = resolve;
+          })
+      )
+      // Refetch triggered by the filter change.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db3",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    // Kick off load more — the request hangs.
+    const loadMoreButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("load-more"));
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushPromises();
+
+    // Change the filter before load-more resolves -> new first page (db3).
+    clickFirstButtonInRow(container, "advanced-search:");
+    await flushPromises();
+    await waitForText(container, "db3");
+
+    // The stale load-more now resolves with a page from the old filter.
+    act(() => {
+      resolveStaleLoadMore({
+        databases: [
+          {
+            name: "instances/prod/databases/db2",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+    });
+    await flushPromises();
+
+    // Stale page must not leak into the filtered list.
+    expect(container.textContent).not.toContain("db2");
+    expect(container.textContent).toContain("db3");
+
+    unmount();
+  });
+
+  test("hides Load more while a new filter's first page is refetching", async () => {
+    mocks.fetchDatabases.mockReset();
+    let resolveRefetch: (value: unknown) => void = () => {};
+    mocks.fetchDatabases
+      // Initial first page with more pages available.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      // First page after the filter change — stays pending so we can inspect
+      // the in-between state.
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefetch = resolve;
+          })
+      );
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    const hasLoadMore = () =>
+      Array.from(container.querySelectorAll("button")).some((button) =>
+        button.textContent?.includes("load-more")
+      );
+    expect(hasLoadMore()).toBe(true);
+
+    // Change the filter; the new first page is still in flight.
+    clickFirstButtonInRow(container, "advanced-search:");
+    await flushPromises();
+
+    // The stale page token must be cleared so Load more cannot fire a request
+    // pairing the old offset token with the new filter.
+    expect(hasLoadMore()).toBe(false);
+
+    // Once the new first page resolves, Load more reflects the new token.
+    act(() => {
+      resolveRefetch({
+        databases: [
+          {
+            name: "instances/prod/databases/db3",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "new-page-2",
+      });
+    });
+    await flushPromises();
+    await waitForText(container, "db3");
+    expect(hasLoadMore()).toBe(true);
+
+    unmount();
+  });
+
   test("selecting a table replaces child column selections", async () => {
     const onValueChange = vi.fn();
     const { container, unmount } = renderIntoContainer(

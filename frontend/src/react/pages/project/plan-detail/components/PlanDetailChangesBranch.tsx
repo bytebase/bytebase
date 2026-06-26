@@ -104,6 +104,7 @@ import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  extractSheetUID,
   getSheetStatement,
   setSheetStatement as setLocalSheetStatement,
 } from "@/utils/v1/sheet";
@@ -732,6 +733,19 @@ function OptionsSection({
   );
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
 
+  // Draft (local) sheets are edited in place by the statement editor, so the
+  // `sheetStatement` state is only a seed that goes stale after each keystroke.
+  // Read the live content back for them so an option toggle rebases on the
+  // user's latest SQL instead of overwriting it (BYT-9781); persisted (server)
+  // sheets stay on the state seeded by the effect below.
+  const isDraftSheet =
+    sheetName !== "" && extractSheetUID(sheetName).startsWith("-");
+  const readStatement = (): string =>
+    isDraftSheet
+      ? getSheetStatement(getLocalSheetByName(sheetName))
+      : sheetStatement;
+  const currentStatement = readStatement();
+
   const targets = useMemo(() => {
     if (selectedSpec.config?.case === "changeDatabaseConfig") {
       return selectedSpec.config.value.targets ?? [];
@@ -764,8 +778,8 @@ function OptionsSection({
     : "";
 
   const parsed = useMemo(
-    () => parseStatement(sheetStatement),
-    [sheetStatement]
+    () => parseStatement(currentStatement),
+    [currentStatement]
   );
   const selectedRole = parsed.role ?? "";
   const selectedIsolation = parsed.isolationLevel ?? "";
@@ -951,7 +965,7 @@ function OptionsSection({
     patchState({ plan: response });
   };
 
-  const currentGhostConfig = getGhostConfigFromStatement(sheetStatement);
+  const currentGhostConfig = getGhostConfigFromStatement(currentStatement);
   const ghostIssueDatabases = useMemo(() => {
     return databases.filter((db) => {
       const instance = getInstanceResource(db);
@@ -1016,7 +1030,7 @@ function OptionsSection({
                   onValueChange={(value) => {
                     void persistStatement(
                       updateRoleSetter(
-                        sheetStatement,
+                        readStatement(),
                         value && value !== EMPTY_SELECT_VALUE
                           ? value
                           : undefined
@@ -1063,7 +1077,7 @@ function OptionsSection({
                   onCheckedChange={(checked) => {
                     void persistStatement(
                       updateTransactionMode(
-                        sheetStatement,
+                        readStatement(),
                         checked ? "on" : "off"
                       )
                     );
@@ -1093,7 +1107,7 @@ function OptionsSection({
                   onValueChange={(value) => {
                     void persistStatement(
                       updateIsolationLevel(
-                        sheetStatement,
+                        readStatement(),
                         value === EMPTY_SELECT_VALUE
                           ? undefined
                           : (value as IsolationLevel) || undefined
@@ -1192,7 +1206,7 @@ function OptionsSection({
                   onCheckedChange={(checked) => {
                     void persistStatement(
                       updateGhostConfig(
-                        sheetStatement,
+                        readStatement(),
                         checked
                           ? (currentGhostConfig ?? getDefaultGhostConfig())
                           : undefined
@@ -1208,7 +1222,9 @@ function OptionsSection({
                 value={currentGhostConfig ?? {}}
                 disabled={!allowChange || isSheetOversize}
                 onChange={(next) =>
-                  void persistStatement(updateGhostConfig(sheetStatement, next))
+                  void persistStatement(
+                    updateGhostConfig(readStatement(), next)
+                  )
                 }
               />
             )}

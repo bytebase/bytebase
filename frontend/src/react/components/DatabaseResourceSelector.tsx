@@ -7,7 +7,7 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -66,6 +66,13 @@ const instanceNamePrefix = "instances/";
 const UNKNOWN_ENVIRONMENT_ID = "-1";
 const UNKNOWN_ENVIRONMENT_NAME = `${environmentNamePrefix}${UNKNOWN_ENVIRONMENT_ID}`;
 
+// Fetch and render databases one page at a time. The selector used to drain
+// every page in a do-while loop and render all rows at once, which froze the
+// tab for projects with thousands of databases (BYT-9785). One bounded page
+// keeps both the network payload and the DOM node count in check; the user
+// loads more on demand or narrows with the instance/environment filter.
+const DATABASE_PAGE_SIZE = 200;
+
 interface DatabaseFilter {
   instance?: string;
   environment?: string;
@@ -98,6 +105,8 @@ export function DatabaseResourceSelector({
   );
 
   const [databases, setDatabases] = useState<Database[]>([]);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
     scopes: [],
@@ -221,28 +230,55 @@ export function DatabaseResourceSelector({
     };
   }, [searchParams]);
 
+  // Bumped whenever the project or filter changes so that in-flight requests
+  // (first page or load-more) from a prior filter discard their results
+  // instead of appending stale databases into the current filtered list.
+  const requestGenerationRef = useRef(0);
+
   useEffect(() => {
-    let cancelled = false;
-    const fetchAll = async () => {
-      let allDatabases: Database[] = [];
-      let pageToken = "";
-      do {
-        const result = await useAppStore.getState().fetchDatabases({
-          parent: projectName,
-          pageSize: 1000,
-          pageToken,
-          filter: databaseFilter,
-        });
-        allDatabases = [...allDatabases, ...result.databases];
-        pageToken = result.nextPageToken;
-      } while (pageToken);
-      if (!cancelled) setDatabases(allDatabases);
+    requestGenerationRef.current += 1;
+    const generation = requestGenerationRef.current;
+    // A new filter context begins. Clear the pending load-more flag and the
+    // previous page token so the stale Load more button can't fire a request
+    // that pairs the old offset token with the new filter (page tokens are
+    // offsets bound to the same list params). The new token arrives with the
+    // first page below.
+    setLoadingMore(false);
+    setNextPageToken("");
+    const fetchFirstPage = async () => {
+      const result = await useAppStore.getState().fetchDatabases({
+        parent: projectName,
+        pageSize: DATABASE_PAGE_SIZE,
+        pageToken: "",
+        filter: databaseFilter,
+      });
+      if (generation !== requestGenerationRef.current) return;
+      setDatabases(result.databases);
+      setNextPageToken(result.nextPageToken);
     };
-    fetchAll();
-    return () => {
-      cancelled = true;
-    };
+    fetchFirstPage();
   }, [projectName, databaseFilter]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextPageToken || loadingMore) return;
+    const generation = requestGenerationRef.current;
+    setLoadingMore(true);
+    try {
+      const result = await useAppStore.getState().fetchDatabases({
+        parent: projectName,
+        pageSize: DATABASE_PAGE_SIZE,
+        pageToken: nextPageToken,
+        filter: databaseFilter,
+      });
+      if (generation !== requestGenerationRef.current) return;
+      setDatabases((prev) => [...prev, ...result.databases]);
+      setNextPageToken(result.nextPageToken);
+    } finally {
+      if (generation === requestGenerationRef.current) {
+        setLoadingMore(false);
+      }
+    }
+  }, [projectName, databaseFilter, nextPageToken, loadingMore]);
 
   const selectedResourceMap = useMemo(() => {
     const map = new Map<string, DatabaseSelection>();
@@ -836,7 +872,9 @@ export function DatabaseResourceSelector({
                 : t("common.select-all")}
             </button>
             <span>
-              {t("common.total")} {databases.length}{" "}
+              {nextPageToken
+                ? `${databases.length}+`
+                : `${t("common.total")} ${databases.length}`}{" "}
               {t("common.items", { count: databases.length })}
             </span>
           </div>
@@ -971,6 +1009,18 @@ export function DatabaseResourceSelector({
                 </div>
               );
             })}
+            {nextPageToken && (
+              <button
+                type="button"
+                className="w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore
+                  ? `${t("common.loading")}...`
+                  : t("common.load-more")}
+              </button>
+            )}
           </div>
         </div>
         <div className="flex-1 flex flex-col min-w-0">
