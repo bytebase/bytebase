@@ -13,7 +13,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/mysqlutil"
 )
 
 func init() {
@@ -131,12 +130,6 @@ func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, err
 	}
 
 	return result, nil
-}
-
-// DealWithDelimiter removes client-side DELIMITER directives and converts
-// statements terminated by a custom delimiter back to semicolon-terminated SQL.
-func DealWithDelimiter(statement string) (string, error) {
-	return mysqlutil.DealWithDelimiter(statement)
 }
 
 func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {

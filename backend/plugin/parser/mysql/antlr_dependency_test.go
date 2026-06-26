@@ -26,4 +26,6 @@ func TestMySQLDelimiterHandlingDoesNotUseLegacyTokenizer(t *testing.T) {
 
 	require.NotContains(t, source, "plugin/parser/tokenizer")
 	require.NotContains(t, source, "SplitTiDBMultiSQL")
+	require.NotContains(t, source, "mysqlutil")
+	require.NotContains(t, source, "DealWithDelimiter")
 }
