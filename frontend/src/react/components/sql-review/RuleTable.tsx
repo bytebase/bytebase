@@ -713,6 +713,15 @@ export function RuleTableWithFilter({
 }: RuleTableWithFilterProps) {
   const { t } = useTranslation();
   const { params, events } = useSQLRuleFilter();
+  const unfilteredRuleList = useMemo(() => {
+    return [...convertToCategoryMap(ruleList).entries()].map(
+      ([category, rules]) => ({
+        value: category,
+        label: t(`sql-review.category.${category.toLowerCase()}`),
+        ruleList: rules,
+      })
+    );
+  }, [ruleList, t]);
 
   useEffect(() => {
     events.reset();
@@ -747,10 +756,13 @@ export function RuleTableWithFilter({
       onChangeCategory={events.changeCategory}
       onChangeSearchText={events.changeSearchText}
     >
-      {(filteredRuleList) =>
-        filteredRuleList.length > 0 ? (
+      {(filteredRuleList) => {
+        const visibleRuleList = focusRuleKey
+          ? unfilteredRuleList
+          : filteredRuleList;
+        return visibleRuleList.length > 0 ? (
           <RuleTable
-            ruleList={filteredRuleList}
+            ruleList={visibleRuleList}
             editable={editable}
             hideLevel={hideLevel}
             supportSelect={supportSelect}
@@ -766,8 +778,8 @@ export function RuleTableWithFilter({
           <div className="py-12 border rounded-sm text-center text-control-placeholder">
             {t("common.no-data")}
           </div>
-        )
-      }
+        );
+      }}
     </RuleFilter>
   );
 }
