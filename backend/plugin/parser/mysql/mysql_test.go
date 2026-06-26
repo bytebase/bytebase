@@ -9,60 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestExtractDelimiter(t *testing.T) {
-	tests := []struct {
-		stmt    string
-		want    string
-		wantErr bool
-	}{
-		{
-			stmt:    "DELIMITER ;;",
-			want:    ";;",
-			wantErr: false,
-		},
-		{
-			stmt:    "DELIMITER //",
-			want:    "//",
-			wantErr: false,
-		},
-		{
-			stmt:    "DELIMITER $$",
-			want:    "$$",
-			wantErr: false,
-		},
-		{
-			stmt:    "DELIMITER    @@   ",
-			want:    "@@",
-			wantErr: false,
-		},
-		{
-			stmt:    "DELIMITER    @@//",
-			want:    "@@//",
-			wantErr: false,
-		},
-		{
-			stmt:    "DELIMITER    @@//",
-			want:    "@@//",
-			wantErr: false,
-		},
-		// DELIMITER cannot contain a backslash character
-		{
-			stmt:    "DELIMITER    \\",
-			wantErr: true,
-		},
-	}
-	a := require.New(t)
-	for _, test := range tests {
-		got, err := ExtractDelimiter(test.stmt)
-		if test.wantErr {
-			a.Error(err)
-		} else {
-			a.NoError(err)
-			a.Equal(test.want, got)
-		}
-	}
-}
-
 func TestMySQLParser(t *testing.T) {
 	tests := []struct {
 		statement    string

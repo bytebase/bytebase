@@ -3,13 +3,11 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysqlomniparser "github.com/bytebase/omni/mysql/parser"
 	parser "github.com/bytebase/parser/mysql"
-	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -207,25 +205,6 @@ func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
 		}
 	}
 	return true
-}
-
-// IsDelimiter returns true if the statement is a delimiter statement.
-func IsDelimiter(stmt string) bool {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
-}
-
-// ExtractDelimiter extracts the delimiter from the delimiter statement.
-func ExtractDelimiter(stmt string) (string, error) {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`
-	re := regexp.MustCompile(delimiterRegex)
-	matchList := re.FindStringSubmatch(stmt)
-	index := re.SubexpIndex("DELIMITER")
-	if index >= 0 && index < len(matchList) {
-		return matchList[index], nil
-	}
-	return "", pkgerrors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
 // IsTopMySQLRule returns true if the given context is a top-level MySQL rule.
