@@ -238,9 +238,13 @@ export function DatabaseResourceSelector({
   useEffect(() => {
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
-    // A new filter context begins; clear any pending load-more flag so a
-    // discarded in-flight request can't leave the button stuck disabled.
+    // A new filter context begins. Clear the pending load-more flag and the
+    // previous page token so the stale Load more button can't fire a request
+    // that pairs the old offset token with the new filter (page tokens are
+    // offsets bound to the same list params). The new token arrives with the
+    // first page below.
     setLoadingMore(false);
+    setNextPageToken("");
     const fetchFirstPage = async () => {
       const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,

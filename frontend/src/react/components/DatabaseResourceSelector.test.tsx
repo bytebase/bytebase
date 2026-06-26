@@ -463,6 +463,66 @@ describe("DatabaseResourceSelector", () => {
     unmount();
   });
 
+  test("hides Load more while a new filter's first page is refetching", async () => {
+    mocks.fetchDatabases.mockReset();
+    let resolveRefetch: (value: unknown) => void = () => {};
+    mocks.fetchDatabases
+      // Initial first page with more pages available.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      // First page after the filter change — stays pending so we can inspect
+      // the in-between state.
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefetch = resolve;
+          })
+      );
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    const hasLoadMore = () =>
+      Array.from(container.querySelectorAll("button")).some((button) =>
+        button.textContent?.includes("load-more")
+      );
+    expect(hasLoadMore()).toBe(true);
+
+    // Change the filter; the new first page is still in flight.
+    clickFirstButtonInRow(container, "advanced-search:");
+    await flushPromises();
+
+    // The stale page token must be cleared so Load more cannot fire a request
+    // pairing the old offset token with the new filter.
+    expect(hasLoadMore()).toBe(false);
+
+    // Once the new first page resolves, Load more reflects the new token.
+    act(() => {
+      resolveRefetch({
+        databases: [
+          {
+            name: "instances/prod/databases/db3",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "new-page-2",
+      });
+    });
+    await flushPromises();
+    await waitForText(container, "db3");
+    expect(hasLoadMore()).toBe(true);
+
+    unmount();
+  });
+
   test("selecting a table replaces child column selections", async () => {
     const onValueChange = vi.fn();
     const { container, unmount } = renderIntoContainer(
