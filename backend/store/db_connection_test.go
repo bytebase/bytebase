@@ -33,6 +33,16 @@ func TestIsFilePath(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "keyword value GCP IAM DSN",
+			in:   "user=bb dbname=bytebase bytebase_gcp_cloud_sql_iam=true bytebase_gcp_cloud_sql_instance_connection_name=project:region:instance",
+			want: false,
+		},
+		{
+			name: "keyword value GCP IAM DSN with runtime parameter first",
+			in:   "bytebase_gcp_cloud_sql_iam=true bytebase_gcp_cloud_sql_instance_connection_name=project:region:instance user=bb dbname=bytebase",
+			want: false,
+		},
+		{
 			name: "keyword value DSN with runtime parameter first",
 			in:   "application_name=bytebase host=example.com port=5432 user=bb dbname=bytebase",
 			want: false,

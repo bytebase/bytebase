@@ -175,7 +175,7 @@ func TestOracleOmniASTWrapper(t *testing.T) {
 	require.Nil(t, got)
 }
 
-func TestOracleOmniASTDoesNotProvideANTLRFallback(t *testing.T) {
+func TestOracleOmniASTUsesOmniNode(t *testing.T) {
 	start := &storepb.Position{Line: 4, Column: 1}
 	omniAST := &OmniAST{
 		Node:          &ast.SelectStmt{},
@@ -183,9 +183,9 @@ func TestOracleOmniASTDoesNotProvideANTLRFallback(t *testing.T) {
 		StartPosition: start,
 	}
 
-	antlrAST, ok := base.GetANTLRAST(omniAST)
-	require.False(t, ok)
-	require.Nil(t, antlrAST)
+	node, ok := GetOmniNode(omniAST)
+	require.True(t, ok)
+	require.Same(t, omniAST.Node, node)
 }
 
 func TestOracleByteOffsetToRunePosition(t *testing.T) {

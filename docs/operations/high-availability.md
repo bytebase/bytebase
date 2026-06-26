@@ -34,6 +34,16 @@ postgres://bb_meta@mydb.abc.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=ve
 
 The PostgreSQL user must be granted `rds_iam`, and the AWS principal used by each Bytebase process must have `rds-db:connect` for that database user. Use verified TLS, such as `sslmode=verify-full`, with a trust store that validates the RDS certificate. Do not put AWS access keys in `PG_URL`; use the standard AWS SDK credential chain through the runtime environment, such as EKS IRSA, ECS task roles, EC2 instance profiles, environment variables, or shared AWS config.
 
+### GCP Cloud SQL IAM authentication for metadata PostgreSQL
+
+When the shared metadata PostgreSQL database is GCP Cloud SQL for PostgreSQL, every Bytebase replica can enable Cloud SQL IAM auth by adding the Bytebase GCP parameters to `PG_URL`. Keyword/value values are recommended because Cloud SQL IAM PostgreSQL user names commonly contain `@`:
+
+```text
+user=bb-meta@project-id.iam dbname=bytebase bytebase_gcp_cloud_sql_iam=true bytebase_gcp_cloud_sql_instance_connection_name=project-id:us-central1:bytebase-metadata
+```
+
+The Cloud SQL IAM database user must exist and have the needed PostgreSQL privileges. The Google principal used by each Bytebase process must have permission to connect to the Cloud SQL instance, typically through ambient Application Default Credentials such as GKE Workload Identity. Do not put Google service account keys in `PG_URL`.
+
 ## How replica detection works
 
 Bytebase tracks live replicas with heartbeats:
