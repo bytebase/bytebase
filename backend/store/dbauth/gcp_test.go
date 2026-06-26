@@ -10,8 +10,9 @@ import (
 )
 
 type fakeGCPDialer struct {
-	calls []fakeGCPDialerCall
-	err   error
+	calls      []fakeGCPDialerCall
+	closeCalls int
+	err        error
 }
 
 type fakeGCPDialerCall struct {
@@ -25,6 +26,11 @@ func (d *fakeGCPDialer) Dial(ctx context.Context, instanceConnectionName string)
 		instanceConnectionName: instanceConnectionName,
 	})
 	return nil, d.err
+}
+
+func (d *fakeGCPDialer) Close() error {
+	d.closeCalls++
+	return nil
 }
 
 func TestGCPConfigFromPGXConfigDisabled(t *testing.T) {
@@ -105,10 +111,28 @@ func TestApplyGCPConfigSetsDialFunc(t *testing.T) {
 	}, dialer.calls)
 }
 
+func TestConfigureGCPWithDialerReturnsCleanup(t *testing.T) {
+	pgxConfig := &pgx.ConnConfig{}
+	dialer := &fakeGCPDialer{}
+
+	openOptions, cleanup, err := configureGCPWithDialer(pgxConfig, &gcpConfig{
+		enabled:                true,
+		instanceConnectionName: "project:region:instance",
+	}, dialer)
+
+	require.NoError(t, err)
+	require.Empty(t, openOptions)
+	require.NotNil(t, cleanup)
+	require.NotNil(t, pgxConfig.DialFunc)
+
+	require.NoError(t, cleanup())
+	require.Equal(t, 1, dialer.closeCalls)
+}
+
 func TestConfigureRejectsMultipleMetadataDBAuthProviders(t *testing.T) {
 	pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1&bytebase_gcp_cloud_sql_iam=true&bytebase_gcp_cloud_sql_instance_connection_name=project:region:instance")
 
-	_, err := Configure(context.Background(), pgxConfig)
+	_, _, err := Configure(context.Background(), pgxConfig)
 
 	require.ErrorContains(t, err, "multiple metadata database IAM auth providers are enabled")
 }

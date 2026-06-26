@@ -6,6 +6,7 @@ import (
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +22,7 @@ type gcpConfig struct {
 
 type gcpDialer interface {
 	Dial(ctx context.Context, instanceConnectionName string) (net.Conn, error)
+	Close() error
 }
 
 type gcpMetadataDBDialer struct {
@@ -37,6 +39,10 @@ func newGCPMetadataDBDialer(ctx context.Context) (*gcpMetadataDBDialer, error) {
 
 func (d *gcpMetadataDBDialer) Dial(ctx context.Context, instanceConnectionName string) (net.Conn, error) {
 	return d.dialer.Dial(ctx, instanceConnectionName)
+}
+
+func (d *gcpMetadataDBDialer) Close() error {
+	return d.dialer.Close()
 }
 
 func gcpConfigFromPGXConfig(pgxConfig *pgx.ConnConfig) (*gcpConfig, error) {
@@ -74,4 +80,9 @@ func applyGCPConfig(pgxConfig *pgx.ConnConfig, authConfig *gcpConfig, dialer gcp
 		}
 		return conn, nil
 	}
+}
+
+func configureGCPWithDialer(pgxConfig *pgx.ConnConfig, authConfig *gcpConfig, dialer gcpDialer) ([]stdlib.OptionOpenDB, func() error, error) {
+	applyGCPConfig(pgxConfig, authConfig, dialer)
+	return nil, dialer.Close, nil
 }
