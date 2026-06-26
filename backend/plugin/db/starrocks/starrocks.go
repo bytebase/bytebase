@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	mysqlomni "github.com/bytebase/omni/mysql/parser"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -25,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -168,9 +168,18 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	statement, err := mysqlparser.DealWithDelimiter(statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to deal with delimiter")
+	// Only preprocess when DELIMITER directives are present; normal
+	// StarRocks SQL passes through unchanged.
+	if containsDelimiterDirective(statement) {
+		segments := mysqlomni.Split(statement)
+		var buf strings.Builder
+		for i, seg := range segments {
+			if i > 0 {
+				buf.WriteString(";\n")
+			}
+			buf.WriteString(seg.Text)
+		}
+		statement = buf.String()
 	}
 	// Execute based on transaction mode
 	// Note: StarRocks is an OLAP database with limited transaction support.
@@ -363,6 +372,17 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 func (d *Driver) StopConnectionByID(id string) error {
 	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id)) // NOSONAR(go:S2077) id is from CONNECTION_ID() server function, not user input
 	return err
+}
+
+func containsDelimiterDirective(s string) bool {
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimLeft(line, " \t")
+		upper := strings.ToUpper(trimmed)
+		if strings.HasPrefix(upper, "DELIMITER ") || strings.HasPrefix(upper, "DELIMITER\t") {
+			return true
+		}
+	}
+	return false
 }
 
 func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
