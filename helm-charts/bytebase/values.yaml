@@ -105,6 +105,31 @@ bytebase:
   #   value: "value"
   #   effect: "NoSchedule"
 
+# Gateway API HTTPRoute configuration
+# ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+httpRoute:
+  # -- Enable HTTPRoute for Bytebase (Gateway API). Requires a Gateway API implementation in the cluster.
+  # Mutually exclusive with Ingress — enable one or the other, not both.
+  enabled: false
+  # -- Additional HTTPRoute annotations
+  annotations: {}
+  # -- Gateway API parentRefs. Must reference an existing Gateway.
+  # @default -- `[]` (See [values.yaml])
+  parentRefs: []
+  # - name: public
+  #   namespace: kube-system
+  #   sectionName: https
+  # -- Hostnames for the HTTPRoute
+  hostnames: []
+  # - bytebase.example.com
+  # -- HTTPRoute rules. Defaults to a single catch-all rule if not set.
+  # Each rule's backendRef is wired to the bytebase-entrypoint Service automatically.
+  rules: []
+  # - matches:
+  #   - path:
+  #       type: PathPrefix
+  #       value: /
+
 # Service account configuration
 # ref: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
