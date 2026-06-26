@@ -1,4 +1,15 @@
 {
+  "add-or-remove-rules": "ルールを追加または削除する",
+  "add-rules": "ルールを追加する",
+  "attach-resource": {
+    "change-resources": "バインドされたリソースを変更する",
+    "label": "SQL レビューポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
+    "label-environment": "SQL レビューポリシーは、選択した環境に属するすべてのデータベースに影響します。",
+    "label-project": "SQL レビューポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL レビューポリシーは無視されます。",
+    "no-linked-resources": "リソースのバインドはありません",
+    "override-warning": "次のリソースは、他の SQL レビューポリシーにバインドされています。 \"{{button}}\" をクリックすると設定が上書きされます。",
+    "self": "リソースにバインドする"
+  },
   "category": {
     "advice": "アドバイス",
     "builtin": "組み込みルール",
@@ -12,6 +23,28 @@
     "system": "システム",
     "table": "テーブル"
   },
+  "configure-policy": "SQL レビューポリシーを設定する",
+  "create": {
+    "basic-info": {
+      "choose-template": "テンプレートを選択",
+      "display-name": "名前",
+      "display-name-default": "SQL レビューポリシー",
+      "display-name-label": "さまざまな SQL レビューポリシーを区別するために使用される名前。",
+      "name": "基本情報"
+    },
+    "configure-rule": {
+      "change-template": "テンプレートの変更",
+      "confirm-override-description": "以前のルールは上書きされます",
+      "name": "ルールを設定する"
+    }
+  },
+  "delete": "SQL レビューポリシーの削除",
+  "delete-description": "SQL レビューポリシーとそのすべてのルールは完全に削除されます。この操作は元に戻せません。",
+  "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
+  "disable-description": "このポリシーを無効にすると、関連付けられたリソースへのルール適用が停止されます。後で再度有効にすることができます。",
+  "disabled": "SQL レビューポリシーが無効になっています",
+  "enable-description": "このポリシーを有効にすると、関連付けられたリソースへのルール適用が開始されます。",
+  "enabled-rules": "開かれたルールの数",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -22,12 +55,20 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
+  "input-then-press-enter": "入力後、Enterを押して追加します",
   "level": {
     "disabled": "無効化",
     "error": "エラー",
     "name": "エラーレベル",
     "warning": "警告"
   },
+  "no-permission": "管理者または DBA のみが SQL レビューポリシーを作成または更新する権限を持っています。",
+  "policy-create-failed": "SQL レビューポリシーの作成に失敗しました",
+  "policy-created": "SQL レビューポリシーが作成されました",
+  "policy-removed": "SQL レビューポリシーが削除されました",
+  "policy-update-failed": "レビューポリシーの更新に失敗しました。",
+  "policy-updated": "SQL レビューポリシーが更新されました",
+  "review-policy": "レビューポリシー",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -701,18 +742,22 @@
       },
       "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。",
       "title": "テキスト入力欄の文字数を制限する"
-    }
+    },
+    "self": "SQLレビュールール"
   },
+  "select-all": "すべて選択",
+  "select-review-rules": "SQL レビュールールを選択",
   "template": {
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-empty": "ゼロから始めます",
-    "bb-sql-review-empty-desc": "空のテンプレートです。必要なルールを自分で追加する必要があります。",
+    "bb-sql-review-empty-desc": "組み込みルールのみで開始します。必要なルールは自分で追加してください。",
     "bb-sql-review-prod": "高度なテンプレート",
     "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
     "bb-sql-review-sample": "サンプルテンプレート",
     "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
   },
+  "title": "SQL レビューポリシー",
   "validation": {
     "rule-required": "少なくとも 1 つのルールを選択してください。",
     "string-array-required": "{{rule}} に少なくとも 1 つの値を追加してください。"

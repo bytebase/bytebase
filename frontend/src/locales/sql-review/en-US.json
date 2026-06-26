@@ -1,4 +1,15 @@
 {
+  "add-or-remove-rules": "Add or remove rules",
+  "add-rules": "Add rules",
+  "attach-resource": {
+    "change-resources": "Change attached resources",
+    "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
+    "label-environment": "The SQL review policy will affect all databases belonging to the selected environment.",
+    "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy.",
+    "no-linked-resources": "No attached resources",
+    "override-warning": "Following resources already bound with other SQL review policies. Click \"{{button}}\" will override the config.",
+    "self": "Attach to resources"
+  },
   "category": {
     "advice": "Advice",
     "builtin": "Builtin rules",
@@ -12,6 +23,28 @@
     "system": "System",
     "table": "Table"
   },
+  "configure-policy": "Configure policy",
+  "create": {
+    "basic-info": {
+      "choose-template": "Choose template",
+      "display-name": "Display name",
+      "display-name-default": "SQL review policy",
+      "display-name-label": "A display name to help identifying among different review policies.",
+      "name": "Basic info"
+    },
+    "configure-rule": {
+      "change-template": "Change the template",
+      "confirm-override-description": "Your rules will be overridden",
+      "name": "Configure rule"
+    }
+  },
+  "delete": "Delete SQL review policy",
+  "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
+  "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+  "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
+  "disabled": "SQL review is disabled",
+  "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
+  "enabled-rules": "Enabled rules",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -22,12 +55,20 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
+  "input-then-press-enter": "Input the value then press enter to add",
   "level": {
     "disabled": "Disabled",
     "error": "Error",
     "name": "Error Level",
     "warning": "Warning"
   },
+  "no-permission": "Only DBA or Admin has permission to create or update review policy.",
+  "policy-create-failed": "Failed to create the review policy.",
+  "policy-created": "Successfully created the review policy.",
+  "policy-removed": "Successfully removed the review policy.",
+  "policy-update-failed": "Failed to update the review policy.",
+  "policy-updated": "Successfully updated the review policy.",
+  "review-policy": "Review policy",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -701,18 +742,22 @@
       },
       "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage.",
       "title": "Restrict the total length of text fields in a table"
-    }
+    },
+    "self": "SQL Review Rule"
   },
+  "select-all": "Select all",
+  "select-review-rules": "Select SQL review rules",
   "template": {
     "bb-sql-review-dev": "Basic Template",
     "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",
     "bb-sql-review-empty": "Start from scratch",
-    "bb-sql-review-empty-desc": "An empty template. You need to add needed rules by yourself.",
+    "bb-sql-review-empty-desc": "Start with only built-in rules. Add the rules you need yourself.",
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-sample": "Sample Template",
     "bb-sql-review-sample-desc": "A minimum template with DROP protection and disallow column nullable."
   },
+  "title": "SQL Review",
   "validation": {
     "rule-required": "Select at least one rule.",
     "string-array-required": "Add at least one value for {{rule}}."

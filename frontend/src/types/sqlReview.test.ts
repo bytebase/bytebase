@@ -10,7 +10,9 @@ import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import {
   convertRuleMapToPolicyRuleList,
+  isBuiltinRule,
   type RuleTemplateV2,
+  TEMPLATE_LIST_V2,
   validateRuleMapByEngine,
 } from "./sqlReview";
 
@@ -297,5 +299,17 @@ describe("convertRuleMapToPolicyRuleList", () => {
     expect(rules).toHaveLength(2);
     expect(getStringArrayList(rules[0])).toEqual(["audit_log"]);
     expect(getStringArrayList(rules[1])).toEqual(["user"]);
+  });
+});
+
+describe("TEMPLATE_LIST_V2", () => {
+  test("start from scratch still includes built-in rules", () => {
+    const template = TEMPLATE_LIST_V2.find(
+      (template) => template.id === "bb.sql-review.empty"
+    );
+
+    expect(template).toBeTruthy();
+    expect(template?.ruleList.length).toBeGreaterThan(0);
+    expect(template?.ruleList.every(isBuiltinRule)).toBe(true);
   });
 });

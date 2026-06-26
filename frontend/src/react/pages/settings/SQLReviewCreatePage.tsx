@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { useSQLReviewStore } from "@/react/stores/sqlReview";
-import { ReviewCreation } from "../../components/sql-review/ReviewCreation";
+import {
+  ReviewCreation,
+  type ReviewCreationProps,
+} from "../../components/sql-review/ReviewCreation";
+
+export function SQLReviewCreationPage(props: ReviewCreationProps) {
+  return (
+    <div className="px-4 pt-4 h-full min-h-0 flex flex-col">
+      <ReviewCreation {...props} />
+    </div>
+  );
+}
 
 export function SQLReviewCreatePage() {
   useEffect(() => {
@@ -14,11 +25,9 @@ export function SQLReviewCreatePage() {
   });
 
   return (
-    <div className="px-4 py-4 gap-y-4 h-full flex flex-col">
-      <ReviewCreation
-        selectedRuleList={[]}
-        selectedResources={selectedResources}
-      />
-    </div>
+    <SQLReviewCreationPage
+      selectedRuleList={[]}
+      selectedResources={selectedResources}
+    />
   );
 }

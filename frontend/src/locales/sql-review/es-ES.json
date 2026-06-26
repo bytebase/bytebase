@@ -1,4 +1,15 @@
 {
+  "add-or-remove-rules": "Agregar o eliminar reglas",
+  "add-rules": "Agregar reglas",
+  "attach-resource": {
+    "change-resources": "Cambiar recursos adjuntos",
+    "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
+    "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
+    "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
+    "no-linked-resources": "Sin recursos adjuntos",
+    "override-warning": "Siguiendo los recursos ya vinculados con otras políticas de revisión de SQL. Haga clic en \"{{button}}\" para anular la configuración.",
+    "self": "Adjuntar a recursos"
+  },
   "category": {
     "advice": "Consejo",
     "builtin": "Reglas incorporadas",
@@ -12,6 +23,28 @@
     "system": "Sistema",
     "table": "Tabla"
   },
+  "configure-policy": "Configurar política",
+  "create": {
+    "basic-info": {
+      "choose-template": "Elegir plantilla",
+      "display-name": "Nombre para mostrar",
+      "display-name-default": "Política de revisión SQL",
+      "display-name-label": "Un nombre para mostrar que ayuda a identificar entre diferentes políticas de revisión.",
+      "name": "Información básica"
+    },
+    "configure-rule": {
+      "change-template": "Cambiar plantilla",
+      "confirm-override-description": "Sus reglas serán anuladas",
+      "name": "Configurar regla"
+    }
+  },
+  "delete": "Eliminar política de revisión SQL",
+  "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
+  "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+  "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
+  "disabled": "La revisión de SQL está deshabilitada",
+  "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
+  "enabled-rules": "Reglas habilitadas",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -22,12 +55,20 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
+  "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
   "level": {
     "disabled": "Deshabilitado",
     "error": "Error",
     "name": "Nivel de Error",
     "warning": "Advertencia"
   },
+  "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
+  "policy-create-failed": "No se pudo crear la política de revisión.",
+  "policy-created": "La política de revisión se creó correctamente.",
+  "policy-removed": "La política de revisión se eliminó correctamente.",
+  "policy-update-failed": "No se pudo actualizar la política de revisión.",
+  "policy-updated": "La política de revisión se actualizó correctamente.",
+  "review-policy": "Política de revisión",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -701,18 +742,22 @@
       },
       "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento.",
       "title": "Limitar la longitud total de los campos de texto en una tabla"
-    }
+    },
+    "self": "Regla de revisión SQL"
   },
+  "select-all": "Seleccionar todo",
+  "select-review-rules": "Seleccionar reglas de revisión de SQL",
   "template": {
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
     "bb-sql-review-empty": "Empezar desde el principio",
-    "bb-sql-review-empty-desc": "Una plantilla vacía. Debe agregar las reglas necesarias usted mismo.",
+    "bb-sql-review-empty-desc": "Comience solo con reglas integradas. Agregue usted mismo las reglas que necesite.",
     "bb-sql-review-prod": "Plantilla Avanzada",
     "bb-sql-review-prod-desc": "Política completa donde se tiene protección total y mejores prácticas para sus bases de datos.",
     "bb-sql-review-sample": "Plantilla de Muestra",
     "bb-sql-review-sample-desc": "Una plantilla mínima con protección de DROP y prohibición de columnas anulables."
   },
+  "title": "Revisión de SQL",
   "validation": {
     "rule-required": "Seleccione al menos una regla.",
     "string-array-required": "Agregue al menos un valor para {{rule}}."
