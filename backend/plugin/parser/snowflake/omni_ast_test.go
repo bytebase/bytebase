@@ -6,13 +6,18 @@ import (
 	omniast "github.com/bytebase/omni/snowflake/ast"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+type testAST struct{}
+
+func (testAST) ASTStartPosition() *storepb.Position {
+	return nil
+}
 
 // TestParseSnowflakeStatementsOmniAST locks the omni-only contract: every
 // non-empty statement carries an OmniAST wrapping a non-nil omni node
-// (reachable via GetOmniNode); the legacy ANTLR tree is gone, so
-// base.GetANTLRAST reports false.
+// (reachable via GetOmniNode); the legacy ANTLR tree is gone.
 func TestParseSnowflakeStatementsOmniAST(t *testing.T) {
 	parsed, err := parseSnowflakeStatements("CREATE TABLE t1(id INT);\nSELECT id FROM t1;")
 	require.NoError(t, err)
@@ -27,10 +32,6 @@ func TestParseSnowflakeStatementsOmniAST(t *testing.T) {
 		node, ok := GetOmniNode(ps.AST)
 		require.True(t, ok, "stmt %d: GetOmniNode must work", i)
 		require.NotNil(t, node, "stmt %d", i)
-
-		// No legacy ANTLR tree rides along anymore.
-		_, ok = base.GetANTLRAST(ps.AST)
-		require.False(t, ok, "stmt %d: GetANTLRAST must report false", i)
 
 		// ASTStartPosition keeps the legacy shape (line-based, BaseLine()+1),
 		// so position reporting is unchanged by the cutover.
@@ -73,8 +74,7 @@ func TestGetOmniNodeEdgeCases(t *testing.T) {
 	require.False(t, ok)
 	require.Nil(t, node)
 
-	// A plain legacy ANTLRAST is not an OmniAST.
-	node, ok = GetOmniNode(&base.ANTLRAST{})
+	node, ok = GetOmniNode(testAST{})
 	require.False(t, ok)
 	require.Nil(t, node)
 }
