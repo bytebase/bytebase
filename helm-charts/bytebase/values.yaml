@@ -46,6 +46,9 @@ bytebase:
       awsRdsIam:
         enabled: false
         region: ""
+      gcpCloudSqlIam:
+        enabled: false
+        instanceConnectionName: ""
   persistence:
     enabled: false
     existingClaim: ""

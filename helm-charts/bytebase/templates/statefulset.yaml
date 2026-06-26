@@ -22,6 +22,11 @@
 {{- $externalPgEscapePgPassword := .Values.bytebase.option.externalPg.escapePassword -}}
 {{- $externalPgAWSRDSIAMEnabled := .Values.bytebase.option.externalPg.awsRdsIam.enabled -}}
 {{- $externalPgAWSRDSIAMRegion := .Values.bytebase.option.externalPg.awsRdsIam.region -}}
+{{- $externalPgGCPCloudSQLIAMEnabled := .Values.bytebase.option.externalPg.gcpCloudSqlIam.enabled -}}
+{{- $externalPgGCPCloudSQLIAMInstanceConnectionName := .Values.bytebase.option.externalPg.gcpCloudSqlIam.instanceConnectionName -}}
+{{- if and $externalPgAWSRDSIAMEnabled $externalPgGCPCloudSQLIAMEnabled -}}
+{{- fail "only one metadata database IAM auth provider can be enabled" -}}
+{{- end -}}
 # bytbease.persistence
 {{- $persistenceEnable := .Values.bytebase.persistence.enabled -}}
 {{- $persistenceExistingClaim := .Values.bytebase.persistence.existingClaim -}}
@@ -49,7 +54,7 @@ spec:
         app: bytebase
     spec:
       serviceAccountName: {{ template "bytebase.serviceAccountName" . }}
-      {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) }}
+      {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) (not $externalPgGCPCloudSQLIAMEnabled) }}
       # If user specify the externalPgEscapePgPassword, we should escape the password in the PG_URL in the shell,
       # because the password may comes from a secret, which is invisible in helm.
       # Hence, we do the escaping in the initialization container, and write the escaped password to the shared volume.
@@ -160,7 +165,10 @@ spec:
             value: {{ $externalPgURL }}
           {{- else }}
           # Otherwise, we should construct the external pg connection string from the specified parameters.
-          {{- if $externalPgAWSRDSIAMEnabled }}
+          {{- if $externalPgGCPCloudSQLIAMEnabled }}
+          - name: PG_URL
+            value: {{ printf "user=%s dbname=%s bytebase_gcp_cloud_sql_iam=true bytebase_gcp_cloud_sql_instance_connection_name=%s" $externalPgUsername $externalPgDatabase (required "bytebase.option.externalPg.gcpCloudSqlIam.instanceConnectionName is required when bytebase.option.externalPg.gcpCloudSqlIam.enabled is true" $externalPgGCPCloudSQLIAMInstanceConnectionName) | quote }}
+          {{- else if $externalPgAWSRDSIAMEnabled }}
           - name: PG_URL
             value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
           {{- else if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
@@ -182,7 +190,7 @@ spec:
             - -c
           args:
             - |
-              {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) }}
+              {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) (not $externalPgGCPCloudSQLIAMEnabled) }}
               # If user escape the password, we should read the escaped password from the shared volume, and construct the PG_PASSWORD.
               export PG_URL=postgres://{{ $externalPgUsername }}:$(cat /mnt/bytebase-shared-volume/pg_escaped_password)@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}
               {{- end }}
