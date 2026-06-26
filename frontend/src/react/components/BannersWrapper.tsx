@@ -228,31 +228,33 @@ function BannerUpgradeSubscription() {
   return (
     <>
       <div className="overflow-clip bg-gray-200">
-        <div className="bb-banner-scroll h-10 w-full">
-          <div className="mx-auto flex w-full flex-row flex-wrap items-center justify-center px-3 py-1">
-            <div className="flex flex-row items-center">
-              <AlertCircle className="mr-1 h-auto w-5 text-gray-800" />
-              <Trans
-                t={t}
-                i18nKey="subscription.overuse-warning"
-                values={{
-                  currentPlan: currentPlanTitle,
-                  neededPlan: neededPlanFeatures,
-                }}
-                components={{
-                  neededPlan: (
-                    <button
-                      type="button"
-                      className="mr-1 cursor-pointer underline hover:opacity-60"
-                      onClick={() => setShowModal(true)}
-                    >
-                      {neededPlanFeatures}
-                    </button>
-                  ),
-                }}
-              />
+        <div className="bb-banner-scroll min-h-10 w-full">
+          <div className="mx-auto flex min-h-10 w-full flex-row flex-wrap items-center justify-start gap-x-2 gap-y-1 px-3 py-2 text-sm leading-5 sm:justify-center sm:py-1">
+            <div className="flex min-w-0 max-w-full flex-[0_1_auto] flex-row items-start sm:items-center">
+              <AlertCircle className="mt-0.5 mr-1 h-auto w-5 shrink-0 text-gray-800 sm:mt-0" />
+              <span data-label="bb-upgrade-banner-message" className="min-w-0">
+                <Trans
+                  t={t}
+                  i18nKey="subscription.overuse-warning"
+                  values={{
+                    currentPlan: currentPlanTitle,
+                    neededPlan: neededPlanFeatures,
+                  }}
+                  components={{
+                    neededPlan: (
+                      <button
+                        type="button"
+                        className="mr-1 cursor-pointer whitespace-nowrap underline hover:opacity-60"
+                        onClick={() => setShowModal(true)}
+                      >
+                        {neededPlanFeatures}
+                      </button>
+                    ),
+                  }}
+                />
+              </span>
             </div>
-            <div className="ml-2">
+            <div className="shrink-0">
               <RouterLink
                 to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
                 className={buttonVariants({ size: "sm" })}

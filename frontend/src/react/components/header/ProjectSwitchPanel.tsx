@@ -171,12 +171,7 @@ export function ProjectSwitchPanel({
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        void navigate.push({
-          name: PROJECT_V1_ROUTE_DETAIL,
-          params: {
-            projectId: getProjectName(project.name),
-          },
-        });
+        void navigate.push(route);
       }
 
       onClose();

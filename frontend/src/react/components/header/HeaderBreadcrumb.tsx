@@ -10,6 +10,7 @@ import {
 } from "@/react/components/ui/popover";
 import {
   useProject,
+  useRecentVisit,
   useSubscription,
   useSwitchWorkspace,
   useWorkspace,
@@ -21,7 +22,11 @@ import {
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
-import { useCurrentRoute, WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import {
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
@@ -58,7 +63,7 @@ function planVariant(
 // ---------------------------------------------------------------------------
 // WorkspaceSegment — shows workspace name + plan badge + optional dropdown
 // ---------------------------------------------------------------------------
-function WorkspaceSegment() {
+export function WorkspaceSegment() {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const workspaceList = useWorkspaceList();
@@ -69,6 +74,8 @@ function WorkspaceSegment() {
   const hasMultiple = workspaceList.length > 1;
   const switchWorkspace = useSwitchWorkspace();
   const [open, setOpen] = useState(false);
+  const { record } = useRecentVisit();
+  const navigate = useNavigate();
 
   const onSwitch = useCallback(
     (workspaceName: string) => {
@@ -83,6 +90,10 @@ function WorkspaceSegment() {
     <div className="inline-flex items-center">
       <RouterLink
         to={{ name: WORKSPACE_ROUTE_LANDING }}
+        onClick={() => {
+          const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
+          record(route.fullPath);
+        }}
         className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
       >
         <Building2 className="size-4 text-control-light shrink-0" />
@@ -156,7 +167,7 @@ function WorkspaceSegment() {
 // ---------------------------------------------------------------------------
 // ProjectSegment — shows project name + dropdown, only when inside a project
 // ---------------------------------------------------------------------------
-function ProjectSegment() {
+export function ProjectSegment() {
   const { t } = useTranslation();
   const route = useCurrentRoute();
   const [open, setOpen] = useState(false);
@@ -227,6 +238,20 @@ export function HeaderBreadcrumb() {
         <span className="text-control-placeholder select-none">/</span>
       </div>
       <ProjectSegment />
+    </div>
+  );
+}
+
+export function MobileSidebarSwitchers() {
+  return (
+    <div
+      data-label="bb-mobile-sidebar-switchers"
+      className="md:hidden border-b border-block-border px-2.5 py-2"
+    >
+      <div className="flex flex-col gap-y-1">
+        <WorkspaceSegment />
+        <ProjectSegment />
+      </div>
     </div>
   );
 }

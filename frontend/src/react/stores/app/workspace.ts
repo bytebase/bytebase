@@ -15,6 +15,8 @@ import {
   settingNamePrefix,
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
+import { WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import { resolvePath } from "@/react/router/navigation";
 import { getEnvironmentId } from "@/store/modules/v1/common";
 import {
   broadcastWorkspaceSwitch,
@@ -71,14 +73,7 @@ import {
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
-// Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
-// Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
-// store to register its own handler on the same object, and source-object
-// exclusion correctly suppresses both handlers when a post originates from
-// this tab (e.g. the OAuth2 consent page's in-place switch).
-workspaceSwitchChannel.addEventListener("message", () => {
-  window.location.href = "/";
-});
+let workspaceSwitchListenerRegistered = false;
 
 const workspaceProfileSettingName = `${settingNamePrefix}${
   Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]
@@ -151,6 +146,22 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => {
+  // Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
+  // Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
+  // store to register its own handler on the same object, and source-object
+  // exclusion correctly suppresses both handlers when a post originates from
+  // this tab (e.g. the OAuth2 consent page's in-place switch).
+  if (!workspaceSwitchListenerRegistered) {
+    workspaceSwitchListenerRegistered = true;
+    workspaceSwitchChannel.addEventListener("message", (event) => {
+      get().recordRecentVisit(
+        resolvePath(WORKSPACE_ROUTE_LANDING),
+        typeof event.data === "string" ? event.data : undefined
+      );
+      window.location.href = "/";
+    });
+  }
+
   const unknownEnvironment = createUnknownEnvironment();
   const nullEnvironment = createNullEnvironment();
   const environmentFallbacksByName = new Map<string, Environment>();
@@ -286,6 +297,10 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
           workspace: workspaceName,
           web: true,
         })
+      );
+      get().recordRecentVisit(
+        resolvePath(WORKSPACE_ROUTE_LANDING),
+        workspaceName
       );
       // Notify other tabs to reload with the new workspace.
       broadcastWorkspaceSwitch(workspaceName);
