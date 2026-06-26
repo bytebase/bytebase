@@ -392,6 +392,77 @@ describe("DatabaseResourceSelector", () => {
     unmount();
   });
 
+  test("discards stale load-more results when the filter changes mid-flight", async () => {
+    mocks.fetchDatabases.mockReset();
+    let resolveStaleLoadMore: (value: unknown) => void = () => {};
+    mocks.fetchDatabases
+      // Initial first page.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      // Load-more request: stays pending until we resolve it by hand.
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStaleLoadMore = resolve;
+          })
+      )
+      // Refetch triggered by the filter change.
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db3",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    // Kick off load more — the request hangs.
+    const loadMoreButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("load-more"));
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushPromises();
+
+    // Change the filter before load-more resolves -> new first page (db3).
+    clickFirstButtonInRow(container, "advanced-search:");
+    await flushPromises();
+    await waitForText(container, "db3");
+
+    // The stale load-more now resolves with a page from the old filter.
+    act(() => {
+      resolveStaleLoadMore({
+        databases: [
+          {
+            name: "instances/prod/databases/db2",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+    });
+    await flushPromises();
+
+    // Stale page must not leak into the filtered list.
+    expect(container.textContent).not.toContain("db2");
+    expect(container.textContent).toContain("db3");
+
+    unmount();
+  });
+
   test("selecting a table replaces child column selections", async () => {
     const onValueChange = vi.fn();
     const { container, unmount } = renderIntoContainer(

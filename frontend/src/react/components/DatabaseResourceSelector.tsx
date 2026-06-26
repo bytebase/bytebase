@@ -7,7 +7,7 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -230,8 +230,17 @@ export function DatabaseResourceSelector({
     };
   }, [searchParams]);
 
+  // Bumped whenever the project or filter changes so that in-flight requests
+  // (first page or load-more) from a prior filter discard their results
+  // instead of appending stale databases into the current filtered list.
+  const requestGenerationRef = useRef(0);
+
   useEffect(() => {
-    let cancelled = false;
+    requestGenerationRef.current += 1;
+    const generation = requestGenerationRef.current;
+    // A new filter context begins; clear any pending load-more flag so a
+    // discarded in-flight request can't leave the button stuck disabled.
+    setLoadingMore(false);
     const fetchFirstPage = async () => {
       const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
@@ -239,18 +248,16 @@ export function DatabaseResourceSelector({
         pageToken: "",
         filter: databaseFilter,
       });
-      if (cancelled) return;
+      if (generation !== requestGenerationRef.current) return;
       setDatabases(result.databases);
       setNextPageToken(result.nextPageToken);
     };
     fetchFirstPage();
-    return () => {
-      cancelled = true;
-    };
   }, [projectName, databaseFilter]);
 
   const loadMore = useCallback(async () => {
     if (!nextPageToken || loadingMore) return;
+    const generation = requestGenerationRef.current;
     setLoadingMore(true);
     try {
       const result = await useAppStore.getState().fetchDatabases({
@@ -259,10 +266,13 @@ export function DatabaseResourceSelector({
         pageToken: nextPageToken,
         filter: databaseFilter,
       });
+      if (generation !== requestGenerationRef.current) return;
       setDatabases((prev) => [...prev, ...result.databases]);
       setNextPageToken(result.nextPageToken);
     } finally {
-      setLoadingMore(false);
+      if (generation === requestGenerationRef.current) {
+        setLoadingMore(false);
+      }
     }
   }, [projectName, databaseFilter, nextPageToken, loadingMore]);
 
