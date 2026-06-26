@@ -713,15 +713,6 @@ export function RuleTableWithFilter({
 }: RuleTableWithFilterProps) {
   const { t } = useTranslation();
   const { params, events } = useSQLRuleFilter();
-  const unfilteredRuleList = useMemo(() => {
-    return [...convertToCategoryMap(ruleList).entries()].map(
-      ([category, rules]) => ({
-        value: category,
-        label: t(`sql-review.category.${category.toLowerCase()}`),
-        ruleList: rules,
-      })
-    );
-  }, [ruleList, t]);
 
   useEffect(() => {
     events.reset();
@@ -757,12 +748,9 @@ export function RuleTableWithFilter({
       onChangeSearchText={events.changeSearchText}
     >
       {(filteredRuleList) => {
-        const visibleRuleList = focusRuleKey
-          ? unfilteredRuleList
-          : filteredRuleList;
-        return visibleRuleList.length > 0 ? (
+        return filteredRuleList.length > 0 ? (
           <RuleTable
-            ruleList={visibleRuleList}
+            ruleList={filteredRuleList}
             editable={editable}
             hideLevel={hideLevel}
             supportSelect={supportSelect}

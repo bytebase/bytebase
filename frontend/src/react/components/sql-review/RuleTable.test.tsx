@@ -2,14 +2,9 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { getRuleKey } from "@/react/lib/sql-review/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import {
-  getRuleLocalization,
-  ruleTemplateMapV2,
-  ruleTypeToString,
-} from "@/types/sqlReview";
+import { getRuleLocalization, ruleTemplateMapV2 } from "@/types/sqlReview";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -87,7 +82,6 @@ vi.mock("./RuleComponents", () => ({
 }));
 
 let RuleTable: typeof import("./RuleTable").RuleTable;
-let RuleTableWithFilter: typeof import("./RuleTable").RuleTableWithFilter;
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
@@ -112,7 +106,7 @@ beforeEach(async () => {
     configurable: true,
     value: vi.fn(),
   });
-  ({ RuleTable, RuleTableWithFilter } = await import("./RuleTable"));
+  ({ RuleTable } = await import("./RuleTable"));
 });
 
 describe("RuleTable", () => {
@@ -185,53 +179,5 @@ describe("RuleTable", () => {
     );
 
     unmount();
-  });
-
-  test("focuses a rule hidden by the current filters", () => {
-    const rules = [
-      ...(ruleTemplateMapV2.get(Engine.MYSQL)?.values() ?? []),
-    ].slice(0, 2) as RuleTemplateV2[];
-    const focusedRuleKey = getRuleKey(rules[1]);
-    const firstRuleText = ruleTypeToString(rules[0].type);
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <RuleTableWithFilter engine={Engine.MYSQL} ruleList={rules} editable />
-      );
-    });
-
-    const searchInput = container.querySelector("input");
-    expect(searchInput).toBeTruthy();
-    act(() => {
-      searchInput!.value = firstRuleText;
-      searchInput!.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    expect(
-      container.querySelector(`[data-sql-review-rule-key="${focusedRuleKey}"]`)
-    ).toBeFalsy();
-
-    act(() => {
-      root.render(
-        <RuleTableWithFilter
-          engine={Engine.MYSQL}
-          ruleList={rules}
-          editable
-          focusRuleKey={focusedRuleKey}
-          focusRuleSignal={1}
-        />
-      );
-    });
-
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
-    expect(
-      container.querySelector(`[data-sql-review-rule-key="${focusedRuleKey}"]`)
-    ).toBeTruthy();
-
-    act(() => {
-      root.unmount();
-    });
   });
 });
