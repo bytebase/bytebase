@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	mysqlomni "github.com/bytebase/omni/mysql/parser"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -25,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlomni "github.com/bytebase/omni/mysql/parser"
 )
 
 var (
