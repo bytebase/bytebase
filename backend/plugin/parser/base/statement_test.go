@@ -8,6 +8,14 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+type testAST struct {
+	start *storepb.Position
+}
+
+func (a *testAST) ASTStartPosition() *storepb.Position {
+	return a.start
+}
+
 func TestFilterEmptyStatements(t *testing.T) {
 	statements := []Statement{
 		{Text: "SELECT 1", Empty: false},
@@ -24,8 +32,8 @@ func TestFilterEmptyStatements(t *testing.T) {
 }
 
 func TestExtractASTs(t *testing.T) {
-	ast1 := &ANTLRAST{StartPosition: &storepb.Position{Line: 1}}
-	ast2 := &ANTLRAST{StartPosition: &storepb.Position{Line: 2}}
+	ast1 := &testAST{start: &storepb.Position{Line: 1}}
+	ast2 := &testAST{start: &storepb.Position{Line: 2}}
 
 	statements := []ParsedStatement{
 		{Statement: Statement{Text: "SELECT 1"}, AST: ast1},
@@ -47,7 +55,7 @@ func TestParsedStatementEmbedding(t *testing.T) {
 			Text:  "SELECT 1",
 			Start: &storepb.Position{Line: 6, Column: 1},
 		},
-		AST: &ANTLRAST{StartPosition: &storepb.Position{Line: 6}},
+		AST: &testAST{start: &storepb.Position{Line: 6}},
 	}
 
 	// Direct access to embedded fields

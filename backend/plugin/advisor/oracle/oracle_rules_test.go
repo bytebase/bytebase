@@ -8,8 +8,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	oracleparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 func TestOracleRules(t *testing.T) {
@@ -161,8 +160,8 @@ func assertOracleStmtsDidNotUseANTLRFallback(t *testing.T, stmts []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		if _, ok := base.GetANTLRAST(stmt.AST); ok {
-			t.Fatalf("Oracle advisor used ANTLR fallback for %T", stmt.AST)
+		if _, ok := stmt.AST.(*oracleparser.OmniAST); !ok {
+			t.Fatalf("Oracle advisor used non-omni AST %T", stmt.AST)
 		}
 	}
 }
