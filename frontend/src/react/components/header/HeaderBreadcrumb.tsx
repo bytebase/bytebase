@@ -10,6 +10,7 @@ import {
 } from "@/react/components/ui/popover";
 import {
   useProject,
+  useRecentVisit,
   useSubscription,
   useSwitchWorkspace,
   useWorkspace,
@@ -21,7 +22,11 @@ import {
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
-import { useCurrentRoute, WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import {
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
@@ -69,6 +74,8 @@ function WorkspaceSegment() {
   const hasMultiple = workspaceList.length > 1;
   const switchWorkspace = useSwitchWorkspace();
   const [open, setOpen] = useState(false);
+  const { record } = useRecentVisit();
+  const navigate = useNavigate();
 
   const onSwitch = useCallback(
     (workspaceName: string) => {
@@ -83,6 +90,10 @@ function WorkspaceSegment() {
     <div className="inline-flex items-center">
       <RouterLink
         to={{ name: WORKSPACE_ROUTE_LANDING }}
+        onClick={() => {
+          const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
+          record(route.fullPath);
+        }}
         className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
       >
         <Building2 className="size-4 text-control-light shrink-0" />

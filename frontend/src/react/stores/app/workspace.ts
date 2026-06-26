@@ -11,10 +11,12 @@ import {
   workspaceServiceClientConnect,
 } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { useRecentVisit } from "@/react/hooks/useAppState";
 import {
   settingNamePrefix,
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
+import { useNavigate, WORKSPACE_ROUTE_LANDING } from "@/react/router";
 import { getEnvironmentId } from "@/store/modules/v1/common";
 import {
   broadcastWorkspaceSwitch,
@@ -77,7 +79,11 @@ import type { AppSliceCreator, WorkspaceSlice } from "./types";
 // exclusion correctly suppresses both handlers when a post originates from
 // this tab (e.g. the OAuth2 consent page's in-place switch).
 workspaceSwitchChannel.addEventListener("message", () => {
-  window.location.href = "/";
+  const navigate = useNavigate();
+  const route = navigate.resolve({ name: WORKSPACE_ROUTE_LANDING });
+  const { record } = useRecentVisit();
+  record(route.fullPath);
+  void navigate.push(route);
 });
 
 const workspaceProfileSettingName = `${settingNamePrefix}${

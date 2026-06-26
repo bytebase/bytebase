@@ -140,10 +140,6 @@ vi.mock("@/assets/logo-full.svg", () => ({
   default: "/assets/logo-full.svg",
 }));
 
-vi.mock("./WorkspaceSwitcher", () => ({
-  WorkspaceSwitcher: () => <div data-testid="workspace-switcher" />,
-}));
-
 let DashboardSidebar: typeof import("./DashboardSidebar").DashboardSidebar;
 
 const renderIntoContainer = (element: ReactElement) => {
