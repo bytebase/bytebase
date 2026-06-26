@@ -53,12 +53,14 @@ export const buildMaskingExemption = async ({
 
   if (radioValue === "EXPRESSION") {
     const parsedExpr = await buildCELExpr(expr);
-    if (parsedExpr) {
-      let [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
-      celString = rewriteResourceDatabase(celString);
-      if (celString) {
-        extraExpressions.push(`(${celString})`);
-      }
+    if (!parsedExpr) {
+      throw new Error("Invalid masking exemption expression");
+    }
+
+    let [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
+    celString = rewriteResourceDatabase(celString);
+    if (celString) {
+      extraExpressions.push(`(${celString})`);
     }
   } else {
     const resources = radioValue === "SELECT" ? databaseResources : undefined;

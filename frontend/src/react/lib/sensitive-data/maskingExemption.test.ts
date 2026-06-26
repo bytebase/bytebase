@@ -20,6 +20,18 @@ describe("buildMaskingExemption", () => {
     expect(exemption.condition?.expression).toBe("");
   });
 
+  test("rejects expression exemption when CEL parsing fails", async () => {
+    await expect(
+      buildMaskingExemption({
+        radioValue: "EXPRESSION",
+        expr,
+        databaseResources: [],
+        memberList: ["user:test@example.com"],
+        description: "reason",
+      })
+    ).rejects.toThrow("Invalid masking exemption expression");
+  });
+
   test("builds a selected single-resource condition with expiration", async () => {
     const exemption = await buildMaskingExemption({
       radioValue: "SELECT",
