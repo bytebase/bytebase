@@ -54,9 +54,16 @@ export const isCurrentColumnException = (
   );
 };
 
-const trimParentheses = (expression: string): string =>
-  expression.trim().replace(/^\(+/, "").replace(/\)+$/, "").trim();
-
+const trimParentheses = (expression: string): string => {
+  let result = expression.trim();
+  while (result.startsWith("(")) {
+    result = result.slice(1).trimStart();
+  }
+  while (result.endsWith(")")) {
+    result = result.slice(0, -1).trimEnd();
+  }
+  return result;
+};
 export const getExpressionsForDatabaseResource = (
   databaseResource: DatabaseResource
 ): string[] => {

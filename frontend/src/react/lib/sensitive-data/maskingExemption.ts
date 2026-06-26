@@ -64,10 +64,10 @@ export const buildMaskingExemption = async ({
     const resources = radioValue === "SELECT" ? databaseResources : undefined;
     const resourceExpressions = (
       resources?.map(getExpressionsForDatabaseResource) ?? [[""]]
-    ).map((parts) => parts.filter((expression) => expression).join(" && "));
+    ).map((parts) => parts.filter(Boolean).join(" && "));
 
     let resourceCondition = "";
-    const nonEmpty = resourceExpressions.filter((expression) => expression);
+    const nonEmpty = resourceExpressions.filter(Boolean);
     if (nonEmpty.length === 1) {
       resourceCondition = nonEmpty[0];
     } else if (nonEmpty.length > 1) {
