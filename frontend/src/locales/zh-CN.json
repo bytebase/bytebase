@@ -1480,7 +1480,7 @@
     },
     "labels-required-for-review": "提交审批前必须设置标签",
     "meta": {
-      "created-by-at": "由 {{user}} 创建 · {{time}}"
+      "created-by": "由 {{user}} 创建"
     },
     "navigator": {
       "changes": "变更项",

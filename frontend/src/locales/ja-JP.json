@@ -1480,7 +1480,7 @@
     },
     "labels-required-for-review": "レビュー前にラベルが必要です",
     "meta": {
-      "created-by-at": "{{user}} が作成 · {{time}}"
+      "created-by": "{{user}} が作成"
     },
     "navigator": {
       "changes": "変更点",

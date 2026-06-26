@@ -14,6 +14,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { getLayerRoot } from "@/react/components/ui/layer";
 import { cn } from "@/react/lib/utils";
+import { formatAbsoluteDateTime } from "@/utils";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
   selectCurrentChat,
@@ -1101,9 +1102,14 @@ export function AgentWindow() {
                             }`}
                             data-agent-chat-updated-ts
                           >
-                            <HumanizeTs
-                              ts={Math.floor(chat.updatedTs / 1000)}
-                            />
+                            <AgentTooltip
+                              content={formatAbsoluteDateTime(chat.updatedTs)}
+                            >
+                              <HumanizeTs
+                                ts={Math.floor(chat.updatedTs / 1000)}
+                                tooltip={false}
+                              />
+                            </AgentTooltip>
                           </span>
                         </button>
                         <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">

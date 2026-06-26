@@ -1480,7 +1480,7 @@
     },
     "labels-required-for-review": "Labels are required before review",
     "meta": {
-      "created-by-at": "Created by {{user}} · {{time}}"
+      "created-by": "Created by {{user}}"
     },
     "navigator": {
       "changes": "Changes",

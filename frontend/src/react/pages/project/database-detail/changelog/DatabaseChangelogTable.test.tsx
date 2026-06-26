@@ -30,8 +30,8 @@ vi.mock("@/types", () => ({
   getDateForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z"),
 }));
 
-vi.mock("@/utils", () => ({
-  humanizeDate: () => "Apr 15, 2026",
+vi.mock("@/react/components/HumanizeTs", () => ({
+  HumanizeTs: () => null,
 }));
 
 import { DatabaseChangelogTable } from "./DatabaseChangelogTable";

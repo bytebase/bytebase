@@ -1480,7 +1480,7 @@
     },
     "labels-required-for-review": "Cần có nhãn trước khi review",
     "meta": {
-      "created-by-at": "Tạo bởi {{user}} · {{time}}"
+      "created-by": "Tạo bởi {{user}}"
     },
     "navigator": {
       "changes": "Thay đổi",

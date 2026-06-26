@@ -17,7 +17,7 @@ import {
   Task_Status,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask, humanizeTs } from "@/utils";
+import { databaseForTask, formatAbsoluteDateTime, humanizeTs } from "@/utils";
 import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
@@ -81,10 +81,13 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
         : "",
     [environmentList, stage?.environment]
   );
-  const scheduledTimeDisplay = useMemo(() => {
+  const scheduledTime = useMemo(() => {
     const ts = getTimeForPbTimestampProtoEs(task.runTime, 0);
-    if (!ts) return "";
-    return humanizeTs(ts / 1000);
+    if (!ts) return undefined;
+    return {
+      relative: humanizeTs(ts / 1000),
+      absolute: formatAbsoluteDateTime(ts),
+    };
   }, [task.runTime]);
   const isReleaseTask = useMemo(() => isReleaseBasedTask(task), [task]);
   const {
@@ -122,7 +125,7 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
               size="md"
               target={database.name}
             />
-            {scheduledTimeDisplay && task.status === Task_Status.PENDING && (
+            {scheduledTime && task.status === Task_Status.PENDING && (
               <Tooltip
                 content={
                   <div className="flex flex-col gap-y-1">
@@ -130,14 +133,14 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
                       {t("task.scheduled-time")}
                     </div>
                     <div className="whitespace-nowrap text-sm">
-                      {scheduledTimeDisplay}
+                      {scheduledTime.absolute}
                     </div>
                   </div>
                 }
               >
                 <span className="inline-flex items-center gap-1 rounded-full bg-control-bg px-2 py-0.5 text-xs text-control">
                   <CalendarClock className="h-3.5 w-3.5 opacity-80" />
-                  <span>{scheduledTimeDisplay}</span>
+                  <span>{scheduledTime.relative}</span>
                 </span>
               </Tooltip>
             )}
