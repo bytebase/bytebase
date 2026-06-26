@@ -192,7 +192,7 @@ export function ProjectMaskingExemptionCreatePage({
           ]);
           celString = rewriteResourceDatabase(celString);
           if (celString) {
-            extraExpressions.push(`(${celString})`)
+            extraExpressions.push(`(${celString})`);
           }
         }
       } else {
@@ -212,7 +212,7 @@ export function ProjectMaskingExemptionCreatePage({
           resourceCondition = nonEmpty.map((e) => `(${e})`).join(" || ");
         }
         if (resourceCondition) {
-          extraExpressions.push(`(${resourceCondition})`)
+          extraExpressions.push(`(${resourceCondition})`);
         }
       }
 
@@ -221,7 +221,8 @@ export function ProjectMaskingExemptionCreatePage({
           members: memberList,
           condition: create(ExprSchema, {
             description,
-            expression: extraExpressions.length > 0 ? extraExpressions.join(" && ") : "",
+            expression:
+              extraExpressions.length > 0 ? extraExpressions.join(" && ") : "",
           }),
         })
       );
