@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Button } from "@/react/components/ui/button";
@@ -21,7 +22,6 @@ import {
   Task_Status,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { humanizeTs } from "@/utils";
 import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
@@ -99,10 +99,10 @@ export function DeployTaskItem({
     latestTaskRun.hasPriorBackup
       ? latestTaskRun
       : undefined;
-  const scheduledTime =
+  const scheduledTimeTs =
     task.runTime && task.status === Task_Status.PENDING
-      ? humanizeTs(getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000)
-      : "";
+      ? getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+      : 0;
   const timingDisplay = latestTaskRun ? getTaskRunDuration(latestTaskRun) : "";
   const executorEmail =
     latestTaskRun?.creator.match(/users\/([^/]+)/)?.[1] ?? "";
@@ -182,19 +182,19 @@ export function DeployTaskItem({
                     <span>{t("common.view-details")}</span>
                   </RouterLink>
                 )}
-                {isExpanded && scheduledTime && (
+                {isExpanded && scheduledTimeTs > 0 && (
                   <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
                     <LoaderCircle className="h-3 w-3 animate-spin" />
-                    {scheduledTime}
+                    <HumanizeTs ts={scheduledTimeTs} />
                   </span>
                 )}
               </div>
               {!isExpanded && (
                 <div className="ml-auto shrink-0 text-xs text-gray-500">
-                  {scheduledTime ? (
+                  {scheduledTimeTs > 0 ? (
                     <span className="flex items-center gap-x-1 text-blue-600">
                       <LoaderCircle className="h-3 w-3 animate-spin" />
-                      {scheduledTime}
+                      <HumanizeTs ts={scheduledTimeTs} />
                     </span>
                   ) : task.status === Task_Status.RUNNING && timingDisplay ? (
                     <span className="flex items-center gap-x-1 text-blue-600">
@@ -258,10 +258,14 @@ export function DeployTaskItem({
             <div className="mt-1 flex items-center gap-x-2 text-xs">
               {latestTaskRun?.createTime && (
                 <span className="rounded-full border bg-gray-50 px-2 py-0.5 text-gray-500">
-                  {humanizeTs(
-                    getTimeForPbTimestampProtoEs(latestTaskRun.createTime, 0) /
-                      1000
-                  )}
+                  <HumanizeTs
+                    ts={
+                      getTimeForPbTimestampProtoEs(
+                        latestTaskRun.createTime,
+                        0
+                      ) / 1000
+                    }
+                  />
                 </span>
               )}
               <span

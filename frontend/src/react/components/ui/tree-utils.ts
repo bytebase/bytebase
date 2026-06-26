@@ -35,7 +35,9 @@ export function countVisibleRows<
   node: T,
   expandedKeys: ReadonlySet<string>,
   keyword: string,
-  searchMatch: (node: T, term: string) => boolean
+  searchMatch: (node: T, term: string) => boolean,
+  includeChildrenOnSearchMatch = false,
+  parentMatches = false
 ): number {
   if (!keyword) {
     let count = 1;
@@ -47,12 +49,20 @@ export function countVisibleRows<
     return count;
   }
 
+  const selfMatches = searchMatch(node, keyword);
+  const includedByParent = includeChildrenOnSearchMatch && parentMatches;
   let childCount = 0;
   for (const child of node.children ?? []) {
-    childCount += countVisibleRows(child, expandedKeys, keyword, searchMatch);
+    childCount += countVisibleRows(
+      child,
+      expandedKeys,
+      keyword,
+      searchMatch,
+      includeChildrenOnSearchMatch,
+      selfMatches
+    );
   }
-  const selfMatches = searchMatch(node, keyword);
-  if (selfMatches || childCount > 0) {
+  if (includedByParent || selfMatches || childCount > 0) {
     return 1 + childCount;
   }
   return 0;

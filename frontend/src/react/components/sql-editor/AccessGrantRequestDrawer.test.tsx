@@ -293,12 +293,15 @@ vi.mock("@/react/components/monaco/MonacoEditor", () => ({
   MonacoEditor: ({
     content,
     onChange,
+    autoHeight,
   }: {
     content: string;
     onChange?: (val: string) => void;
+    autoHeight?: boolean;
   }) => (
     <textarea
       data-testid="monaco-editor"
+      data-auto-height={String(autoHeight)}
       value={content}
       onChange={(e) => onChange?.(e.target.value)}
     />
@@ -377,6 +380,31 @@ describe("AccessGrantRequestDrawer", () => {
     ) as HTMLInputElement;
     expect(checkbox).not.toBeNull();
     expect(checkbox.checked).toBe(true);
+
+    unmount();
+  });
+
+  test("statement editor is fixed-height (autoHeight=false) so a long query can't overflow and cover the reason box", () => {
+    const onClose = vi.fn();
+    // A tall statement is what triggered the bug: MonacoEditor's default
+    // autoHeight grows the editor to its content (clamped to 600px), overflowing
+    // the 160px (h-40) wrapper and painting over the fields below it — hiding the
+    // reason box. The fix pins autoHeight={false} so it stays a fixed, internally
+    // scrolling box. jsdom has no layout engine, so we assert the prop contract.
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/mydb"]}
+        query={"SELECT id,\n".repeat(40) + "FROM orders"}
+        onClose={onClose}
+      />
+    );
+    render();
+
+    const monacoEditor = container.querySelector(
+      "[data-testid='monaco-editor']"
+    ) as HTMLTextAreaElement;
+    expect(monacoEditor).not.toBeNull();
+    expect(monacoEditor.getAttribute("data-auto-height")).toBe("false");
 
     unmount();
   });

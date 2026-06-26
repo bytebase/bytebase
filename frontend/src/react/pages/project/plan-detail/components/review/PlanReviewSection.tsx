@@ -67,20 +67,12 @@ export function PlanReviewSection() {
     );
   }
 
-  const skipped =
-    issue.approvalStatus === ApprovalStatus.SKIPPED ||
-    (issue.approvalTemplate?.flow?.roles ?? []).length === 0;
-
   return (
     <div className="flex flex-col">
       <PlanReviewSectionHeader issue={issue} />
-      {skipped ? (
-        <div className="px-4 py-3 text-sm text-control-placeholder">
-          {t("custom-approval.approval-flow.skip")}
-        </div>
-      ) : (
-        <ReviewApprovalFlow issue={issue} />
-      )}
+      {/* ReviewApprovalFlow renders the "no approval required" note itself when
+          the approval is skipped / has no roles, so no guard is needed here. */}
+      <ReviewApprovalFlow issue={issue} />
       <ReviewRejectionBanner comments={comments} issue={issue} />
       <ReviewActivityTimeline
         comments={comments}

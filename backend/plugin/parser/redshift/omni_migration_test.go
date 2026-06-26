@@ -18,9 +18,6 @@ func TestParseStatementsUsesOmniAST(t *testing.T) {
 
 	_, ok := stmts[0].AST.(*OmniAST)
 	require.True(t, ok)
-
-	_, ok = base.GetANTLRAST(stmts[0].AST)
-	require.False(t, ok)
 }
 
 func TestParseStatementsUsesOmniASTForMultipleStatements(t *testing.T) {

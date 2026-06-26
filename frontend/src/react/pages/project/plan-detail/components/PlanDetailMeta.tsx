@@ -3,6 +3,7 @@ import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Popover,
@@ -17,7 +18,7 @@ import {
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { hasProjectPermissionV2, humanizeTs } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 export function PlanDetailMeta() {
@@ -39,11 +40,10 @@ export function PlanDetailMeta() {
     () => extractUserEmail(page.plan.creator),
     [page.plan.creator]
   );
-  const createdTimeDisplay = useMemo(() => {
-    const ts = getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
-    if (!ts) return "";
+  const createdTimeTs = useMemo(() => {
+    // Reference `now` so the relative label re-renders on each tick.
     void now;
-    return humanizeTs(ts / 1000);
+    return getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
   }, [now, page.plan.createTime]);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
@@ -85,12 +85,13 @@ export function PlanDetailMeta() {
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
-      <span>
-        {t("plan.meta.created-by-at", {
-          time: createdTimeDisplay,
-          user: creatorEmail,
-        })}
-      </span>
+      <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
+      {createdTimeTs > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <HumanizeTs ts={createdTimeTs / 1000} />
+        </>
+      )}
 
       {page.issue && (
         <>

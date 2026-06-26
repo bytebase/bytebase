@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { MaskingReasonPopover } from "@/react/components/sql-editor/MaskingReasonPopover";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
@@ -217,11 +218,10 @@ function CopyJSONButton({
 }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(getContent());
+    if (await writeTextToClipboard(getContent())) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       // ignore
     }
   };

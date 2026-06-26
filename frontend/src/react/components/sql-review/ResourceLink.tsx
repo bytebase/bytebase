@@ -1,13 +1,15 @@
+import { ShieldAlert } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { RouterLink } from "@/react/components/RouterLink";
+import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function ResourceLink({ resource }: { resource: string }) {
@@ -22,15 +24,23 @@ export function ResourceLink({ resource }: { resource: string }) {
 
 function EnvironmentResourceLink({ resource }: { resource: string }) {
   const { t } = useTranslation();
+  const environment = useEnvironment(resource);
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+  const isProtected =
+    hasEnvTierFeature && environment.tags?.protected === "protected";
+
   return (
     <RouterLink
       to={{ path: `/${resource}` }}
-      className="inline-flex items-center gap-x-1"
+      className="inline-flex items-center gap-x-1 normal-link"
     >
       <span className="text-control-light text-xs mr-0.5">
         {t("common.environment")}:
       </span>
-      <EnvironmentLabel environmentName={resource} />
+      <span>{environment.title || resource}</span>
+      {isProtected && <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
     </RouterLink>
   );
 }

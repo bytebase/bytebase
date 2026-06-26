@@ -42,6 +42,7 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -867,11 +868,10 @@ function DatabaseInfo({ database }: { database: Database }) {
 function CopyInlineButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await writeTextToClipboard(text)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-    } catch {
+    } else {
       // ignore
     }
   };

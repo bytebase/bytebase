@@ -263,7 +263,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.GhostDatabaseName = common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
 	migrationContext.DatabaseName = database.DatabaseName
 	migrationContext.OriginalTableName = tableName
-	migrationContext.AlterStatement = strings.Join(strings.Fields(statement), " ")
+	migrationContext.AlterStatement = strings.TrimRight(strings.Join(strings.Fields(statement), " "), "; ")
 	migrationContext.Noop = noop
 	// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
 	// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html

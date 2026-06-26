@@ -68,7 +68,8 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsSequence: vi.fn(() => false),
     instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
-    humanizeDate: vi.fn(() => "5 minutes ago"),
+    formatRelativeTime: vi.fn(() => "5 minutes ago"),
+    formatAbsoluteDateTime: vi.fn(() => "Jan 1, 1970, 12:00:01 AM UTC"),
   };
 });
 
@@ -147,7 +148,8 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getInstanceResource: mocks.getInstanceResource,
   getDatabaseProject: mocks.getDatabaseProject,
-  humanizeDate: mocks.humanizeDate,
+  formatRelativeTime: mocks.formatRelativeTime,
+  formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
   hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   isDev: mocks.isDev,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
@@ -352,8 +354,8 @@ beforeEach(async () => {
   mocks.instanceV1SupportsSequence.mockReturnValue(false);
   mocks.bytesToString.mockReset();
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
-  mocks.humanizeDate.mockReset();
-  mocks.humanizeDate.mockReturnValue("5 minutes ago");
+  mocks.formatRelativeTime.mockReset();
+  mocks.formatRelativeTime.mockReturnValue("5 minutes ago");
   mocks.dbSchemaStore.mockReset();
   mocks.dbSchemaStore.mockReturnValue({
     getSchemaList: vi.fn(() => mocks.schemaList),
@@ -561,7 +563,7 @@ describe("DatabaseOverviewPanel", () => {
 
     expect(container.textContent).toContain("database.last-sync");
     expect(container.textContent).toContain("-");
-    expect(mocks.humanizeDate).not.toHaveBeenCalled();
+    expect(mocks.formatRelativeTime).not.toHaveBeenCalled();
 
     unmount();
   });

@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { ruleTemplateMapV2 } from "@/types/sqlReview";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -16,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let AttachResourcesPanel: typeof import("./Panels").AttachResourcesPanel;
+let RulesSelectPanel: typeof import("./Panels").RulesSelectPanel;
 
 const appStoreState = {
   environmentList: [],
@@ -51,7 +53,8 @@ vi.mock("@/react/stores/sqlReview", () => ({
   }),
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
   hasWorkspacePermissionV2: vi.fn(() => true),
 }));
 
@@ -115,7 +118,33 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   appStoreState.projectsByName = {};
-  ({ AttachResourcesPanel } = await import("./Panels"));
+  ({ AttachResourcesPanel, RulesSelectPanel } = await import("./Panels"));
+});
+
+describe("RulesSelectPanel", () => {
+  test("renders the first rule choices without blocking on the full list", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RulesSelectPanel
+        show
+        selectedRuleMap={new Map()}
+        onClose={vi.fn()}
+        onRuleSelect={vi.fn()}
+        onRuleRemove={vi.fn()}
+      />
+    );
+
+    render();
+
+    const renderedRuleLinks = container.querySelectorAll(
+      'a[href^="https://docs.bytebase.com/sql-review/review-rules"]'
+    );
+    expect(renderedRuleLinks.length).toBeGreaterThan(0);
+    expect(renderedRuleLinks.length).toBeLessThan(
+      ruleTemplateMapV2.get(Engine.MYSQL)?.size ?? 0
+    );
+
+    unmount();
+  });
 });
 
 describe("AttachResourcesPanel", () => {

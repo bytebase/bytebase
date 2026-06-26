@@ -13,6 +13,10 @@ export type TimelineSource =
 export interface TimelineEntry {
   id: string;
   source: TimelineSource;
+  // Set by consolidateConsecutive when this row stands in for a run of N>=2
+  // consecutive similar activities (e.g. repeated label edits). Drives the
+  // "(N similar activities)" badge. Absent means a standalone row.
+  similarCount?: number;
 }
 
 export function buildTimelineEntries(input: {

@@ -27,6 +27,7 @@ export interface TreeProps<T> {
 
   readonly searchTerm?: string;
   readonly searchMatch?: (node: TreeDataNode<T>, term: string) => boolean;
+  readonly includeChildrenOnSearchMatch?: boolean;
 
   readonly height?: number;
   readonly rowHeight?: number;
@@ -56,6 +57,7 @@ export function Tree<T>({
   onToggle,
   searchTerm,
   searchMatch,
+  includeChildrenOnSearchMatch = false,
   height = 300,
   rowHeight = 28,
   indent = 16,
@@ -153,10 +155,18 @@ export function Tree<T>({
     return label.toLowerCase().includes(term.toLowerCase());
   };
 
-  const resolvedSearchMatch = searchMatch
+  const baseSearchMatch = searchMatch
     ? (node: NodeApi<TreeDataNode<T>>, term: string) =>
         searchMatch(node.data, term)
     : defaultSearchMatch;
+  const resolvedSearchMatch = includeChildrenOnSearchMatch
+    ? (node: NodeApi<TreeDataNode<T>>, term: string) => {
+        return (
+          baseSearchMatch(node, term) ||
+          (!!node.parent?.data?.data && baseSearchMatch(node.parent, term))
+        );
+      }
+    : baseSearchMatch;
 
   return (
     <div

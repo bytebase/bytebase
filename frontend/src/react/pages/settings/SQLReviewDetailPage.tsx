@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { AttachResourcesPanel } from "@/react/components/sql-review/Panels";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
-import { ReviewCreation } from "@/react/components/sql-review/ReviewCreation";
 import { RuleTableWithFilter } from "@/react/components/sql-review/RuleTable";
 import { TabsByEngine } from "@/react/components/sql-review/TabsByEngine";
 import { Alert } from "@/react/components/ui/alert";
@@ -41,6 +40,7 @@ import {
   setDocumentTitle,
   sqlReviewNameFromSlug,
 } from "@/utils";
+import { SQLReviewCreationPage } from "./SQLReviewCreatePage";
 
 // ============================================================
 // SQLReviewDetailPage
@@ -230,15 +230,13 @@ export function SQLReviewDetailPage({
   // Edit mode: show the wizard
   if (editMode) {
     return (
-      <div className="px-4 py-4">
-        <ReviewCreation
-          policy={reviewPolicy}
-          name={reviewPolicy.name}
-          selectedRuleList={ruleListOfPolicy}
-          selectedResources={reviewPolicy.resources}
-          onCancel={() => setEditMode(false)}
-        />
-      </div>
+      <SQLReviewCreationPage
+        policy={reviewPolicy}
+        name={reviewPolicy.name}
+        selectedRuleList={ruleListOfPolicy}
+        selectedResources={reviewPolicy.resources}
+        onCancel={() => setEditMode(false)}
+      />
     );
   }
 
@@ -372,7 +370,7 @@ export function SQLReviewDetailPage({
       <hr className="my-6" />
       <PermissionGuard permissions={["bb.reviewConfigs.delete"]}>
         <Button
-          variant="destructive"
+          variant="ghost-destructive"
           disabled={!hasDeletePermission}
           onClick={() => setShowDeleteConfirm(true)}
         >

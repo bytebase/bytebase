@@ -9,6 +9,7 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button, buttonVariants } from "@/react/components/ui/button";
@@ -36,12 +37,10 @@ import {
   extractInstanceResourceName,
   extractIssueUID,
   extractProjectResourceName,
-  formatAbsoluteDateTime,
   getDefaultPagination,
   getIssueRoute,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
-  humanizeTs,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
   type SearchParams as VueSearchParams,
 } from "@/utils";
@@ -681,9 +680,7 @@ function IssueListItem({
             <span className="opacity-80">#{extractIssueUID(issue.name)}</span>
             <span>&middot;</span>
             {t("common.created")}
-            <Tooltip content={formatAbsoluteDateTime(createTimeTs * 1000)}>
-              <span>{humanizeTs(createTimeTs)}</span>
-            </Tooltip>
+            <HumanizeTs ts={createTimeTs} />
             <span>&middot;</span>
             <RouterLink
               className="hover:underline"

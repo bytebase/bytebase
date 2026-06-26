@@ -8,11 +8,11 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { formatAbsoluteDateTime, humanizeDate } from "@/utils";
 
 export function DeployLatestTaskRunInfo({
   duration,
@@ -88,11 +88,10 @@ export function DeployLatestTaskRunInfo({
         {updateDate && (
           <>
             <span className="text-gray-300">·</span>
-            <Tooltip content={formatAbsoluteDateTime(updateDate.getTime())}>
-              <span className="shrink-0 text-gray-500">
-                {humanizeDate(updateDate)}
-              </span>
-            </Tooltip>
+            <HumanizeTs
+              ts={updateDate.getTime() / 1000}
+              className="shrink-0 text-gray-500"
+            />
           </>
         )}
         {executorEmail && (

@@ -9,6 +9,7 @@ import {
   useInstanceFormContext,
 } from "@/react/components/instance";
 import type { InfoSection } from "@/react/components/instance/info-content";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { router } from "@/react/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -137,6 +138,7 @@ function CreateInstanceFormInner() {
         <div className="sticky bottom-0 z-10 bg-background">
           <InstanceFormButtons />
         </div>
+        <UnsavedChangesGuard />
       </div>
 
       {/* Docked info panel */}
@@ -170,4 +172,10 @@ function CreateInstanceFormInner() {
       </InfoPanel>
     </div>
   );
+}
+
+function UnsavedChangesGuard() {
+  const { state, valueChanged } = useInstanceFormContext();
+  useUnsavedChangesGuard(valueChanged && !state.isRequesting);
+  return null;
 }

@@ -34,6 +34,43 @@ func TestMySQLSplitSQLLargeInsertScriptScalesLinearly(t *testing.T) {
 	require.Less(t, elapsed, time.Second)
 }
 
+func TestMySQLSplitSQLDelimiterDirectives(t *testing.T) {
+	statement := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND//\nDELIMITER ;\nCALL p();"
+
+	list, err := SplitSQL(statement)
+	require.NoError(t, err)
+
+	list = base.FilterEmptyStatements(list)
+	require.Len(t, list, 2)
+	require.Equal(t, "CREATE PROCEDURE p()\nBEGIN\n  SELECT delimiter FROM t;\nEND", list[0].Text)
+	require.Equal(t, "CALL p();", list[1].Text)
+	require.Equal(t, statement[list[0].Range.Start:list[0].Range.End], list[0].Text)
+	require.Equal(t, statement[list[1].Range.Start:list[1].Range.End], list[1].Text)
+}
+
+func TestMySQLSplitSQLDelimiterLabelIsNotDirective(t *testing.T) {
+	statement := "DELIMITER: LOOP\n  SELECT 1;\n  LEAVE DELIMITER;\nEND LOOP DELIMITER;"
+
+	list, err := SplitSQL(statement)
+	require.NoError(t, err)
+
+	list = base.FilterEmptyStatements(list)
+	require.Len(t, list, 1)
+	require.Equal(t, statement, list[0].Text)
+}
+
+func TestMySQLSplitSQLDelimiterIdentifierIsNotDirective(t *testing.T) {
+	statement := "CREATE TABLE t (\n  delimiter INT\n);\nSELECT delimiter FROM t;"
+
+	list, err := SplitSQL(statement)
+	require.NoError(t, err)
+
+	list = base.FilterEmptyStatements(list)
+	require.Len(t, list, 2)
+	require.Equal(t, "CREATE TABLE t (\n  delimiter INT\n);", list[0].Text)
+	require.Equal(t, "\nSELECT delimiter FROM t;", list[1].Text)
+}
+
 func TestSplitMySQLStatements(t *testing.T) {
 	tests := []struct {
 		statement string

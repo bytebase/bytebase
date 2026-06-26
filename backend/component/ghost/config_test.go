@@ -55,6 +55,48 @@ func TestNewMigrationContextUsesContextAttrs(t *testing.T) {
 	require.NotContains(t, output, `replica_id=`)
 }
 
+func TestNewMigrationContextTrimsTrailingSemicolon(t *testing.T) {
+	ctx := context.Background()
+	database := &store.DatabaseMessage{DatabaseName: "ghostdb"}
+	dataSource := &storepb.DataSource{
+		Host:               "127.0.0.1",
+		Port:               "3306",
+		Username:           "root",
+		AuthenticationType: storepb.DataSource_PASSWORD,
+	}
+
+	testCases := []struct {
+		name      string
+		statement string
+		wantAlter string
+	}{
+		{
+			name:      "trailing semicolon",
+			statement: "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL AUTO_INCREMENT;",
+			wantAlter: "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL AUTO_INCREMENT",
+		},
+		{
+			name:      "trailing semicolon with whitespace",
+			statement: "ALTER TABLE t ADD COLUMN c INT ;  ",
+			wantAlter: "ALTER TABLE t ADD COLUMN c INT",
+		},
+		{
+			name:      "no trailing semicolon",
+			statement: "ALTER TABLE t ADD COLUMN c INT",
+			wantAlter: "ALTER TABLE t ADD COLUMN c INT",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", tc.statement, false, nil, 0)
+			require.NoError(t, err)
+			t.Cleanup(cleanup)
+			require.Equal(t, tc.wantAlter, migrationContext.AlterStatement)
+			require.NotContains(t, migrationContext.AlterStatementOptions, ";")
+		})
+	}
+}
+
 func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 	certPEM, keyPEM := generateSelfSignedPEM(t)
 

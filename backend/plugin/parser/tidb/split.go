@@ -1,9 +1,10 @@
 package tidb
 
 import (
+	tidbparser "github.com/bytebase/omni/tidb/parser"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -12,10 +13,12 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitTiDBMultiSQL()
-	if err != nil {
-		return nil, err
+	segments := tidbparser.Split(statement)
+
+	result := make([]base.Statement, 0, len(segments))
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
+	for _, seg := range segments {
+		result = append(result, base.NewStatementFromRange(statement, positionMapper, seg.ByteStart, seg.ByteEnd, seg.Empty()))
 	}
-	return list, nil
+	return result, nil
 }

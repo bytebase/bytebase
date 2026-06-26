@@ -13,6 +13,7 @@ import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserProto } from "@/types/proto-es/v1/user_service_pb";
@@ -51,6 +52,7 @@ export function deriveSteps(issue: Issue): FlowStep[] {
 }
 
 export function ReviewApprovalFlow({ issue }: { issue: Issue }) {
+  const { t } = useTranslation();
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
@@ -76,6 +78,18 @@ export function ReviewApprovalFlow({ issue }: { issue: Issue }) {
       ),
     [steps, width]
   );
+
+  // A skipped approval — or a resolved template with no approver roles — has no
+  // flow to render. Show the "no approval required" note here so every caller
+  // (the review section and the bypass confirm sheet) stays consistent, instead
+  // of each guarding the empty case on its own (BYT-9745).
+  if (issue.approvalStatus === ApprovalStatus.SKIPPED || steps.length === 0) {
+    return (
+      <div className="px-4 py-3 text-sm text-control-placeholder">
+        {t("custom-approval.approval-flow.skip")}
+      </div>
+    );
+  }
 
   return (
     <div ref={hostRef} className="min-w-0 px-4 py-3">
@@ -159,9 +173,15 @@ function HorizontalFlow({
 
 function VerticalFlow({ issue, steps }: { issue: Issue; steps: FlowStep[] }) {
   return (
-    <div className="flex flex-col gap-y-3">
-      {steps.map((step) => (
-        <FlowNode key={step.index} issue={issue} step={step} vertical />
+    <div className="flex flex-col">
+      {steps.map((step, i) => (
+        <FlowNode
+          key={step.index}
+          isLast={i === steps.length - 1}
+          issue={issue}
+          step={step}
+          vertical
+        />
       ))}
     </div>
   );
@@ -196,10 +216,12 @@ function FlowNode({
   issue,
   step,
   vertical = false,
+  isLast = false,
 }: {
   issue: Issue;
   step: FlowStep;
   vertical?: boolean;
+  isLast?: boolean;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -227,8 +249,20 @@ function FlowNode({
         !vertical && "shrink-0"
       )}
     >
-      <StatusDot index={step.index + 1} status={step.status} />
-      <div className="min-w-0">
+      {vertical ? (
+        // Timeline rail: the status dot plus a connector line dropping to the
+        // next node — the vertical counterpart of HorizontalFlow's between-node
+        // connectors. The rail stretches to the row height (self-stretch) so the
+        // flex-1 line reaches the next dot; spacing comes from the text's
+        // padding-bottom rather than a container gap, so the line stays unbroken.
+        <div className="flex flex-col items-center self-stretch">
+          <StatusDot index={step.index + 1} status={step.status} />
+          {!isLast && <div className="w-px flex-1 bg-control-border" />}
+        </div>
+      ) : (
+        <StatusDot index={step.index + 1} status={step.status} />
+      )}
+      <div className={cn("min-w-0", vertical && !isLast && "pb-3")}>
         <div className="flex items-center gap-x-1.5">
           <span className="truncate text-sm font-medium text-main">
             {roleName}

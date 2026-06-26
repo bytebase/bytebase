@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -468,6 +469,27 @@ func TestUnescapeCheckClause(t *testing.T) {
 	for _, tc := range testCases {
 		require.Equal(t, tc.want, unescapeCheckClause(tc.clause))
 	}
+}
+
+func TestGetCheckConstraintQuery(t *testing.T) {
+	t.Run("MariaDB uses native table name column", func(t *testing.T) {
+		query := strings.ToUpper(getCheckConstraintQuery(true))
+
+		require.Contains(t, query, "TABLE_NAME")
+		require.Contains(t, query, "FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS")
+		require.Contains(t, query, "WHERE CONSTRAINT_SCHEMA = ?")
+		require.NotContains(t, query, "JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS")
+		require.NotContains(t, query, "TC.TABLE_SCHEMA")
+	})
+
+	t.Run("MySQL keeps table constraints join", func(t *testing.T) {
+		query := strings.ToUpper(getCheckConstraintQuery(false))
+
+		require.Contains(t, query, "TC.TABLE_NAME")
+		require.Contains(t, query, "JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS")
+		require.Contains(t, query, "TC.CONSTRAINT_TYPE = 'CHECK'")
+		require.Contains(t, query, "TC.TABLE_SCHEMA = ?")
+	})
 }
 
 func TestStripReturnsCharset(t *testing.T) {

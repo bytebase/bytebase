@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from "uuid";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
 import { useRecentVisit, useSubscription } from "@/react/hooks/useAppState";
+import { cn } from "@/react/lib/utils";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
@@ -117,7 +118,12 @@ export function DashboardHeader({
         </button>
       ) : null}
 
-      <HeaderBreadcrumb />
+      <div
+        data-label="bb-header-breadcrumb-slot"
+        className={cn(showMobileSidebarToggle ? "hidden md:flex" : "flex")}
+      >
+        <HeaderBreadcrumb />
+      </div>
 
       <div className="flex flex-1 items-center justify-end gap-x-2">
         <Button

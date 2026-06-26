@@ -260,4 +260,32 @@ describe("BannersWrapper", () => {
     expect(container.textContent).toContain("Upgrade");
     unmount();
   });
+
+  test("allows the upgrade banner to grow when the message wraps", () => {
+    mocks.useServerState.mockReturnValue({
+      needConfigureExternalUrl: false,
+      serverInfo: { unlicensedFeatures: ["FEATURE_BATCH_QUERY"] },
+    });
+    mocks.getMinimumRequiredPlan.mockReturnValue(PlanType.TEAM);
+    const { container, unmount } = renderIntoContainer(<BannersWrapper />);
+
+    const banner = container.querySelector(".bb-banner-scroll");
+    const classes = banner?.className.split(/\s+/) ?? [];
+    expect(classes).toContain("min-h-10");
+    expect(classes).not.toContain("h-10");
+    const content = banner?.firstElementChild;
+    const contentClasses = content?.className.split(/\s+/) ?? [];
+    expect(contentClasses).toContain("flex-row");
+    expect(contentClasses).toContain("flex-wrap");
+    expect(contentClasses).not.toContain("flex-col");
+    const messageContainer = container.querySelector(
+      '[data-label="bb-upgrade-banner-message"]'
+    )?.parentElement;
+    expect(messageContainer?.className).toContain("flex-[0_1_auto]");
+    expect(
+      container.querySelector('[data-label="bb-upgrade-banner-message"]')
+    ).not.toBeNull();
+
+    unmount();
+  });
 });

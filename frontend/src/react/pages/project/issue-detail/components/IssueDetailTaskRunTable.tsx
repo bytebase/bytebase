@@ -4,6 +4,7 @@ import { Check, Minus } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
@@ -34,7 +35,6 @@ import {
   extractInstanceResourceName,
   extractTaskUID,
   formatAbsoluteDateTime,
-  humanizeDate,
   humanizeDurationV1,
 } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
@@ -277,15 +277,19 @@ function IssueDetailTaskRunDateCell({
   if (!parsedDate) {
     return <span className="text-control-light">-</span>;
   }
-  const text =
-    format === "absolute"
-      ? formatAbsoluteDateTime(parsedDate.getTime())
-      : humanizeDate(parsedDate);
+  if (format === "absolute") {
+    return (
+      <span className="text-sm text-control">
+        {formatAbsoluteDateTime(parsedDate.getTime())}
+      </span>
+    );
+  }
 
   return (
-    <Tooltip content={formatAbsoluteDateTime(parsedDate.getTime())}>
-      <span className="text-sm text-control">{text}</span>
-    </Tooltip>
+    <HumanizeTs
+      ts={parsedDate.getTime() / 1000}
+      className="text-sm text-control"
+    />
   );
 }
 

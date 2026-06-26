@@ -1,0 +1,17 @@
+[
+  { "key": "max-load", "type": "string", "default": "" },
+  { "key": "chunk-size", "type": "int", "default": "1000" },
+  { "key": "max-lag-millis", "type": "int", "default": "1500" },
+  { "key": "dml-batch-size", "type": "int", "default": "10" },
+  { "key": "nice-ratio", "type": "float", "default": "0" },
+  { "key": "cut-over-lock-timeout-seconds", "type": "int", "default": "10" },
+  { "key": "default-retries", "type": "int", "default": "60" },
+  { "key": "exponential-backoff-max-interval", "type": "int", "default": "64" },
+  { "key": "heartbeat-interval-millis", "type": "int", "default": "100" },
+  { "key": "throttle-control-replicas", "type": "string", "default": "" },
+  { "key": "allow-on-master", "type": "bool", "default": "true" },
+  { "key": "attempt-instant-ddl", "type": "bool", "default": "true" },
+  { "key": "switch-to-rbr", "type": "bool", "default": "false" },
+  { "key": "assume-rbr", "type": "bool", "default": "false" },
+  { "key": "assume-master-host", "type": "bool", "default": "false" }
+]

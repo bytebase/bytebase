@@ -225,16 +225,17 @@ func TestAWSOpenOptions(t *testing.T) {
 func TestConfigure(t *testing.T) {
 	pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full")
 
-	options, err := Configure(context.Background(), pgxConfig)
+	options, cleanup, err := Configure(context.Background(), pgxConfig)
 
 	require.NoError(t, err)
 	require.Empty(t, options)
+	require.Nil(t, cleanup)
 }
 
 func TestConfigureRequiresAWSRegion(t *testing.T) {
 	pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true")
 
-	_, err := Configure(context.Background(), pgxConfig)
+	_, _, err := Configure(context.Background(), pgxConfig)
 
 	require.ErrorContains(t, err, "bytebase_aws_region is required")
 }
@@ -242,10 +243,11 @@ func TestConfigureRequiresAWSRegion(t *testing.T) {
 func TestConfigureEnabledAWSReturnsOpenOption(t *testing.T) {
 	pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1")
 
-	options, err := Configure(context.Background(), pgxConfig)
+	options, cleanup, err := Configure(context.Background(), pgxConfig)
 
 	require.NoError(t, err)
 	require.Len(t, options, 1)
+	require.Nil(t, cleanup)
 }
 
 func TestIsKeywordValueRuntimeParam(t *testing.T) {

@@ -369,6 +369,14 @@ function AccessGrantRequestDrawerInner({
               description={t("sql-editor.only-select-allowed")}
             />
             <MonacoEditor
+              // Fixed-height box: fill the h-40 wrapper and scroll internally.
+              // MonacoEditor defaults to autoHeight, which sizes the editor to
+              // its content (clamped to 600px). A long statement then overflows
+              // the 160px wrapper (which doesn't clip) and paints over the
+              // fields below it — Unmask/Export/Expiration/Reason — hiding the
+              // reason box. autoHeight={false} keeps it a fixed, internally
+              // scrolling box, matching every other fixed-height embed.
+              autoHeight={false}
               // Drawer Monaco portals outside `.sqleditor--wrapper`, so opt the
               // canvas into the transparent-background rule and back it with the
               // themed `bg-background` (from `sheetStyle`'s `--color-background`)

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
@@ -11,7 +12,6 @@ import {
 import { router } from "@/react/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import { humanizeDate } from "@/utils";
 import { getRevisionType, revisionLink } from "@/utils/v1/revision";
 
 export function DatabaseRevisionTable({
@@ -105,11 +105,17 @@ export function DatabaseRevisionTable({
             </TableCell>
             <TableCell>{getRevisionType(revision.type)}</TableCell>
             <TableCell>
-              {getDateForPbTimestampProtoEs(revision.createTime)
-                ? humanizeDate(
-                    getDateForPbTimestampProtoEs(revision.createTime) as Date
-                  )
-                : "-"}
+              {revision.createTime ? (
+                <HumanizeTs
+                  ts={
+                    (
+                      getDateForPbTimestampProtoEs(revision.createTime) as Date
+                    ).getTime() / 1000
+                  }
+                />
+              ) : (
+                "-"
+              )}
             </TableCell>
           </TableRow>
         ))}

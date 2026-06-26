@@ -18,6 +18,7 @@ import {
 } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { GhostFlagsButton } from "@/react/components/ghost/GhostFlagsButton";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import {
@@ -103,6 +104,7 @@ import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  extractSheetUID,
   getSheetStatement,
   setSheetStatement as setLocalSheetStatement,
 } from "@/utils/v1/sheet";
@@ -612,15 +614,17 @@ export function PlanDetailChangesBranch({
       </PlanDetailTabStrip>
 
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
-        <div className="flex flex-col gap-y-4">
+        {/* One key on the wrapper — not on each child — remounts the whole
+            spec-detail group when the selected spec changes (resetting each
+            section's internal state) without the sections colliding on a shared
+            key={selectedSpec.id}, which logged a duplicate-key warning. */}
+        <div key={selectedSpec.id} className="flex flex-col gap-y-4">
           <TargetsSection
-            key={selectedSpec.id}
             allowEdit={canModifySpecs}
             onEdit={() => setShowTargetSelectorSheet(true)}
             selectedSpec={selectedSpec}
           />
           <PlanDetailStatementSection
-            key={selectedSpec.id}
             planCheckRuns={
               page.isCreating
                 ? draftCheckRuns
@@ -633,7 +637,6 @@ export function PlanDetailChangesBranch({
             page.isCreating &&
             selectedSpec.config.case === "changeDatabaseConfig" && (
               <PlanDetailDraftChecks
-                key={selectedSpec.id}
                 checkResults={draftCheckResults}
                 onCheckResultsChange={handleDraftCheckResultsChange}
                 selectedSpec={selectedSpec}
@@ -641,7 +644,6 @@ export function PlanDetailChangesBranch({
             )}
           {!specHasRelease && (
             <OptionsSection
-              key={selectedSpec.id}
               onStatementPersisted={() =>
                 handleStatementPersisted(selectedSpec.id)
               }
@@ -731,6 +733,19 @@ function OptionsSection({
   );
   const [instanceRoles, setInstanceRoles] = useState<string[]>([]);
 
+  // Draft (local) sheets are edited in place by the statement editor, so the
+  // `sheetStatement` state is only a seed that goes stale after each keystroke.
+  // Read the live content back for them so an option toggle rebases on the
+  // user's latest SQL instead of overwriting it (BYT-9781); persisted (server)
+  // sheets stay on the state seeded by the effect below.
+  const isDraftSheet =
+    sheetName !== "" && extractSheetUID(sheetName).startsWith("-");
+  const readStatement = (): string =>
+    isDraftSheet
+      ? getSheetStatement(getLocalSheetByName(sheetName))
+      : sheetStatement;
+  const currentStatement = readStatement();
+
   const targets = useMemo(() => {
     if (selectedSpec.config?.case === "changeDatabaseConfig") {
       return selectedSpec.config.value.targets ?? [];
@@ -763,8 +778,8 @@ function OptionsSection({
     : "";
 
   const parsed = useMemo(
-    () => parseStatement(sheetStatement),
-    [sheetStatement]
+    () => parseStatement(currentStatement),
+    [currentStatement]
   );
   const selectedRole = parsed.role ?? "";
   const selectedIsolation = parsed.isolationLevel ?? "";
@@ -950,7 +965,7 @@ function OptionsSection({
     patchState({ plan: response });
   };
 
-  const currentGhostConfig = getGhostConfigFromStatement(sheetStatement);
+  const currentGhostConfig = getGhostConfigFromStatement(currentStatement);
   const ghostIssueDatabases = useMemo(() => {
     return databases.filter((db) => {
       const instance = getInstanceResource(db);
@@ -1015,7 +1030,7 @@ function OptionsSection({
                   onValueChange={(value) => {
                     void persistStatement(
                       updateRoleSetter(
-                        sheetStatement,
+                        readStatement(),
                         value && value !== EMPTY_SELECT_VALUE
                           ? value
                           : undefined
@@ -1062,7 +1077,7 @@ function OptionsSection({
                   onCheckedChange={(checked) => {
                     void persistStatement(
                       updateTransactionMode(
-                        sheetStatement,
+                        readStatement(),
                         checked ? "on" : "off"
                       )
                     );
@@ -1092,7 +1107,7 @@ function OptionsSection({
                   onValueChange={(value) => {
                     void persistStatement(
                       updateIsolationLevel(
-                        sheetStatement,
+                        readStatement(),
                         value === EMPTY_SELECT_VALUE
                           ? undefined
                           : (value as IsolationLevel) || undefined
@@ -1191,7 +1206,7 @@ function OptionsSection({
                   onCheckedChange={(checked) => {
                     void persistStatement(
                       updateGhostConfig(
-                        sheetStatement,
+                        readStatement(),
                         checked
                           ? (currentGhostConfig ?? getDefaultGhostConfig())
                           : undefined
@@ -1202,6 +1217,17 @@ function OptionsSection({
                 />
               </div>
             </Tooltip>
+            {ghostEnabled && (
+              <GhostFlagsButton
+                value={currentGhostConfig ?? {}}
+                disabled={!allowChange || isSheetOversize}
+                onChange={(next) =>
+                  void persistStatement(
+                    updateGhostConfig(readStatement(), next)
+                  )
+                }
+              />
+            )}
           </div>
         </div>
       ) : (

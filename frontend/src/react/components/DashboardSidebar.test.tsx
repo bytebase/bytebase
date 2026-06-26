@@ -24,6 +24,21 @@ const mocks = vi.hoisted(() => ({
   databaseChangeMode: 1,
   isSaaSMode: false,
   workspaceLogo: "",
+  project: undefined as { name: string; title: string } | undefined,
+  workspace: {
+    name: "workspaces/default",
+    title: "Default Workspace",
+    logo: "",
+  },
+  workspaceList: [
+    {
+      name: "workspaces/default",
+      title: "Default Workspace",
+    },
+  ],
+  subscription: {
+    plan: 0,
+  },
   record: vi.fn(),
   push: vi.fn(),
   resolve: vi.fn((target: string | { name?: string; path?: string }) => {
@@ -59,6 +74,10 @@ const t = vi.hoisted(
       "common.environments": "Environments",
       "common.users": "Users",
       "common.settings": "Settings",
+      "project.select": "Select project",
+      "subscription.plan.free.title": "Free",
+      "subscription.plan.team.title": "Team",
+      "subscription.plan.enterprise.title": "Enterprise",
       "settings.sidebar.iam-and-admin": "IAM & Admin",
       "settings.members.service-accounts": "Service Accounts",
       "settings.members.workload-identities": "Workload Identities",
@@ -91,12 +110,19 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/react/hooks/useAppState", () => ({
   useAppFeature: () => mocks.databaseChangeMode,
   useIsSaaSMode: () => mocks.isSaaSMode,
-  useWorkspace: () => ({
-    logo: mocks.workspaceLogo,
-  }),
+  useProject: () => mocks.project,
   useRecentVisit: () => ({
     record: mocks.record,
   }),
+  useSubscription: () => ({
+    subscription: mocks.subscription,
+  }),
+  useSwitchWorkspace: () => vi.fn(),
+  useWorkspace: () => ({
+    ...mocks.workspace,
+    logo: mocks.workspaceLogo,
+  }),
+  useWorkspaceList: () => mocks.workspaceList,
 }));
 
 vi.mock("@/react/router", () => ({
@@ -140,8 +166,12 @@ vi.mock("@/assets/logo-full.svg", () => ({
   default: "/assets/logo-full.svg",
 }));
 
-vi.mock("./WorkspaceSwitcher", () => ({
-  WorkspaceSwitcher: () => <div data-testid="workspace-switcher" />,
+vi.mock("@/react/components/header/ProjectCreateDialog", () => ({
+  ProjectCreateDialog: () => null,
+}));
+
+vi.mock("@/react/components/header/ProjectSwitchPanel", () => ({
+  ProjectSwitchPanel: () => <div data-testid="project-switch-panel" />,
 }));
 
 let DashboardSidebar: typeof import("./DashboardSidebar").DashboardSidebar;
@@ -169,9 +199,22 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.currentRoute.name = WORKSPACE_ROUTE_LANDING;
   mocks.currentRoute.fullPath = "/";
+  mocks.currentRoute.params = {};
   mocks.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   mocks.isSaaSMode = false;
   mocks.workspaceLogo = "";
+  mocks.project = undefined;
+  mocks.workspace = {
+    name: "workspaces/default",
+    title: "Default Workspace",
+    logo: "",
+  };
+  mocks.workspaceList = [
+    {
+      name: "workspaces/default",
+      title: "Default Workspace",
+    },
+  ];
   ({ DashboardSidebar } = await import("./DashboardSidebar"));
 });
 
@@ -223,6 +266,27 @@ describe("DashboardSidebar", () => {
 
     expect(mocks.record).toHaveBeenCalledWith("/sql-editor");
     expect(mocks.push).toHaveBeenCalledWith({ name: SQL_EDITOR_HOME_MODULE });
+
+    unmount();
+  });
+
+  test("places workspace and project switchers in a mobile-only sidebar block", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DashboardSidebar />
+    );
+    render();
+
+    const switcherBlock = container.querySelector(
+      '[data-label="bb-mobile-sidebar-switchers"]'
+    );
+    expect(switcherBlock).not.toBeNull();
+    expect(switcherBlock?.className).toContain("md:hidden");
+    expect(switcherBlock?.textContent).toContain("Default Workspace");
+    expect(switcherBlock?.textContent).toContain("Select project");
+    expect(switcherBlock?.previousElementSibling?.tagName).toBe("A");
+    expect(
+      switcherBlock?.previousElementSibling?.querySelector("img")
+    ).not.toBeNull();
 
     unmount();
   });

@@ -26,7 +26,7 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 // flipped to omni, *OmniAST values reach un-migrated callers of GetTiDBAST,
 // and those callers fall through to AsPingCapAST() to keep working.
 //
-// Mirrors backend/plugin/parser/base/AntlrASTProvider for the mysql migration.
+// Mirrors the native-AST bridge pattern used during parser migrations.
 // See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0 invariant #4.
 type PingCapASTProvider interface {
 	AsPingCapAST() (*AST, bool)

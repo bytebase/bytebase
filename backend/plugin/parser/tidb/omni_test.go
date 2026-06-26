@@ -168,8 +168,7 @@ func TestAsPingCapASTReturnsNativeAST(t *testing.T) {
 
 // TestAsPingCapASTCachesAcrossCalls pins the lazy+cached contract: the
 // native parse runs once per OmniAST instance regardless of how many
-// advisors call the bridge. Mirrors mysql/OmniAST.AsANTLRAST's antlrParsed
-// flag pattern.
+// advisors call the bridge.
 func TestAsPingCapASTCachesAcrossCalls(t *testing.T) {
 	a := require.New(t)
 	o := &OmniAST{

@@ -593,7 +593,7 @@ describe("PlanReviewSection — five review states", () => {
     unmount();
   });
 
-  test("skipped (SKIPPED): skip line renders + footer shows all-gates-passed", () => {
+  test("skipped (SKIPPED): footer shows all-gates-passed", () => {
     const issue = makeIssue({
       approvalStatus: ApprovalStatus.SKIPPED,
       roles: [],
@@ -608,10 +608,9 @@ describe("PlanReviewSection — five review states", () => {
 
     render();
 
-    // Skip placeholder rendered in PlanReviewSection itself
-    expect(container.textContent).toContain(
-      "custom-approval.approval-flow.skip"
-    );
+    // The "no approval required" note is rendered by ReviewApprovalFlow itself
+    // (mocked out here; covered in ReviewApprovalFlow.test.tsx). The footer
+    // treats a skipped approval as satisfied.
     expect(container.textContent).toContain(
       "plan.review.footer.all-gates-passed"
     );

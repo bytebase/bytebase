@@ -2,11 +2,14 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import {
+  getRuleKey,
   getRuleMapValidationErrorTitle,
   getTemplateId,
 } from "@/react/lib/sql-review/utils";
@@ -42,7 +45,7 @@ import { RuleTableWithFilter } from "./RuleTable";
 import { TabsByEngine } from "./TabsByEngine";
 import { TemplateSelector } from "./TemplateSelector";
 
-interface ReviewCreationProps {
+export interface ReviewCreationProps {
   policy?: SQLReviewPolicy;
   name?: string;
   selectedResources?: string[];
@@ -52,6 +55,19 @@ interface ReviewCreationProps {
 
 const STEP_BASIC_INFO = 0;
 const STEP_CONFIGURE_RULES = 1;
+
+function getInitialRuleList({
+  policy,
+  selectedRuleList,
+}: {
+  policy?: SQLReviewPolicy;
+  selectedRuleList: RuleTemplateV2[];
+}) {
+  if (policy || selectedRuleList.length > 0) {
+    return selectedRuleList;
+  }
+  return builtInTemplateList[0]?.ruleList ?? [];
+}
 
 export function ReviewCreation({
   policy,
@@ -72,9 +88,10 @@ export function ReviewCreation({
   );
   const [attachedResources, _setAttachedResources] =
     useState<string[]>(selectedResources);
+  const initialRuleList = getInitialRuleList({ policy, selectedRuleList });
   const [ruleMapByEngine, setRuleMapByEngine] = useState(
     () =>
-      withBuiltinRules(getRuleMapByEngine(selectedRuleList)) as Map<
+      withBuiltinRules(getRuleMapByEngine(initialRuleList)) as Map<
         Engine,
         Map<SQLReviewRule_Type, RuleTemplateV2>
       >
@@ -87,6 +104,10 @@ export function ReviewCreation({
     SQLReviewPolicyTemplateV2 | undefined
   >();
   const [showRuleSelectPanel, setShowRuleSelectPanel] = useState(false);
+  const [setupFinished, setSetupFinished] = useState(false);
+  const [focusedEngine, setFocusedEngine] = useState<Engine | undefined>();
+  const [focusedRuleKey, setFocusedRuleKey] = useState<string | undefined>();
+  const [focusedRuleSignal, setFocusedRuleSignal] = useState(0);
 
   const isUpdate = !!policy;
 
@@ -96,6 +117,20 @@ export function ReviewCreation({
     currentStep === STEP_BASIC_INFO
       ? !!policyName && !!resourceId
       : ruleMapByEngine.size > 0;
+  const initialPolicyName =
+    initialName || t("sql-review.create.basic-info.display-name-default");
+  const initialResourceId = policy ? getReviewConfigId(policy.id) : "";
+  const initialRuleMapByEngine = withBuiltinRules(
+    getRuleMapByEngine(initialRuleList)
+  ) as Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
+  const hasUnsavedChanges =
+    !setupFinished &&
+    (policyName !== initialPolicyName ||
+      resourceId !== initialResourceId ||
+      !isEqual(selectedResources, attachedResources) ||
+      !isEqual(ruleMapByEngine, initialRuleMapByEngine) ||
+      pendingApplyTemplate !== undefined);
+  useUnsavedChangesGuard(hasUnsavedChanges);
 
   // --- Template logic ---
 
@@ -222,6 +257,12 @@ export function ReviewCreation({
 
     const validationError = validateRuleMapByEngine(ruleMapByEngine);
     if (validationError) {
+      if (validationError.type === "EMPTY_STRING_ARRAY") {
+        setCurrentStep(STEP_CONFIGURE_RULES);
+        setFocusedEngine(validationError.rule.engine);
+        setFocusedRuleKey(getRuleKey(validationError.rule));
+        setFocusedRuleSignal((signal) => signal + 1);
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -247,6 +288,7 @@ export function ReviewCreation({
           ? t("sql-review.policy-updated")
           : t("sql-review.policy-created"),
       });
+      flushSync(() => setSetupFinished(true));
       handleCancel(result);
     } catch (error) {
       if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
@@ -301,7 +343,7 @@ export function ReviewCreation({
   return (
     <div className="w-full h-full flex flex-col">
       {/* Step bar */}
-      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+      <div className="sticky top-0 z-10 bg-background border-b pb-4">
         <div className="flex items-center gap-x-2">
           {steps.map((step, index) => (
             <div key={index} className="flex items-center gap-x-2">
@@ -326,35 +368,37 @@ export function ReviewCreation({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto py-4 px-2">
         {currentStep === STEP_BASIC_INFO && (
-          <div className="flex flex-col gap-y-6 max-w-2xl">
-            {/* Display name */}
-            <div>
-              <label className="textlabel">
-                {t("sql-review.create.basic-info.display-name")}
-                <span className="text-error ml-0.5">*</span>
-              </label>
-              <p className="mt-1 textinfolabel">
-                {t("sql-review.create.basic-info.display-name-label")}
-              </p>
-              <Input
-                className="mt-2"
-                value={policyName}
-                onChange={(e) => setPolicyName(e.target.value)}
+          <div className="flex flex-col gap-y-4 max-w-2xl">
+            <div className="flex flex-col gap-y-2 max-w-2xl">
+              {/* Display name */}
+              <div>
+                <label className="textlabel">
+                  {t("sql-review.create.basic-info.display-name")}
+                  <span className="text-error ml-0.5">*</span>
+                </label>
+                <p className="mt-1 textinfolabel">
+                  {t("sql-review.create.basic-info.display-name-label")}
+                </p>
+                <Input
+                  className="mt-2"
+                  value={policyName}
+                  onChange={(e) => setPolicyName(e.target.value)}
+                />
+              </div>
+
+              {/* Resource ID */}
+              <ResourceIdField
+                value={resourceId}
+                resourceName={t("sql-review.review-policy")}
+                resourceTitle={policyName}
+                suffix
+                readonly={!!policy}
+                onChange={setResourceId}
+                validate={validateResourceId}
               />
             </div>
-
-            {/* Resource ID */}
-            <ResourceIdField
-              value={resourceId}
-              resourceName={t("sql-review.review-policy")}
-              resourceTitle={policyName}
-              suffix
-              readonly={!!policy}
-              onChange={setResourceId}
-              validate={validateResourceId}
-            />
 
             {/* Template selector */}
             <TemplateSelector
@@ -369,24 +413,28 @@ export function ReviewCreation({
         {currentStep === STEP_CONFIGURE_RULES && (
           <div>
             {ruleMapByEngine.size > 0 ? (
-              <>
-                <div className="flex justify-end mb-4">
-                  <Button onClick={() => setShowRuleSelectPanel(true)}>
-                    {t("sql-review.add-or-remove-rules")}
-                  </Button>
-                </div>
-                <TabsByEngine ruleMapByEngine={ruleMapByEngine}>
-                  {(ruleList, engine) => (
-                    <RuleTableWithFilter
-                      engine={engine}
-                      ruleList={ruleList}
-                      editable
-                      onRuleUpsert={upsertRule}
-                      onRuleRemove={removeRule}
-                    />
-                  )}
-                </TabsByEngine>
-              </>
+              <TabsByEngine
+                ruleMapByEngine={ruleMapByEngine}
+                selectedEngine={focusedEngine}
+                onSelectedEngineChange={(engine) => {
+                  setFocusedEngine(engine);
+                  setFocusedRuleKey(undefined);
+                }}
+              >
+                {(ruleList, engine) => (
+                  <RuleTableWithFilter
+                    engine={engine}
+                    ruleList={ruleList}
+                    editable
+                    onRuleUpsert={upsertRule}
+                    onRuleRemove={removeRule}
+                    focusRuleKey={
+                      engine === focusedEngine ? focusedRuleKey : undefined
+                    }
+                    focusRuleSignal={focusedRuleSignal}
+                  />
+                )}
+              </TabsByEngine>
             ) : (
               <div className="py-12 border rounded-sm flex flex-col items-center gap-y-4 text-control-light">
                 <p>{t("common.no-data")}</p>
@@ -409,7 +457,7 @@ export function ReviewCreation({
       </div>
 
       {/* Footer navigation */}
-      <div className="border-t px-6 py-4 flex justify-between">
+      <div className="sticky bottom-0 z-10 border-t bg-background py-4 flex justify-between">
         <div>
           {currentStep === STEP_BASIC_INFO && (
             <Button variant="outline" onClick={() => handleCancel()}>
@@ -426,6 +474,14 @@ export function ReviewCreation({
           )}
         </div>
         <div className="flex gap-x-2">
+          {currentStep === STEP_CONFIGURE_RULES && (
+            <Button
+              variant="outline"
+              onClick={() => setShowRuleSelectPanel(true)}
+            >
+              {t("sql-review.add-or-remove-rules")}
+            </Button>
+          )}
           {currentStep < STEP_CONFIGURE_RULES && (
             <Button
               disabled={!allowNext}

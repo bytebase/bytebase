@@ -33,6 +33,20 @@ describe("canonical locale resources", () => {
     expect(source).not.toContain("@/react/locales/");
   });
 
+  test("keeps SQL Review messages in the SQL Review locale slice only", () => {
+    const localesDir = resolve(srcDir, "locales");
+    const localeFiles = readdirSync(localesDir).filter((file) =>
+      file.endsWith(".json")
+    );
+
+    for (const file of localeFiles) {
+      const content = JSON.parse(
+        readFileSync(resolve(localesDir, file), "utf-8")
+      ) as Record<string, unknown>;
+      expect(content["sql-review"], file).toBeUndefined();
+    }
+  });
+
   test("uses the React i18n module as the single runtime entrypoint", () => {
     expect(existsSync(resolve(srcDir, "plugins/i18n.ts"))).toBe(false);
 

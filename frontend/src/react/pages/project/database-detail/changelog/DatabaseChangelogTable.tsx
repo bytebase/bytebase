@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/react/components/HumanizeTs";
 import {
   Table,
   TableBody,
@@ -15,7 +16,6 @@ import {
   type Changelog,
   Changelog_Status,
 } from "@/types/proto-es/v1/database_service_pb";
-import { humanizeDate } from "@/utils";
 import { changelogLink } from "@/utils/v1/changelog";
 
 function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
@@ -100,11 +100,19 @@ export function DatabaseChangelogTable({
                 <ChangelogStatusIcon status={changelog.status} />
               </TableCell>
               <TableCell className="text-main">
-                {getDateForPbTimestampProtoEs(changelog.createTime)
-                  ? humanizeDate(
-                      getDateForPbTimestampProtoEs(changelog.createTime) as Date
-                    )
-                  : "-"}
+                {changelog.createTime ? (
+                  <HumanizeTs
+                    ts={
+                      (
+                        getDateForPbTimestampProtoEs(
+                          changelog.createTime
+                        ) as Date
+                      ).getTime() / 1000
+                    }
+                  />
+                ) : (
+                  "-"
+                )}
               </TableCell>
               <TableCell className="truncate text-main">
                 {changelog.planTitle || "-"}

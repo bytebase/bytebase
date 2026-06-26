@@ -16,6 +16,7 @@ import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
+import { MobileSidebarSwitchers } from "@/react/components/header/HeaderBreadcrumb";
 import { RouterLink } from "@/react/components/RouterLink";
 import {
   useAppFeature,
@@ -503,6 +504,7 @@ export function DashboardSidebar() {
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
       </RouterLink>
+      <MobileSidebarSwitchers />
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>

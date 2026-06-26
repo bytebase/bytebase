@@ -15,6 +15,7 @@ import {
   useServerState,
   useSubscriptionState,
 } from "@/react/hooks/useAppState";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { getResourceId, workspaceNamePrefix } from "@/react/lib/resourceName";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
@@ -122,11 +123,10 @@ export function SubscriptionPage({
   };
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(workspaceId);
+    if (await writeTextToClipboard(workspaceId)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       // Clipboard API not available
     }
   };
