@@ -101,15 +101,11 @@ func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
 func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, error) {
 	var result []*base.ANTLRAST
 
-	if len(stmts) > 0 {
-		// Add semicolon to the last statement if needed
-		stmts[len(stmts)-1].Text = mysqlAddSemicolonIfNeeded(stmts[len(stmts)-1].Text)
-	}
-
 	for _, s := range stmts {
 		if s.Empty {
 			continue
 		}
+		s.Text = mysqlAddSemicolonIfNeeded(s.Text)
 
 		tree, tokens, err := parseSingleStatement(s.BaseLine(), s.Text)
 		if err != nil {

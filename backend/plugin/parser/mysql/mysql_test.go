@@ -101,6 +101,14 @@ func TestMySQLParser(t *testing.T) {
 	}
 }
 
+func TestParseMySQLAddsSemicolonToEachDelimiterSegment(t *testing.T) {
+	statement := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\nDELIMITER ;\nCALL p();"
+
+	list, err := ParseMySQL(statement)
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+}
+
 func TestParseMySQLStatements(t *testing.T) {
 	statement := "SELECT 1; SELECT 2;"
 
