@@ -3,17 +3,14 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysqlomniparser "github.com/bytebase/omni/mysql/parser"
 	parser "github.com/bytebase/parser/mysql"
-	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -92,10 +89,6 @@ func convertOmniError(err error, stmt base.Statement) error {
 
 // ParseMySQL parses the given SQL statement and returns the AST.
 func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
-	statement, err := DealWithDelimiter(statement)
-	if err != nil {
-		return nil, err
-	}
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -108,15 +101,11 @@ func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
 func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, error) {
 	var result []*base.ANTLRAST
 
-	if len(stmts) > 0 {
-		// Add semicolon to the last statement if needed
-		stmts[len(stmts)-1].Text = mysqlAddSemicolonIfNeeded(stmts[len(stmts)-1].Text)
-	}
-
 	for _, s := range stmts {
 		if s.Empty {
 			continue
 		}
+		s.Text = mysqlAddSemicolonIfNeeded(s.Text)
 
 		tree, tokens, err := parseSingleStatement(s.BaseLine(), s.Text)
 		if err != nil {
@@ -135,45 +124,6 @@ func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, err
 	}
 
 	return result, nil
-}
-
-// DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
-func DealWithDelimiter(statement string) (string, error) {
-	has, list, err := hasDelimiter(statement)
-	if err != nil {
-		return "", err
-	}
-	if has {
-		var result strings.Builder
-		delimiter := `;`
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				delimiter, err = ExtractDelimiter(sql.Text)
-				if err != nil {
-					return "", err
-				}
-				// Comment out only the DELIMITER line, preserving all other lines for correct line numbers
-				lines := strings.Split(sql.Text, "\n")
-				for i, line := range lines {
-					if IsDelimiter(line) {
-						lines[i] = "-- " + strings.TrimLeft(line, " \t")
-						break
-					}
-				}
-				result.WriteString(strings.Join(lines, "\n"))
-				continue
-			}
-			if delimiter != ";" && !sql.Empty {
-				result.WriteString(strings.TrimSuffix(sql.Text, delimiter))
-				result.WriteString(";")
-			} else {
-				result.WriteString(sql.Text)
-			}
-		}
-
-		statement = result.String()
-	}
-	return statement, nil
 }
 
 func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
@@ -251,42 +201,6 @@ func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
 		}
 	}
 	return true
-}
-
-// IsDelimiter returns true if the statement is a delimiter statement.
-func IsDelimiter(stmt string) bool {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
-}
-
-// ExtractDelimiter extracts the delimiter from the delimiter statement.
-func ExtractDelimiter(stmt string) (string, error) {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`
-	re := regexp.MustCompile(delimiterRegex)
-	matchList := re.FindStringSubmatch(stmt)
-	index := re.SubexpIndex("DELIMITER")
-	if index >= 0 && index < len(matchList) {
-		return matchList[index], nil
-	}
-	return "", pkgerrors.Errorf("cannot extract delimiter from %q", stmt)
-}
-
-func hasDelimiter(statement string) (bool, []base.Statement, error) {
-	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitTiDBMultiSQL()
-	if err != nil {
-		return false, nil, pkgerrors.Errorf("failed to split multi sql: %v", err)
-	}
-
-	for _, sql := range list {
-		if IsDelimiter(sql.Text) {
-			return true, list, nil
-		}
-	}
-
-	return false, list, nil
 }
 
 // IsTopMySQLRule returns true if the given context is a top-level MySQL rule.

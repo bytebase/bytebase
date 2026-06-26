@@ -23,24 +23,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	result := make([]base.Statement, 0, len(segments))
 	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, seg := range segments {
-		// omni Segment excludes the trailing semicolon, but downstream
-		// code expects it included. Extend the byte range to cover it.
-		byteEnd := seg.ByteEnd
-		if byteEnd < len(statement) && statement[byteEnd] == ';' {
-			byteEnd++
-		}
-		text := statement[seg.ByteStart:byteEnd]
-
-		result = append(result, base.Statement{
-			Text:  text,
-			Empty: seg.Empty(),
-			Start: positionMapper.Position(seg.ByteStart),
-			End:   positionMapper.Position(byteEnd),
-			Range: &storepb.Range{
-				Start: int32(seg.ByteStart),
-				End:   int32(byteEnd),
-			},
-		})
+		result = append(result, base.NewStatementFromRange(statement, positionMapper, seg.ByteStart, seg.ByteEnd, seg.Empty()))
 	}
 	return result, nil
 }
