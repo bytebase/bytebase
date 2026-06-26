@@ -21,3 +21,13 @@ func TestStarRocksQueryDoesNotUseANTLROrMySQLParser(t *testing.T) {
 	require.NotContains(t, source, "omni/mysql/parser")
 	require.NotContains(t, source, "plugin/parser/mysql")
 }
+
+func TestStarRocksDriverDoesNotUseANTLR(t *testing.T) {
+	content, err := os.ReadFile("starrocks.go")
+	require.NoError(t, err)
+	source := string(content)
+
+	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")
+	require.NotContains(t, source, "github.com/bytebase/parser/mysql")
+	require.NotContains(t, source, "plugin/parser/mysql")
+}

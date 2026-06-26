@@ -25,7 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	mysqlomni "github.com/bytebase/omni/mysql/parser"
 )
 
 var (
@@ -168,10 +168,17 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	statement, err := mysqlparser.DealWithDelimiter(statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to deal with delimiter")
+	// Normalize DELIMITER directives using omni's DELIMITER-aware splitter,
+	// then rejoin with semicolons for the SQL driver.
+	segments := mysqlomni.Split(statement)
+	var buf strings.Builder
+	for i, seg := range segments {
+		if i > 0 {
+			buf.WriteString(";\n")
+		}
+		buf.WriteString(seg.Text)
 	}
+	statement = buf.String()
 	// Execute based on transaction mode
 	// Note: StarRocks is an OLAP database with limited transaction support.
 	// For DDL operations, transactions are not supported. For DML operations,
