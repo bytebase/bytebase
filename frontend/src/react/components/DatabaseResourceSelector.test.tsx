@@ -335,6 +335,63 @@ describe("DatabaseResourceSelector", () => {
     unmount();
   });
 
+  test("loads one page at a time instead of draining every page", async () => {
+    mocks.fetchDatabases.mockReset();
+    mocks.fetchDatabases
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db1",
+            environment: "environments/prod",
+            effectiveEnvironment: "environments/prod",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "page-2",
+      })
+      .mockResolvedValueOnce({
+        databases: [
+          {
+            name: "instances/prod/databases/db2",
+            environment: "environments/prod",
+            effectiveEnvironment: "environments/prod",
+            instanceResource: { title: "Prod" },
+          },
+        ],
+        nextPageToken: "",
+      });
+
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    await waitForText(container, "db1");
+
+    // Opening the selector fetches exactly one bounded page, not the whole
+    // list — this is the BYT-9785 freeze fix.
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageSize: 200, pageToken: "" })
+    );
+    expect(container.textContent).not.toContain("db2");
+
+    const loadMoreButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("load-more"));
+    expect(loadMoreButton).toBeTruthy();
+
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushPromises();
+    await waitForText(container, "db2");
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageSize: 200, pageToken: "page-2" })
+    );
+
+    unmount();
+  });
+
   test("selecting a table replaces child column selections", async () => {
     const onValueChange = vi.fn();
     const { container, unmount } = renderIntoContainer(

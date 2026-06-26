@@ -66,6 +66,13 @@ const instanceNamePrefix = "instances/";
 const UNKNOWN_ENVIRONMENT_ID = "-1";
 const UNKNOWN_ENVIRONMENT_NAME = `${environmentNamePrefix}${UNKNOWN_ENVIRONMENT_ID}`;
 
+// Fetch and render databases one page at a time. The selector used to drain
+// every page in a do-while loop and render all rows at once, which froze the
+// tab for projects with thousands of databases (BYT-9785). One bounded page
+// keeps both the network payload and the DOM node count in check; the user
+// loads more on demand or narrows with the instance/environment filter.
+const DATABASE_PAGE_SIZE = 200;
+
 interface DatabaseFilter {
   instance?: string;
   environment?: string;
@@ -98,6 +105,8 @@ export function DatabaseResourceSelector({
   );
 
   const [databases, setDatabases] = useState<Database[]>([]);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
     scopes: [],
@@ -223,26 +232,39 @@ export function DatabaseResourceSelector({
 
   useEffect(() => {
     let cancelled = false;
-    const fetchAll = async () => {
-      let allDatabases: Database[] = [];
-      let pageToken = "";
-      do {
-        const result = await useAppStore.getState().fetchDatabases({
-          parent: projectName,
-          pageSize: 1000,
-          pageToken,
-          filter: databaseFilter,
-        });
-        allDatabases = [...allDatabases, ...result.databases];
-        pageToken = result.nextPageToken;
-      } while (pageToken);
-      if (!cancelled) setDatabases(allDatabases);
+    const fetchFirstPage = async () => {
+      const result = await useAppStore.getState().fetchDatabases({
+        parent: projectName,
+        pageSize: DATABASE_PAGE_SIZE,
+        pageToken: "",
+        filter: databaseFilter,
+      });
+      if (cancelled) return;
+      setDatabases(result.databases);
+      setNextPageToken(result.nextPageToken);
     };
-    fetchAll();
+    fetchFirstPage();
     return () => {
       cancelled = true;
     };
   }, [projectName, databaseFilter]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextPageToken || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await useAppStore.getState().fetchDatabases({
+        parent: projectName,
+        pageSize: DATABASE_PAGE_SIZE,
+        pageToken: nextPageToken,
+        filter: databaseFilter,
+      });
+      setDatabases((prev) => [...prev, ...result.databases]);
+      setNextPageToken(result.nextPageToken);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [projectName, databaseFilter, nextPageToken, loadingMore]);
 
   const selectedResourceMap = useMemo(() => {
     const map = new Map<string, DatabaseSelection>();
@@ -836,7 +858,9 @@ export function DatabaseResourceSelector({
                 : t("common.select-all")}
             </button>
             <span>
-              {t("common.total")} {databases.length}{" "}
+              {nextPageToken
+                ? `${databases.length}+`
+                : `${t("common.total")} ${databases.length}`}{" "}
               {t("common.items", { count: databases.length })}
             </span>
           </div>
@@ -971,6 +995,18 @@ export function DatabaseResourceSelector({
                 </div>
               );
             })}
+            {nextPageToken && (
+              <button
+                type="button"
+                className="w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore
+                  ? `${t("common.loading")}...`
+                  : t("common.load-more")}
+              </button>
+            )}
           </div>
         </div>
         <div className="flex-1 flex flex-col min-w-0">
