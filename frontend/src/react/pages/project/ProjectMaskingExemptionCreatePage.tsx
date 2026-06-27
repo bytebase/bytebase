@@ -3,9 +3,8 @@ import dayjs from "dayjs";
 import { CircleHelp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
-  buildCELExpr,
   emptySimpleExpr,
   validateSimpleExpr,
   wrapAsGroup,
@@ -21,35 +20,22 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
-import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
-import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
+import {
+  buildMaskingExemption,
+  useMaskingExemptionExprConfig,
+} from "@/react/lib/sensitive-data/maskingExemption";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
-import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
-  MaskingExemptionPolicy_ExemptionSchema,
   MaskingExemptionPolicySchema,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  batchConvertParsedExprToCELString,
-  getDatabaseNameOptionConfig,
-} from "@/utils";
-import {
-  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-  CEL_ATTRIBUTE_RESOURCE_DATABASE,
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-} from "@/utils/cel-attributes";
-import { type OptionConfig } from "@/utils/expr";
 
 type RadioValue = "ALL" | "EXPRESSION" | "SELECT";
 
@@ -110,49 +96,8 @@ export function ProjectMaskingExemptionCreatePage({
     [memberList, isValid]
   );
 
-  // ExprEditor config
-  const factorList = useMemo((): Factor[] => {
-    return [
-      CEL_ATTRIBUTE_RESOURCE_DATABASE,
-      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
-      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-      CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-    ];
-  }, []);
-
-  const factorOperatorOverrideMap = useMemo(
-    () =>
-      new Map<Factor, Operator[]>([
-        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
-        [
-          CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-          ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
-        ],
-      ]),
-    []
-  );
-
-  // Subscribe so the classification options recompute when DATA_CLASSIFICATION
-  // loads (getClassificationLevelOptions reads the app store imperatively).
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  const factorOptionConfigMap = useMemo((): Map<Factor, OptionConfig> => {
-    return factorList.reduce((map, factor) => {
-      if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
-        map.set(factor, getDatabaseNameOptionConfig(projectName));
-      } else if (factor === CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL) {
-        map.set(factor, {
-          options: getClassificationLevelOptions(),
-        });
-      } else {
-        map.set(factor, { options: [] });
-      }
-      return map;
-    }, new Map<Factor, OptionConfig>());
-  }, [factorList, projectName, settingsByName]);
+  const { factorList, factorOperatorOverrideMap, factorOptionConfigMap } =
+    useMaskingExemptionExprConfig(projectName);
 
   const onRadioChange = useCallback(
     (value: RadioValue) => {
@@ -174,58 +119,14 @@ export function ProjectMaskingExemptionCreatePage({
     setProcessing(true);
 
     try {
-      const exemptions = [];
-
-      const extraExpressions: string[] = [];
-      if (expirationTimestamp) {
-        extraExpressions.push(
-          `request.time < timestamp("${new Date(expirationTimestamp).toISOString()}")`
-        );
-      }
-
-      if (radioValue === "EXPRESSION") {
-        // Build CEL expression directly
-        const parsedExpr = await buildCELExpr(expr);
-        if (parsedExpr) {
-          let [celString] = await batchConvertParsedExprToCELString([
-            parsedExpr,
-          ]);
-          celString = rewriteResourceDatabase(celString);
-          if (celString) {
-            extraExpressions.push(`(${celString})`);
-          }
-        }
-      } else {
-        // ALL or SELECT mode
-        const resources =
-          radioValue === "SELECT" ? databaseResources : undefined;
-
-        const resourceExpressions = (
-          resources?.map(getExpressionsForDatabaseResource) ?? [[""]]
-        ).map((parts) => parts.filter((e) => e).join(" && "));
-
-        let resourceCondition = "";
-        const nonEmpty = resourceExpressions.filter((e) => e);
-        if (nonEmpty.length === 1) {
-          resourceCondition = nonEmpty[0];
-        } else if (nonEmpty.length > 1) {
-          resourceCondition = nonEmpty.map((e) => `(${e})`).join(" || ");
-        }
-        if (resourceCondition) {
-          extraExpressions.push(`(${resourceCondition})`);
-        }
-      }
-
-      exemptions.push(
-        create(MaskingExemptionPolicy_ExemptionSchema, {
-          members: memberList,
-          condition: create(ExprSchema, {
-            description,
-            expression:
-              extraExpressions.length > 0 ? extraExpressions.join(" && ") : "",
-          }),
-        })
-      );
+      const exemption = await buildMaskingExemption({
+        radioValue,
+        expr,
+        databaseResources,
+        memberList,
+        description,
+        expirationTimestamp,
+      });
 
       const policy = await useAppStore
         .getState()
@@ -248,7 +149,7 @@ export function ProjectMaskingExemptionCreatePage({
           policy: {
             case: "maskingExemptionPolicy",
             value: create(MaskingExemptionPolicySchema, {
-              exemptions: [...existed, ...exemptions],
+              exemptions: [...existed, exemption],
             }),
           },
         },
