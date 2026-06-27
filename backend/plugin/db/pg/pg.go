@@ -13,6 +13,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	dsqlauth "github.com/aws/aws-sdk-go-v2/feature/dsql/auth"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -82,7 +84,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	pgxConnConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {
-		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		// Aurora DSQL rejects startup parameters outside its supported set,
+		// including default_transaction_read_only, which would fail the
+		// connection before any query runs. Skip it for DSQL.
+		if !util.IsAWSDSQLHost(config.DataSource.Host) {
+			pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		}
 	}
 
 	if config.DataSource.GetSshHost() != "" {
@@ -238,6 +245,12 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 		return "", err
 	}
 
+	// Aurora DSQL is PostgreSQL-compatible but uses a different IAM auth token
+	// scheme than RDS/Aurora. Detect it by its endpoint and sign a DSQL token.
+	if util.IsAWSDSQLHost(conf.DataSource.Host) {
+		return getDSQLConnectionPassword(ctx, conf, cfg.Credentials)
+	}
+
 	dbEndpoint := fmt.Sprintf("%s:%s", conf.DataSource.Host, conf.DataSource.Port)
 	authenticationToken, err := auth.BuildAuthToken(
 		ctx, dbEndpoint, conf.DataSource.GetRegion(), conf.DataSource.Username, cfg.Credentials)
@@ -246,6 +259,30 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 	}
 
 	return authenticationToken, nil
+}
+
+// getDSQLConnectionPassword generates an IAM authentication token for Aurora DSQL.
+//
+// DSQL requires the dsql:DbConnectAdmin action for the built-in "admin" user and
+// the dsql:DbConnect action for any other (custom) database role. The token is a
+// signed request against the cluster endpoint hostname only (no port).
+//
+// https://docs.aws.amazon.com/aurora-dsql/latest/userguide/authentication-token.html
+func getDSQLConnectionPassword(ctx context.Context, conf db.ConnectionConfig, creds aws.CredentialsProvider) (string, error) {
+	endpoint := conf.DataSource.Host
+	region := conf.DataSource.GetRegion()
+
+	var token string
+	var err error
+	if conf.DataSource.Username == "admin" {
+		token, err = dsqlauth.GenerateDBConnectAdminAuthToken(ctx, endpoint, region, creds)
+	} else {
+		token, err = dsqlauth.GenerateDbConnectAuthToken(ctx, endpoint, region, creds)
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create DSQL authentication token")
+	}
+	return token, nil
 }
 
 // getRDSConnectionConfig returns connection config for AWS RDS.
