@@ -527,6 +527,11 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
+		for _, spec := range plan.Config.GetSpecs() {
+			if spec.GetExportDataConfig() != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+			}
+		}
 		planUID = &plan.UID
 
 		// Use plan's title and description as defaults if not provided by request

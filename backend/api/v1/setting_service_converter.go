@@ -50,7 +50,7 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		}
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
-			if rule.Source == storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA {
+			if rule.Source == storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA { //nolint:staticcheck // Keep filtering legacy store rules from the public API.
 				continue
 			}
 			template := convertToApprovalTemplate(rule.Template)
