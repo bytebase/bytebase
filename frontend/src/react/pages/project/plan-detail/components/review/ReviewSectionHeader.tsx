@@ -1,4 +1,4 @@
-import { ChevronDown, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ChevronDown, Info, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/react/components/RouterLink";
@@ -8,6 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -47,9 +48,16 @@ export function PlanReviewSectionHeader({ issue }: { issue: Issue }) {
     // row) when the width is too narrow to fit them beside the button.
     <div className="flex items-start gap-x-2 px-4 pt-3 sm:items-center">
       <div className="flex min-w-0 flex-1 flex-col gap-y-1.5 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
-        <h3 className="shrink-0 text-base font-medium text-main">
-          {t("issue.approval-flow.self")}
-        </h3>
+        <div className="flex shrink-0 items-center gap-x-1">
+          <h3 className="text-base font-medium text-main">
+            {t("issue.approval-flow.self")}
+          </h3>
+          {issue.approvalTemplate?.title?.trim() && (
+            <Tooltip content={issue.approvalTemplate.title.trim()}>
+              <Info className="size-3.5 text-control-light" />
+            </Tooltip>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <RiskChip riskLevel={issue.riskLevel} />
           <RouterLink
