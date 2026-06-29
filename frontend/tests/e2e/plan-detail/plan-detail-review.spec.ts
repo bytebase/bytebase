@@ -1,21 +1,43 @@
-// Plan detail — AIO Review section: review actions, recovery, composer, timeline.
+// Plan detail — AIO Review section (the whole sub-area in one file).
 //
 // Covers the issue-backed review workflow that now lives inline on Plan Detail
-// (spec: docs/superpowers/specs/2026-06-12-aio-plan-review-section-design.md):
+// (spec: docs/superpowers/specs/2026-06-12-aio-plan-review-section-design.md).
+// Per the e2e convention (AGENTS.md: one <feature>.spec.ts per sub-area, never
+// split by fixture), every facet of the Review section lives here as its own
+// describe block — review actions, the rollout-readiness footer, and the
+// adaptive approval-flow renderer:
+//
+//   Review actions / recovery / composer / timeline
 //   - Approval flow + Review action render while PENDING (CUJ A)
-//   - Approve via the Review popover → node green, action gone, rollout auto-creates (CUJ B)
+//   - Approve via the Review popover → node green, action gone, rollout
+//     auto-creates (CUJ B)
 //   - Reject requires a comment; rejection banner + in-stream decision (CUJ C)
 //   - Creator re-requests review without changes (CUJ D)
 //   - Comment composer: draft survives collapse, post appends + re-collapses (CUJ E)
 //   - Long-history timeline fold (torn separator + Show all) (CUJ J)
 //   - Non-candidate sees no Review action but can still comment (permission boundary)
-//   - BYT-9746 guard: "(edited)" marker shows in place after inline comment
-//     edit (was missing until reload; fixed by #20649)
+//   - BYT-9746 guard: "(edited)" marker shows in place after an inline edit
 //
-// All review CUJs need an issue-backed plan with a generated approval flow, so
-// this file configures a single-step workspaceAdmin approval rule + mandatory
-// approval in the top beforeAll and restores it in afterAll. demo@ (admin,
-// allowSelfApproval) is a candidate of that step, so the Review action shows.
+//   Rollout-readiness footer + bypass (readinessFooterState.ts)
+//   - Approved/skipped + failed checks → "Bypass and deploy" → confirm sheet →
+//     rollout created (CUJ F)
+//   - Waiting-review bypass link gated by requireIssueApproval (G1 mandatory
+//     hides it / G2 optional shows the muted link)
+//   - A mandatory project gate (requirePlanCheckNoError) hard-blocks the
+//     confirm-sheet Deploy (cannot be acknowledged away)
+//   - BYT-9745 guard: confirm-sheet REVIEW box shows the skip note for
+//     skipped-approval issues
+//
+//   Approval-flow renderer (approvalFlowLayout.ts)
+//   - Long 5-step flow: constrained width folds approved/pending into chips
+//     while the current step stays named; narrow width renders the full
+//     vertical stepper with no chips (CUJ I)
+//
+// Each describe configures the project/workspace settings IT needs in its own
+// beforeAll (approval rule, plan-check gate, review config), so the blocks are
+// order-independent despite sharing the workspace-level WORKSPACE_APPROVAL
+// setting. The file-level beforeAll only snapshots the originals + opens the
+// shared browser; the file-level afterAll restores them.
 
 import {
   test,
@@ -44,6 +66,7 @@ let originalProjectSettings: {
   allowSelfApproval?: boolean;
 } = {};
 let originalApproval: unknown = null;
+const createdReviewConfigs: string[] = [];
 
 const ONE_STEP_RULE = {
   source: "CHANGE_DATABASE",
@@ -55,10 +78,58 @@ const ONE_STEP_RULE = {
   },
 };
 
+const FIVE_STEP_RULE = {
+  source: "CHANGE_DATABASE",
+  condition: { expression: "true" },
+  template: {
+    flow: {
+      roles: [
+        "roles/workspaceAdmin",
+        "roles/workspaceDBA",
+        "roles/projectOwner",
+        "roles/projectDeveloper",
+        "roles/projectReleaser",
+      ],
+    },
+    title: "E2E Five-Step",
+    description: "Five-step approval flow",
+  },
+};
+
 async function goReview(planId: string): Promise<void> {
   await planPage.goto(projectId, planId);
   await planPage.dismissModals();
   await planPage.expandSection("Review");
+}
+
+// Configure a mandatory single/multi-step approval flow (the common case for
+// the review-action + flow describes). Clears any review-config tag first so a
+// prior describe's ERROR rule can't leak in. allowSelfApproval=true lets demo@
+// (the issue creator) approve their own issue for single-admin tests.
+async function setupApproval(rule: object): Promise<void> {
+  await env.api.deletePolicy(env.project, "tag").catch(() => {});
+  await env.api.updateProjectSettings(env.project, {
+    requireIssueApproval: true,
+    requirePlanCheckNoError: false,
+    allowSelfApproval: true,
+  });
+  await env.api.upsertSetting(
+    "WORKSPACE_APPROVAL",
+    { workspaceApproval: { rules: [rule] } },
+    "value.workspace_approval",
+  );
+}
+
+// Attach a single ERROR-level COLUMN_NO_NULL rule to the project so a nullable
+// column trips it. Tracked in createdReviewConfigs for afterAll cleanup; each
+// footer describe that uses it clears the tag in its own beforeAll first.
+async function attachErrorConfig(): Promise<void> {
+  const id = `e2e-review-err-${Date.now()}`;
+  const cfg = await env.api.upsertReviewConfig(id, "E2E Review ERROR", [
+    { type: "COLUMN_NO_NULL", level: "ERROR", engine: "POSTGRES" },
+  ]);
+  createdReviewConfigs.push(cfg.name);
+  await env.api.upsertReviewConfigTag(env.project, cfg.name);
 }
 
 test.beforeAll(async ({ browser }) => {
@@ -74,17 +145,6 @@ test.beforeAll(async ({ browser }) => {
   };
   originalApproval = (await env.api.getSetting("WORKSPACE_APPROVAL"))?.value ?? null;
 
-  await env.api.updateProjectSettings(env.project, {
-    requireIssueApproval: true,
-    requirePlanCheckNoError: false,
-    allowSelfApproval: true,
-  });
-  await env.api.upsertSetting(
-    "WORKSPACE_APPROVAL",
-    { workspaceApproval: { rules: [ONE_STEP_RULE] } },
-    "value.workspace_approval",
-  );
-
   sharedContext = await browser.newContext({
     storageState: ".auth/state.json",
   });
@@ -93,6 +153,10 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
+  await env.api.deletePolicy(env.project, "tag").catch(() => {});
+  for (const name of createdReviewConfigs) {
+    await env.api.deleteReviewConfig(name).catch(() => {});
+  }
   await env.api
     .updateProjectSettings(env.project, originalProjectSettings)
     .catch(() => {});
@@ -111,6 +175,7 @@ test.describe("Review action and approval flow (CUJ A)", () => {
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review A",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_a_${Date.now()} TEXT;`,
@@ -137,6 +202,7 @@ test.describe("Approve via the Review popover (CUJ B)", () => {
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review B",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_b_${Date.now()} TEXT;`,
@@ -167,6 +233,7 @@ test.describe("Reject requires a comment; banner + in-stream decision (CUJ C)", 
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review C",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c_${Date.now()} TEXT;`,
@@ -206,6 +273,7 @@ test.describe("Creator re-requests review without changes (CUJ D)", () => {
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review D",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_d_${Date.now()} TEXT;`,
@@ -232,6 +300,7 @@ test.describe("Comment composer: draft persistence + post (CUJ E)", () => {
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review E",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_e_${Date.now()} TEXT;`,
@@ -270,6 +339,7 @@ test.describe("Long-history timeline fold (CUJ J)", () => {
   let planId: string;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review J",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_j_${Date.now()} TEXT;`,
@@ -314,6 +384,7 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
   let planId: string;
 
   test.beforeAll(async ({ browser }) => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review Perm",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_perm_${Date.now()} TEXT;`,
@@ -366,6 +437,7 @@ test.describe("inline comment edit shows the edited marker in place (BYT-9746)",
   const original = `O7 edit me ${Date.now()}`;
 
   test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
     const seeded = await seedReviewPlan(env.api, env.project, env.database, {
       prefix: "E2E Review O7",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_o7_${Date.now()} TEXT;`,
@@ -393,5 +465,244 @@ test.describe("inline comment edit shows the edited marker in place (BYT-9746)",
     await expect(page.getByText("(edited)").first()).toBeVisible({
       timeout: 5_000,
     });
+  });
+});
+
+test.describe("Bypass when approved but checks failed (CUJ F)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+
+  test.beforeAll(async () => {
+    await env.api.deletePolicy(env.project, "tag").catch(() => {});
+    await env.api.updateProjectSettings(env.project, {
+      requireIssueApproval: false,
+      requirePlanCheckNoError: false,
+      allowSelfApproval: true,
+    });
+    await env.api.upsertSetting(
+      "WORKSPACE_APPROVAL",
+      { workspaceApproval: { rules: [] } },
+      "value.workspace_approval",
+    );
+    await attachErrorConfig();
+    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+      prefix: "E2E Review F",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_f_${Date.now()} TEXT;`,
+      runChecks: true,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["SKIPPED"]);
+    planId = seeded.planId;
+    await goReview(planId);
+  });
+
+  test("footer is the primary action; confirm sheet → deploy creates the rollout", async () => {
+    await expect(
+      page.getByText("Review approved, but plan checks failed"),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(planPage.bypassAndDeployAction).toBeVisible();
+
+    await planPage.bypassAndDeployAction.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    // A soft (non-mandatory) failed-check warning must be acknowledged.
+    await sheet.getByRole("checkbox").check();
+    await sheet.getByRole("button", { name: "Deploy", exact: true }).click();
+
+    // Rollout created → the footer (only shown while !hasRollout) disappears.
+    await expect(
+      page.getByText("Review approved, but plan checks failed"),
+    ).toBeHidden({ timeout: 20_000 });
+    await expect(planPage.deploySection).toBeVisible();
+  });
+});
+
+test.describe("Waiting-review bypass link is gated by requireIssueApproval (CUJ G1/G2)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+
+  test.beforeAll(async () => {
+    await env.api.deletePolicy(env.project, "tag").catch(() => {});
+    await env.api.updateProjectSettings(env.project, {
+      requireIssueApproval: true,
+      requirePlanCheckNoError: false,
+      allowSelfApproval: true,
+    });
+    await env.api.upsertSetting(
+      "WORKSPACE_APPROVAL",
+      { workspaceApproval: { rules: [ONE_STEP_RULE] } },
+      "value.workspace_approval",
+    );
+    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+      prefix: "E2E Review G",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_g_${Date.now()} TEXT;`,
+      runChecks: true,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    await goReview(planId);
+  });
+
+  test("mandatory approval hides the link; optional approval shows it (same plan)", async () => {
+    // G1 — requireIssueApproval=true: footer waits, NO bypass link.
+    await expect(page.getByText("Waiting on review")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(planPage.bypassAndDeployAction).not.toBeVisible();
+
+    // G2 — flip the project to optional approval; the muted link appears.
+    await env.api.updateProjectSettings(env.project, {
+      requireIssueApproval: false,
+    });
+    await goReview(planId);
+    await expect(page.getByText("Waiting on review")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(planPage.bypassAndDeployAction).toBeVisible();
+  });
+});
+
+test.describe("A mandatory project gate hard-blocks the bypass confirm", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+
+  test.beforeAll(async () => {
+    await env.api.deletePolicy(env.project, "tag").catch(() => {});
+    await env.api.updateProjectSettings(env.project, {
+      requireIssueApproval: false,
+      requirePlanCheckNoError: true,
+      allowSelfApproval: true,
+    });
+    await env.api.upsertSetting(
+      "WORKSPACE_APPROVAL",
+      { workspaceApproval: { rules: [] } },
+      "value.workspace_approval",
+    );
+    await attachErrorConfig();
+    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+      prefix: "E2E Review Gate",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_gate_${Date.now()} TEXT;`,
+      runChecks: true,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["SKIPPED"]);
+    planId = seeded.planId;
+    await goReview(planId);
+  });
+
+  test("confirm sheet reports the unmet gate and Deploy stays disabled", async () => {
+    await expect(planPage.bypassAndDeployAction).toBeVisible({ timeout: 15_000 });
+    await planPage.bypassAndDeployAction.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    await expect(
+      sheet.getByText("Required project gates are not met", { exact: false }),
+    ).toBeVisible();
+    // The mandatory gate cannot be acknowledged away — Deploy is disabled.
+    await expect(
+      sheet.getByRole("button", { name: "Deploy", exact: true }),
+    ).toBeDisabled();
+  });
+});
+
+// Regression guard for BYT-9745 (finding O5): the bypass confirm sheet used to
+// render an empty bordered box under REVIEW for skipped-approval issues, while
+// the main Review section showed "No approval required". Root cause:
+// ReviewReadinessFooter rendered <ReviewApprovalFlow> (zero nodes when there
+// are no roles) without the skipped-guard PlanReviewSection had. Fixed by
+// #20662 — ReviewApprovalFlow now renders the skip note itself. This was a
+// test.fail() lock until the fix landed; it now runs as a normal passing guard.
+test.describe("confirm sheet shows the skipped state in its review box (BYT-9745)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+
+  test.beforeAll(async () => {
+    await env.api.deletePolicy(env.project, "tag").catch(() => {});
+    await env.api.updateProjectSettings(env.project, {
+      requireIssueApproval: false,
+      requirePlanCheckNoError: false,
+      allowSelfApproval: true,
+    });
+    await env.api.upsertSetting(
+      "WORKSPACE_APPROVAL",
+      { workspaceApproval: { rules: [] } },
+      "value.workspace_approval",
+    );
+    await attachErrorConfig();
+    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+      prefix: "E2E Review O5",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_o5_${Date.now()} TEXT;`,
+      runChecks: true,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["SKIPPED"]);
+    planId = seeded.planId;
+    await goReview(planId);
+  });
+
+  test("confirm-sheet review box shows the skip note for a skipped approval", async () => {
+    await expect(planPage.bypassAndDeployAction).toBeVisible({ timeout: 15_000 });
+    await planPage.bypassAndDeployAction.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    // The main section shows "No approval required"; post-fix (#20662) the
+    // confirm sheet's review box shows it too. Scoped to the sheet so the main
+    // section behind the scrim doesn't satisfy it. (Pre-fix the box was empty.)
+    await expect(
+      sheet.getByText("No approval required", { exact: false }),
+    ).toBeVisible({ timeout: 5_000 });
+  });
+});
+
+test.describe("Long approval flow adaptive rendering (CUJ I)", () => {
+  test.describe.configure({ mode: "serial" });
+
+  test.beforeAll(async () => {
+    await setupApproval(FIVE_STEP_RULE);
+    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+      prefix: "E2E Review Flow",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_flow_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    // Approve step 1 (workspaceAdmin) as demo, step 2 (workspaceDBA) as dba1 →
+    // 2 approved, step 3 (projectOwner) current, steps 4-5 pending.
+    await env.api.approveIssue(seeded.issueName);
+    const dba = await BytebaseApiClient.asUser(
+      env.baseURL,
+      "dba1@example.com",
+      "12345678",
+    );
+    await dba.approveIssue(seeded.issueName);
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    await planPage.goto(projectId, seeded.planId);
+    await planPage.dismissModals();
+    await planPage.expandSection("Review");
+  });
+
+  test.afterAll(async () => {
+    await page?.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
+  });
+
+  test("constrained width folds approved + pending into chips; current stays named", async () => {
+    await page.setViewportSize({ width: 900, height: 1100 });
+    // Leading approved chip, trailing pending chip, current step named.
+    await expect(page.getByText("2 approved")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("2 pending")).toBeVisible();
+    await expect(page.getByText("Project Owner").first()).toBeVisible();
+    await expect(page.getByText("Current", { exact: true })).toBeVisible();
+  });
+
+  test("narrow width renders the vertical stepper with every node, no chips", async () => {
+    await page.setViewportSize({ width: 480, height: 1500 });
+    // Every role is named in the vertical stepper.
+    for (const role of [
+      "Workspace Admin",
+      "Workspace DBA",
+      "Project Owner",
+      "Project Developer",
+      "Project Releaser",
+    ]) {
+      await expect(page.getByText(role).first()).toBeVisible({ timeout: 15_000 });
+    }
+    // No fold chips in the vertical layout.
+    await expect(page.getByText("2 approved")).toBeHidden();
+    await expect(page.getByText("2 pending")).toBeHidden();
   });
 });
