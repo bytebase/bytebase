@@ -12,6 +12,23 @@ export class PlanDetailPage {
   // <input> bound to the plan or issue title — first textbox on the page.
   readonly headerTitle: Locator;
 
+  // --- Review section (AIO Plan Detail Review) ---
+  // The header Review action button (PlanReviewSectionHeader). Distinct from the
+  // "Review" phase label, which is a <span>, not a button.
+  readonly reviewButton: Locator;
+  // The markdown editor inside the Review popover (ReviewActionPopover).
+  readonly reviewPopoverEditor: Locator;
+  readonly reviewSubmitButton: Locator;
+  // The rejection banner pinned above the timeline (ReviewRejectionBanner).
+  readonly rejectionBanner: Locator;
+  readonly reRequestButton: Locator;
+  // The collapsed composer trigger + its expanded editor (ReviewCommentComposer).
+  readonly composerTrigger: Locator;
+  readonly composerEditor: Locator;
+  readonly composerSubmitButton: Locator;
+  // The readiness footer's single action, in either weight (link or button).
+  readonly bypassAndDeployAction: Locator;
+
   constructor(page: Page, baseURL: string) {
     this.page = page;
     this.baseURL = baseURL;
@@ -21,6 +38,39 @@ export class PlanDetailPage {
     this.manualCreateRolloutButton = page.getByRole("button", { name: "Manually create rollout" });
     this.retryButton = page.getByRole("button", { name: "Retry" });
     this.headerTitle = page.getByRole("textbox").first();
+
+    this.reviewButton = page.getByRole("button", { name: "Review", exact: true });
+    this.reviewPopoverEditor = page.locator(
+      "textarea[placeholder='Leave a comment...']",
+    );
+    this.reviewSubmitButton = page.getByRole("button", { name: "Submit", exact: true });
+    this.rejectionBanner = page.getByText(/^Rejected by /).first();
+    this.reRequestButton = page.getByRole("button", { name: "re-request review" });
+    this.composerTrigger = page.getByRole("button", { name: "Add a comment..." });
+    this.composerEditor = page.locator("textarea[placeholder='Add a comment...']");
+    this.composerSubmitButton = page.getByRole("button", { name: "Comment", exact: true });
+    this.bypassAndDeployAction = page.getByRole("button", { name: "Bypass and deploy" });
+  }
+
+  // The Review phase status badge text (e.g. "Under review", "Approved",
+  // "Rejected", "Skipped"). Scoped to its known label set so it doesn't match
+  // body copy.
+  reviewBadge(text: string): Locator {
+    return this.page.getByText(text, { exact: true });
+  }
+
+  // Open the Review popover, pick an action, optionally type a comment, submit.
+  async submitReview(
+    action: "Comment" | "Approve" | "Reject",
+    comment?: string,
+  ): Promise<void> {
+    await this.reviewButton.click();
+    await this.page.getByText("Submit feedback and request changes").waitFor();
+    await this.page.locator(`label:has-text("${action}")`).click();
+    if (comment !== undefined) {
+      await this.reviewPopoverEditor.fill(comment);
+    }
+    await this.reviewSubmitButton.click();
   }
 
   async goto(projectId: string, planId: string) {

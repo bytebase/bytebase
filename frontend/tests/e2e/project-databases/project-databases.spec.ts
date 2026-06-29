@@ -3,12 +3,17 @@
 // BYT-9609 (FIXED, #20450; cherry-picked to 3.18.1): a user whose only role on a
 // project is Project Developer opened the project's Database page, checked a
 // database row, and found EVERY button on the selection action bar (Change
-// Database, Export Data, Sync Schema, …) disabled — even though projectDeveloper
-// grants those permissions. Visiting the project Members page and returning made
-// them clickable, because only the Members route loaded the project IAM policy
-// into the React app store; every other project route evaluated permissions
-// against an EMPTY policy. The fix loads the project IAM policy on route entry
-// for all project routes.
+// Database, Sync Schema, …) disabled — even though projectDeveloper grants those
+// permissions. Visiting the project Members page and returning made them
+// clickable, because only the Members route loaded the project IAM policy into
+// the React app store; every other project route evaluated permissions against
+// an EMPTY policy. The fix loads the project IAM policy on route entry for all
+// project routes.
+//
+// NOTE: the bar's "Export Data" action was removed when the export center was
+// deprecated (#20693) — the contract under test is "IAM-gated actions are
+// enabled on a cold route", so we assert against the two permission-gated
+// actions that remain (Change Database, Sync Schema). Do not re-add Export Data.
 //
 // Per AGENTS.md "F. Test by role": create scoped users via the API, sign each
 // into its own context, and COLD-load /databases (without visiting Members
@@ -106,7 +111,7 @@ test.afterAll(async () => {
 });
 
 test.describe("Project developer action bar is enabled on a cold Database page (BYT-9609)", () => {
-  test("a projectDeveloper sees Change Database / Export Data / Sync Schema ENABLED without visiting Members first", async ({
+  test("a projectDeveloper sees Change Database / Sync Schema ENABLED without visiting Members first", async ({
     browser,
   }) => {
     const page = await openColdDatabasesPage(browser, DEV_USER.authFile);
@@ -115,7 +120,7 @@ test.describe("Project developer action bar is enabled on a cold Database page (
     // The regression: pre-fix these rendered disabled because the project IAM
     // policy was never fetched on the /databases route. Playwright auto-retries
     // toBeEnabled, tolerating the async IAM fetch the fix performs on entry.
-    for (const name of ["Change Database", "Export Data", "Sync Schema"]) {
+    for (const name of ["Change Database", "Sync Schema"]) {
       await expect(
         page.getByRole("button", { name, exact: true }),
         `"${name}" must be enabled for a projectDeveloper on a cold Database page`,

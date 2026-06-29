@@ -4,11 +4,15 @@
 //   - WARNING-level rule produces an inline warning count but does NOT
 //     block rollout creation (auto-rollout still happens).
 //   - ERROR-level rule with `requirePlanCheckNoError=true` blocks the
-//     auto-rollout with NO "Manually create rollout" button; relaxing the
-//     gate (requirePlanCheckNoError=false) reveals the manual-create button.
-//   - Multi-spec plans: smoke test that each spec tab is selectable and
-//     renders an inline check summary (BYT-9160 context; NOT a strict
-//     regression lock — see the in-test comment).
+//     auto-rollout; the Review readiness footer reports "Review approved, but
+//     plan checks failed" and NO "Manually create rollout" button is offered.
+//     Relaxing the gate (requirePlanCheckNoError=false) lets the user bypass
+//     via the footer's "Bypass and deploy" action (the old DEPLOY manual
+//     button is GitOps-only now — AIO review section, 3.19.1).
+//   - Multi-spec plans: check counts render PLAN-WIDE (BYT-9160 resolution —
+//     the per-spec sidebar was removed), and switching spec tabs shows only the
+//     selected spec's statement (BYT-9794 — a duplicate-key regression fixed by
+//     #20662; guarded here so it can't re-regress).
 //
 // Each test owns its review config + project TagPolicy via API, and
 // cleans up in afterEach so a sibling test doesn't inherit state.
@@ -172,8 +176,16 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
   //     "Manually create rollout" button is offered — the user must
   //     either fix the SQL or relax the gate.
   //   - When the gate is relaxed (requirePlanCheckNoError=false), the
-  //     manual create button DOES appear so the user can bypass the
-  //     failed checks intentionally.
+  //     manual deploy path appears so the user can bypass the failed
+  //     checks intentionally.
+  //
+  // NOTE (AIO plan review section, 3.19.1): the manual "Manually create
+  // rollout" button was REMOVED from DEPLOY for issue-backed plans and is
+  // now GitOps-only (PlanDetailDeployFuture.tsx). For issue-backed plans the
+  // single manual path is the Review section's readiness-footer "Bypass and
+  // deploy" action (ReviewReadinessFooter.tsx). The gate-off test below was
+  // updated to assert that new path; the gate-on test is unchanged (DEPLOY
+  // still explains the block and offers no manual button).
   // Both halves are covered here so a regression on either side fails
   // loudly.
 
@@ -196,17 +208,23 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     await expect(planPage.checksSummary()).toContainText("Error", {
       timeout: 15_000,
     });
-    // DEPLOY explains the block.
+    // The blocking status moved from DEPLOY to the Review readiness footer (AIO
+    // review section): no approval rule → SKIPPED, plus failed checks → the
+    // footer reads "Review approved, but plan checks failed". The old DEPLOY
+    // "Failed checks are blocking automatic rollout creation" helper text was
+    // removed with the DeployFuture dedup.
+    await planPage.expandSection("Review");
     await expect(
-      page.getByText(/Failed checks are blocking/i).first(),
+      page.getByText("Review approved, but plan checks failed"),
     ).toBeVisible({ timeout: 10_000 });
-    // No manual create path is offered in this state.
+    // No manual create path is offered in this state (the gate is mandatory, so
+    // the footer's bypass confirm sheet would hard-block deploy anyway).
     await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
       timeout: 3_000,
     });
   });
 
-  test("relaxing the gate (requirePlanCheckNoError=false) reveals the manual-create button", async () => {
+  test("relaxing the gate (requirePlanCheckNoError=false) reveals the readiness-footer bypass action", async () => {
     await attachReviewConfig("ERROR");
     // Gate OFF — failed checks no longer block; user can bypass.
     await env.api.updateProjectSettings(env.project, {
@@ -225,70 +243,146 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     await expect(planPage.checksSummary()).toContainText("Error", {
       timeout: 15_000,
     });
-    await expect(planPage.manualCreateRolloutButton).toBeVisible({
+    // No approval rule (seedTestData clears WORKSPACE_APPROVAL) →
+    // approvalStatus SKIPPED; ERROR checks + gate OFF → the Review readiness
+    // footer is "Review approved, but plan checks failed" and offers the
+    // single manual path: "Bypass and deploy". The old "Manually create
+    // rollout" button no longer exists for issue-backed plans.
+    await planPage.expandSection("Review");
+    await expect(
+      planPage.page.getByText("Review approved, but plan checks failed"),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(planPage.bypassAndDeployAction).toBeVisible({
       timeout: 10_000,
+    });
+    await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
+      timeout: 3_000,
     });
   });
 });
 
-test.describe("Per-spec scoping (BYT-9160)", () => {
-  // BYT-9160 was a per-spec rendering bug: the right sidebar always showed
-  // the LAST spec's check counts regardless of which spec tab was selected.
-  // The React migration REMOVED that right sidebar. Per-spec data now lives
-  // in the CHANGES editor (the statement + inline advice markers, scoped to
-  // the selected spec via planCheckRunListForSpec), while check COUNTS are
-  // shown PLAN-WIDE (PlanDetailAggregateChecks: one Success/Warning/Error
-  // summary that opens a results drawer). There is no per-spec count to
-  // compare anymore, so the surviving contract is: selecting a spec shows
-  // THAT spec's statement, not a stale sibling's. The two specs carry
-  // uniquely-stamped columns, so the BYT-9160-class regression (stale
-  // per-spec content on tab switch) fails loudly.
-  test("each spec tab shows its own statement; checks render plan-wide", async () => {
+test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
+  // BYT-9160 (original): the per-spec right SIDEBAR always showed the LAST
+  // spec's check counts regardless of which spec tab was selected. The React
+  // migration REMOVED that sidebar; check counts are now a single PLAN-WIDE
+  // aggregate summary (PlanDetailAggregateChecks). That UI element no longer
+  // exists, so the original bug cannot recur. This test locks the resolution:
+  // the aggregate summary renders and stays present regardless of the selected
+  // spec (it is plan-wide, not per-spec).
+  //
+  // NOTE: the separate contract "selecting a spec shows only THAT spec's
+  // STATEMENT" is a *different* concern, guarded separately below (BYT-9794 —
+  // a duplicate-key regression that stacked spec editors, fixed by #20662).
+  test("the aggregate check summary stays plan-wide across spec switches", async () => {
     const ts = Date.now();
-    const colA = `e2e_spec_a_${ts}`;
-    const colB = `e2e_spec_b_${ts}`;
-    await createPlanAndWaitForChecks("E2E Per-Spec", [
+    await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
       {
         id: `spec-a-${ts}`,
         targets: [env.database],
-        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
+        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_a_${ts} TEXT;`,
       },
       {
         id: `spec-b-${ts}`,
         targets: [env.database],
-        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
+        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_b_${ts} TEXT;`,
       },
     ]);
 
-    // Expand CHANGES so the spec tabs + statement editor are reachable.
     await planPage.expandSection("Changes");
 
-    // Joined text of every mounted Monaco surface. The CHANGES statement
-    // editor renders only the SELECTED spec (PlanDetailStatementSection is
-    // driven by selectedSpec), so this reflects the active spec's statement.
-    const readStatement = (): Promise<string> =>
-      page.evaluate(() =>
-        Array.from(document.querySelectorAll('[role="code"]'))
-          .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
-          .map((l) => l.textContent ?? "")
-          .join("\n"),
-      );
-
-    // Spec #1 selected: its statement shows; spec #2's does not.
-    await planPage.specTab(1).click();
-    await expect.poll(readStatement, { timeout: 15_000 }).toContain(colA);
-    expect(await readStatement()).not.toContain(colB);
-
-    // Switching to spec #2 swaps the CHANGES content to spec #2's statement.
-    // The BYT-9160 regression would leave spec #1's content rendered here.
-    await planPage.specTab(2).click();
-    await expect.poll(readStatement, { timeout: 15_000 }).toContain(colB);
-    expect(await readStatement()).not.toContain(colA);
-
-    // Check counts are now a single plan-wide summary (the per-spec sidebar
-    // is gone); confirm it renders.
+    // The plan-wide aggregate summary renders (the removed per-spec sidebar
+    // would have shown per-spec counts here instead).
     await expect(page.getByText("Success").first()).toBeVisible({
       timeout: 15_000,
     });
+
+    // It is plan-wide: still present after switching specs (the BYT-9160
+    // sidebar would have re-bound to / gone stale on the selected spec).
+    await planPage.specTab(1).click();
+    await expect(page.getByText("Success").first()).toBeVisible();
+    await planPage.specTab(2).click();
+    await expect(page.getByText("Success").first()).toBeVisible();
   });
 });
+
+// Regression guard for BYT-9794 (distinct from BYT-9160's deleted sidebar):
+// switching spec tabs used to leave the PREVIOUSLY-selected spec's statement
+// editor mounted, so both specs' SQL stacked in CHANGES. Root cause: the
+// spec-detail sections (TargetsSection / StatementSection / OptionsSection)
+// each carried the SAME `key={selectedSpec.id}` — duplicate React keys on
+// siblings broke reconciliation, so the old sections weren't removed on
+// switch. Fixed by #20662, which consolidated them under a single keyed
+// wrapper `<div key={selectedSpec.id}>`. This was a test.fail() lock until the
+// fix landed; it now runs as a normal passing guard so a re-regression fails
+// loudly.
+test.describe(
+  "Spec tab switch shows only the selected spec's statement (BYT-9794)",
+  () => {
+    test(
+      "only the selected spec's statement is shown in CHANGES after switching tabs",
+      async () => {
+        const ts = Date.now();
+        const colA = `e2e_stale_a_${ts}`;
+        const colB = `e2e_stale_b_${ts}`;
+        await createPlanAndWaitForChecks("E2E Stale Spec Editor", [
+          {
+            id: `spec-a-${ts}`,
+            targets: [env.database],
+            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
+          },
+          {
+            id: `spec-b-${ts}`,
+            targets: [env.database],
+            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
+          },
+        ]);
+
+        await planPage.expandSection("Changes");
+
+        // Read ONLY the CHANGES section's statement editors — the [role=code]
+        // Monaco surfaces between the "Changes" and "Deploy" phase labels. This
+        // deliberately excludes the DEPLOY task-statement preview (which shows
+        // the first task's SQL and is independent of the spec tab), so the
+        // assertion is purely about the CHANGES section leaking a stale editor.
+        const readChangesStatements = (): Promise<string> =>
+          page.evaluate(() => {
+            const spans = Array.from(document.querySelectorAll("span"));
+            const changesLabel = spans.find(
+              (e) => e.textContent?.trim() === "Changes",
+            );
+            const deployLabel = spans.find(
+              (e) => e.textContent?.trim() === "Deploy",
+            );
+            if (!changesLabel) return "";
+            const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+            const PRECEDING = Node.DOCUMENT_POSITION_PRECEDING;
+            return Array.from(document.querySelectorAll('[role="code"]'))
+              .filter(
+                (c) =>
+                  !!(changesLabel.compareDocumentPosition(c) & FOLLOWING) &&
+                  (!deployLabel ||
+                    !!(deployLabel.compareDocumentPosition(c) & PRECEDING)),
+              )
+              .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
+              .map((l) => l.textContent ?? "")
+              .join("\n");
+          });
+
+        await planPage.specTab(1).click();
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colA);
+
+        await planPage.specTab(2).click();
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colB);
+
+        // Post-fix (#20662): spec #1's editor is unmounted on switch, so only
+        // spec #2's statement remains. (Pre-fix, duplicate keys left spec #1's
+        // editor stacked and this assertion failed.)
+        expect(await readChangesStatements()).not.toContain(colA);
+      },
+    );
+  },
+);
