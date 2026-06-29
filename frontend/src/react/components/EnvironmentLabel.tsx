@@ -37,9 +37,9 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
     environment.name === NULL_ENVIRONMENT_NAME;
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
-  const bgColorRgb = !isUnset
-    ? hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR)
-    : null;
+  const bgColorRgb = isUnset
+    ? null
+    : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
 
   return (
     <span

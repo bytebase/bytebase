@@ -192,9 +192,9 @@ function EnvironmentName({ environmentName }: { environmentName: string }) {
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
 
-  const bgColorRgb = !isUnset
-    ? hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR)
-    : null;
+  const bgColorRgb = isUnset
+    ? null
+    : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
 
   return (
     <span
