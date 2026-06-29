@@ -1,6 +1,5 @@
 import {
   ArrowRightLeft,
-  Download,
   Pencil,
   RefreshCw,
   SquareStack,
@@ -19,7 +18,6 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
-  PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
 } from "@/utils";
 
 export interface DatabaseBatchOperationsBarProps {
@@ -35,8 +33,6 @@ export interface DatabaseBatchOperationsBarProps {
   onUnassign?: () => void;
   // Project context: change database schema
   onChangeDatabase?: () => void;
-  // Project context: export data
-  onExportData?: () => void;
   /**
    * True when every visible database on the current page is selected.
    * Drives the leading checkbox's checked vs. indeterminate state.
@@ -57,7 +53,6 @@ export function DatabaseBatchOperationsBar({
   onTransferProject,
   onUnassign,
   onChangeDatabase,
-  onExportData,
   allSelected,
   onToggleSelectAll,
 }: DatabaseBatchOperationsBarProps) {
@@ -73,8 +68,6 @@ export function DatabaseBatchOperationsBar({
   const canGetEnvironment = hasPermission("bb.settings.getEnvironment");
   const canChangeDatabase =
     PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every(hasPermission);
-  const canExportData =
-    PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.every(hasPermission);
 
   const actions: SelectionAction[] = [
     {
@@ -84,14 +77,6 @@ export function DatabaseBatchOperationsBar({
       onClick: () => onChangeDatabase?.(),
       disabled: !canChangeDatabase,
       hidden: !onChangeDatabase,
-    },
-    {
-      key: "export-data",
-      label: t("custom-approval.risk-rule.risk.namespace.data_export"),
-      icon: Download,
-      onClick: () => onExportData?.(),
-      disabled: !canExportData,
-      hidden: !onExportData,
     },
     {
       key: "sync-schema",

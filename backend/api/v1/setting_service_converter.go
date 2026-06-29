@@ -50,6 +50,9 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 		}
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
+			if rule.Source == storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA {
+				continue
+			}
 			template := convertToApprovalTemplate(rule.Template)
 			v1Value.Rules = append(v1Value.Rules, &v1pb.WorkspaceApprovalSetting_Rule{
 				Source:    v1pb.WorkspaceApprovalSetting_Rule_Source(rule.Source),

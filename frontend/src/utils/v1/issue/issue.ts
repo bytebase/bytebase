@@ -90,18 +90,15 @@ export const formatIssueTitle = (
   return parts.join(" ");
 };
 
-/**
- * Generates a title for plan-related issues (change database, export data).
- */
+/** Generates a title for database change plan issues. */
 export const generatePlanTitle = (
-  template: "bb.plan.change-database" | "bb.plan.export-data",
+  template: "bb.plan.change-database",
   databaseNameList?: string[]
 ): string => {
-  const title =
-    template === "bb.plan.change-database"
-      ? i18n.t("issue.title.change-database")
-      : i18n.t("issue.title.export-data");
-  return formatIssueTitle(title, databaseNameList);
+  return formatIssueTitle(
+    i18n.t("issue.title.change-database"),
+    databaseNameList
+  );
 };
 
 /**

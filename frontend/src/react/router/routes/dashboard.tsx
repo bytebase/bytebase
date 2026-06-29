@@ -13,7 +13,6 @@ import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DATA_EXPORT,
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
@@ -850,20 +849,6 @@ const projectV1Routes: RouteObject[] = [
         lazy: lazyPage(
           () => import("@/react/pages/project/DatabaseRevisionDetailPage"),
           (m) => m.DatabaseRevisionDetailPage
-        ),
-      },
-      {
-        path: "data-export",
-        handle: {
-          name: PROJECT_V1_ROUTE_DATA_EXPORT,
-          requiredPermissionList: (): Permission[] => [
-            "bb.issues.list",
-            "bb.databases.list",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/react/pages/project/ProjectDataExportPage"),
-          (m) => m.ProjectDataExportPage
         ),
       },
       {

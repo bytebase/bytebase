@@ -385,6 +385,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		payload := &storepb.WorkspaceApprovalSetting{}
 		for _, rule := range request.Msg.Setting.Value.GetWorkspaceApproval().Rules {
+			if rule.Source == v1pb.WorkspaceApprovalSetting_Rule_Source(3) {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("EXPORT_DATA approval source is removed from the API"))
+			}
+
 			// Validate the condition.
 			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
 				return nil, err

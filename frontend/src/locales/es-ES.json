@@ -849,20 +849,6 @@
     "something-went-wrong": "Algo salió mal",
     "unexpected-error-description": "Se produjo un error inesperado al mostrar esta página. Actualizar suele solucionarlo; si persiste, informa el problema a tu administrador."
   },
-  "export-center": {
-    "data-export": "Exportación de datos",
-    "deprecated": {
-      "approval-flow-link-text": "flujo de aprobación de solicitudes de acceso",
-      "configure-approval-flow": "Asegúrate de que el <lnk>{{linkText}}</lnk> esté configurado.",
-      "enable-jit-first": "Habilita el <lnk>{{linkText}}</lnk> en el proyecto para que los usuarios puedan enviar una solicitud de exportación Just-in-Time desde el Editor SQL.",
-      "go-to-sql-editor-for-export": "Ve al Editor SQL para exportar datos.",
-      "intro": "El Centro de Exportación se desactivará en una próxima versión.",
-      "open-sql-editor": "Ir al Editor SQL",
-      "project-jit-link-text": "acceso Just-in-Time",
-      "request-via-jit": "Los usuarios pueden enviar una solicitud de exportación Just-in-Time desde el Editor SQL.",
-      "title": "El Centro de Exportación será deprecado"
-    }
-  },
   "export-data": {
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
@@ -1309,6 +1295,7 @@
       "write": "Escribir"
     },
     "data-export": {
+      "creation-not-supported": "La creación de incidencias de exportación de datos ya no es compatible.",
       "download-tooltip": "Disponible por 24 horas",
       "file-expired": "Archivo expirado",
       "format": "Formato",
@@ -1865,8 +1852,7 @@
   "quick-action": {
     "create-db": "Crear base de datos",
     "create-project": "Crear proyecto",
-    "new-project": "Nuevo Proyecto",
-    "request-export-data": "Solicitar exportación"
+    "new-project": "Nuevo Proyecto"
   },
   "quick-start": {
     "guide": "haga clic en el paso para probarlo",

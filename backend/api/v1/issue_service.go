@@ -438,6 +438,9 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
+	case v1pb.Issue_DATABASE_EXPORT:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+
 	case v1pb.Issue_ROLE_GRANT:
 		// Title is required for role grant requests.
 		if strings.TrimSpace(request.Issue.Title) == "" {
@@ -506,7 +509,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		title = strings.TrimSpace(request.Issue.Title)
 		description = request.Issue.Description
 
-	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_DATABASE_EXPORT:
+	case v1pb.Issue_DATABASE_CHANGE:
 		// Validate and fetch plan (shared logic for both types)
 		if request.Issue.Plan == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan is required"))

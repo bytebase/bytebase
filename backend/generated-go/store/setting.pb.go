@@ -152,9 +152,10 @@ const (
 	WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED WorkspaceApprovalSetting_Rule_Source = 0
 	WorkspaceApprovalSetting_Rule_CHANGE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 1
 	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
-	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
-	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
-	WorkspaceApprovalSetting_Rule_REQUEST_ACCESS     WorkspaceApprovalSetting_Rule_Source = 5
+	// Deprecated: Marked as deprecated in store/setting.proto.
+	WorkspaceApprovalSetting_Rule_EXPORT_DATA    WorkspaceApprovalSetting_Rule_Source = 3
+	WorkspaceApprovalSetting_Rule_REQUEST_ROLE   WorkspaceApprovalSetting_Rule_Source = 4
+	WorkspaceApprovalSetting_Rule_REQUEST_ACCESS WorkspaceApprovalSetting_Rule_Source = 5
 )
 
 // Enum value maps for WorkspaceApprovalSetting_Rule_Source.
@@ -2858,18 +2859,18 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x06tokens\x18\x04 \x03(\v21.bytebase.store.SQLEditorThemeSetting.TokensEntryR\x06tokens\x1a9\n" +
 	"\vTokensEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa9\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xad\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc7\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xcb\x02\n" +
 	"\x04Rule\x12<\n" +
 	"\btemplate\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12L\n" +
-	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x81\x01\n" +
+	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x85\x01\n" +
 	"\x06Source\x12\x16\n" +
 	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
-	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
-	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
+	"\x0fCREATE_DATABASE\x10\x02\x12\x13\n" +
+	"\vEXPORT_DATA\x10\x03\x1a\x02\b\x01\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
 	"\x0eREQUEST_ACCESS\x10\x05\"\xcf\x05\n" +
 	"\x19DataClassificationSetting\x12\\\n" +
