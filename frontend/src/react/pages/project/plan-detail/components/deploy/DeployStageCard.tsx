@@ -1,8 +1,8 @@
 import { ArrowRight, Eye } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
-import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -20,19 +20,10 @@ function StageProgressCard({ stage }: { stage: Stage }) {
       task.status === Task_Status.DONE || task.status === Task_Status.SKIPPED
   ).length;
   const stageStatus = getStageStatus(stage);
-  const dotClass =
-    stageStatus === Task_Status.DONE || stageStatus === Task_Status.SKIPPED
-      ? "bg-success"
-      : stageStatus === Task_Status.FAILED
-        ? "bg-error"
-        : stageStatus === Task_Status.RUNNING ||
-            stageStatus === Task_Status.PENDING
-          ? "bg-accent"
-          : "bg-control-placeholder";
 
   return (
     <div className="flex items-center gap-2">
-      <span className={cn("h-2 w-2 rounded-full", dotClass)} />
+      <TaskStatusIcon size="tiny" status={stageStatus} />
       <span className="text-sm font-medium text-main">{env.title}</span>
       <span className="text-xs text-control-light">
         ({completed}/{stage.tasks.length})

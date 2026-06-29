@@ -1,11 +1,9 @@
-import { Check, FastForward, Minus, Pause, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { RouterLink } from "@/react/components/RouterLink";
-import { Tooltip } from "@/react/components/ui/tooltip";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -177,7 +175,7 @@ export function IssueDetailDatabaseCreateView() {
               <span className="text-sm font-medium text-gray-600">
                 {t("common.status")}:
               </span>
-              <IssueDetailTaskStatus status={createDatabaseTask.status} />
+              <TaskStatusIcon status={createDatabaseTask.status} size="small" />
             </div>
           )}
         </div>
@@ -256,121 +254,4 @@ function IssueDetailDatabaseCreateInstance({
       <span className="truncate">{children}</span>
     </RouterLink>
   );
-}
-
-function IssueDetailTaskStatus({ status }: { status: Task_Status }) {
-  const { t } = useTranslation();
-  const classes = (() => {
-    const sizeClass = "h-5 w-5";
-    let statusClass = "";
-    switch (status) {
-      case Task_Status.NOT_STARTED:
-        statusClass = "bg-white border-2 border-control";
-        break;
-      case Task_Status.PENDING:
-        statusClass = "bg-white border-2 border-info text-info";
-        break;
-      case Task_Status.RUNNING:
-        statusClass = "bg-white border-2 border-info text-info";
-        break;
-      case Task_Status.SKIPPED:
-        statusClass = "bg-white border-2 border-control-light text-gray-600";
-        break;
-      case Task_Status.DONE:
-        statusClass = "bg-success text-white";
-        break;
-      case Task_Status.FAILED:
-        statusClass = "bg-error text-white";
-        break;
-      default:
-        statusClass = "";
-        break;
-    }
-    return `${sizeClass} ${statusClass}`;
-  })();
-
-  return (
-    <Tooltip content={taskStatusLabel(t, status)}>
-      <div
-        aria-label={taskStatusLabel(t, status)}
-        className={cn(
-          "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full",
-          classes
-        )}
-      >
-        {status === Task_Status.STATUS_UNSPECIFIED && (
-          <span className="h-full w-full rounded-full border border-dashed border-control" />
-        )}
-        {status === Task_Status.NOT_STARTED && (
-          <span
-            aria-hidden="true"
-            className="h-1/2 w-1/2 rounded-full bg-control"
-          />
-        )}
-        {status === Task_Status.PENDING && <Pause className="h-3/4 w-3/4" />}
-        {status === Task_Status.RUNNING && (
-          <div className="relative flex h-1/2 w-1/2 overflow-visible">
-            <span
-              aria-hidden="true"
-              className="absolute z-0 h-full w-full animate-ping-slow rounded-full"
-              style={{ backgroundColor: "rgba(37, 99, 235, 0.5)" }}
-            />
-            <span
-              aria-hidden="true"
-              className="z-1 h-full w-full rounded-full bg-info"
-            />
-          </div>
-        )}
-        {status === Task_Status.SKIPPED && (
-          <FastForward className="h-3/4 w-3/4" />
-        )}
-        {status === Task_Status.DONE && <Check className="h-3/4 w-3/4" />}
-        {status === Task_Status.FAILED && (
-          <span
-            aria-hidden="true"
-            className="rounded-full text-center text-base font-medium"
-          >
-            !
-          </span>
-        )}
-        {status === Task_Status.CANCELED && (
-          <Minus className="h-full w-full rounded-full border-2 border-control-light bg-white text-control-light" />
-        )}
-        {status !== Task_Status.CANCELED &&
-          status !== Task_Status.FAILED &&
-          status !== Task_Status.DONE &&
-          status !== Task_Status.SKIPPED &&
-          status !== Task_Status.RUNNING &&
-          status !== Task_Status.PENDING &&
-          status !== Task_Status.NOT_STARTED &&
-          status !== Task_Status.STATUS_UNSPECIFIED && (
-            <X className="h-3/4 w-3/4" />
-          )}
-      </div>
-    </Tooltip>
-  );
-}
-
-function taskStatusLabel(
-  t: ReturnType<typeof useTranslation>["t"],
-  status: Task_Status
-) {
-  switch (status) {
-    case Task_Status.NOT_STARTED:
-      return t("task.status.not-started");
-    case Task_Status.PENDING:
-      return t("task.status.pending");
-    case Task_Status.RUNNING:
-      return t("task.status.running");
-    case Task_Status.DONE:
-      return t("task.status.done");
-    case Task_Status.FAILED:
-      return t("task.status.failed");
-    case Task_Status.CANCELED:
-      return t("task.status.canceled");
-    case Task_Status.SKIPPED:
-      return t("task.status.skipped");
-    default:
-      return String(status);
-  }
 }

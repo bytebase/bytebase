@@ -2,6 +2,7 @@ import { CalendarClock, EllipsisVertical, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/react/components/monaco";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
 import {
   DropdownMenu,
@@ -33,7 +34,6 @@ import { PlanDetailTaskRunTable } from "../PlanDetailTaskRunTable";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
-import { DeployTaskStatus } from "./DeployTaskStatus";
 import { useDeployTaskActions } from "./taskActions";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
 
@@ -114,7 +114,7 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-2">
-            <DeployTaskStatus size="large" status={task.status} />
+            <TaskStatusIcon size="large" status={task.status} />
             {stageTitle && (
               <span className="rounded-full bg-control-bg px-2 py-0.5 text-xs text-control">
                 {stageTitle}
