@@ -526,7 +526,20 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
     [t, isMobile]
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+  const { widths, totalWidth, onResizeStart, setWidths } =
+    useColumnWidths(columns);
+
+  // useColumnWidths seeds its state only on first render, so a viewport that
+  // crosses the `sm` breakpoint after mount (resize / rotate) would keep the
+  // stale name-column width. Re-seed from the rebuilt column defaults whenever
+  // the breakpoint flips.
+  const wasMobile = useRef(isMobile);
+  useEffect(() => {
+    if (wasMobile.current !== isMobile) {
+      wasMobile.current = isMobile;
+      setWidths(columns.map((c) => c.defaultWidth));
+    }
+  }, [isMobile, columns, setWidths]);
 
   return (
     <div className="overflow-x-auto">
