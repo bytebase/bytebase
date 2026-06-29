@@ -274,6 +274,17 @@ export const SQLEditorSection = forwardRef<
     );
   }, [getInitialTheme, selectedThemeId, customDraft]);
 
+  const isPolicyDirty = useCallback(() => {
+    const init = getInitialState();
+    const maximumResultRows = state.maximumResultRows ?? 0;
+    return (
+      init.disableExport !== state.disableExport ||
+      init.disableCopyData !== state.disableCopyData ||
+      init.allowAdminDataSource !== state.allowAdminDataSource ||
+      init.maximumResultRows !== maximumResultRows
+    );
+  }, [getInitialState, state]);
+
   const isDirty = useCallback(
     () =>
       !isEqual(normalizeForCompare(state), getInitialState()) || isThemeDirty(),
@@ -322,23 +333,25 @@ export const SQLEditorSection = forwardRef<
     }
 
     // Update policy (toggles + rows)
-    await useAppStore.getState().upsertPolicy({
-      parentPath: resource,
-      policy: {
-        type: PolicyType.DATA_QUERY,
-        resourceType: PolicyResourceType.WORKSPACE,
+    if (isPolicyDirty()) {
+      await useAppStore.getState().upsertPolicy({
+        parentPath: resource,
         policy: {
-          case: "queryDataPolicy",
-          value: create(QueryDataPolicySchema, {
-            ...policyPayload,
-            disableExport: state.disableExport,
-            disableCopyData: state.disableCopyData,
-            allowAdminDataSource: state.allowAdminDataSource,
-            maximumResultRows,
-          }),
+          type: PolicyType.DATA_QUERY,
+          resourceType: PolicyResourceType.WORKSPACE,
+          policy: {
+            case: "queryDataPolicy",
+            value: create(QueryDataPolicySchema, {
+              ...policyPayload,
+              disableExport: state.disableExport,
+              disableCopyData: state.disableCopyData,
+              allowAdminDataSource: state.allowAdminDataSource,
+              maximumResultRows,
+            }),
+          },
         },
-      },
-    });
+      });
+    }
 
     // Update SQL Editor theme if changed.
     if (isThemeDirty()) {
@@ -363,6 +376,7 @@ export const SQLEditorSection = forwardRef<
     resource,
     policyPayload,
     getInitialState,
+    isPolicyDirty,
     isThemeDirty,
     selectedThemeId,
     customDraft,
@@ -580,9 +594,7 @@ export const SQLEditorSection = forwardRef<
             </div>
 
             <SegmentedControl
-              ariaLabel={t(
-                "settings.general.workspace.sql-editor-theme.self"
-              )}
+              ariaLabel={t("settings.general.workspace.sql-editor-theme.self")}
               disabled={!canSetWorkspaceProfile}
               value={isCustomSelected ? CUSTOM_THEME_OPTION : selectedThemeId}
               onValueChange={handleSelectTheme}

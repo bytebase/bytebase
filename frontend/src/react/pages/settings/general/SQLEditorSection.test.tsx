@@ -147,7 +147,14 @@ beforeEach(() => {
   root = createRoot(container);
   mocks.profile.sqlEditorThemeId = "";
   mocks.profile.sqlEditorCustomTheme = undefined;
+  mocks.profile.sqlResultSize = 0n;
+  mocks.profile.queryTimeout = undefined;
+  mocks.policy.disableExport = false;
+  mocks.policy.disableCopyData = false;
+  mocks.policy.allowAdminDataSource = false;
+  mocks.policy.maximumResultRows = 0n;
   mocks.updateWorkspaceProfile.mockClear();
+  mocks.upsertPolicy.mockClear();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
 });
 
@@ -197,6 +204,25 @@ describe("SQLEditorSection theme", () => {
       "value.workspace_profile.sql_editor_theme_id",
       "value.workspace_profile.sql_editor_custom_theme",
     ]);
+  });
+
+  test("saving a theme-only change does not upsert unchanged query policy", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+
+    const darkSegment = querySegment("Default Dark");
+    expect(darkSegment).toBeTruthy();
+    act(() => {
+      darkSegment?.querySelector("input")?.click();
+    });
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
   });
 
   test("selecting Custom + editing an anchor yields a full-token draft with stable uuid", async () => {
