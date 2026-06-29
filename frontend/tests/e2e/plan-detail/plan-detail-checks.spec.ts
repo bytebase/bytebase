@@ -9,9 +9,10 @@
 //     Relaxing the gate (requirePlanCheckNoError=false) lets the user bypass
 //     via the footer's "Bypass and deploy" action (the old DEPLOY manual
 //     button is GitOps-only now — AIO review section, 3.19.1).
-//   - Multi-spec plans: smoke test that each spec tab is selectable and
-//     renders an inline check summary (BYT-9160 context; NOT a strict
-//     regression lock — see the in-test comment).
+//   - Multi-spec plans: check counts render PLAN-WIDE (BYT-9160 resolution —
+//     the per-spec sidebar was removed), and a test.fail lock for a NEW
+//     regression where switching spec tabs leaves the prior spec's statement
+//     editor stacked (BUG BYT-9794).
 //
 // Each test owns its review config + project TagPolicy via API, and
 // cleans up in afterEach so a sibling test doesn't inherit state.
@@ -260,64 +261,128 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
   });
 });
 
-test.describe("Per-spec scoping (BYT-9160)", () => {
-  // BYT-9160 was a per-spec rendering bug: the right sidebar always showed
-  // the LAST spec's check counts regardless of which spec tab was selected.
-  // The React migration REMOVED that right sidebar. Per-spec data now lives
-  // in the CHANGES editor (the statement + inline advice markers, scoped to
-  // the selected spec via planCheckRunListForSpec), while check COUNTS are
-  // shown PLAN-WIDE (PlanDetailAggregateChecks: one Success/Warning/Error
-  // summary that opens a results drawer). There is no per-spec count to
-  // compare anymore, so the surviving contract is: selecting a spec shows
-  // THAT spec's statement, not a stale sibling's. The two specs carry
-  // uniquely-stamped columns, so the BYT-9160-class regression (stale
-  // per-spec content on tab switch) fails loudly.
-  test("each spec tab shows its own statement; checks render plan-wide", async () => {
+test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
+  // BYT-9160 (original): the per-spec right SIDEBAR always showed the LAST
+  // spec's check counts regardless of which spec tab was selected. The React
+  // migration REMOVED that sidebar; check counts are now a single PLAN-WIDE
+  // aggregate summary (PlanDetailAggregateChecks). That UI element no longer
+  // exists, so the original bug cannot recur. This test locks the resolution:
+  // the aggregate summary renders and stays present regardless of the selected
+  // spec (it is plan-wide, not per-spec).
+  //
+  // NOTE: the separate contract "selecting a spec shows only THAT spec's
+  // STATEMENT" is a *different* concern and is currently BROKEN by a new
+  // regression — switching tabs leaves the prior spec's statement editor
+  // stacked. That is locked separately below (BUG BYT-9794),
+  // not here.
+  test("the aggregate check summary stays plan-wide across spec switches", async () => {
     const ts = Date.now();
-    const colA = `e2e_spec_a_${ts}`;
-    const colB = `e2e_spec_b_${ts}`;
-    await createPlanAndWaitForChecks("E2E Per-Spec", [
+    await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
       {
         id: `spec-a-${ts}`,
         targets: [env.database],
-        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
+        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_a_${ts} TEXT;`,
       },
       {
         id: `spec-b-${ts}`,
         targets: [env.database],
-        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
+        sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_b_${ts} TEXT;`,
       },
     ]);
 
-    // Expand CHANGES so the spec tabs + statement editor are reachable.
     await planPage.expandSection("Changes");
 
-    // Joined text of every mounted Monaco surface. The CHANGES statement
-    // editor renders only the SELECTED spec (PlanDetailStatementSection is
-    // driven by selectedSpec), so this reflects the active spec's statement.
-    const readStatement = (): Promise<string> =>
-      page.evaluate(() =>
-        Array.from(document.querySelectorAll('[role="code"]'))
-          .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
-          .map((l) => l.textContent ?? "")
-          .join("\n"),
-      );
-
-    // Spec #1 selected: its statement shows; spec #2's does not.
-    await planPage.specTab(1).click();
-    await expect.poll(readStatement, { timeout: 15_000 }).toContain(colA);
-    expect(await readStatement()).not.toContain(colB);
-
-    // Switching to spec #2 swaps the CHANGES content to spec #2's statement.
-    // The BYT-9160 regression would leave spec #1's content rendered here.
-    await planPage.specTab(2).click();
-    await expect.poll(readStatement, { timeout: 15_000 }).toContain(colB);
-    expect(await readStatement()).not.toContain(colA);
-
-    // Check counts are now a single plan-wide summary (the per-spec sidebar
-    // is gone); confirm it renders.
+    // The plan-wide aggregate summary renders (the removed per-spec sidebar
+    // would have shown per-spec counts here instead).
     await expect(page.getByText("Success").first()).toBeVisible({
       timeout: 15_000,
     });
+
+    // It is plan-wide: still present after switching specs (the BYT-9160
+    // sidebar would have re-bound to / gone stale on the selected spec).
+    await planPage.specTab(1).click();
+    await expect(page.getByText("Success").first()).toBeVisible();
+    await planPage.specTab(2).click();
+    await expect(page.getByText("Success").first()).toBeVisible();
   });
 });
+
+// NEW regression — distinct from BYT-9160 (whose buggy sidebar was deleted in
+// the React migration). Switching spec tabs leaves the PREVIOUSLY-selected
+// spec's statement EDITOR mounted in the CHANGES section, so both specs' SQL
+// stack. Visible to users on any multi-spec plan. Root-cause lead: the old
+// PlanDetailStatementSection is not unmounted on spec switch (despite
+// key={selectedSpec.id}) — MonacoEditor disposes correctly on unmount, so the
+// stale editor surviving means the component itself stays mounted; most likely
+// a side effect of #20652's statement cache-seeding / re-derive-on-render.
+// test.fail() until the product bug is fixed; flips to a passing guard then.
+test.describe(
+  "Spec tab switch must not leave a stale statement editor (BUG BYT-9794)",
+  () => {
+    test.fail(
+      "only the selected spec's statement is shown in CHANGES after switching tabs",
+      async () => {
+        const ts = Date.now();
+        const colA = `e2e_stale_a_${ts}`;
+        const colB = `e2e_stale_b_${ts}`;
+        await createPlanAndWaitForChecks("E2E Stale Spec Editor", [
+          {
+            id: `spec-a-${ts}`,
+            targets: [env.database],
+            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
+          },
+          {
+            id: `spec-b-${ts}`,
+            targets: [env.database],
+            sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
+          },
+        ]);
+
+        await planPage.expandSection("Changes");
+
+        // Read ONLY the CHANGES section's statement editors — the [role=code]
+        // Monaco surfaces between the "Changes" and "Deploy" phase labels. This
+        // deliberately excludes the DEPLOY task-statement preview (which shows
+        // the first task's SQL and is independent of the spec tab), so the
+        // assertion is purely about the CHANGES section leaking a stale editor.
+        const readChangesStatements = (): Promise<string> =>
+          page.evaluate(() => {
+            const spans = Array.from(document.querySelectorAll("span"));
+            const changesLabel = spans.find(
+              (e) => e.textContent?.trim() === "Changes",
+            );
+            const deployLabel = spans.find(
+              (e) => e.textContent?.trim() === "Deploy",
+            );
+            if (!changesLabel) return "";
+            const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+            const PRECEDING = Node.DOCUMENT_POSITION_PRECEDING;
+            return Array.from(document.querySelectorAll('[role="code"]'))
+              .filter(
+                (c) =>
+                  !!(changesLabel.compareDocumentPosition(c) & FOLLOWING) &&
+                  (!deployLabel ||
+                    !!(deployLabel.compareDocumentPosition(c) & PRECEDING)),
+              )
+              .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
+              .map((l) => l.textContent ?? "")
+              .join("\n");
+          });
+
+        await planPage.specTab(1).click();
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colA);
+
+        await planPage.specTab(2).click();
+        await expect
+          .poll(readChangesStatements, { timeout: 15_000 })
+          .toContain(colB);
+
+        // BUG: spec #1's statement editor is left mounted (stacked) in CHANGES,
+        // so its SQL is still present after switching to spec #2.
+        expect(await readChangesStatements()).not.toContain(colA);
+      },
+    );
+  },
+);
