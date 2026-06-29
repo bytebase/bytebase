@@ -128,23 +128,23 @@ function SessionTable({ rows }: { rows: TaskRunSession_Postgres_Session[] }) {
 
   return (
     <div className="overflow-auto rounded-sm border">
-      <Table className="table-fixed">
+      <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-20">pid</TableHead>
-            <TableHead className="w-28">blocked_by_pids</TableHead>
-            <TableHead className="min-w-[256px]">query</TableHead>
-            <TableHead className="w-28">state</TableHead>
-            <TableHead className="w-28">wait_event_type</TableHead>
-            <TableHead className="w-28">wait_event</TableHead>
-            <TableHead className="w-28">datname</TableHead>
-            <TableHead className="w-28">usename</TableHead>
-            <TableHead className="w-36">application_name</TableHead>
-            <TableHead className="w-28">client_addr</TableHead>
-            <TableHead className="w-24">client_port</TableHead>
-            <TableHead className="w-40">backend_start</TableHead>
-            <TableHead className="w-40">xact_start</TableHead>
-            <TableHead className="w-40">query_start</TableHead>
+            <TableHead>pid</TableHead>
+            <TableHead>blocked_by_pids</TableHead>
+            <TableHead>query</TableHead>
+            <TableHead>state</TableHead>
+            <TableHead>wait_event_type</TableHead>
+            <TableHead>wait_event</TableHead>
+            <TableHead>datname</TableHead>
+            <TableHead>usename</TableHead>
+            <TableHead>application_name</TableHead>
+            <TableHead>client_addr</TableHead>
+            <TableHead>client_port</TableHead>
+            <TableHead>backend_start</TableHead>
+            <TableHead>xact_start</TableHead>
+            <TableHead>query_start</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,7 +152,9 @@ function SessionTable({ rows }: { rows: TaskRunSession_Postgres_Session[] }) {
             <TableRow key={`${row.pid}-${row.queryStart?.seconds ?? 0}`}>
               <TableCell>{row.pid}</TableCell>
               <TableCell>{row.blockedByPids.join(", ") || "-"}</TableCell>
-              <TableCell className="truncate">{row.query || "-"}</TableCell>
+              <TableCell>
+                <div className="max-w-[360px] truncate">{row.query || "-"}</div>
+              </TableCell>
               <TableCell>{row.state || "-"}</TableCell>
               <TableCell>{row.waitEventType || "-"}</TableCell>
               <TableCell>{row.waitEvent || "-"}</TableCell>

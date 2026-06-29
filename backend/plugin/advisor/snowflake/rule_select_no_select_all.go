@@ -4,7 +4,6 @@ package snowflake
 import (
 	"context"
 	"slices"
-	"strings"
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
@@ -96,19 +95,4 @@ func (c *selectNoSelectAllChecker) checkStmt(node omniast.Node, text string, bas
 			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
 		})
 	}
-}
-
-// statementLineForOffset converts a byte offset within a statement's text into
-// the 1-based line number of that offset — the same line ANTLR assigned to a
-// token at that position when the legacy listeners parsed the identical
-// per-statement text. Add the statement's BaseLine() to obtain the line in the
-// whole script.
-func statementLineForOffset(text string, offset int) int {
-	if offset < 0 {
-		offset = 0
-	}
-	if offset > len(text) {
-		offset = len(text)
-	}
-	return strings.Count(text[:offset], "\n") + 1
 }

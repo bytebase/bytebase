@@ -1,8 +1,20 @@
 package snowflake
 
 import (
+	"strings"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+func statementLineForOffset(text string, offset int) int {
+	if offset < 0 {
+		offset = 0
+	}
+	if offset > len(text) {
+		offset = len(text)
+	}
+	return strings.Count(text[:offset], "\n") + 1
+}
 
 // BaseRule provides the common advice-accumulation plumbing for the omni-AST
 // review rules. Rules embed it to get SetBaseLine/AddAdvice/GetAdviceList.

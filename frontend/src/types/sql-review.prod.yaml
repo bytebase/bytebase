@@ -433,27 +433,12 @@ ruleList:
   - type: STATEMENT_DISALLOW_ADD_NOT_NULL
     level: WARNING
     engine: POSTGRES
-  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
-    level: ERROR
-    engine: MYSQL
-  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
-    level: ERROR
-    engine: OCEANBASE
-  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
-    level: ERROR
-    engine: MARIADB
   - type: STATEMENT_CREATE_SPECIFY_SCHEMA
     level: WARNING
     engine: POSTGRES
   - type: STATEMENT_CHECK_SET_ROLE_VARIABLE
     level: WARNING
     engine: POSTGRES
-  - type: STATEMENT_DISALLOW_USING_FILESORT
-    level: WARNING
-    engine: MYSQL
-  - type: STATEMENT_DISALLOW_USING_TEMPORARY
-    level: WARNING
-    engine: MYSQL
   - type: STATEMENT_WHERE_NO_EQUAL_NULL
     level: WARNING
     engine: MYSQL
@@ -469,42 +454,7 @@ ruleList:
   - type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
     level: WARNING
     engine: ORACLE
-  - type: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL
-    level: WARNING
-    payload:
-      level: INDEX
-    engine: MYSQL
   - type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
-    level: WARNING
-    payload:
-      number: 10
-    engine: MYSQL
-  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
-    level: WARNING
-    payload:
-      number: 1000
-    engine: MYSQL
-  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
-    level: WARNING
-    payload:
-      number: 1000
-    engine: OCEANBASE
-  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
-    level: WARNING
-    payload:
-      number: 1000
-    engine: MARIADB
-  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
-    level: WARNING
-    payload:
-      number: 1000
-    engine: TIDB
-  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
-    level: WARNING
-    payload:
-      number: 1000
-    engine: POSTGRES
-  - type: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT
     level: WARNING
     payload:
       number: 10
@@ -513,9 +463,6 @@ ruleList:
     level: WARNING
     payload:
       number: 10
-    engine: MYSQL
-  - type: STATEMENT_JOIN_STRICT_COLUMN_ATTRS
-    level: WARNING
     engine: MYSQL
   - type: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
     level: WARNING

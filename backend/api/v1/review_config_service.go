@@ -390,8 +390,6 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 	case storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
 		storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
 		storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT,
-		storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE,
-		storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT,
 		storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION,
 		storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH,
 		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH,
@@ -408,21 +406,6 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		}
 		if payload.Number <= 0 {
 			return errors.Errorf("number payload must be positive for rule %s, got %d", ruleType, payload.Number)
-		}
-
-	// String payload rules
-	case storepb.SQLReviewRule_STATEMENT_QUERY_MINIMUM_PLAN_LEVEL:
-		payload := rule.GetStringPayload()
-		if payload == nil {
-			return errors.Errorf("rule %s requires string payload", ruleType)
-		}
-		validLevels := map[string]bool{
-			"ALL": true, "INDEX": true, "RANGE": true,
-			"REF": true, "EQ_REF": true, "CONST": true,
-		}
-		upperValue := strings.ToUpper(payload.Value)
-		if !validLevels[upperValue] {
-			return errors.Errorf("invalid plan level %q for rule %s, must be one of: ALL, INDEX, RANGE, REF, EQ_REF, CONST", payload.Value, ruleType)
 		}
 
 	// String array payload rules that require non-empty arrays
@@ -486,14 +469,10 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		storepb.SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID,
 		storepb.SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID,
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL,
-		storepb.SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN,
 		storepb.SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA,
 		storepb.SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE,
-		storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT,
-		storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY,
 		storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL,
 		storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		storepb.SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS,
 		storepb.SQLReviewRule_STATEMENT_NON_TRANSACTIONAL,
 		storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION,
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL,
