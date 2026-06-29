@@ -8,7 +8,8 @@
 //     mandatory → no link (G1); optional → muted link (G2)
 //   - A mandatory project gate (requirePlanCheckNoError) hard-blocks the
 //     confirm-sheet Deploy (cannot be acknowledged away)
-//   - BUG O5: confirm-sheet REVIEW box is empty for skipped-approval issues
+//   - BYT-9745 guard: confirm-sheet REVIEW box shows the skip note for
+//     skipped-approval issues (was an empty box; fixed by #20662)
 //
 // The "approved + checks failed" and hard-gate states need a skipped approval
 // (no rule) plus an ERROR-level review rule on the change, so those describes
@@ -243,13 +244,14 @@ test.describe("A mandatory project gate hard-blocks the bypass confirm", () => {
   });
 });
 
-// BUG O5: in the bypass confirm sheet, the REVIEW section shows an empty
-// bordered box for skipped-approval issues, while the main Review section shows
-// "No approval required". Root cause: ReviewReadinessFooter renders
-// <ReviewApprovalFlow> (which produces zero nodes when there are no roles)
-// without the skipped-guard PlanReviewSection has. Expected: the confirm sheet
-// communicates the skipped state consistently with the main section.
-test.describe("confirm sheet shows the skipped state in its review box (BUG O5)", () => {
+// Regression guard for BYT-9745 (finding O5): the bypass confirm sheet used to
+// render an empty bordered box under REVIEW for skipped-approval issues, while
+// the main Review section showed "No approval required". Root cause:
+// ReviewReadinessFooter rendered <ReviewApprovalFlow> (zero nodes when there
+// are no roles) without the skipped-guard PlanReviewSection had. Fixed by
+// #20662 — ReviewApprovalFlow now renders the skip note itself. This was a
+// test.fail() lock until the fix landed; it now runs as a normal passing guard.
+test.describe("confirm sheet shows the skipped state in its review box (BYT-9745)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
 
@@ -276,14 +278,14 @@ test.describe("confirm sheet shows the skipped state in its review box (BUG O5)"
     await goReview(planId);
   });
 
-  test.fail("confirm-sheet review box is not empty for a skipped approval", async () => {
+  test("confirm-sheet review box shows the skip note for a skipped approval", async () => {
     await expect(planPage.bypassAndDeployAction).toBeVisible({ timeout: 15_000 });
     await planPage.bypassAndDeployAction.click();
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
-    // The main section shows "No approval required"; the confirm sheet's review
-    // box should too. Scoped to the sheet so the main section behind the scrim
-    // doesn't satisfy it. The bug: the box is empty.
+    // The main section shows "No approval required"; post-fix (#20662) the
+    // confirm sheet's review box shows it too. Scoped to the sheet so the main
+    // section behind the scrim doesn't satisfy it. (Pre-fix the box was empty.)
     await expect(
       sheet.getByText("No approval required", { exact: false }),
     ).toBeVisible({ timeout: 5_000 });

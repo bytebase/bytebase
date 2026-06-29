@@ -10,9 +10,9 @@
 //     via the footer's "Bypass and deploy" action (the old DEPLOY manual
 //     button is GitOps-only now — AIO review section, 3.19.1).
 //   - Multi-spec plans: check counts render PLAN-WIDE (BYT-9160 resolution —
-//     the per-spec sidebar was removed), and a test.fail lock for a NEW
-//     regression where switching spec tabs leaves the prior spec's statement
-//     editor stacked (BUG BYT-9794).
+//     the per-spec sidebar was removed), and switching spec tabs shows only the
+//     selected spec's statement (BYT-9794 — a duplicate-key regression fixed by
+//     #20662; guarded here so it can't re-regress).
 //
 // Each test owns its review config + project TagPolicy via API, and
 // cleans up in afterEach so a sibling test doesn't inherit state.
@@ -271,10 +271,8 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
   // spec (it is plan-wide, not per-spec).
   //
   // NOTE: the separate contract "selecting a spec shows only THAT spec's
-  // STATEMENT" is a *different* concern and is currently BROKEN by a new
-  // regression — switching tabs leaves the prior spec's statement editor
-  // stacked. That is locked separately below (BUG BYT-9794),
-  // not here.
+  // STATEMENT" is a *different* concern, guarded separately below (BYT-9794 —
+  // a duplicate-key regression that stacked spec editors, fixed by #20662).
   test("the aggregate check summary stays plan-wide across spec switches", async () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
@@ -307,19 +305,20 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
   });
 });
 
-// NEW regression — distinct from BYT-9160 (whose buggy sidebar was deleted in
-// the React migration). Switching spec tabs leaves the PREVIOUSLY-selected
-// spec's statement EDITOR mounted in the CHANGES section, so both specs' SQL
-// stack. Visible to users on any multi-spec plan. Root-cause lead: the old
-// PlanDetailStatementSection is not unmounted on spec switch (despite
-// key={selectedSpec.id}) — MonacoEditor disposes correctly on unmount, so the
-// stale editor surviving means the component itself stays mounted; most likely
-// a side effect of #20652's statement cache-seeding / re-derive-on-render.
-// test.fail() until the product bug is fixed; flips to a passing guard then.
+// Regression guard for BYT-9794 (distinct from BYT-9160's deleted sidebar):
+// switching spec tabs used to leave the PREVIOUSLY-selected spec's statement
+// editor mounted, so both specs' SQL stacked in CHANGES. Root cause: the
+// spec-detail sections (TargetsSection / StatementSection / OptionsSection)
+// each carried the SAME `key={selectedSpec.id}` — duplicate React keys on
+// siblings broke reconciliation, so the old sections weren't removed on
+// switch. Fixed by #20662, which consolidated them under a single keyed
+// wrapper `<div key={selectedSpec.id}>`. This was a test.fail() lock until the
+// fix landed; it now runs as a normal passing guard so a re-regression fails
+// loudly.
 test.describe(
-  "Spec tab switch must not leave a stale statement editor (BUG BYT-9794)",
+  "Spec tab switch shows only the selected spec's statement (BYT-9794)",
   () => {
-    test.fail(
+    test(
       "only the selected spec's statement is shown in CHANGES after switching tabs",
       async () => {
         const ts = Date.now();
@@ -379,8 +378,9 @@ test.describe(
           .poll(readChangesStatements, { timeout: 15_000 })
           .toContain(colB);
 
-        // BUG: spec #1's statement editor is left mounted (stacked) in CHANGES,
-        // so its SQL is still present after switching to spec #2.
+        // Post-fix (#20662): spec #1's editor is unmounted on switch, so only
+        // spec #2's statement remains. (Pre-fix, duplicate keys left spec #1's
+        // editor stacked and this assertion failed.)
         expect(await readChangesStatements()).not.toContain(colA);
       },
     );

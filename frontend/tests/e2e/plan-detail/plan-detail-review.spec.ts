@@ -9,7 +9,8 @@
 //   - Comment composer: draft survives collapse, post appends + re-collapses (CUJ E)
 //   - Long-history timeline fold (torn separator + Show all) (CUJ J)
 //   - Non-candidate sees no Review action but can still comment (permission boundary)
-//   - BUG O7: "(edited)" marker missing in place after inline comment edit
+//   - BYT-9746 guard: "(edited)" marker shows in place after inline comment
+//     edit (was missing until reload; fixed by #20649)
 //
 // All review CUJs need an issue-backed plan with a generated approval flow, so
 // this file configures a single-step workspaceAdmin approval rule + mandatory
