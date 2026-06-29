@@ -764,7 +764,7 @@ func getDatabaseGroupForPlanApproval(ctx context.Context, stores *store.Store, p
 
 		dbGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 			ResourceID: &databaseGroupID,
-			ProjectID:  &plan.ProjectID,
+			ProjectIDs: []string{plan.ProjectID},
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group %q", target)
