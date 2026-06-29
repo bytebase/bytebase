@@ -41,11 +41,13 @@ describe("plan list column composition", () => {
 
   test("name carries the tuned default width for plan titles", () => {
     // P0 column for the navigation surface: holds UID + title + optional
-    // lifecycle badge. 400px gives ~45 effective chars for the title with a
-    // badge present, covering typical long plan titles before truncation.
+    // lifecycle badge. 400px (desktop) gives ~45 effective chars for the title
+    // with a badge present. Phones use a fixed 200px and disable resizing so the
+    // title column doesn't push the table wider than the viewport.
     const entry = columnEntry(source, "name");
-    expect(entry.match(/defaultWidth:\s*(\d+)/)?.[1]).toBe("400");
+    expect(entry).toMatch(/defaultWidth:\s*isMobile\s*\?\s*200\s*:\s*400/);
     expect(entry.match(/minWidth:\s*(\d+)/)?.[1]).toBe("200");
+    expect(entry).toMatch(/resizable:\s*!isMobile/);
   });
 
   test("creator carries the tuned default width and min width", () => {

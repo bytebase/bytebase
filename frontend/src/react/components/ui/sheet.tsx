@@ -72,7 +72,11 @@ const sheetContentVariants = cva(
         // a ~5vw strip on the left as a visual anchor; clicking the strip
         // closes the sheet like any other scrim click.
         huge: "w-[95vw]",
-        workspace: "w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]",
+        // Phones get a near-full-width sheet (a thin scrim strip stays
+        // tappable to close); tablets keep the original ~8rem gap, large
+        // screens cap at a fixed width.
+        workspace:
+          "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[calc(100vw-8rem)] sm:max-w-[calc(100vw-8rem)] lg:w-240",
       },
     },
     defaultVariants: {

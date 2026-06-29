@@ -49,6 +49,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { useMediaQuery } from "@/react/hooks/useMediaQuery";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
@@ -96,6 +97,10 @@ import {
   getStageStatusFromCounts,
 } from "@/utils/v1/issue/rollout";
 import { getReviewBadge, type ReviewBadge } from "./utils/reviewBadge";
+
+// Below Tailwind's `sm` breakpoint (640px) we switch the plan list and the
+// database picker to their compact mobile layouts.
+const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -381,6 +386,7 @@ interface PlanRowContext {
 
 function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
   // Subscribe so stage cells re-render when the environment cache loads.
   void useAppStore((s) => s.environmentList);
 
@@ -389,9 +395,12 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
       {
         key: "name",
         title: t("issue.table.name"),
-        defaultWidth: 400,
+        // On phones the name column keeps a fixed, compact width so it does
+        // not dominate the row or push the whole table wider than the
+        // viewport; the remaining columns scroll horizontally.
+        defaultWidth: isMobile ? 200 : 400,
         minWidth: 200,
-        resizable: true,
+        resizable: !isMobile,
         render: (plan, ctx) => (
           <div className="flex items-center gap-x-2 overflow-hidden">
             <span className="whitespace-nowrap text-control opacity-60">
@@ -495,10 +504,23 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
         ),
       },
     ],
-    [t]
+    [t, isMobile]
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+  const { widths, totalWidth, onResizeStart, setWidths } =
+    useColumnWidths(columns);
+
+  // useColumnWidths seeds its state only on first render, so a viewport that
+  // crosses the `sm` breakpoint after mount (resize / rotate) would keep the
+  // stale name-column width. Re-seed from the rebuilt column defaults whenever
+  // the breakpoint flips.
+  const wasMobile = useRef(isMobile);
+  useEffect(() => {
+    if (wasMobile.current !== isMobile) {
+      wasMobile.current = isMobile;
+      setWidths(columns.map((c) => c.defaultWidth));
+    }
+  }, [isMobile, columns, setWidths]);
 
   return (
     <div className="overflow-x-auto">
@@ -937,7 +959,7 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <table className="w-full text-sm">
+          <table className="w-full text-sm max-sm:table-fixed">
             <thead>
               <tr className="border-b text-left text-control-light">
                 <th className="py-2 pl-3 pr-2 w-10">
@@ -952,10 +974,10 @@ function DatabaseSelector({
                 <th className="py-2 pr-4 font-medium">
                   {t("common.instance")}
                 </th>
-                <th className="py-2 pr-4 font-medium">
+                <th className="hidden py-2 pr-4 font-medium sm:table-cell">
                   {t("common.environment")}
                 </th>
-                <th className="py-2 pr-4 font-medium whitespace-nowrap">
+                <th className="hidden py-2 pr-4 font-medium whitespace-nowrap sm:table-cell">
                   {t("common.status")}
                 </th>
               </tr>
@@ -979,18 +1001,23 @@ function DatabaseSelector({
                       <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
-                      <div className="flex items-center gap-x-1.5">
+                      <div className="flex min-w-0 items-center gap-x-1.5">
                         {inst && (
-                          <EngineIcon engine={inst.engine} className="size-4" />
+                          <EngineIcon
+                            engine={inst.engine}
+                            className="size-4 shrink-0"
+                          />
                         )}
-                        <span>{databaseName}</span>
+                        <span className="truncate">{databaseName}</span>
                       </div>
                     </td>
-                    <td className="py-2 pr-4">{inst?.title}</td>
                     <td className="py-2 pr-4">
+                      <span className="block truncate">{inst?.title}</span>
+                    </td>
+                    <td className="hidden py-2 pr-4 sm:table-cell">
                       {env && <EnvironmentLabel environmentName={env.name} />}
                     </td>
-                    <td className="py-2 pr-4">
+                    <td className="hidden py-2 pr-4 sm:table-cell">
                       {db.syncStatus === SyncStatus.FAILED ? (
                         <Tooltip
                           content={
