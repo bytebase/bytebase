@@ -1,11 +1,11 @@
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { type Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
-import { DeployTaskStatus } from "./DeployTaskStatus";
 
 export function DeployTaskRow({
   active,
@@ -41,7 +41,7 @@ export function DeployTaskRow({
       type="button"
     >
       <div className="flex min-w-0 items-center gap-2">
-        <DeployTaskStatus size="small" status={task.status} />
+        <TaskStatusIcon size="small" status={task.status} />
         <div className="min-w-0">
           <div className="truncate text-main">{task.name}</div>
           <div className="text-xs text-control-light">

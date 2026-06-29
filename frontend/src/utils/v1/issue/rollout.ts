@@ -1,7 +1,10 @@
 import i18n from "@/react/i18n";
 import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type {
+  Plan,
+  Plan_TaskStatusCount,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Rollout,
@@ -148,31 +151,44 @@ export const stringifyTaskStatus = (
   }
 };
 
-export const getStageStatus = (stage: Stage): Task_Status => {
-  const tasks = stage.tasks;
-  if (tasks.length === 0) return Task_Status.NOT_STARTED;
-
-  // Priority order follows TASK_STATUS_FILTERS
+// Return the highest-priority Task_Status (per TASK_STATUS_FILTERS) for which
+// `has` reports a member, or `fallback` when none match. Shared by the stage
+// and rollout status reducers below.
+const foldByStatusPriority = (
+  has: (status: Task_Status) => boolean,
+  fallback: Task_Status
+): Task_Status => {
   for (const status of TASK_STATUS_FILTERS) {
-    if (tasks.some((task) => task.status === status)) {
-      return status;
-    }
+    if (has(status)) return status;
   }
-
-  return Task_Status.NOT_STARTED;
+  return fallback;
 };
 
+export const getStageStatus = (stage: Stage): Task_Status => {
+  if (stage.tasks.length === 0) return Task_Status.NOT_STARTED;
+  return foldByStatusPriority(
+    (status) => stage.tasks.some((task) => task.status === status),
+    Task_Status.NOT_STARTED
+  );
+};
+
+// Derive a stage status from aggregated task status counts (used by the plan
+// table, which only has counts rather than the full task list).
+export const getStageStatusFromCounts = (
+  counts: Plan_TaskStatusCount[]
+): Task_Status =>
+  foldByStatusPriority(
+    (status) => counts.some((item) => item.status === status),
+    Task_Status.STATUS_UNSPECIFIED
+  );
+
 export const getRolloutStatus = (rollout: Rollout): Task_Status => {
-  const stages = rollout.stages;
-  if (stages.length === 0) return Task_Status.NOT_STARTED;
-
-  for (const status of TASK_STATUS_FILTERS) {
-    if (stages.some((stage) => getStageStatus(stage) === status)) {
-      return status;
-    }
-  }
-
-  return Task_Status.NOT_STARTED;
+  if (rollout.stages.length === 0) return Task_Status.NOT_STARTED;
+  return foldByStatusPriority(
+    (status) =>
+      rollout.stages.some((stage) => getStageStatus(stage) === status),
+    Task_Status.NOT_STARTED
+  );
 };
 
 export const databaseForTask = (project: Project, task: Task, plan?: Plan) => {

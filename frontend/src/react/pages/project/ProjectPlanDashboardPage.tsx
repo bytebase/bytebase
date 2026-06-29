@@ -23,6 +23,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -76,16 +77,11 @@ import {
   type Database,
   SyncStatus,
 } from "@/types/proto-es/v1/database_service_pb";
-import type {
-  Plan,
-  Plan_RolloutStageSummary,
-  Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
@@ -96,19 +92,11 @@ import {
   getInstanceResource,
   type SearchParams as VueSearchParams,
 } from "@/utils";
-import { extractStageUID } from "@/utils/v1/issue/rollout";
+import {
+  extractStageUID,
+  getStageStatusFromCounts,
+} from "@/utils/v1/issue/rollout";
 import { getReviewBadge, type ReviewBadge } from "./utils/reviewBadge";
-
-// Task status priority order for determining rollout stage status
-const TASK_STATUS_FILTERS: Task_Status[] = [
-  Task_Status.RUNNING,
-  Task_Status.FAILED,
-  Task_Status.PENDING,
-  Task_Status.NOT_STARTED,
-  Task_Status.CANCELED,
-  Task_Status.DONE,
-  Task_Status.SKIPPED,
-];
 
 // Below Tailwind's `sm` breakpoint (640px) we switch the plan list and the
 // database picker to their compact mobile layouts.
@@ -396,15 +384,6 @@ interface PlanRowContext {
   showDraftTag: boolean;
 }
 
-function getRolloutStageStatus(summary: Plan_RolloutStageSummary): Task_Status {
-  for (const status of TASK_STATUS_FILTERS) {
-    if (summary.taskStatusCounts.some((item) => item.status === status)) {
-      return status;
-    }
-  }
-  return Task_Status.STATUS_UNSPECIFIED;
-}
-
 function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
   const { t } = useTranslation();
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
@@ -491,11 +470,13 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
                 const environment = useAppStore
                   .getState()
                   .getEnvironmentByName(envName);
-                const stageStatus = getRolloutStageStatus(summary);
+                const stageStatus = getStageStatusFromCounts(
+                  summary.taskStatusCounts
+                );
                 return (
                   <div key={summary.stage} className="flex items-center gap-1">
                     <div className="flex items-center gap-1">
-                      <TaskStatusIcon status={stageStatus} />
+                      <TaskStatusIcon size="tiny" status={stageStatus} />
                       <span className="text-sm">
                         {environment?.title || envName}
                       </span>
@@ -668,54 +649,6 @@ function PlanRow({
       ))}
     </TableRow>
   );
-}
-
-// ---------------------------------------------------------------------------
-// TaskStatusIcon
-// ---------------------------------------------------------------------------
-
-function TaskStatusIcon({ status }: { status: Task_Status }) {
-  const size = "size-4";
-  switch (status) {
-    case Task_Status.DONE:
-      return <CheckCircle className={cn(size, "text-success")} />;
-    case Task_Status.RUNNING:
-      return <Loader2 className={cn(size, "text-info animate-spin")} />;
-    case Task_Status.FAILED:
-      return <XCircle className={cn(size, "text-error")} />;
-    case Task_Status.CANCELED:
-      return <XCircle className={cn(size, "text-control-placeholder")} />;
-    case Task_Status.PENDING:
-    case Task_Status.NOT_STARTED:
-      return (
-        <span
-          className={cn(
-            size,
-            "inline-flex items-center justify-center rounded-full border-2 border-control-border"
-          )}
-        />
-      );
-    case Task_Status.SKIPPED:
-      return (
-        <span
-          className={cn(
-            size,
-            "inline-flex items-center justify-center rounded-full bg-control-bg-hover text-control-light"
-          )}
-        >
-          <span className="w-2 h-px bg-current" />
-        </span>
-      );
-    default:
-      return (
-        <span
-          className={cn(
-            size,
-            "inline-flex items-center justify-center rounded-full border-2 border-block-border"
-          )}
-        />
-      );
-  }
 }
 
 // ---------------------------------------------------------------------------

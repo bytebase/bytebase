@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { RouterLink } from "@/react/components/RouterLink";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
@@ -36,7 +37,6 @@ import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
 import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
-import { DeployTaskStatus } from "./DeployTaskStatus";
 import { useDeployTaskActions } from "./taskActions";
 import { getTaskRunDuration } from "./taskRunUtils";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
@@ -171,7 +171,7 @@ export function DeployTaskItem({
                 onCheckedChange={() => onToggleSelect()}
                 onClick={(event) => event.stopPropagation()}
               />
-              <DeployTaskStatus
+              <TaskStatusIcon
                 size={isExpanded ? "large" : "small"}
                 status={task.status}
               />
