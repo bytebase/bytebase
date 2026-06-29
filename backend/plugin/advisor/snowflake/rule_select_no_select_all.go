@@ -96,4 +96,3 @@ func (c *selectNoSelectAllChecker) checkStmt(node omniast.Node, text string, bas
 		})
 	}
 }
-
