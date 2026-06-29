@@ -138,14 +138,17 @@ export function DeployTaskItem({
   ].filter((item) => item.visible);
   const showHeaderActions =
     isExpanded && (actionItems.length > 0 || Boolean(rollbackableTaskRun));
+  const isClickableCollapsed = !readonly && !isExpanded;
 
   return (
     <>
       <div
         className={cn(
           "group relative rounded-lg border bg-white transition-all",
-          active && "border-accent bg-accent/5"
+          active && "border-accent bg-accent/5",
+          isClickableCollapsed && "cursor-pointer hover:bg-control-bg"
         )}
+        onClick={isClickableCollapsed ? onToggleExpand : undefined}
       >
         <div
           className={
@@ -241,7 +244,10 @@ export function DeployTaskItem({
             {!readonly && (
               <Button
                 className={isExpanded ? "self-start" : undefined}
-                onClick={onToggleExpand}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleExpand();
+                }}
                 size="xs"
                 variant="ghost"
               >
@@ -270,12 +276,11 @@ export function DeployTaskItem({
               )}
               <span
                 className={cn(
-                  "cursor-pointer truncate",
+                  "truncate",
                   task.status === Task_Status.FAILED
                     ? "text-error"
                     : "italic text-gray-500"
                 )}
-                onClick={onToggleExpand}
               >
                 {collapsedStatusText}
               </span>

@@ -500,14 +500,14 @@ function PhaseSection({
           </div>
         ) : (
           <div className="flex flex-col">
-            <div
-              className="flex items-center gap-2 py-0.5 cursor-pointer"
-              onClick={onToggle}
-            >
+            <div className="flex items-center gap-2 py-0.5">
               <span className="textlabel uppercase text-accent">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-[11px] text-control-placeholder">
+              <span
+                className="shrink-0 cursor-pointer text-[11px] text-control-placeholder hover:text-control"
+                onClick={onToggle}
+              >
                 {t("plan.phase.hide-details")}
               </span>
             </div>
