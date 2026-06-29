@@ -464,14 +464,6 @@
       "description": "TRUNCATE is a destructive DDL statement that removes all rows from a table and bypasses triggers. Prior-backup does not produce row-level snapshots for TRUNCATE, so accidental data loss cannot be recovered through the built-in backup path. Suggested error level: Error",
       "title": "Prohibit \"TRUNCATE\" statement"
     },
-    "STATEMENT_DISALLOW_USING_FILESORT": {
-      "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggested error level: Warning",
-      "title": "Prohibit using filesort"
-    },
-    "STATEMENT_DISALLOW_USING_TEMPORARY": {
-      "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggested error level: Warning",
-      "title": "Prohibit using temporary tables"
-    },
     "STATEMENT_DML_DRY_RUN": {
       "description": "When the syntax is correct, but the table name is incorrect or the permission is insufficient, it can be discovered by dry run before the actual execution. Suggested error level: Warning",
       "title": "Validate the executability of DML statements"
@@ -492,28 +484,6 @@
       },
       "description": "Reveal the number of rows to be inserted can help determine whether the statement meets business expectations. Suggested error level: Warning",
       "title": "Restrict the maximum number of inserted rows"
-    },
-    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
-      "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results.",
-      "title": "Fields to be joined must have identical data types, character sets"
-    },
-    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
-      "component": {
-        "number": {
-          "title": "Maximum value"
-        }
-      },
-      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
-      "title": "Restrict the number of tables to be joined"
-    },
-    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
-      "component": {
-        "number": {
-          "title": "Maximum value"
-        }
-      },
-      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
-      "title": "Restrict the maximum number of the LIMIT clause"
     },
     "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
       "component": {
@@ -548,15 +518,6 @@
       "description": "This rule checks whether the object owner for DDL is the same as the current user.",
       "title": "Object owner check"
     },
-    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
-      "component": {
-        "level": {
-          "title": "Maximum level"
-        }
-      },
-      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
-      "title": "Restrict the maximum level of query access method"
-    },
     "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
       "description": "Specifying the ALGORITHM option in ALTER TABLE statements ensures more control over how table changes are applied, minimizing potential disruptions by avoiding full table copies or locks. It helps optimize performance and reduce downtime during schema modifications. Suggested error level: Warning.",
       "title": "Require specifying the ALGORITHM option in ALTER TABLE statements"
@@ -564,10 +525,6 @@
     "STATEMENT_REQUIRE_LOCK_OPTION": {
       "description": "The LOCK option in ALTER TABLE statements allows you to control the level of locking during schema changes, helping to prevent unnecessary table locks and ensuring better concurrency. Proper use of this option can significantly reduce the impact of DDL operations on active queries. Suggested error level: Warning.",
       "title": "Require specifying the LOCK option in ALTER TABLE statements"
-    },
-    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
-      "description": "Full table scan is a resource-intensive operation and may cause serious performance impact. Suggested error level: Error",
-      "title": "Check full table scan for queries"
     },
     "STATEMENT_SELECT_NO_SELECT_ALL": {
       "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggested error level: Error",

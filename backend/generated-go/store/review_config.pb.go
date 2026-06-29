@@ -109,19 +109,12 @@ const (
 	SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID                       SQLReviewRule_Type = 29
 	SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID                 SQLReviewRule_Type = 30
 	SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL                     SQLReviewRule_Type = 31
-	SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN                    SQLReviewRule_Type = 32
 	SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA                     SQLReviewRule_Type = 33
 	SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE                   SQLReviewRule_Type = 34
-	SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT                   SQLReviewRule_Type = 35
-	SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY                  SQLReviewRule_Type = 36
 	SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL                       SQLReviewRule_Type = 37
 	SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS SQLReviewRule_Type = 38
-	SQLReviewRule_STATEMENT_QUERY_MINIMUM_PLAN_LEVEL                  SQLReviewRule_Type = 39
 	SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT      SQLReviewRule_Type = 40
-	SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE                       SQLReviewRule_Type = 41
-	SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT                  SQLReviewRule_Type = 42
 	SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION         SQLReviewRule_Type = 43
-	SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS                  SQLReviewRule_Type = 44
 	SQLReviewRule_STATEMENT_NON_TRANSACTIONAL                         SQLReviewRule_Type = 45
 	SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION               SQLReviewRule_Type = 46
 	SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL                      SQLReviewRule_Type = 47
@@ -226,19 +219,12 @@ var (
 		29:  "STATEMENT_ADD_CHECK_NOT_VALID",
 		30:  "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID",
 		31:  "STATEMENT_DISALLOW_ADD_NOT_NULL",
-		32:  "STATEMENT_SELECT_FULL_TABLE_SCAN",
 		33:  "STATEMENT_CREATE_SPECIFY_SCHEMA",
 		34:  "STATEMENT_CHECK_SET_ROLE_VARIABLE",
-		35:  "STATEMENT_DISALLOW_USING_FILESORT",
-		36:  "STATEMENT_DISALLOW_USING_TEMPORARY",
 		37:  "STATEMENT_WHERE_NO_EQUAL_NULL",
 		38:  "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS",
-		39:  "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL",
 		40:  "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT",
-		41:  "STATEMENT_MAXIMUM_LIMIT_VALUE",
-		42:  "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT",
 		43:  "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION",
-		44:  "STATEMENT_JOIN_STRICT_COLUMN_ATTRS",
 		45:  "STATEMENT_NON_TRANSACTIONAL",
 		46:  "STATEMENT_ADD_COLUMN_WITHOUT_POSITION",
 		47:  "STATEMENT_DISALLOW_OFFLINE_DDL",
@@ -340,19 +326,12 @@ var (
 		"STATEMENT_ADD_CHECK_NOT_VALID":                       29,
 		"STATEMENT_ADD_FOREIGN_KEY_NOT_VALID":                 30,
 		"STATEMENT_DISALLOW_ADD_NOT_NULL":                     31,
-		"STATEMENT_SELECT_FULL_TABLE_SCAN":                    32,
 		"STATEMENT_CREATE_SPECIFY_SCHEMA":                     33,
 		"STATEMENT_CHECK_SET_ROLE_VARIABLE":                   34,
-		"STATEMENT_DISALLOW_USING_FILESORT":                   35,
-		"STATEMENT_DISALLOW_USING_TEMPORARY":                  36,
 		"STATEMENT_WHERE_NO_EQUAL_NULL":                       37,
 		"STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": 38,
-		"STATEMENT_QUERY_MINIMUM_PLAN_LEVEL":                  39,
 		"STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT":      40,
-		"STATEMENT_MAXIMUM_LIMIT_VALUE":                       41,
-		"STATEMENT_MAXIMUM_JOIN_TABLE_COUNT":                  42,
 		"STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION":         43,
-		"STATEMENT_JOIN_STRICT_COLUMN_ATTRS":                  44,
 		"STATEMENT_NON_TRANSACTIONAL":                         45,
 		"STATEMENT_ADD_COLUMN_WITHOUT_POSITION":               46,
 		"STATEMENT_DISALLOW_OFFLINE_DDL":                      47,
@@ -951,7 +930,7 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
 	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"^\n" +
 	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xa0&\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xba$\n" +
 	"\rSQLReviewRule\x126\n" +
 	"\x04type\x18\x01 \x01(\x0e2\".bytebase.store.SQLReviewRule.TypeR\x04type\x129\n" +
 	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12X\n" +
@@ -981,7 +960,7 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\"\xf1\x1c\n" +
+	"\aWARNING\x10\x02\"\x8b\x1b\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ENGINE_MYSQL_USE_INNODB\x10\x01\x12\x1a\n" +
@@ -1015,20 +994,13 @@ const file_store_review_config_proto_rawDesc = "" +
 	"*STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT\x10\x1c\x12!\n" +
 	"\x1dSTATEMENT_ADD_CHECK_NOT_VALID\x10\x1d\x12'\n" +
 	"#STATEMENT_ADD_FOREIGN_KEY_NOT_VALID\x10\x1e\x12#\n" +
-	"\x1fSTATEMENT_DISALLOW_ADD_NOT_NULL\x10\x1f\x12$\n" +
-	" STATEMENT_SELECT_FULL_TABLE_SCAN\x10 \x12#\n" +
+	"\x1fSTATEMENT_DISALLOW_ADD_NOT_NULL\x10\x1f\x12#\n" +
 	"\x1fSTATEMENT_CREATE_SPECIFY_SCHEMA\x10!\x12%\n" +
-	"!STATEMENT_CHECK_SET_ROLE_VARIABLE\x10\"\x12%\n" +
-	"!STATEMENT_DISALLOW_USING_FILESORT\x10#\x12&\n" +
-	"\"STATEMENT_DISALLOW_USING_TEMPORARY\x10$\x12!\n" +
+	"!STATEMENT_CHECK_SET_ROLE_VARIABLE\x10\"\x12!\n" +
 	"\x1dSTATEMENT_WHERE_NO_EQUAL_NULL\x10%\x127\n" +
-	"3STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS\x10&\x12&\n" +
-	"\"STATEMENT_QUERY_MINIMUM_PLAN_LEVEL\x10'\x122\n" +
-	".STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT\x10(\x12!\n" +
-	"\x1dSTATEMENT_MAXIMUM_LIMIT_VALUE\x10)\x12&\n" +
-	"\"STATEMENT_MAXIMUM_JOIN_TABLE_COUNT\x10*\x12/\n" +
-	"+STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION\x10+\x12&\n" +
-	"\"STATEMENT_JOIN_STRICT_COLUMN_ATTRS\x10,\x12\x1f\n" +
+	"3STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS\x10&\x122\n" +
+	".STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT\x10(\x12/\n" +
+	"+STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION\x10+\x12\x1f\n" +
 	"\x1bSTATEMENT_NON_TRANSACTIONAL\x10-\x12)\n" +
 	"%STATEMENT_ADD_COLUMN_WITHOUT_POSITION\x10.\x12\"\n" +
 	"\x1eSTATEMENT_DISALLOW_OFFLINE_DDL\x10/\x12'\n" +
@@ -1095,7 +1067,7 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\x17ADVICE_ONLINE_MIGRATION\x10l\x12\x1e\n" +
 	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10m\x12\x1e\n" +
 	"\x1aBUILTIN_WALK_THROUGH_CHECK\x10n\x12\x1f\n" +
-	"\x1bSTATEMENT_DISALLOW_TRUNCATE\x10oB\t\n" +
+	"\x1bSTATEMENT_DISALLOW_TRUNCATE\x10o\"\x04\b \x10 \"\x04\b#\x10#\"\x04\b$\x10$\"\x04\b'\x10'\"\x04\b)\x10)\"\x04\b*\x10*\"\x04\b,\x10,B\t\n" +
 	"\apayloadB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11ReviewConfigProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

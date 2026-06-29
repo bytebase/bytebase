@@ -564,11 +564,6 @@ export enum SQLReviewRule_Type {
   STATEMENT_DISALLOW_ADD_NOT_NULL = 31,
 
   /**
-   * @generated from enum value: STATEMENT_SELECT_FULL_TABLE_SCAN = 32;
-   */
-  STATEMENT_SELECT_FULL_TABLE_SCAN = 32,
-
-  /**
    * @generated from enum value: STATEMENT_CREATE_SPECIFY_SCHEMA = 33;
    */
   STATEMENT_CREATE_SPECIFY_SCHEMA = 33,
@@ -577,16 +572,6 @@ export enum SQLReviewRule_Type {
    * @generated from enum value: STATEMENT_CHECK_SET_ROLE_VARIABLE = 34;
    */
   STATEMENT_CHECK_SET_ROLE_VARIABLE = 34,
-
-  /**
-   * @generated from enum value: STATEMENT_DISALLOW_USING_FILESORT = 35;
-   */
-  STATEMENT_DISALLOW_USING_FILESORT = 35,
-
-  /**
-   * @generated from enum value: STATEMENT_DISALLOW_USING_TEMPORARY = 36;
-   */
-  STATEMENT_DISALLOW_USING_TEMPORARY = 36,
 
   /**
    * @generated from enum value: STATEMENT_WHERE_NO_EQUAL_NULL = 37;
@@ -599,34 +584,14 @@ export enum SQLReviewRule_Type {
   STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS = 38,
 
   /**
-   * @generated from enum value: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL = 39;
-   */
-  STATEMENT_QUERY_MINIMUM_PLAN_LEVEL = 39,
-
-  /**
    * @generated from enum value: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT = 40;
    */
   STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT = 40,
 
   /**
-   * @generated from enum value: STATEMENT_MAXIMUM_LIMIT_VALUE = 41;
-   */
-  STATEMENT_MAXIMUM_LIMIT_VALUE = 41,
-
-  /**
-   * @generated from enum value: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT = 42;
-   */
-  STATEMENT_MAXIMUM_JOIN_TABLE_COUNT = 42,
-
-  /**
    * @generated from enum value: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION = 43;
    */
   STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION = 43,
-
-  /**
-   * @generated from enum value: STATEMENT_JOIN_STRICT_COLUMN_ATTRS = 44;
-   */
-  STATEMENT_JOIN_STRICT_COLUMN_ATTRS = 44,
 
   /**
    * @generated from enum value: STATEMENT_NON_TRANSACTIONAL = 45;

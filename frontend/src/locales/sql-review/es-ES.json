@@ -464,14 +464,6 @@
       "description": "TRUNCATE es una sentencia DDL destructiva que elimina todas las filas de una tabla y omite los triggers. prior-backup no genera snapshots a nivel de fila para TRUNCATE, por lo que una pérdida accidental de datos no puede recuperarse mediante la ruta de backup integrada. Nivel de error sugerido: Error",
       "title": "Prohibir la sentencia \"TRUNCATE\""
     },
-    "STATEMENT_DISALLOW_USING_FILESORT": {
-      "description": "El uso de filesort puede causar un impacto grave en el rendimiento. Nivel de error sugerido: Advertencia",
-      "title": "Prohibir el uso de filesort"
-    },
-    "STATEMENT_DISALLOW_USING_TEMPORARY": {
-      "description": "Las tablas temporales pueden causar problemas de rendimiento y de mantenimiento. Nivel de error sugerido: Advertencia",
-      "title": "Prohibir el uso de tablas temporales"
-    },
     "STATEMENT_DML_DRY_RUN": {
       "description": "Cuando la sintaxis es correcta, pero el nombre de la tabla es incorrecto o el permiso es insuficiente, se puede descubrir mediante una simulación antes de la ejecución real. Nivel de sugerencia de error: Advertencia",
       "title": "Validar la ejecutabilidad de declaraciones DML"
@@ -492,28 +484,6 @@
       },
       "description": "Revelar el número de filas a insertar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
       "title": "Restringir el número máximo de filas insertadas"
-    },
-    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
-      "description": "Si los tipos de datos y los juegos de caracteres de las columnas de unión no son idénticos, es posible que la base de datos no pueda identificar correctamente las filas coincidentes, lo que dará lugar a resultados inexactos o incompletos.",
-      "title": "Los campos a unir deben tener tipos de datos y conjuntos de caracteres idénticos"
-    },
-    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
-      "component": {
-        "number": {
-          "title": "Valor máximo"
-        }
-      },
-      "description": "Cuanto más tablas unes, más compleja se vuelve la consulta y más tardará en ejecutarse. En general, es recomendable mantener el número de uniones al mínimo.",
-      "title": "Limite el número de tablas a unir"
-    },
-    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
-      "component": {
-        "number": {
-          "title": "Valor máximo"
-        }
-      },
-      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento.",
-      "title": "Limitar el número máximo de la cláusula LIMIT"
     },
     "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
       "component": {
@@ -548,15 +518,6 @@
       "description": "Esta regla verifica si el propietario del objeto para DDL es el mismo que el usuario actual.",
       "title": "Verificación del propietario del objeto"
     },
-    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
-      "component": {
-        "level": {
-          "title": "Nivel maximo"
-        }
-      },
-      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango.",
-      "title": "Limitar el nivel máximo del método de acceso a la consulta"
-    },
     "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
       "description": "La especificación de la opción ALGORITHM en las instrucciones ALTER TABLE garantiza un mayor control sobre cómo se aplican los cambios en las tablas, lo que minimiza las posibles interrupciones al evitar copias o bloqueos completos de las tablas. Ayuda a optimizar el rendimiento y reducir el tiempo de inactividad durante las modificaciones del esquema. Nivel de error sugerido: Advertencia.",
       "title": "Requiere especificar la opción ALGORITMO en las instrucciones ALTER TABLE"
@@ -564,10 +525,6 @@
     "STATEMENT_REQUIRE_LOCK_OPTION": {
       "description": "La opción LOCK en las instrucciones ALTER TABLE le permite controlar el nivel de bloqueo durante los cambios de esquema, lo que ayuda a evitar bloqueos de tablas innecesarios y garantiza una mejor concurrencia. El uso adecuado de esta opción puede reducir significativamente el impacto de las operaciones DDL en las consultas activas. Nivel de error sugerido: Advertencia.",
       "title": "Requerir especificar la opción LOCK en las instrucciones ALTER TABLE"
-    },
-    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
-      "description": "El escaneo completo de tabla es una operación intensiva en recursos y puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error",
-      "title": "Verificar escaneo completo de tabla en consultas"
     },
     "STATEMENT_SELECT_NO_SELECT_ALL": {
       "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error",
