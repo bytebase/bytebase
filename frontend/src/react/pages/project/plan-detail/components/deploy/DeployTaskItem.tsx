@@ -155,7 +155,14 @@ export function DeployTaskItem({
             isExpanded ? "space-y-3 py-4 pl-3 pr-4" : "py-2.5 pl-3 pr-4"
           }
         >
-          <div className="flex items-center justify-between gap-x-3">
+          <div
+            className={cn(
+              "flex justify-between gap-x-3",
+              isExpanded
+                ? "flex-col gap-y-2 sm:flex-row sm:items-center"
+                : "items-center"
+            )}
+          >
             <div className="flex min-w-0 flex-1 items-center gap-x-2">
               <Checkbox
                 checked={isSelected}
@@ -168,7 +175,7 @@ export function DeployTaskItem({
                 size={isExpanded ? "large" : "small"}
                 status={task.status}
               />
-              <div className="flex min-w-0 items-center gap-x-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 <PlanTargetDisplay size="md" target={task.target} />
                 {isExpanded && !readonly && (
                   <RouterLink
@@ -211,52 +218,57 @@ export function DeployTaskItem({
               )}
             </div>
 
-            {showHeaderActions && (
-              <div className="flex shrink-0 items-center gap-x-2">
-                {actionItems.map((item) => (
+            {(showHeaderActions || !readonly) && (
+              <div className="flex shrink-0 items-center gap-x-2 max-sm:justify-end">
+                {showHeaderActions && (
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {actionItems.map((item) => (
+                      <Button
+                        key={item.key}
+                        onClick={() => {
+                          setAction(item.key);
+                          setActionOpen(true);
+                        }}
+                        size="xs"
+                        variant={item.key === "RUN" ? "default" : "outline"}
+                      >
+                        {item.key === "RUN" && <Play className="h-3 w-3" />}
+                        {item.key === "SKIP" && (
+                          <SkipForward className="h-3 w-3" />
+                        )}
+                        {item.key === "CANCEL" && <X className="h-3 w-3" />}
+                        {item.label}
+                      </Button>
+                    ))}
+                    {rollbackableTaskRun && (
+                      <Button
+                        onClick={() => setRollbackOpen(true)}
+                        size="xs"
+                        variant="outline"
+                      >
+                        {t("common.rollback")}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {!readonly && (
                   <Button
-                    key={item.key}
-                    onClick={() => {
-                      setAction(item.key);
-                      setActionOpen(true);
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleExpand();
                     }}
                     size="xs"
-                    variant={item.key === "RUN" ? "default" : "outline"}
+                    variant="ghost"
                   >
-                    {item.key === "RUN" && <Play className="h-3 w-3" />}
-                    {item.key === "SKIP" && <SkipForward className="h-3 w-3" />}
-                    {item.key === "CANCEL" && <X className="h-3 w-3" />}
-                    {item.label}
-                  </Button>
-                ))}
-                {rollbackableTaskRun && (
-                  <Button
-                    onClick={() => setRollbackOpen(true)}
-                    size="xs"
-                    variant="outline"
-                  >
-                    {t("common.rollback")}
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-500" />
+                    )}
                   </Button>
                 )}
               </div>
-            )}
-
-            {!readonly && (
-              <Button
-                className={isExpanded ? "self-start" : undefined}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleExpand();
-                }}
-                size="xs"
-                variant="ghost"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
-                )}
-              </Button>
             )}
           </div>
 

@@ -111,6 +111,8 @@ export function DashboardHeader({
       {showMobileSidebarToggle ? (
         <button
           type="button"
+          aria-label={t("common.open-mobile-sidebar")}
+          title={t("common.open-mobile-sidebar")}
           className="p-1 text-gray-500 hover:text-gray-900 md:hidden"
           onClick={onOpenMobileSidebar}
         >
@@ -129,6 +131,8 @@ export function DashboardHeader({
         <Button
           size="sm"
           variant="outline"
+          aria-label={t("agent.self")}
+          title={t("agent.self")}
           onClick={() => {
             void import("@/react/plugins/agent/store/agent").then(
               ({ useAgentStore }) => {
@@ -145,6 +149,8 @@ export function DashboardHeader({
           <Button
             size="sm"
             variant="outline"
+            aria-label={t("common.want-help")}
+            title={t("common.want-help")}
             className="border-success text-success hover:bg-success/10"
             onClick={() => {
               window.open(
@@ -161,6 +167,8 @@ export function DashboardHeader({
         <Button
           size="sm"
           variant="outline"
+          aria-label={t("sql-editor.self")}
+          title={t("sql-editor.self")}
           onClick={() => {
             window.open(sqlEditorHref, "_blank", "noopener,noreferrer");
           }}
@@ -174,6 +182,8 @@ export function DashboardHeader({
         <Button
           size="sm"
           variant="outline"
+          aria-label={t("issue.my-issues")}
+          title={t("issue.my-issues")}
           onClick={() => {
             record(myIssueHref);
             localStorage.setItem(STORAGE_KEY_MY_ISSUES_TAB, uuidv4());
