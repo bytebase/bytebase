@@ -76,8 +76,15 @@
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status":  "ERROR",
+        "title":  "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE",
+        "content":  "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
+        "code":  204,
+        "sqlReviewReport":  {
+          "startPosition":  {
+            "line":  1
+          }
+        }
       }
   run: false
 - statement: DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')

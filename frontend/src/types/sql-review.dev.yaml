@@ -142,6 +142,54 @@ ruleList:
   - type: TABLE_DISALLOW_SET_CHARSET
     level: WARNING
     engine: MYSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: TIDB
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: POSTGRES
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: ORACLE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: OCEANBASE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: SNOWFLAKE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: MSSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: WARNING
+    engine: MARIADB
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: TIDB
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: POSTGRES
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: ORACLE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: OCEANBASE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: SNOWFLAKE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: MSSQL
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: WARNING
+    engine: MARIADB
   - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: MYSQL
@@ -164,6 +212,24 @@ ruleList:
     level: WARNING
     engine: MSSQL
   - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+    level: WARNING
+    engine: MARIADB
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: WARNING
+    engine: TIDB
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: WARNING
+    engine: POSTGRES
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: WARNING
+    engine: ORACLE
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: WARNING
+    engine: OCEANBASE
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: MARIADB
   - type: STATEMENT_DISALLOW_COMMIT
@@ -350,6 +416,14 @@ ruleList:
   - type: STATEMENT_CHECK_SET_ROLE_VARIABLE
     level: WARNING
     engine: POSTGRES
+  - type: STATEMENT_WHERE_NO_EQUAL_NULL
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
+    level: WARNING
+    payload:
+      number: 10
+    engine: MYSQL
   - type: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION
     level: WARNING
     payload:

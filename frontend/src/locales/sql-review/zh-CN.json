@@ -1,15 +1,4 @@
 {
-  "add-or-remove-rules": "添加或删除规则",
-  "add-rules": "添加规则",
-  "attach-resource": {
-    "change-resources": "更改绑定的资源",
-    "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
-    "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
-    "label-project": "SQL 审核策略将影响所选项目下的所有数据库。数据库所属环境的 SQL 审核策略将被忽略。",
-    "no-linked-resources": "没有绑定的资源",
-    "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击\"{{button}}\"将覆盖配置。",
-    "self": "绑定到资源"
-  },
   "category": {
     "advice": "建议",
     "builtin": "内置规则",
@@ -23,28 +12,6 @@
     "system": "系统",
     "table": "表"
   },
-  "configure-policy": "配置审核策略",
-  "create": {
-    "basic-info": {
-      "choose-template": "选择模板",
-      "display-name": "名称",
-      "display-name-default": "SQL 审核策略",
-      "display-name-label": "用以区分不同审核策略的名称。",
-      "name": "基本信息"
-    },
-    "configure-rule": {
-      "change-template": "更改模板",
-      "confirm-override-description": "之前的规则将会被覆盖",
-      "name": "配置规则"
-    }
-  },
-  "delete": "删除审核策略",
-  "delete-description": "SQL 审核策略及其所有规则将被永久删除，此操作无法撤销。",
-  "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
-  "disable-description": "禁用此策略将停止对已关联资源应用规则。您可以稍后重新启用。",
-  "disabled": "SQL 审核策略已禁用",
-  "enable-description": "启用此策略将开始对已关联资源应用规则。",
-  "enabled-rules": "开启的规则数",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -55,20 +22,12 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
-  "input-then-press-enter": "输入后按下回车来添加",
   "level": {
     "disabled": "禁用",
     "error": "错误",
     "name": "错误等级",
     "warning": "警告"
   },
-  "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
-  "policy-create-failed": "审核策略创建失败",
-  "policy-created": "审核策略已创建",
-  "policy-removed": "审核策略已删除",
-  "policy-update-failed": "审核策略更新失败",
-  "policy-updated": "审核策略已更新",
-  "review-policy": "审核策略",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -494,6 +453,18 @@
       "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。",
       "title": "限制事务中的语句数量"
     },
+    "STATEMENT_MAX_EXECUTION_TIME": {
+      "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：警告",
+      "mariadb": {
+        "description": "在变更脚本中设置 MAX_STATEMENT_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告",
+        "title": "强制明确设置 MAX_STATEMENT_TIME 参数"
+      },
+      "mysql": {
+        "description": "在变更脚本中设置 MAX_EXECUTION_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告",
+        "title": "强制明确设置 MAX_EXECUTION_TIME 参数"
+      },
+      "title": "强制设置最大执行时间参数"
+    },
     "STATEMENT_MERGE_ALTER_TABLE": {
       "description": "每一次对表的变更都可能造成锁表并且消耗大量资源，如果存在对同一张表的多次变更，应该合并为一个变更语句。建议错误等级：错误",
       "title": "禁止对同一张表发起多次独立变更"
@@ -513,6 +484,35 @@
     "STATEMENT_REQUIRE_LOCK_OPTION": {
       "description": "ALTER TABLE 语句中的 LOCK 选项允许您控制架构更改期间的锁定级别，有助于防止不必要的表锁定并确保更好的并发性。正确使用此选项可以显著减少 ALTER TABLE 操作对活动查询的影响。建议的错误级别：警告。",
       "title": "需要在 ALTER TABLE 语句中指定 LOCK 选项"
+    },
+    "STATEMENT_SELECT_NO_SELECT_ALL": {
+      "description": "SELECT * 拉取整行数据可能造成不必要的资源开销，同时一旦表增减列，也可能造成应用出现不符合预期的结果。建议错误等级：错误",
+      "title": "禁止使用 \"SELECT *\""
+    },
+    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
+      "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。",
+      "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算"
+    },
+    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
+      "component": {
+        "number": {
+          "title": "最大数量"
+        }
+      },
+      "description": "这可以防止因频繁对比和资源限制导致性能下降。",
+      "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量"
+    },
+    "STATEMENT_WHERE_NO_EQUAL_NULL": {
+      "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告",
+      "title": "禁止在WHERE子句中使用NULL等式比较"
+    },
+    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
+      "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误",
+      "title": "禁止过滤条件使用左模糊匹配"
+    },
+    "STATEMENT_WHERE_REQUIRE_SELECT": {
+      "description": "没有 WHERE 子句的查询可能会造成巨大的不必要的资源开销。建议错误等级：错误",
+      "title": "强制要求在 SELECT 语句中带有 \"WHERE\" 条件"
     },
     "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
       "description": "没有 WHERE 子句的 DML 可能会造成大规模数据丢失。建议错误等级：错误",
@@ -658,22 +658,18 @@
       },
       "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。",
       "title": "限制表格文本字段的总长度"
-    },
-    "self": "SQL 审核规则"
+    }
   },
-  "select-all": "选择全部",
-  "select-review-rules": "选择 SQL 审核规则",
   "template": {
     "bb-sql-review-dev": "基础模板",
     "bb-sql-review-dev-desc": "保证变更可正确地应用到数据库。",
     "bb-sql-review-empty": "白手起家",
-    "bb-sql-review-empty-desc": "仅从内置规则开始。自行添加所需规则。",
+    "bb-sql-review-empty-desc": "一个空的模板，需要您自行添加需要的规则。",
     "bb-sql-review-prod": "进阶模板",
     "bb-sql-review-prod-desc": "为您的数据库提供全面保护和最佳实践。",
     "bb-sql-review-sample": "样例模版",
     "bb-sql-review-sample-desc": "一个包括 DROP 保护和禁止列值为 NULL 的简易审核策略。"
   },
-  "title": "SQL 审核策略",
   "validation": {
     "rule-required": "请选择至少一条规则。",
     "string-array-required": "请为 {{rule}} 添加至少一个值。"

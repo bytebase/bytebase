@@ -1,15 +1,4 @@
 {
-  "add-or-remove-rules": "ルールを追加または削除する",
-  "add-rules": "ルールを追加する",
-  "attach-resource": {
-    "change-resources": "バインドされたリソースを変更する",
-    "label": "SQL レビューポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
-    "label-environment": "SQL レビューポリシーは、選択した環境に属するすべてのデータベースに影響します。",
-    "label-project": "SQL レビューポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL レビューポリシーは無視されます。",
-    "no-linked-resources": "リソースのバインドはありません",
-    "override-warning": "次のリソースは、他の SQL レビューポリシーにバインドされています。 \"{{button}}\" をクリックすると設定が上書きされます。",
-    "self": "リソースにバインドする"
-  },
   "category": {
     "advice": "アドバイス",
     "builtin": "組み込みルール",
@@ -23,28 +12,6 @@
     "system": "システム",
     "table": "テーブル"
   },
-  "configure-policy": "SQL レビューポリシーを設定する",
-  "create": {
-    "basic-info": {
-      "choose-template": "テンプレートを選択",
-      "display-name": "名前",
-      "display-name-default": "SQL レビューポリシー",
-      "display-name-label": "さまざまな SQL レビューポリシーを区別するために使用される名前。",
-      "name": "基本情報"
-    },
-    "configure-rule": {
-      "change-template": "テンプレートの変更",
-      "confirm-override-description": "以前のルールは上書きされます",
-      "name": "ルールを設定する"
-    }
-  },
-  "delete": "SQL レビューポリシーの削除",
-  "delete-description": "SQL レビューポリシーとそのすべてのルールは完全に削除されます。この操作は元に戻せません。",
-  "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
-  "disable-description": "このポリシーを無効にすると、関連付けられたリソースへのルール適用が停止されます。後で再度有効にすることができます。",
-  "disabled": "SQL レビューポリシーが無効になっています",
-  "enable-description": "このポリシーを有効にすると、関連付けられたリソースへのルール適用が開始されます。",
-  "enabled-rules": "開かれたルールの数",
   "engine": {
     "mariadb": "MariaDB",
     "mssql": "SQL Server",
@@ -55,20 +22,12 @@
     "snowflake": "Snowflake",
     "tidb": "TiDB"
   },
-  "input-then-press-enter": "入力後、Enterを押して追加します",
   "level": {
     "disabled": "無効化",
     "error": "エラー",
     "name": "エラーレベル",
     "warning": "警告"
   },
-  "no-permission": "管理者または DBA のみが SQL レビューポリシーを作成または更新する権限を持っています。",
-  "policy-create-failed": "SQL レビューポリシーの作成に失敗しました",
-  "policy-created": "SQL レビューポリシーが作成されました",
-  "policy-removed": "SQL レビューポリシーが削除されました",
-  "policy-update-failed": "レビューポリシーの更新に失敗しました。",
-  "policy-updated": "SQL レビューポリシーが更新されました",
-  "review-policy": "レビューポリシー",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {
@@ -494,6 +453,18 @@
       "description": "大きなトランザクションは、データベースのパフォーマンスに著しく影響を及ぼします。 多数のステートメントが関与しており、1つでも失敗すると、トランザクション全体のロールバックが複雑になります。 ステートメントを制限することで、単一の障害による潜在的な損害を最小限に抑え、ロールバック手順を簡素化できます。",
       "title": "トランザクション内のステートメント数を制限する"
     },
+    "STATEMENT_MAX_EXECUTION_TIME": {
+      "description": "SQL 文の最大実行時間を設定します。実行時間が制限を超えると、文は終了します。提案エラー レベル: 警告",
+      "mariadb": {
+        "description": "変更スクリプトで MAX_STATEMENT_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告",
+        "title": "MAX_STATEMENT_TIMEパラメータを明示的に設定する"
+      },
+      "mysql": {
+        "description": "変更スクリプトで MAX_EXECUTION_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告",
+        "title": "MAX_EXECUTION_TIMEパラメータを明示的に設定する"
+      },
+      "title": "最大実行時間パラメータの設定を強制する"
+    },
     "STATEMENT_MERGE_ALTER_TABLE": {
       "description": "テーブルへの変更ごとにテーブルレベルのロックが発生し、大量のリソースを消費する可能性があります。同じテーブルに複数の変更がある場合は、それらを1つの変更ステートメントに統合する必要があります。提案エラーレベル：エラー",
       "title": "同じテーブルに対して複数の独立した変更の発行の禁止"
@@ -513,6 +484,35 @@
     "STATEMENT_REQUIRE_LOCK_OPTION": {
       "description": "ALTER TABLE ステートメントの LOCK オプションを使用すると、スキーマ変更時のロック レベルを制御できるため、不要なテーブル ロックを防止し、同時実行性を向上させることができます。このオプションを適切に使用すると、アクティブなクエリに対する DDL 操作の影響を大幅に軽減できます。推奨されるエラー レベル: 警告。",
       "title": "ALTER TABLE文でLOCKオプションを指定する必要がある"
+    },
+    "STATEMENT_SELECT_NO_SELECT_ALL": {
+      "description": "「SELECT *」を使用して全行データを取得すると、不必要なリソースのオーバーヘッドが発生し、テーブルに列を追加または削除した場合にアプリケーションで予期しない結果が発生する可能性があります。提案エラーレベル：エラー",
+      "title": "「SELECT *」の使用を禁止する"
+    },
+    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
+      "description": "あなたがインデックス付けされたフィールドに関数や計算を適用すると、データベースはインデックスを使用できず、代わりにテーブル全体をスキャンする必要があります。",
+      "title": "WHERE 句でインデックス付きフィールドに関数や計算を適用しないでください"
+    },
+    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
+      "component": {
+        "number": {
+          "title": "最大値"
+        }
+      },
+      "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。",
+      "title": "WHERE 句の IN または OR 句の値数を制限する"
+    },
+    "STATEMENT_WHERE_NO_EQUAL_NULL": {
+      "description": "NULL等価比較の結果は常にNULLです、これは予期しない結果を引き起こす可能性があります。推奨エラーレベル：警告",
+      "title": "WHERE句でのNULL等価比較の使用を禁止する"
+    },
+    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
+      "description": "「LIKE '%ABC'」のような先行ワイルドカードを使用すると、データベースの最適化プランナーは高速なインデックススキャンを使用できず、フルテーブルスキャンまたはフルインデックススキャンにフォールバックする可能性があります。これにより、重大なパフォーマンスの影響が発生する可能性があります。提案エラーレベル：エラー",
+      "title": "フィルタ条件で先行ワイルドカードの使用を禁止する"
+    },
+    "STATEMENT_WHERE_REQUIRE_SELECT": {
+      "description": "WHERE 句のないクエリは、膨大なリソースのオーバーヘッドを引き起こす可能性があります。提案エラー レベル: エラー",
+      "title": "SELECT文に「WHERE」条件を強制する"
     },
     "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
       "description": "WHERE 句のない DML は、大量の偶発的なデータ損失を引き起こす可能性があります。提案エラー レベル: エラー",
@@ -658,22 +658,18 @@
       },
       "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。",
       "title": "テキスト入力欄の文字数を制限する"
-    },
-    "self": "SQLレビュールール"
+    }
   },
-  "select-all": "すべて選択",
-  "select-review-rules": "SQL レビュールールを選択",
   "template": {
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
     "bb-sql-review-empty": "ゼロから始めます",
-    "bb-sql-review-empty-desc": "組み込みルールのみで開始します。必要なルールは自分で追加してください。",
+    "bb-sql-review-empty-desc": "空のテンプレートです。必要なルールを自分で追加する必要があります。",
     "bb-sql-review-prod": "高度なテンプレート",
     "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
     "bb-sql-review-sample": "サンプルテンプレート",
     "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
   },
-  "title": "SQL レビューポリシー",
   "validation": {
     "rule-required": "少なくとも 1 つのルールを選択してください。",
     "string-array-required": "{{rule}} に少なくとも 1 つの値を追加してください。"

@@ -616,7 +616,22 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 			},
 			// Statement
 			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_POSTGRES,
+			},
+			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_POSTGRES,
+			},
+			{
 				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_POSTGRES,
+			},
+			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
 			},
@@ -859,7 +874,22 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 			},
 			// Statement
 			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_MYSQL,
+			},
+			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_MYSQL,
+			},
+			{
 				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
+				Level:  v1pb.SQLReviewRule_ERROR,
+				Engine: v1pb.Engine_MYSQL,
+			},
+			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_MYSQL,
 			},

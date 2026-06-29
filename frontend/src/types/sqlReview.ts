@@ -194,25 +194,6 @@ export const ruleTemplateMapV2 = getRuleMapByEngine(
   convertRuleTemplateV2Raw(sqlReviewSchema as unknown as RuleTemplateV2Raw[])
 );
 
-const getBuiltinRuleMap = (): Map<
-  Engine,
-  Map<SQLReviewRule_Type, RuleTemplateV2>
-> => {
-  const ruleMap = new Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>();
-  for (const [engine, engineMap] of ruleTemplateMapV2) {
-    const builtinMap = new Map<SQLReviewRule_Type, RuleTemplateV2>();
-    for (const [type, rule] of engineMap) {
-      if (isBuiltinRule(rule)) {
-        builtinMap.set(type, { ...rule });
-      }
-    }
-    if (builtinMap.size > 0) {
-      ruleMap.set(engine, builtinMap);
-    }
-  }
-  return ruleMap;
-};
-
 // Build the frontend template list based on schema and template.
 export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   interface PayloadObject {
@@ -292,9 +273,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
 
   resp.unshift({
     id: "bb.sql-review.empty",
-    ruleList: [...getBuiltinRuleMap().values()].flatMap((ruleMap) => [
-      ...ruleMap.values(),
-    ]),
+    ruleList: [],
   });
 
   return resp;
@@ -548,6 +527,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
     case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
+    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
@@ -724,6 +704,7 @@ const mergeIndividualConfigAsRule = (
     case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
     case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
     case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
+    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
     case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberPayload) {
         throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);

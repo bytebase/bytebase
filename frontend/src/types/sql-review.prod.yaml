@@ -165,6 +165,54 @@ ruleList:
   - type: TABLE_REQUIRE_COLLATION
     level: WARNING
     engine: MYSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: MYSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: TIDB
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: POSTGRES
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: ORACLE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: OCEANBASE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: SNOWFLAKE
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: MSSQL
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
+    level: ERROR
+    engine: MARIADB
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: MYSQL
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: TIDB
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: POSTGRES
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: ORACLE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: OCEANBASE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: SNOWFLAKE
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: MSSQL
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
+    level: ERROR
+    engine: MARIADB
   - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: ERROR
     engine: MYSQL
@@ -187,6 +235,24 @@ ruleList:
     level: ERROR
     engine: MSSQL
   - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+    level: ERROR
+    engine: MARIADB
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: ERROR
+    engine: MYSQL
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: ERROR
+    engine: TIDB
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: ERROR
+    engine: POSTGRES
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: ERROR
+    engine: ORACLE
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+    level: ERROR
+    engine: OCEANBASE
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: ERROR
     engine: MARIADB
   - type: STATEMENT_DISALLOW_COMMIT
@@ -373,6 +439,26 @@ ruleList:
   - type: STATEMENT_CHECK_SET_ROLE_VARIABLE
     level: WARNING
     engine: POSTGRES
+  - type: STATEMENT_WHERE_NO_EQUAL_NULL
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+    level: WARNING
+    engine: MSSQL
+  - type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+    level: WARNING
+    engine: POSTGRES
+  - type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+    level: WARNING
+    engine: ORACLE
+  - type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
+    level: WARNING
+    payload:
+      number: 10
+    engine: MYSQL
   - type: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION
     level: WARNING
     payload:
@@ -387,6 +473,12 @@ ruleList:
   - type: STATEMENT_DISALLOW_CROSS_DB_QUERIES
     level: WARNING
     engine: MSSQL
+  - type: STATEMENT_MAX_EXECUTION_TIME
+    level: ERROR
+    engine: MYSQL
+  - type: STATEMENT_MAX_EXECUTION_TIME
+    level: ERROR
+    engine: MARIADB
   - type: STATEMENT_REQUIRE_ALGORITHM_OPTION
     level: ERROR
     engine: MYSQL
