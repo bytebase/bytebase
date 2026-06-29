@@ -69,8 +69,6 @@ export const approvalSourceText = (
       return i18n.t("custom-approval.risk-rule.risk.namespace.change_database");
     case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
       return i18n.t("custom-approval.risk-rule.risk.namespace.create_database");
-    case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
-      return i18n.t("custom-approval.risk-rule.risk.namespace.data_export");
     case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
       return i18n.t("custom-approval.risk-rule.risk.namespace.request-role");
     case WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS:
@@ -85,7 +83,6 @@ export const approvalSourceText = (
 export const APPROVAL_SOURCES = [
   WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE,
   WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
-  WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
   WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
   WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS,
   WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED,
@@ -133,10 +130,6 @@ export const ApprovalSourceFactorMap: Map<
     [...commonFactorList, CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME],
   ],
   [
-    WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
-    [...commonFactorList, ...schemaObjectNameFactorList],
-  ],
-  [
     WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
     [
       CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
@@ -147,11 +140,6 @@ export const ApprovalSourceFactorMap: Map<
   ],
   [
     WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS,
-    // Same resource scope as EXPORT_DATA — `buildCELVariablesForAccessGrant`
-    // now populates db_engine / database_name / schema_name / table_name
-    // for ACCESS_GRANT issues (via export.GetResources on the grant's
-    // query), so REQUEST_ACCESS rules can use the same per-target
-    // attributes EXPORT_DATA rules already use.
     [
       ...commonFactorList,
       ...schemaObjectNameFactorList,

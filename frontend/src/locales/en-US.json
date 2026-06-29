@@ -849,20 +849,6 @@
     "something-went-wrong": "Something went wrong",
     "unexpected-error-description": "An unexpected error occurred while displaying this page. Refreshing usually fixes it; if it keeps happening, please report the issue to your administrator."
   },
-  "export-center": {
-    "data-export": "Data Export",
-    "deprecated": {
-      "approval-flow-link-text": "request access approval flow",
-      "configure-approval-flow": "Make sure the <lnk>{{linkText}}</lnk> is configured.",
-      "enable-jit-first": "Enable <lnk>{{linkText}}</lnk> on the project so users can submit a Just-in-Time export request from the SQL Editor.",
-      "go-to-sql-editor-for-export": "Go to SQL Editor for data export.",
-      "intro": "Export Center will be deprecated in a future release.",
-      "open-sql-editor": "Go to SQL Editor",
-      "project-jit-link-text": "Just-in-Time access",
-      "request-via-jit": "Users can submit a Just-in-Time export request from the SQL Editor.",
-      "title": "Export Center will be deprecated"
-    }
-  },
   "export-data": {
     "export-format": "Export format",
     "export-rows": "Export rows",
@@ -1309,6 +1295,7 @@
       "write": "Write"
     },
     "data-export": {
+      "creation-not-supported": "Data export issue creation is no longer supported.",
       "download-tooltip": "Available for 24 hours",
       "file-expired": "File Expired",
       "format": "Format",
@@ -1865,8 +1852,7 @@
   "quick-action": {
     "create-db": "Create database",
     "create-project": "Create project",
-    "new-project": "New Project",
-    "request-export-data": "Request Export"
+    "new-project": "New Project"
   },
   "quick-start": {
     "guide": "click on the step to try it out",

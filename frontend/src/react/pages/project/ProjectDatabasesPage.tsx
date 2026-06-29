@@ -59,7 +59,6 @@ import {
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
-import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -220,18 +219,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       .map((name) => databasesByName[name] ?? unknownDatabase());
   }, [selectedNames, databasesByName]);
 
-  // Stable references for downstream sheets. Without these the JSX would
-  // rebuild a fresh array + fresh object literal on every parent re-render
-  // (e.g. opening any drawer flips state on this page) — DataExportPrepSheet
-  // would then see a new `seed` prop reference each render and re-run its
-  // `seedKey = selectedDatabaseNames.join(",")` work (O(N) on every render).
   const selectedDatabaseNames = useMemo(
     () => selectedDatabases.map((db) => db.name),
     [selectedDatabases]
-  );
-  const exportPrepSeed = useMemo(
-    () => ({ selectedDatabaseNames, step: 2 as const }),
-    [selectedDatabaseNames]
   );
 
   // Mirror `selectedDatabases` into a ref so the batch-operation handlers
@@ -385,12 +375,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     preCreateIssue(projectName, selectedDatabaseNames);
   }, [projectName, selectedDatabaseNames]);
 
-  const [showExportDrawer, setShowExportDrawer] = useState(false);
-
-  const handleExportData = useCallback(() => {
-    setShowExportDrawer(true);
-  }, []);
-
   return (
     <div className="py-4 flex flex-col">
       <div className="px-4 flex flex-col gap-y-2 pb-2">
@@ -444,7 +428,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         onEditEnvironment={() => setShowEditEnvDrawer(true)}
         onUnassign={isDefault ? undefined : () => setShowUnassignConfirm(true)}
         onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
-        onExportData={isDefault ? undefined : handleExportData}
         allSelected={
           visibleDatabases.length > 0 &&
           visibleDatabases.every((d) => selectedNames.has(d.name))
@@ -474,13 +457,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         databases={selectedDatabases}
         onClose={() => setShowLabelEditor(false)}
         onApply={handleLabelsApply}
-      />
-
-      <DataExportPrepSheet
-        open={showExportDrawer}
-        onClose={() => setShowExportDrawer(false)}
-        projectName={projectName}
-        seed={exportPrepSeed}
       />
 
       {/* Unassign confirmation dialog */}

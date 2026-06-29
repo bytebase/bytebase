@@ -7,13 +7,9 @@ export const PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE: Permission[] = [
   "bb.sheets.create",
 ];
 
-export const PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE: Permission[] = [
+export const PERMISSIONS_FOR_DATABASE_CREATE_ISSUE: Permission[] = [
   "bb.issues.create",
   ...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
-];
-
-export const PERMISSIONS_FOR_DATABASE_CREATE_ISSUE: Permission[] = [
-  ...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
 ];
 
 export const hasPermissionToCreateChangeDatabaseIssueInProject = (

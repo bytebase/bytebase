@@ -24,9 +24,6 @@ describe("plan detail header create issue helpers", () => {
     expect(shouldStayOnPlanDetailPage(makePlan(["changeDatabaseConfig"]))).toBe(
       true
     );
-    expect(shouldStayOnPlanDetailPage(makePlan(["exportDataConfig"]))).toBe(
-      false
-    );
     expect(shouldStayOnPlanDetailPage(makePlan(["createDatabaseConfig"]))).toBe(
       false
     );
@@ -74,6 +71,22 @@ describe("plan detail header create issue helpers", () => {
     ).toContain(
       "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
     );
+  });
+
+  test("blocks data export issue creation", () => {
+    const project = {
+      enforceSqlReview: false,
+      forceIssueLabels: false,
+    } as Project;
+
+    expect(
+      getCreateIssueBlockingErrors({
+        emptySpecCount: 0,
+        plan: makePlan(["exportDataConfig"]),
+        project,
+        t,
+      })
+    ).toContain("issue.data-export.creation-not-supported");
   });
 });
 

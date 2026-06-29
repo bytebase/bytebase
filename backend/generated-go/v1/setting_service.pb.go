@@ -150,7 +150,6 @@ const (
 	WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED WorkspaceApprovalSetting_Rule_Source = 0
 	WorkspaceApprovalSetting_Rule_CHANGE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 1
 	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
-	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
 	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
 	WorkspaceApprovalSetting_Rule_REQUEST_ACCESS     WorkspaceApprovalSetting_Rule_Source = 5
 )
@@ -161,7 +160,6 @@ var (
 		0: "SOURCE_UNSPECIFIED",
 		1: "CHANGE_DATABASE",
 		2: "CREATE_DATABASE",
-		3: "EXPORT_DATA",
 		4: "REQUEST_ROLE",
 		5: "REQUEST_ACCESS",
 	}
@@ -169,7 +167,6 @@ var (
 		"SOURCE_UNSPECIFIED": 0,
 		"CHANGE_DATABASE":    1,
 		"CREATE_DATABASE":    2,
-		"EXPORT_DATA":        3,
 		"REQUEST_ROLE":       4,
 		"REQUEST_ACCESS":     5,
 	}
@@ -2600,7 +2597,6 @@ type WorkspaceApprovalSetting_Rule struct {
 	//
 	// When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
 	// When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
-	// When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
 	// When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
 	// When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name, request.unmask, request.data_export
 	//
@@ -3499,20 +3495,19 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
 	"background\x18\x01 \x01(\tR\n" +
 	"background\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04textJ\x04\b\x01\x10\x02R\x05level\"\xa0\x03\n" +
+	"\x04text\x18\x02 \x01(\tR\x04textJ\x04\b\x01\x10\x02R\x05level\"\xa2\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
-	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc1\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc3\x02\n" +
 	"\x04Rule\x129\n" +
 	"\btemplate\x18\x01 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12I\n" +
-	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x81\x01\n" +
+	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x83\x01\n" +
 	"\x06Source\x12\x16\n" +
 	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
-	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
-	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
+	"\x0fCREATE_DATABASE\x10\x02\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\xc3\x05\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\x04\b\x03\x10\x03*\vEXPORT_DATA\"\xc3\x05\n" +
 	"\x19DataClassificationSetting\x12Y\n" +
 	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xca\x04\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
