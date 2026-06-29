@@ -26,6 +26,7 @@ vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
 vi.mock("@/types", () => ({
   NULL_ENVIRONMENT_NAME: "environments/-",
   UNKNOWN_ENVIRONMENT_NAME: "environments/-1",
+  DEFAULT_ENVIRONMENT_COLOR: "#4f46e5",
 }));
 vi.mock("@/utils", () => ({
   hexToRgb: () => [128, 128, 128],

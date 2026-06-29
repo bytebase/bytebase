@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
 import type { Environment } from "@/types";
-import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  DEFAULT_ENVIRONMENT_COLOR,
+  NULL_ENVIRONMENT_NAME,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hexToRgb } from "@/utils";
 
@@ -33,7 +37,9 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
     environment.name === NULL_ENVIRONMENT_NAME;
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
-  const bgColorRgb = environment.color ? hexToRgb(environment.color) : null;
+  const bgColorRgb = isUnset
+    ? null
+    : hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR);
 
   return (
     <span

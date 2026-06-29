@@ -28,6 +28,7 @@ import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLEditorDatabaseQueryContext } from "@/types/sqlEditor/tab";
+import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -448,7 +449,9 @@ function TabButton({
 }: TabButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
   const { t } = useTranslation();
   const environment = getDatabaseEnvironment(item.database);
-  const colorRgb = hexToRgb(environment.color || "#4f46e5").join(", ");
+  const colorRgb = hexToRgb(
+    environment.color || DEFAULT_ENVIRONMENT_COLOR
+  ).join(", ");
   const style = {
     backgroundColor: `rgba(${colorRgb}, 0.1)`,
     borderTopColor: `rgb(${colorRgb})`,

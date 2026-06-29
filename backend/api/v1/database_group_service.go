@@ -116,7 +116,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 	}
 
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		ProjectID:  &project.ResourceID,
+		ProjectIDs: []string{project.ResourceID},
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -184,7 +184,7 @@ func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectResourceID))
 	}
 	existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		ProjectID:  &project.ResourceID,
+		ProjectIDs: []string{project.ResourceID},
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {
@@ -220,7 +220,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 	}
 
 	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
-		ProjectID: &project.ResourceID,
+		ProjectIDs: []string{project.ResourceID},
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list database groups"))
@@ -273,7 +273,7 @@ func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGr
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
 	}
 	databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		ProjectID:  &project.ResourceID,
+		ProjectIDs: []string{project.ResourceID},
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {

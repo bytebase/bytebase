@@ -289,7 +289,23 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 	}
 
 	// database group
-	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
+	projects, err := s.store.ListProjects(ctx, &store.FindProjectMessage{
+		Workspace:   workspaceID,
+		ShowDeleted: false,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list projects")
+	}
+	projectIDs := make([]string, 0, len(projects))
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ResourceID)
+	}
+	if len(projectIDs) == 0 {
+		return features, nil
+	}
+	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
+		ProjectIDs: projectIDs,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list database groups")
 	}

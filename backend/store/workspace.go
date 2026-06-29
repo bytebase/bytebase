@@ -139,8 +139,8 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{
 			Environments: []*storepb.EnvironmentSetting_Environment{
-				{Title: "Test", Id: "test"},
-				{Title: "Prod", Id: "prod"},
+				{Title: "Test", Id: "test", Color: "#4f46e5"},
+				{Title: "Prod", Id: "prod", Color: "#4f46e5"},
 			},
 		}},
 	}

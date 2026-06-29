@@ -231,7 +231,7 @@ func (s *Scheduler) getDatabaseGroupForPlan(ctx context.Context, plan *store.Pla
 		// Found a database group reference - fetch and expand it
 		dbGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 			ResourceID: &databaseGroupID,
-			ProjectID:  &plan.ProjectID,
+			ProjectIDs: []string{plan.ProjectID},
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group %q", target)

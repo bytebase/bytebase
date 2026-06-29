@@ -1157,7 +1157,7 @@ function TreeRow({
       {/* Expand / collapse chevron — shown for non-leaf rows. Renders an
           empty spacer for leaf rows so labels stay vertically aligned. */}
       <span className="shrink-0 inline-flex size-4 items-center justify-center text-control-light">
-        {hasChildren ? (
+        {hasChildren || node.meta.type === "environment" ? (
           isOpen ? (
             <ChevronDown className="size-3.5" />
           ) : (
