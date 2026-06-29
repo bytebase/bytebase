@@ -6,7 +6,6 @@
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
-export const WORKSPACE_ROUTE_DATA_EXPORT = "workspace.data-export";
 export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
 export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
 export const INSTANCE_ROUTE_DASHBOARD = "workspace.instance";
@@ -105,7 +104,6 @@ export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SERVICE_ACCOUNTS = `${PROJECT_V1_ROUTE_DASHBOARD}.service-accounts`;
 export const PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.workload-identities`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
-export const PROJECT_V1_ROUTE_DATA_EXPORT = `${PROJECT_V1_ROUTE_DASHBOARD}.data-export`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollouts`;

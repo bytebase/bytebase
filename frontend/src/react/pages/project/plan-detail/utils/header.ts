@@ -62,6 +62,9 @@ export const getCreateIssueBlockingErrors = ({
   if (emptySpecCount > 0) {
     errors.push(t("plan.navigator.statement-empty"));
   }
+  if (plan.specs.some((spec) => spec.config?.case === "exportDataConfig")) {
+    errors.push(t("issue.data-export.creation-not-supported"));
+  }
   if ((statusCount.RUNNING ?? 0) > 0) {
     errors.push(
       t(

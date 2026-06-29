@@ -174,7 +174,7 @@ message WorkspaceApprovalSetting {
       SOURCE_UNSPECIFIED = 0;
       CHANGE_DATABASE = 1;
       CREATE_DATABASE = 2;
-      EXPORT_DATA = 3;
+      EXPORT_DATA = 3 [deprecated = true];
       REQUEST_ROLE = 4;
       REQUEST_ACCESS = 5;
     }

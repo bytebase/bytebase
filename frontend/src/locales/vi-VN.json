@@ -849,20 +849,6 @@
     "something-went-wrong": "Đã xảy ra lỗi",
     "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo cho quản trị viên."
   },
-  "export-center": {
-    "data-export": "Xuất dữ liệu",
-    "deprecated": {
-      "approval-flow-link-text": "luồng phê duyệt yêu cầu truy cập",
-      "configure-approval-flow": "Hãy đảm bảo <lnk>{{linkText}}</lnk> đã được cấu hình.",
-      "enable-jit-first": "Bật <lnk>{{linkText}}</lnk> cho dự án để người dùng có thể gửi yêu cầu xuất dữ liệu Just-in-Time từ SQL Editor.",
-      "go-to-sql-editor-for-export": "Hãy vào SQL Editor để xuất dữ liệu.",
-      "intro": "Trung tâm Xuất dữ liệu sẽ bị ngừng hỗ trợ trong một bản phát hành tương lai.",
-      "open-sql-editor": "Đi tới SQL Editor",
-      "project-jit-link-text": "Truy cập Just-in-Time",
-      "request-via-jit": "Người dùng có thể gửi yêu cầu xuất dữ liệu Just-in-Time từ SQL Editor.",
-      "title": "Trung tâm Xuất dữ liệu sẽ bị ngừng hỗ trợ"
-    }
-  },
   "export-data": {
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
@@ -1309,6 +1295,7 @@
       "write": "Viết"
     },
     "data-export": {
+      "creation-not-supported": "Không còn hỗ trợ tạo vấn đề xuất dữ liệu.",
       "download-tooltip": "Có sẵn trong 24 giờ",
       "file-expired": "Tệp đã hết hạn",
       "format": "Định dạng",
@@ -1865,8 +1852,7 @@
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
     "create-project": "Tạo dự án",
-    "new-project": "Mới Dự án",
-    "request-export-data": "Yêu cầu Xuất"
+    "new-project": "Mới Dự án"
   },
   "quick-start": {
     "guide": "nhấp vào bước để thử",

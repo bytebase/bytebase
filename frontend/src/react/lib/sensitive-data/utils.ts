@@ -34,20 +34,36 @@ export const isCurrentColumnException = (
     // no expression means can access all databases.
     return true;
   }
-  const databaseExpression = expression
-    .split(" && ")
-    .filter(
-      (expr) =>
-        !expr.startsWith(CEL_ATTRIBUTE_REQUEST_TIME) &&
-        !expr.startsWith(CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL)
-    )
-    .join(" && ");
+  const databaseExpressions = expression.split(" || ").map((part) =>
+    part
+      .split(" && ")
+      .map(trimParentheses)
+      .filter(
+        (expr) =>
+          !expr.startsWith(CEL_ATTRIBUTE_REQUEST_TIME) &&
+          !expr.startsWith(CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL)
+      )
+      .join(" && ")
+  );
   const matches = getExpressionsForDatabaseResource(
     convertSensitiveColumnToDatabaseResource(sensitiveColumn)
   );
-  return matches.join(" && ").includes(databaseExpression);
+  const currentColumnExpression = matches.join(" && ");
+  return databaseExpressions.some((databaseExpression) =>
+    currentColumnExpression.includes(databaseExpression)
+  );
 };
 
+const trimParentheses = (expression: string): string => {
+  let result = expression.trim();
+  while (result.startsWith("(")) {
+    result = result.slice(1).trimStart();
+  }
+  while (result.endsWith(")")) {
+    result = result.slice(0, -1).trimEnd();
+  }
+  return result;
+};
 export const getExpressionsForDatabaseResource = (
   databaseResource: DatabaseResource
 ): string[] => {

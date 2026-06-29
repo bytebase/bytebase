@@ -422,11 +422,7 @@ export function PlanDetailHeader() {
             labels: selectedLabels,
             plan: page.plan.name,
             status: IssueStatus.OPEN,
-            type: page.plan.specs.some(
-              (spec) => spec.config?.case === "exportDataConfig"
-            )
-              ? Issue_Type.DATABASE_EXPORT
-              : Issue_Type.DATABASE_CHANGE,
+            type: Issue_Type.DATABASE_CHANGE,
           }),
         })
       );

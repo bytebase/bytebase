@@ -19,7 +19,6 @@ import { router, useCurrentRoute } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
-  PROJECT_V1_ROUTE_DATA_EXPORT,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DETAIL,
@@ -153,11 +152,6 @@ function useSidebarItems(): SidebarItem[] {
           {
             title: t("project.masking-exemption.self"),
             path: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
-            type: "div",
-          },
-          {
-            title: t("export-center.data-export"),
-            path: PROJECT_V1_ROUTE_DATA_EXPORT,
             type: "div",
           },
         ],

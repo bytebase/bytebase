@@ -859,7 +859,6 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    *
    * When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
    * When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
-   * When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
    * When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
    * When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name, request.unmask, request.data_export
    *
@@ -901,11 +900,6 @@ export enum WorkspaceApprovalSetting_Rule_Source {
    * @generated from enum value: CREATE_DATABASE = 2;
    */
   CREATE_DATABASE = 2,
-
-  /**
-   * @generated from enum value: EXPORT_DATA = 3;
-   */
-  EXPORT_DATA = 3,
 
   /**
    * @generated from enum value: REQUEST_ROLE = 4;

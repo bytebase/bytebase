@@ -948,7 +948,7 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA
+			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA //nolint:staticcheck // Existing export plans still need runtime approval compatibility.
 		}
 	}
 	return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED
@@ -972,7 +972,7 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 		}
 		return getApprovalSourceFromPlan(plan.Config), nil
 	case storepb.Issue_DATABASE_EXPORT:
-		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil
+		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil //nolint:staticcheck // Existing export issues still need runtime approval compatibility.
 	case storepb.Issue_ACCESS_GRANT:
 		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS, nil
 	default:

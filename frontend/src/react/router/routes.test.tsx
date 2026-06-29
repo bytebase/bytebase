@@ -94,6 +94,7 @@ describe("react route table reachability", () => {
 
   it.each([
     "/projects/db333/rollouts/605",
+    "/projects/db333/data-export",
     "/sql-editor/does-not-exist",
   ])("matches unknown URL %s to the dedicated 404 catch-all route", (path) => {
     const matched = matchRoutes(routes, path);

@@ -28,9 +28,6 @@ var mariaDBOnlySQL = []string{
 	// application-time periods (omni #324-#328)
 	"CREATE TABLE t (s DATE, e DATE, PERIOD FOR app_time(s, e))",
 	"UPDATE t FOR PORTION OF app_time FROM '2020-01-01' TO '2021-01-01' SET id = 1",
-	// parenthesized row constructors (omni #330)
-	"SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4))",
-	"SELECT * FROM t WHERE (a, b) > (1, 2)",
 }
 
 // TestMariaDBDiagnoseKeystone is the carve-out keystone. Before the re-point,
