@@ -27,14 +27,41 @@ test.afterAll(async () => {
   await sharedContext?.close();
 });
 
+// The admin terminal shell no longer carries a `bg-dark-bg` class — #20602
+// ("token migration") migrated it to `bg-background`, which resolves to the
+// dark token (#1e1e1e) inside the terminal's own theme scope. Returns true when
+// a dark-background shell is mounted, located structurally as the first opaque
+// dark-background ancestor of the "Exit admin mode" button (page-scoped; the
+// admin `page` is shared across this file). Reading the computed color rather
+// than a class name keeps the assertion meaningful across future token renames.
+async function adminShellIsDark(): Promise<boolean> {
+  return await page.evaluate(() => {
+    const exit = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Exit admin mode/.test(b.textContent || ""),
+    );
+    let el: Element | null = exit ?? null;
+    while (el) {
+      const bg = getComputedStyle(el).backgroundColor;
+      const m = bg.match(/rgba?\(([^)]+)\)/);
+      if (m) {
+        const p = m[1].split(",").map((v) => parseFloat(v.trim()));
+        if ((p[3] ?? 1) > 0 && (p[0] + p[1] + p[2]) / 3 < 128) return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  });
+}
+
 test.describe("Vertical display preserves the admin-mode dark theme", () => {
   // BYT-9496 (sub-bug R44a): in admin mode, toggling the "Vertical
   // display" switch on a result panel re-renders the panel as the
   // transposed key:value layout — but the new layout uses generic
   // light-theme tokens (`bg-control-bg`) instead of the dark terminal
-  // tokens (`bg-dark-bg`) used by the surrounding admin shell. The
-  // result is a white-background, black-text block dropped into the
-  // middle of an otherwise dark terminal.
+  // surface used by the surrounding admin shell. The result is a
+  // white-background, black-text block dropped into the middle of an
+  // otherwise dark terminal. (The shell's dark surface is `bg-background`
+  // in the terminal's theme scope since #20602; it was `bg-dark-bg` before.)
   //
   // Bug evidence: .playwright-cli/qa-session-2026-05-12/r44-byt9496-admin-mode/
   //   - 03-notes.txt
@@ -101,8 +128,27 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
       .first()
       .waitFor({ timeout: 10_000 });
     const sample = await page.evaluate(() => {
-      // Terminal shell wraps everything in admin mode with bg-dark-bg.
-      const shell = document.querySelector(".bg-dark-bg");
+      // Terminal shell. Post-#20602 the admin shell no longer carries a
+      // `bg-dark-bg` class — it uses `bg-background` resolved to the dark token
+      // inside the terminal's theme scope. Locate it structurally: the first
+      // opaque dark-background ancestor of the "Exit admin mode" button.
+      const findAdminShell = (): Element | null => {
+        const exit = Array.from(document.querySelectorAll("button")).find((b) =>
+          /Exit admin mode/.test(b.textContent || ""),
+        );
+        let el: Element | null = exit ?? null;
+        while (el) {
+          const bg = getComputedStyle(el).backgroundColor;
+          const m = bg.match(/rgba?\(([^)]+)\)/);
+          if (m) {
+            const p = m[1].split(",").map((v) => parseFloat(v.trim()));
+            if ((p[3] ?? 1) > 0 && (p[0] + p[1] + p[2]) / 3 < 128) return el;
+          }
+          el = el.parentElement;
+        }
+        return null;
+      };
+      const shell = findAdminShell();
       if (!shell) return { reason: "admin terminal shell not found" };
       const shellBg = getComputedStyle(shell).backgroundColor;
 
@@ -118,18 +164,24 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
       if (!blockCard) return { reason: "vertical block card not found" };
       const blockBg = getComputedStyle(blockCard).backgroundColor;
 
-      // Parse rgb(), rgba(), AND lab() — Chromium 124+ emits lab() for
-      // some Tailwind tokens so the legacy rgb-only regex returns null
-      // and the test reports a false failure. For lab(L a b), convert
-      // to approximate sRGB via the L-only luminance (a/b are tiny for
-      // near-neutral grays which is what the SQL editor's dark-theme
-      // tokens are). L is 0–100; mapping linearly to 0–255 is plenty
-      // for the harmony assertion below.
+      // Parse rgb(), rgba(), lab(), AND oklab() — newer Chromium + Tailwind
+      // v4 emit lab()/oklab() for some tokens (post-#20602 the SQL editor's
+      // dark-theme surfaces resolve to oklab), so the legacy rgb-only regex
+      // returns null and the test reports a false failure. For lab/oklab,
+      // convert to an approximate gray via the L-only luminance (a/b are tiny
+      // for the near-neutral grays the dark theme uses). lab L is 0–100,
+      // oklab L is 0–1 — both map linearly to 0–255, plenty for the harmony
+      // assertion below.
       const parse = (s: string) => {
         const rgb = s.match(/rgba?\(([^)]+)\)/);
         if (rgb) {
           const parts = rgb[1].split(",").map((p) => parseFloat(p.trim()));
           return { r: parts[0], g: parts[1], b: parts[2], a: parts[3] ?? 1 };
+        }
+        const oklab = s.match(/^oklab\(\s*([\d.\-]+)/);
+        if (oklab) {
+          const gray = Math.round(parseFloat(oklab[1]) * 255);
+          return { r: gray, g: gray, b: gray, a: 1 };
         }
         const lab = s.match(/^lab\(\s*([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)/);
         if (lab) {
@@ -179,10 +231,10 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
     // shade for the fix. What we DO require is low contrast against
     // the shell.
     //
-    // Threshold 100 (per channel) is generous: bg-control-bg vs
-    // bg-dark-bg differs by ~240 on every channel, while a properly
-    // themed block (e.g., a bg-dark-block one shade lighter than the
-    // shell, or a translucent overlay) stays well under 100.
+    // Threshold 100 (per channel) is generous: a light `bg-control-bg`
+    // block vs the dark terminal shell differs by ~240 on every channel,
+    // while a properly themed block (one shade lighter than the shell, or
+    // a translucent overlay) stays well under 100.
     expect(
       sample.maxChannelDelta!,
       `vertical block must visually harmonize with the admin shell ` +
@@ -240,9 +292,11 @@ test.describe("Wrench is not clickable when no database is connected", () => {
 
 test.describe("Clicking the wrench enters the admin terminal", () => {
   // After the click, the editor swaps from WORKSHEET to ADMIN mode.
-  // TerminalPanel mounts in place of the standard editor — the dark
-  // shell (.bg-dark-bg) and the "SQL>" prompt are the visible
-  // signals. The "Exit admin mode" toolbar button also appears.
+  // TerminalPanel mounts in place of the standard editor — the "SQL>"
+  // prompt and the "Exit admin mode" toolbar button are the visible
+  // signals, and the shell mounts with its dark surface (asserted via
+  // adminShellIsDark(), since the shell uses `bg-background` in its theme
+  // scope post-#20602 rather than a `bg-dark-bg` class).
 
   test("admin terminal mounts with dark shell and SQL> prompt", async () => {
     test.setTimeout(120_000);
@@ -255,12 +309,16 @@ test.describe("Clicking the wrench enters the admin terminal", () => {
     await sqlEditor.adminModeButton.click();
     await page.waitForTimeout(800);
 
-    await expect(page.locator(".bg-dark-bg").first()).toBeVisible({ timeout: 10_000 });
     // The CompactSQLEditor renders "SQL>" as a sibling line-decoration.
-    await expect(page.getByText(/SQL>/).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/SQL>/).first()).toBeVisible({ timeout: 10_000 });
     await expect(
       page.getByRole("button", { name: "Exit admin mode", exact: true }),
     ).toBeVisible({ timeout: 5000 });
+    // ...and it mounts with its DARK shell (the BYT-9496 theme contract).
+    expect(
+      await adminShellIsDark(),
+      "admin terminal should mount with a dark shell",
+    ).toBe(true);
   });
 });
 
@@ -308,19 +366,20 @@ test.describe("Exit admin mode returns to the worksheet view", () => {
 
     await sqlEditor.adminModeButton.click();
     await page.waitForTimeout(800);
-    await expect(page.locator(".bg-dark-bg").first()).toBeVisible({ timeout: 10_000 });
-
+    // Terminal mounted (admin mode active) with its dark shell.
     const exitBtn = page.getByRole("button", {
       name: "Exit admin mode",
       exact: true,
     });
+    await expect(exitBtn).toBeVisible({ timeout: 10_000 });
+    expect(await adminShellIsDark(), "admin shell should be dark").toBe(true);
+
     await exitBtn.click();
     await page.waitForTimeout(800);
 
-    // Dark shell unmounts. (TerminalPanel renders TWO bg-dark-bg
-    // descendants — the outer wrapper and the inner scroll area.
-    // Both must vanish, so we check count rather than .first().)
-    await expect(page.locator(".bg-dark-bg")).toHaveCount(0);
+    // Terminal unmounts: the admin-only "Exit admin mode" button is gone (the
+    // canonical "admin mode inactive" signal — the dark shell went with it).
+    await expect(exitBtn).toHaveCount(0);
     // Wrench is back (worksheet mode) and enabled (still connected).
     await expect(sqlEditor.adminModeButton).toBeVisible({ timeout: 5000 });
     await expect(sqlEditor.adminModeButton).toBeEnabled();
@@ -385,9 +444,11 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
     await page.waitForTimeout(800);
     await sqlEditor.adminModeButton.click();
     await page.waitForTimeout(800);
-    await expect(page.locator(".bg-dark-bg").first()).toBeVisible({
-      timeout: 10_000,
-    });
+    // Admin mode active: the "Exit admin mode" toolbar button is present (the
+    // dark terminal mounted). Replaces the pre-#20602 `.bg-dark-bg` gate.
+    await expect(
+      page.getByRole("button", { name: "Exit admin mode", exact: true }),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test.afterEach(async () => {
@@ -442,6 +503,14 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
     // a future theme regression matches text to bg.)
     const contrast = await page.evaluate(() => {
       const parse = (s: string) => {
+        // Handle oklab() too (Tailwind v4 / post-#20602 dark tokens): map the
+        // L channel (0–1) to an approximate gray; a/b are ~0 for the neutral
+        // grays here. Falls through to rgb()/rgba() otherwise.
+        const ok = s.match(/^oklab\(\s*([\d.\-]+)/);
+        if (ok) {
+          const gray = Math.round(parseFloat(ok[1]) * 255);
+          return { r: gray, g: gray, b: gray };
+        }
         const m = s.match(/rgba?\(([^)]+)\)/);
         if (!m) return null;
         const [r, g, b] = m[1].split(",").map((v) => parseFloat(v.trim()));
@@ -450,7 +519,26 @@ test.describe("Up/down arrow keys scroll the admin terminal's query history", ()
       const codes = document.querySelectorAll('[role="code"]');
       const last = codes[codes.length - 1];
       const line = last?.querySelector(".view-lines .view-line");
-      const shell = document.querySelector(".bg-dark-bg");
+      // Terminal shell: post-#20602 it uses `bg-background` (dark in the
+      // terminal's theme scope), no longer `bg-dark-bg`. Find the first opaque
+      // dark-background ancestor of the "Exit admin mode" button.
+      const findAdminShell = (): Element | null => {
+        const exit = Array.from(document.querySelectorAll("button")).find((b) =>
+          /Exit admin mode/.test(b.textContent || ""),
+        );
+        let el: Element | null = exit ?? null;
+        while (el) {
+          const bg = getComputedStyle(el).backgroundColor;
+          const m = bg.match(/rgba?\(([^)]+)\)/);
+          if (m) {
+            const p = m[1].split(",").map((v) => parseFloat(v.trim()));
+            if ((p[3] ?? 1) > 0 && (p[0] + p[1] + p[2]) / 3 < 128) return el;
+          }
+          el = el.parentElement;
+        }
+        return null;
+      };
+      const shell = findAdminShell();
       if (!line || !shell)
         return { reason: "missing line or shell" } as { reason: string };
       const shellRgb = parse(getComputedStyle(shell).backgroundColor);
