@@ -11,9 +11,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TestDirectApprovalRuleMatching tests the new direct approval rule API
@@ -302,6 +306,172 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 	}))
 	a.NoError(err)
 	a.Equal(v1pb.PlanCheckRun_DONE, checkResp.Msg.Status)
+}
+
+func TestApprovalActionRejectsStaleApprovalInputVersion(t *testing.T) {
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = ctl.Close(ctx) })
+
+	stores := getStore(t, ctl.server)
+
+	t.Run("RejectIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-reject")
+
+		withImpersonation(ctx, t, ctl, approver, func() {
+			_, err := ctl.issueServiceClient.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{
+				Name:    issue.Name,
+				Comment: "reject stale approval",
+			}))
+			require.Error(t, err)
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+		})
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_PENDING, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+
+	t.Run("RequestIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-request")
+		staleApproval.Approvers = append(staleApproval.Approvers, &storepb.IssuePayloadApproval_Approver{
+			Status:    storepb.IssuePayloadApproval_Approver_REJECTED,
+			Principal: common.FormatUserEmail(approver.Email),
+		})
+		writeIssueApprovalPayload(ctx, t, stores, issue.Name, staleApproval)
+
+		_, err := ctl.issueServiceClient.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
+			Name:    issue.Name,
+			Comment: "request stale approval",
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_REJECTED, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+}
+
+func createStaleApprovalInputVersionIssue(ctx context.Context, t *testing.T, ctl *controller, stores *store.Store, suffix string) (*v1pb.Issue, *storepb.IssuePayloadApproval, testApprover) {
+	t.Helper()
+	project := ctl.createTestProject(ctx, t, suffix)
+
+	instanceDir := t.TempDir()
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			Title:       "Stale Approval Instance",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type: v1pb.DataSourceType_ADMIN,
+				Host: instanceDir,
+				Id:   "admin",
+			}},
+		},
+	}))
+	require.NoError(t, err)
+
+	dbName := generateRandomString("db")
+	require.NoError(t, ctl.createDatabase(ctx, project, instanceResp.Msg, nil, dbName, ""))
+	target := dbTargetName(instanceResp.Msg, dbName)
+
+	disableSelfApproval(ctx, t, ctl, project)
+	installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
+	approver := provisionApprover(ctx, t, ctl, project, suffix, "roles/projectOwner")
+
+	sheet1 := createSheetWithContent(ctx, t, ctl, project, []byte(fmt.Sprintf("CREATE TABLE %s_a (id INTEGER PRIMARY KEY);", strings.ReplaceAll(suffix, "-", "_"))))
+
+	specID := uuid.NewString()
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Stale approval input version plan " + suffix,
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{target},
+						Sheet:   sheet1,
+					},
+				},
+			}},
+		},
+	}))
+	require.NoError(t, err)
+
+	issue := createIssueForPlan(ctx, t, ctl, project, planResp.Msg, "stale approval input version "+suffix)
+	waitForIssuePending(ctx, t, ctl, issue)
+
+	_, issueUID, err := common.GetProjectIDIssueUID(issue.Name)
+	require.NoError(t, err)
+	projectID, err := common.GetProjectID(project.Name)
+	require.NoError(t, err)
+	storeIssue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{projectID},
+		UID:        &issueUID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, storeIssue)
+	staleApproval := proto.CloneOf(storeIssue.Payload.Approval)
+
+	_, planUID, err := common.GetProjectIDPlanID(planResp.Msg.Name)
+	require.NoError(t, err)
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &planUID})
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:                      plan.UID,
+		ProjectID:                plan.ProjectID,
+		Config:                   proto.CloneOf(plan.Config),
+		BumpApprovalInputVersion: true,
+	})
+	require.NoError(t, err)
+
+	writeIssueApprovalPayload(ctx, t, stores, issue.Name, staleApproval)
+	return issue, staleApproval, approver
+}
+
+func createSheetWithContent(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, content []byte) string {
+	t.Helper()
+	resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet:  &v1pb.Sheet{Content: content},
+	}))
+	require.NoError(t, err)
+	return resp.Msg.Name
+}
+
+func writeIssueApprovalPayload(ctx context.Context, t *testing.T, stores *store.Store, issueName string, approval *storepb.IssuePayloadApproval) {
+	t.Helper()
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	require.NoError(t, err)
+	_, err = stores.UpdateIssue(ctx, projectID, issueUID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval: approval,
+		},
+	})
+	require.NoError(t, err)
+}
+
+func requireApprovalPayloadApproverCount(ctx context.Context, t *testing.T, stores *store.Store, issueName string, count int) {
+	t.Helper()
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	require.NoError(t, err)
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{projectID},
+		UID:        &issueUID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, issue)
+	require.Len(t, issue.Payload.GetApproval().GetApprovers(), count)
 }
 
 // TestApprovalRuleFirstMatchWins tests that the first matching approval rule is applied
