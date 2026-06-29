@@ -40,6 +40,9 @@ func (x *IssuePayloadApproval) Equal(y *IssuePayloadApproval) bool {
 	if x.ApprovalFindingDone != y.ApprovalFindingDone {
 		return false
 	}
+	if x.ApprovalInputVersion != y.ApprovalInputVersion {
+		return false
+	}
 	return true
 }
 

@@ -98,6 +98,9 @@ func (x *PlanCheckRunResult) Equal(y *PlanCheckRunResult) bool {
 	if x.Error != y.Error {
 		return false
 	}
+	if x.ApprovalInputVersion != y.ApprovalInputVersion {
+		return false
+	}
 	return true
 }
 

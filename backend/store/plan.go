@@ -58,8 +58,13 @@ type UpdatePlanMessage struct {
 	// Config replaces the entire plan config.
 	// Callers should clone the existing config and modify only the fields they want to change.
 	// Example: config := proto.CloneOf(plan.Config); config.HasRollout = true; patch.Config = config
-	Config  *storepb.PlanConfig
-	Deleted *bool
+	Config *storepb.PlanConfig
+	// BumpApprovalInputVersion increments config.approvalInputVersion from the
+	// current stored row while applying Config as a full replacement. Use this
+	// only for approval-relevant full config replacements such as spec updates.
+	// This flag is not a partial JSONB patch mechanism for unrelated config fields.
+	BumpApprovalInputVersion bool
+	Deleted                  *bool
 }
 
 // CreatePlan creates a new plan.
@@ -230,7 +235,11 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal plan config")
 		}
-		set.Comma("config = ?", config)
+		if patch.BumpApprovalInputVersion {
+			set.Comma("config = jsonb_set(?::jsonb, '{approvalInputVersion}', to_jsonb(COALESCE((config->>'approvalInputVersion')::bigint, 0) + 1), true)", config)
+		} else {
+			set.Comma("config = ?", config)
+		}
 	}
 
 	q := qb.Q().Space(`UPDATE plan SET ? WHERE id = ? AND project = ?

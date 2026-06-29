@@ -18,6 +18,9 @@ message PlanCheckRunResult {
   repeated Result results = 1;
   string error = 2;
 
+  // The plan approval input version this check run was created for.
+  int64 approval_input_version = 3;
+
   message Result {
     Advice.Status status = 1;
     string title = 2;

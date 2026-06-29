@@ -131,5 +131,8 @@ func (x *PlanConfig) Equal(y *PlanConfig) bool {
 	if x.HasRollout != y.HasRollout {
 		return false
 	}
+	if x.ApprovalInputVersion != y.ApprovalInputVersion {
+		return false
+	}
 	return true
 }
