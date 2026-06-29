@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
-import { DeployTaskStatus } from "./DeployTaskStatus";
 
 const TASK_STATUS_FILTERS = [
   Task_Status.NOT_STARTED,
@@ -51,7 +51,7 @@ export function DeployTaskFilter({
             }}
             type="button"
           >
-            <DeployTaskStatus size="small" status={status} />
+            <TaskStatusIcon size="small" status={status} />
             <span className="select-none text-sm">
               {stringifyTaskStatus(status, t)}
             </span>

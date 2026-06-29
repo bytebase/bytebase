@@ -5,22 +5,27 @@ import { cn } from "@/react/lib/utils";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
 
-export function DeployTaskStatus({
+/**
+ * Canonical status icon for a rollout task/stage. Drive the size with the
+ * `size` prop. Use this everywhere a `Task_Status` is shown so the plan table,
+ * plan detail task rows, and stage tabs stay visually consistent.
+ */
+const SIZE_CLASSES = {
+  tiny: "h-4 w-4",
+  small: "h-5 w-5",
+  medium: "h-6 w-6",
+  large: "h-7 w-7",
+} as const;
+
+export function TaskStatusIcon({
   status,
   size = "small",
 }: {
   status: Task_Status;
-  size?: "tiny" | "small" | "medium" | "large";
+  size?: keyof typeof SIZE_CLASSES;
 }) {
   const { t } = useTranslation();
-  const classes =
-    size === "tiny"
-      ? "h-4 w-4"
-      : size === "small"
-        ? "h-5 w-5"
-        : size === "large"
-          ? "h-7 w-7"
-          : "h-6 w-6";
+  const classes = SIZE_CLASSES[size];
 
   const statusLabel = stringifyTaskStatus(status, t);
 
