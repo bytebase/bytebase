@@ -21,7 +21,8 @@ type DatabaseGroupMessage struct {
 
 // FindDatabaseGroupMessage is the message for finding database group.
 type FindDatabaseGroupMessage struct {
-	ProjectID  *string
+	// Required field
+	ProjectIDs []string
 	ResourceID *string
 }
 
@@ -47,28 +48,9 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 
 // ListDatabaseGroups lists database groups.
 func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			project,
-			resource_id,
-			name,
-			expression
-		FROM db_group
-		WHERE TRUE
-	`)
-
-	if v := find.ProjectID; v != nil {
-		q.And("project = ?", *v)
-	}
-	if v := find.ResourceID; v != nil {
-		q.And("resource_id = ?", *v)
-	}
-
-	q.Space("ORDER BY project, resource_id ASC")
-
-	query, args, err := q.ToSQL()
+	query, args, err := buildListDatabaseGroupsQuery(find)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return nil, err
 	}
 
 	var databaseGroups []*DatabaseGroupMessage
@@ -101,6 +83,38 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	}
 
 	return databaseGroups, nil
+}
+
+func buildListDatabaseGroupsQuery(find *FindDatabaseGroupMessage) (string, []any, error) {
+	q := qb.Q().Space(`
+		SELECT
+			project,
+			resource_id,
+			name,
+			expression
+		FROM db_group
+		WHERE TRUE
+	`)
+
+	switch len(find.ProjectIDs) {
+	case 0:
+		return "", nil, errors.Errorf("invalid project filter")
+	case 1:
+		q.And("project = ?", find.ProjectIDs[0])
+	default:
+		q.And("project = ANY(?)", find.ProjectIDs)
+	}
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
+	}
+
+	q.Space("ORDER BY project, resource_id ASC")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to build sql")
+	}
+	return query, args, nil
 }
 
 // GetDatabaseGroup gets a database group.

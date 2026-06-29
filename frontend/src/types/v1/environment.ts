@@ -8,6 +8,7 @@ import {
 
 export const UNKNOWN_ENVIRONMENT_NAME = `environments/${UNKNOWN_ID}`;
 export const NULL_ENVIRONMENT_NAME = "environments/-";
+export const DEFAULT_ENVIRONMENT_COLOR = "#4f46e5";
 
 export interface Environment extends EnvironmentSetting_Environment {
   order: number;

@@ -71,6 +71,7 @@ import { useSQLReviewStore } from "@/react/stores/sqlReview";
 import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
+  DEFAULT_ENVIRONMENT_COLOR,
   formatEnvironmentName,
   isValidEnvironmentName,
   PRESET_PROJECT_ROLES,
@@ -112,7 +113,7 @@ function EnvironmentName({
   const hasEnvTierFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
-  const color = environment.color || "#4f46e5";
+  const color = environment.color || DEFAULT_ENVIRONMENT_COLOR;
   const rgbValues = hexToRgb(color);
   const rgbStr = rgbValues.join(", ");
   const showProductionIcon =
@@ -645,7 +646,9 @@ function EnvironmentDetail({
 
   // Local editing state
   const [editTitle, setEditTitle] = useState(environment.title);
-  const [editColor, setEditColor] = useState(environment.color || "#4f46e5");
+  const [editColor, setEditColor] = useState(
+    environment.color || DEFAULT_ENVIRONMENT_COLOR
+  );
   const [editProtected, setEditProtected] = useState(
     environment.tags?.protected === "protected"
   );
@@ -666,7 +669,7 @@ function EnvironmentDetail({
   // Reset state when environment changes
   useEffect(() => {
     setEditTitle(environment.title);
-    setEditColor(environment.color || "#4f46e5");
+    setEditColor(environment.color || DEFAULT_ENVIRONMENT_COLOR);
     setEditProtected(environment.tags?.protected === "protected");
     setShowDeleteConfirm(false);
   }, [environment.id, environment.title, environment.color, environment.tags]);
@@ -729,7 +732,7 @@ function EnvironmentDetail({
   const envChanged = useMemo(() => {
     return (
       editTitle !== environment.title ||
-      editColor !== (environment.color || "#4f46e5") ||
+      editColor !== (environment.color || DEFAULT_ENVIRONMENT_COLOR) ||
       editProtected !== (environment.tags?.protected === "protected")
     );
   }, [editTitle, editColor, editProtected, environment]);
@@ -747,7 +750,7 @@ function EnvironmentDetail({
 
   const revert = () => {
     setEditTitle(environment.title);
-    setEditColor(environment.color || "#4f46e5");
+    setEditColor(environment.color || DEFAULT_ENVIRONMENT_COLOR);
     setEditProtected(environment.tags?.protected === "protected");
     if (originalRolloutPolicy) {
       setRolloutPolicy(cloneDeep(originalRolloutPolicy));
@@ -773,7 +776,7 @@ function EnvironmentDetail({
       });
       // Sync local state to the saved values so hasChanges becomes false
       setEditTitle(updated.title);
-      setEditColor(updated.color || "#4f46e5");
+      setEditColor(updated.color || DEFAULT_ENVIRONMENT_COLOR);
       setEditProtected(updated.tags?.protected === "protected");
       await refreshEnvironmentList();
     }
@@ -813,7 +816,7 @@ function EnvironmentDetail({
         title: t("common.warning"),
         description: "Invalid color",
       });
-      setEditColor("#4f46e5");
+      setEditColor(DEFAULT_ENVIRONMENT_COLOR);
       return;
     }
     setEditColor(color);
@@ -833,7 +836,11 @@ function EnvironmentDetail({
                 value={editColor}
                 disabled={!canEdit}
                 onChange={(e) => onColorChange(e.target.value)}
-                className="w-5 h-5 rounded-sm cursor-pointer border-0 p-0"
+                className={cn(
+                  "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
+                  "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
+                  "cursor-pointer"
+                )}
               />
               <span className="font-medium">
                 {t("common.environment-name")}
@@ -934,7 +941,7 @@ function EnvironmentDetail({
           {allowDelete && (
             <div className="mt-6 border-t border-block-border flex justify-between items-center pt-4 pb-2">
               <Button
-                variant="destructive"
+                variant="ghost-destructive"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 {t("common.delete")}
@@ -1039,7 +1046,7 @@ function CreateSheet({
   );
 
   const [title, setTitle] = useState("");
-  const [color, setColor] = useState("#4f46e5");
+  const [color, setColor] = useState(DEFAULT_ENVIRONMENT_COLOR);
   const [isProtected, setIsProtected] = useState(false);
   const [rolloutPolicy, setRolloutPolicy] = useState<Policy>(
     getEmptyRolloutPolicy("", PolicyResourceType.ENVIRONMENT)
@@ -1052,7 +1059,7 @@ function CreateSheet({
   useEffect(() => {
     if (!open) return;
     setTitle("");
-    setColor("#4f46e5");
+    setColor(DEFAULT_ENVIRONMENT_COLOR);
     setIsProtected(false);
     setRolloutPolicy(getEmptyRolloutPolicy("", PolicyResourceType.ENVIRONMENT));
     setResourceId("");
@@ -1110,7 +1117,7 @@ function CreateSheet({
         title: t("common.warning"),
         description: "Invalid color",
       });
-      setColor("#4f46e5");
+      setColor(DEFAULT_ENVIRONMENT_COLOR);
       return;
     }
     setColor(newColor);
@@ -1132,7 +1139,11 @@ function CreateSheet({
                   type="color"
                   value={color}
                   onChange={(e) => onColorChange(e.target.value)}
-                  className="w-5 h-5 rounded-sm cursor-pointer border-0 p-0"
+                  className={cn(
+                    "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
+                    "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
+                    "cursor-pointer"
+                  )}
                 />
                 <span className="font-medium">
                   {t("common.environment-name")}

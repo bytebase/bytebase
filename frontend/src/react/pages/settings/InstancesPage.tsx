@@ -71,6 +71,7 @@ import type { InstanceFilter } from "@/react/stores/app/types";
 import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
+  DEFAULT_ENVIRONMENT_COLOR,
   isValidInstanceName,
   NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -191,7 +192,9 @@ function EnvironmentName({ environmentName }: { environmentName: string }) {
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
 
-  const bgColorRgb = environment.color ? hexToRgb(environment.color) : null;
+  const bgColorRgb = !isUnset
+    ? hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR)
+    : null;
 
   return (
     <span
@@ -475,12 +478,12 @@ function EditEnvironmentSheet({
                   className="accent-accent"
                 />
                 <div className="flex items-center gap-x-2">
-                  {env.color && (
-                    <span
-                      className="inline-block size-3 rounded-full"
-                      style={{ backgroundColor: env.color }}
-                    />
-                  )}
+                  <span
+                    className="inline-block size-3 rounded-full"
+                    style={{
+                      backgroundColor: env.color || DEFAULT_ENVIRONMENT_COLOR,
+                    }}
+                  />
                   <span>{env.title}</span>
                 </div>
               </label>

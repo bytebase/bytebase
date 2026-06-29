@@ -418,7 +418,7 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 			// This is a database group - unfold it
 			databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 				ResourceID: &databaseGroupID,
-				ProjectID:  &projectID,
+				ProjectIDs: []string{projectID},
 			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group")

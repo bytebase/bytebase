@@ -29,7 +29,7 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 					// Re-evaluate database group matches live instead of using deployment snapshot
 					databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 						ResourceID: &databaseGroupID,
-						ProjectID:  &projectID,
+						ProjectIDs: []string{projectID},
 					})
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to get database group")

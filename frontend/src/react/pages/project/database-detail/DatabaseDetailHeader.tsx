@@ -9,6 +9,7 @@ import { INSTANCE_ROUTE_DETAIL } from "@/react/router/handles";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  DEFAULT_ENVIRONMENT_COLOR,
   formatEnvironmentName,
   isValidEnvironmentName,
   UNKNOWN_ENVIRONMENT_NAME,
@@ -75,10 +76,10 @@ export function DatabaseDetailHeader({
     environment.tags?.protected === "protected";
 
   const environmentColorRgb = useMemo(() => {
-    if (!isValidEnv || !environment.color) {
+    if (!isValidEnv) {
       return "";
     }
-    return hexToRgb(environment.color).join(", ");
+    return hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR).join(", ");
   }, [environment, isValidEnv]);
 
   const environmentBadgeStyle: React.CSSProperties | undefined = useMemo(() => {

@@ -4,7 +4,11 @@ import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import type { SQLEditorTreeNode } from "@/types";
-import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  DEFAULT_ENVIRONMENT_COLOR,
+  NULL_ENVIRONMENT_NAME,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hexToRgb } from "@/utils";
 import { DatabaseNode } from "./DatabaseNode";
@@ -75,8 +79,9 @@ function EnvironmentLabel({
   );
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";
-  const bgColorRgb =
-    !isUnset && environment.color ? hexToRgb(environment.color) : null;
+  const bgColorRgb = !isUnset
+    ? hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR)
+    : null;
 
   return (
     <span
