@@ -55,7 +55,6 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
-  isDev: () => true,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
