@@ -62,7 +62,8 @@ type UpdatePlanMessage struct {
 	// BumpApprovalInputVersion increments config.approvalInputVersion from the
 	// current stored row while applying Config as a full replacement. Use this
 	// only for approval-relevant full config replacements such as spec updates.
-	// This flag is not a partial JSONB patch mechanism for unrelated config fields.
+	// Such updates are pre-rollout input changes, so the store rejects them once
+	// rollout marking has won the race.
 	BumpApprovalInputVersion bool
 	Deleted                  *bool
 }
@@ -242,9 +243,14 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		}
 	}
 
-	q := qb.Q().Space(`UPDATE plan SET ? WHERE id = ? AND project = ?
+	where := qb.Q().Space("id = ? AND project = ?", patch.UID, patch.ProjectID)
+	if patch.BumpApprovalInputVersion {
+		where.Space("AND COALESCE((config->>'hasRollout')::boolean, false) = false")
+	}
+
+	q := qb.Q().Space(`UPDATE plan SET ? WHERE ?
 		RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted`,
-		set, patch.UID, patch.ProjectID)
+		set, where)
 
 	query, finalArgs, err := q.ToSQL()
 	if err != nil {

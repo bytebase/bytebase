@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -132,6 +133,43 @@ func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, got.Config.GetHasRollout())
 	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, got.Config, "spec-a")
+}
+
+func TestUpdatePlanBumpApprovalInputVersionDoesNotOverwriteRollout(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 1,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-a"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	staleConfig := proto.CloneOf(plan.Config)
+	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
+
+	marked, _, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 1, nil)
+	require.NoError(t, err)
+	require.True(t, marked)
+
+	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:                      plan.UID,
+		ProjectID:                "project-a",
+		Config:                   staleConfig,
+		BumpApprovalInputVersion: true,
+	})
+	require.Error(t, err)
+
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 1, got.Config.GetApprovalInputVersion())
 	requirePlanSpecID(t, got.Config, "spec-a")
 }
 
