@@ -812,7 +812,9 @@ func (x *EnvironmentSetting_Environment) Equal(y *EnvironmentSetting_Environment
 			return false
 		}
 	}
-	if x.Color != y.Color {
+	if equal, ok := interface{}(x.Color).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Color) {
+		return false
+	} else if !proto.Equal(x.Color, y.Color) {
 		return false
 	}
 	return true

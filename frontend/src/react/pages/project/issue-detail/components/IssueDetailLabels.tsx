@@ -25,11 +25,11 @@ import {
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { colorToHex, hasProjectPermissionV2 } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 type IssueLabelOption = {
-  color: string;
+  color?: string;
   value: string;
 };
 
@@ -49,7 +49,7 @@ export function IssueDetailLabels() {
 
   const options = useMemo<IssueLabelOption[]>(() => {
     return (project?.issueLabels ?? []).map((label) => ({
-      color: label.color,
+      color: label.color ? colorToHex(label.color) : undefined,
       value: label.value,
     }));
   }, [project?.issueLabels]);

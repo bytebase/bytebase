@@ -53,6 +53,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
+  colorToHex,
   extractIssueUID,
   extractProjectResourceName,
   getDefaultPagination,
@@ -337,7 +338,10 @@ export function useIssueSearchScopeOptions(
       .then((project) => {
         const labels = new Map<string, Label>();
         for (const label of project.issueLabels) {
-          labels.set(`${label.value}-${label.color}`, label);
+          labels.set(
+            `${label.value}-${label.color ? colorToHex(label.color) : ""}`,
+            label
+          );
         }
         setProjectLabels([...labels.values()]);
       });
@@ -518,7 +522,11 @@ export function useIssueSearchScopeOptions(
             <div className="flex items-center gap-x-2">
               <div
                 className="size-4 rounded-sm"
-                style={{ backgroundColor: label.color }}
+                style={{
+                  backgroundColor: label.color
+                    ? colorToHex(label.color)
+                    : undefined,
+                }}
               />
               {label.value}
             </div>
@@ -680,7 +688,11 @@ export const IssueListItem = memo(function IssueListItem({
               >
                 <span
                   className="size-2.5 rounded-sm shrink-0"
-                  style={{ backgroundColor: label.color }}
+                  style={{
+                    backgroundColor: label.color
+                      ? colorToHex(label.color)
+                      : undefined,
+                  }}
                 />
                 {label.value}
               </span>

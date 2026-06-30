@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceSelect } from "@/react/components/InstanceSelect";
-import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
+import {
+  type IssueLabel,
+  IssueLabelSelect,
+} from "@/react/components/IssueLabelSelect";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
@@ -88,7 +91,7 @@ export function CreateDatabaseSheet({
 
   const [selectedProject, setSelectedProject] = useState<
     | {
-        issueLabels: { value: string; color: string }[];
+        issueLabels: IssueLabel[];
         forceIssueLabels: boolean;
       }
     | undefined

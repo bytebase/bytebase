@@ -9,9 +9,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	colorpb "google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -513,6 +515,58 @@ func TestValidateLabels(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestValidateIssueLabelsColor(t *testing.T) {
+	tests := []struct {
+		name    string
+		labels  []*v1pb.Label
+		wantErr bool
+	}{
+		{
+			name: "missing color",
+			labels: []*v1pb.Label{
+				{Value: "review"},
+			},
+		},
+		{
+			name: "opaque color",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3}},
+			},
+		},
+		{
+			name: "explicit alpha one",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3, Alpha: wrapperspb.Float(1)}},
+			},
+		},
+		{
+			name: "channel out of range",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 1.1, Green: 0.2, Blue: 0.3}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "transparent color",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3, Alpha: wrapperspb.Float(0.5)}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateIssueLabels(tc.labels)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

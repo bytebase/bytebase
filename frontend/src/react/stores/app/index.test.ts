@@ -55,6 +55,7 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import { hexToColor } from "@/utils";
 import {
   storageKeyIntroState,
   storageKeyRecentProjects,
@@ -1689,7 +1690,7 @@ describe("useAppStore", () => {
                 createProto(EnvironmentSetting_EnvironmentSchema, {
                   id: "dev",
                   title: "Development",
-                  color: "#00aa00",
+                  color: hexToColor("#00aa00"),
                 }),
                 createProto(EnvironmentSetting_EnvironmentSchema, {
                   id: "prod",
@@ -1715,6 +1716,7 @@ describe("useAppStore", () => {
       order: 1,
       tags: { protected: "protected" },
     });
+    expect(store.getState().environmentList[0].color).toBe("#00aa00");
   });
 
   test("refreshes environment settings after cache warm-up", async () => {

@@ -5,10 +5,12 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { cn } from "@/react/lib/utils";
+import type { Color } from "@/types/proto-es/google/type/color_pb";
+import { colorToHex } from "@/utils";
 
 export interface IssueLabel {
   value: string;
-  color: string;
+  color?: Color;
 }
 
 interface IssueLabelSelectProps {
@@ -44,6 +46,7 @@ export function IssueLabelSelect({
         : [...selected, value]
     );
   };
+  const getColor = (color?: Color) => (color ? colorToHex(color) : undefined);
 
   return (
     <div className="flex flex-col gap-y-2">
@@ -72,7 +75,7 @@ export function IssueLabelSelect({
                   >
                     <span
                       className="size-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: label?.color }}
+                      style={{ backgroundColor: getColor(label?.color) }}
                     />
                     {val}
                     <X
@@ -123,7 +126,7 @@ export function IssueLabelSelect({
                       <Checkbox checked={isSelected} />
                       <span
                         className="size-4 rounded-sm shrink-0"
-                        style={{ backgroundColor: label.color }}
+                        style={{ backgroundColor: getColor(label.color) }}
                       />
                       <span>{label.value}</span>
                     </button>

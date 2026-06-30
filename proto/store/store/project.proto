@@ -2,14 +2,16 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/type/color.proto";
+
 option go_package = "generated-go/store";
 
 // Label represents a categorization tag that can be applied to issues.
 message Label {
   // The display text of the label.
   string value = 1;
-  // The color for the label in hex format (e.g., "#FF0000").
-  string color = 2;
+  // The color for the label.
+  google.type.Color color = 2;
   // Optional group name for organizing related labels.
   string group = 3;
 }

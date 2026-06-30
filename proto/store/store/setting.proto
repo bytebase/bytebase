@@ -359,7 +359,7 @@ message EnvironmentSetting {
     // The display name of the environment.
     string title = 3;
     map<string, string> tags = 4;
-    string color = 5;
+    google.type.Color color = 5;
   }
 }
 

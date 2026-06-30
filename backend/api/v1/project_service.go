@@ -219,6 +219,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	}
+	if req.Msg.Project != nil {
+		if err := validateIssueLabels(req.Msg.Project.IssueLabels); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
 
 	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 
@@ -310,6 +315,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings.DataClassificationConfigId = req.Msg.Project.DataClassificationConfigId
 			patch.Setting = projectSettings
 		case "issue_labels":
+			if err := validateIssueLabels(req.Msg.Project.IssueLabels); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			var issueLabels []*storepb.Label
 			for _, label := range req.Msg.Project.IssueLabels {
 				issueLabels = append(issueLabels, &storepb.Label{
@@ -1272,4 +1280,13 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid member %s", member)
+}
+
+func validateIssueLabels(labels []*v1pb.Label) error {
+	for _, label := range labels {
+		if label.Color != nil && !isOpaqueColor(label.Color) {
+			return errors.Errorf("issue label %q color invalid", label.Value)
+		}
+	}
+	return nil
 }

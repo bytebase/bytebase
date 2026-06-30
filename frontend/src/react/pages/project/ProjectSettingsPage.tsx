@@ -47,11 +47,13 @@ import {
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  colorToHex,
   convertKVListToLabels,
   convertLabelsToKVList,
   extractProjectResourceName,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
+  hexToColor,
   sqlReviewPolicySlug,
 } from "@/utils";
 
@@ -513,7 +515,12 @@ export function ProjectSettingsPage() {
         updateMask.push("parallel_tasks_per_rollout");
       }
       if (updateMask.length > 0) {
-        await useAppStore.getState().updateProject(projectPatch, updateMask);
+        const updatedProject = await useAppStore
+          .getState()
+          .updateProject(projectPatch, updateMask);
+        if (updateMask.includes("issue_labels")) {
+          setIssueLabels(cloneDeep(updatedProject.issueLabels));
+        }
       }
 
       pushNotification({
@@ -606,7 +613,11 @@ export function ProjectSettingsPage() {
     if (issueLabels.some((l) => l.value === trimmed)) return;
     setIssueLabels((prev) => [
       ...prev,
-      create(LabelSchema, { value: trimmed, color: "#4f46e5", group: "" }),
+      create(LabelSchema, {
+        value: trimmed,
+        color: hexToColor("#4f46e5"),
+        group: "",
+      }),
     ]);
     setNewLabelValue("");
   }, [newLabelValue, issueLabels]);
@@ -624,7 +635,7 @@ export function ProjectSettingsPage() {
   const updateIssueLabelColor = useCallback((index: number, color: string) => {
     setIssueLabels((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], color };
+      next[index] = { ...next[index], color: hexToColor(color) };
       return next;
     });
   }, []);
@@ -888,7 +899,9 @@ export function ProjectSettingsPage() {
                     >
                       <input
                         type="color"
-                        value={label.color || "#4f46e5"}
+                        value={
+                          label.color ? colorToHex(label.color) : "#4f46e5"
+                        }
                         onChange={(e) =>
                           updateIssueLabelColor(index, e.target.value)
                         }
