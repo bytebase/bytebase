@@ -464,14 +464,17 @@ vi.mock("./PlanDetailTabStrip", () => ({
   }) => <button onClick={onSelect}>{children}</button>,
   PlanDetailTabStrip: ({
     action,
+    trailing,
     children,
   }: {
     action?: ReactNode;
+    trailing?: ReactNode;
     children: ReactNode;
   }) => (
     <div>
       {action}
       {children}
+      {trailing}
     </div>
   ),
 }));
@@ -765,7 +768,7 @@ describe("PlanDetailChangesBranch", () => {
     renderHarness(0);
 
     const addChangeButton = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "plan.add-spec"
+      (button) => button.getAttribute("aria-label") === "plan.add-spec"
     );
     expect(addChangeButton).toBeTruthy();
 
@@ -806,7 +809,7 @@ describe("PlanDetailChangesBranch", () => {
     });
 
     const addChangeButton = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "plan.add-spec"
+      (button) => button.getAttribute("aria-label") === "plan.add-spec"
     );
     expect(addChangeButton).toBeTruthy();
 
