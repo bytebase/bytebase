@@ -16,6 +16,13 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import { useServerState } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -215,6 +222,23 @@ export const AIAugmentationSection = forwardRef<
     });
   };
 
+  const providerLabel = (provider: AISetting_Provider) => {
+    switch (provider) {
+      case AISetting_Provider.OPEN_AI:
+        return t("settings.general.workspace.ai-assistant.provider.open_ai");
+      case AISetting_Provider.AZURE_OPENAI:
+        return t(
+          "settings.general.workspace.ai-assistant.provider.azure_open_ai"
+        );
+      case AISetting_Provider.GEMINI:
+        return t("settings.general.workspace.ai-assistant.provider.gemini");
+      case AISetting_Provider.CLAUDE:
+        return t("settings.general.workspace.ai-assistant.provider.claude");
+      default:
+        return "";
+    }
+  };
+
   return (
     <div id="ai" ref={containerRef} className="py-6 lg:flex">
       <div className="text-left lg:w-1/4">
@@ -272,37 +296,26 @@ export const AIAugmentationSection = forwardRef<
                           )}
                         </span>
                       </label>
-                      <select
-                        className="w-48 border border-control-border rounded-xs px-3 py-1.5 text-sm bg-background disabled:opacity-50"
-                        value={state.provider}
+                      <Select
+                        value={String(state.provider)}
                         disabled={!canEdit}
-                        onChange={(e) =>
-                          onProviderChange(
-                            Number(e.target.value) as AISetting_Provider
-                          )
+                        onValueChange={(value) =>
+                          onProviderChange(Number(value) as AISetting_Provider)
                         }
                       >
-                        {PROVIDER_OPTIONS.map((provider) => (
-                          <option key={provider} value={provider}>
-                            {provider === AISetting_Provider.OPEN_AI &&
-                              t(
-                                "settings.general.workspace.ai-assistant.provider.open_ai"
-                              )}
-                            {provider === AISetting_Provider.AZURE_OPENAI &&
-                              t(
-                                "settings.general.workspace.ai-assistant.provider.azure_open_ai"
-                              )}
-                            {provider === AISetting_Provider.GEMINI &&
-                              t(
-                                "settings.general.workspace.ai-assistant.provider.gemini"
-                              )}
-                            {provider === AISetting_Provider.CLAUDE &&
-                              t(
-                                "settings.general.workspace.ai-assistant.provider.claude"
-                              )}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-48">
+                          <SelectValue>
+                            {providerLabel(state.provider)}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROVIDER_OPTIONS.map((provider) => (
+                            <SelectItem key={provider} value={String(provider)}>
+                              {providerLabel(provider)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* API Key */}

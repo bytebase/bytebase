@@ -4,6 +4,7 @@
 package v1
 
 import (
+	color "google.golang.org/genproto/googleapis/type/color"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	proto "google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -429,7 +430,9 @@ func (x *SQLEditorThemeSetting) Equal(y *SQLEditorThemeSetting) bool {
 		if !ok {
 			return false
 		}
-		if x.Tokens[k] != y.Tokens[k] {
+		if equal, ok := interface{}(x.Tokens[k]).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Tokens[k]) {
+			return false
+		} else if !proto.Equal(x.Tokens[k], y.Tokens[k]) {
 			return false
 		}
 	}
@@ -443,10 +446,14 @@ func (x *Announcement_AnnouncementTheme) Equal(y *Announcement_AnnouncementTheme
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Background != y.Background {
+	if equal, ok := interface{}(x.Background).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Background) {
+		return false
+	} else if !proto.Equal(x.Background, y.Background) {
 		return false
 	}
-	if x.Text != y.Text {
+	if equal, ok := interface{}(x.Text).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Text) {
+		return false
+	} else if !proto.Equal(x.Text, y.Text) {
 		return false
 	}
 	return true

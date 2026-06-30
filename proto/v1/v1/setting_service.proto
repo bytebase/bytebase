@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/color.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
@@ -281,7 +282,8 @@ message SQLEditorThemeSetting {
   string id = 1;
   string name = 2;
   string monaco_base = 3;
-  map<string, string> tokens = 4;
+  // CSS token colors.
+  map<string, google.type.Color> tokens = 4;
 }
 
 message Announcement {
@@ -289,8 +291,8 @@ message Announcement {
   reserved "level";
 
   message AnnouncementTheme {
-    string background = 1; // "r g b"
-    string text = 2; // "r g b"
+    google.type.Color background = 1;
+    google.type.Color text = 2;
   }
 
   // The text of announcement

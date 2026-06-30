@@ -53,7 +53,8 @@ export interface SQLEditorTheme {
   // syntax token colors (and is light/dark per the chosen theme).
   monacoBase: string;
   // Chrome layer: the SQL-Editor `--color-*` token values for this theme,
-  // each a "r g b" triple (Tailwind resolves to `rgb(var(--color-x) / <alpha>)`).
+  // each a #rrggbb hex color. Convert to CSS channel triples at the style boundary
+  // because Tailwind resolves scoped tokens as `rgb(var(--color-x) / <alpha>)`.
   tokens: Record<SQLEditorThemeToken, string>;
 }
 

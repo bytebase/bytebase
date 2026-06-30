@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { hexToColor } from "@/utils";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -87,6 +88,21 @@ vi.mock("@/react/stores/app", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  colorToHex: (color: { red: number; green: number; blue: number }) => {
+    const channelToHex = (value: number) =>
+      Math.round(value * 255)
+        .toString(16)
+        .padStart(2, "0");
+    return `#${channelToHex(color.red)}${channelToHex(color.green)}${channelToHex(color.blue)}`;
+  },
+  hexToColor: (hex: string) => {
+    const value = hex.replace(/^#/, "");
+    return {
+      red: Number.parseInt(value.slice(0, 2), 16) / 255,
+      green: Number.parseInt(value.slice(2, 4), 16) / 255,
+      blue: Number.parseInt(value.slice(4, 6), 16) / 255,
+    };
+  },
   isDev: mocks.isDev,
   urlfy: mocks.urlfy,
 }));
@@ -211,7 +227,10 @@ describe("BannersWrapper", () => {
     mocks.usePlanFeature.mockReturnValue(true);
     mocks.useWorkspaceProfile.mockReturnValue({
       announcement: {
-        theme: { background: "0 83 226", text: "255 255 255" },
+        theme: {
+          background: hexToColor("#0053e2"),
+          text: hexToColor("#ffffff"),
+        },
         link: "example.com/path",
         text: "Maintenance window",
       },
@@ -242,7 +261,7 @@ describe("BannersWrapper", () => {
     const banner = Array.from(container.querySelectorAll("div")).find((el) =>
       el.textContent?.includes("Untheméd banner")
     );
-    // info preset background: "37 99 235", white text.
+    // info preset background: "#2563eb", white text.
     expect(banner?.style.backgroundColor).toBe("rgb(37, 99, 235)");
     expect(banner?.style.color).toBe("rgb(255, 255, 255)");
     unmount();

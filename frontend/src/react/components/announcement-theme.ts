@@ -1,5 +1,5 @@
 import type { Announcement } from "@/types/proto-es/v1/setting_service_pb";
-import { hexToRgb, rgbToHex } from "@/utils/css";
+import { colorToHex } from "@/utils";
 
 export interface AnnouncementTheme {
   background: string;
@@ -10,16 +10,16 @@ export type AnnouncementPresetKey = "info" | "warning" | "critical";
 
 /**
  * Built-in presets are a frontend-only concept that seed the two banner colors.
- * Each value is an `"r g b"` triple. The backgrounds match
- * `--color-info` / `--color-warning` / `--color-error`, all with white text.
+ * Each value is a #rrggbb hex color. The backgrounds match `--color-info` /
+ * `--color-warning` / `--color-error`, all with white text.
  */
 export const ANNOUNCEMENT_PRESETS: Record<
   AnnouncementPresetKey,
   AnnouncementTheme
 > = {
-  info: { background: "37 99 235", text: "255 255 255" },
-  warning: { background: "245 158 11", text: "255 255 255" },
-  critical: { background: "220 38 38", text: "255 255 255" },
+  info: { background: "#2563eb", text: "#ffffff" },
+  warning: { background: "#f59e0b", text: "#ffffff" },
+  critical: { background: "#dc2626", text: "#ffffff" },
 };
 
 export const ANNOUNCEMENT_PRESET_KEYS: AnnouncementPresetKey[] = [
@@ -38,8 +38,10 @@ export function resolveAnnouncementTheme(
 ): AnnouncementTheme {
   if (announcement?.theme?.background) {
     return {
-      background: announcement.theme.background,
-      text: announcement.theme.text,
+      background: colorToHex(announcement.theme.background),
+      text: announcement.theme.text
+        ? colorToHex(announcement.theme.text)
+        : ANNOUNCEMENT_PRESETS.info.text,
     };
   }
   return ANNOUNCEMENT_PRESETS.info;
@@ -60,16 +62,4 @@ export function matchPresetKey(
     }
   }
   return "custom";
-}
-
-/** Converts an `"r g b"` triple to a `#rrggbb` hex string for color inputs. */
-export function tripleToHex(triple: string): string {
-  const parts = triple.trim().split(/\s+/).map(Number);
-  const [r, g, b] = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
-  return rgbToHex(r, g, b);
-}
-
-/** Converts a `#rrggbb` hex string to an `"r g b"` triple for storage. */
-export function hexToTriple(hex: string): string {
-  return hexToRgb(hex).join(" ");
 }

@@ -6117,8 +6117,8 @@ IssueService manages issues for tracking database changes and tasks.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| background | [string](#string) |  | &#34;r g b&#34; |
-| text | [string](#string) |  | &#34;r g b&#34; |
+| background | [google.type.Color](#google-type-Color) |  |  |
+| text | [google.type.Color](#google-type-Color) |  |  |
 
 
 
@@ -6495,7 +6495,7 @@ The response message for getting a setting.
 | id | [string](#string) |  |  |
 | name | [string](#string) |  |  |
 | monaco_base | [string](#string) |  |  |
-| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-v1-SQLEditorThemeSetting-TokensEntry) | repeated |  |
+| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-v1-SQLEditorThemeSetting-TokensEntry) | repeated | CSS token colors. |
 
 
 
@@ -6511,7 +6511,7 @@ The response message for getting a setting.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
+| value | [google.type.Color](#google-type-Color) |  |  |
 
 
 

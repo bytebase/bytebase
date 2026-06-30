@@ -278,6 +278,7 @@ export const VirtualDataTable = forwardRef<
           {/* Index header */}
           <HeaderCell
             width={indexColWidth}
+            borderRight
             onResizeStart={(e) => tableResize.onResizeStart(0, e)}
           >
             <div
@@ -498,7 +499,7 @@ function HeaderCell({
       onClick={onClick}
       className={cn(
         "group relative shrink-0 border-block-border",
-        borderRight ? "border-x" : "border-l",
+        borderRight && "border-r",
         className
       )}
       style={{ width: `${width}px` }}

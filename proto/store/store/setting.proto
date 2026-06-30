@@ -4,6 +4,7 @@ package bytebase.store;
 
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
+import "google/type/color.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
 import "store/common.proto";
@@ -40,8 +41,8 @@ message WorkspaceProfileSetting {
     reserved "level";
 
     message AnnouncementTheme {
-      string background = 1; // "r g b"
-      string text = 2; // "r g b"
+      google.type.Color background = 1;
+      google.type.Color text = 2;
     }
 
     // The text of the announcement.
@@ -162,7 +163,8 @@ message SQLEditorThemeSetting {
   string id = 1;
   string name = 2;
   string monaco_base = 3;
-  map<string, string> tokens = 4;
+  // CSS token colors.
+  map<string, google.type.Color> tokens = 4;
 }
 
 message WorkspaceApprovalSetting {

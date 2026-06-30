@@ -8,6 +8,7 @@ package v1
 
 import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	color "google.golang.org/genproto/googleapis/type/color"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1230,11 +1231,12 @@ func (x *WorkspaceProfileSetting) GetSqlEditorCustomTheme() *SQLEditorThemeSetti
 }
 
 type SQLEditorThemeSetting struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	MonacoBase    string                 `protobuf:"bytes,3,opt,name=monaco_base,json=monacoBase,proto3" json:"monaco_base,omitempty"`
-	Tokens        map[string]string      `protobuf:"bytes,4,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	MonacoBase string                 `protobuf:"bytes,3,opt,name=monaco_base,json=monacoBase,proto3" json:"monaco_base,omitempty"`
+	// CSS token colors.
+	Tokens        map[string]*color.Color `protobuf:"bytes,4,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1290,7 +1292,7 @@ func (x *SQLEditorThemeSetting) GetMonacoBase() string {
 	return ""
 }
 
-func (x *SQLEditorThemeSetting) GetTokens() map[string]string {
+func (x *SQLEditorThemeSetting) GetTokens() map[string]*color.Color {
 	if x != nil {
 		return x.Tokens
 	}
@@ -2523,8 +2525,8 @@ func (x *WorkspaceProfileSetting_PasswordRestriction) GetPasswordRotation() *dur
 
 type Announcement_AnnouncementTheme struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Background    string                 `protobuf:"bytes,1,opt,name=background,proto3" json:"background,omitempty"` // "r g b"
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`             // "r g b"
+	Background    *color.Color           `protobuf:"bytes,1,opt,name=background,proto3" json:"background,omitempty"`
+	Text          *color.Color           `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2559,18 +2561,18 @@ func (*Announcement_AnnouncementTheme) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
-func (x *Announcement_AnnouncementTheme) GetBackground() string {
+func (x *Announcement_AnnouncementTheme) GetBackground() *color.Color {
 	if x != nil {
 		return x.Background
 	}
-	return ""
+	return nil
 }
 
-func (x *Announcement_AnnouncementTheme) GetText() string {
+func (x *Announcement_AnnouncementTheme) GetText() *color.Color {
 	if x != nil {
 		return x.Text
 	}
-	return ""
+	return nil
 }
 
 type WorkspaceApprovalSetting_Rule struct {
@@ -3369,7 +3371,7 @@ var File_v1_setting_service_proto protoreflect.FileDescriptor
 
 const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\"\x15\n" +
+	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x17google/type/color.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\"\x15\n" +
 	"\x13ListSettingsRequest\"H\n" +
 	"\x14ListSettingsResponse\x120\n" +
 	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"E\n" +
@@ -3477,25 +3479,25 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x10\x10\x11\"\xdf\x01\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x10\x10\x11\"\xf3\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
 	"\vmonaco_base\x18\x03 \x01(\tR\n" +
 	"monacoBase\x12F\n" +
-	"\x06tokens\x18\x04 \x03(\v2..bytebase.v1.SQLEditorThemeSetting.TokensEntryR\x06tokens\x1a9\n" +
+	"\x06tokens\x18\x04 \x03(\v2..bytebase.v1.SQLEditorThemeSetting.TokensEntryR\x06tokens\x1aM\n" +
 	"\vTokensEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcf\x01\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
+	"\x05value\x18\x02 \x01(\v2\x12.google.type.ColorR\x05value:\x028\x01\"\xf7\x01\n" +
 	"\fAnnouncement\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
 	"\x04link\x18\x03 \x01(\tR\x04link\x12A\n" +
-	"\x05theme\x18\x04 \x01(\v2+.bytebase.v1.Announcement.AnnouncementThemeR\x05theme\x1aG\n" +
-	"\x11AnnouncementTheme\x12\x1e\n" +
+	"\x05theme\x18\x04 \x01(\v2+.bytebase.v1.Announcement.AnnouncementThemeR\x05theme\x1ao\n" +
+	"\x11AnnouncementTheme\x122\n" +
 	"\n" +
-	"background\x18\x01 \x01(\tR\n" +
-	"background\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04textJ\x04\b\x01\x10\x02R\x05level\"\xa2\x03\n" +
+	"background\x18\x01 \x01(\v2\x12.google.type.ColorR\n" +
+	"background\x12&\n" +
+	"\x04text\x18\x02 \x01(\v2\x12.google.type.ColorR\x04textJ\x04\b\x01\x10\x02R\x05level\"\xa2\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
 	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc3\x02\n" +
 	"\x04Rule\x129\n" +
@@ -3709,8 +3711,9 @@ var file_v1_setting_service_proto_goTypes = []any{
 	(*fieldmaskpb.FieldMask)(nil),            // 52: google.protobuf.FieldMask
 	(*durationpb.Duration)(nil),              // 53: google.protobuf.Duration
 	(WebhookType)(0),                         // 54: bytebase.v1.WebhookType
-	(*ApprovalTemplate)(nil),                 // 55: bytebase.v1.ApprovalTemplate
-	(*expr.Expr)(nil),                        // 56: google.type.Expr
+	(*color.Color)(nil),                      // 55: google.type.Color
+	(*ApprovalTemplate)(nil),                 // 56: bytebase.v1.ApprovalTemplate
+	(*expr.Expr)(nil),                        // 57: google.type.Expr
 }
 var file_v1_setting_service_proto_depIdxs = []int32{
 	13, // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
@@ -3758,31 +3761,34 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	32, // 42: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
 	33, // 43: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
 	53, // 44: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
-	55, // 45: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	56, // 46: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	2,  // 47: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
-	40, // 48: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	42, // 49: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	41, // 50: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	22, // 51: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
-	48, // 52: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
-	3,  // 53: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
-	50, // 54: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	6,  // 55: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
-	7,  // 56: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
-	8,  // 57: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	10, // 58: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	12, // 59: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	26, // 60: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
-	9,  // 61: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	13, // 62: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	13, // 63: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	27, // 64: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
-	61, // [61:65] is the sub-list for method output_type
-	57, // [57:61] is the sub-list for method input_type
-	57, // [57:57] is the sub-list for extension type_name
-	57, // [57:57] is the sub-list for extension extendee
-	0,  // [0:57] is the sub-list for field type_name
+	55, // 45: bytebase.v1.SQLEditorThemeSetting.TokensEntry.value:type_name -> google.type.Color
+	55, // 46: bytebase.v1.Announcement.AnnouncementTheme.background:type_name -> google.type.Color
+	55, // 47: bytebase.v1.Announcement.AnnouncementTheme.text:type_name -> google.type.Color
+	56, // 48: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	57, // 49: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	2,  // 50: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+	40, // 51: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	42, // 52: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	41, // 53: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	22, // 54: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
+	48, // 55: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
+	3,  // 56: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
+	50, // 57: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
+	6,  // 58: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
+	7,  // 59: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
+	8,  // 60: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	10, // 61: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	12, // 62: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	26, // 63: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
+	9,  // 64: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	13, // 65: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	13, // 66: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	27, // 67: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
+	64, // [64:68] is the sub-list for method output_type
+	60, // [60:64] is the sub-list for method input_type
+	60, // [60:60] is the sub-list for extension type_name
+	60, // [60:60] is the sub-list for extension extendee
+	0,  // [0:60] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }

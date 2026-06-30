@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useAppStore } from "@/react/stores/app";
+import type { Color } from "@/types/proto-es/google/type/color_pb";
+import { colorToHex } from "@/utils";
 import { validateTheme } from "./derive";
 import { PRESET_BY_ID, resolveThemeId } from "./presets";
-import type { SQLEditorTheme } from "./types";
+import { type SQLEditorTheme, type SQLEditorThemeToken } from "./types";
 
 // Mirrors WorkspaceProfileSetting's two theme fields (protojson camelCase).
 export interface WorkspaceThemeInput {
@@ -11,7 +13,7 @@ export interface WorkspaceThemeInput {
     id: string;
     name: string;
     monacoBase: string;
-    tokens: Record<string, string>;
+    tokens: Record<string, Color>;
   };
 }
 
@@ -27,7 +29,12 @@ export function resolveWorkspaceTheme(
       id: custom.id,
       name: custom.name,
       monacoBase: custom.monacoBase,
-      tokens: custom.tokens,
+      tokens: Object.fromEntries(
+        Object.entries(custom.tokens).map(([key, color]) => [
+          key,
+          colorToHex(color),
+        ])
+      ) as Record<SQLEditorThemeToken, string>,
     };
     try {
       validateTheme(theme);

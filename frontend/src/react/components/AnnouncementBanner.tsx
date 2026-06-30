@@ -6,9 +6,9 @@ interface AnnouncementBannerProps {
   text: string;
   /** When set, an arrow affordance is shown next to the text. */
   link?: string;
-  /** Background color as an `"r g b"` triple. */
+  /** Background color as a #rrggbb hex color. */
   background: string;
-  /** Text color as an `"r g b"` triple. */
+  /** Text color as a #rrggbb hex color. */
   textColor: string;
   /**
    * When true (default), the link navigates (`<a target="_blank">`). Pass
@@ -65,8 +65,8 @@ export function AnnouncementBanner({
         className
       )}
       style={{
-        backgroundColor: `rgb(${background})`,
-        color: `rgb(${textColor})`,
+        backgroundColor: background,
+        color: textColor,
       }}
     >
       {content}
