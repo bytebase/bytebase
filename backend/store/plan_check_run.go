@@ -325,6 +325,40 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, 
 	return nil
 }
 
+// CancelPlanCheckRunIfApprovalInputVersion cancels an active plan check run only when it still matches the observed approval input version.
+func (s *Store) CancelPlanCheckRunIfApprovalInputVersion(ctx context.Context, projectID string, planCheckRunUID int64, approvalInputVersion int64) (bool, error) {
+	q := qb.Q().Space(`
+		UPDATE plan_check_run
+		SET
+			status = ?,
+			updated_at = ?
+		WHERE id = ?
+		  AND project = ?
+		  AND status IN (?, ?)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = plan_check_run.project
+			  AND plan.id = plan_check_run.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+		  )`,
+		PlanCheckRunStatusCanceled, time.Now(), planCheckRunUID, projectID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to inspect plan check run cancel")
+	}
+	return rowsAffected > 0, nil
+}
+
 // ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
 type ClaimedPlanCheckRun struct {
 	UID                  int64

@@ -374,15 +374,16 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		if issueToReset == nil {
 			return nil
 		}
-		updatedIssue, err := s.store.UpdateIssue(ctx, issueToReset.ProjectID, issueToReset.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: &storepb.Issue{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			},
-		})
+		updatedIssue, updated, err := resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s.store, issueToReset, updatedPlan.Config.GetApprovalInputVersion())
 		if err != nil {
 			slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
+			return nil
+		}
+		if !updated {
+			slog.Info("skip stale approval finding reset after plan update",
+				slog.String("project", issueToReset.ProjectID),
+				slog.Int64("issue_uid", issueToReset.UID),
+				slog.Int64("approval_input_version", updatedPlan.Config.GetApprovalInputVersion()))
 			return nil
 		}
 		return updatedIssue
@@ -454,6 +455,38 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 
 	converted := convertToPlanCheckRun(projectID, planUID, planCheckRun)
 	return connect.NewResponse(converted), nil
+}
+
+func resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, stores *store.Store, issue *store.IssueMessage, approvalInputVersion int64) (*store.IssueMessage, bool, error) {
+	payloadPatch := &storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  false,
+			ApprovalInputVersion: approvalInputVersion,
+		},
+	}
+	if issue.Type == storepb.Issue_DATABASE_CHANGE {
+		updated, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		if err != nil {
+			return nil, false, err
+		}
+		if !updated {
+			return nil, false, nil
+		}
+		uid := issue.UID
+		updatedIssue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+			ProjectIDs: []string{issue.ProjectID},
+			UID:        &uid,
+		})
+		return updatedIssue, true, err
+	}
+
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: payloadPatch,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return updatedIssue, true, nil
 }
 
 // RunPlanChecks runs plan checks for a plan.
@@ -563,19 +596,25 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running or available"))
 	}
 
+	approvalInputVersion := planCheckRun.Result.GetApprovalInputVersion()
+
 	// Cancel in-flight plan check run if running.
-	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(bus.PlanCheckRunRef{ProjectID: projectID, UID: planCheckRun.UID}); ok {
+	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(bus.PlanCheckRunRef{ProjectID: projectID, UID: planCheckRun.UID, ApprovalInputVersion: approvalInputVersion}); ok {
 		cancelFunc.(context.CancelFunc)()
 	}
 
 	// Broadcast cancel signal to all replicas for HA.
-	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID); err != nil {
+	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID, approvalInputVersion); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
 	}
 
 	// Update the status to canceled.
-	if err := s.store.BatchCancelPlanCheckRuns(ctx, projectID, []int64{planCheckRun.UID}); err != nil {
+	canceled, err := s.store.CancelPlanCheckRunIfApprovalInputVersion(ctx, projectID, planCheckRun.UID, approvalInputVersion)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
+	}
+	if !canceled {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot cancel because plan check run is stale"))
 	}
 
 	return connect.NewResponse(&v1pb.CancelPlanCheckRunResponse{}), nil

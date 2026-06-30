@@ -25,8 +25,9 @@ type IssueRef struct {
 
 // PlanCheckRunRef identifies a plan check run by project and UID.
 type PlanCheckRunRef struct {
-	ProjectID string
-	UID       int64
+	ProjectID            string
+	UID                  int64
+	ApprovalInputVersion int64
 }
 
 // Bus is the message bus for all in-memory communication within the server.

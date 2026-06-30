@@ -93,7 +93,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int64, planUID int64, approvalInputVersion int64) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
-	planCheckRef := bus.PlanCheckRunRef{ProjectID: projectID, UID: uid}
+	planCheckRef := bus.PlanCheckRunRef{ProjectID: projectID, UID: uid, ApprovalInputVersion: approvalInputVersion}
 	s.bus.RunningPlanCheckRunsCancelFunc.Store(planCheckRef, cancel)
 	defer s.bus.RunningPlanCheckRunsCancelFunc.Delete(planCheckRef)
 
