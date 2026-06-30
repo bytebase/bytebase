@@ -613,9 +613,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		if plan.Config != nil {
 			approvalInputVersion = plan.Config.GetApprovalInputVersion()
 		}
-		if payload.Approval.GetApprovalInputVersion() != approvalInputVersion {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot approve because approval finding is stale"))
-		}
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -656,7 +653,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		Approval: payload.Approval,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 		}
@@ -773,9 +770,6 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		if plan.Config != nil {
 			approvalInputVersion = plan.Config.GetApprovalInputVersion()
 		}
-		if payload.Approval.GetApprovalInputVersion() != approvalInputVersion {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot reject because approval finding is stale"))
-		}
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -811,7 +805,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		Approval: payload.Approval,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 		}
@@ -924,9 +918,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		if plan.Config != nil {
 			approvalInputVersion = plan.Config.GetApprovalInputVersion()
 		}
-		if payload.Approval.GetApprovalInputVersion() != approvalInputVersion {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot request issue because approval finding is stale"))
-		}
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -957,7 +948,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		Approval: payload.Approval,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 		}
