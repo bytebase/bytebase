@@ -3213,7 +3213,7 @@ type EnvironmentSetting_Environment struct {
 	// The display name of the environment.
 	Title         string            `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Tags          map[string]string `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Color         string            `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
+	Color         *color.Color      `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3276,11 +3276,11 @@ func (x *EnvironmentSetting_Environment) GetTags() map[string]string {
 	return nil
 }
 
-func (x *EnvironmentSetting_Environment) GetColor() string {
+func (x *EnvironmentSetting_Environment) GetColor() *color.Color {
 	if x != nil {
 		return x.Color
 	}
-	return ""
+	return nil
 }
 
 type EmailSetting_SMTPConfig struct {
@@ -3578,15 +3578,15 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xce\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xe2\x02\n" +
 	"\x12EnvironmentSetting\x12O\n" +
-	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe6\x01\n" +
+	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xfa\x01\n" +
 	"\vEnvironment\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12I\n" +
-	"\x04tags\x18\x04 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
-	"\x05color\x18\x05 \x01(\tR\x05color\x1a7\n" +
+	"\x04tags\x18\x04 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12(\n" +
+	"\x05color\x18\x05 \x01(\v2\x12.google.type.ColorR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcc\x05\n" +
@@ -3774,21 +3774,22 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	48, // 55: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
 	3,  // 56: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
 	50, // 57: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	6,  // 58: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
-	7,  // 59: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
-	8,  // 60: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	10, // 61: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	12, // 62: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	26, // 63: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
-	9,  // 64: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	13, // 65: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	13, // 66: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	27, // 67: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
-	64, // [64:68] is the sub-list for method output_type
-	60, // [60:64] is the sub-list for method input_type
-	60, // [60:60] is the sub-list for extension type_name
-	60, // [60:60] is the sub-list for extension extendee
-	0,  // [0:60] is the sub-list for field type_name
+	55, // 58: bytebase.v1.EnvironmentSetting.Environment.color:type_name -> google.type.Color
+	6,  // 59: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
+	7,  // 60: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
+	8,  // 61: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	10, // 62: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	12, // 63: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	26, // 64: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
+	9,  // 65: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	13, // 66: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	13, // 67: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	27, // 68: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
+	65, // [65:69] is the sub-list for method output_type
+	61, // [61:65] is the sub-list for method input_type
+	61, // [61:61] is the sub-list for extension type_name
+	61, // [61:61] is the sub-list for extension extendee
+	0,  // [0:61] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }

@@ -7,6 +7,7 @@
 package store
 
 import (
+	color "google.golang.org/genproto/googleapis/type/color"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -26,8 +27,8 @@ type Label struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The display text of the label.
 	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	// The color for the label in hex format (e.g., "#FF0000").
-	Color string `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
+	// The color for the label.
+	Color *color.Color `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
 	// Optional group name for organizing related labels.
 	Group         string `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -71,11 +72,11 @@ func (x *Label) GetValue() string {
 	return ""
 }
 
-func (x *Label) GetColor() string {
+func (x *Label) GetColor() *color.Color {
 	if x != nil {
 		return x.Color
 	}
-	return ""
+	return nil
 }
 
 func (x *Label) GetGroup() string {
@@ -310,10 +311,10 @@ var File_store_project_proto protoreflect.FileDescriptor
 
 const file_store_project_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/project.proto\x12\x0ebytebase.store\"I\n" +
+	"\x13store/project.proto\x12\x0ebytebase.store\x1a\x17google/type/color.proto\"]\n" +
 	"\x05Label\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
-	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
+	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
 	"\x05group\x18\x03 \x01(\tR\x05group\"\xe5\a\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
@@ -357,16 +358,18 @@ var file_store_project_proto_goTypes = []any{
 	(*Project)(nil),                      // 1: bytebase.store.Project
 	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
 	nil,                                  // 3: bytebase.store.Project.LabelsEntry
+	(*color.Color)(nil),                  // 4: google.type.Color
 }
 var file_store_project_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
-	2, // 1: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
-	3, // 2: bytebase.store.Project.labels:type_name -> bytebase.store.Project.LabelsEntry
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 0: bytebase.store.Label.color:type_name -> google.type.Color
+	0, // 1: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
+	2, // 2: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
+	3, // 3: bytebase.store.Project.labels:type_name -> bytebase.store.Project.LabelsEntry
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_store_project_proto_init() }

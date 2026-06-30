@@ -3,6 +3,11 @@
 
 package store
 
+import (
+	color "google.golang.org/genproto/googleapis/type/color"
+	proto "google.golang.org/protobuf/proto"
+)
+
 func (x *Label) Equal(y *Label) bool {
 	if x == y {
 		return true
@@ -13,7 +18,9 @@ func (x *Label) Equal(y *Label) bool {
 	if x.Value != y.Value {
 		return false
 	}
-	if x.Color != y.Color {
+	if equal, ok := interface{}(x.Color).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Color) {
+		return false
+	} else if !proto.Equal(x.Color, y.Color) {
 		return false
 	}
 	if x.Group != y.Group {

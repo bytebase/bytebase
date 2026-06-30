@@ -1397,9 +1397,9 @@ export declare type EnvironmentSetting_Environment = Message<"bytebase.v1.Enviro
   tags: { [key: string]: string };
 
   /**
-   * @generated from field: string color = 5;
+   * @generated from field: google.type.Color color = 5;
    */
-  color: string;
+  color?: Color | undefined;
 };
 
 /**

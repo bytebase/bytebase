@@ -13,12 +13,13 @@ import {
 import { cn } from "@/react/lib/utils";
 import { extractUserEmail, pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
+import type { Color } from "@/types/proto-es/google/type/color_pb";
 import {
   IssueSchema,
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { colorToHex, hasProjectPermissionV2 } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 export function PlanDetailMeta() {
@@ -115,7 +116,7 @@ function InlineLabels({
   onUpdate,
 }: {
   allowChange: boolean;
-  issueLabels: Array<{ color: string; value: string }>;
+  issueLabels: Array<{ color?: Color; value: string }>;
   labels: string[];
   onUpdate: (labels: string[]) => Promise<void>;
 }) {
@@ -144,7 +145,11 @@ function InlineLabels({
       >
         <span
           className="size-2.5 shrink-0 rounded-sm"
-          style={{ backgroundColor: option?.color }}
+          style={{
+            backgroundColor: option?.color
+              ? colorToHex(option.color)
+              : undefined,
+          }}
         />
         <span className="truncate">{value}</span>
         {allowChange && (
@@ -217,7 +222,11 @@ function InlineLabels({
                     <Checkbox checked={isSelected} />
                     <span
                       className="size-4 shrink-0 rounded-sm"
-                      style={{ backgroundColor: option.color }}
+                      style={{
+                        backgroundColor: option.color
+                          ? colorToHex(option.color)
+                          : undefined,
+                      }}
                     />
                     <span>{option.value}</span>
                   </button>

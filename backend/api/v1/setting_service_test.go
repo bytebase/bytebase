@@ -143,7 +143,7 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 
 func TestValidateEnvironmentsColor(t *testing.T) {
 	service := &SettingService{}
-	env := func(color string) *v1pb.EnvironmentSetting_Environment {
+	env := func(color *colorpb.Color) *v1pb.EnvironmentSetting_Environment {
 		return &v1pb.EnvironmentSetting_Environment{
 			Id:    "test",
 			Title: "Test",
@@ -152,16 +152,14 @@ func TestValidateEnvironmentsColor(t *testing.T) {
 	}
 	cases := []struct {
 		name    string
-		color   string
+		color   *colorpb.Color
 		wantErr bool
 	}{
-		{"empty ok", "", false},
-		{"valid", "#4f46e5", false},
-		{"uppercase valid", "#AABBCC", false},
-		{"rgb rejected", "79 70 229", true},
-		{"missing hash rejected", "4f46e5", true},
-		{"short hex rejected", "#fff", true},
-		{"invalid hex rejected", "#zzzzzz", true},
+		{"nil ok", nil, false},
+		{"valid", colorValue(0.31, 0.27, 0.9), false},
+		{"red below range rejected", colorValue(-0.1, 0.27, 0.9), true},
+		{"green above range rejected", colorValue(0.31, 1.1, 0.9), true},
+		{"alpha below one rejected", colorWithAlpha(0.31, 0.27, 0.9, 0.5), true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

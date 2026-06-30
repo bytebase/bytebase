@@ -2643,7 +2643,7 @@ type EnvironmentSetting_Environment struct {
 	// The display name of the environment.
 	Title         string            `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Tags          map[string]string `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Color         string            `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
+	Color         *color.Color      `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2706,11 +2706,11 @@ func (x *EnvironmentSetting_Environment) GetTags() map[string]string {
 	return nil
 }
 
-func (x *EnvironmentSetting_Environment) GetColor() string {
+func (x *EnvironmentSetting_Environment) GetColor() *color.Color {
 	if x != nil {
 		return x.Color
 	}
-	return ""
+	return nil
 }
 
 type EmailSetting_SMTPConfig struct {
@@ -2977,15 +2977,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xd4\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xe8\x02\n" +
 	"\x12EnvironmentSetting\x12R\n" +
-	"\fenvironments\x18\x01 \x03(\v2..bytebase.store.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe9\x01\n" +
+	"\fenvironments\x18\x01 \x03(\v2..bytebase.store.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xfd\x01\n" +
 	"\vEnvironment\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12L\n" +
-	"\x04tags\x18\x04 \x03(\v28.bytebase.store.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
-	"\x05color\x18\x05 \x01(\tR\x05color\x1a7\n" +
+	"\x04tags\x18\x04 \x03(\v28.bytebase.store.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12(\n" +
+	"\x05color\x18\x05 \x01(\v2\x12.google.type.ColorR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd3\x05\n" +
@@ -3145,13 +3145,14 @@ var file_store_setting_proto_depIdxs = []int32{
 	38, // 41: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
 	39, // 42: bytebase.store.AppIMSetting.IMSetting.teams:type_name -> bytebase.store.AppIMSetting.Teams
 	42, // 43: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	6,  // 44: bytebase.store.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.store.EmailSetting.SMTPConfig.Encryption
-	7,  // 45: bytebase.store.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.store.EmailSetting.SMTPConfig.Authentication
-	46, // [46:46] is the sub-list for method output_type
-	46, // [46:46] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	45, // 44: bytebase.store.EnvironmentSetting.Environment.color:type_name -> google.type.Color
+	6,  // 45: bytebase.store.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.store.EmailSetting.SMTPConfig.Encryption
+	7,  // 46: bytebase.store.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.store.EmailSetting.SMTPConfig.Authentication
+	47, // [47:47] is the sub-list for method output_type
+	47, // [47:47] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }

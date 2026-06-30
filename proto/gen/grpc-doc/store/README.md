@@ -3477,7 +3477,7 @@ Label represents a categorization tag that can be applied to issues.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | value | [string](#string) |  | The display text of the label. |
-| color | [string](#string) |  | The color for the label in hex format (e.g., &#34;#FF0000&#34;). |
+| color | [google.type.Color](#google-type-Color) |  | The color for the label. |
 | group | [string](#string) |  | Optional group name for organizing related labels. |
 
 
@@ -4494,7 +4494,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
-| color | [string](#string) |  |  |
+| color | [google.type.Color](#google-type-Color) |  |  |
 
 
 

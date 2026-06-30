@@ -6406,7 +6406,7 @@ IssueService manages issues for tracking database changes and tasks.
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
-| color | [string](#string) |  |  |
+| color | [google.type.Color](#google-type-Color) |  |  |
 
 
 
@@ -9533,7 +9533,7 @@ A label for categorizing and organizing issues.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | value | [string](#string) |  | The label value/name. |
-| color | [string](#string) |  | The color code for the label (e.g., hex color). |
+| color | [google.type.Color](#google-type-Color) |  | The label color. |
 | group | [string](#string) |  | The group this label belongs to. |
 
 

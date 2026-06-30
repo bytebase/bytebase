@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	colorpb "google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -139,8 +140,8 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{
 			Environments: []*storepb.EnvironmentSetting_Environment{
-				{Title: "Test", Id: "test", Color: "#4f46e5"},
-				{Title: "Prod", Id: "prod", Color: "#4f46e5"},
+				{Title: "Test", Id: "test", Color: defaultEnvironmentColor()},
+				{Title: "Prod", Id: "prod", Color: defaultEnvironmentColor()},
 			},
 		}},
 	}
@@ -161,7 +162,6 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 			return nil, errors.Wrapf(err, "failed to create setting %s", s.name)
 		}
 	}
-
 	// Initialize workspace IAM policy — add the creator as workspace admin.
 	iamPolicy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
@@ -196,6 +196,10 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 	}
 
 	return create, nil
+}
+
+func defaultEnvironmentColor() *colorpb.Color {
+	return &colorpb.Color{Red: 79.0 / 255.0, Green: 70.0 / 255.0, Blue: 229.0 / 255.0}
 }
 
 // UpdateWorkspaceMessage is the message for updating a workspace.

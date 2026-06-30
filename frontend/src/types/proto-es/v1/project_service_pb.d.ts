@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { Color } from "../google/type/color_pb";
 import type { State, WebhookType } from "./common_pb";
 import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 
@@ -422,11 +423,11 @@ export declare type Label = Message<"bytebase.v1.Label"> & {
   value: string;
 
   /**
-   * The color code for the label (e.g., hex color).
+   * The label color.
    *
-   * @generated from field: string color = 2;
+   * @generated from field: google.type.Color color = 2;
    */
-  color: string;
+  color?: Color | undefined;
 
   /**
    * The group this label belongs to.

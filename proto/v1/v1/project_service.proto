@@ -9,6 +9,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/color.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/iam_policy.proto";
@@ -378,8 +379,8 @@ message BatchDeleteProjectsRequest {
 message Label {
   // The label value/name.
   string value = 1;
-  // The color code for the label (e.g., hex color).
-  string color = 2;
+  // The label color.
+  google.type.Color color = 2;
   // The group this label belongs to.
   string group = 3;
 }

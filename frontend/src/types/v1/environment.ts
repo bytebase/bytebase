@@ -10,7 +10,9 @@ export const UNKNOWN_ENVIRONMENT_NAME = `environments/${UNKNOWN_ID}`;
 export const NULL_ENVIRONMENT_NAME = "environments/-";
 export const DEFAULT_ENVIRONMENT_COLOR = "#4f46e5";
 
-export interface Environment extends EnvironmentSetting_Environment {
+export interface Environment
+  extends Omit<EnvironmentSetting_Environment, "color"> {
+  color: string;
   order: number;
 }
 
@@ -20,6 +22,7 @@ export const unknownEnvironment = (): Environment => {
       name: UNKNOWN_ENVIRONMENT_NAME,
       id: String(UNKNOWN_ID),
     }),
+    color: "",
     order: 0,
   };
 };
@@ -31,8 +34,8 @@ export const nullEnvironment = (): Environment => {
       id: "-",
       title: "No Environment",
       tags: {},
-      color: "",
     }),
+    color: "",
     order: -1,
   };
 };

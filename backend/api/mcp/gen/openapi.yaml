@@ -11262,8 +11262,8 @@ components:
             type: string
             title: value
         color:
-          type: string
           title: color
+          $ref: '#/components/schemas/google.type.Color'
       title: Environment
       additionalProperties: false
     bytebase.v1.EnvironmentSetting.Environment.TagsEntry:
@@ -12991,9 +12991,9 @@ components:
           title: value
           description: The label value/name.
         color:
-          type: string
           title: color
-          description: The color code for the label (e.g., hex color).
+          description: The label color.
+          $ref: '#/components/schemas/google.type.Color'
         group:
           type: string
           title: group

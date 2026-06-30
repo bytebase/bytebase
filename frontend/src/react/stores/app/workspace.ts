@@ -70,6 +70,7 @@ import {
   isValidEnvironmentName,
   NULL_ENVIRONMENT_NAME,
 } from "@/types/v1/environment";
+import { colorToHex, hexToColor } from "@/utils";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
@@ -117,9 +118,9 @@ function convertEnvironmentList(
       name: environmentNameFromId(env.id),
       id: env.id,
       title: env.title,
-      color: env.color,
       tags: env.tags,
     }),
+    color: env.color ? colorToHex(env.color) : "",
     order: i,
   }));
 }
@@ -136,7 +137,7 @@ function convertEnvironmentsToSetting(
       name: env.name,
       id: env.id,
       title: env.title,
-      color: env.color,
+      color: env.color ? hexToColor(env.color) : undefined,
       tags: env.tags,
     })
   );
@@ -769,7 +770,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
           name: "",
           id: environment.id ?? "",
           title: environment.title ?? "",
-          color: environment.color ?? "",
+          color: environment.color ? hexToColor(environment.color) : undefined,
           tags: environment.tags ?? {},
         }),
       ]);
