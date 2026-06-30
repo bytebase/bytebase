@@ -116,6 +116,10 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 -   **`--plan`**: The specific plan to rollout.
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
+-   **`--plan-title`**: Title of the created plan.
+    -   Defaults to the release ID (e.g. `release_20260628-RC00`) when not provided.
+
+-   **`--plan-description`**: Description of the created plan.
 
 ## Using Declarative Mode
 
