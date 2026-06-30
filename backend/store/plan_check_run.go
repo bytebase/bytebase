@@ -229,8 +229,9 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status
 
 // UpdatePlanCheckRunIfApprovalInputVersion updates a running plan check run only when it still matches the claimed approval input version.
 //
-// The version guard validates the materialized run row only. Callers that change approval inputs
-// are responsible for refreshing the row to the new plan approval input version.
+// Plan check workers finish against the row version they claimed. We do not join back to the
+// current plan here because plan edits move the row forward separately; this update only prevents
+// an old worker from publishing over a row that has already been refreshed.
 func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, projectID string, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int64, approvalInputVersion int64) (bool, error) {
 	resultBytes, err := protojson.Marshal(result)
 	if err != nil {
@@ -264,8 +265,9 @@ func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 
 // RefreshPlanCheckRunIfStaleApprovalInputVersion refreshes a terminal stale-version plan check run to AVAILABLE.
 //
-// The version guard validates the materialized run row only. Callers pass the plan approval input
-// version they want to materialize after checking the current plan.
+// Approval recompute may observe an older terminal row while another request is already moving
+// the plan forward. Treat the caller's version as the version to materialize, and leave checking
+// which version is current to the caller that read the plan.
 func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Context, projectID string, planUID int64, approvalInputVersion int64) (bool, error) {
 	result := &storepb.PlanCheckRunResult{ApprovalInputVersion: approvalInputVersion}
 	resultBytes, err := protojson.Marshal(result)
