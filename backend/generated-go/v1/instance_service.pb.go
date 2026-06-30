@@ -356,6 +356,59 @@ func (DataSource_AuthenticationType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 0}
 }
 
+// CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+type DataSource_CloudSQLIPType int32
+
+const (
+	DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED DataSource_CloudSQLIPType = 0
+	DataSource_PUBLIC                        DataSource_CloudSQLIPType = 1
+	DataSource_PRIVATE                       DataSource_CloudSQLIPType = 2
+	DataSource_PSC                           DataSource_CloudSQLIPType = 3
+)
+
+// Enum value maps for DataSource_CloudSQLIPType.
+var (
+	DataSource_CloudSQLIPType_name = map[int32]string{
+		0: "CLOUD_SQL_IP_TYPE_UNSPECIFIED",
+		1: "PUBLIC",
+		2: "PRIVATE",
+		3: "PSC",
+	}
+	DataSource_CloudSQLIPType_value = map[string]int32{
+		"CLOUD_SQL_IP_TYPE_UNSPECIFIED": 0,
+		"PUBLIC":                        1,
+		"PRIVATE":                       2,
+		"PSC":                           3,
+	}
+)
+
+func (x DataSource_CloudSQLIPType) Enum() *DataSource_CloudSQLIPType {
+	p := new(DataSource_CloudSQLIPType)
+	*p = x
+	return p
+}
+
+func (x DataSource_CloudSQLIPType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DataSource_CloudSQLIPType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_instance_service_proto_enumTypes[6].Descriptor()
+}
+
+func (DataSource_CloudSQLIPType) Type() protoreflect.EnumType {
+	return &file_v1_instance_service_proto_enumTypes[6]
+}
+
+func (x DataSource_CloudSQLIPType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DataSource_CloudSQLIPType.Descriptor instead.
+func (DataSource_CloudSQLIPType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 1}
+}
+
 type DataSource_RedisType int32
 
 const (
@@ -392,11 +445,11 @@ func (x DataSource_RedisType) String() string {
 }
 
 func (DataSource_RedisType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[6].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[7].Descriptor()
 }
 
 func (DataSource_RedisType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[6]
+	return &file_v1_instance_service_proto_enumTypes[7]
 }
 
 func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
@@ -405,7 +458,7 @@ func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_RedisType.Descriptor instead.
 func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 2}
 }
 
 type GetInstanceRequest struct {
@@ -1893,6 +1946,9 @@ type DataSource struct {
 	AuthenticationPrivateKeyPassphrase string                        `protobuf:"bytes,40,opt,name=authentication_private_key_passphrase,json=authenticationPrivateKeyPassphrase,proto3" json:"authentication_private_key_passphrase,omitempty"`
 	ExternalSecret                     *DataSourceExternalSecret     `protobuf:"bytes,21,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
 	AuthenticationType                 DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.v1.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
+	// cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.
+	// CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.
+	CloudSqlIpType DataSource_CloudSQLIPType `protobuf:"varint,56,opt,name=cloud_sql_ip_type,json=cloudSqlIpType,proto3,enum=bytebase.v1.DataSource_CloudSQLIPType" json:"cloud_sql_ip_type,omitempty"`
 	// Types that are valid to be assigned to IamExtension:
 	//
 	//	*DataSource_AzureCredential_
@@ -2196,6 +2252,13 @@ func (x *DataSource) GetAuthenticationType() DataSource_AuthenticationType {
 		return x.AuthenticationType
 	}
 	return DataSource_AUTHENTICATION_UNSPECIFIED
+}
+
+func (x *DataSource) GetCloudSqlIpType() DataSource_CloudSQLIPType {
+	if x != nil {
+		return x.CloudSqlIpType
+	}
+	return DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
 }
 
 func (x *DataSource) GetIamExtension() isDataSource_IamExtension {
@@ -3052,7 +3115,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\x93\x17\n" +
+	"\vauth_option\"\xbd\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -3094,7 +3157,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x03\xe0A\x04R\x18authenticationPrivateKey\x12V\n" +
 	"%authentication_private_key_passphrase\x18( \x01(\tB\x03\xe0A\x04R\"authenticationPrivateKeyPassphrase\x12N\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2%.bytebase.v1.DataSourceExternalSecretR\x0eexternalSecret\x12[\n" +
-	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12T\n" +
+	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12Q\n" +
+	"\x11cloud_sql_ip_type\x188 \x01(\x0e2&.bytebase.v1.DataSource.CloudSQLIPTypeR\x0ecloudSqlIpType\x12T\n" +
 	"\x10azure_credential\x18\x17 \x01(\v2'.bytebase.v1.DataSource.AzureCredentialH\x00R\x0fazureCredential\x12N\n" +
 	"\x0eaws_credential\x18% \x01(\v2%.bytebase.v1.DataSource.AWSCredentialH\x00R\rawsCredential\x12N\n" +
 	"\x0egcp_credential\x18& \x01(\v2%.bytebase.v1.DataSource.GCPCredentialH\x00R\rgcpCredential\x128\n" +
@@ -3136,7 +3200,13 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\bPASSWORD\x10\x01\x12\x18\n" +
 	"\x14GOOGLE_CLOUD_SQL_IAM\x10\x02\x12\x0f\n" +
 	"\vAWS_RDS_IAM\x10\x03\x12\r\n" +
-	"\tAZURE_IAM\x10\x04\"R\n" +
+	"\tAZURE_IAM\x10\x04\"U\n" +
+	"\x0eCloudSQLIPType\x12!\n" +
+	"\x1dCLOUD_SQL_IP_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06PUBLIC\x10\x01\x12\v\n" +
+	"\aPRIVATE\x10\x02\x12\a\n" +
+	"\x03PSC\x10\x03\"R\n" +
 	"\tRedisType\x12\x1a\n" +
 	"\x16REDIS_TYPE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -3200,7 +3270,7 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 	return file_v1_instance_service_proto_rawDescData
 }
 
-var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_v1_instance_service_proto_goTypes = []any{
 	(DataSourceType)(0),                                        // 0: bytebase.v1.DataSourceType
@@ -3209,115 +3279,117 @@ var file_v1_instance_service_proto_goTypes = []any{
 	(DataSourceExternalSecret_TokenType)(0),                    // 3: bytebase.v1.DataSourceExternalSecret.TokenType
 	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 4: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
 	(DataSource_AuthenticationType)(0),                         // 5: bytebase.v1.DataSource.AuthenticationType
-	(DataSource_RedisType)(0),                                  // 6: bytebase.v1.DataSource.RedisType
-	(*GetInstanceRequest)(nil),                                 // 7: bytebase.v1.GetInstanceRequest
-	(*ListInstancesRequest)(nil),                               // 8: bytebase.v1.ListInstancesRequest
-	(*ListInstancesResponse)(nil),                              // 9: bytebase.v1.ListInstancesResponse
-	(*CreateInstanceRequest)(nil),                              // 10: bytebase.v1.CreateInstanceRequest
-	(*UpdateInstanceRequest)(nil),                              // 11: bytebase.v1.UpdateInstanceRequest
-	(*DeleteInstanceRequest)(nil),                              // 12: bytebase.v1.DeleteInstanceRequest
-	(*UndeleteInstanceRequest)(nil),                            // 13: bytebase.v1.UndeleteInstanceRequest
-	(*SyncInstanceRequest)(nil),                                // 14: bytebase.v1.SyncInstanceRequest
-	(*ListInstanceDatabaseRequest)(nil),                        // 15: bytebase.v1.ListInstanceDatabaseRequest
-	(*ListInstanceDatabaseResponse)(nil),                       // 16: bytebase.v1.ListInstanceDatabaseResponse
-	(*SyncInstanceResponse)(nil),                               // 17: bytebase.v1.SyncInstanceResponse
-	(*BatchSyncInstancesRequest)(nil),                          // 18: bytebase.v1.BatchSyncInstancesRequest
-	(*BatchSyncInstancesResponse)(nil),                         // 19: bytebase.v1.BatchSyncInstancesResponse
-	(*BatchUpdateInstancesRequest)(nil),                        // 20: bytebase.v1.BatchUpdateInstancesRequest
-	(*BatchUpdateInstancesResponse)(nil),                       // 21: bytebase.v1.BatchUpdateInstancesResponse
-	(*AddDataSourceRequest)(nil),                               // 22: bytebase.v1.AddDataSourceRequest
-	(*RemoveDataSourceRequest)(nil),                            // 23: bytebase.v1.RemoveDataSourceRequest
-	(*UpdateDataSourceRequest)(nil),                            // 24: bytebase.v1.UpdateDataSourceRequest
-	(*Instance)(nil),                                           // 25: bytebase.v1.Instance
-	(*DataSourceExternalSecret)(nil),                           // 26: bytebase.v1.DataSourceExternalSecret
-	(*DataSource)(nil),                                         // 27: bytebase.v1.DataSource
-	(*InstanceResource)(nil),                                   // 28: bytebase.v1.InstanceResource
-	(*SASLConfig)(nil),                                         // 29: bytebase.v1.SASLConfig
-	(*KerberosConfig)(nil),                                     // 30: bytebase.v1.KerberosConfig
-	nil,                                                        // 31: bytebase.v1.Instance.LabelsEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 32: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	(*DataSource_AzureCredential)(nil),                         // 33: bytebase.v1.DataSource.AzureCredential
-	(*DataSource_AWSCredential)(nil),                           // 34: bytebase.v1.DataSource.AWSCredential
-	(*DataSource_GCPCredential)(nil),                           // 35: bytebase.v1.DataSource.GCPCredential
-	(*DataSource_Address)(nil),                                 // 36: bytebase.v1.DataSource.Address
-	nil,                                                        // 37: bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	(*fieldmaskpb.FieldMask)(nil),                              // 38: google.protobuf.FieldMask
-	(State)(0),                                                 // 39: bytebase.v1.State
-	(Engine)(0),                                                // 40: bytebase.v1.Engine
-	(*InstanceRole)(nil),                                       // 41: bytebase.v1.InstanceRole
-	(*durationpb.Duration)(nil),                                // 42: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 43: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                                      // 44: google.protobuf.Empty
+	(DataSource_CloudSQLIPType)(0),                             // 6: bytebase.v1.DataSource.CloudSQLIPType
+	(DataSource_RedisType)(0),                                  // 7: bytebase.v1.DataSource.RedisType
+	(*GetInstanceRequest)(nil),                                 // 8: bytebase.v1.GetInstanceRequest
+	(*ListInstancesRequest)(nil),                               // 9: bytebase.v1.ListInstancesRequest
+	(*ListInstancesResponse)(nil),                              // 10: bytebase.v1.ListInstancesResponse
+	(*CreateInstanceRequest)(nil),                              // 11: bytebase.v1.CreateInstanceRequest
+	(*UpdateInstanceRequest)(nil),                              // 12: bytebase.v1.UpdateInstanceRequest
+	(*DeleteInstanceRequest)(nil),                              // 13: bytebase.v1.DeleteInstanceRequest
+	(*UndeleteInstanceRequest)(nil),                            // 14: bytebase.v1.UndeleteInstanceRequest
+	(*SyncInstanceRequest)(nil),                                // 15: bytebase.v1.SyncInstanceRequest
+	(*ListInstanceDatabaseRequest)(nil),                        // 16: bytebase.v1.ListInstanceDatabaseRequest
+	(*ListInstanceDatabaseResponse)(nil),                       // 17: bytebase.v1.ListInstanceDatabaseResponse
+	(*SyncInstanceResponse)(nil),                               // 18: bytebase.v1.SyncInstanceResponse
+	(*BatchSyncInstancesRequest)(nil),                          // 19: bytebase.v1.BatchSyncInstancesRequest
+	(*BatchSyncInstancesResponse)(nil),                         // 20: bytebase.v1.BatchSyncInstancesResponse
+	(*BatchUpdateInstancesRequest)(nil),                        // 21: bytebase.v1.BatchUpdateInstancesRequest
+	(*BatchUpdateInstancesResponse)(nil),                       // 22: bytebase.v1.BatchUpdateInstancesResponse
+	(*AddDataSourceRequest)(nil),                               // 23: bytebase.v1.AddDataSourceRequest
+	(*RemoveDataSourceRequest)(nil),                            // 24: bytebase.v1.RemoveDataSourceRequest
+	(*UpdateDataSourceRequest)(nil),                            // 25: bytebase.v1.UpdateDataSourceRequest
+	(*Instance)(nil),                                           // 26: bytebase.v1.Instance
+	(*DataSourceExternalSecret)(nil),                           // 27: bytebase.v1.DataSourceExternalSecret
+	(*DataSource)(nil),                                         // 28: bytebase.v1.DataSource
+	(*InstanceResource)(nil),                                   // 29: bytebase.v1.InstanceResource
+	(*SASLConfig)(nil),                                         // 30: bytebase.v1.SASLConfig
+	(*KerberosConfig)(nil),                                     // 31: bytebase.v1.KerberosConfig
+	nil,                                                        // 32: bytebase.v1.Instance.LabelsEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 33: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	(*DataSource_AzureCredential)(nil),                         // 34: bytebase.v1.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 35: bytebase.v1.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 36: bytebase.v1.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 37: bytebase.v1.DataSource.Address
+	nil,                                                        // 38: bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	(*fieldmaskpb.FieldMask)(nil),                              // 39: google.protobuf.FieldMask
+	(State)(0),                                                 // 40: bytebase.v1.State
+	(Engine)(0),                                                // 41: bytebase.v1.Engine
+	(*InstanceRole)(nil),                                       // 42: bytebase.v1.InstanceRole
+	(*durationpb.Duration)(nil),                                // 43: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 44: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                                      // 45: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
-	25, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	25, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	25, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	38, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	25, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
-	14, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
-	11, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
-	25, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	27, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	27, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	27, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	38, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	39, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	40, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	27, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	41, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
-	42, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
-	43, // 17: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
-	31, // 18: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
+	26, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	26, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	26, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	39, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	26, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
+	15, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
+	12, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
+	26, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	28, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	28, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	28, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	39, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	40, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	41, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	28, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	42, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
+	43, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
+	44, // 17: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	32, // 18: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
 	1,  // 19: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
 	2,  // 20: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
-	32, // 21: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	33, // 21: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
 	3,  // 22: bytebase.v1.DataSourceExternalSecret.token_type:type_name -> bytebase.v1.DataSourceExternalSecret.TokenType
 	0,  // 23: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	26, // 24: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
+	27, // 24: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
 	5,  // 25: bytebase.v1.DataSource.authentication_type:type_name -> bytebase.v1.DataSource.AuthenticationType
-	33, // 26: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
-	34, // 27: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
-	35, // 28: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
-	29, // 29: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
-	36, // 30: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
-	6,  // 31: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
-	37, // 32: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	40, // 33: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
-	27, // 34: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
-	30, // 35: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
-	4,  // 36: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	7,  // 37: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	8,  // 38: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	10, // 39: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	11, // 40: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	12, // 41: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	13, // 42: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	14, // 43: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	15, // 44: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
-	18, // 45: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
-	20, // 46: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
-	22, // 47: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	23, // 48: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	24, // 49: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	25, // 50: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	9,  // 51: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	25, // 52: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	25, // 53: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	44, // 54: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	25, // 55: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	17, // 56: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	16, // 57: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
-	19, // 58: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
-	21, // 59: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
-	25, // 60: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	25, // 61: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	25, // 62: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	50, // [50:63] is the sub-list for method output_type
-	37, // [37:50] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	6,  // 26: bytebase.v1.DataSource.cloud_sql_ip_type:type_name -> bytebase.v1.DataSource.CloudSQLIPType
+	34, // 27: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
+	35, // 28: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
+	36, // 29: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
+	30, // 30: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
+	37, // 31: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
+	7,  // 32: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
+	38, // 33: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	41, // 34: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	28, // 35: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	31, // 36: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
+	4,  // 37: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	8,  // 38: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	9,  // 39: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	11, // 40: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	12, // 41: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	13, // 42: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	14, // 43: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	15, // 44: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	16, // 45: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
+	19, // 46: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
+	21, // 47: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
+	23, // 48: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	24, // 49: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	25, // 50: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	26, // 51: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	10, // 52: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	26, // 53: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	26, // 54: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	45, // 55: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	26, // 56: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	18, // 57: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	17, // 58: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
+	20, // 59: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
+	22, // 60: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
+	26, // 61: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	26, // 62: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	26, // 63: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	51, // [51:64] is the sub-list for method output_type
+	38, // [38:51] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -3348,7 +3420,7 @@ func file_v1_instance_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_instance_service_proto_rawDesc), len(file_v1_instance_service_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,

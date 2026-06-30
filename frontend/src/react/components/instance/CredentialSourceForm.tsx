@@ -8,12 +8,20 @@ import {
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
   DataSource_AzureCredentialSchema,
+  DataSource_CloudSQLIPType,
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
@@ -272,6 +280,79 @@ function CredentialSourceForm({
           authenticationType={dataSource.authenticationType}
         />
       )}
+
+      {dataSource.authenticationType ===
+        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
+        <CloudSQLIPTypeField
+          value={dataSource.cloudSqlIpType}
+          allowEdit={allowEdit}
+          onChange={(cloudSqlIpType) => onDataSourceChange({ cloudSqlIpType })}
+        />
+      )}
+    </div>
+  );
+}
+
+function CloudSQLIPTypeField({
+  value,
+  allowEdit,
+  onChange,
+}: {
+  value: DataSource_CloudSQLIPType;
+  allowEdit: boolean;
+  onChange: (value: DataSource_CloudSQLIPType) => void;
+}) {
+  const { t } = useTranslation();
+  const options = [
+    {
+      value: DataSource_CloudSQLIPType.PUBLIC,
+      label: t("instance.cloud-sql-ip-type.public"),
+    },
+    {
+      value: DataSource_CloudSQLIPType.PRIVATE,
+      label: t("instance.cloud-sql-ip-type.private"),
+    },
+    {
+      value: DataSource_CloudSQLIPType.PSC,
+      label: t("instance.cloud-sql-ip-type.psc"),
+    },
+  ];
+  // Treat unspecified as public for display, matching the backend default.
+  const current =
+    value === DataSource_CloudSQLIPType.CLOUD_SQL_IP_TYPE_UNSPECIFIED
+      ? DataSource_CloudSQLIPType.PUBLIC
+      : value;
+
+  return (
+    <div className="mt-4 sm:col-span-3 sm:col-start-1">
+      <label className="textlabel block">
+        {t("instance.cloud-sql-ip-type.label")}
+      </label>
+      <Select
+        value={String(current)}
+        disabled={!allowEdit}
+        onValueChange={(val) => {
+          if (val != null) onChange(Number(val) as DataSource_CloudSQLIPType);
+        }}
+      >
+        <SelectTrigger className="mt-2 w-full">
+          <SelectValue>
+            {(v: string | null) =>
+              options.find((o) => String(o.value) === v)?.label ?? null
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={String(o.value)}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="textinfolabel mt-1">
+        {t("instance.cloud-sql-ip-type.description")}
+      </p>
     </div>
   );
 }

@@ -925,6 +925,13 @@
     "archive-instance-instance-name": "归档实例'{{0}}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "authentication-database": "认证数据库",
+    "cloud-sql-ip-type": {
+      "description": "选择通过哪个 Cloud SQL IP 进行连接。当实例没有公共 IP 且 Bytebase 运行在同一 VPC 内时，请使用私有 IP 或 PSC。",
+      "label": "Cloud SQL IP 类型",
+      "private": "私有 IP",
+      "psc": "Private Service Connect (PSC)",
+      "public": "公共 IP"
+    },
     "connection-info": "连接信息",
     "connection-options": "连接选项",
     "create-gcp-credentials": "创建凭据的方法见",

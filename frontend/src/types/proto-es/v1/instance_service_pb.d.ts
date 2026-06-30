@@ -1208,6 +1208,14 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   authenticationType: DataSource_AuthenticationType;
 
   /**
+   * cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.
+   * CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.
+   *
+   * @generated from field: bytebase.v1.DataSource.CloudSQLIPType cloud_sql_ip_type = 56;
+   */
+  cloudSqlIpType: DataSource_CloudSQLIPType;
+
+  /**
    * @generated from oneof bytebase.v1.DataSource.iam_extension
    */
   iamExtension: {
@@ -1448,6 +1456,38 @@ export enum DataSource_AuthenticationType {
  * Describes the enum bytebase.v1.DataSource.AuthenticationType.
  */
 export declare const DataSource_AuthenticationTypeSchema: GenEnum<DataSource_AuthenticationType>;
+
+/**
+ * CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+ *
+ * @generated from enum bytebase.v1.DataSource.CloudSQLIPType
+ */
+export enum DataSource_CloudSQLIPType {
+  /**
+   * @generated from enum value: CLOUD_SQL_IP_TYPE_UNSPECIFIED = 0;
+   */
+  CLOUD_SQL_IP_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PUBLIC = 1;
+   */
+  PUBLIC = 1,
+
+  /**
+   * @generated from enum value: PRIVATE = 2;
+   */
+  PRIVATE = 2,
+
+  /**
+   * @generated from enum value: PSC = 3;
+   */
+  PSC = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.DataSource.CloudSQLIPType.
+ */
+export declare const DataSource_CloudSQLIPTypeSchema: GenEnum<DataSource_CloudSQLIPType>;
 
 /**
  * @generated from enum bytebase.v1.DataSource.RedisType

@@ -142,6 +142,7 @@
     - [SASLConfig](#bytebase-store-SASLConfig)
   
     - [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType)
+    - [DataSource.CloudSQLIPType](#bytebase-store-DataSource-CloudSQLIPType)
     - [DataSource.RedisType](#bytebase-store-DataSource-RedisType)
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
@@ -2379,6 +2380,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_authentication_private_key_passphrase | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
+| cloud_sql_ip_type | [DataSource.CloudSQLIPType](#bytebase-store-DataSource-CloudSQLIPType) |  | cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections. CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. |
 | azure_credential | [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential) |  |  |
 | aws_credential | [DataSource.AWSCredential](#bytebase-store-DataSource-AWSCredential) |  |  |
 | gcp_credential | [DataSource.GCPCredential](#bytebase-store-DataSource-GCPCredential) |  |  |
@@ -2646,6 +2648,20 @@ InstanceRole is the API message for instance role.
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
 | AZURE_IAM | 4 |  |
+
+
+
+<a name="bytebase-store-DataSource-CloudSQLIPType"></a>
+
+### DataSource.CloudSQLIPType
+CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CLOUD_SQL_IP_TYPE_UNSPECIFIED | 0 |  |
+| PUBLIC | 1 |  |
+| PRIVATE | 2 |  |
+| PSC | 3 |  |
 
 
 

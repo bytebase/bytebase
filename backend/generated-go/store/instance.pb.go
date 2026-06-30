@@ -127,6 +127,59 @@ func (DataSource_AuthenticationType) EnumDescriptor() ([]byte, []int) {
 	return file_store_instance_proto_rawDescGZIP(), []int{2, 0}
 }
 
+// CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+type DataSource_CloudSQLIPType int32
+
+const (
+	DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED DataSource_CloudSQLIPType = 0
+	DataSource_PUBLIC                        DataSource_CloudSQLIPType = 1
+	DataSource_PRIVATE                       DataSource_CloudSQLIPType = 2
+	DataSource_PSC                           DataSource_CloudSQLIPType = 3
+)
+
+// Enum value maps for DataSource_CloudSQLIPType.
+var (
+	DataSource_CloudSQLIPType_name = map[int32]string{
+		0: "CLOUD_SQL_IP_TYPE_UNSPECIFIED",
+		1: "PUBLIC",
+		2: "PRIVATE",
+		3: "PSC",
+	}
+	DataSource_CloudSQLIPType_value = map[string]int32{
+		"CLOUD_SQL_IP_TYPE_UNSPECIFIED": 0,
+		"PUBLIC":                        1,
+		"PRIVATE":                       2,
+		"PSC":                           3,
+	}
+)
+
+func (x DataSource_CloudSQLIPType) Enum() *DataSource_CloudSQLIPType {
+	p := new(DataSource_CloudSQLIPType)
+	*p = x
+	return p
+}
+
+func (x DataSource_CloudSQLIPType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DataSource_CloudSQLIPType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_instance_proto_enumTypes[2].Descriptor()
+}
+
+func (DataSource_CloudSQLIPType) Type() protoreflect.EnumType {
+	return &file_store_instance_proto_enumTypes[2]
+}
+
+func (x DataSource_CloudSQLIPType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DataSource_CloudSQLIPType.Descriptor instead.
+func (DataSource_CloudSQLIPType) EnumDescriptor() ([]byte, []int) {
+	return file_store_instance_proto_rawDescGZIP(), []int{2, 1}
+}
+
 type DataSource_RedisType int32
 
 const (
@@ -163,11 +216,11 @@ func (x DataSource_RedisType) String() string {
 }
 
 func (DataSource_RedisType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_instance_proto_enumTypes[2].Descriptor()
+	return file_store_instance_proto_enumTypes[3].Descriptor()
 }
 
 func (DataSource_RedisType) Type() protoreflect.EnumType {
-	return &file_store_instance_proto_enumTypes[2]
+	return &file_store_instance_proto_enumTypes[3]
 }
 
 func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
@@ -176,7 +229,7 @@ func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_RedisType.Descriptor instead.
 func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
-	return file_store_instance_proto_rawDescGZIP(), []int{2, 1}
+	return file_store_instance_proto_rawDescGZIP(), []int{2, 2}
 }
 
 type DataSourceExternalSecret_SecretType int32
@@ -222,11 +275,11 @@ func (x DataSourceExternalSecret_SecretType) String() string {
 }
 
 func (DataSourceExternalSecret_SecretType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_instance_proto_enumTypes[3].Descriptor()
+	return file_store_instance_proto_enumTypes[4].Descriptor()
 }
 
 func (DataSourceExternalSecret_SecretType) Type() protoreflect.EnumType {
-	return &file_store_instance_proto_enumTypes[3]
+	return &file_store_instance_proto_enumTypes[4]
 }
 
 func (x DataSourceExternalSecret_SecretType) Number() protoreflect.EnumNumber {
@@ -273,11 +326,11 @@ func (x DataSourceExternalSecret_AuthType) String() string {
 }
 
 func (DataSourceExternalSecret_AuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_instance_proto_enumTypes[4].Descriptor()
+	return file_store_instance_proto_enumTypes[5].Descriptor()
 }
 
 func (DataSourceExternalSecret_AuthType) Type() protoreflect.EnumType {
-	return &file_store_instance_proto_enumTypes[4]
+	return &file_store_instance_proto_enumTypes[5]
 }
 
 func (x DataSourceExternalSecret_AuthType) Number() protoreflect.EnumNumber {
@@ -330,11 +383,11 @@ func (x DataSourceExternalSecret_TokenType) String() string {
 }
 
 func (DataSourceExternalSecret_TokenType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_instance_proto_enumTypes[5].Descriptor()
+	return file_store_instance_proto_enumTypes[6].Descriptor()
 }
 
 func (DataSourceExternalSecret_TokenType) Type() protoreflect.EnumType {
-	return &file_store_instance_proto_enumTypes[5]
+	return &file_store_instance_proto_enumTypes[6]
 }
 
 func (x DataSourceExternalSecret_TokenType) Number() protoreflect.EnumNumber {
@@ -379,11 +432,11 @@ func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) String() string {
 }
 
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_instance_proto_enumTypes[6].Descriptor()
+	return file_store_instance_proto_enumTypes[7].Descriptor()
 }
 
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Type() protoreflect.EnumType {
-	return &file_store_instance_proto_enumTypes[6]
+	return &file_store_instance_proto_enumTypes[7]
 }
 
 func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Number() protoreflect.EnumNumber {
@@ -672,6 +725,9 @@ type DataSource struct {
 	ObfuscatedAuthenticationPrivateKeyPassphrase string                        `protobuf:"bytes,49,opt,name=obfuscated_authentication_private_key_passphrase,json=obfuscatedAuthenticationPrivateKeyPassphrase,proto3" json:"obfuscated_authentication_private_key_passphrase,omitempty"`
 	ExternalSecret                               *DataSourceExternalSecret     `protobuf:"bytes,21,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
 	AuthenticationType                           DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
+	// cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.
+	// CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.
+	CloudSqlIpType DataSource_CloudSQLIPType `protobuf:"varint,56,opt,name=cloud_sql_ip_type,json=cloudSqlIpType,proto3,enum=bytebase.store.DataSource_CloudSQLIPType" json:"cloud_sql_ip_type,omitempty"`
 	// Types that are valid to be assigned to IamExtension:
 	//
 	//	*DataSource_AzureCredential_
@@ -1011,6 +1067,13 @@ func (x *DataSource) GetAuthenticationType() DataSource_AuthenticationType {
 		return x.AuthenticationType
 	}
 	return DataSource_AUTHENTICATION_UNSPECIFIED
+}
+
+func (x *DataSource) GetCloudSqlIpType() DataSource_CloudSQLIPType {
+	if x != nil {
+		return x.CloudSqlIpType
+	}
+	return DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
 }
 
 func (x *DataSource) GetIamExtension() isDataSource_IamExtension {
@@ -1896,7 +1959,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xc5\x1c\n" +
+	"_attribute\"\xf2\x1d\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1941,7 +2004,8 @@ const file_store_instance_proto_rawDesc = "" +
 	"%authentication_private_key_passphrase\x180 \x01(\tR\"authenticationPrivateKeyPassphrase\x12f\n" +
 	"0obfuscated_authentication_private_key_passphrase\x181 \x01(\tR,obfuscatedAuthenticationPrivateKeyPassphrase\x12Q\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2(.bytebase.store.DataSourceExternalSecretR\x0eexternalSecret\x12^\n" +
-	"\x13authentication_type\x18\x16 \x01(\x0e2-.bytebase.store.DataSource.AuthenticationTypeR\x12authenticationType\x12W\n" +
+	"\x13authentication_type\x18\x16 \x01(\x0e2-.bytebase.store.DataSource.AuthenticationTypeR\x12authenticationType\x12T\n" +
+	"\x11cloud_sql_ip_type\x188 \x01(\x0e2).bytebase.store.DataSource.CloudSQLIPTypeR\x0ecloudSqlIpType\x12W\n" +
 	"\x10azure_credential\x18\x17 \x01(\v2*.bytebase.store.DataSource.AzureCredentialH\x00R\x0fazureCredential\x12Q\n" +
 	"\x0eaws_credential\x18- \x01(\v2(.bytebase.store.DataSource.AWSCredentialH\x00R\rawsCredential\x12Q\n" +
 	"\x0egcp_credential\x18. \x01(\v2(.bytebase.store.DataSource.GCPCredentialH\x00R\rgcpCredential\x12;\n" +
@@ -1989,7 +2053,13 @@ const file_store_instance_proto_rawDesc = "" +
 	"\bPASSWORD\x10\x01\x12\x18\n" +
 	"\x14GOOGLE_CLOUD_SQL_IAM\x10\x02\x12\x0f\n" +
 	"\vAWS_RDS_IAM\x10\x03\x12\r\n" +
-	"\tAZURE_IAM\x10\x04\"R\n" +
+	"\tAZURE_IAM\x10\x04\"U\n" +
+	"\x0eCloudSQLIPType\x12!\n" +
+	"\x1dCLOUD_SQL_IP_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06PUBLIC\x10\x01\x12\v\n" +
+	"\aPRIVATE\x10\x02\x12\a\n" +
+	"\x03PSC\x10\x03\"R\n" +
 	"\tRedisType\x12\x1a\n" +
 	"\x16REDIS_TYPE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -2079,61 +2149,63 @@ func file_store_instance_proto_rawDescGZIP() []byte {
 	return file_store_instance_proto_rawDescData
 }
 
-var file_store_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_store_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_store_instance_proto_goTypes = []any{
 	(DataSourceType)(0),                                        // 0: bytebase.store.DataSourceType
 	(DataSource_AuthenticationType)(0),                         // 1: bytebase.store.DataSource.AuthenticationType
-	(DataSource_RedisType)(0),                                  // 2: bytebase.store.DataSource.RedisType
-	(DataSourceExternalSecret_SecretType)(0),                   // 3: bytebase.store.DataSourceExternalSecret.SecretType
-	(DataSourceExternalSecret_AuthType)(0),                     // 4: bytebase.store.DataSourceExternalSecret.AuthType
-	(DataSourceExternalSecret_TokenType)(0),                    // 5: bytebase.store.DataSourceExternalSecret.TokenType
-	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 6: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	(*Instance)(nil),                                           // 7: bytebase.store.Instance
-	(*InstanceRole)(nil),                                       // 8: bytebase.store.InstanceRole
-	(*DataSource)(nil),                                         // 9: bytebase.store.DataSource
-	(*SASLConfig)(nil),                                         // 10: bytebase.store.SASLConfig
-	(*KerberosConfig)(nil),                                     // 11: bytebase.store.KerberosConfig
-	(*DataSourceExternalSecret)(nil),                           // 12: bytebase.store.DataSourceExternalSecret
-	nil,                                                        // 13: bytebase.store.Instance.LabelsEntry
-	(*DataSource_AzureCredential)(nil),                         // 14: bytebase.store.DataSource.AzureCredential
-	(*DataSource_AWSCredential)(nil),                           // 15: bytebase.store.DataSource.AWSCredential
-	(*DataSource_GCPCredential)(nil),                           // 16: bytebase.store.DataSource.GCPCredential
-	(*DataSource_Address)(nil),                                 // 17: bytebase.store.DataSource.Address
-	nil,                                                        // 18: bytebase.store.DataSource.ExtraConnectionParametersEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 19: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	(Engine)(0),                                                // 20: bytebase.store.Engine
-	(*durationpb.Duration)(nil),                                // 21: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 22: google.protobuf.Timestamp
+	(DataSource_CloudSQLIPType)(0),                             // 2: bytebase.store.DataSource.CloudSQLIPType
+	(DataSource_RedisType)(0),                                  // 3: bytebase.store.DataSource.RedisType
+	(DataSourceExternalSecret_SecretType)(0),                   // 4: bytebase.store.DataSourceExternalSecret.SecretType
+	(DataSourceExternalSecret_AuthType)(0),                     // 5: bytebase.store.DataSourceExternalSecret.AuthType
+	(DataSourceExternalSecret_TokenType)(0),                    // 6: bytebase.store.DataSourceExternalSecret.TokenType
+	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 7: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	(*Instance)(nil),                                           // 8: bytebase.store.Instance
+	(*InstanceRole)(nil),                                       // 9: bytebase.store.InstanceRole
+	(*DataSource)(nil),                                         // 10: bytebase.store.DataSource
+	(*SASLConfig)(nil),                                         // 11: bytebase.store.SASLConfig
+	(*KerberosConfig)(nil),                                     // 12: bytebase.store.KerberosConfig
+	(*DataSourceExternalSecret)(nil),                           // 13: bytebase.store.DataSourceExternalSecret
+	nil,                                                        // 14: bytebase.store.Instance.LabelsEntry
+	(*DataSource_AzureCredential)(nil),                         // 15: bytebase.store.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 16: bytebase.store.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 17: bytebase.store.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 18: bytebase.store.DataSource.Address
+	nil,                                                        // 19: bytebase.store.DataSource.ExtraConnectionParametersEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 20: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	(Engine)(0),                                                // 21: bytebase.store.Engine
+	(*durationpb.Duration)(nil),                                // 22: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 23: google.protobuf.Timestamp
 }
 var file_store_instance_proto_depIdxs = []int32{
-	20, // 0: bytebase.store.Instance.engine:type_name -> bytebase.store.Engine
-	9,  // 1: bytebase.store.Instance.data_sources:type_name -> bytebase.store.DataSource
-	21, // 2: bytebase.store.Instance.sync_interval:type_name -> google.protobuf.Duration
-	22, // 3: bytebase.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
-	8,  // 4: bytebase.store.Instance.roles:type_name -> bytebase.store.InstanceRole
-	13, // 5: bytebase.store.Instance.labels:type_name -> bytebase.store.Instance.LabelsEntry
+	21, // 0: bytebase.store.Instance.engine:type_name -> bytebase.store.Engine
+	10, // 1: bytebase.store.Instance.data_sources:type_name -> bytebase.store.DataSource
+	22, // 2: bytebase.store.Instance.sync_interval:type_name -> google.protobuf.Duration
+	23, // 3: bytebase.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	9,  // 4: bytebase.store.Instance.roles:type_name -> bytebase.store.InstanceRole
+	14, // 5: bytebase.store.Instance.labels:type_name -> bytebase.store.Instance.LabelsEntry
 	0,  // 6: bytebase.store.DataSource.type:type_name -> bytebase.store.DataSourceType
-	12, // 7: bytebase.store.DataSource.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
+	13, // 7: bytebase.store.DataSource.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
 	1,  // 8: bytebase.store.DataSource.authentication_type:type_name -> bytebase.store.DataSource.AuthenticationType
-	14, // 9: bytebase.store.DataSource.azure_credential:type_name -> bytebase.store.DataSource.AzureCredential
-	15, // 10: bytebase.store.DataSource.aws_credential:type_name -> bytebase.store.DataSource.AWSCredential
-	16, // 11: bytebase.store.DataSource.gcp_credential:type_name -> bytebase.store.DataSource.GCPCredential
-	10, // 12: bytebase.store.DataSource.sasl_config:type_name -> bytebase.store.SASLConfig
-	17, // 13: bytebase.store.DataSource.additional_addresses:type_name -> bytebase.store.DataSource.Address
-	2,  // 14: bytebase.store.DataSource.redis_type:type_name -> bytebase.store.DataSource.RedisType
-	18, // 15: bytebase.store.DataSource.extra_connection_parameters:type_name -> bytebase.store.DataSource.ExtraConnectionParametersEntry
-	11, // 16: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
-	3,  // 17: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
-	4,  // 18: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
-	19, // 19: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	5,  // 20: bytebase.store.DataSourceExternalSecret.token_type:type_name -> bytebase.store.DataSourceExternalSecret.TokenType
-	6,  // 21: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	2,  // 9: bytebase.store.DataSource.cloud_sql_ip_type:type_name -> bytebase.store.DataSource.CloudSQLIPType
+	15, // 10: bytebase.store.DataSource.azure_credential:type_name -> bytebase.store.DataSource.AzureCredential
+	16, // 11: bytebase.store.DataSource.aws_credential:type_name -> bytebase.store.DataSource.AWSCredential
+	17, // 12: bytebase.store.DataSource.gcp_credential:type_name -> bytebase.store.DataSource.GCPCredential
+	11, // 13: bytebase.store.DataSource.sasl_config:type_name -> bytebase.store.SASLConfig
+	18, // 14: bytebase.store.DataSource.additional_addresses:type_name -> bytebase.store.DataSource.Address
+	3,  // 15: bytebase.store.DataSource.redis_type:type_name -> bytebase.store.DataSource.RedisType
+	19, // 16: bytebase.store.DataSource.extra_connection_parameters:type_name -> bytebase.store.DataSource.ExtraConnectionParametersEntry
+	12, // 17: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
+	4,  // 18: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
+	5,  // 19: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
+	20, // 20: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	6,  // 21: bytebase.store.DataSourceExternalSecret.token_type:type_name -> bytebase.store.DataSourceExternalSecret.TokenType
+	7,  // 22: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_store_instance_proto_init() }
@@ -2160,7 +2232,7 @@ func file_store_instance_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_instance_proto_rawDesc), len(file_store_instance_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,

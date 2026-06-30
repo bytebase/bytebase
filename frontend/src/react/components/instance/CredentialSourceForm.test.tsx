@@ -87,4 +87,32 @@ describe("CredentialSourceForm", () => {
 
     unmount();
   });
+
+  test("renders Cloud SQL IP type selector only for Google Cloud SQL IAM", () => {
+    const gcp = render(
+      <CredentialSourceForm
+        dataSource={makeDataSource(
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        )}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+    expect(gcp.container.textContent).toContain(
+      "instance.cloud-sql-ip-type.label"
+    );
+    gcp.unmount();
+
+    const password = render(
+      <CredentialSourceForm
+        dataSource={makeDataSource(DataSource_AuthenticationType.PASSWORD)}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+    expect(password.container.textContent).not.toContain(
+      "instance.cloud-sql-ip-type.label"
+    );
+    password.unmount();
+  });
 });

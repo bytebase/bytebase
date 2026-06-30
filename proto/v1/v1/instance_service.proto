@@ -648,6 +648,17 @@ message DataSource {
   }
   AuthenticationType authentication_type = 22;
 
+  // CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+  enum CloudSQLIPType {
+    CLOUD_SQL_IP_TYPE_UNSPECIFIED = 0;
+    PUBLIC = 1;
+    PRIVATE = 2;
+    PSC = 3;
+  }
+  // cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.
+  // CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.
+  CloudSQLIPType cloud_sql_ip_type = 56;
+
   message AzureCredential {
     string tenant_id = 1;
     string client_id = 2;
