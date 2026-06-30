@@ -4528,7 +4528,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | id | [string](#string) |  |  |
 | name | [string](#string) |  |  |
 | monaco_base | [string](#string) |  |  |
-| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry) | repeated |  |
+| tokens | [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry) | repeated | CSS token values as #rrggbb hex colors. |
 
 
 
@@ -4694,8 +4694,8 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| background | [string](#string) |  | &#34;r g b&#34; |
-| text | [string](#string) |  | &#34;r g b&#34; |
+| background | [string](#string) |  | #rrggbb |
+| text | [string](#string) |  | #rrggbb |
 
 
 

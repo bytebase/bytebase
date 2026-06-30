@@ -228,7 +228,6 @@ export const SQLEditorSection = forwardRef<
       return;
     }
     setSelectedThemeId(value);
-    setCustomDraft(null);
   };
 
   const handleAnchorsChange = (nextAnchors: ThemeAnchors) => {

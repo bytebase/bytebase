@@ -211,7 +211,7 @@ describe("BannersWrapper", () => {
     mocks.usePlanFeature.mockReturnValue(true);
     mocks.useWorkspaceProfile.mockReturnValue({
       announcement: {
-        theme: { background: "0 83 226", text: "255 255 255" },
+        theme: { background: "#0053e2", text: "#ffffff" },
         link: "example.com/path",
         text: "Maintenance window",
       },
@@ -242,7 +242,7 @@ describe("BannersWrapper", () => {
     const banner = Array.from(container.querySelectorAll("div")).find((el) =>
       el.textContent?.includes("Untheméd banner")
     );
-    // info preset background: "37 99 235", white text.
+    // info preset background: "#2563eb", white text.
     expect(banner?.style.backgroundColor).toBe("rgb(37, 99, 235)");
     expect(banner?.style.color).toBe("rgb(255, 255, 255)");
     unmount();

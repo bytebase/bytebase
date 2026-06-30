@@ -4,8 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -264,6 +262,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			case "value.workspace_profile.announcement":
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				if payload.Announcement != nil {
+					if err := validateAnnouncementTheme(payload.Announcement.Theme); err != nil {
+						return nil, err
+					}
 				}
 				oldSetting.Announcement = payload.Announcement
 			case "value.workspace_profile.maximum_request_expiration":
@@ -822,6 +825,7 @@ func (s *SettingService) checkSettingPermission(ctx context.Context, req connect
 }
 
 var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
+var hexColorRegexp = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 var disallowedDomains = map[string]bool{
 	"gmail.com":      true,
 	"googlemail.com": true,
@@ -883,7 +887,7 @@ func validateDomains(domains []string) error {
 // validateSQLEditorCustomTheme checks the SHAPE of a custom theme, not the
 // frontend's token vocabulary. The `--color-*` token keys are a frontend/CSS
 // concern owned by SQL_EDITOR_THEME_TOKENS; the server only ensures the stored
-// value isn't garbage (non-empty tokens, each an "r g b" triple). The frontend
+// value isn't garbage (non-empty tokens, each a #rrggbb hex color). The frontend
 // derives the full token set and falls back to a built-in if one is missing, so
 // the backend stays theme-catalog-agnostic.
 func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
@@ -906,25 +910,28 @@ func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme.tokens is required"))
 	}
 	for k, v := range t.Tokens {
-		if !isRGBTriple(v) {
+		if !isHexColor(v) {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme token %s invalid: %q", k, v))
 		}
 	}
 	return nil
 }
 
-func isRGBTriple(s string) bool {
-	parts := strings.Fields(s)
-	if len(parts) != 3 {
-		return false
+func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme) error {
+	if t == nil {
+		return nil
 	}
-	for _, p := range parts {
-		n, err := strconv.Atoi(p)
-		if err != nil || n < 0 || n > 255 {
-			return false
-		}
+	if !isHexColor(t.Background) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme background invalid: %q", t.Background))
 	}
-	return true
+	if !isHexColor(t.Text) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme text invalid: %q", t.Text))
+	}
+	return nil
+}
+
+func isHexColor(s string) bool {
+	return hexColorRegexp.MatchString(s)
 }
 
 func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID string, envs []*v1pb.EnvironmentSetting_Environment) error {
@@ -938,6 +945,9 @@ func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID s
 		}
 		if used[env.Id] {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate environment ID %v", env.Id))
+		}
+		if env.Color != "" && !isHexColor(env.Color) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("environment color invalid: %q", env.Color))
 		}
 		if v, ok := env.Tags["protected"]; ok && v == "protected" {
 			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_ENVIRONMENT_TIERS); err != nil {

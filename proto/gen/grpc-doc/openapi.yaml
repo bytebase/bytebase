@@ -16185,11 +16185,11 @@ components:
         background:
           type: string
           title: background
-          description: '"r g b"'
+          description: '#rrggbb'
         text:
           type: string
           title: text
-          description: '"r g b"'
+          description: '#rrggbb'
       title: AnnouncementTheme
       additionalProperties: false
     bytebase.v1.AppIMSetting:
@@ -25091,6 +25091,7 @@ components:
           additionalProperties:
             type: string
             title: value
+          description: 'CSS token values as #rrggbb hex colors.'
       title: SQLEditorThemeSetting
       additionalProperties: false
     bytebase.v1.SQLEditorThemeSetting.TokensEntry:

@@ -17,7 +17,7 @@ export function themeToCssVars(
 ): CSSProperties & Record<string, string> {
   const vars: Record<string, string> = {};
   for (const token of SQL_EDITOR_THEME_TOKENS) {
-    vars[token] = tokens[token];
+    vars[token] = hexToRgbString(tokens[token]);
   }
   return vars as CSSProperties & Record<string, string>;
 }
@@ -34,7 +34,7 @@ export function monacoThemeName(theme: SQLEditorTheme): string {
 
 /** Whether the theme reads as dark (by its chrome background luminance). */
 export function isDarkTheme(theme: SQLEditorTheme): boolean {
-  return luminance(fromStr(theme.tokens["--color-background"])) < 0.5;
+  return luminance(hexToRgb(theme.tokens["--color-background"])) < 0.5;
 }
 
 /**
@@ -59,7 +59,8 @@ export function themeColorScheme(theme: SQLEditorTheme): "dark" | "light" {
 /** Throws if any chrome token is missing. */
 export function validateTheme(theme: SQLEditorTheme): void {
   for (const token of SQL_EDITOR_THEME_TOKENS) {
-    if (typeof theme.tokens[token] !== "string") {
+    const value = theme.tokens[token];
+    if (typeof value !== "string" || !isHexColor(value)) {
       throw new TypeError(`theme "${theme.id}" missing chrome token ${token}`);
     }
   }
@@ -84,29 +85,31 @@ export interface ThemeAnchors {
 // the accent (the least-semantic "brand" status) so info surfaces match the
 // theme instead of clashing with a fixed blue.
 const FIXED_TOKEN_VALUES: Record<string, string> = {
-  "--color-warning": "245 158 11",
-  "--color-warning-hover": "180 83 9",
-  "--color-error": "220 38 38",
-  "--color-error-hover": "185 28 28",
-  "--color-success": "22 163 74",
-  "--color-success-hover": "21 128 61",
-  "--color-matrix-green": "0 204 0",
-  "--color-matrix-green-hover": "136 255 136",
+  "--color-warning": "#f59e0b",
+  "--color-warning-hover": "#b45309",
+  "--color-error": "#dc2626",
+  "--color-error-hover": "#b91c1c",
+  "--color-success": "#16a34a",
+  "--color-success-hover": "#15803d",
+  "--color-matrix-green": "#00cc00",
+  "--color-matrix-green-hover": "#88ff88",
 };
 
 type RGB3 = [number, number, number];
+const isHexColor = (value: string): boolean => /^#[\da-fA-F]{6}$/.test(value);
 const hexToRgb = (h: string): RGB3 => {
   const x = h.replace("#", "");
   return [0, 2, 4].map((i) => Number.parseInt(x.slice(i, i + 2), 16)) as RGB3;
 };
-const toStr = (c: RGB3): string =>
-  c.map((n) => Math.max(0, Math.min(255, Math.round(n)))).join(" ");
-const fromStr = (s: string): RGB3 => s.split(" ").map(Number) as RGB3;
-const toHex = (s: string): string =>
+const normalizeRgb = (c: RGB3): RGB3 =>
+  c.map((n) => Math.max(0, Math.min(255, Math.round(n)))) as RGB3;
+const toHex = (c: RGB3): string =>
   "#" +
-  fromStr(s)
+  normalizeRgb(c)
     .map((n) => n.toString(16).padStart(2, "0"))
     .join("");
+const hexToRgbString = (h: string): string =>
+  normalizeRgb(hexToRgb(h)).join(" ");
 const mix = (a: RGB3, b: RGB3, t: number): RGB3 =>
   a.map((v, i) => v + (b[i] - v) * t) as RGB3;
 const luminance = ([r, g, b]: RGB3): number =>
@@ -136,39 +139,39 @@ export function deriveThemeFromAnchors(
   // Elevated surface (panels/headers/hover) — the background nudged toward the
   // text. Derived (not an anchor) so the admin only picks 4 colors.
   const surface = elevate(bg, 0.06);
-  const accentRgb = toStr(accent);
-  const accentHover = toStr(dark ? elevate(accent, 0.15) : recede(accent, 0.2));
+  const accentHex = toHex(accent);
+  const accentHover = toHex(dark ? elevate(accent, 0.15) : recede(accent, 0.2));
 
   const tokens: Record<string, string> = {
-    "--color-background": toStr(bg),
-    "--color-dark-bg": toStr(bg),
-    "--color-control-bg": toStr(surface),
-    "--color-control-bg-hover": toStr(elevate(surface, 0.06)),
-    "--color-control": toStr(text),
-    "--color-control-hover": toStr(recede(text, 0.15)),
-    "--color-control-light": toStr(recede(text, 0.3)),
-    "--color-control-light-hover": toStr(recede(text, 0.15)),
-    "--color-control-placeholder": toStr(recede(text, 0.5)),
-    "--color-control-border": toStr(border),
-    "--color-block-border": toStr(border),
-    "--color-link-hover": toStr(border),
-    "--color-accent": accentRgb,
+    "--color-background": toHex(bg),
+    "--color-dark-bg": toHex(bg),
+    "--color-control-bg": toHex(surface),
+    "--color-control-bg-hover": toHex(elevate(surface, 0.06)),
+    "--color-control": toHex(text),
+    "--color-control-hover": toHex(recede(text, 0.15)),
+    "--color-control-light": toHex(recede(text, 0.3)),
+    "--color-control-light-hover": toHex(recede(text, 0.15)),
+    "--color-control-placeholder": toHex(recede(text, 0.5)),
+    "--color-control-border": toHex(border),
+    "--color-block-border": toHex(border),
+    "--color-link-hover": toHex(border),
+    "--color-accent": accentHex,
     "--color-accent-hover": accentHover,
-    "--color-accent-disabled": toStr(recede(accent, 0.5)),
+    "--color-accent-disabled": toHex(recede(accent, 0.5)),
     // On-accent text (e.g. the Run button label): use whichever of the theme's
     // Text / Background anchors contrasts better with the accent — so it follows
     // the theme's own colors while staying legible on the accent fill.
     "--color-accent-text":
       Math.abs(luminance(bg) - luminance(accent)) >=
       Math.abs(luminance(text) - luminance(accent))
-        ? toStr(bg)
-        : toStr(text),
+        ? toHex(bg)
+        : toHex(text),
     // Info mirrors the brand accent (warning/error/success stay semantic).
-    "--color-info": accentRgb,
+    "--color-info": accentHex,
     "--color-info-hover": accentHover,
-    "--color-main": toStr(text),
-    "--color-main-hover": toStr(recede(text, 0.2)),
-    "--color-main-text": luminance(text) < 0.5 ? "255 255 255" : "24 24 27",
+    "--color-main": toHex(text),
+    "--color-main-hover": toHex(recede(text, 0.2)),
+    "--color-main-text": luminance(text) < 0.5 ? "#ffffff" : "#18181b",
   };
   Object.assign(tokens, FIXED_TOKEN_VALUES);
 
@@ -187,9 +190,9 @@ export function deriveThemeFromAnchors(
 /** Inverse of {@link deriveThemeFromAnchors}: recover the 4 picked anchors. */
 export function themeToAnchors(theme: SQLEditorTheme): ThemeAnchors {
   return {
-    background: toHex(theme.tokens["--color-background"]),
-    text: toHex(theme.tokens["--color-main"]),
-    accent: toHex(theme.tokens["--color-accent"]),
-    border: toHex(theme.tokens["--color-block-border"]),
+    background: theme.tokens["--color-background"],
+    text: theme.tokens["--color-main"],
+    accent: theme.tokens["--color-accent"],
+    border: theme.tokens["--color-block-border"],
   };
 }

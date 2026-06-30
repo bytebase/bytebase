@@ -123,7 +123,7 @@ export function ThemeAnchorEditor({
             if (typeof id === "string") onEditorThemeChange(id);
           }}
         >
-          <SelectTrigger size="sm" className="w-60" disabled={disabled}>
+          <SelectTrigger className="w-60" disabled={disabled}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

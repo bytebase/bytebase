@@ -16,9 +16,8 @@ describe("SQLEditorThemeScope", () => {
       </SQLEditorThemeScope>
     );
     const el = container.firstChild as HTMLElement;
-    expect(el.style.getPropertyValue("--color-background")).toBe(
-      PRESET_BY_ID.dark.tokens["--color-background"]
-    );
+    expect(PRESET_BY_ID.dark.tokens["--color-background"]).toBe("#1e1e1e");
+    expect(el.style.getPropertyValue("--color-background")).toBe("30 30 30");
   });
 
   test("provides the theme via context", () => {

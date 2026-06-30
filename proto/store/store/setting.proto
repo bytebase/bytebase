@@ -40,8 +40,8 @@ message WorkspaceProfileSetting {
     reserved "level";
 
     message AnnouncementTheme {
-      string background = 1; // "r g b"
-      string text = 2; // "r g b"
+      string background = 1; // #rrggbb
+      string text = 2; // #rrggbb
     }
 
     // The text of the announcement.
@@ -162,6 +162,7 @@ message SQLEditorThemeSetting {
   string id = 1;
   string name = 2;
   string monaco_base = 3;
+  // CSS token values as #rrggbb hex colors.
   map<string, string> tokens = 4;
 }
 

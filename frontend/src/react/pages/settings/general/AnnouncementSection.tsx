@@ -14,10 +14,8 @@ import {
   ANNOUNCEMENT_PRESET_KEYS,
   ANNOUNCEMENT_PRESETS,
   type AnnouncementTheme,
-  hexToTriple,
   matchPresetKey,
   resolveAnnouncementTheme,
-  tripleToHex,
 } from "@/react/components/announcement-theme";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
@@ -213,7 +211,7 @@ export const AnnouncementSection = forwardRef<
                     </label>
                     <ColorInput
                       id="announcement-theme-background"
-                      value={tripleToHex(state.theme.background)}
+                      value={state.theme.background}
                       disabled={disabled}
                       ariaLabel={t(
                         "settings.general.workspace.announcement-theme.background"
@@ -221,7 +219,7 @@ export const AnnouncementSection = forwardRef<
                       onChange={(hex) =>
                         setState((s) => ({
                           ...s,
-                          theme: { ...s.theme, background: hexToTriple(hex) },
+                          theme: { ...s.theme, background: hex },
                         }))
                       }
                     />
@@ -235,7 +233,7 @@ export const AnnouncementSection = forwardRef<
                     </label>
                     <ColorInput
                       id="announcement-theme-text"
-                      value={tripleToHex(state.theme.text)}
+                      value={state.theme.text}
                       disabled={disabled}
                       ariaLabel={t(
                         "settings.general.workspace.announcement-theme.text"
@@ -243,7 +241,7 @@ export const AnnouncementSection = forwardRef<
                       onChange={(hex) =>
                         setState((s) => ({
                           ...s,
-                          theme: { ...s.theme, text: hexToTriple(hex) },
+                          theme: { ...s.theme, text: hex },
                         }))
                       }
                     />

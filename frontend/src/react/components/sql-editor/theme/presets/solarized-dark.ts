@@ -13,34 +13,34 @@ export const solarizedDark: SQLEditorTheme = {
   tokens: {
     // Text bumped up the palette for readability — base01 (#586e75) is too dim
     // for UI secondary text on the dark base03 bg.
-    "--color-control": "147 161 161", // base1
-    "--color-control-hover": "203 213 213", // lightened base1
-    "--color-control-light": "131 148 150", // base0
-    "--color-control-light-hover": "147 161 161", // base1
-    "--color-control-bg": "7 54 66", // base02
-    "--color-control-bg-hover": "18 71 84",
-    "--color-control-placeholder": "101 123 131", // base00
-    "--color-control-border": "30 80 92",
-    "--color-accent": "38 139 210", // blue
-    "--color-accent-hover": "77 163 222",
-    "--color-accent-disabled": "44 100 130",
-    "--color-accent-text": "253 246 227", // base3
-    "--color-main": "147 161 161", // base1
-    "--color-main-hover": "203 213 213", // lightened base1 (brighter, not dimmer)
-    "--color-main-text": "0 43 54", // base03 (text on a base1 surface)
-    "--color-background": "0 43 54", // base03
-    "--color-block-border": "18 71 84",
-    "--color-link-hover": "18 71 84",
-    "--color-info": "38 139 210", // blue
-    "--color-info-hover": "77 163 222",
-    "--color-warning": "181 137 0", // yellow
-    "--color-warning-hover": "204 153 0",
-    "--color-error": "220 50 47", // red
-    "--color-error-hover": "233 90 88",
-    "--color-success": "133 153 0", // green
-    "--color-success-hover": "163 184 30",
-    "--color-matrix-green": "0 204 0",
-    "--color-matrix-green-hover": "136 255 136",
-    "--color-dark-bg": "0 43 54", // base03
+    "--color-control": "#93a1a1", // base1
+    "--color-control-hover": "#cbd5d5", // lightened base1
+    "--color-control-light": "#839496", // base0
+    "--color-control-light-hover": "#93a1a1", // base1
+    "--color-control-bg": "#073642", // base02
+    "--color-control-bg-hover": "#124754",
+    "--color-control-placeholder": "#657b83", // base00
+    "--color-control-border": "#1e505c",
+    "--color-accent": "#268bd2", // blue
+    "--color-accent-hover": "#4da3de",
+    "--color-accent-disabled": "#2c6482",
+    "--color-accent-text": "#fdf6e3", // base3
+    "--color-main": "#93a1a1", // base1
+    "--color-main-hover": "#cbd5d5", // lightened base1 (brighter, not dimmer)
+    "--color-main-text": "#002b36", // base03 (text on a base1 surface)
+    "--color-background": "#002b36", // base03
+    "--color-block-border": "#124754",
+    "--color-link-hover": "#124754",
+    "--color-info": "#268bd2", // blue
+    "--color-info-hover": "#4da3de",
+    "--color-warning": "#b58900", // yellow
+    "--color-warning-hover": "#cc9900",
+    "--color-error": "#dc322f", // red
+    "--color-error-hover": "#e95a58",
+    "--color-success": "#859900", // green
+    "--color-success-hover": "#a3b81e",
+    "--color-matrix-green": "#00cc00",
+    "--color-matrix-green-hover": "#88ff88",
+    "--color-dark-bg": "#002b36", // base03
   },
 };

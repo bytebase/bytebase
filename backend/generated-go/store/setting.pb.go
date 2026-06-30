@@ -757,11 +757,12 @@ func (x *WorkspaceProfileSetting) GetSqlEditorCustomTheme() *SQLEditorThemeSetti
 }
 
 type SQLEditorThemeSetting struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	MonacoBase    string                 `protobuf:"bytes,3,opt,name=monaco_base,json=monacoBase,proto3" json:"monaco_base,omitempty"`
-	Tokens        map[string]string      `protobuf:"bytes,4,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	MonacoBase string                 `protobuf:"bytes,3,opt,name=monaco_base,json=monacoBase,proto3" json:"monaco_base,omitempty"`
+	// CSS token values as #rrggbb hex colors.
+	Tokens        map[string]string `protobuf:"bytes,4,rep,name=tokens,proto3" json:"tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1497,8 +1498,8 @@ func (x *WorkspaceProfileSetting_PasswordRestriction) GetPasswordRotation() *dur
 
 type WorkspaceProfileSetting_Announcement_AnnouncementTheme struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Background    string                 `protobuf:"bytes,1,opt,name=background,proto3" json:"background,omitempty"` // "r g b"
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`             // "r g b"
+	Background    string                 `protobuf:"bytes,1,opt,name=background,proto3" json:"background,omitempty"` // #rrggbb
+	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`             // #rrggbb
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

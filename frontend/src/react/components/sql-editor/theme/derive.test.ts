@@ -20,7 +20,7 @@ import {
 // Minimal complete fixture (token values arbitrary but every key present).
 const fixture = (over: Partial<SQLEditorTheme> = {}): SQLEditorTheme => {
   const tokens = Object.fromEntries(
-    SQL_EDITOR_THEME_TOKENS.map((k) => [k, "1 2 3"])
+    SQL_EDITOR_THEME_TOKENS.map((k) => [k, "#010203"])
   ) as SQLEditorTheme["tokens"];
   return {
     id: "fixture",
@@ -54,7 +54,7 @@ const lightThemed = (over: Partial<SQLEditorTheme> = {}) =>
     ...over,
     tokens: {
       ...fixture().tokens,
-      "--color-background": "255 255 255",
+      "--color-background": "#ffffff",
     } as SQLEditorTheme["tokens"],
   });
 const darkThemed = (over: Partial<SQLEditorTheme> = {}) =>
@@ -62,7 +62,7 @@ const darkThemed = (over: Partial<SQLEditorTheme> = {}) =>
     ...over,
     tokens: {
       ...fixture().tokens,
-      "--color-background": "30 30 30",
+      "--color-background": "#1e1e1e",
     } as SQLEditorTheme["tokens"],
   });
 
@@ -93,6 +93,15 @@ describe("validateTheme", () => {
     delete bad.tokens["--color-accent"];
     expect(() => validateTheme(bad)).toThrow(/--color-accent/);
   });
+  test("throws when a chrome token is not a hex color", () => {
+    const bad = fixture({
+      tokens: {
+        ...fixture().tokens,
+        "--color-accent": "1 2 3",
+      } as SQLEditorTheme["tokens"],
+    });
+    expect(() => validateTheme(bad)).toThrow(/--color-accent/);
+  });
 });
 
 const lightAnchors: ThemeAnchors = {
@@ -117,16 +126,16 @@ describe("deriveThemeFromAnchors", () => {
   });
   test("anchors map to direct tokens", () => {
     const t = deriveThemeFromAnchors(lightAnchors, "B");
-    expect(t.tokens["--color-background"]).toBe("255 255 255");
-    expect(t.tokens["--color-main"]).toBe("24 24 27");
-    expect(t.tokens["--color-accent"]).toBe("79 70 229");
-    expect(t.tokens["--color-block-border"]).toBe("229 231 235");
+    expect(t.tokens["--color-background"]).toBe("#ffffff");
+    expect(t.tokens["--color-main"]).toBe("#18181b");
+    expect(t.tokens["--color-accent"]).toBe("#4f46e5");
+    expect(t.tokens["--color-block-border"]).toBe("#e5e7eb");
   });
   test("surface is derived from the background (not an anchor)", () => {
     // white bg nudged 6% toward near-black text → a light gray.
     expect(
       deriveThemeFromAnchors(lightAnchors, "B").tokens["--color-control-bg"]
-    ).toBe("241 241 241");
+    ).toBe("#f1f1f1");
   });
   test("monacoBase default by luminance", () => {
     expect(deriveThemeFromAnchors(lightAnchors, "L").monacoBase).toBe(

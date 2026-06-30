@@ -743,6 +743,8 @@ export declare type SQLEditorThemeSetting = Message<"bytebase.v1.SQLEditorThemeS
   monacoBase: string;
 
   /**
+   * CSS token values as #rrggbb hex colors.
+   *
    * @generated from field: map<string, string> tokens = 4;
    */
   tokens: { [key: string]: string };
@@ -792,14 +794,14 @@ export declare const AnnouncementSchema: GenMessage<Announcement>;
  */
 export declare type Announcement_AnnouncementTheme = Message<"bytebase.v1.Announcement.AnnouncementTheme"> & {
   /**
-   * "r g b"
+   * #rrggbb
    *
    * @generated from field: string background = 1;
    */
   background: string;
 
   /**
-   * "r g b"
+   * #rrggbb
    *
    * @generated from field: string text = 2;
    */
