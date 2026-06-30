@@ -115,6 +115,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 			slog.Int64("plan_check_run_id", uid),
 			slog.Int64("claimed_approval_input_version", approvalInputVersion),
 			slog.Int64("current_approval_input_version", plan.Config.GetApprovalInputVersion()))
+		s.markPlanCheckRunCanceled(ctxWithCancel, projectID, uid, approvalInputVersion, "stale plan check run")
 		return
 	}
 

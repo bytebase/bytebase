@@ -266,8 +266,8 @@ func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 // RefreshPlanCheckRunIfStaleApprovalInputVersion refreshes a terminal stale-version plan check run to AVAILABLE.
 //
 // Approval recompute may observe an older terminal row while another request is already moving
-// the plan forward. Treat the caller's version as the version to materialize, and leave checking
-// which version is current to the caller that read the plan.
+// the plan forward. Only move rows to a newer materialized version; never rewind a row that has
+// already advanced beyond the caller's observed plan version.
 func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Context, projectID string, planUID int64, approvalInputVersion int64) (bool, error) {
 	result := &storepb.PlanCheckRunResult{ApprovalInputVersion: approvalInputVersion}
 	resultBytes, err := protojson.Marshal(result)
@@ -284,7 +284,7 @@ func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Conte
 		WHERE project = ?
 		  AND plan_id = ?
 		  AND status NOT IN (?, ?)
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) != ?`,
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) < ?`,
 		time.Now(), PlanCheckRunStatusAvailable, resultBytes, projectID, planUID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {

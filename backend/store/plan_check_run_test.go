@@ -451,6 +451,52 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *te
 	require.EqualValues(t, 1, run.Result.GetApprovalInputVersion())
 }
 
+func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotRewindNewerRow(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 3},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 3},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	claimed, err := s.ClaimAvailablePlanCheckRuns(ctx)
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+
+	updated, err := s.UpdatePlanCheckRunIfApprovalInputVersion(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: 3,
+		Results: []*storepb.PlanCheckRunResult_Result{{
+			Status: storepb.Advice_SUCCESS,
+			Title:  "newer result",
+		}},
+	}, claimed[0].UID, 3)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	refreshed, err := s.RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx, "project-a", plan.UID, 2)
+	require.NoError(t, err)
+	require.False(t, refreshed)
+
+	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+	require.Equal(t, store.PlanCheckRunStatusDone, run.Status)
+	require.EqualValues(t, 3, run.Result.GetApprovalInputVersion())
+	require.Len(t, run.Result.GetResults(), 1)
+}
+
 func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)

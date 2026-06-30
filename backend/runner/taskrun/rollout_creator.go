@@ -146,8 +146,8 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		return
 	}
 
-	// If plan checks exist, they must be DONE with no errors
-	if planCheckRun != nil {
+	// If current plan checks exist, they must be DONE with no errors.
+	if planCheckRunBlocksRollout(plan, planCheckRun) {
 		// Check if plan checks are in DONE status
 		if planCheckRun.Status != store.PlanCheckRunStatusDone {
 			slog.Debug("plan checks not in DONE status, skipping rollout creation",
@@ -187,6 +187,13 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	rc.bus.TaskRunTickleChan <- 0
 
 	slog.Info("successfully auto-created rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
+}
+
+func planCheckRunBlocksRollout(plan *store.PlanMessage, planCheckRun *store.PlanCheckRunMessage) bool {
+	if planCheckRun == nil {
+		return false
+	}
+	return planCheckRun.Result.GetApprovalInputVersion() == plan.Config.GetApprovalInputVersion()
 }
 
 // hasOnlyChangeDatabaseSpecs checks if every spec in the plan is a change database spec.
