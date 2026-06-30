@@ -598,6 +598,15 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 
 	approvalInputVersion := planCheckRun.Result.GetApprovalInputVersion()
 
+	// Update the status to canceled.
+	canceled, err := s.store.CancelPlanCheckRunIfApprovalInputVersion(ctx, projectID, planCheckRun.UID, approvalInputVersion)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
+	}
+	if !canceled {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot cancel because plan check run is stale"))
+	}
+
 	// Cancel in-flight plan check run if running.
 	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(bus.PlanCheckRunRef{ProjectID: projectID, UID: planCheckRun.UID, ApprovalInputVersion: approvalInputVersion}); ok {
 		cancelFunc.(context.CancelFunc)()
@@ -606,15 +615,6 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	// Broadcast cancel signal to all replicas for HA.
 	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID, approvalInputVersion); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
-	}
-
-	// Update the status to canceled.
-	canceled, err := s.store.CancelPlanCheckRunIfApprovalInputVersion(ctx, projectID, planCheckRun.UID, approvalInputVersion)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
-	}
-	if !canceled {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot cancel because plan check run is stale"))
 	}
 
 	return connect.NewResponse(&v1pb.CancelPlanCheckRunResponse{}), nil
