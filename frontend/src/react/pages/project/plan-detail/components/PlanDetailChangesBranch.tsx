@@ -1393,25 +1393,28 @@ function TargetsSection({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-control-border border-t-accent" />
           </div>
         ) : targets.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {visibleTargets.map((target) =>
               isValidDatabaseName(target) ? (
                 <div
                   key={target}
-                  className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
                 >
                   <PlanTargetDisplay showEnvironment target={target} />
                 </div>
               ) : isValidDatabaseGroupName(target) ? (
-                <div key={target} className="rounded-lg border px-2 py-1">
+                <div
+                  key={target}
+                  className="min-w-0 max-w-full rounded-lg border px-2 py-1"
+                >
                   <DatabaseGroupTarget className="py-1" target={target} />
                 </div>
               ) : (
                 <div
                   key={target}
-                  className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
                 >
-                  <span className="text-sm text-control-placeholder">
+                  <span className="truncate text-sm text-control-placeholder">
                     {target}
                   </span>
                 </div>
@@ -1994,11 +1997,11 @@ export function DatabaseGroupTarget({
         )}
       </div>
       {matchedDatabases.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pl-7">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 pl-7">
           {inlineDatabases.map((database) => (
             <div
               key={database.name}
-              className="inline-flex cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
             >
               <PlanTargetDisplay showEnvironment target={database.name} />
             </div>

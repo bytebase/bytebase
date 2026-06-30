@@ -401,14 +401,14 @@ function IssueDetailDatabaseExportTasks({
       <h3 className="text-base font-medium">{t("common.task")}</h3>
       <div
         className={cn(
-          "flex flex-wrap gap-2",
+          "flex min-w-0 flex-wrap gap-2",
           tasksExpanded && hasMore && "max-h-96 overflow-y-auto"
         )}
       >
         {visibleTasks.map((task) => (
           <div
             key={task.name}
-            className="inline-flex min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5"
+            className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5"
           >
             <TaskStatusIcon status={task.status} size="tiny" />
             <IssueDetailDatabaseExportDatabaseTarget target={task.target} />
@@ -607,11 +607,11 @@ function IssueDetailDatabaseExportTargets({ targets }: { targets: string[] }) {
   return (
     <div className="flex flex-col gap-y-2">
       <h3 className="text-base font-medium">{t("plan.targets.title")}</h3>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex min-w-0 flex-wrap gap-2">
         {targets.map((target) => (
           <div
             key={target}
-            className="inline-flex min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5"
+            className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5"
           >
             {isValidDatabaseName(target) ? (
               <IssueDetailDatabaseExportDatabaseTarget target={target} />
@@ -655,17 +655,23 @@ function IssueDetailDatabaseExportDatabaseTarget({
     t("common.unknown");
 
   return (
-    <div className="flex min-w-0 items-center truncate text-sm">
+    <div className="flex min-w-0 max-w-full items-center text-sm">
       {instance && (
         <EngineIcon
           engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4"
+          className="mr-1 inline-block h-4 w-4 shrink-0"
         />
       )}
-      <span className="mr-1 truncate text-gray-400">{environment.title}</span>
-      <span className="truncate text-gray-600">{instanceTitle}</span>
+      <span className="mr-1 max-w-24 shrink truncate text-gray-400">
+        {environment.title}
+      </span>
+      <span className="min-w-0 shrink-[2] truncate text-gray-600">
+        {instanceTitle}
+      </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 opacity-60" />
-      <span className="truncate text-gray-800">{databaseName}</span>
+      <span className="min-w-12 flex-1 truncate text-gray-800">
+        {databaseName}
+      </span>
     </div>
   );
 }
@@ -723,7 +729,7 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
           {t("common.database-group")}
         </span>
-        <span className="truncate text-sm text-gray-800">
+        <span className="min-w-0 truncate text-sm text-gray-800">
           {extractDatabaseGroupName(databaseGroup.name || target)}
         </span>
         {isValidDatabaseGroupName(databaseGroup.name) && (
@@ -738,11 +744,11 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
       </div>
 
       {databases.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pl-7">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 pl-7">
           {databases.slice(0, MAX_INLINE_DATABASES).map((database) => (
             <div
               key={database}
-              className="inline-flex cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
             >
               <IssueDetailDatabaseExportDatabaseTarget target={database} />
             </div>

@@ -646,11 +646,11 @@ function IssueDetailDatabaseChangeTargets({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-control-border border-t-accent" />
           </div>
         ) : targets.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {visibleTargets.map((target) => (
               <div
                 key={target}
-                className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
               >
                 {isValidDatabaseName(target) ? (
                   <IssueDetailDatabaseTarget showEnvironment target={target} />
@@ -660,7 +660,7 @@ function IssueDetailDatabaseChangeTargets({
                     target={target}
                   />
                 ) : (
-                  <span className="text-sm text-control-placeholder">
+                  <span className="truncate text-sm text-control-placeholder">
                     {target}
                   </span>
                 )}
@@ -858,7 +858,7 @@ function IssueDetailDatabaseGroupTarget({
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
           {t("common.database-group")}
         </span>
-        <span className="truncate text-sm text-gray-800">
+        <span className="min-w-0 truncate text-sm text-gray-800">
           {extractDatabaseGroupName(databaseGroup.name || target)}
         </span>
         {isValidDatabaseGroupName(databaseGroup.name) && (
@@ -873,11 +873,11 @@ function IssueDetailDatabaseGroupTarget({
       </div>
 
       {databases.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pl-7">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 pl-7">
           {databases.slice(0, MAX_INLINE_DATABASES).map((database) => (
             <div
               key={database}
-              className="inline-flex cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
             >
               <IssueDetailDatabaseTarget showEnvironment target={database} />
             </div>
