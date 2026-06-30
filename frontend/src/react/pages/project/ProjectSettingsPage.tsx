@@ -515,7 +515,12 @@ export function ProjectSettingsPage() {
         updateMask.push("parallel_tasks_per_rollout");
       }
       if (updateMask.length > 0) {
-        await useAppStore.getState().updateProject(projectPatch, updateMask);
+        const updatedProject = await useAppStore
+          .getState()
+          .updateProject(projectPatch, updateMask);
+        if (updateMask.includes("issue_labels")) {
+          setIssueLabels(cloneDeep(updatedProject.issueLabels));
+        }
       }
 
       pushNotification({
