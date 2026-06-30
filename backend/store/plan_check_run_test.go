@@ -101,7 +101,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(
 	require.Empty(t, run.Result.GetError())
 }
 
-func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerAfterPlanVersionBump(t *testing.T) {
+func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersionBump(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -141,14 +141,14 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerAfterPlanVersio
 		}},
 	}, claimed[0].UID, 1)
 	require.NoError(t, err)
-	require.False(t, updated)
+	require.True(t, updated)
 
 	run, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
 	require.NoError(t, err)
 	require.NotNil(t, run)
-	require.Equal(t, store.PlanCheckRunStatusRunning, run.Status)
+	require.Equal(t, store.PlanCheckRunStatusDone, run.Status)
 	require.EqualValues(t, 1, run.Result.GetApprovalInputVersion())
-	require.Empty(t, run.Result.GetResults())
+	require.Len(t, run.Result.GetResults(), 1)
 }
 
 func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
@@ -399,7 +399,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 	require.Empty(t, run.Result.GetResults())
 }
 
-func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsStaleRequestedVersion(t *testing.T) {
+func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 

@@ -242,15 +242,8 @@ func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 		WHERE id = ?
 		  AND project = ?
 		  AND status = ?
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = plan_check_run.project
-			  AND plan.id = plan_check_run.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`,
-		time.Now(), status, resultBytes, uid, projectID, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?`,
+		time.Now(), status, resultBytes, uid, projectID, PlanCheckRunStatusRunning, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
@@ -283,15 +276,8 @@ func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Conte
 		WHERE project = ?
 		  AND plan_id = ?
 		  AND status NOT IN (?, ?)
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) != ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = plan_check_run.project
-			  AND plan.id = plan_check_run.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`,
-		time.Now(), PlanCheckRunStatusAvailable, resultBytes, projectID, planUID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) != ?`,
+		time.Now(), PlanCheckRunStatusAvailable, resultBytes, projectID, planUID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
