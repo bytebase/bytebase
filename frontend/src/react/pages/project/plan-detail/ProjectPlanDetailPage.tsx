@@ -41,12 +41,9 @@ import { isReleaseBackedPlan } from "./utils/spec";
 type PhaseStatus = "completed" | "closed" | "active" | "future";
 
 function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
-  if (from === "closed" || to === "closed")
-    return "border-l-2 border-dashed border-control-border";
   if (from === "completed" && (to === "completed" || to === "active"))
-    return "border-l-2 border-success";
-  if (from === "active") return "border-l-2 border-dashed border-accent";
-  return "border-l-2 border-dashed border-control-border";
+    return "bg-success";
+  return "bg-control-border";
 }
 
 export function ProjectPlanDetailPage(props: {
@@ -224,7 +221,6 @@ function ProjectPlanDetailPageInner({
       deploy: {
         status: deployStatus,
         badge: deployBadge,
-        lineClass: "",
       },
     };
   }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
@@ -267,11 +263,13 @@ function ProjectPlanDetailPageInner({
             style={desktopLayoutStyle}
           >
             <main className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-col gap-y-3 pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+              {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
+                  which the connector line fills so it stays continuous. */}
+              <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
                 <PhaseSection
                   badge={phaseConfigs.changes.badge}
                   expanded={page.activePhases.has("changes")}
-                  icon={<Code2 className="h-4 w-4 text-white" />}
+                  icon={<Code2 className="size-3 md:size-4" />}
                   lineClass={phaseConfigs.changes.lineClass}
                   label={t("plan.navigator.changes")}
                   onSelect={() => page.expandPhase("changes")}
@@ -289,7 +287,7 @@ function ProjectPlanDetailPageInner({
                   <PhaseSection
                     badge={phaseConfigs.review.badge}
                     expanded={page.activePhases.has("review")}
-                    icon={<MessageSquareMore className="h-4 w-4 text-white" />}
+                    icon={<MessageSquareMore className="size-3 md:size-4" />}
                     lineClass={phaseConfigs.review.lineClass}
                     label={t("plan.navigator.review")}
                     onSelect={() => page.expandPhase("review")}
@@ -309,7 +307,7 @@ function ProjectPlanDetailPageInner({
                 <PhaseSection
                   badge={phaseConfigs.deploy.badge}
                   expanded={page.activePhases.has("deploy")}
-                  icon={<Rocket className="h-4 w-4 text-white" />}
+                  icon={<Rocket className="size-3 md:size-4" />}
                   isLast
                   label={t("plan.navigator.deploy")}
                   status={phaseConfigs.deploy.status}
@@ -446,18 +444,18 @@ function PhaseSection({
   const { t } = useTranslation();
   const dotClass =
     status === "completed"
-      ? "bg-success"
+      ? "bg-success text-white ring-[3px] ring-success/15 md:ring-4"
       : status === "closed"
-        ? "bg-control-placeholder"
+        ? "bg-control-placeholder text-white"
         : status === "active"
-          ? "bg-accent ring-[3px] ring-accent/20"
-          : "border-2 border-dashed border-control-border";
+          ? "bg-accent text-white ring-[3px] ring-accent/15 md:ring-4"
+          : "border-2 border-dashed border-control-border text-control-placeholder";
 
   return (
     <div className={cn("flex", isLast && "mb-48")}>
       <div className="flex w-10 shrink-0 flex-col items-center md:w-16">
         <div
-          className="mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center md:h-7 md:w-7"
+          className="relative z-10 mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center md:h-7 md:w-7"
           onClick={onSelect}
         >
           <div
@@ -466,13 +464,16 @@ function PhaseSection({
               dotClass
             )}
           >
-            {status !== "future" ? icon : null}
+            {icon}
           </div>
         </div>
-        {!isLast && <div className={cn("flex-1 min-h-[16px]", lineClass)} />}
+        {/* -mt-1 tucks the rail under the node's halo so it reads as connected. */}
+        {!isLast && (
+          <div className={cn("-mt-1 w-0.5 flex-1 min-h-[20px]", lineClass)} />
+        )}
       </div>
 
-      <div className="min-w-0 flex-1 pb-4">
+      <div className="min-w-0 flex-1 pb-6">
         {status === "future" ? (
           <div className="py-0.5">
             <span className="textlabel uppercase text-control-placeholder">
