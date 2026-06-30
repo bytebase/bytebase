@@ -7,6 +7,7 @@ import {
   FolderTree,
   Loader2,
   Pencil,
+  Plus,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -151,6 +152,12 @@ import { PlanTargetDisplay } from "./PlanTargetDisplay";
 const DEFAULT_VISIBLE_TARGETS = 20;
 const DATABASE_GROUP_VISIBLE_DATABASES = 3;
 const EMPTY_SELECT_VALUE = "__empty__";
+
+// Shared hover/focus recipe for the square icon buttons on the tab strip
+// (the per-tab actions menu and the add-change button). Callers append their
+// own size and corner radius.
+const ICON_ACTION_CLASS =
+  "inline-flex cursor-pointer items-center justify-center text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
 
 const pushSpecDetailRoute = (
   projectId: string,
@@ -530,21 +537,27 @@ export function PlanDetailChangesBranch({
   return (
     <div className="flex w-full flex-1 flex-col">
       <PlanDetailTabStrip
-        action={
+        trailing={
           canModifySpecs ? (
             <Tooltip
               content={
-                pendingNewSpec ? t("plan.add-spec-pending-draft") : undefined
+                pendingNewSpec
+                  ? t("plan.add-spec-pending-draft")
+                  : t("plan.add-spec")
               }
             >
-              <Button
+              <button
+                aria-label={t("plan.add-spec")}
+                className={cn(
+                  ICON_ACTION_CLASS,
+                  "size-7 rounded-md [touch-action:manipulation]"
+                )}
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
-                size="xs"
-                variant="outline"
+                type="button"
               >
-                {t("plan.add-spec")}
-              </Button>
+                <Plus aria-hidden="true" className="size-4" />
+              </button>
             </Tooltip>
           ) : undefined
         }
@@ -560,7 +573,8 @@ export function PlanDetailChangesBranch({
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       className={cn(
-                        "mr-2 inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-xs text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent"
+                        ICON_ACTION_CLASS,
+                        "mr-2 size-6 shrink-0 rounded-xs"
                       )}
                     >
                       <EllipsisVertical className="size-3.5" />
