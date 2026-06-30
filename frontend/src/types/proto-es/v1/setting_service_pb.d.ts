@@ -6,6 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { WebhookType } from "./common_pb";
+import type { Color } from "../google/type/color_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
 
@@ -743,11 +744,11 @@ export declare type SQLEditorThemeSetting = Message<"bytebase.v1.SQLEditorThemeS
   monacoBase: string;
 
   /**
-   * CSS token values as #rrggbb hex colors.
+   * CSS token colors.
    *
-   * @generated from field: map<string, string> tokens = 4;
+   * @generated from field: map<string, google.type.Color> tokens = 4;
    */
-  tokens: { [key: string]: string };
+  tokens: { [key: string]: Color };
 };
 
 /**
@@ -794,18 +795,14 @@ export declare const AnnouncementSchema: GenMessage<Announcement>;
  */
 export declare type Announcement_AnnouncementTheme = Message<"bytebase.v1.Announcement.AnnouncementTheme"> & {
   /**
-   * #rrggbb
-   *
-   * @generated from field: string background = 1;
+   * @generated from field: google.type.Color background = 1;
    */
-  background: string;
+  background?: Color | undefined;
 
   /**
-   * #rrggbb
-   *
-   * @generated from field: string text = 2;
+   * @generated from field: google.type.Color text = 2;
    */
-  text: string;
+  text?: Color | undefined;
 };
 
 /**

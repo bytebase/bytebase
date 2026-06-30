@@ -1,17 +1,28 @@
 import { describe, expect, test } from "vitest";
+import { hexToColor } from "@/utils";
 import { deriveThemeFromAnchors } from "./derive";
 import { PRESET_BY_ID } from "./presets";
+import type { SQLEditorTheme } from "./types";
 import { resolveWorkspaceTheme } from "./useWorkspaceSQLEditorTheme";
 
+const toStoredTheme = (theme: SQLEditorTheme) => ({
+  ...theme,
+  tokens: Object.fromEntries(
+    Object.entries(theme.tokens).map(([key, value]) => [key, hexToColor(value)])
+  ),
+});
+
 const customDef = {
-  ...deriveThemeFromAnchors(
-    {
-      background: "#1e1e1e",
-      text: "#f4f4f5",
-      accent: "#6366f1",
-      border: "#3f3f46",
-    },
-    "Brand"
+  ...toStoredTheme(
+    deriveThemeFromAnchors(
+      {
+        background: "#1e1e1e",
+        text: "#f4f4f5",
+        accent: "#6366f1",
+        border: "#3f3f46",
+      },
+      "Brand"
+    )
   ),
   id: "u1",
 };

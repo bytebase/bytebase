@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => {
             id: string;
             name: string;
             monacoBase: string;
-            tokens: Record<string, string>;
+            tokens: Record<string, unknown>;
           },
       sqlResultSize: 0n,
       queryTimeout: undefined as undefined | { seconds: bigint },
@@ -34,7 +34,7 @@ const mocks = vi.hoisted(() => {
           sqlEditorCustomTheme?: {
             id: string;
             name: string;
-            tokens: Record<string, string>;
+            tokens: Record<string, unknown>;
           };
         };
         updateMask: { paths: string[] };
@@ -55,6 +55,14 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
+  hexToColor: (hex: string) => {
+    const value = hex.replace(/^#/, "");
+    return {
+      red: Number.parseInt(value.slice(0, 2), 16) / 255,
+      green: Number.parseInt(value.slice(2, 4), 16) / 255,
+      blue: Number.parseInt(value.slice(4, 6), 16) / 255,
+    };
+  },
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -254,8 +262,18 @@ describe("SQLEditorSection theme", () => {
     const id = draft.id;
     expect(id).toMatch(/[0-9a-f-]{36}/);
     // Tokens are complete (background present).
-    expect(draft.tokens["--color-background"]).toBeTruthy();
-    expect(draft.tokens["--color-main"]).toBeTruthy();
+    expect(draft.tokens["--color-background"]).toMatchObject({
+      red: 1,
+      green: 1,
+      blue: 1,
+    });
+    expect(draft.tokens["--color-main"]).toEqual(
+      expect.objectContaining({
+        red: expect.closeTo(24 / 255),
+        green: expect.closeTo(24 / 255),
+        blue: expect.closeTo(27 / 255),
+      })
+    );
 
     // Edit a color anchor; uuid must be preserved.
     const colorInput = container.querySelector(

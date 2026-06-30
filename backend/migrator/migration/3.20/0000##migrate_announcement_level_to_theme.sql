@@ -1,5 +1,5 @@
 -- Convert the deprecated announcement `level` enum into the new `theme` colors
--- (background/text #rrggbb), then drop the obsolete `level` key. Levels map to
+-- (background/text google.type.Color JSON), then drop the obsolete `level` key. Levels map to
 -- the previous banner colors: INFO=--color-info, WARNING=--color-warning,
 -- CRITICAL=--color-error; text was always white.
 --
@@ -16,10 +16,19 @@ SET value = jsonb_set(
     '{announcement,theme}',
     CASE
         WHEN value->'announcement'->>'level' IN ('WARNING', '2')
-            THEN jsonb_build_object('background', '#f59e0b', 'text', '#ffffff')
+            THEN jsonb_build_object(
+                'background', jsonb_build_object('red', 0.960784, 'green', 0.619608, 'blue', 0.043137),
+                'text', jsonb_build_object('red', 1, 'green', 1, 'blue', 1)
+            )
         WHEN value->'announcement'->>'level' IN ('CRITICAL', '3')
-            THEN jsonb_build_object('background', '#dc2626', 'text', '#ffffff')
-        ELSE jsonb_build_object('background', '#2563eb', 'text', '#ffffff')
+            THEN jsonb_build_object(
+                'background', jsonb_build_object('red', 0.862745, 'green', 0.14902, 'blue', 0.14902),
+                'text', jsonb_build_object('red', 1, 'green', 1, 'blue', 1)
+            )
+        ELSE jsonb_build_object(
+            'background', jsonb_build_object('red', 0.145098, 'green', 0.388235, 'blue', 0.921569),
+            'text', jsonb_build_object('red', 1, 'green', 1, 'blue', 1)
+        )
     END,
     true
 )

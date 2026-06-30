@@ -1,4 +1,5 @@
 import type { Announcement } from "@/types/proto-es/v1/setting_service_pb";
+import { colorToHex } from "@/utils";
 
 export interface AnnouncementTheme {
   background: string;
@@ -37,8 +38,10 @@ export function resolveAnnouncementTheme(
 ): AnnouncementTheme {
   if (announcement?.theme?.background) {
     return {
-      background: announcement.theme.background,
-      text: announcement.theme.text,
+      background: colorToHex(announcement.theme.background),
+      text: announcement.theme.text
+        ? colorToHex(announcement.theme.text)
+        : ANNOUNCEMENT_PRESETS.info.text,
     };
   }
   return ANNOUNCEMENT_PRESETS.info;

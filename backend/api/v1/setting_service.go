@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	colorpb "google.golang.org/genproto/googleapis/type/color"
 
 	"google.golang.org/protobuf/proto" // Added
 	"google.golang.org/protobuf/types/known/anypb"
@@ -887,7 +888,7 @@ func validateDomains(domains []string) error {
 // validateSQLEditorCustomTheme checks the SHAPE of a custom theme, not the
 // frontend's token vocabulary. The `--color-*` token keys are a frontend/CSS
 // concern owned by SQL_EDITOR_THEME_TOKENS; the server only ensures the stored
-// value isn't garbage (non-empty tokens, each a #rrggbb hex color). The frontend
+// value isn't garbage (non-empty tokens, each an opaque Color). The frontend
 // derives the full token set and falls back to a built-in if one is missing, so
 // the backend stays theme-catalog-agnostic.
 func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
@@ -910,8 +911,8 @@ func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme.tokens is required"))
 	}
 	for k, v := range t.Tokens {
-		if !isHexColor(v) {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme token %s invalid: %q", k, v))
+		if !isOpaqueColor(v) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme token %s invalid", k))
 		}
 	}
 	return nil
@@ -921,13 +922,30 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 	if t == nil {
 		return nil
 	}
-	if !isHexColor(t.Background) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme background invalid: %q", t.Background))
+	if !isOpaqueColor(t.Background) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme background invalid"))
 	}
-	if !isHexColor(t.Text) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme text invalid: %q", t.Text))
+	if !isOpaqueColor(t.Text) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme text invalid"))
 	}
 	return nil
+}
+
+func isOpaqueColor(c *colorpb.Color) bool {
+	if c == nil {
+		return false
+	}
+	if !isUnitFloat(c.Red) || !isUnitFloat(c.Green) || !isUnitFloat(c.Blue) {
+		return false
+	}
+	if c.Alpha != nil && c.Alpha.Value != 1 {
+		return false
+	}
+	return true
+}
+
+func isUnitFloat(v float32) bool {
+	return v >= 0 && v <= 1
 }
 
 func isHexColor(s string) bool {

@@ -28,7 +28,10 @@ import {
   PRESET_BY_ID,
   PRESETS,
 } from "@/react/components/sql-editor/theme/presets";
-import type { SQLEditorTheme } from "@/react/components/sql-editor/theme/types";
+import type {
+  SQLEditorTheme,
+  SQLEditorThemeToken,
+} from "@/react/components/sql-editor/theme/types";
 import { resolveWorkspaceTheme } from "@/react/components/sql-editor/theme/useWorkspaceSQLEditorTheme";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { NumberInput } from "@/react/components/ui/number-input";
@@ -46,12 +49,21 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, hexToColor } from "@/utils";
 import { ThemeAnchorEditor } from "./sql-editor-theme/ThemeAnchorEditor";
 import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
 
 const CUSTOM_THEME_OPTION = "__custom__";
+
+const toSQLEditorThemeSettingPayload = (theme: SQLEditorTheme) => ({
+  id: theme.id,
+  name: theme.name,
+  monacoBase: theme.monacoBase,
+  tokens: Object.fromEntries(
+    Object.entries(theme.tokens).map(([key, hex]) => [key, hexToColor(hex)])
+  ) as Record<SQLEditorThemeToken, ReturnType<typeof hexToColor>>,
+});
 
 interface SQLEditorSectionProps {
   title: string;
@@ -168,12 +180,10 @@ export const SQLEditorSection = forwardRef<
       // blank one. Matches the applied theme — `resolveThemeId("")` is light too.
       selectedThemeId: workspaceProfile.sqlEditorThemeId || DEFAULT_THEME_ID,
       customDraft: custom
-        ? {
-            id: custom.id,
-            name: custom.name,
-            monacoBase: custom.monacoBase as SQLEditorTheme["monacoBase"],
-            tokens: custom.tokens as SQLEditorTheme["tokens"],
-          }
+        ? resolveWorkspaceTheme({
+            sqlEditorThemeId: custom.id,
+            sqlEditorCustomTheme: custom,
+          })
         : null,
     };
   }, [workspaceProfile]);
@@ -359,7 +369,10 @@ export const SQLEditorSection = forwardRef<
           sqlEditorThemeId: selectedThemeId,
           // `undefined` clears the custom theme when a built-in is selected.
           sqlEditorCustomTheme: customDraft
-            ? create(SQLEditorThemeSettingSchema, customDraft)
+            ? create(
+                SQLEditorThemeSettingSchema,
+                toSQLEditorThemeSettingPayload(customDraft)
+              )
             : undefined,
         },
         updateMask: create(FieldMaskSchema, {

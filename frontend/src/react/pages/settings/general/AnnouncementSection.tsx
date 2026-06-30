@@ -32,6 +32,7 @@ import {
   AnnouncementSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hexToColor } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 interface AnnouncementSectionProps {
@@ -102,7 +103,10 @@ export const AnnouncementSection = forwardRef<
         announcement: create(AnnouncementSchema, {
           text: state.text,
           link: state.link,
-          theme: create(Announcement_AnnouncementThemeSchema, state.theme),
+          theme: create(Announcement_AnnouncementThemeSchema, {
+            background: hexToColor(state.theme.background),
+            text: hexToColor(state.theme.text),
+          }),
         }),
       },
       updateMask: create(FieldMaskSchema, {

@@ -1,3 +1,6 @@
+import { create } from "@bufbuild/protobuf";
+import { type Color, ColorSchema } from "@/types/proto-es/google/type/color_pb";
+
 // Tailwind CSS default breakpoints
 // https://tailwindcss.com/docs/responsive-design
 export const TailwindBreakpoints = {
@@ -29,6 +32,28 @@ export const hexToRgb = (hex: string) => {
     hexValues.push(hex.charAt(4) + hex.charAt(5));
   }
   return hexValues.map((str) => parseInt(str, 16));
+};
+
+const channelToByte = (channel: number): number =>
+  Math.max(0, Math.min(255, Math.round(channel * 255)));
+
+export const colorToHex = (color: Color): string =>
+  rgbToHex(
+    channelToByte(color.red),
+    channelToByte(color.green),
+    channelToByte(color.blue)
+  );
+
+export const colorToRgbString = (color: Color): string =>
+  [color.red, color.green, color.blue].map(channelToByte).join(" ");
+
+export const hexToColor = (hex: string): Color => {
+  const [red, green, blue] = hexToRgb(hex);
+  return create(ColorSchema, {
+    red: red / 255,
+    green: green / 255,
+    blue: blue / 255,
+  });
 };
 
 /**
