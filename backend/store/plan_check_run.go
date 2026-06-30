@@ -335,15 +335,8 @@ func (s *Store) CancelPlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 		WHERE id = ?
 		  AND project = ?
 		  AND status IN (?, ?)
-		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = plan_check_run.project
-			  AND plan.id = plan_check_run.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`,
-		PlanCheckRunStatusCanceled, time.Now(), planCheckRunUID, projectID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion, approvalInputVersion)
+		  AND COALESCE((result->>'approvalInputVersion')::bigint, 0) = ?`,
+		PlanCheckRunStatusCanceled, time.Now(), planCheckRunUID, projectID, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
