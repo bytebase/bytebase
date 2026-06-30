@@ -32,7 +32,10 @@ import {
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useColumnWidths } from "@/react/hooks/useColumnWidths";
+import {
+  distributeColumnWidths,
+  useColumnWidths,
+} from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
@@ -432,44 +435,44 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         key: "status",
         title: t("common.status"),
         defaultWidth: 112,
-        minWidth: 80,
+        minWidth: 72,
       },
       {
         key: "creator",
         title: t("common.creator"),
         defaultWidth: 200,
-        minWidth: 140,
+        minWidth: 128,
         sortKey: "creator",
       },
       {
         key: "created",
         title: t("common.created-at"),
         defaultWidth: 200,
-        minWidth: 160,
+        minWidth: 132,
         sortKey: "create_time",
       },
       {
         key: "expiration",
         title: t("common.expiration"),
         defaultWidth: 200,
-        minWidth: 160,
+        minWidth: 132,
         sortKey: "expire_time",
       },
       {
         key: "statement",
         title: t("common.statement"),
         defaultWidth: 400,
-        minWidth: 200,
+        minWidth: 180,
       },
       {
         key: "databases",
         title: t("common.databases"),
         defaultWidth: 240,
-        minWidth: 160,
+        minWidth: 128,
       },
       // Trailing actions column — no title (blank header), fixed
       // width sized for two ghost buttons + "View issue".
-      { key: "actions", defaultWidth: 180, minWidth: 120, resizable: false },
+      { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
     ],
     [t]
   );
@@ -478,7 +481,20 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   // expiration values aren't permanently truncated by the table's
   // fixed-width layout. The hook owns the per-column width state and
   // the mousedown→mousemove→mouseup drag pipeline.
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+  const { widths, totalWidth, onResizeStart, setWidths } =
+    useColumnWidths(columns);
+
+  const didFitColumnsRef = useRef(false);
+  const fitTableContainer = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || didFitColumnsRef.current) return;
+      const width = node.clientWidth;
+      if (width <= 0) return;
+      didFitColumnsRef.current = true;
+      setWidths(distributeColumnWidths(columns, width));
+    },
+    [columns, setWidths]
+  );
 
   const handleConfirm = useCallback(async () => {
     if (!confirmAction) return;
@@ -540,17 +556,11 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               {t("common.no-data")}
             </div>
           ) : (
-            <div className="px-4">
-              {/*
-                `overflow-x-auto` lets users drag a column past the
-                container width without clipping the trailing columns.
-                The previous `overflow-hidden` would have swallowed
-                the resized overflow.
-              */}
+            <div ref={fitTableContainer} className="px-4">
               <div className="border rounded-sm overflow-x-auto">
                 <Table
-                  className="table-fixed"
-                  style={{ minWidth: `${totalWidth}px` }}
+                  className="w-auto table-fixed"
+                  style={{ width: `${totalWidth}px` }}
                 >
                   {/*
                     `<colgroup>` order mirrors `columns`, which in turn

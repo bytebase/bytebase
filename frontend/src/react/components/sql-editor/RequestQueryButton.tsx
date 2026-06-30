@@ -103,7 +103,7 @@ export function RequestQueryButton({
     () =>
       !!project?.allowJustInTimeAccess &&
       permissionDeniedDetail.requiredPermissions.every(
-        (perm) => perm === "bb.sql.select"
+        (perm) => perm === "bb.sql.select" || perm === "bb.sql.info"
       ),
     [project, permissionDeniedDetail.requiredPermissions]
   );
