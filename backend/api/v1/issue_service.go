@@ -641,10 +641,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
 	}
 
-	payloadPatch := &storepb.Issue{
-		Approval: payload.Approval,
-	}
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
 	if err != nil {
 		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot approve because approval finding is stale"))
@@ -761,10 +758,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		Principal: common.FormatUserEmail(user.Email),
 	})
 
-	payloadPatch := &storepb.Issue{
-		Approval: payload.Approval,
-	}
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
 	if err != nil {
 		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot reject because approval finding is stale"))
@@ -873,10 +867,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	payload.Approval.Approvers = updatedApprovers
 
-	payloadPatch := &storepb.Issue{
-		Approval: payload.Approval,
-	}
-	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, &storepb.Issue{Approval: payload.Approval}, plan, approvalInputVersion)
 	if err != nil {
 		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot request issue because approval finding is stale"))
