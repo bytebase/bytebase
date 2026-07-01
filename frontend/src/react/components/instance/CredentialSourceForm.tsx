@@ -41,7 +41,7 @@ function CredentialSourceForm({
   engine,
   allowEdit,
   onDataSourceChange,
-}: CredentialSourceFormProps) {
+}: Readonly<CredentialSourceFormProps>) {
   const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
 
@@ -329,11 +329,11 @@ function CloudSQLIPTypeField({
   value,
   allowEdit,
   onChange,
-}: {
+}: Readonly<{
   value: DataSource_CloudSQLIPType;
   allowEdit: boolean;
   onChange: (value: DataSource_CloudSQLIPType) => void;
-}) {
+}>) {
   const { t } = useTranslation();
   // Treat unspecified as public for display, matching the backend default.
   const current =
