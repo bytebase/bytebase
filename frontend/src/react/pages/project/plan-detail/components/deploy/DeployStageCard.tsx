@@ -1,20 +1,15 @@
 import { ArrowRight, Eye } from "lucide-react";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
-import { useAppStore } from "@/react/stores/app";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getStageStatus } from "@/utils";
+import { useStageTitle } from "../lifecycle/useStageTitle";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "../PlanDetailTabStrip";
 
 function StageProgressCard({ stage }: { stage: Stage }) {
-  const environmentList = useAppStore((s) => s.environmentList);
-  const env = useMemo(
-    () => useAppStore.getState().getEnvironmentByName(stage.environment),
-    [environmentList, stage.environment]
-  );
+  const title = useStageTitle(stage);
   const completed = stage.tasks.filter(
     (task) =>
       task.status === Task_Status.DONE || task.status === Task_Status.SKIPPED
@@ -24,7 +19,7 @@ function StageProgressCard({ stage }: { stage: Stage }) {
   return (
     <div className="flex items-center gap-2">
       <TaskStatusIcon size="tiny" status={stageStatus} />
-      <span className="text-sm font-medium text-main">{env.title}</span>
+      <span className="text-sm font-medium text-main">{title}</span>
       <span className="text-xs text-control-light">
         ({completed}/{stage.tasks.length})
       </span>

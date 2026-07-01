@@ -26,9 +26,11 @@ import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
+import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { INLINE_TASK_PANEL_BREAKPOINT_PX } from "./shell/constants";
+import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
 import { PlanDetailProvider } from "./shell/PlanDetailContext";
 import {
@@ -75,6 +77,17 @@ function ProjectPlanDetailPageInner({
 }) {
   const { t } = useTranslation();
   const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
+  // The sticky title row only shows its bottom border once content scrolls
+  // under it (GitHub issue-header pattern) — flat at the top, separated when
+  // stuck. pageHost is the scroll container.
+  const [headerStuck, setHeaderStuck] = useState(false);
+  useEffect(() => {
+    if (!pageHost) return;
+    const onScroll = () => setHeaderStuck(pageHost.scrollTop > 0);
+    onScroll();
+    pageHost.addEventListener("scroll", onScroll, { passive: true });
+    return () => pageHost.removeEventListener("scroll", onScroll);
+  }, [pageHost]);
   const [selectedSpecId, setSelectedSpecId] = useState(specId ?? "");
   const page = usePlanDetailPage({
     projectId,
@@ -254,9 +267,20 @@ function ProjectPlanDetailPageInner({
             page.ready ? "" : "invisible pointer-events-none"
           )}
         >
-          <header className="shrink-0 border-b bg-white">
+          {/* Only the title/action row is sticky (GitHub issue-header pattern);
+              the description + metadata below scroll away beneath it. pageHost
+              (overflow-x-hidden → overflow-y auto) is the scroll container, so
+              top-0 pins to it; z-20 keeps it above the phase rail nodes (z-10).
+              The border appears only when stuck, so the row is flat at the top. */}
+          <header
+            className={cn(
+              "sticky top-0 z-20 shrink-0 bg-white",
+              headerStuck && "border-b"
+            )}
+          >
             <PlanDetailHeader />
           </header>
+          <PlanDetailHeaderDetails />
 
           <div
             className="min-h-0 flex flex-1 flex-col lg:grid"
@@ -267,6 +291,7 @@ function ProjectPlanDetailPageInner({
                   which the connector line fills so it stays continuous. */}
               <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
                 <PhaseSection
+                  anchorId={planPhaseAnchorId("changes")}
                   badge={phaseConfigs.changes.badge}
                   expanded={page.activePhases.has("changes")}
                   icon={<Code2 className="size-3 md:size-4" />}
@@ -285,6 +310,7 @@ function ProjectPlanDetailPageInner({
 
                 {reviewVisible && (
                   <PhaseSection
+                    anchorId={planPhaseAnchorId("review")}
                     badge={phaseConfigs.review.badge}
                     expanded={page.activePhases.has("review")}
                     icon={<MessageSquareMore className="size-3 md:size-4" />}
@@ -305,6 +331,7 @@ function ProjectPlanDetailPageInner({
                 )}
 
                 <PhaseSection
+                  anchorId={planPhaseAnchorId("deploy")}
                   badge={phaseConfigs.deploy.badge}
                   expanded={page.activePhases.has("deploy")}
                   icon={<Rocket className="size-3 md:size-4" />}
@@ -424,6 +451,7 @@ function PhaseSection({
   children,
   onToggle,
   onSelect,
+  anchorId,
 }: {
   badge?: {
     label: string;
@@ -440,6 +468,7 @@ function PhaseSection({
   children: ReactNode;
   onToggle: () => void;
   onSelect: () => void;
+  anchorId?: string;
 }) {
   const { t } = useTranslation();
   const dotClass =
@@ -452,7 +481,7 @@ function PhaseSection({
           : "border-2 border-dashed border-control-border text-control-placeholder";
 
   return (
-    <div className={cn("flex", isLast && "mb-48")}>
+    <div className={cn("flex scroll-mt-16", isLast && "mb-48")} id={anchorId}>
       <div className="flex w-10 shrink-0 flex-col items-center md:w-16">
         <div
           className="relative z-10 mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center md:h-7 md:w-7"

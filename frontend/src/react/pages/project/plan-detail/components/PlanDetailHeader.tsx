@@ -1,5 +1,5 @@
 import { clone, create } from "@bufbuild/protobuf";
-import { Ban, ChevronUp, Loader2, Plus } from "lucide-react";
+import { EllipsisVertical, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
@@ -7,10 +7,15 @@ import {
   type IssueLabel,
   IssueLabelSelect,
 } from "@/react/components/IssueLabelSelect";
-import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverContent,
@@ -26,10 +31,12 @@ import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
+  BatchUpdateIssuesStatusRequestSchema,
   CreateIssueRequestSchema,
   Issue_Type,
   IssueSchema,
   IssueStatus,
+  ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -45,6 +52,7 @@ import {
   hasProjectPermissionV2,
 } from "@/utils";
 import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidation";
+import { focusPlanPhase } from "../shell/focusPhase";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getCreateIssueBlockingErrors,
@@ -54,9 +62,13 @@ import {
   shouldStayOnPlanDetailPage,
 } from "../utils/header";
 import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
-import { isReleaseBackedPlan } from "../utils/spec";
-import { PlanDetailMeta } from "./PlanDetailMeta";
+import { PlanLifecycleSlot } from "./lifecycle/PlanLifecycleSlot";
+import { PlanLifecycleStamp } from "./lifecycle/PlanLifecycleStamp";
+import { slotHasPrimaryControl } from "./lifecycle/planLifecycleHeaderState";
+import { usePlanLifecycleHeader } from "./lifecycle/usePlanLifecycleHeader";
 
+// The sticky title/action row. Description + metadata live in
+// PlanDetailHeaderDetails so they scroll away while this row stays pinned.
 export function PlanDetailHeader() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -64,10 +76,7 @@ export function PlanDetailHeader() {
   const currentUser = page.currentUser;
   const project = page.project;
   const [title, setTitle] = useState(page.plan.title);
-  const [description, setDescription] = useState(page.plan.description);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [showFullDescription, setShowFullDescription] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showReviewPopover, setShowReviewPopover] = useState(false);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
@@ -95,12 +104,6 @@ export function PlanDetailHeader() {
     setTitle((prev) => (prev === nextTitle ? prev : nextTitle));
   }, [page.issue?.title, page.plan.title]);
 
-  useEffect(() => {
-    setDescription((prev) =>
-      prev === page.plan.description ? prev : page.plan.description
-    );
-  }, [page.plan.description]);
-
   const allowTitleEdit = useMemo(() => {
     if (page.readonly) return false;
     if (page.isCreating) return true;
@@ -108,24 +111,6 @@ export function PlanDetailHeader() {
     if (page.issue) {
       return hasProjectPermissionV2(project, "bb.issues.update");
     }
-    return (
-      page.plan.creator === currentUser.name ||
-      hasProjectPermissionV2(project, "bb.plans.update")
-    );
-  }, [
-    currentUser.name,
-    page.isCreating,
-    page.issue,
-    page.plan.creator,
-    page.plan.hasRollout,
-    page.readonly,
-    project,
-  ]);
-
-  const allowDescriptionEdit = useMemo(() => {
-    if (page.readonly) return false;
-    if (page.isCreating) return true;
-    if (!page.issue && page.plan.hasRollout) return false;
     return (
       page.plan.creator === currentUser.name ||
       hasProjectPermissionV2(project, "bb.plans.update")
@@ -153,16 +138,9 @@ export function PlanDetailHeader() {
     titleInputRef.current?.focus();
   }, [page.isCreating, page.ready]);
 
-  const isGitOpsPlan = useMemo(
-    () => isReleaseBackedPlan(page.plan.specs),
-    [page.plan.specs]
-  );
-  const showSubmitForReview =
-    !!page.plan.name &&
-    !page.isCreating &&
-    !page.plan.issue &&
-    !isGitOpsPlan &&
-    page.plan.state === State.ACTIVE;
+  // The resolver owns "what does the header show": the create / ready-for-review
+  // advances surface as lifecycle states, replacing the old ad-hoc booleans.
+  const lifecycle = usePlanLifecycleHeader(page);
   const showClosePlan =
     !page.isCreating &&
     !page.plan.issue &&
@@ -173,6 +151,20 @@ export function PlanDetailHeader() {
     !page.plan.issue &&
     !page.plan.hasRollout &&
     page.plan.state === State.DELETED;
+
+  // Close (cancel) / reopen the review issue from the header, mirroring the issue
+  // detail page. Close is offered during the review phase (open issue, no rollout
+  // yet); reopen once the review was canceled.
+  const canUpdateIssue = hasProjectPermissionV2(project, "bb.issues.update");
+  const showCloseIssue =
+    !!page.issue &&
+    page.issue.status === IssueStatus.OPEN &&
+    !page.plan.hasRollout &&
+    canUpdateIssue;
+  const showReopenIssue =
+    !!page.issue &&
+    page.issue.status === IssueStatus.CANCELED &&
+    canUpdateIssue;
 
   const submitDisabled = page.isEditing;
   const submitDisabledReason = submitDisabled
@@ -245,50 +237,6 @@ export function PlanDetailHeader() {
     }
   };
 
-  const saveDescription = async () => {
-    if (page.isCreating) {
-      patchState({
-        plan: {
-          ...page.plan,
-          description,
-        },
-      });
-      setEditingDescription(false);
-      setEditing("description", false);
-      return;
-    }
-
-    let saved = false;
-    try {
-      setUpdating(true);
-      const planPatch = create(PlanSchema, {
-        ...page.plan,
-        description,
-      });
-      const response = await planServiceClientConnect.updatePlan(
-        create(UpdatePlanRequestSchema, {
-          plan: planPatch,
-          updateMask: { paths: ["description"] },
-        })
-      );
-      patchState({ plan: response });
-      saved = true;
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("common.error"),
-        description: String(error),
-      });
-    } finally {
-      setUpdating(false);
-      if (saved) {
-        setEditingDescription(false);
-        setEditing("description", false);
-      }
-    }
-  };
-
   const updatePlanState = async (state: State) => {
     try {
       const planPatch = clone(PlanSchema, page.plan);
@@ -314,6 +262,111 @@ export function PlanDetailHeader() {
       });
     }
   };
+
+  const updateIssueStatus = async (status: IssueStatus) => {
+    const issue = page.issue;
+    if (!issue) return;
+    try {
+      await issueServiceClientConnect.batchUpdateIssuesStatus(
+        create(BatchUpdateIssuesStatusRequestSchema, {
+          parent: project.name,
+          issues: [issue.name],
+          status,
+        })
+      );
+      // Closing / reopening records a system comment — refresh page state and the
+      // issue comments so the review timeline reflects it (like issue detail).
+      await Promise.all([
+        page.refreshState(),
+        useAppStore.getState().listIssueComments(
+          create(ListIssueCommentsRequestSchema, {
+            parent: issue.name,
+            pageSize: 1000,
+          })
+        ),
+      ]);
+      // Land on the review section so the close/reopen system comment and the
+      // updated status are visible (consistent with the other header advances).
+      focusPlanPhase("review", page.expandPhase);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+        description: String(error),
+      });
+    }
+  };
+
+  // Secondary lifecycle actions collapse into a "..." overflow menu beside the
+  // primary slot, matching the issue detail page — the slot keeps one action or
+  // status, everything else lives in the menu.
+  const secondaryActions: {
+    key: string;
+    label: string;
+    onSelect: () => void;
+  }[] = [];
+  if (showClosePlan) {
+    secondaryActions.push({
+      key: "close-plan",
+      label: t("common.close"),
+      onSelect: () => {
+        if (window.confirm(t("plan.state.close-confirm"))) {
+          void updatePlanState(State.DELETED);
+        }
+      },
+    });
+  }
+  if (showReopenPlan) {
+    secondaryActions.push({
+      key: "reopen-plan",
+      label: t("common.reopen"),
+      onSelect: () => {
+        if (window.confirm(t("plan.state.reopen-confirm"))) {
+          void updatePlanState(State.ACTIVE);
+        }
+      },
+    });
+  }
+  if (showCloseIssue) {
+    secondaryActions.push({
+      key: "close-issue",
+      label: t("issue.batch-transition.close"),
+      onSelect: () => {
+        if (window.confirm(t("plan.state.close-review-confirm"))) {
+          void updateIssueStatus(IssueStatus.CANCELED);
+        }
+      },
+    });
+  }
+  if (showReopenIssue) {
+    secondaryActions.push({
+      key: "reopen-issue",
+      label: t("issue.batch-transition.reopen"),
+      onSelect: () => {
+        if (window.confirm(t("plan.state.reopen-review-confirm"))) {
+          void updateIssueStatus(IssueStatus.OPEN);
+        }
+      },
+    });
+  }
+
+  // With no primary in the slot (terminal / none), surface the first secondary
+  // action directly (e.g. Reopen) rather than hiding it; the rest stay in the
+  // overflow menu.
+  const slotHasPrimary = slotHasPrimaryControl(lifecycle);
+  const promotedAction =
+    !slotHasPrimary && secondaryActions.length > 0
+      ? secondaryActions[0]
+      : undefined;
+  const overflowActions = promotedAction
+    ? secondaryActions.slice(1)
+    : secondaryActions;
 
   const createSheets = async () => {
     for (const spec of page.plan.specs) {
@@ -406,10 +459,6 @@ export function PlanDetailHeader() {
     }
   };
 
-  const isDescriptionLong =
-    (description?.length ?? 0) > 150 ||
-    (description?.split("\n").length ?? 0) > 3;
-
   const handleCreateIssue = async () => {
     if (createIssueConfirmErrors.length > 0) return;
     try {
@@ -436,6 +485,8 @@ export function PlanDetailHeader() {
       });
       if (shouldStayOnPlanDetailPage(page.plan)) {
         await page.refreshState();
+        // Land the user on the review they just opened.
+        focusPlanPhase("review", page.expandPhase);
         return;
       }
       void router.push({
@@ -460,17 +511,14 @@ export function PlanDetailHeader() {
   return (
     <div className="px-2 py-2 sm:px-4">
       <div className="flex flex-row items-center justify-between gap-2">
-        {page.plan.state === State.DELETED && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-sm text-control">
-            <Ban className="h-4 w-4" />
-            {t("common.closed")}
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-x-2">
+          {/* Terminal status (Closed / Deployed) sits at the far left, before
+              the title — a state badge, not an action. */}
+          <PlanLifecycleStamp state={lifecycle} />
           <input
             ref={titleInputRef}
             className={cn(
-              "h-9 w-full bg-transparent text-xl! font-bold text-main outline-hidden",
+              "h-9 min-w-0 flex-1 bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle
                 ? "border border-control-border px-3"
                 : "border border-transparent px-0",
@@ -503,7 +551,10 @@ export function PlanDetailHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-x-2">
-          {page.isCreating ? (
+          {/* Lifecycle slot: one primary advance/status per state. Create and
+              ready-for-review stay here (coupled to the title/create flow); all
+              other states render through PlanLifecycleSlot. */}
+          {lifecycle.kind === "create" ? (
             <Popover
               modal={false}
               onOpenChange={setShowCreateErrors}
@@ -536,195 +587,78 @@ export function PlanDetailHeader() {
                 />
               </PopoverContent>
             </Popover>
+          ) : lifecycle.kind === "ready-for-review" ? (
+            <Popover
+              open={showReviewPopover}
+              onOpenChange={handleReviewPopoverOpenChange}
+            >
+              <PopoverTrigger
+                render={
+                  <Button
+                    disabled={submitDisabled}
+                    title={submitDisabledReason}
+                  />
+                }
+              >
+                {t("plan.ready-for-review")}
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-[min(28rem,calc(100vw-2rem))] px-4 py-4"
+              >
+                <ReadyForReviewPopoverContent
+                  checksWarningAcknowledged={checksWarningAcknowledged}
+                  confirmErrors={createIssueConfirmErrors}
+                  forceIssueLabels={project.forceIssueLabels}
+                  issueLabels={project.issueLabels ?? []}
+                  onCancel={() => handleReviewPopoverOpenChange(false)}
+                  onChecksWarningAcknowledgedChange={
+                    setChecksWarningAcknowledged
+                  }
+                  onConfirm={() => void handleCreateIssue()}
+                  onSelectedLabelsChange={setSelectedLabels}
+                  selectedLabels={selectedLabels}
+                  showChecksWarning={showChecksWarning}
+                  submitting={submittingReview}
+                />
+              </PopoverContent>
+            </Popover>
           ) : (
-            <>
-              {showSubmitForReview && (
-                <Popover
-                  open={showReviewPopover}
-                  onOpenChange={handleReviewPopoverOpenChange}
-                >
-                  <PopoverTrigger
-                    render={
-                      <Button
-                        disabled={submitDisabled}
-                        title={submitDisabledReason}
-                      />
-                    }
-                  >
-                    {t("plan.ready-for-review")}
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="end"
-                    className="w-[min(28rem,calc(100vw-2rem))] px-4 py-4"
-                  >
-                    <ReadyForReviewPopoverContent
-                      checksWarningAcknowledged={checksWarningAcknowledged}
-                      confirmErrors={createIssueConfirmErrors}
-                      forceIssueLabels={project.forceIssueLabels}
-                      issueLabels={project.issueLabels ?? []}
-                      onCancel={() => handleReviewPopoverOpenChange(false)}
-                      onChecksWarningAcknowledgedChange={
-                        setChecksWarningAcknowledged
-                      }
-                      onConfirm={() => void handleCreateIssue()}
-                      onSelectedLabelsChange={setSelectedLabels}
-                      selectedLabels={selectedLabels}
-                      showChecksWarning={showChecksWarning}
-                      submitting={submittingReview}
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-              {showClosePlan && (
-                <Button
-                  onClick={() => {
-                    if (window.confirm(t("plan.state.close-confirm"))) {
-                      void updatePlanState(State.DELETED);
-                    }
-                  }}
-                  variant="outline"
-                >
-                  {t("common.close")}
-                </Button>
-              )}
-              {showReopenPlan && (
-                <Button
-                  onClick={() => {
-                    if (window.confirm(t("plan.state.reopen-confirm"))) {
-                      void updatePlanState(State.ACTIVE);
-                    }
-                  }}
-                  variant="outline"
-                >
-                  {t("common.reopen")}
-                </Button>
-              )}
-            </>
+            <PlanLifecycleSlot state={lifecycle} />
+          )}
+          {/* Secondary actions trail the lifecycle slot in a "..." overflow menu
+              and never compete with it for the primary position — except when the
+              slot has no primary, where the first one (e.g. Reopen) surfaces
+              directly. */}
+          {promotedAction && (
+            <Button onClick={promotedAction.onSelect} variant="outline">
+              {promotedAction.label}
+            </Button>
+          )}
+          {overflowActions.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={t("common.more")}
+                    className="px-2"
+                    variant="ghost"
+                  />
+                }
+              >
+                <EllipsisVertical className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {overflowActions.map((action) => (
+                  <DropdownMenuItem key={action.key} onClick={action.onSelect}>
+                    {action.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
-
-      <div className="min-w-0">
-        {editingDescription ? (
-          <div className="py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-base font-medium">
-                {t("common.description")}
-              </span>
-              <div className="flex items-center gap-2">
-                {!page.isCreating ? (
-                  <Button
-                    onClick={() => void saveDescription()}
-                    size="xs"
-                    variant="outline"
-                  >
-                    {t("common.save")}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => {
-                      setDescription(page.plan.description);
-                      setEditingDescription(false);
-                      setEditing("description", false);
-                    }}
-                    size="xs"
-                    variant="ghost"
-                  >
-                    <ChevronUp className="mr-1 h-4 w-4" />
-                    {t("common.collapse")}
-                  </Button>
-                )}
-                {!page.isCreating && (
-                  <Button
-                    onClick={() => {
-                      setDescription(page.plan.description);
-                      setEditingDescription(false);
-                      setEditing("description", false);
-                    }}
-                    size="xs"
-                    variant="ghost"
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <textarea
-              className="mt-2 min-h-28 w-full rounded-sm border border-control-border px-3 py-2 text-sm outline-hidden"
-              onChange={(e) => {
-                setDescription(e.target.value);
-                if (page.isCreating) {
-                  patchState({
-                    plan: { ...page.plan, description: e.target.value },
-                  });
-                }
-              }}
-              value={description}
-            />
-          </div>
-        ) : description ? (
-          <div className="mt-1">
-            <div
-              aria-disabled={!allowDescriptionEdit}
-              className={cn(
-                "relative w-full rounded-md border border-transparent px-2 py-1 text-left text-sm text-control-light transition-all duration-200",
-                !showFullDescription && "max-h-[4.5rem] overflow-hidden",
-                allowDescriptionEdit && "cursor-pointer hover:border-gray-200"
-              )}
-              onClick={() => {
-                if (!allowDescriptionEdit) return;
-                setEditingDescription(true);
-                setEditing("description", true);
-              }}
-              onKeyDown={(event) => {
-                if (!allowDescriptionEdit) return;
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                setEditingDescription(true);
-                setEditing("description", true);
-              }}
-              role={allowDescriptionEdit ? "button" : undefined}
-              tabIndex={allowDescriptionEdit ? 0 : undefined}
-            >
-              <div className="pointer-events-none">
-                <MarkdownEditor content={description} mode="preview" />
-              </div>
-              {!showFullDescription && isDescriptionLong && (
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent" />
-              )}
-            </div>
-            {isDescriptionLong && (
-              <button
-                className="mt-1 px-2 text-xs text-control-placeholder hover:text-control"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowFullDescription((value) => !value);
-                }}
-                type="button"
-              >
-                {showFullDescription
-                  ? t("common.show-less")
-                  : t("common.show-more")}
-              </button>
-            )}
-          </div>
-        ) : allowDescriptionEdit ? (
-          <Button
-            onClick={() => {
-              setEditingDescription(true);
-              setEditing("description", true);
-            }}
-            size="xs"
-            variant="ghost"
-            className="italic opacity-60"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            {t("plan.description.placeholder")}
-          </Button>
-        ) : null}
-      </div>
-
-      <PlanDetailMeta />
     </div>
   );
 }

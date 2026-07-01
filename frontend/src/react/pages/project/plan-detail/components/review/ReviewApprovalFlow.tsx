@@ -51,7 +51,16 @@ export function deriveSteps(issue: Issue): FlowStep[] {
   });
 }
 
-export function ReviewApprovalFlow({ issue }: { issue: Issue }) {
+export function ReviewApprovalFlow({
+  issue,
+  compact = false,
+}: {
+  issue: Issue;
+  // Fold to at most four nodes (approved chip + two waiting + pending chip),
+  // rendered vertically. Used by the header Plan status popover, which is too
+  // narrow for the full flow.
+  compact?: boolean;
+}) {
   const { t } = useTranslation();
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -87,6 +96,14 @@ export function ReviewApprovalFlow({ issue }: { issue: Issue }) {
     return (
       <div className="px-4 py-3 text-sm text-control-placeholder">
         {t("custom-approval.approval-flow.skip")}
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="min-w-0 px-4 py-3">
+        <CompactVerticalFlow issue={issue} steps={steps} />
       </div>
     );
   }
@@ -562,6 +579,102 @@ function PendingPopoverRow({ issue, step }: { issue: Issue; step: FlowStep }) {
             </span>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Compact fold used by the header Plan status popover: collapse all approved
+// steps into one chip, name up to two upcoming (waiting) steps, and fold the
+// rest into a "N pending" chip — at most four rows, stacked vertically.
+function CompactVerticalFlow({
+  issue,
+  steps,
+}: {
+  issue: Issue;
+  steps: FlowStep[];
+}) {
+  const approved = steps.filter((step) => step.status === "approved");
+  const rest = steps.filter((step) => step.status !== "approved");
+  const named = rest.slice(0, 2);
+  const folded = rest.slice(2);
+  const hasFolded = folded.length > 0;
+
+  // Rows render in order: an approved fold, up to two named steps, then a pending
+  // fold. `isLast` (which drops the trailing connector) is a self-contained
+  // expression per row, so it doesn't depend on push order.
+  const rows: ReactNode[] = [];
+  if (approved.length > 0) {
+    rows.push(
+      <ApprovedFoldRow
+        isLast={named.length === 0 && !hasFolded}
+        key="approved-fold"
+        steps={approved}
+      />
+    );
+  }
+  named.forEach((step, i) => {
+    rows.push(
+      <FlowNode
+        isLast={i === named.length - 1 && !hasFolded}
+        issue={issue}
+        key={`step-${step.index}`}
+        step={step}
+        vertical
+      />
+    );
+  });
+  if (hasFolded) {
+    rows.push(<PendingFoldRow isLast key="pending-fold" steps={folded} />);
+  }
+
+  return <div className="flex flex-col">{rows}</div>;
+}
+
+function ApprovedFoldRow({
+  steps,
+  isLast,
+}: {
+  steps: FlowStep[];
+  isLast: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-w-0 items-start gap-x-2">
+      <div className="flex flex-col items-center self-stretch">
+        <StatusDot index={0} status="approved" />
+        {!isLast && <div className="w-px flex-1 bg-control-border" />}
+      </div>
+      <div className={cn("min-w-0", !isLast && "pb-3")}>
+        <span className="text-sm font-medium text-control">
+          {t("plan.review.approval-flow.n-approved", { n: steps.length })}
+        </span>
+        <div className="mt-1 flex h-4 items-center">
+          <ChipAvatars principals={steps.map((step) => step.approver ?? "")} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PendingFoldRow({
+  steps,
+  isLast,
+}: {
+  steps: FlowStep[];
+  isLast: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-w-0 items-start gap-x-2">
+      <div className="flex flex-col items-center self-stretch">
+        <div className="size-6 shrink-0 rounded-full border-2 border-dashed border-control-border" />
+        {!isLast && <div className="w-px flex-1 bg-control-border" />}
+      </div>
+      <div className={cn("min-w-0", !isLast && "pb-3")}>
+        <span className="text-sm font-medium text-control">
+          {t("plan.review.approval-flow.n-pending", { n: steps.length })}
+        </span>
       </div>
     </div>
   );

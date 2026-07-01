@@ -1474,6 +1474,27 @@
       "serializable": "直列化可能"
     },
     "labels-required-for-review": "レビュー前にラベルが必要です",
+    "lifecycle": {
+      "checking": "チェック中…",
+      "checks-failing_one": "{{count}} 件のチェック失敗",
+      "checks-failing_other": "{{count}} 件のチェック失敗",
+      "deployed": "デプロイ済み",
+      "gate-checks-failed": "一部のチェックが失敗しました",
+      "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
+      "gate-checks-passed": "すべてのチェックに合格",
+      "gate-checks-passed-sub": "{{count}} 件成功",
+      "gate-checks-running": "チェックを実行中",
+      "gate-checks-running-sub": "{{running}} 件実行中、{{passed}} 件成功",
+      "gate-review-approved": "変更が承認されました",
+      "gate-review-pending": "レビュー中",
+      "gate-review-rejected": "変更がリクエストされました",
+      "preparing-rollout": "ロールアウトを準備中…",
+      "rejected": "却下されました",
+      "rerun-stage": "再実行 · {{stage}}",
+      "review-waiting": "{{role}} の承認待ち",
+      "run-stage": "実行 · {{stage}}",
+      "stage-status": "{{status}} · {{stage}}"
+    },
     "meta": {
       "created-by": "{{user}} が作成"
     },
@@ -1552,7 +1573,9 @@
         "n-checks-failed_other": "{{count}} 件のチェックに失敗",
         "n-checks-passed_one": "{{count}} 件のチェックに合格",
         "n-checks-passed_other": "{{count}} 件のチェックに合格",
+        "rollout-auto-creates": "承認後にロールアウトが自動作成されます",
         "rollout-blocked-by-failed-checks": "チェックが通過するまでロールアウトは自動作成されません",
+        "rollout-not-created": "ロールアウトは自動作成されませんでした",
         "waiting-on-review": "レビュー待ち"
       },
       "rejection": {
@@ -1573,7 +1596,9 @@
     },
     "state": {
       "close-confirm": "このプランを閉じますか？",
-      "reopen-confirm": "このプランを再開きますか？"
+      "close-review-confirm": "このレビューを閉じますか？",
+      "reopen-confirm": "このプランを再開きますか？",
+      "reopen-review-confirm": "このレビューを再開しますか？"
     },
     "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
@@ -1995,7 +2020,6 @@
     },
     "stage": {
       "confirm-create": "このステージのタスクを作成しますか？",
-      "run-stage": "タスクを実行",
       "self_one": "ステージ",
       "self_other": "ステージ"
     },

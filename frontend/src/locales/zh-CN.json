@@ -1474,6 +1474,27 @@
       "serializable": "串行化"
     },
     "labels-required-for-review": "提交审批前必须设置标签",
+    "lifecycle": {
+      "checking": "检查中…",
+      "checks-failing_one": "{{count}} 项检查失败",
+      "checks-failing_other": "{{count}} 项检查失败",
+      "deployed": "已部署",
+      "gate-checks-failed": "部分检查未通过",
+      "gate-checks-failed-sub": "{{failing}} 项失败，{{passed}} 项通过",
+      "gate-checks-passed": "所有检查已通过",
+      "gate-checks-passed-sub": "{{count}} 项通过",
+      "gate-checks-running": "检查运行中",
+      "gate-checks-running-sub": "{{running}} 项运行中，{{passed}} 项通过",
+      "gate-review-approved": "变更已批准",
+      "gate-review-pending": "审核中",
+      "gate-review-rejected": "请求变更",
+      "preparing-rollout": "正在准备发布…",
+      "rejected": "已拒绝",
+      "rerun-stage": "重新执行 · {{stage}}",
+      "review-waiting": "等待 {{role}}",
+      "run-stage": "执行 · {{stage}}",
+      "stage-status": "{{status}} · {{stage}}"
+    },
     "meta": {
       "created-by": "由 {{user}} 创建"
     },
@@ -1540,8 +1561,8 @@
         "confirm-checks-failed_one": "{{count}} 项失败的检查",
         "confirm-checks-failed_other": "{{count}} 项失败的检查",
         "confirm-checks-running": "检查仍在运行",
-        "confirm-review-not-approved": "审核尚未通过",
-        "confirm-review-rejected": "审核已被拒绝",
+        "confirm-review-not-approved": "审批尚未通过",
+        "confirm-review-rejected": "审批已被拒绝",
         "creating-rollout-automatically": "正在自动创建发布...",
         "errors-passed-not-created_one": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
         "errors-passed-not-created_other": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
@@ -1552,7 +1573,9 @@
         "n-checks-failed_other": "{{count}} 项检查失败",
         "n-checks-passed_one": "{{count}} 项检查通过",
         "n-checks-passed_other": "{{count}} 项检查通过",
+        "rollout-auto-creates": "审批通过后自动创建发布",
         "rollout-blocked-by-failed-checks": "在检查通过前不会自动创建发布",
+        "rollout-not-created": "发布未自动创建",
         "waiting-on-review": "等待审批"
       },
       "rejection": {
@@ -1573,7 +1596,9 @@
     },
     "state": {
       "close-confirm": "确认关闭这个计划？",
-      "reopen-confirm": "确认重新打开这个计划？"
+      "close-review-confirm": "确认关闭这个审批？",
+      "reopen-confirm": "确认重新打开这个计划？",
+      "reopen-review-confirm": "确认重新打开这个审批？"
     },
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
@@ -1995,7 +2020,6 @@
     },
     "stage": {
       "confirm-create": "确认创建此阶段的任务？",
-      "run-stage": "运行任务",
       "self_one": "阶段",
       "self_other": "阶段"
     },

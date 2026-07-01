@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
-import { Play, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
@@ -10,13 +10,7 @@ import {
   CreateRolloutRequestSchema,
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  canRolloutTasks,
-  preloadRolloutPermissionContext,
-  RUNNABLE_TASK_STATUSES,
-} from "../../../issue-detail/utils/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-import { PlanDetailTaskRolloutActionPanel } from "../PlanDetailTaskRolloutActionPanel";
 import { DeployStageRollbackSection } from "./DeployStageRollbackSection";
 import { DeployTaskFilter } from "./DeployTaskFilter";
 import { DeployTaskList } from "./DeployTaskList";
@@ -30,8 +24,6 @@ export function DeployStageContentView({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const currentUser = page.currentUser;
-  const project = page.project;
   const [filterStatuses, setFilterStatuses] = useState<Task_Status[]>([]);
   // Scope the task filter to the stage: when switching to a different stage,
   // drop the previous stage's filter so it can't silently hide the new stage's
@@ -43,44 +35,8 @@ export function DeployStageContentView({
     setFilteredStageName(stage.name);
     setFilterStatuses([]);
   }
-  const [rolloutPermissionReady, setRolloutPermissionReady] = useState(false);
-  const [runStageOpen, setRunStageOpen] = useState(false);
-  const stageTaskKey = stage.tasks.map((task) => task.name).join("|");
 
   const isStageCreated = stage.tasks.length > 0;
-
-  useEffect(() => {
-    let canceled = false;
-    const load = async () => {
-      if (!isStageCreated) {
-        setRolloutPermissionReady(true);
-        return;
-      }
-      setRolloutPermissionReady(false);
-      await preloadRolloutPermissionContext({
-        environment: stage.environment,
-        projectName: project.name,
-        tasks: stage.tasks,
-      });
-      if (!canceled) setRolloutPermissionReady(true);
-    };
-    void load();
-    return () => {
-      canceled = true;
-    };
-  }, [isStageCreated, project.name, stage.environment, stageTaskKey]);
-
-  const canRunStage =
-    rolloutPermissionReady &&
-    isStageCreated &&
-    stage.tasks.some((task) => RUNNABLE_TASK_STATUSES.includes(task.status)) &&
-    canRolloutTasks({
-      currentUser,
-      environment: stage.environment,
-      issue: page.issue,
-      project,
-      tasks: stage.tasks,
-    });
 
   const filteredTasks =
     filterStatuses.length > 0
@@ -101,17 +57,13 @@ export function DeployStageContentView({
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-x-2">
-            {isStageCreated ? (
-              <Button
-                disabled={!canRunStage}
-                size="sm"
-                onClick={() => setRunStageOpen(true)}
-              >
-                <Play className="h-4 w-4" />
-                {t("rollout.stage.run-stage")}
-              </Button>
-            ) : (
+          {/* The bulk "run this stage" advance now lives in the page header's
+              lifecycle slot (Run · {stage}, frontier-only — BYT-9722), so this
+              row no longer duplicates it. "Create" is a separate action for a
+              stage that doesn't exist in the rollout yet; per-task actions and
+              the multi-select toolbar below still cover ad hoc runs. */}
+          {!isStageCreated && (
+            <div className="flex shrink-0 items-center gap-x-2">
               <Button
                 onClick={async () => {
                   const confirmed = window.confirm(
@@ -145,8 +97,8 @@ export function DeployStageContentView({
                 <Plus className="h-4 w-4" />
                 {t("common.create")}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -162,16 +114,6 @@ export function DeployStageContentView({
 
         {isStageCreated && <DeployStageRollbackSection stage={stage} />}
       </div>
-
-      <PlanDetailTaskRolloutActionPanel
-        action="RUN"
-        onConfirm={async () => {
-          await page.refreshState();
-        }}
-        onOpenChange={setRunStageOpen}
-        open={runStageOpen}
-        target={{ type: "tasks", stage }}
-      />
     </div>
   );
 }

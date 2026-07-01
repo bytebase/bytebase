@@ -1474,6 +1474,27 @@
       "serializable": "Tuần tự hóa"
     },
     "labels-required-for-review": "Cần có nhãn trước khi review",
+    "lifecycle": {
+      "checking": "Đang kiểm tra…",
+      "checks-failing_one": "{{count}} kiểm tra thất bại",
+      "checks-failing_other": "{{count}} kiểm tra thất bại",
+      "deployed": "Đã triển khai",
+      "gate-checks-failed": "Một số kiểm tra không thành công",
+      "gate-checks-failed-sub": "{{failing}} thất bại, {{passed}} thành công",
+      "gate-checks-passed": "Tất cả kiểm tra đã qua",
+      "gate-checks-passed-sub": "{{count}} thành công",
+      "gate-checks-running": "Đang chạy kiểm tra",
+      "gate-checks-running-sub": "{{running}} đang chạy, {{passed}} thành công",
+      "gate-review-approved": "Đã duyệt thay đổi",
+      "gate-review-pending": "Đang xem xét",
+      "gate-review-rejected": "Yêu cầu thay đổi",
+      "preparing-rollout": "Đang chuẩn bị triển khai…",
+      "rejected": "Đã từ chối",
+      "rerun-stage": "Chạy lại · {{stage}}",
+      "review-waiting": "Đang chờ {{role}}",
+      "run-stage": "Chạy · {{stage}}",
+      "stage-status": "{{status}} · {{stage}}"
+    },
     "meta": {
       "created-by": "Tạo bởi {{user}}"
     },
@@ -1552,7 +1573,9 @@
         "n-checks-failed_other": "{{count}} kiểm tra thất bại",
         "n-checks-passed_one": "{{count}} kiểm tra đạt",
         "n-checks-passed_other": "{{count}} kiểm tra đạt",
+        "rollout-auto-creates": "Bản triển khai tự động tạo sau khi phê duyệt",
         "rollout-blocked-by-failed-checks": "bản triển khai sẽ không được tạo tự động cho đến khi các kiểm tra đạt",
+        "rollout-not-created": "Bản triển khai chưa được tạo tự động",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
       "rejection": {
@@ -1573,7 +1596,9 @@
     },
     "state": {
       "close-confirm": "Đóng kế hoạch này?",
-      "reopen-confirm": "Mở lại kế hoạch này?"
+      "close-review-confirm": "Đóng đợt xem xét này?",
+      "reopen-confirm": "Mở lại kế hoạch này?",
+      "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
@@ -1995,7 +2020,6 @@
     },
     "stage": {
       "confirm-create": "Xác nhận tạo tác vụ cho giai đoạn này?",
-      "run-stage": "Chạy tác vụ",
       "self_one": "Giai đoạn",
       "self_other": "Các giai đoạn"
     },
