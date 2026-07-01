@@ -227,6 +227,7 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			UseSsl:                    ds.GetUseSsl(),
 			VerifyTlsCertificate:      ds.GetVerifyTlsCertificate(),
 			RedisType:                 convertRedisType(ds.GetRedisType()),
+			CloudSqlIpType:            convertCloudSQLIPType(ds.GetCloudSqlIpType()),
 			MasterName:                ds.GetMasterName(),
 			MasterUsername:            ds.GetMasterUsername(),
 			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
@@ -469,6 +470,32 @@ func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_Re
 	}
 }
 
+func convertV1CloudSQLIPType(ipType v1pb.DataSource_CloudSQLIPType) storepb.DataSource_CloudSQLIPType {
+	switch ipType {
+	case v1pb.DataSource_PUBLIC:
+		return storepb.DataSource_PUBLIC
+	case v1pb.DataSource_PRIVATE:
+		return storepb.DataSource_PRIVATE
+	case v1pb.DataSource_PSC:
+		return storepb.DataSource_PSC
+	default:
+		return storepb.DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
+	}
+}
+
+func convertCloudSQLIPType(ipType storepb.DataSource_CloudSQLIPType) v1pb.DataSource_CloudSQLIPType {
+	switch ipType {
+	case storepb.DataSource_PUBLIC:
+		return v1pb.DataSource_PUBLIC
+	case storepb.DataSource_PRIVATE:
+		return v1pb.DataSource_PRIVATE
+	case storepb.DataSource_PSC:
+		return v1pb.DataSource_PSC
+	default:
+		return v1pb.DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
+	}
+}
+
 func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
 	dsType, err := convertV1DataSourceType(dataSource.Type)
 	if err != nil {
@@ -516,6 +543,7 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		UseSsl:                             dataSource.UseSsl,
 		VerifyTlsCertificate:               dataSource.VerifyTlsCertificate,
 		RedisType:                          convertV1RedisType(dataSource.RedisType),
+		CloudSqlIpType:                     convertV1CloudSQLIPType(dataSource.CloudSqlIpType),
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterPassword:                     dataSource.MasterPassword,

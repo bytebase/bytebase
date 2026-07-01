@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -39,14 +40,28 @@ func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (a
 }
 
 func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
+	// WithIAMAuthN enables IAM database authentication.
+	opts := []cloudsqlconn.Option{cloudsqlconn.WithIAMAuthN()}
+	// WithCredentialsJSON provides Cloud SQL Admin API access when a service account key is set.
 	if gcpCredential := connCfg.DataSource.GetGcpCredential(); gcpCredential != nil && len(gcpCredential.Content) > 0 {
-		// Need BOTH: WithCredentialsJSON for API access AND WithIAMAuthN for IAM database authentication
-		return cloudsqlconn.NewDialer(ctx,
-			cloudsqlconn.WithCredentialsJSON([]byte(gcpCredential.Content)),
-			cloudsqlconn.WithIAMAuthN(),
-		)
+		opts = append(opts, cloudsqlconn.WithCredentialsJSON([]byte(gcpCredential.Content)))
 	}
-	return cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	opts = append(opts, cloudSQLDialOptions(connCfg.DataSource)...)
+	return cloudsqlconn.NewDialer(ctx, opts...)
+}
+
+// cloudSQLDialOptions selects the Cloud SQL IP type (private or PSC) for Google
+// Cloud SQL IAM connections. Public IP is the cloudsqlconn default, so no option
+// is needed for PUBLIC or unspecified.
+func cloudSQLDialOptions(ds *storepb.DataSource) []cloudsqlconn.Option {
+	switch ds.GetCloudSqlIpType() {
+	case storepb.DataSource_PRIVATE:
+		return []cloudsqlconn.Option{cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPrivateIP())}
+	case storepb.DataSource_PSC:
+		return []cloudsqlconn.Option{cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPSC())}
+	default:
+		return nil
+	}
 }
 
 // GCPCredentialOption returns the appropriate option.ClientOption for the given

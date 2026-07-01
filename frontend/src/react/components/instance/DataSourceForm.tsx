@@ -809,6 +809,7 @@ export function DataSourceForm({
               {isIAM && (
                 <CredentialSourceForm
                   dataSource={dataSource}
+                  engine={basicInfo.engine}
                   allowEdit={allowEdit}
                   onDataSourceChange={update}
                 />
@@ -1617,6 +1618,7 @@ export function DataSourceForm({
               </div>
               <CredentialSourceForm
                 dataSource={dataSource}
+                engine={basicInfo.engine}
                 allowEdit={allowEdit}
                 onDataSourceChange={update}
               />

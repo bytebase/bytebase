@@ -136,6 +136,7 @@
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
     - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
+    - [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType)
     - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
@@ -2371,6 +2372,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | authentication_private_key_passphrase | [string](#string) |  | Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
+| cloud_sql_ip_type | [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType) |  | cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections. CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility. |
 | azure_credential | [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential) |  |  |
 | aws_credential | [DataSource.AWSCredential](#bytebase-v1-DataSource-AWSCredential) |  |  |
 | gcp_credential | [DataSource.GCPCredential](#bytebase-v1-DataSource-GCPCredential) |  |  |
@@ -2838,6 +2840,20 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
 | AZURE_IAM | 4 |  |
+
+
+
+<a name="bytebase-v1-DataSource-CloudSQLIPType"></a>
+
+### DataSource.CloudSQLIPType
+CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CLOUD_SQL_IP_TYPE_UNSPECIFIED | 0 |  |
+| PUBLIC | 1 |  |
+| PRIVATE | 2 |  |
+| PSC | 3 |  |
 
 
 

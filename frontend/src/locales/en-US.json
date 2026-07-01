@@ -925,6 +925,13 @@
     "archive-instance-instance-name": "Archive instance '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "authentication-database": "Authentication Database",
+    "cloud-sql-ip-type": {
+      "description": "Select which Cloud SQL IP to connect through. Use Private IP or PSC when the instance has no public IP and Bytebase runs inside the same VPC.",
+      "label": "Cloud SQL IP type",
+      "private": "Private IP",
+      "psc": "Private Service Connect (PSC)",
+      "public": "Public IP"
+    },
     "connection-info": "Connection info",
     "connection-options": "Connection Options",
     "create-gcp-credentials": "To create credentials, see",

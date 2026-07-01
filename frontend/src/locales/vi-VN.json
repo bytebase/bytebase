@@ -925,6 +925,13 @@
     "archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
     "authentication-database": "Cơ sở dữ liệu xác thực",
+    "cloud-sql-ip-type": {
+      "description": "Chọn IP Cloud SQL nào để kết nối. Dùng IP riêng hoặc PSC khi instance không có IP công khai và Bytebase chạy trong cùng một VPC.",
+      "label": "Loại IP Cloud SQL",
+      "private": "IP riêng",
+      "psc": "Private Service Connect (PSC)",
+      "public": "IP công khai"
+    },
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
     "create-gcp-credentials": "Để tạo thông tin xác thực, xem",

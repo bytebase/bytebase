@@ -998,6 +998,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.VerifyTlsCertificate = req.Msg.DataSource.VerifyTlsCertificate
 		case "redis_type":
 			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
+		case "cloud_sql_ip_type":
+			dataSource.CloudSqlIpType = convertV1CloudSQLIPType(req.Msg.DataSource.CloudSqlIpType)
 		case "master_name":
 			dataSource.MasterName = req.Msg.DataSource.MasterName
 		case "master_username":

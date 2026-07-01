@@ -669,6 +669,9 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.AuthenticationType != y.AuthenticationType {
 		return false
 	}
+	if x.CloudSqlIpType != y.CloudSqlIpType {
+		return false
+	}
 	if !x.GetAzureCredential().Equal(y.GetAzureCredential()) {
 		return false
 	}

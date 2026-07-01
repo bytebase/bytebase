@@ -8,12 +8,21 @@ import {
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
   DataSource_AzureCredentialSchema,
+  DataSource_CloudSQLIPType,
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
@@ -22,15 +31,17 @@ type CredentialSource = "default" | "specific-credential";
 
 interface CredentialSourceFormProps {
   dataSource: EditDataSource;
+  engine: Engine;
   allowEdit: boolean;
   onDataSourceChange: (updates: Partial<EditDataSource>) => void;
 }
 
 function CredentialSourceForm({
   dataSource,
+  engine,
   allowEdit,
   onDataSourceChange,
-}: CredentialSourceFormProps) {
+}: Readonly<CredentialSourceFormProps>) {
   const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
 
@@ -272,6 +283,108 @@ function CredentialSourceForm({
           authenticationType={dataSource.authenticationType}
         />
       )}
+
+      {showsCloudSQLIPType(engine, dataSource.authenticationType) && (
+        <CloudSQLIPTypeField
+          value={dataSource.cloudSqlIpType}
+          allowEdit={allowEdit}
+          onChange={(cloudSqlIpType) => onDataSourceChange({ cloudSqlIpType })}
+        />
+      )}
+    </div>
+  );
+}
+
+// The Cloud SQL IP type only applies to Cloud SQL connections (which use the
+// cloudsqlconn dialer). Google Cloud SQL IAM auth is also offered for Spanner and
+// BigQuery, whose drivers do not use cloudsqlconn, so restrict the selector to the
+// Cloud SQL MySQL/Postgres engines.
+export function showsCloudSQLIPType(
+  engine: Engine,
+  authType: DataSource_AuthenticationType
+): boolean {
+  return (
+    authType === DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM &&
+    (engine === Engine.MYSQL || engine === Engine.POSTGRES)
+  );
+}
+
+// PSC is accepted via the API and Terraform provider but not offered in the UI
+// until it is verified end-to-end. An instance that already has PSC set (via the
+// API) still shows it so the stored value renders correctly.
+export function offeredCloudSQLIPTypes(
+  current: DataSource_CloudSQLIPType
+): DataSource_CloudSQLIPType[] {
+  const offered = [
+    DataSource_CloudSQLIPType.PUBLIC,
+    DataSource_CloudSQLIPType.PRIVATE,
+  ];
+  if (current === DataSource_CloudSQLIPType.PSC) {
+    offered.push(DataSource_CloudSQLIPType.PSC);
+  }
+  return offered;
+}
+
+function CloudSQLIPTypeField({
+  value,
+  allowEdit,
+  onChange,
+}: Readonly<{
+  value: DataSource_CloudSQLIPType;
+  allowEdit: boolean;
+  onChange: (value: DataSource_CloudSQLIPType) => void;
+}>) {
+  const { t } = useTranslation();
+  // Treat unspecified as public for display, matching the backend default.
+  const current =
+    value === DataSource_CloudSQLIPType.CLOUD_SQL_IP_TYPE_UNSPECIFIED
+      ? DataSource_CloudSQLIPType.PUBLIC
+      : value;
+  const label = (ipType: DataSource_CloudSQLIPType) => {
+    switch (ipType) {
+      case DataSource_CloudSQLIPType.PRIVATE:
+        return t("instance.cloud-sql-ip-type.private");
+      case DataSource_CloudSQLIPType.PSC:
+        return t("instance.cloud-sql-ip-type.psc");
+      default:
+        return t("instance.cloud-sql-ip-type.public");
+    }
+  };
+  const options = offeredCloudSQLIPTypes(current).map((ipType) => ({
+    value: ipType,
+    label: label(ipType),
+  }));
+
+  return (
+    <div className="mt-4 sm:col-span-3 sm:col-start-1">
+      <label className="textlabel block">
+        {t("instance.cloud-sql-ip-type.label")}
+      </label>
+      <Select
+        value={String(current)}
+        disabled={!allowEdit}
+        onValueChange={(val) => {
+          if (val != null) onChange(Number(val) as DataSource_CloudSQLIPType);
+        }}
+      >
+        <SelectTrigger className="mt-2 w-full">
+          <SelectValue>
+            {(v: string | null) =>
+              options.find((o) => String(o.value) === v)?.label ?? null
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={String(o.value)}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="textinfolabel mt-1">
+        {t("instance.cloud-sql-ip-type.description")}
+      </p>
     </div>
   );
 }
