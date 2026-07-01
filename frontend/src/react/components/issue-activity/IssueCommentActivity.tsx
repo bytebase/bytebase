@@ -297,8 +297,14 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
       return <ActivityBadge spec={ISSUE_EVENT_ICON.resolved} />;
     }
 
-    const { fromLabels, toDescription, toLabels, toTitle } =
+    const { fromLabels, toDescription, toLabels, toStatus, toTitle } =
       comment.event.value;
+    if (toStatus === IssueStatus.CANCELED) {
+      return <ActivityBadge spec={ISSUE_EVENT_ICON.closed} />;
+    }
+    if (toStatus === IssueStatus.OPEN) {
+      return <ActivityBadge spec={ISSUE_EVENT_ICON.reopened} />;
+    }
     if (
       toTitle !== undefined ||
       toDescription !== undefined ||
