@@ -142,9 +142,15 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	case v1pb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		appRole := externalSecret.GetAppRole()
 		if appRole != nil {
+			secretType := v1pb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type)
+			if secretType == v1pb.DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED {
+				// Legacy data has no secret type; surface it as PLAIN explicitly so
+				// the API never exposes an ambiguous UNSPECIFIED for an existing secret.
+				secretType = v1pb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN
+			}
 			resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
 				AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
-					Type:      v1pb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type),
+					Type:      secretType,
 					MountPath: appRole.MountPath,
 				},
 			}
