@@ -1598,7 +1598,7 @@ export function EnvironmentsPage() {
           <TabsPanel
             key={env.id}
             value={env.id}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto scrollbar-gutter-stable"
             keepMounted={false}
           >
             <EnvironmentDetail
