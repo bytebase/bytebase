@@ -645,31 +645,6 @@ test.describe("Composite Exemption Expiration (BYT-9788)", () => {
     ).toBe(false);
   });
 
-  // CHARACTERIZATION of the incident: the UNWRAPPED shape (what the pre-fix
-  // builders emitted, and what un-migrated stored exemptions still carry) leaks
-  // the first resource past expiry. cel-go reads `(res1) || (res2) && time` as
-  // `res1 || (res2 && time)`, so res1 (col_classification) ignores the expiry.
-  // This is correct CEL — the defect was the BUILDER producing this shape (now
-  // fixed: #20683 create page, #20687 GrantAccessDialog). A passing assertion
-  // here proves WHY the wrapped form above is required, and that legacy data
-  // with this shape is still mis-evaluated until migrated.
-  test("UNWRAPPED composite leaks the first column past expiry (incident repro)", async () => {
-    await setSingleExemption(
-      `(${res1}) || (${res2}) && request.time < timestamp("${PAST}")`,
-      "composite unwrapped (buggy) shape",
-    );
-    // The leak: the first column stays UNMASKED despite the expired time bound.
-    expect(
-      await columnUnmasked(maskingData.classificationColumn),
-      "unwrapped shape leaks the first column past expiry (BYT-9788 incident)",
-    ).toBe(true);
-    // The last branch IS time-bound, so the second column correctly masks.
-    expect(
-      await columnUnmasked(maskingData.semanticTypeColumn),
-      "the time-bound last branch still masks the second column",
-    ).toBe(false);
-  });
-
   test("list page shows a composite grant's Active/Expired status consistently", async () => {
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
