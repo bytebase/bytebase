@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
     .mockResolvedValue({ databases: [], nextPageToken: "" }),
   createAccessGrant: vi.fn(),
   routerResolve: vi.fn(() => ({ fullPath: "/projects/proj1/issues/123" })),
+  // Captures the multi picker's server-search callback (undefined pre-fix).
+  dbOnSearch: undefined as ((q: string) => void) | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -46,6 +48,9 @@ vi.mock("@/react/stores/app", () => {
     // which drives the drawer's Monaco theme). Empty profile resolves to the
     // default theme.
     getWorkspaceProfile: () => ({}),
+    // Consumed by the shared DatabaseSelect (rendered by the drawer's picker).
+    workspaceResourceName: () => "workspaces/-",
+    getDatabaseByName: () => ({ name: "" }),
   });
   return {
     useAppStore: Object.assign(
@@ -122,6 +127,10 @@ vi.mock("@/utils", () => ({
     const match = name.match(/projects\/(.+?)(?:\/|$)/);
     return match?.[1] ?? "";
   }),
+  // Consumed by the shared DatabaseSelect (rendered by the drawer's picker).
+  getDefaultPagination: () => 50,
+  getInstanceResource: () => ({ engine: 0, title: "" }),
+  getDatabaseEnvironment: () => ({ name: "environments/prod" }),
 }));
 
 vi.mock("@bufbuild/protobuf", () => ({
@@ -217,40 +226,58 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
+// The drawer now renders the real DatabaseSelect, which imports EngineIcon and
+// EnvironmentLabel. Stub them so their transitive proto-es imports don't load
+// (they conflict with this file's minimal @bufbuild/protobuf(/wkt) mocks). They
+// are only referenced inside the picker's option.render, never invoked here
+// because the Combobox mock below renders plain <option> labels.
+vi.mock("@/react/components/EngineIcon", () => ({ EngineIcon: () => null }));
+vi.mock("@/react/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: () => null,
+}));
+
 vi.mock("@/react/components/ui/combobox", () => ({
   Combobox: ({
     value,
     onChange,
     options,
     multiple,
+    onSearch,
   }: {
     value: string | string[];
     onChange: (val: string | string[]) => void;
     options: { value: string; label: string }[];
     multiple?: boolean;
-  }) => (
-    <select
-      data-testid={multiple ? "multi-combobox" : "combobox"}
-      multiple={multiple}
-      value={multiple ? (value as string[]) : (value as string)}
-      onChange={(e) => {
-        if (multiple) {
-          const selected = Array.from(e.target.selectedOptions).map(
-            (o) => o.value
-          );
-          onChange(selected);
-        } else {
-          onChange(e.target.value);
-        }
-      }}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  ),
+    onSearch?: (q: string) => void;
+  }) => {
+    // Only the multi database picker sets this; the single Expiration combobox
+    // (multiple falsy) is skipped. Pre-fix the local MultiDatabaseSelect passes
+    // no onSearch, so this stays undefined — the red bug-repro assertion.
+    if (multiple) mocks.dbOnSearch = onSearch;
+    return (
+      <select
+        data-testid={multiple ? "multi-combobox" : "combobox"}
+        multiple={multiple}
+        value={multiple ? (value as string[]) : (value as string)}
+        onChange={(e) => {
+          if (multiple) {
+            const selected = Array.from(e.target.selectedOptions).map(
+              (o) => o.value
+            );
+            onChange(selected);
+          } else {
+            onChange(e.target.value);
+          }
+        }}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    );
+  },
 }));
 
 vi.mock("@/react/components/ui/expiration-picker", () => ({
@@ -337,6 +364,8 @@ const setupMocks = () => {
   mocks.currentTabDatabase = "instances/inst1/databases/db1";
 
   mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+  // vi.clearAllMocks() does not reset a plain hoisted property.
+  mocks.dbOnSearch = undefined;
 };
 
 beforeEach(async () => {
@@ -529,6 +558,83 @@ describe("AccessGrantRequestDrawer", () => {
       "projects/proj1/accessGrants/grant-xyz"
     );
     expect(onClose).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("typing in the Request Data Access database picker re-queries the server (BYT-9801)", async () => {
+    const onClose = vi.fn();
+    const { render: renderFn, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        onClose={onClose}
+      />
+    );
+    renderFn();
+    await act(async () => {
+      await Promise.resolve(); // let the picker's mount fetch resolve
+    });
+
+    // Pre-fix: the local MultiDatabaseSelect passes no onSearch → undefined.
+    expect(mocks.dbOnSearch).toBeTypeOf("function");
+
+    await act(async () => {
+      mocks.dbOnSearch?.("orders");
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: expect.objectContaining({ query: "orders" }),
+      })
+    );
+    unmount();
+  });
+
+  test("pre-filled targets are submitted to createAccessGrant", async () => {
+    mocks.createAccessGrant.mockResolvedValue({
+      status: 2,
+      issue: "",
+      name: "projects/proj1/accessGrants/g",
+    });
+    const onClose = vi.fn();
+    const {
+      container,
+      render: renderFn,
+      unmount,
+    } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/db1"]}
+        query="SELECT * FROM t"
+        onClose={onClose}
+      />
+    );
+    renderFn();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      const changeEvent = new Event("change", { bubbles: true });
+      Object.defineProperty(textarea, "value", { writable: true, value: "r" });
+      Object.defineProperty(changeEvent, "target", {
+        writable: false,
+        value: textarea,
+      });
+      textarea.dispatchEvent(changeEvent);
+    });
+
+    const submitBtn = container.querySelector(
+      "[data-submit-btn]"
+    ) as HTMLButtonElement;
+    await act(async () => submitBtn.click());
+
+    expect(mocks.createAccessGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessGrant: expect.objectContaining({
+          targets: ["instances/inst1/databases/db1"],
+        }),
+      })
+    );
     unmount();
   });
 });
