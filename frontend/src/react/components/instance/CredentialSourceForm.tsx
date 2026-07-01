@@ -293,6 +293,22 @@ function CredentialSourceForm({
   );
 }
 
+// PSC is accepted via the API and Terraform provider but not offered in the UI
+// until it is verified end-to-end. An instance that already has PSC set (via the
+// API) still shows it so the stored value renders correctly.
+export function offeredCloudSQLIPTypes(
+  current: DataSource_CloudSQLIPType
+): DataSource_CloudSQLIPType[] {
+  const offered = [
+    DataSource_CloudSQLIPType.PUBLIC,
+    DataSource_CloudSQLIPType.PRIVATE,
+  ];
+  if (current === DataSource_CloudSQLIPType.PSC) {
+    offered.push(DataSource_CloudSQLIPType.PSC);
+  }
+  return offered;
+}
+
 function CloudSQLIPTypeField({
   value,
   allowEdit,
@@ -303,25 +319,25 @@ function CloudSQLIPTypeField({
   onChange: (value: DataSource_CloudSQLIPType) => void;
 }) {
   const { t } = useTranslation();
-  const options = [
-    {
-      value: DataSource_CloudSQLIPType.PUBLIC,
-      label: t("instance.cloud-sql-ip-type.public"),
-    },
-    {
-      value: DataSource_CloudSQLIPType.PRIVATE,
-      label: t("instance.cloud-sql-ip-type.private"),
-    },
-    {
-      value: DataSource_CloudSQLIPType.PSC,
-      label: t("instance.cloud-sql-ip-type.psc"),
-    },
-  ];
   // Treat unspecified as public for display, matching the backend default.
   const current =
     value === DataSource_CloudSQLIPType.CLOUD_SQL_IP_TYPE_UNSPECIFIED
       ? DataSource_CloudSQLIPType.PUBLIC
       : value;
+  const label = (ipType: DataSource_CloudSQLIPType) => {
+    switch (ipType) {
+      case DataSource_CloudSQLIPType.PRIVATE:
+        return t("instance.cloud-sql-ip-type.private");
+      case DataSource_CloudSQLIPType.PSC:
+        return t("instance.cloud-sql-ip-type.psc");
+      default:
+        return t("instance.cloud-sql-ip-type.public");
+    }
+  };
+  const options = offeredCloudSQLIPTypes(current).map((ipType) => ({
+    value: ipType,
+    label: label(ipType),
+  }));
 
   return (
     <div className="mt-4 sm:col-span-3 sm:col-start-1">

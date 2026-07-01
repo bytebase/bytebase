@@ -5,9 +5,13 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
 import {
   DataSource_AuthenticationType,
+  DataSource_CloudSQLIPType,
   DataSourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { CredentialSourceForm } from "./CredentialSourceForm";
+import {
+  CredentialSourceForm,
+  offeredCloudSQLIPTypes,
+} from "./CredentialSourceForm";
 import type { EditDataSource } from "./common";
 
 (
@@ -114,5 +118,16 @@ describe("CredentialSourceForm", () => {
       "instance.cloud-sql-ip-type.label"
     );
     password.unmount();
+  });
+
+  test("offers Public and Private only, grandfathering an existing PSC value", () => {
+    const { PUBLIC, PRIVATE, PSC, CLOUD_SQL_IP_TYPE_UNSPECIFIED } =
+      DataSource_CloudSQLIPType;
+    expect(offeredCloudSQLIPTypes(CLOUD_SQL_IP_TYPE_UNSPECIFIED)).toEqual([
+      PUBLIC,
+      PRIVATE,
+    ]);
+    expect(offeredCloudSQLIPTypes(PRIVATE)).toEqual([PUBLIC, PRIVATE]);
+    expect(offeredCloudSQLIPTypes(PSC)).toEqual([PUBLIC, PRIVATE, PSC]);
   });
 });
