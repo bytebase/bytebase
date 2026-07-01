@@ -16,11 +16,15 @@
 //   Plan change (activity):  added / deleted / edited — one symmetric "file"
 //     trio, so "edit a change" (FilePen) never collides with an issue-field
 //     edit (Pencil) or a reject.
-//   Issue event (activity):  field edit (Pencil) / resolved (CheckCircle2)
+//   Issue event (activity):  field edit (Pencil) / resolved (CheckCircle2) /
+//     closed (Ban) / reopened (CircleDot) — a close/reopen is a lifecycle
+//     transition, so it stays neutral rather than reading as a verdict.
 //
 // `Pencil` is reserved for exactly one meaning — an issue *field* edit.
 import {
+  Ban,
   CheckCircle2,
+  CircleDot,
   FileMinus2,
   FilePen,
   FilePlus2,
@@ -57,6 +61,8 @@ export const PLAN_CHANGE_ICON = {
 export const ISSUE_EVENT_ICON = {
   fieldEdit: { Icon: Pencil, tone: "neutral" },
   resolved: { Icon: CheckCircle2, tone: "success" },
+  closed: { Icon: Ban, tone: "neutral" },
+  reopened: { Icon: CircleDot, tone: "neutral" },
 } satisfies Record<string, ActivityIconSpec>;
 
 // Tone → classes. Activity badges fill the circle (white glyph on bg-tone);
