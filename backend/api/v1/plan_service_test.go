@@ -124,7 +124,7 @@ func TestResetIssueApprovalFindingSkipsStalePlanApprovalInputVersion(t *testing.
 		Payload: &storepb.Issue{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone:  true,
-				ApprovalInputVersion: 2,
+				ApprovalInputVersion: 1,
 			},
 		},
 		PlanUID: &plan.UID,
@@ -139,7 +139,7 @@ func TestResetIssueApprovalFindingSkipsStalePlanApprovalInputVersion(t *testing.
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
 	require.NoError(t, err)
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
-	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.EqualValues(t, 1, got.Payload.GetApproval().GetApprovalInputVersion())
 
 	updatedIssue, updated, err = resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s, issue, 2)
 	require.NoError(t, err)
