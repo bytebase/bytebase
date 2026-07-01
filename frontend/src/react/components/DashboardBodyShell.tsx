@@ -146,7 +146,7 @@ export function DashboardBodyShell({
             id="bb-layout-main"
             ref={mainContainerRef}
             className={cn(
-              "flex-1 overflow-y-auto",
+              "flex-1 overflow-y-auto scrollbar-gutter-stable",
               variant === "workspace" ? "md:min-w-0" : "min-w-0"
             )}
           >

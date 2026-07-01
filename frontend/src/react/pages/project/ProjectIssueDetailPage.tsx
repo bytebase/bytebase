@@ -52,7 +52,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
     <IssueDetailProvider value={page}>
       <div
         ref={setPageHost}
-        className="relative h-full overflow-x-hidden overflow-y-auto"
+        className="relative h-full overflow-x-hidden overflow-y-auto scrollbar-gutter-stable"
       >
         <div
           className={`flex min-h-full flex-col ${

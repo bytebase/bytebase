@@ -447,7 +447,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
           <StepIndicator steps={stepList} currentIndex={currentStep} />
 
           {/* Step content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto scrollbar-gutter-stable">
             {currentStep === Step.SELECT_SOURCE_SCHEMA && (
               <SourceSchemaStep
                 project={project}
