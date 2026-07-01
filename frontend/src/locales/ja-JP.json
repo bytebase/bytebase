@@ -926,7 +926,7 @@
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
     "authentication-database": "認証データベース",
     "cloud-sql-ip-type": {
-      "description": "接続に使用する Cloud SQL の IP を選択します。インスタンスにパブリック IP がなく、Bytebase が同じ VPC 内で実行されている場合は、プライベート IP または PSC を使用してください。",
+      "description": "インスタンスにパブリック IP がなく、Bytebase が同じ VPC 内で実行されている場合は、プライベート IP を使用してください。",
       "label": "Cloud SQL IP タイプ",
       "private": "プライベート IP",
       "psc": "Private Service Connect (PSC)",
