@@ -5,7 +5,7 @@ import type {
 } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { SensitiveColumn } from "@/react/lib/sensitive-data/types";
 
 (
@@ -100,15 +100,35 @@ vi.mock("@/react/components/DatabaseResourceSelector", () => ({
   DatabaseResourceSelector: ({
     value,
     includeColumns,
+    onChange,
   }: {
     value: unknown;
     includeColumns?: boolean;
+    onChange?: (resources: unknown[]) => void;
   }) => (
     <div
       data-include-columns={String(includeColumns)}
       data-testid="database-resource-selector"
     >
       {JSON.stringify(value)}
+      <button
+        data-testid="set-two-resources"
+        type="button"
+        onClick={() =>
+          onChange?.([
+            {
+              databaseFullName: "instances/inst1/databases/db1",
+              schema: "public",
+              table: "t1",
+            },
+            {
+              databaseFullName: "instances/inst1/databases/db1",
+              schema: "public",
+              table: "t2",
+            },
+          ])
+        }
+      />
     </div>
   ),
 }));
@@ -173,8 +193,20 @@ vi.mock("@/react/components/ui/dialog", () => ({
 }));
 
 vi.mock("@/react/components/ui/expiration-picker", () => ({
-  ExpirationPicker: ({ minDate }: { minDate: string }) => (
-    <div data-min-date={minDate} data-testid="expiration-picker" />
+  ExpirationPicker: ({
+    minDate,
+    onChange,
+  }: {
+    minDate: string;
+    onChange?: (value: string) => void;
+  }) => (
+    <div data-min-date={minDate} data-testid="expiration-picker">
+      <button
+        data-testid="set-expiration"
+        type="button"
+        onClick={() => onChange?.("2026-06-02T10:00:00.000Z")}
+      />
+    </div>
   ),
 }));
 
@@ -230,6 +262,7 @@ vi.mock("@/utils/v1/cel", () => ({
   batchConvertCELStringToParsedExpr: mocks.batchConvertCELStringToParsedExpr,
 }));
 
+import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
 import { GrantAccessDialog } from "./GrantAccessDialog";
 
 const flush = async () => {
@@ -534,6 +567,94 @@ describe("GrantAccessDialog", () => {
       'input[placeholder="common.description"]'
     );
     expect(refreshedDescriptionInput?.value).toBe("temporary reason");
+
+    unmount();
+  });
+});
+
+// ============================================================
+// BYT-9791 — REGRESSION GUARD (bug fixed by #20687).
+//
+// This was filed as a sibling of BYT-9788: GrantAccessDialog used to emit the
+// unwrapped `(c1) || (c2) && request.time < …`, which cel-go reads as
+// `(c1) || ((c2) && time)`, leaking the first resource past expiry. #20687
+// extracted the shared buildMaskingExemption helper and routed both this dialog
+// and the create page through it, so the OR-group is now wrapped and the time
+// constraint binds to every resource. This test drives the real dialog and pins
+// the corrected output so GrantAccessDialog can't regress to the buggy shape.
+// ============================================================
+
+describe("GrantAccessDialog — composite exemption precedence (BYT-9791)", () => {
+  const c1 =
+    'resource.instance_id == "inst1" && resource.database_name == "db1" && resource.table_name == "t1"';
+  const c2 =
+    'resource.instance_id == "inst1" && resource.database_name == "db1" && resource.table_name == "t2"';
+  const timeClause = 'request.time < timestamp("2026-06-02T10:00:00.000Z")';
+
+  beforeEach(() => {
+    mocks.upsertPolicy.mockClear();
+    mocks.getOrFetchPolicyByParentAndType.mockReset();
+    // Return real per-resource clauses so onSubmit assembles a real expression.
+    vi.mocked(getExpressionsForDatabaseResource).mockImplementation(
+      (resource: { table?: string }) => [
+        'resource.instance_id == "inst1"',
+        'resource.database_name == "db1"',
+        `resource.table_name == "${resource.table}"`,
+      ]
+    );
+  });
+
+  afterEach(() => {
+    // Restore the inert default the other tests rely on.
+    vi.mocked(getExpressionsForDatabaseResource).mockReturnValue([]);
+  });
+
+  test("wraps the OR-group so the expiration binds to every resource", async () => {
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    // Default mode for a non-column-scoped selection is SELECT (radio index 2).
+    const radios = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(radios[2]?.checked).toBe(true);
+
+    await click(
+      container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!
+    );
+    await click(
+      container.querySelector<HTMLElement>('[data-testid="set-expiration"]')!
+    );
+    await click(
+      container.querySelector<HTMLElement>(
+        '[data-testid="account-multi-select"]'
+      )!
+    );
+
+    const confirm = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.confirm");
+    expect(confirm).toBeTruthy();
+    expect(confirm?.disabled).toBe(false);
+
+    await click(confirm!);
+    await flush();
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    const arg = mocks.upsertPolicy.mock.calls[0][0] as {
+      policy: {
+        policy: {
+          value: { exemptions: { condition?: { expression: string } }[] };
+        };
+      };
+    };
+    const expression =
+      arg.policy.policy.value.exemptions[0]?.condition?.expression;
+
+    // FIXED (#20687): the OR-group is wrapped and the time constraint leads, so
+    // the expiry binds to every resource — not just the last branch.
+    expect(expression).toBe(`${timeClause} && ((${c1}) || (${c2}))`);
+    expect(expression).not.toBe(`(${c1}) || (${c2}) && ${timeClause}`);
 
     unmount();
   });

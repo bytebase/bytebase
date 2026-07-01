@@ -276,6 +276,37 @@ async function revokeAllExemptions(): Promise<void> {
   });
 }
 
+// ── Composite (multi-resource) exemption helpers (BYT-9788) ──
+
+// One column-scoped resource clause, AND-joined exactly like the create-page
+// builder's getExpressionsForDatabaseResource output. instance_id/database_name
+// are the instance resource id and the database name — the same attributes the
+// backend masking evaluator populates (masking_evaluator.go:199-203).
+function columnResourceClause(column: string): string {
+  return [
+    `resource.instance_id == "${env.instanceId}"`,
+    `resource.database_name == "${env.databaseId}"`,
+    `resource.schema_name == "${TEST_SCHEMA}"`,
+    `resource.table_name == "${TEST_TABLE}"`,
+    `resource.column_name == "${column}"`,
+  ].join(" && ");
+}
+
+// Replace the project's exemption policy with exactly one exemption carrying a
+// raw CEL expression, so the test controls the precise OR/AND/precedence shape.
+async function setSingleExemption(
+  expression: string,
+  description: string,
+  member = `user:${env.adminEmail}`,
+): Promise<void> {
+  await env.api.upsertPolicy(env.project, "masking_exemption", {
+    type: "MASKING_EXEMPTION",
+    maskingExemptionPolicy: {
+      exemptions: [{ members: [member], condition: { expression, description } }],
+    },
+  });
+}
+
 // ── Setup/Teardown ──
 
 test.beforeAll(async ({ browser }) => {
@@ -540,6 +571,110 @@ test.describe("E2E Masking Verification", () => {
 
   test("semantic-type-based masking: cycle via UI", async () => {
     await runMaskingCycle(maskingData.semanticTypeColumn, "e2e semantic type masking test");
+  });
+});
+
+// ── Composite Exemption Expiration (BYT-9788) ──
+//
+// A composite exemption ORs several resource clauses and ANDs a request.time
+// bound. Because `&&` binds tighter than `||` in CEL — and the backend evaluates
+// with stock cel-go (masking_evaluator.go:237) — the OR-group MUST be wrapped:
+//   request.time < T && ((res1) || (res2))
+// If it isn't, the time bound attaches only to the LAST branch and every earlier
+// resource is served unmasked forever (the GovTech incident). #20683 fixed the
+// create-page builder and #20687 shared it with GrantAccessDialog (BYT-9791).
+//
+// These verify the contract end-to-end through the real masking evaluator and SQL
+// editor — the on-screen masked/unmasked result is the oracle, not a CEL string.
+test.describe("Composite Exemption Expiration (BYT-9788)", () => {
+  const PAST = "2020-01-01T00:00:00.000Z";
+  const FUTURE = "2099-01-01T00:00:00.000Z";
+  let res1: string; // col_classification clause
+  let res2: string; // col_semantic clause
+
+  test.beforeAll(() => {
+    res1 = columnResourceClause(CLASSIFICATION_COLUMN);
+    res2 = columnResourceClause(SEMANTIC_TYPE_COLUMN);
+  });
+
+  test.beforeEach(async () => {
+    await revokeAllExemptions();
+  });
+
+  test.afterAll(async () => {
+    await revokeAllExemptions();
+  });
+
+  // Query one column in the SQL editor; true = its known unmasked value is
+  // visible (unmasked), false = masked.
+  const columnUnmasked = async (col: MaskingTestColumn): Promise<boolean> => {
+    const sqlEditor = new SqlEditorPage(page, env.baseURL);
+    const sql = `SELECT "${col.sampleColumn}" FROM "${col.sampleSchema}"."${col.sampleTable}" WHERE "${col.primaryKeyColumn}" = '${col.primaryKeyValue}';`;
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await sqlEditor.runQuery(sql);
+    return sqlEditor.resultContainsText(col.knownUnmaskedValue);
+  };
+
+  test("future expiry unmasks ALL columns in the composite", async () => {
+    await setSingleExemption(
+      `request.time < timestamp("${FUTURE}") && ((${res1}) || (${res2}))`,
+      "composite future expiry",
+    );
+    expect(
+      await columnUnmasked(maskingData.classificationColumn),
+      "first column should be unmasked under a valid future expiry",
+    ).toBe(true);
+    expect(
+      await columnUnmasked(maskingData.semanticTypeColumn),
+      "second column should be unmasked under a valid future expiry",
+    ).toBe(true);
+  });
+
+  test("past expiry re-masks ALL columns in the composite (the BYT-9788 contract)", async () => {
+    await setSingleExemption(
+      `request.time < timestamp("${PAST}") && ((${res1}) || (${res2}))`,
+      "composite past expiry",
+    );
+    expect(
+      await columnUnmasked(maskingData.classificationColumn),
+      "first column must be masked once the wrapped expiry passes",
+    ).toBe(false);
+    expect(
+      await columnUnmasked(maskingData.semanticTypeColumn),
+      "second column must be masked once the wrapped expiry passes",
+    ).toBe(false);
+  });
+
+  test("list page shows a composite grant's Active/Expired status consistently", async () => {
+    const listPage = new MaskingExemptionPage(page, env.baseURL);
+
+    // Future expiry → appears under Active, both columns listed, not expired.
+    await setSingleExemption(
+      `request.time < timestamp("${FUTURE}") && ((${res1}) || (${res2}))`,
+      "composite display future",
+    );
+    await listPage.goto(projectId);
+    await listPage.activeTab.click();
+    await page.waitForTimeout(500);
+    await listPage.selectMember(env.adminEmail);
+    await page.waitForTimeout(500);
+    await expect(page.getByText("composite display future")).toBeVisible();
+    await expect(page.getByText("(Expired)")).toHaveCount(0);
+    await expect(page.getByText(CLASSIFICATION_COLUMN).first()).toBeVisible();
+    await expect(page.getByText(SEMANTIC_TYPE_COLUMN).first()).toBeVisible();
+
+    // Past expiry → appears under Expired, marked expired.
+    await setSingleExemption(
+      `request.time < timestamp("${PAST}") && ((${res1}) || (${res2}))`,
+      "composite display past",
+    );
+    await listPage.goto(projectId);
+    await listPage.expiredTab.click();
+    await page.waitForTimeout(500);
+    await listPage.selectMember(env.adminEmail);
+    await page.waitForTimeout(500);
+    await expect(page.getByText("composite display past")).toBeVisible();
+    await expect(page.getByText("(Expired)").first()).toBeVisible();
   });
 });
 

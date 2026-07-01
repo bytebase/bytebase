@@ -1017,3 +1017,84 @@ describe("rewriteResourceDatabase", () => {
     expect(rewriteResourceDatabase("")).toBe("");
   });
 });
+
+// ============================================================
+// BYT-9788 — composite (OR) exemption precedence & read-path round-trip
+//
+// `&&` binds tighter than `||` in CEL, and the backend evaluates with stock
+// cel-go (backend/api/v1/masking_evaluator.go), so a masking exemption that ORs
+// several resources and ANDs a request.time bound must wrap the OR-group —
+//   request.time < T && ((c1) || (c2))
+// otherwise the expiry binds only to the last branch. PR #20683 (create page)
+// and #20687 (GrantAccessDialog) make the builders satisfy that invariant.
+//
+// The read-path helpers below (parseExpirationTimestamp / getConditionExpression)
+// assume the expiration is a top-level `&&` term; these round-trip the wrapped
+// output to prove the writer and reader agree.
+// ============================================================
+
+describe("composite exemption precedence (BYT-9788)", () => {
+  // One resource's clause = instance && database (&& table), the exact shape
+  // getExpressionsForDatabaseResource produces, AND-joined.
+  const clause = (instance: string, database: string, table?: string): string =>
+    [
+      `resource.instance_id == "${instance}"`,
+      `resource.database_name == "${database}"`,
+      table ? `resource.table_name == "${table}"` : "",
+    ]
+      .filter((e) => e)
+      .join(" && ");
+
+  const TIME = "2026-06-02T10:00:00.000Z";
+  const timeClause = `request.time < timestamp("${TIME}")`;
+  const timeMs = new Date(TIME).getTime();
+
+  const c1 = clause("inst", "db", "SPCP_CP_ENTITY_AUTHORISATION");
+  const c2 = clause("inst", "db", "SPCP_CP_AUTH_ACCESS");
+
+  describe("fixed format (what PR #20683 now writes)", () => {
+    // request.time < T && ((c1) || (c2))
+    const fixedMulti = `${timeClause} && ((${c1}) || (${c2}))`;
+
+    test("expiration applies to the whole OR-group (timestamp extracted)", () => {
+      expect(parseExpirationTimestamp(fixedMulti)).toBe(timeMs);
+    });
+
+    test("getConditionExpression strips time and keeps the OR-group intact", () => {
+      // Both resources survive, OR operator preserved, internal && preserved.
+      expect(getConditionExpression(fixedMulti)).toBe(`((${c1}) || (${c2}))`);
+    });
+
+    test("round-trip: time + condition reconstruct the original expression", () => {
+      const condition = getConditionExpression(fixedMulti);
+      const ts = parseExpirationTimestamp(fixedMulti);
+      const rebuilt = [
+        `request.time < timestamp("${new Date(ts!).toISOString()}")`,
+        condition,
+      ].join(" && ");
+      expect(rebuilt).toBe(fixedMulti);
+    });
+
+    test("single resource is wrapped but parses identically", () => {
+      const fixedSingle = `${timeClause} && (${c1})`;
+      expect(parseExpirationTimestamp(fixedSingle)).toBe(timeMs);
+      expect(getConditionExpression(fixedSingle)).toBe(`(${c1})`);
+    });
+
+    test("classification level inside an OR branch is still parsed", () => {
+      const withLevel = `${timeClause} && ((${c1} && resource.classification_level <= 3) || (${c2} && resource.classification_level <= 3))`;
+      expect(
+        parseClassificationLevel(getConditionExpression(withLevel))
+      ).toEqual({ operator: "<=", value: 3 });
+    });
+
+    test("EXPRESSION mode: a top-level || in custom CEL is wrapped and bounded", () => {
+      // The create page wraps the user's celString: request.time < T && (a || b)
+      const expr = `${timeClause} && (resource.database_name == "a" || resource.database_name == "b")`;
+      expect(parseExpirationTimestamp(expr)).toBe(timeMs);
+      expect(getConditionExpression(expr)).toBe(
+        '(resource.database_name == "a" || resource.database_name == "b")'
+      );
+    });
+  });
+});
