@@ -6,10 +6,10 @@ import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { generateRolloutPreview } from "../../utils/rolloutPreview";
+import { getFrontierStage } from "../lifecycle/frontierStage";
 import { DeployPendingTasksSection } from "./DeployPendingTasksSection";
 import { DeployStageList } from "./DeployStageCard";
 import { DeployStageContentView } from "./DeployStageContentView";
@@ -80,15 +80,10 @@ export function DeployBranch({
         stage.name.endsWith(`/${page.routeStageId}`)
       );
     }
-    const firstIncomplete = page.rollout.stages.find((stage) =>
-      stage.tasks.some(
-        (task) =>
-          task.status !== Task_Status.DONE &&
-          task.status !== Task_Status.SKIPPED
-      )
-    );
-    return firstIncomplete ?? page.rollout.stages[0];
-  }, [page.rollout?.stages, page.routeStageId, selectedTask]);
+    // Default to the frontier (first non-complete) stage, falling back to the
+    // first stage once every stage is complete.
+    return getFrontierStage(page.rollout) ?? page.rollout.stages[0];
+  }, [page.rollout, page.routeStageId, selectedTask]);
 
   useEffect(() => {
     let canceled = false;

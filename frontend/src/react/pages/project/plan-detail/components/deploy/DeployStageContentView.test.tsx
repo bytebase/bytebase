@@ -47,14 +47,6 @@ vi.mock("./DeployTaskFilter", () => ({
 vi.mock("./DeployStageRollbackSection", () => ({
   DeployStageRollbackSection: () => null,
 }));
-vi.mock("../PlanDetailTaskRolloutActionPanel", () => ({
-  PlanDetailTaskRolloutActionPanel: () => null,
-}));
-vi.mock("../../../issue-detail/utils/rollout", () => ({
-  canRolloutTasks: () => false,
-  preloadRolloutPermissionContext: () => Promise.resolve(),
-  RUNNABLE_TASK_STATUSES: [],
-}));
 vi.mock("@/connect", () => ({ rolloutServiceClientConnect: {} }));
 vi.mock("@/store", () => ({ pushNotification: () => undefined }));
 

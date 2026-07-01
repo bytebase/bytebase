@@ -1474,6 +1474,28 @@
       "serializable": "Serializable"
     },
     "labels-required-for-review": "Labels are required before review",
+    "lifecycle": {
+      "checking": "Checking…",
+      "checks-failing_one": "{{count}} check failing",
+      "checks-failing_other": "{{count}} checks failing",
+      "deployed": "Deployed",
+      "gate-checks-failed": "Some checks were not successful",
+      "gate-checks-failed-sub": "{{failing}} failing, {{passed}} passed",
+      "gate-checks-passed": "All checks passed",
+      "gate-checks-passed-sub": "{{count}} passed",
+      "gate-checks-running": "Checks are running",
+      "gate-checks-running-sub": "{{running}} running, {{passed}} passed",
+      "gate-review-approved": "Changes approved",
+      "gate-review-pending": "Review in progress",
+      "gate-review-rejected": "Changes requested",
+      "in-review": "In review",
+      "preparing-rollout": "Preparing rollout…",
+      "rejected": "Rejected",
+      "rerun-stage": "Rerun · {{stage}}",
+      "review-waiting": "Waiting for {{role}}",
+      "run-stage": "Run · {{stage}}",
+      "stage-status": "{{status}} · {{stage}}"
+    },
     "meta": {
       "created-by": "Created by {{user}}"
     },
@@ -1552,7 +1574,9 @@
         "n-checks-failed_other": "{{count}} checks failed",
         "n-checks-passed_one": "{{count}} check passed",
         "n-checks-passed_other": "{{count}} checks passed",
+        "rollout-auto-creates": "Rollout auto-creates after approval",
         "rollout-blocked-by-failed-checks": "rollout won't be created automatically until checks pass",
+        "rollout-not-created": "Rollout was not created automatically",
         "waiting-on-review": "Waiting on review"
       },
       "rejection": {
@@ -1573,7 +1597,9 @@
     },
     "state": {
       "close-confirm": "Close this plan?",
-      "reopen-confirm": "Reopen this plan?"
+      "close-review-confirm": "Close this review?",
+      "reopen-confirm": "Reopen this plan?",
+      "reopen-review-confirm": "Reopen this review?"
     },
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "summary": {
@@ -1995,7 +2021,6 @@
     },
     "stage": {
       "confirm-create": "Confirm to create tasks for this stage?",
-      "run-stage": "Run Tasks",
       "self_one": "Stage",
       "self_other": "Stages"
     },

@@ -105,6 +105,10 @@ vi.mock("./components/PlanDetailHeader", () => ({
   PlanDetailHeader: () => null,
 }));
 
+vi.mock("./components/PlanDetailHeaderDetails", () => ({
+  PlanDetailHeaderDetails: () => null,
+}));
+
 vi.mock("./shell/constants", () => ({
   INLINE_TASK_PANEL_BREAKPOINT_PX: 1024,
 }));

@@ -1474,6 +1474,28 @@
       "serializable": "Serializable"
     },
     "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
+    "lifecycle": {
+      "checking": "Comprobando…",
+      "checks-failing_one": "{{count}} comprobación fallida",
+      "checks-failing_other": "{{count}} comprobaciones fallidas",
+      "deployed": "Desplegado",
+      "gate-checks-failed": "Algunas comprobaciones fallaron",
+      "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
+      "gate-checks-passed": "Todas las comprobaciones correctas",
+      "gate-checks-passed-sub": "{{count}} correctas",
+      "gate-checks-running": "Comprobaciones en curso",
+      "gate-checks-running-sub": "{{running}} en curso, {{passed}} correctas",
+      "gate-review-approved": "Cambios aprobados",
+      "gate-review-pending": "Revisión en curso",
+      "gate-review-rejected": "Cambios solicitados",
+      "in-review": "En revisión",
+      "preparing-rollout": "Preparando despliegue…",
+      "rejected": "Rechazado",
+      "rerun-stage": "Reejecutar · {{stage}}",
+      "review-waiting": "Esperando a {{role}}",
+      "run-stage": "Ejecutar · {{stage}}",
+      "stage-status": "{{status}} · {{stage}}"
+    },
     "meta": {
       "created-by": "Creado por {{user}}"
     },
@@ -1552,7 +1574,9 @@
         "n-checks-failed_other": "{{count}} comprobaciones fallidas",
         "n-checks-passed_one": "{{count}} comprobación superada",
         "n-checks-passed_other": "{{count}} comprobaciones superadas",
+        "rollout-auto-creates": "El despliegue se crea automáticamente tras la aprobación",
         "rollout-blocked-by-failed-checks": "el despliegue no se creará automáticamente hasta que las comprobaciones pasen",
+        "rollout-not-created": "El despliegue no se creó automáticamente",
         "waiting-on-review": "Esperando revisión"
       },
       "rejection": {
@@ -1573,7 +1597,9 @@
     },
     "state": {
       "close-confirm": "¿Cerrar este plan?",
-      "reopen-confirm": "¿Reabrir este plan?"
+      "close-review-confirm": "¿Cerrar esta revisión?",
+      "reopen-confirm": "¿Reabrir este plan?",
+      "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
@@ -1995,7 +2021,6 @@
     },
     "stage": {
       "confirm-create": "¿Confirmas la creación de tareas para esta etapa?",
-      "run-stage": "Ejecutar tareas",
       "self_one": "Etapa",
       "self_other": "Etapas"
     },
