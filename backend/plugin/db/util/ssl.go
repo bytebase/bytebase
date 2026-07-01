@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -247,6 +248,13 @@ func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.Fallb
 }
 
 func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
+	// Send Server Name Indication (SNI) so that servers which route by hostname
+	// (e.g. Aurora DSQL) accept the connection. Set it per host so multi-address
+	// (primary + fallback) connections present each target's own name. Per RFC
+	// 6066, SNI must not be a literal IP address.
+	if net.ParseIP(host) == nil {
+		dst.ServerName = host
+	}
 	if len(src.Certificates) > 0 {
 		dst.Certificates = append([]tls.Certificate(nil), src.Certificates...)
 	}

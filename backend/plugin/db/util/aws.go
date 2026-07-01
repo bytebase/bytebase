@@ -16,6 +16,15 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
+// IsAWSDSQLHost reports whether host is an Aurora DSQL cluster endpoint.
+// DSQL endpoints have the form <cluster-id>.dsql.<region>.on.aws, which is
+// distinct from RDS/Aurora endpoints (*.rds.amazonaws.com). DSQL is
+// PostgreSQL-compatible on the wire but requires a different IAM auth token, so
+// callers use this to branch on the token generation path.
+func IsAWSDSQLHost(host string) bool {
+	return strings.Contains(host, ".dsql.") && strings.HasSuffix(host, ".on.aws")
+}
+
 // AssumeRoleIfNeeded checks if role assumption is configured and updates the AWS config with assumed role credentials.
 // This is a shared utility used by multiple AWS service drivers (Elasticsearch, RDS, etc.).
 // Returns an error if role assumption fails.
