@@ -75,3 +75,32 @@ func TestResolveVaultToken(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestResolveVaultAppRoleSecretID(t *testing.T) {
+	t.Run("plain", func(t *testing.T) {
+		got, err := resolveVaultAppRoleSecretID(&storepb.DataSourceExternalSecret_AppRoleAuthOption{
+			SecretId: "plain-secret-id",
+			Type:     storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "plain-secret-id", got.FromString)
+	})
+
+	t.Run("unspecified defaults to plain", func(t *testing.T) {
+		got, err := resolveVaultAppRoleSecretID(&storepb.DataSourceExternalSecret_AppRoleAuthOption{
+			SecretId: "plain-secret-id",
+			Type:     storepb.DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "plain-secret-id", got.FromString)
+	})
+
+	t.Run("environment", func(t *testing.T) {
+		got, err := resolveVaultAppRoleSecretID(&storepb.DataSourceExternalSecret_AppRoleAuthOption{
+			SecretId: "BB_TEST_VAULT_APP_ROLE_SECRET_ID",
+			Type:     storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "BB_TEST_VAULT_APP_ROLE_SECRET_ID", got.FromEnv)
+	})
+}

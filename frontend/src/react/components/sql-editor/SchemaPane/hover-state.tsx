@@ -3,6 +3,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -60,6 +61,17 @@ export function HoverStateProvider({ children }: { children: ReactNode }) {
   const setPosition = useCallback((next: Position) => {
     setPositionState(next);
   }, []);
+
+  useEffect(() => {
+    const handleWindowMouseOut = (event: MouseEvent) => {
+      if (event.relatedTarget) return;
+      update(undefined, "after", 0);
+    };
+    window.addEventListener("mouseout", handleWindowMouseOut);
+    return () => {
+      window.removeEventListener("mouseout", handleWindowMouseOut);
+    };
+  }, [update]);
 
   const value = useMemo<HoverStateContextValue>(
     () => ({ state, position, setPosition, update, cancel }),
