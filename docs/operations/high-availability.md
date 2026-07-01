@@ -44,6 +44,8 @@ user=bb-meta@project-id.iam dbname=bytebase bytebase_gcp_cloud_sql_iam=true byte
 
 The Cloud SQL IAM database user must exist and have the needed PostgreSQL privileges. The Google principal used by each Bytebase process must have permission to connect to the Cloud SQL instance, typically through ambient Application Default Credentials such as GKE Workload Identity. Do not put Google service account keys in `PG_URL`.
 
+By default the connector dials the instance's public IP. For a private-IP-only instance (the recommended production posture), add `bytebase_gcp_cloud_sql_ip_type=private` (or `psc` for Private Service Connect); `public` is the default. Bytebase must have a network path to the selected IP — for private IP, run it inside the same VPC (Private Service Access).
+
 ## How replica detection works
 
 Bytebase tracks live replicas with heartbeats:
