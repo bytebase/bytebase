@@ -65,7 +65,7 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 		}
 		appRoleSecret := &approle.SecretID{}
 		switch role.Type {
-		case storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN:
+		case storepb.DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED, storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN:
 			appRoleSecret.FromString = role.SecretId
 		case storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT:
 			appRoleSecret.FromEnv = role.SecretId
