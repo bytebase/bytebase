@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
@@ -9,6 +9,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine, hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";
+import { TableNamePopover } from "../Modals/TableNamePopover";
 import { TableList } from "./TableList";
 
 interface Props {
@@ -29,6 +30,8 @@ export function DatabaseEditor({
   const { t } = useTranslation();
   const { readonly, tabs, editStatus } = useSchemaEditorContext();
   const engine = getDatabaseEngine(db);
+  const [tableNamePopoverAnchorPoint, setTableNamePopoverAnchorPoint] =
+    useState<{ x: number; y: number } | null>(null);
 
   const shouldShowSchemaSelector = hasSchemaProperty(engine);
 
@@ -121,8 +124,12 @@ export function DatabaseEditor({
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => {
-              // Will be wired to TableNameDialog in T22
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setTableNamePopoverAnchorPoint({
+                x: rect.left,
+                y: rect.bottom,
+              });
             }}
           >
             <Plus className="size-4" />
@@ -140,6 +147,16 @@ export function DatabaseEditor({
           onEditTable={handleEditTable}
         />
       </div>
+      {tableNamePopoverAnchorPoint && (
+        <TableNamePopover
+          open
+          onClose={() => setTableNamePopoverAnchorPoint(null)}
+          anchorPoint={tableNamePopoverAnchorPoint}
+          db={db}
+          database={database}
+          schema={effectiveSchema}
+        />
+      )}
     </div>
   );
 }
