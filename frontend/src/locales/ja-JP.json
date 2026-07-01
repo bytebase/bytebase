@@ -1488,7 +1488,6 @@
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
-      "in-review": "レビュー中",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
       "rerun-stage": "再実行 · {{stage}}",

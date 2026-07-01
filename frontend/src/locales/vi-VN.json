@@ -1488,7 +1488,6 @@
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
-      "in-review": "Đang xem xét",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
       "rerun-stage": "Chạy lại · {{stage}}",

@@ -75,7 +75,9 @@ export function PlanStatusAction({
       case "checking":
         return t("plan.lifecycle.checking");
       case "in-review":
-        return t("plan.lifecycle.in-review");
+        // Reuse the shared review-status label so the header matches the plan
+        // list / issue surfaces ("Under review"), not a header-only "In review".
+        return t("common.under-review");
       case "rejected":
         return t("plan.lifecycle.rejected");
       case "checks-failing":

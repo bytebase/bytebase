@@ -1488,7 +1488,6 @@
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
-      "in-review": "In review",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
       "rerun-stage": "Rerun · {{stage}}",

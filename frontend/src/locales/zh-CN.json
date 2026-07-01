@@ -1488,7 +1488,6 @@
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审核中",
       "gate-review-rejected": "请求变更",
-      "in-review": "审批中",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
       "rerun-stage": "重新执行 · {{stage}}",
