@@ -2,13 +2,16 @@ package approval
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -377,4 +380,75 @@ func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 			require.Equal(t, tt.wantPending, pending)
 		})
 	}
+}
+
+func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{"instances/prod/databases/app"},
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	celVarsList, approvalInputVersion, done, err := buildCELVariablesForDatabaseChange(ctx, s, issue)
+	require.NoError(t, err)
+	require.False(t, done)
+	require.Nil(t, celVarsList)
+	require.EqualValues(t, 2, approvalInputVersion)
+
+	planCheckRun, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, planCheckRun)
+	require.Equal(t, store.PlanCheckRunStatusAvailable, planCheckRun.Status)
+	require.EqualValues(t, 2, planCheckRun.Result.GetApprovalInputVersion())
+}
+
+func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
+	t.Helper()
+
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+	`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
+	return s
 }

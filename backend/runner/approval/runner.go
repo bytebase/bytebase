@@ -628,6 +628,25 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 
 	if checksExpected {
 		if planCheckRun == nil {
+			// Some plans can reach approval without a durable check row, for example after
+			// legacy data import or a previous row creation failure. Waiting without a row
+			// leaves no work for the scheduler to claim.
+			_, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+				ProjectID: issue.ProjectID,
+				PlanUID:   plan.UID,
+				Result: &storepb.PlanCheckRunResult{
+					ApprovalInputVersion: approvalInputVersion,
+				},
+			})
+			if err != nil {
+				slog.Error("failed to create missing plan check run for approval input version",
+					slog.String("project", issue.ProjectID),
+					slog.Int64("issue_uid", issue.UID),
+					slog.Int64("plan_uid", plan.UID),
+					slog.Int64("approval_input_version", approvalInputVersion),
+					log.BBError(err))
+				return nil, approvalInputVersion, false, errors.Wrap(err, "failed to create missing plan check run for approval input version")
+			}
 			return nil, approvalInputVersion, false, nil
 		}
 		if planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning {
