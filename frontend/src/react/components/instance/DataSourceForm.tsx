@@ -1113,7 +1113,8 @@ export function DataSourceForm({
                                           type="radio"
                                           checked={
                                             dataSource.externalSecret.authOption
-                                              .value.type === 0
+                                              .value.type ===
+                                            DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
                                           }
                                           disabled={!allowEdit}
                                           onChange={() => {
@@ -1130,7 +1131,7 @@ export function DataSourceForm({
                                                   value: {
                                                     ...ds.externalSecret
                                                       .authOption.value,
-                                                    type: 0,
+                                                    type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
                                                   },
                                                 },
                                               };
@@ -1147,7 +1148,8 @@ export function DataSourceForm({
                                           type="radio"
                                           checked={
                                             dataSource.externalSecret.authOption
-                                              .value.type === 1
+                                              .value.type ===
+                                            DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
                                           }
                                           disabled={!allowEdit}
                                           onChange={() => {
@@ -1164,7 +1166,7 @@ export function DataSourceForm({
                                                   value: {
                                                     ...ds.externalSecret
                                                       .authOption.value,
-                                                    type: 1,
+                                                    type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT,
                                                   },
                                                 },
                                               };
