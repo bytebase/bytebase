@@ -12,7 +12,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -398,40 +397,19 @@ func CreateRolloutAndPendingTasks(
 		}
 	}
 
-	rolloutMarked := false
+	var approvalInputVersion *int64
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
-		marked, createdTasks, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, project.ResourceID, plan.UID, plan.Config.GetApprovalInputVersion(), tasks)
-		if err != nil {
-			return errors.Wrap(err, "failed to create rollout tasks")
-		}
-		if !marked {
-			return errors.New("cannot create rollout because issue approval is stale")
-		}
-		tasks = createdTasks
-		rolloutMarked = true
+		v := plan.Config.GetApprovalInputVersion()
+		approvalInputVersion = &v
 	}
-
-	// Create rollout tasks
-	if !rolloutMarked {
-		tasks, err = s.CreateTasks(ctx, project.ResourceID, plan.UID, tasks)
-		if err != nil {
-			return errors.Wrap(err, "failed to create rollout tasks")
-		}
+	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, approvalInputVersion, tasks)
+	if err != nil {
+		return errors.Wrap(err, "failed to create rollout tasks")
 	}
-
-	// Update plan to set hasRollout to true
-	if !rolloutMarked {
-		config := proto.CloneOf(plan.Config)
-		config.HasRollout = true
-		_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-			UID:       plan.UID,
-			ProjectID: project.ResourceID,
-			Config:    config,
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to update plan hasRollout")
-		}
+	if !marked {
+		return errors.New("cannot create rollout because issue approval is stale")
 	}
+	tasks = createdTasks
 
 	// Update issue status to DONE when rollout is created
 	if issue != nil {

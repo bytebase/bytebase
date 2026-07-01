@@ -39,6 +39,8 @@ type IssueService struct {
 	iamManager     *iam.Manager
 }
 
+var errStaleApprovalFinding = errors.New("stale approval finding")
+
 type filterIssueMessage struct {
 	ApprovalStatus *v1pb.ApprovalStatus
 	// Approver is the user who can approve the issue.
@@ -600,19 +602,9 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	var plan *store.PlanMessage
-	var approvalInputVersion int64
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-		plan, err = s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-		}
-		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
-		}
-		if plan.Config != nil {
-			approvalInputVersion = plan.Config.GetApprovalInputVersion()
-		}
+	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
+	if err != nil {
+		return nil, err
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -652,43 +644,21 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	payloadPatch := &storepb.Issue{
 		Approval: payload.Approval,
 	}
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
-		if !updated {
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	if err != nil {
+		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot approve because approval finding is stale"))
 		}
-		uid := issue.UID
-		issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ProjectIDs: []string{issue.ProjectID},
-			UID:        &uid,
-		})
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if plan != nil {
+		plan, _, err = s.getIssuePlanApprovalInputVersion(ctx, issue)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to refresh issue"))
-		}
-		if issue == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after approval"))
-		}
-		plan, err = s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-		}
-		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
+			return nil, err
 		}
 		approved, err = utils.CheckIssueApprovedForPlan(issue, plan)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
-		}
-	} else {
-		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: payloadPatch,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 		}
 	}
 
@@ -757,19 +727,9 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	var plan *store.PlanMessage
-	var approvalInputVersion int64
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-		plan, err = s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-		}
-		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
-		}
-		if plan.Config != nil {
-			approvalInputVersion = plan.Config.GetApprovalInputVersion()
-		}
+	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
+	if err != nil {
+		return nil, err
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -804,33 +764,12 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	payloadPatch := &storepb.Issue{
 		Approval: payload.Approval,
 	}
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
-		if !updated {
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	if err != nil {
+		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot reject because approval finding is stale"))
 		}
-		uid := issue.UID
-		issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ProjectIDs: []string{issue.ProjectID},
-			UID:        &uid,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to refresh issue"))
-		}
-		if issue == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after rejection"))
-		}
-	} else {
-		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: payloadPatch,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
@@ -905,19 +844,9 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	var plan *store.PlanMessage
-	var approvalInputVersion int64
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-		plan, err = s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-		}
-		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
-		}
-		if plan.Config != nil {
-			approvalInputVersion = plan.Config.GetApprovalInputVersion()
-		}
+	plan, approvalInputVersion, err := s.getIssuePlanApprovalInputVersion(ctx, issue)
+	if err != nil {
+		return nil, err
 	}
 
 	rejectedRole := utils.FindRejectedRole(payload.Approval)
@@ -947,33 +876,12 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	payloadPatch := &storepb.Issue{
 		Approval: payload.Approval,
 	}
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
-		updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
-		if !updated {
+	issue, err = s.updateIssueApprovalPayload(ctx, issue, payloadPatch, plan, approvalInputVersion)
+	if err != nil {
+		if errors.Is(err, errStaleApprovalFinding) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot request issue because approval finding is stale"))
 		}
-		uid := issue.UID
-		issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ProjectIDs: []string{issue.ProjectID},
-			UID:        &uid,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to refresh issue"))
-		}
-		if issue == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after request"))
-		}
-	} else {
-		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: payloadPatch,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
@@ -998,6 +906,58 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
+}
+
+func (s *IssueService) getIssuePlanApprovalInputVersion(ctx context.Context, issue *store.IssueMessage) (*store.PlanMessage, int64, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
+		return nil, 0, nil
+	}
+
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return nil, 0, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
+	}
+	if plan == nil {
+		return nil, 0, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
+	}
+	if plan.Config == nil {
+		return plan, 0, nil
+	}
+	return plan, plan.Config.GetApprovalInputVersion(), nil
+}
+
+func (s *IssueService) updateIssueApprovalPayload(ctx context.Context, issue *store.IssueMessage, payloadPatch *storepb.Issue, plan *store.PlanMessage, approvalInputVersion int64) (*store.IssueMessage, error) {
+	if plan == nil {
+		updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+			PayloadUpsert: payloadPatch,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to update issue")
+		}
+		return updatedIssue, nil
+	}
+
+	updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue")
+	}
+	if !updated {
+		return nil, errStaleApprovalFinding
+	}
+
+	uid := issue.UID
+	updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &uid,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to refresh issue")
+	}
+	if updatedIssue == nil {
+		return nil, errors.New("issue not found after update")
+	}
+	return updatedIssue, nil
 }
 
 // RetryIssueApproval re-runs approval-template finding for an issue stuck

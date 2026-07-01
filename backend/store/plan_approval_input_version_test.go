@@ -98,7 +98,7 @@ func TestUpdatePlanBumpsApprovalInputVersionOnlyWhenRequested(t *testing.T) {
 	requirePlanSpecID(t, updated.Config, "spec-e")
 }
 
-func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
+func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)
 
@@ -113,7 +113,8 @@ func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
 	}, "creator@example.com")
 	require.NoError(t, err)
 
-	updated, createdTasks, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 1, nil)
+	staleVersion := int64(1)
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &staleVersion, nil)
 	require.NoError(t, err)
 	require.False(t, updated)
 	require.Empty(t, createdTasks)
@@ -124,7 +125,8 @@ func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
 	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
 	requirePlanSpecID(t, got.Config, "spec-a")
 
-	updated, createdTasks, err = s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 2, nil)
+	currentVersion := int64(2)
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &currentVersion, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
 	require.Empty(t, createdTasks)
@@ -136,7 +138,42 @@ func TestCreateTasksIfPlanApprovalInputVersionMarksRollout(t *testing.T) {
 	requirePlanSpecID(t, got.Config, "spec-a")
 }
 
-func TestUpdatePlanBumpApprovalInputVersionDoesNotOverwriteRollout(t *testing.T) {
+func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 1},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
+		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
+	})
+	require.NoError(t, err)
+	require.True(t, updated)
+	require.Len(t, createdTasks, 1)
+
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout())
+
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
+		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
+		newTestRolloutTask("instance-a", "database-b", "sheet-b"),
+	})
+	require.NoError(t, err)
+	require.True(t, updated)
+	require.Len(t, createdTasks, 1)
+	require.Equal(t, "instance-a", createdTasks[0].InstanceID)
+	require.Equal(t, "database-b", createdTasks[0].GetDatabaseName())
+	require.Equal(t, "sheet-b", createdTasks[0].Payload.GetSheetSha256())
+}
+
+func TestUpdatePlanRequireNoRolloutDoesNotOverwriteRollout(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)
 
@@ -154,7 +191,8 @@ func TestUpdatePlanBumpApprovalInputVersionDoesNotOverwriteRollout(t *testing.T)
 	staleConfig := proto.CloneOf(plan.Config)
 	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
 
-	marked, _, err := s.CreateTasksIfPlanApprovalInputVersion(ctx, "project-a", plan.UID, 1, nil)
+	approvalInputVersion := int64(1)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -163,6 +201,45 @@ func TestUpdatePlanBumpApprovalInputVersionDoesNotOverwriteRollout(t *testing.T)
 		ProjectID:                "project-a",
 		Config:                   staleConfig,
 		BumpApprovalInputVersion: true,
+		RequireNoRollout:         true,
+	})
+	require.Error(t, err)
+
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 1, got.Config.GetApprovalInputVersion())
+	requirePlanSpecID(t, got.Config, "spec-a")
+}
+
+func TestUpdatePlanRequireNoRolloutRejectsConfigUpdateAfterRollout(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 1,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-a"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	staleConfig := proto.CloneOf(plan.Config)
+	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
+
+	approvalInputVersion := int64(1)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+	require.NoError(t, err)
+	require.True(t, marked)
+
+	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:              plan.UID,
+		ProjectID:        "project-a",
+		Config:           staleConfig,
+		RequireNoRollout: true,
 	})
 	require.Error(t, err)
 
@@ -424,6 +501,19 @@ func requirePlanSpecID(t *testing.T, config *storepb.PlanConfig, id string) {
 	require.Equal(t, id, config.GetSpecs()[0].GetId())
 }
 
+func newTestRolloutTask(instanceID string, databaseName string, sheetSha256 string) *store.TaskMessage {
+	return &store.TaskMessage{
+		InstanceID:   instanceID,
+		DatabaseName: &databaseName,
+		Type:         storepb.Task_DATABASE_MIGRATE,
+		Payload: &storepb.Task{
+			Source: &storepb.Task_SheetSha256{
+				SheetSha256: sheetSha256,
+			},
+		},
+	}
+}
+
 func setupPlanApprovalInputVersionStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
@@ -437,6 +527,7 @@ func setupPlanApprovalInputVersionStore(ctx context.Context, t *testing.T) *stor
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 	`)
 	require.NoError(t, err)
 

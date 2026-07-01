@@ -514,32 +514,40 @@ func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64
 	return tasks, nil
 }
 
-// CreateTasksIfPlanApprovalInputVersion marks the plan as having rollout and creates tasks atomically if the approval input version is current.
-func (s *Store) CreateTasksIfPlanApprovalInputVersion(ctx context.Context, projectID string, planUID int64, approvalInputVersion int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+// CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
+// If approvalInputVersion is set, the transaction creates no tasks unless the plan
+// still has that approval input version.
+func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, approvalInputVersion *int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
-	result, err := tx.ExecContext(ctx, `
+	var updatedPlanUID int64
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE plan
 		SET
-			updated_at = $1,
-			config = jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
+			updated_at = CASE
+				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN $1
+				ELSE updated_at
+			END,
+			config = CASE
+				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
+				ELSE config
+			END
 		WHERE project = $2
 		  AND id = $3
-		  AND COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4`,
-		time.Now(), projectID, planUID, approvalInputVersion)
-	if err != nil {
+		  AND (
+			$4::bigint IS NULL
+			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
+		  )
+		RETURNING id`,
+		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil, nil
+		}
 		return false, nil, errors.Wrapf(err, "failed to mark plan has rollout")
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to inspect plan has rollout update")
-	}
-	if rowsAffected == 0 {
-		return false, nil, nil
 	}
 
 	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)

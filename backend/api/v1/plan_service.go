@@ -334,6 +334,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			config.Specs = allSpecs
 			planUpdate.Config = config
 			planUpdate.BumpApprovalInputVersion = true
+			planUpdate.RequireNoRollout = true
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
