@@ -55,7 +55,7 @@ func configureAWS(ctx context.Context, authConfig *awsConfig) ([]stdlib.OptionOp
 }
 
 func configureGCP(ctx context.Context, pgxConfig *pgx.ConnConfig, authConfig *gcpConfig) ([]stdlib.OptionOpenDB, func() error, error) {
-	dialer, err := newGCPMetadataDBDialer(ctx)
+	dialer, err := newGCPMetadataDBDialer(ctx, authConfig.ipType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -65,7 +65,7 @@ func configureGCP(ctx context.Context, pgxConfig *pgx.ConnConfig, authConfig *gc
 // IsKeywordValueRuntimeParam reports whether key is a Bytebase metadata DB auth runtime parameter.
 func IsKeywordValueRuntimeParam(key string) bool {
 	switch key {
-	case awsRDSIAMParam, awsRegionParam, gcpCloudSQLIAMParam, gcpCloudSQLInstanceConnectionNameParam:
+	case awsRDSIAMParam, awsRegionParam, gcpCloudSQLIAMParam, gcpCloudSQLInstanceConnectionNameParam, gcpCloudSQLIPTypeParam:
 		return true
 	default:
 		return false
