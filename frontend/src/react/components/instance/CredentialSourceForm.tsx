@@ -17,6 +17,7 @@ import {
 } from "@/react/components/ui/select";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
@@ -30,12 +31,14 @@ type CredentialSource = "default" | "specific-credential";
 
 interface CredentialSourceFormProps {
   dataSource: EditDataSource;
+  engine: Engine;
   allowEdit: boolean;
   onDataSourceChange: (updates: Partial<EditDataSource>) => void;
 }
 
 function CredentialSourceForm({
   dataSource,
+  engine,
   allowEdit,
   onDataSourceChange,
 }: CredentialSourceFormProps) {
@@ -281,8 +284,7 @@ function CredentialSourceForm({
         />
       )}
 
-      {dataSource.authenticationType ===
-        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
+      {showsCloudSQLIPType(engine, dataSource.authenticationType) && (
         <CloudSQLIPTypeField
           value={dataSource.cloudSqlIpType}
           allowEdit={allowEdit}
@@ -290,6 +292,20 @@ function CredentialSourceForm({
         />
       )}
     </div>
+  );
+}
+
+// The Cloud SQL IP type only applies to Cloud SQL connections (which use the
+// cloudsqlconn dialer). Google Cloud SQL IAM auth is also offered for Spanner and
+// BigQuery, whose drivers do not use cloudsqlconn, so restrict the selector to the
+// Cloud SQL MySQL/Postgres engines.
+export function showsCloudSQLIPType(
+  engine: Engine,
+  authType: DataSource_AuthenticationType
+): boolean {
+  return (
+    authType === DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM &&
+    (engine === Engine.MYSQL || engine === Engine.POSTGRES)
   );
 }
 

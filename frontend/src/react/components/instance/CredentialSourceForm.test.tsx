@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_CloudSQLIPType,
@@ -11,6 +12,7 @@ import {
 import {
   CredentialSourceForm,
   offeredCloudSQLIPTypes,
+  showsCloudSQLIPType,
 } from "./CredentialSourceForm";
 import type { EditDataSource } from "./common";
 
@@ -82,6 +84,7 @@ describe("CredentialSourceForm", () => {
     const { container, unmount } = render(
       <CredentialSourceForm
         dataSource={makeDataSource(authenticationType)}
+        engine={Engine.POSTGRES}
         allowEdit={true}
         onDataSourceChange={vi.fn()}
       />
@@ -92,32 +95,52 @@ describe("CredentialSourceForm", () => {
     unmount();
   });
 
-  test("renders Cloud SQL IP type selector only for Google Cloud SQL IAM", () => {
-    const gcp = render(
+  test("shows the Cloud SQL IP selector only for Cloud SQL MySQL/Postgres IAM", () => {
+    const { GOOGLE_CLOUD_SQL_IAM, PASSWORD } = DataSource_AuthenticationType;
+    expect(showsCloudSQLIPType(Engine.MYSQL, GOOGLE_CLOUD_SQL_IAM)).toBe(true);
+    expect(showsCloudSQLIPType(Engine.POSTGRES, GOOGLE_CLOUD_SQL_IAM)).toBe(
+      true
+    );
+    // Spanner/BigQuery reuse the Google IAM auth type but do not use cloudsqlconn.
+    expect(showsCloudSQLIPType(Engine.SPANNER, GOOGLE_CLOUD_SQL_IAM)).toBe(
+      false
+    );
+    expect(showsCloudSQLIPType(Engine.BIGQUERY, GOOGLE_CLOUD_SQL_IAM)).toBe(
+      false
+    );
+    expect(showsCloudSQLIPType(Engine.POSTGRES, PASSWORD)).toBe(false);
+  });
+
+  test("renders the selector for Postgres GCP IAM but not for Spanner", () => {
+    const shown = render(
       <CredentialSourceForm
         dataSource={makeDataSource(
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         )}
+        engine={Engine.POSTGRES}
         allowEdit={true}
         onDataSourceChange={vi.fn()}
       />
     );
-    expect(gcp.container.textContent).toContain(
+    expect(shown.container.textContent).toContain(
       "instance.cloud-sql-ip-type.label"
     );
-    gcp.unmount();
+    shown.unmount();
 
-    const password = render(
+    const spanner = render(
       <CredentialSourceForm
-        dataSource={makeDataSource(DataSource_AuthenticationType.PASSWORD)}
+        dataSource={makeDataSource(
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        )}
+        engine={Engine.SPANNER}
         allowEdit={true}
         onDataSourceChange={vi.fn()}
       />
     );
-    expect(password.container.textContent).not.toContain(
+    expect(spanner.container.textContent).not.toContain(
       "instance.cloud-sql-ip-type.label"
     );
-    password.unmount();
+    spanner.unmount();
   });
 
   test("offers Public and Private only, grandfathering an existing PSC value", () => {
