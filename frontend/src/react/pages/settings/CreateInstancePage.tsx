@@ -45,7 +45,7 @@ export function CreateInstancePage() {
   }, []);
 
   return (
-    <div className="h-full overflow-hidden px-4 sm:px-6">
+    <div className="h-full overflow-hidden">
       <InstanceFormProvider onDismiss={goBack}>
         <CreateInstanceFormInner />
       </InstanceFormProvider>
@@ -130,13 +130,15 @@ function CreateInstanceFormInner() {
     >
       <div className="min-w-0 min-h-0 flex-1 flex flex-col">
         {/* Body */}
-        <div className="flex-1 min-h-0 overflow-auto py-4">
-          <InstanceFormBody onOpenInfoPanel={handleOpenInfoPanel} />
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className="px-4 py-4 sm:px-6">
+            <InstanceFormBody onOpenInfoPanel={handleOpenInfoPanel} />
+          </div>
         </div>
 
         {/* Sticky footer */}
         <div className="sticky bottom-0 z-10 bg-background">
-          <InstanceFormButtons />
+          <InstanceFormButtons className="px-4 sm:px-6" />
         </div>
         <UnsavedChangesGuard />
       </div>

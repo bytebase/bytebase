@@ -40,6 +40,7 @@ describe("SQLReviewCreatePage", () => {
 
     expect(container.firstElementChild).toHaveClass("pt-4");
     expect(container.firstElementChild).not.toHaveClass("py-4");
+    expect(container.firstElementChild).not.toHaveClass("px-4");
 
     act(() => {
       root.unmount();
