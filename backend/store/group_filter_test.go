@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 func TestGetListGroupFilter(t *testing.T) {
@@ -141,4 +143,12 @@ func TestGetListGroupFilterProject(t *testing.T) {
 	require.Empty(t, args)
 	require.NotNil(t, find.ProjectID)
 	require.Equal(t, "test-project", *find.ProjectID)
+}
+
+func TestProjectMembersGroupJoinCondition(t *testing.T) {
+	sql, args, err := projectMembersGroupJoinCondition().ToSQL()
+	require.NoError(t, err)
+	require.Contains(t, sql, "user_group.email")
+	require.Contains(t, sql, "user_group.id")
+	require.Equal(t, []any{common.AllUsers}, args)
 }

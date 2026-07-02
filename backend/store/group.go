@@ -113,7 +113,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
 		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
-		from.Space(`INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
+		from.Space("INNER JOIN project_members ON ?", projectMembersGroupJoinCondition())
 	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
@@ -194,6 +194,13 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 		s.groupCache.Add(getGroupCacheKey(group.Workspace, group), group)
 	}
 	return groups, nil
+}
+
+func projectMembersGroupJoinCondition() *qb.Query {
+	return qb.Q().Space(
+		`((CONCAT('groups/', user_group.email) = ANY(project_members.members) OR CONCAT('groups/', user_group.id) = ANY(project_members.members)) OR ? = ANY(project_members.members))`,
+		common.AllUsers,
+	)
 }
 
 // CreateGroup creates a group.
