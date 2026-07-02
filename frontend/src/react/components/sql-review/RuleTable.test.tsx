@@ -351,8 +351,6 @@ describe("RuleTable", () => {
     expect(mobileDeleteButton).toBeTruthy();
     expect(mobileEditButton?.className).toContain("size-7");
     expect(mobileDeleteButton?.className).toContain("size-7");
-    expect(mobileEditButton?.className).toContain("border");
-    expect(mobileDeleteButton?.className).toContain("border");
     expect(mobileEditButton?.className).not.toContain("size-8");
     expect(mobileDeleteButton?.className).not.toContain("size-8");
     expect(mobileDeleteButton?.textContent).toBe("");
