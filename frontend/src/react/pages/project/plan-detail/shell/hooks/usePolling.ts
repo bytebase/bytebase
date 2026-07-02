@@ -7,8 +7,24 @@ export interface UsePollingParams {
   refreshState: () => Promise<void>;
 }
 
-export function usePolling({ enabled, refreshState }: UsePollingParams): void {
+export interface UsePollingResult {
+  // Reset the backoff and poll again from the minimum interval. Call this
+  // after a user-triggered mutation (run/skip/cancel a task, etc.) so the UI
+  // watches closely for the resulting status transition instead of waiting out
+  // the current (possibly maxed-out) backoff interval.
+  restart: () => void;
+}
+
+export function usePolling({
+  enabled,
+  refreshState,
+}: UsePollingParams): UsePollingResult {
   const pollTimerRef = useRef<number | undefined>(undefined);
+  // `active` mirrors the effect's mounted+enabled lifetime so a late-resolving
+  // refreshState (or a `restart` racing an unmount) cannot schedule a new poll.
+  const activeRef = useRef(false);
+  const refreshStateRef = useRef(refreshState);
+  refreshStateRef.current = refreshState;
 
   const stopPolling = useCallback(() => {
     if (!pollTimerRef.current) {
@@ -18,15 +34,8 @@ export function usePolling({ enabled, refreshState }: UsePollingParams): void {
     pollTimerRef.current = undefined;
   }, []);
 
-  useEffect(() => {
-    if (!enabled) {
-      stopPolling();
-      return;
-    }
-
-    let canceled = false;
-
-    const poll = (interval: number) => {
+  const scheduleNext = useCallback(
+    (interval: number) => {
       stopPolling();
       const nextInterval = minmax(
         interval +
@@ -37,24 +46,43 @@ export function usePolling({ enabled, refreshState }: UsePollingParams): void {
       );
 
       pollTimerRef.current = window.setTimeout(async () => {
-        if (canceled) {
+        if (!activeRef.current) {
           return;
         }
-        await refreshState().catch(() => undefined);
-        if (canceled) {
+        await refreshStateRef.current().catch(() => undefined);
+        if (!activeRef.current) {
           return;
         }
-        poll(
+        scheduleNext(
           Math.min(nextInterval * POLLER_INTERVAL.growth, POLLER_INTERVAL.max)
         );
       }, nextInterval);
-    };
+    },
+    [stopPolling]
+  );
 
-    poll(POLLER_INTERVAL.min);
+  const restart = useCallback(() => {
+    if (!activeRef.current) {
+      return;
+    }
+    scheduleNext(POLLER_INTERVAL.min);
+  }, [scheduleNext]);
+
+  useEffect(() => {
+    if (!enabled) {
+      activeRef.current = false;
+      stopPolling();
+      return;
+    }
+
+    activeRef.current = true;
+    scheduleNext(POLLER_INTERVAL.min);
 
     return () => {
-      canceled = true;
+      activeRef.current = false;
       stopPolling();
     };
-  }, [enabled, refreshState, stopPolling]);
+  }, [enabled, scheduleNext, stopPolling]);
+
+  return { restart };
 }
