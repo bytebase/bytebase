@@ -259,7 +259,7 @@ function ProjectPlanDetailPageInner({
     <PlanDetailProvider value={page}>
       <div
         ref={setPageHost}
-        className="relative h-full overflow-x-hidden bg-gray-50 scrollbar-gutter-stable"
+        className="relative h-full overflow-x-hidden bg-gray-50"
       >
         <div
           className={cn(
@@ -562,9 +562,7 @@ function DesktopColumn({
     <div className="min-w-0 border-l bg-white">
       <div className="sticky top-0 flex max-h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)] flex-col overflow-hidden">
         {header ? <div className="shrink-0">{header}</div> : null}
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-stable">
-          {children}
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

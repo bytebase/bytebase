@@ -443,7 +443,7 @@ export function ProjectMaskingExemptionPage({
             onSelect={setSelectedMemberKey}
             onRevoke={handleRevoke}
           />
-          <div className="flex-1 min-w-0 overflow-y-auto scrollbar-gutter-stable">
+          <div className="flex-1 min-w-0 overflow-y-auto">
             {!membersFromVue.loading && selectedMemberData ? (
               <ExemptionDetailPanel
                 member={selectedMemberData}
@@ -792,7 +792,7 @@ function ExemptionMemberList({
 
   if (loading) {
     return (
-      <div className={cn("overflow-y-auto scrollbar-gutter-stable", className)}>
+      <div className={cn("overflow-y-auto", className)}>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full size-5 border-2 border-accent border-t-transparent" />
         </div>
@@ -802,7 +802,7 @@ function ExemptionMemberList({
 
   if (members.length === 0) {
     return (
-      <div className={cn("overflow-y-auto scrollbar-gutter-stable", className)}>
+      <div className={cn("overflow-y-auto", className)}>
         <div className="flex items-center justify-center py-12 text-control-placeholder text-sm">
           {t("project.masking-exemption.no-exemptions")}
         </div>
@@ -811,7 +811,7 @@ function ExemptionMemberList({
   }
 
   return (
-    <div className={cn("overflow-y-auto scrollbar-gutter-stable", className)}>
+    <div className={cn("overflow-y-auto", className)}>
       <div className="divide-y divide-block-border">
         {members.map((member) => (
           <div key={member.member}>
