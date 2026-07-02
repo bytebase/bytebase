@@ -19,5 +19,8 @@ func (x *Signal) Equal(y *Signal) bool {
 	if x.Project != y.Project {
 		return false
 	}
+	if x.ApprovalInputVersion != y.ApprovalInputVersion {
+		return false
+	}
 	return true
 }
