@@ -1,19 +1,15 @@
 import { Info, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { RouterLink } from "@/react/components/RouterLink";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/react/router/handles";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { extractIssueUID } from "@/utils/v1/issue/issue";
-import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 
 // The Review advance (Comment / Approve / Reject) lives in the page header's
 // lifecycle slot now (BYT-9722), so this section header is title + metadata only
 // — no duplicate Review action.
 export function PlanReviewSectionHeader({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
-  const page = usePlanDetailContext();
   const issueUID = extractIssueUID(issue.name);
 
   return (
@@ -30,15 +26,11 @@ export function PlanReviewSectionHeader({ issue }: { issue: Issue }) {
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <RiskChip riskLevel={issue.riskLevel} />
-        <RouterLink
-          className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs text-control hover:border-control-border"
-          to={{
-            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-            params: { issueId: issueUID, projectId: page.projectId },
-          }}
-        >
+        {/* Static label, not a link: for change plans the issue route redirects
+            back to this Plan Detail page (BYT-9721), so a link would be a no-op. */}
+        <span className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs text-control">
           {t("common.issue")} #{issueUID}
-        </RouterLink>
+        </span>
       </div>
     </div>
   );

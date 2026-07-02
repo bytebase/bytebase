@@ -74,6 +74,7 @@ import {
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router/handles";
+import { issueDetailRedirectLoader } from "@/react/router/issueDetailRedirect";
 import { RouteShellOutletPlaceholder } from "@/react/router/layoutPlaceholders";
 import { lazyPage } from "@/react/router/lazyPage";
 import { ProjectRouteGate } from "@/react/router/ProjectRouteGate";
@@ -941,13 +942,17 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.ProjectPlanDetailPage
         ),
       },
-      // Issue detail.
+      // Issue detail. Schema/data change issues redirect to Plan Detail — the
+      // canonical review surface (BYT-9721); create-database, export, and grant
+      // issues stay here. The `loader` (static) decides the redirect and the
+      // `lazy` Component renders when it doesn't.
       {
         path: "issues/:issueId",
         handle: {
           name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
           requiredPermissionList: (): Permission[] => ["bb.issues.get"],
         },
+        loader: issueDetailRedirectLoader,
         lazy: lazyPage(
           () => import("@/react/pages/project/ProjectIssueDetailPage"),
           (m) => m.ProjectIssueDetailPage
