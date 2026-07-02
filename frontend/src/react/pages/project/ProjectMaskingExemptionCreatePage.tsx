@@ -199,7 +199,7 @@ export function ProjectMaskingExemptionCreatePage({
       </div>
 
       {/* Body */}
-      <div className="flex-1 mb-6 px-4 overflow-y-auto scrollbar-gutter-stable">
+      <div className="flex-1 mb-6 px-4 overflow-y-auto">
         <div className="flex flex-col gap-y-8 pt-4">
           <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
 
