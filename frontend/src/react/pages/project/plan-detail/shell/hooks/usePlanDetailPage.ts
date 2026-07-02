@@ -212,7 +212,7 @@ export const usePlanDetailPage = ({
     [syncDefaultActivePhases]
   );
 
-  const refreshState = useCallback(async () => {
+  const fetchState = useCallback(async () => {
     try {
       setIsRefreshing(true);
       const current = latestSnapshotRef.current;
@@ -292,10 +292,19 @@ export const usePlanDetailPage = ({
     );
   }, [snapshot.rollout]);
 
-  usePolling({
+  const { restart: restartPolling } = usePolling({
     enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    refreshState,
+    refreshState: fetchState,
   });
+
+  // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
+  // It fetches immediately and then resets the poll backoff so the follow-up
+  // status transition (e.g. a task moving PENDING -> RUNNING) is observed on
+  // the next ~1s tick instead of waiting out the current backoff interval.
+  const refreshState = useCallback(async () => {
+    await fetchState();
+    restartPolling();
+  }, [fetchState, restartPolling]);
 
   return useDerivedPlanState({
     snapshot,
