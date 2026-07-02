@@ -263,9 +263,8 @@ export function AccountMultiSelect({
       return user?.title || user?.email;
     }
     if (fullname.startsWith(groupNamePrefix)) {
-      const email = fullname.slice(groupNamePrefix.length);
-      const group = groups.find((g) => g.email === email);
-      return group?.title || email;
+      const group = groups.find((g) => g.name === fullname);
+      return group?.title || fullname;
     }
     return undefined;
   };
@@ -460,8 +459,7 @@ export function AccountMultiSelect({
                   {t("common.groups")}
                 </div>
                 {groups.map((group) => {
-                  const fullname = `${groupNamePrefix}${group.email}`;
-                  const selected = selectedFullnames.has(fullname);
+                  const selected = selectedFullnames.has(group.name);
                   return (
                     <div
                       key={group.name}
@@ -469,7 +467,7 @@ export function AccountMultiSelect({
                         "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                         selected && "bg-accent/5"
                       )}
-                      onClick={() => toggle(fullname)}
+                      onClick={() => toggle(group.name)}
                     >
                       <SelectionCheckbox selected={selected} />
                       <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
