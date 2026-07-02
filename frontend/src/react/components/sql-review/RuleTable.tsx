@@ -1,4 +1,10 @@
-import { ChevronDown, ChevronRight, ExternalLink, Pencil } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
@@ -31,6 +37,8 @@ import {
   RuleLevelSwitch,
   type RuleListWithCategory,
 } from "./RuleComponents";
+
+const DESKTOP_RULE_MEDIA_QUERY = "(min-width: 1024px)";
 
 // ---- Types ----
 
@@ -280,9 +288,15 @@ export function RuleTable({
     if (!focusRuleKey) return;
     setHighlightedRuleKey(focusRuleKey);
     window.requestAnimationFrame(() => {
-      document
-        .querySelector(`[data-sql-review-rule-key="${focusRuleKey}"]`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      const ruleView = window.matchMedia(DESKTOP_RULE_MEDIA_QUERY).matches
+        ? "desktop"
+        : "mobile";
+      const target =
+        document.querySelector(
+          `[data-sql-review-rule-key="${focusRuleKey}"][data-sql-review-rule-view="${ruleView}"]`
+        ) ??
+        document.querySelector(`[data-sql-review-rule-key="${focusRuleKey}"]`);
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
     });
     const timer = window.setTimeout(() => {
       setHighlightedRuleKey(undefined);
@@ -367,7 +381,7 @@ export function RuleTable({
           </div>
 
           {/* Mobile cards */}
-          <div className="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border">
+          <div className="flex flex-col lg:hidden border px-2 divide-y divide-block-border">
             {category.ruleList.map((rule) => {
               const key = getRuleKey(rule);
               const highlighted = highlightedRuleKey === key;
@@ -457,6 +471,7 @@ function RuleTableRow({
     <>
       <TableRow
         data-sql-review-rule-key={ruleKey}
+        data-sql-review-rule-view="desktop"
         className={cn(
           supportSelect ? "cursor-pointer" : "",
           highlighted &&
@@ -614,15 +629,22 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
   return (
     <div
       data-sql-review-rule-key={ruleKey}
+      data-sql-review-rule-view="mobile"
       className={cn(
-        "pt-4 flex flex-col gap-y-3",
+        "relative py-4 flex flex-col gap-y-3",
         highlighted &&
           "rounded-sm outline outline-1 outline-error outline-offset-[-1px] bg-error/5"
       )}
     >
-      <div className="flex justify-between items-center gap-x-2">
-        <div className="flex items-center gap-x-1">
-          <span>
+      <div
+        data-testid="mobile-rule-title-row"
+        className={cn(
+          "min-w-0 pr-20",
+          supportSelect ? "flex items-start justify-between gap-x-3 pr-0" : ""
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <span className="break-words">
             {loc.title}
             <a
               href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
@@ -637,20 +659,31 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
         {supportSelect ? (
           <Checkbox checked={isSelected} onCheckedChange={onToggleRule} />
         ) : (
-          <div className="flex items-center gap-x-2">
+          <div
+            data-testid="mobile-rule-action-list"
+            className="absolute right-0 top-4 flex shrink-0 items-center gap-x-1"
+          >
             {editable && (
-              <Pencil
-                className="w-4 h-4 cursor-pointer hover:text-accent"
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0 text-control hover:text-accent"
+                aria-label={t("common.edit")}
                 onClick={() => setEditing(true)}
-              />
+              >
+                <Pencil className="size-4" />
+              </Button>
             )}
             {editable && !isBuiltinRule(rule) && (
               <Button
-                variant="ghost-destructive"
+                variant="ghost"
                 size="sm"
+                className="size-7 p-0 text-error hover:bg-error/10 hover:text-error"
+                aria-label={t("common.delete")}
                 onClick={() => onRuleRemove?.(rule)}
               >
-                {t("common.delete")}
+                <Trash2 className="size-4" />
               </Button>
             )}
           </div>
@@ -722,7 +755,7 @@ export function RuleTableWithFilter({
     if (focusRuleKey) {
       events.reset();
     }
-  }, [focusRuleKey, events]);
+  }, [focusRuleKey, focusRuleSignal, events]);
 
   const toggleSelectAll = useCallback(
     (select: boolean) => {
