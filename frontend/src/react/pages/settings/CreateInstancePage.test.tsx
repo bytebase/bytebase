@@ -50,8 +50,10 @@ vi.mock("@/react/components/instance", () => ({
     <div>{children}</div>
   ),
   InfoPanelContent: () => <div />,
-  InstanceFormBody: () => <div />,
-  InstanceFormButtons: () => <div />,
+  InstanceFormBody: () => <div data-testid="instance-form-body" />,
+  InstanceFormButtons: ({ className }: { className?: string }) => (
+    <div data-testid="instance-form-buttons" className={className} />
+  ),
   InstanceFormProvider: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -71,6 +73,35 @@ beforeEach(async () => {
 });
 
 describe("CreateInstancePage", () => {
+  test("keeps the scroll container flush with the page edge", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<CreateInstancePage />);
+    });
+
+    const page = container.firstElementChild;
+    expect(page).not.toHaveClass("px-4");
+    expect(page).not.toHaveClass("sm:px-6");
+
+    const bodyPadding = container.querySelector(
+      "[data-testid='instance-form-body']"
+    )?.parentElement;
+    expect(bodyPadding).toHaveClass("px-4");
+    expect(bodyPadding).toHaveClass("sm:px-6");
+
+    const buttons = container.querySelector(
+      "[data-testid='instance-form-buttons']"
+    );
+    expect(buttons).toHaveClass("px-4");
+    expect(buttons).toHaveClass("sm:px-6");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("guards navigation when the create form has unsaved changes", () => {
     const container = document.createElement("div");
     const root = createRoot(container);

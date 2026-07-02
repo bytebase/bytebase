@@ -343,7 +343,7 @@ export function ReviewCreation({
   return (
     <div className="w-full h-full flex flex-col">
       {/* Step bar */}
-      <div className="sticky top-0 z-10 bg-background border-b pb-4">
+      <div className="sticky top-0 z-10 bg-background border-b px-4 pb-4">
         <div className="flex items-center gap-x-2">
           {steps.map((step, index) => (
             <div key={index} className="flex items-center gap-x-2">
@@ -368,7 +368,7 @@ export function ReviewCreation({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 overflow-y-auto py-4 px-2">
+      <div className="flex-1 overflow-y-auto p-4">
         {currentStep === STEP_BASIC_INFO && (
           <div className="flex flex-col gap-y-4 max-w-2xl">
             <div className="flex flex-col gap-y-2 max-w-2xl">
@@ -457,7 +457,7 @@ export function ReviewCreation({
       </div>
 
       {/* Footer navigation */}
-      <div className="sticky bottom-0 z-10 border-t bg-background py-4 flex justify-between">
+      <div className="sticky bottom-0 z-10 border-t bg-background px-4 py-4 flex justify-between">
         <div>
           {currentStep === STEP_BASIC_INFO && (
             <Button variant="outline" onClick={() => handleCancel()}>

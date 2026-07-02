@@ -7,7 +7,7 @@ import {
 
 export function SQLReviewCreationPage(props: ReviewCreationProps) {
   return (
-    <div className="px-4 pt-4 h-full min-h-0 flex flex-col">
+    <div className="pt-4 h-full min-h-0 flex flex-col">
       <ReviewCreation {...props} />
     </div>
   );
