@@ -156,6 +156,12 @@ export class SchemaEditorPage {
     await expect(this.popoverCreateButton).toBeEnabled();
     await this.popoverCreateButton.click();
     await expect(this.tableNameInput).toBeHidden({ timeout: 10_000 });
+    // The new table opens in a tab and renders its TableEditor asynchronously.
+    // Wait for the toolbar (and thus the default `id` column) to render before
+    // returning, so a follow-up addColumn()/column read doesn't race an
+    // empty grid and capture a stale count.
+    await expect(this.addColumnButton).toBeVisible({ timeout: 10_000 });
+    await expect(this.columnRow("id")).toBeVisible({ timeout: 10_000 });
   }
 
   // ---- Column grid ----

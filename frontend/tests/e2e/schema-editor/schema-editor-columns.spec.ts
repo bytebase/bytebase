@@ -106,22 +106,23 @@ test.describe("column editing", () => {
     await expect(typeInput).toHaveValue("varchar(255)");
   });
 
-  test("checking Primary forces Not-Null on a created table", async () => {
+  test("checking Primary on a created-table column forces Not-Null (in the DDL)", async () => {
     await newTable();
     await se.addColumn();
     await se.columnNameInputs().last().fill("zcode");
     await se.selectColumnType(1, "text");
 
-    const primary = se.primaryCheckbox("zcode");
-    const notNull = se.notNullCheckbox("zcode");
-    await expect(notNull).not.toBeChecked();
-    // Use click (not check) — Playwright's check() mis-handles Base UI's
-    // span[role=checkbox] and reports "state did not change" spuriously.
-    await primary.click();
-    await expect(primary).toBeChecked();
-    // PK implies NOT NULL, and the Not-Null box locks on.
-    await expect(notNull).toBeChecked();
-    await expect(notNull).toBeDisabled();
+    // Clicking Primary mutates the metadata immediately (adds the column to the
+    // PK and sets nullable=false). Verify via the generated DDL rather than the
+    // grid checkboxes: on a *created* table the grid only re-renders through the
+    // delayed BYT-9802-preview path, so the checkbox UI updates late (~seconds)
+    // and asserting on it is timing-fragile. The DDL reads metadata directly.
+    await se.primaryCheckbox("zcode").click();
+    await se.insertSql();
+
+    const stmt = await se.planStatementText();
+    expect(stmt).toMatch(/"zcode"\s+text\s+NOT NULL/); // PK forced NOT NULL
+    expect(stmt).toMatch(/PRIMARY KEY\s*\([^;]*zcode/); // zcode joined the PK
   });
 
   test("Primary is disabled for every column on an existing table", async () => {
@@ -208,7 +209,12 @@ test.describe("created-table edit reactivity (BUG BYT-9802-preview)", () => {
     await se.selectColumnType(0, "bigint");
     await expect(se.columnTypeInputs().nth(0)).toHaveValue("bigint"); // control
 
-    // Bug: the preview should reflect the new type but stays "integer".
-    expect(await se.previewText()).toContain("bigint");
+    // Bug: the preview should reflect the new type but stays "integer". Poll
+    // (don't read once) so that when the bug is fixed the preview's async
+    // schema-string refresh is given time to land — turning this into an
+    // *unexpected pass* that signals the fix, rather than racing the refresh.
+    await expect
+      .poll(async () => await se.previewText())
+      .toContain("bigint");
   });
 });
