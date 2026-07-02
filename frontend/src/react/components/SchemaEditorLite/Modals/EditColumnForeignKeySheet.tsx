@@ -201,7 +201,11 @@ export function EditColumnForeignKeySheet({
             <label className="mb-1 block text-sm font-medium">
               {t("schema-editor.foreign-key.name")}
             </label>
-            <Input value={fkName} onChange={(e) => setFkName(e.target.value)} />
+            <Input
+              value={fkName}
+              autoComplete="off"
+              onChange={(e) => setFkName(e.target.value)}
+            />
           </div>
           {showSchemaSelector && (
             <div>

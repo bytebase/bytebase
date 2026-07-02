@@ -21,6 +21,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
         <Input
           ref={ref}
+          autoComplete="off"
           className={cn("pl-8", className)}
           placeholder={placeholder ?? t("common.type-to-search")}
           {...props}

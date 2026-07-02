@@ -359,6 +359,7 @@ export function TableColumnEditor({
                     autoFocus={status === "created" && column.name === ""}
                     placeholder={t("schema-editor.column.name-placeholder")}
                     value={column.name}
+                    autoComplete="off"
                     disabled={disabled}
                     size="xs"
                     className={INLINE_EDIT_INPUT_CLASS}
@@ -385,6 +386,7 @@ export function TableColumnEditor({
                 <TableCell className={cellClass}>
                   <Input
                     value={column.comment}
+                    autoComplete="off"
                     disabled={disabled}
                     size="xs"
                     className={INLINE_EDIT_INPUT_CLASS}
