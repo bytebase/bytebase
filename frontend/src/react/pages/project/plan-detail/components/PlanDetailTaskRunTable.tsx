@@ -1,9 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
-import { Check, Minus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { TaskRunStatusIcon } from "@/react/components/TaskRunStatusIcon";
 import { Button } from "@/react/components/ui/button";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { useAppStore } from "@/react/stores/app";
 import {
   getDateForPbTimestampProtoEs,
@@ -157,52 +156,6 @@ export function PlanDetailTaskRunTable({
   );
 }
 
-function TaskRunStatusIcon({ status }: { status: TaskRun_Status }) {
-  const { t } = useTranslation();
-  const classes = (() => {
-    switch (status) {
-      case TaskRun_Status.PENDING:
-        return "border-2 border-info bg-white text-info";
-      case TaskRun_Status.RUNNING:
-        return "border-2 border-info bg-white text-info";
-      case TaskRun_Status.DONE:
-        return "bg-success text-white";
-      case TaskRun_Status.FAILED:
-        return "bg-error text-white";
-      case TaskRun_Status.CANCELED:
-        return "border-2 border-gray-400 bg-white text-gray-400";
-      default:
-        return "";
-    }
-  })();
-
-  return (
-    <Tooltip content={taskRunStatusLabel(t, status)}>
-      <div
-        className={[
-          "relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full select-none",
-          classes,
-        ].join(" ")}
-      >
-        {status === TaskRun_Status.PENDING && (
-          <span className="h-1.5 w-1.5 rounded-full bg-info" />
-        )}
-        {status === TaskRun_Status.RUNNING && (
-          <div className="relative flex h-2.5 w-2.5 overflow-visible">
-            <span className="absolute z-0 h-full w-full animate-ping-slow rounded-full bg-blue-600/50" />
-            <span className="z-1 h-full w-full rounded-full bg-info" />
-          </div>
-        )}
-        {status === TaskRun_Status.DONE && <Check className="h-4 w-4" />}
-        {status === TaskRun_Status.FAILED && (
-          <span className="text-base font-medium text-white">!</span>
-        )}
-        {status === TaskRun_Status.CANCELED && <Minus className="h-4 w-4" />}
-      </div>
-    </Tooltip>
-  );
-}
-
 function TaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   const { t } = useTranslation();
   const earliestAllowedTime = taskRun.runTime
@@ -284,26 +237,6 @@ function executionDurationOfTaskRun(taskRun: TaskRun) {
     nanos: (elapsedMS % 1000) * 1e6,
     seconds: BigInt(Math.floor(elapsedMS / 1000)),
   });
-}
-
-function taskRunStatusLabel(
-  t: ReturnType<typeof useTranslation>["t"],
-  status: TaskRun_Status
-) {
-  switch (status) {
-    case TaskRun_Status.PENDING:
-      return t("task.status.pending");
-    case TaskRun_Status.RUNNING:
-      return t("task.status.running");
-    case TaskRun_Status.DONE:
-      return t("task.status.done");
-    case TaskRun_Status.FAILED:
-      return t("task.status.failed");
-    case TaskRun_Status.CANCELED:
-      return t("task.status.canceled");
-    default:
-      return String(status);
-  }
 }
 
 function shouldShowDetailButton(taskRun: TaskRun) {

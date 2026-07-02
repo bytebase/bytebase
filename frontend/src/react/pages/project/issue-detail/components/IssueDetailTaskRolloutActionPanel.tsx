@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
-import { Check, FastForward, Loader2, Pause, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
+import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
@@ -17,10 +18,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { cn } from "@/react/lib/utils";
 import {
   ScheduledRunTimeInput,
   TASK_ROLLOUT_ACTION_SHEET_WIDTH,
@@ -36,7 +35,6 @@ import {
   ListTaskRunsRequestSchema,
   type Stage,
   type Task,
-  Task_Status,
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -367,7 +365,7 @@ export function IssueDetailTaskRolloutActionPanel({
                         className="flex h-8 items-center gap-x-2"
                         key={task.name}
                       >
-                        <IssueDetailTaskStatus status={task.status} />
+                        <TaskStatusIcon size="small" status={task.status} />
                         <IssueDetailTaskDatabaseName task={task} />
                       </li>
                     ))}
@@ -643,91 +641,4 @@ function IssueDetailStageEnvironment({
       {environment.title || environmentName.split("/").at(-1)}
     </span>
   );
-}
-
-function IssueDetailTaskStatus({ status }: { status: Task_Status }) {
-  const { t } = useTranslation();
-  return (
-    <Tooltip content={taskStatusLabel(t, status)}>
-      <div
-        aria-label={taskStatusLabel(t, status)}
-        className={cn(
-          "relative flex h-5 w-5 shrink-0 select-none items-center justify-center overflow-hidden rounded-full",
-          taskStatusClassName(status)
-        )}
-      >
-        {status === Task_Status.NOT_STARTED && (
-          <span className="h-1/2 w-1/2 rounded-full bg-control" />
-        )}
-        {status === Task_Status.PENDING && <Pause className="h-3/4 w-3/4" />}
-        {status === Task_Status.RUNNING && (
-          <div className="relative flex h-1/2 w-1/2 overflow-visible">
-            <span
-              className="absolute z-0 h-full w-full animate-ping-slow rounded-full"
-              style={{ backgroundColor: "rgba(37, 99, 235, 0.5)" }}
-            />
-            <span className="z-1 h-full w-full rounded-full bg-info" />
-          </div>
-        )}
-        {status === Task_Status.SKIPPED && (
-          <FastForward className="h-3/4 w-3/4" />
-        )}
-        {status === Task_Status.DONE && <Check className="h-3/4 w-3/4" />}
-        {status === Task_Status.FAILED && (
-          <span className="rounded-full text-base font-medium">!</span>
-        )}
-        {status === Task_Status.CANCELED && (
-          <span className="text-base leading-none">-</span>
-        )}
-        {status !== Task_Status.CANCELED &&
-          status !== Task_Status.FAILED &&
-          status !== Task_Status.DONE &&
-          status !== Task_Status.SKIPPED &&
-          status !== Task_Status.RUNNING &&
-          status !== Task_Status.PENDING &&
-          status !== Task_Status.NOT_STARTED && <X className="h-3/4 w-3/4" />}
-      </div>
-    </Tooltip>
-  );
-}
-
-function taskStatusClassName(status: Task_Status) {
-  switch (status) {
-    case Task_Status.NOT_STARTED:
-      return "border-2 border-control bg-white";
-    case Task_Status.PENDING:
-    case Task_Status.RUNNING:
-      return "border-2 border-info bg-white text-info";
-    case Task_Status.SKIPPED:
-      return "border-2 border-control-light bg-white text-gray-600";
-    case Task_Status.DONE:
-      return "bg-success text-white";
-    case Task_Status.FAILED:
-      return "bg-error text-white";
-    case Task_Status.CANCELED:
-      return "border-2 border-control-light bg-white text-control-light";
-    default:
-      return "border border-dashed border-control bg-white";
-  }
-}
-
-function taskStatusLabel(t: (key: string) => string, status: Task_Status) {
-  switch (status) {
-    case Task_Status.NOT_STARTED:
-      return t("task.status.not-started");
-    case Task_Status.PENDING:
-      return t("task.status.pending");
-    case Task_Status.RUNNING:
-      return t("task.status.running");
-    case Task_Status.SKIPPED:
-      return t("task.status.skipped");
-    case Task_Status.DONE:
-      return t("task.status.done");
-    case Task_Status.FAILED:
-      return t("task.status.failed");
-    case Task_Status.CANCELED:
-      return t("task.status.canceled");
-    default:
-      return t("task.status.not-started");
-  }
 }
