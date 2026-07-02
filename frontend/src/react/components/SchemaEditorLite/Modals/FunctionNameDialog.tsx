@@ -89,6 +89,7 @@ export function FunctionNameDialog({
           <Input
             value={name}
             placeholder="Function name"
+            autoComplete="off"
             autoFocus
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {

@@ -89,6 +89,7 @@ export function ViewNameDialog({
           <Input
             value={name}
             placeholder="View name"
+            autoComplete="off"
             autoFocus
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {

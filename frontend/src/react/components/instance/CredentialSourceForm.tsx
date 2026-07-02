@@ -8,13 +8,6 @@ import {
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/react/components/ui/select";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -360,28 +353,23 @@ function CloudSQLIPTypeField({
       <label className="textlabel block">
         {t("instance.cloud-sql-ip-type.label")}
       </label>
-      <Select
-        value={String(current)}
-        disabled={!allowEdit}
-        onValueChange={(val) => {
-          if (val != null) onChange(Number(val) as DataSource_CloudSQLIPType);
-        }}
-      >
-        <SelectTrigger className="mt-2 w-full">
-          <SelectValue>
-            {(v: string | null) =>
-              options.find((o) => String(o.value) === v)?.label ?? null
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={String(o.value)}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="textlabel mt-2 flex gap-x-4">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className="inline-flex items-center gap-x-1.5"
+          >
+            <input
+              type="radio"
+              name="cloud-sql-ip-type"
+              checked={current === option.value}
+              disabled={!allowEdit}
+              onChange={() => onChange(option.value)}
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
       <p className="textinfolabel mt-1">
         {t("instance.cloud-sql-ip-type.description")}
       </p>

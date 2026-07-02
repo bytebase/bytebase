@@ -148,6 +148,7 @@ export function DataTypeCell({
       <Input
         ref={inputRef}
         value={value}
+        autoComplete="off"
         disabled={readonly}
         placeholder="column type"
         size="xs"

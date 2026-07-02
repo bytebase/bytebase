@@ -89,6 +89,7 @@ export function ProcedureNameDialog({
           <Input
             value={name}
             placeholder="Procedure name"
+            autoComplete="off"
             autoFocus
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
