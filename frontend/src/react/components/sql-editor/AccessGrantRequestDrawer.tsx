@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { accessGrantServiceClientConnect } from "@/connect";
+import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import {
   monacoThemeName,
@@ -43,58 +44,6 @@ import {
   extractIssueUID,
   extractProjectResourceName,
 } from "@/utils";
-
-// Multi-select database combobox
-function MultiDatabaseSelect({
-  value,
-  projectName,
-  onChange,
-}: {
-  value: string[];
-  projectName: string;
-  onChange: (val: string[]) => void;
-}) {
-  const { t } = useTranslation();
-  const [databases, setDatabases] = useState<
-    { name: string; displayName: string }[]
-  >([]);
-
-  const fetchDatabases = useAppStore((s) => s.fetchDatabases);
-
-  useEffect(() => {
-    fetchDatabases({
-      parent: projectName,
-      filter: { query: "" },
-      pageSize: 100,
-      silent: true,
-    })
-      .then((result) => {
-        setDatabases(
-          result.databases.map((db) => {
-            const { databaseName } = extractDatabaseResourceName(db.name);
-            return { name: db.name, displayName: databaseName };
-          })
-        );
-      })
-      .catch(() => {
-        /* ignore */
-      });
-  }, [fetchDatabases, projectName]);
-
-  return (
-    <Combobox
-      multiple={true}
-      value={value}
-      onChange={onChange}
-      placeholder={t("database.select")}
-      noResultsText={t("common.no-data")}
-      options={databases.map((db) => ({
-        value: db.name,
-        label: db.displayName,
-      }))}
-    />
-  );
-}
 
 interface Props {
   readonly targets?: string[];
@@ -266,10 +215,11 @@ function AccessGrantRequestDrawerInner({
               {t("common.databases")}
               <span className="text-error ml-0.5">*</span>
             </div>
-            <MultiDatabaseSelect
+            <DatabaseSelect
+              multiple
               value={targets}
-              projectName={project as string}
               onChange={setTargets}
+              projectName={project as string}
             />
           </div>
 
