@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useMatches } from "react-router-dom";
 import signinImage from "@/assets/illustration/signin.webp";
 import signupImage from "@/assets/illustration/signup.webp";
@@ -14,9 +15,11 @@ export function SplashLayout() {
     matches.at(-1)?.handle as { name?: string } | undefined
   )?.name;
 
-  const currentPlan = useAppStore((s) => s.currentPlan());
-  const isTrialing = useAppStore((s) => s.isTrialing());
-  const showBrandingImage = currentPlan !== PlanType.ENTERPRISE || isTrialing;
+  const [showBrandingImage] = useState(() => {
+    const store = useAppStore.getState();
+    const currentPlan = store.currentPlan();
+    return currentPlan !== PlanType.ENTERPRISE || store.isTrialing();
+  });
 
   return (
     <div className="min-h-screen overflow-hidden flex">
