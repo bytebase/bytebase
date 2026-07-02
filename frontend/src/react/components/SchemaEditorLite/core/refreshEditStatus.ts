@@ -92,66 +92,69 @@ export function refreshTableEditStatus(
   const ownStatus = editStatus.getEditStatusByKey(
     keyForResource(db, { schema, table })
   );
-  if (ownStatus !== "created" && ownStatus !== "dropped") {
-    const baselineTable = baselineMetadata.schemas
-      .find((s) => s.name === schema.name)
-      ?.tables.find((t) => t.name === table.name);
+  if (ownStatus === "created" || ownStatus === "dropped") {
+    editStatus.markEditStatus(db, { schema, table }, ownStatus);
+    return;
+  }
 
-    // The table's own status reflects its scalar fields plus indexes, foreign
-    // keys, and partitions. Index/FK/partition edits are all tracked on the
-    // table key (see TableEditor's add handlers), so partitions must be
-    // compared here too — otherwise a reverted column/comment edit could clear
-    // the only marker for an added partition. Column edits surface separately
-    // via the per-column statuses below.
-    const ownChanged =
-      !baselineTable ||
+  const baselineTable = baselineMetadata.schemas
+    .find((s) => s.name === schema.name)
+    ?.tables.find((t) => t.name === table.name);
+
+  // The table's own status reflects its scalar fields plus indexes, foreign
+  // keys, and partitions. Index/FK/partition edits are all tracked on the
+  // table key (see TableEditor's add handlers), so partitions must be
+  // compared here too — otherwise a reverted column/comment edit could clear
+  // the only marker for an added partition. Column edits surface separately
+  // via the per-column statuses below.
+  const ownChanged =
+    !baselineTable ||
+    !isEqual(
+      pick(table, ComparableTableFields),
+      pick(baselineTable, ComparableTableFields)
+    ) ||
+    !isEqualForeignKeys(baselineTable.foreignKeys, table.foreignKeys) ||
+    !isEqualIndexes(baselineTable.indexes, table.indexes) ||
+    !isEqualPartitions(baselineTable.partitions, table.partitions);
+  if (ownChanged) {
+    editStatus.markEditStatus(db, { schema, table }, "updated");
+  } else {
+    // Non-recursive: clear only the table's own key so the per-column
+    // statuses (set below) survive.
+    editStatus.removeEditStatus(db, { schema, table }, false);
+  }
+
+  // Edit-status keys are column-name based, so two columns sharing a name
+  // (an in-progress rename collision) map to the same key. Treat any such
+  // duplicate as changed and never clear its key — otherwise the unchanged
+  // twin could remove the dirty marker the renamed twin just set, leaving
+  // the editor wrongly clean while the metadata actually differs.
+  const nameCounts = new Map<string, number>();
+  for (const column of table.columns) {
+    nameCounts.set(column.name, (nameCounts.get(column.name) ?? 0) + 1);
+  }
+
+  for (const column of table.columns) {
+    const columnStatus = editStatus.getColumnStatus(db, {
+      schema,
+      table,
+      column,
+    });
+    if (columnStatus === "created" || columnStatus === "dropped") continue;
+    const baselineColumn = baselineTable?.columns.find(
+      (c) => c.name === column.name
+    );
+    const changed =
+      (nameCounts.get(column.name) ?? 0) > 1 ||
+      !baselineColumn ||
       !isEqual(
-        pick(table, ComparableTableFields),
-        pick(baselineTable, ComparableTableFields)
-      ) ||
-      !isEqualForeignKeys(baselineTable.foreignKeys, table.foreignKeys) ||
-      !isEqualIndexes(baselineTable.indexes, table.indexes) ||
-      !isEqualPartitions(baselineTable.partitions, table.partitions);
-    if (ownChanged) {
-      editStatus.markEditStatus(db, { schema, table }, "updated");
-    } else {
-      // Non-recursive: clear only the table's own key so the per-column
-      // statuses (set below) survive.
-      editStatus.removeEditStatus(db, { schema, table }, false);
-    }
-
-    // Edit-status keys are column-name based, so two columns sharing a name
-    // (an in-progress rename collision) map to the same key. Treat any such
-    // duplicate as changed and never clear its key — otherwise the unchanged
-    // twin could remove the dirty marker the renamed twin just set, leaving
-    // the editor wrongly clean while the metadata actually differs.
-    const nameCounts = new Map<string, number>();
-    for (const column of table.columns) {
-      nameCounts.set(column.name, (nameCounts.get(column.name) ?? 0) + 1);
-    }
-
-    for (const column of table.columns) {
-      const columnStatus = editStatus.getColumnStatus(db, {
-        schema,
-        table,
-        column,
-      });
-      if (columnStatus === "created" || columnStatus === "dropped") continue;
-      const baselineColumn = baselineTable?.columns.find(
-        (c) => c.name === column.name
+        pick(column, ComparableColumnFields),
+        pick(baselineColumn, ComparableColumnFields)
       );
-      const changed =
-        (nameCounts.get(column.name) ?? 0) > 1 ||
-        !baselineColumn ||
-        !isEqual(
-          pick(column, ComparableColumnFields),
-          pick(baselineColumn, ComparableColumnFields)
-        );
-      if (changed) {
-        editStatus.markEditStatus(db, { schema, table, column }, "updated");
-      } else {
-        editStatus.removeEditStatus(db, { schema, table, column }, false);
-      }
+    if (changed) {
+      editStatus.markEditStatus(db, { schema, table, column }, "updated");
+    } else {
+      editStatus.removeEditStatus(db, { schema, table, column }, false);
     }
   }
 }
