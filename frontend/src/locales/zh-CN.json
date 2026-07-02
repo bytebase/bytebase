@@ -926,7 +926,7 @@
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "authentication-database": "认证数据库",
     "cloud-sql-ip-type": {
-      "description": "选择通过哪个 Cloud SQL IP 进行连接。当实例没有公共 IP 且 Bytebase 运行在同一 VPC 内时，请使用私有 IP 或 PSC。",
+      "description": "当实例没有公共 IP 且 Bytebase 运行在同一 VPC 内时，请使用私有 IP。",
       "label": "Cloud SQL IP 类型",
       "private": "私有 IP",
       "psc": "Private Service Connect (PSC)",

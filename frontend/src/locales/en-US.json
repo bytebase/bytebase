@@ -926,7 +926,7 @@
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "authentication-database": "Authentication Database",
     "cloud-sql-ip-type": {
-      "description": "Select which Cloud SQL IP to connect through. Use Private IP or PSC when the instance has no public IP and Bytebase runs inside the same VPC.",
+      "description": "Use Private IP when the instance has no public IP and Bytebase runs in the same VPC.",
       "label": "Cloud SQL IP type",
       "private": "Private IP",
       "psc": "Private Service Connect (PSC)",
