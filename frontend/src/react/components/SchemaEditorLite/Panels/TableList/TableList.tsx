@@ -217,6 +217,7 @@ export function TableList({
                   ) : (
                     <Input
                       value={table.comment}
+                      autoComplete="off"
                       disabled={status === "dropped"}
                       size="xs"
                       className={INLINE_EDIT_INPUT_CLASS}

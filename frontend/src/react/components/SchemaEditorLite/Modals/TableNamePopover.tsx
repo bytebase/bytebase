@@ -162,6 +162,7 @@ export function TableNamePopover({
           <Input
             value={tableName}
             placeholder={t("schema-editor.table.name-placeholder")}
+            autoComplete="off"
             autoFocus
             onChange={(e) => setTableName(e.target.value)}
             onKeyDown={(e) => {

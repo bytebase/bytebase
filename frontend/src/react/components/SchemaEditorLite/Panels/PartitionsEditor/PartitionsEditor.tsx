@@ -123,6 +123,7 @@ export function PartitionsEditor({
                 <TableCell>
                   <Input
                     value={partition.name}
+                    autoComplete="off"
                     disabled={isReadonly || status === "dropped"}
                     size="sm"
                     className="border-none bg-transparent shadow-none focus-visible:ring-1"
@@ -138,6 +139,7 @@ export function PartitionsEditor({
                 <TableCell>
                   <Input
                     value={partition.expression}
+                    autoComplete="off"
                     disabled={isReadonly || !isFirst || status === "dropped"}
                     size="sm"
                     className="border-none bg-transparent shadow-none focus-visible:ring-1"
@@ -150,6 +152,7 @@ export function PartitionsEditor({
                 <TableCell>
                   <Input
                     value={partition.value}
+                    autoComplete="off"
                     disabled={isReadonly || status === "dropped"}
                     size="sm"
                     className="border-none bg-transparent shadow-none focus-visible:ring-1"

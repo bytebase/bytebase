@@ -31,6 +31,7 @@ export function DefaultValueCell({ column, disabled, onUpdate }: Props) {
   return (
     <Input
       value={column.default ?? ""}
+      autoComplete="off"
       disabled={disabled}
       placeholder={t("schema-editor.default.placeholder")}
       size="xs"

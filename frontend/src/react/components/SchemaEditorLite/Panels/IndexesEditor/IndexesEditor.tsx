@@ -91,6 +91,7 @@ export function IndexesEditor({
               <TableCell>
                 <Input
                   value={index.name}
+                  autoComplete="off"
                   disabled={isReadonly || index.primary}
                   size="sm"
                   className="border-none bg-transparent shadow-none focus-visible:ring-1"
@@ -116,6 +117,7 @@ export function IndexesEditor({
               <TableCell>
                 <Input
                   value={index.comment}
+                  autoComplete="off"
                   disabled={isReadonly}
                   size="sm"
                   className="border-none bg-transparent shadow-none focus-visible:ring-1"

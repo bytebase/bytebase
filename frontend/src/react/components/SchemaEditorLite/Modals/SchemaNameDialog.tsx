@@ -79,6 +79,7 @@ export function SchemaNameDialog({
           <Input
             value={schemaName}
             placeholder={t("schema-editor.schema.name-placeholder")}
+            autoComplete="off"
             autoFocus
             onChange={(e) => setSchemaName(e.target.value)}
             onKeyDown={(e) => {
