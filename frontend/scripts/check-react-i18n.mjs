@@ -80,8 +80,9 @@ const DYNAMIC_PREFIXES = [
   //   - sheet.{mine,shared} — src/views/sql-editor/Sheet/context.ts
   "sheet.mine",
   "sheet.shared",
-  //   - task.status.available — src/utils/v1/issue/rollout.ts
+  //   - task.status.available / .not-started — src/utils/v1/issue/rollout.ts
   "task.status.available",
+  "task.status.not-started",
   //   - auth.token-expired-description — src/connect/middlewares/authInterceptorMiddleware.ts
   "auth.token-expired-description",
   //   - issue.title.export-data — src/utils/v1/issue/issue.ts
