@@ -3,7 +3,11 @@ import { act, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./select";
-import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
+import {
+  menuRowStateClassName,
+  menuRowStyle,
+  overlaySurfaceClassName,
+} from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -34,7 +38,13 @@ vi.mock("@base-ui/react/select", () => ({
       selectMocks.positionerProps.push(props);
       return <div>{children}</div>;
     },
-    Popup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Popup: ({
+      children,
+      ...props
+    }: {
+      children: ReactNode;
+      className?: string;
+    }) => <div {...props}>{children}</div>,
     Item: ({
       children,
       ...props
@@ -113,6 +123,31 @@ describe("SelectContent", () => {
         sideOffset: 8,
       })
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("uses the shared overlay surface contract", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Select>
+          <SelectContent>Role options</SelectContent>
+        </Select>
+      );
+    });
+
+    const popup = Array.from(container.querySelectorAll("div")).find(
+      (element) =>
+        element.textContent === "Role options" &&
+        element.className.includes("min-w-")
+    );
+    expect(popup?.className).toContain(overlaySurfaceClassName);
 
     await act(async () => {
       root.unmount();

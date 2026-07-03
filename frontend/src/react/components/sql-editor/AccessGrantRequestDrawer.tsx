@@ -20,6 +20,12 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox } from "@/react/components/ui/combobox";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import {
+  FormDescription,
+  FormError,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -295,25 +301,25 @@ function AccessGrantRequestDrawerInner({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Databases */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.databases")}
               <span className="text-error ml-0.5">*</span>
-            </div>
+            </FormLabel>
             <DatabaseSelect
               multiple
               value={targets}
               onChange={setTargets}
               projectName={project as string}
             />
-          </div>
+          </FormField>
 
           {/* Statement */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.statement")}
               <span className="text-error ml-0.5">*</span>
-            </div>
+            </FormLabel>
             <Alert
               variant="info"
               description={t("sql-editor.only-select-allowed")}
@@ -338,13 +344,11 @@ function AccessGrantRequestDrawerInner({
               onChange={setQuery}
               options={monacoOptions}
             />
-          </div>
+          </FormField>
 
           {/* Unmask */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
-              {t("sql-editor.grant-type-unmask")}
-            </div>
+          <FormField>
+            <FormLabel>{t("sql-editor.grant-type-unmask")}</FormLabel>
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox
                 checked={unmask}
@@ -352,13 +356,11 @@ function AccessGrantRequestDrawerInner({
               />
               <span>{t("sql-editor.access-type-unmask")}</span>
             </label>
-          </div>
+          </FormField>
 
           {/* Export */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
-              {t("sql-editor.grant-type-export")}
-            </div>
+          <FormField>
+            <FormLabel>{t("sql-editor.grant-type-export")}</FormLabel>
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox
                 checked={exportResult}
@@ -366,14 +368,14 @@ function AccessGrantRequestDrawerInner({
               />
               <span>{t("sql-editor.access-type-export")}</span>
             </label>
-          </div>
+          </FormField>
 
           {/* Expiration */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.expiration")}
               <span className="text-error ml-0.5">*</span>
-            </div>
+            </FormLabel>
             <Combobox
               value={String(duration)}
               onChange={(val) => setDuration(Number(val))}
@@ -389,39 +391,39 @@ function AccessGrantRequestDrawerInner({
               />
             )}
             {maximumExpirationDays !== undefined && (
-              <p className="text-xs text-control-light">
+              <FormDescription>
                 {t("project.members.request-role.max-expiration-hint", {
                   days: maximumExpirationDays,
                 })}
-              </p>
+              </FormDescription>
             )}
             {expirationIsInPast && (
-              <p className="text-xs text-error">
+              <FormError>
                 {t("project.members.request-role.expiration-must-be-future")}
-              </p>
+              </FormError>
             )}
             {expirationExceedsMax && maximumExpirationDays !== undefined && (
-              <p className="text-xs text-error">
+              <FormError>
                 {t("project.members.request-role.expiration-exceeds-max", {
                   days: maximumExpirationDays,
                 })}
-              </p>
+              </FormError>
             )}
-          </div>
+          </FormField>
 
           {/* Reason */}
-          <div className="flex flex-col gap-y-2">
-            <div className="text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.reason")}
               <span className="text-error ml-0.5">*</span>
-            </div>
+            </FormLabel>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               placeholder=""
             />
-          </div>
+          </FormField>
         </div>
       </SheetBody>
       <SheetFooter>

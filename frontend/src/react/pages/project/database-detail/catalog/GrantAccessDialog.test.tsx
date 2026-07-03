@@ -272,6 +272,15 @@ const flush = async () => {
   });
 };
 
+const getRadios = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>('[role="radio"]'));
+
+const isChecked = (radio: HTMLElement | undefined) =>
+  radio?.getAttribute("aria-checked") === "true";
+
+const isDisabled = (radio: HTMLElement | undefined) =>
+  radio?.getAttribute("aria-disabled") === "true";
+
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((resolver) => {
@@ -365,12 +374,10 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    const radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
+    const radioList = getRadios(container);
 
     expect(radioList).toHaveLength(3);
-    expect(radioList[2]?.checked).toBe(true);
+    expect(isChecked(radioList[2])).toBe(true);
 
     await click(radioList[1]!);
 
@@ -420,11 +427,9 @@ describe("GrantAccessDialog", () => {
     });
     await flush();
 
-    const radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(radioList[1]?.checked).toBe(true);
-    expect(radioList[2]?.disabled).toBe(false);
+    const radioList = getRadios(container);
+    expect(isChecked(radioList[1])).toBe(true);
+    expect(isDisabled(radioList[2])).toBe(false);
 
     const exprEditor = container.querySelector('[data-testid="expr-editor"]');
     expect(exprEditor?.textContent).toContain("serialized-selection");
@@ -436,11 +441,9 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    let radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(radioList[2]?.checked).toBe(true);
-    expect(radioList[2]?.disabled).toBe(false);
+    let radioList = getRadios(container);
+    expect(isChecked(radioList[2])).toBe(true);
+    expect(isDisabled(radioList[2])).toBe(false);
 
     await click(radioList[1]!);
     await click(
@@ -449,18 +452,14 @@ describe("GrantAccessDialog", () => {
       )!
     );
 
-    radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(radioList[1]?.checked).toBe(true);
-    expect(radioList[2]?.disabled).toBe(false);
+    radioList = getRadios(container);
+    expect(isChecked(radioList[1])).toBe(true);
+    expect(isDisabled(radioList[2])).toBe(false);
 
     await click(radioList[2]!);
 
-    radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(radioList[2]?.checked).toBe(true);
+    radioList = getRadios(container);
+    expect(isChecked(radioList[2])).toBe(true);
     expect(
       container
         .querySelector('[data-testid="database-resource-selector"]')
@@ -501,7 +500,7 @@ describe("GrantAccessDialog", () => {
     vi.useRealTimers();
   });
 
-  test("keeps the latest mode when an earlier async conversion resolves late", async () => {
+  test("disables mode changes while async conversion is pending", async () => {
     const pendingConversion = deferred<[{ parsed: true }]>();
     mocks.batchConvertCELStringToParsedExpr.mockImplementationOnce(
       () => pendingConversion.promise
@@ -510,37 +509,25 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    const radioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
+    const radioList = getRadios(container);
 
-    expect(radioList[2]?.checked).toBe(true);
+    expect(isChecked(radioList[2])).toBe(true);
 
-    act(() => {
-      radioList[1]?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
+    await click(radioList[1]!);
     await flush();
 
-    act(() => {
-      radioList[0]?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
-    await flush();
+    const pendingRadioList = getRadios(container);
+    expect(isDisabled(pendingRadioList[0])).toBe(true);
+    expect(isDisabled(pendingRadioList[1])).toBe(true);
+    expect(isDisabled(pendingRadioList[2])).toBe(true);
 
     pendingConversion.resolve([{ parsed: true }]);
     await flush();
 
-    const refreshedRadioList = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(refreshedRadioList[0]?.checked).toBe(true);
-    expect(refreshedRadioList[1]?.checked).toBe(false);
-    expect(
-      container.querySelector('[data-testid="expr-editor"]')
-    ).not.toBeTruthy();
+    const refreshedRadioList = getRadios(container);
+    expect(isChecked(refreshedRadioList[1])).toBe(true);
+    expect(isChecked(refreshedRadioList[2])).toBe(false);
+    expect(container.querySelector('[data-testid="expr-editor"]')).toBeTruthy();
 
     unmount();
   });
@@ -614,10 +601,8 @@ describe("GrantAccessDialog — composite exemption precedence (BYT-9791)", () =
     await flush();
 
     // Default mode for a non-column-scoped selection is SELECT (radio index 2).
-    const radios = Array.from(
-      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
-    );
-    expect(radios[2]?.checked).toBe(true);
+    const radios = getRadios(container);
+    expect(isChecked(radios[2])).toBe(true);
 
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!

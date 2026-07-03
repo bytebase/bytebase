@@ -2,7 +2,10 @@ import { describe, expect, test } from "vitest";
 import { getRequestRoleButtonState } from "./requestRoleButton";
 
 describe("getRequestRoleButtonState", () => {
+  const t = (key: string) => `translated:${key}`;
+
   const base = {
+    t,
     projectName: "projects/demo",
     projectReady: true,
     allowRequestRole: true,
@@ -29,9 +32,7 @@ describe("getRequestRoleButtonState", () => {
       })
     ).toEqual({
       visible: true,
-      disabledReason: {
-        kind: "loading",
-      },
+      disabledReason: "translated:common.loading",
     });
   });
 
@@ -43,9 +44,8 @@ describe("getRequestRoleButtonState", () => {
       })
     ).toEqual({
       visible: true,
-      disabledReason: {
-        kind: "allow-request-role-disabled",
-      },
+      disabledReason:
+        "translated:project.members.request-role.disabled-reason.allow-request-role-disabled",
     });
   });
 
@@ -56,10 +56,7 @@ describe("getRequestRoleButtonState", () => {
         hasFullProjectAccess: true,
       })
     ).toEqual({
-      visible: true,
-      disabledReason: {
-        kind: "can-grant-access-directly",
-      },
+      visible: false,
     });
   });
 
@@ -81,9 +78,8 @@ describe("getRequestRoleButtonState", () => {
       })
     ).toEqual({
       visible: true,
-      disabledReason: {
-        kind: "feature-unavailable",
-      },
+      disabledReason:
+        "translated:project.members.request-role.disabled-reason.feature-unavailable",
     });
   });
 

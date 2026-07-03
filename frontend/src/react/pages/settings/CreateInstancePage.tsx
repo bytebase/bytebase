@@ -136,10 +136,7 @@ function CreateInstanceFormInner() {
           </div>
         </div>
 
-        {/* Sticky footer */}
-        <div className="sticky bottom-0 z-10 bg-background">
-          <InstanceFormButtons className="px-4 sm:px-6" />
-        </div>
+        <InstanceFormButtons />
         <UnsavedChangesGuard />
       </div>
 

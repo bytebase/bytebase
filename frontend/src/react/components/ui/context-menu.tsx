@@ -7,7 +7,11 @@ import {
   LAYER_SURFACE_CLASS,
   usePreserveHigherLayerAccess,
 } from "./layer";
-import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
+import {
+  menuRowStateClassName,
+  menuRowStyle,
+  overlaySurfaceClassName,
+} from "./styles.stylex";
 
 // ---- Root ----
 // Wraps BaseContextMenu.Root. ContextMenu has no `modal` prop (it is omitted
@@ -32,11 +36,7 @@ function ContextMenuContent({
       <BaseContextMenu.Positioner className={LAYER_SURFACE_CLASS}>
         <BaseContextMenu.Popup
           ref={ref}
-          className={cn(
-            "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
-            "focus:outline-hidden",
-            className
-          )}
+          className={cn("min-w-[10rem]", overlaySurfaceClassName, className)}
           {...props}
         >
           {children}

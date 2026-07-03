@@ -233,8 +233,8 @@ function MaskingRuleConfig({
             onUpdate={handleExprUpdate}
           />
         </div>
-        <div>
-          <h3 className="font-medium text-sm text-main py-2">
+        <div className="flex flex-col gap-y-2">
+          <h3 className="flex items-center h-9 font-medium text-sm text-main">
             {t("settings.sensitive-data.semantic-types.table.semantic-type")}
           </h3>
           <Select

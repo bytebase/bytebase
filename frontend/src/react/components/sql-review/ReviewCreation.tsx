@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import {
   getRuleKey,
@@ -457,46 +458,50 @@ export function ReviewCreation({
       </div>
 
       {/* Footer navigation */}
-      <div className="sticky bottom-0 z-10 border-t bg-background px-4 py-4 flex justify-between">
-        <div>
-          {currentStep === STEP_BASIC_INFO && (
-            <Button variant="outline" onClick={() => handleCancel()}>
-              {t("common.cancel")}
-            </Button>
-          )}
-          {currentStep > STEP_BASIC_INFO && (
-            <Button
-              variant="outline"
-              onClick={() => changeStep(currentStep - 1)}
-            >
-              {t("common.previous")}
-            </Button>
-          )}
-        </div>
-        <div className="flex gap-x-2">
-          {currentStep === STEP_CONFIGURE_RULES && (
-            <Button
-              variant="outline"
-              onClick={() => setShowRuleSelectPanel(true)}
-            >
-              {t("sql-review.add-or-remove-rules")}
-            </Button>
-          )}
-          {currentStep < STEP_CONFIGURE_RULES && (
-            <Button
-              disabled={!allowNext}
-              onClick={() => changeStep(currentStep + 1)}
-            >
-              {t("common.next")}
-            </Button>
-          )}
-          {currentStep === STEP_CONFIGURE_RULES && (
-            <Button disabled={!allowNext} onClick={tryFinishSetup}>
-              {finishTitle}
-            </Button>
-          )}
-        </div>
-      </div>
+      <StickyActionFooter
+        left={
+          <>
+            {currentStep === STEP_BASIC_INFO && (
+              <Button variant="outline" onClick={() => handleCancel()}>
+                {t("common.cancel")}
+              </Button>
+            )}
+            {currentStep > STEP_BASIC_INFO && (
+              <Button
+                variant="outline"
+                onClick={() => changeStep(currentStep - 1)}
+              >
+                {t("common.previous")}
+              </Button>
+            )}
+          </>
+        }
+        right={
+          <>
+            {currentStep === STEP_CONFIGURE_RULES && (
+              <Button
+                variant="outline"
+                onClick={() => setShowRuleSelectPanel(true)}
+              >
+                {t("sql-review.add-or-remove-rules")}
+              </Button>
+            )}
+            {currentStep < STEP_CONFIGURE_RULES && (
+              <Button
+                disabled={!allowNext}
+                onClick={() => changeStep(currentStep + 1)}
+              >
+                {t("common.next")}
+              </Button>
+            )}
+            {currentStep === STEP_CONFIGURE_RULES && (
+              <Button disabled={!allowNext} onClick={tryFinishSetup}>
+                {finishTitle}
+              </Button>
+            )}
+          </>
+        }
+      />
     </div>
   );
 }

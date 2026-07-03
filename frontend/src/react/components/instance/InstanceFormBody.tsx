@@ -20,7 +20,15 @@ import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormDescription,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -111,16 +119,16 @@ function SpannerHostInput({
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-      <div>
-        <label className="textlabel">
+      <FormField>
+        <FormLabel>
           {t("instance.project-id")}
           <span style={{ color: "red" }}> *</span>
-        </label>
+        </FormLabel>
         <Input
           value={projectId}
           required
           placeholder="projectId"
-          className={`mt-1 w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
+          className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
             const v = e.target.value;
@@ -128,17 +136,17 @@ function SpannerHostInput({
             update(v, instanceId);
           }}
         />
-      </div>
-      <div>
-        <label className="textlabel">
+      </FormField>
+      <FormField>
+        <FormLabel>
           {t("instance.instance-id")}
           <span style={{ color: "red" }}> *</span>
-        </label>
+        </FormLabel>
         <Input
           value={instanceId}
           required
           placeholder="instanceId"
-          className={`mt-1 w-full ${dirty && !isValidInstanceId ? "border-error" : ""}`}
+          className={`w-full ${dirty && !isValidInstanceId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
             const v = e.target.value;
@@ -146,8 +154,8 @@ function SpannerHostInput({
             update(projectId, v);
           }}
         />
-      </div>
-      <p className="col-span-2 textinfolabel">
+      </FormField>
+      <FormDescription className="col-span-2">
         {t("instance.find-gcp-project-id-and-instance-id")}{" "}
         <a
           href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
@@ -158,7 +166,7 @@ function SpannerHostInput({
           {t("common.detailed-guide")}
           <ExternalLink className="size-4 ml-1" />
         </a>
-      </p>
+      </FormDescription>
     </div>
   );
 }
@@ -186,16 +194,16 @@ function BigQueryHostInput({
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-      <div>
-        <label className="textlabel">
+      <FormField>
+        <FormLabel>
           {t("instance.project-id")}
           <span style={{ color: "red" }}> *</span>
-        </label>
+        </FormLabel>
         <Input
           value={projectId}
           required
           placeholder="projectId"
-          className={`mt-1 w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
+          className={`w-full ${dirty && !isValidProjectId ? "border-error" : ""}`}
           disabled={!allowEdit}
           onChange={(e) => {
             const v = e.target.value;
@@ -208,8 +216,8 @@ function BigQueryHostInput({
             }
           }}
         />
-      </div>
-      <p className="col-span-2 textinfolabel">
+      </FormField>
+      <FormDescription className="col-span-2">
         {t("instance.find-gcp-project-id")}{" "}
         <a
           href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
@@ -220,7 +228,7 @@ function BigQueryHostInput({
           {t("common.detailed-guide")}
           <ExternalLink className="size-4 ml-1" />
         </a>
-      </p>
+      </FormDescription>
     </div>
   );
 }
@@ -336,31 +344,23 @@ function ScanIntervalInput({
   if (hideAdvancedFeatures) return null;
 
   return (
-    <div className="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2">
+    <FormField className="sm:col-span-4 sm:col-start-1">
       <div className="flex items-center gap-x-2">
-        <label className="textlabel">{t("instance.scan-interval.self")}</label>
+        <FormLabel>{t("instance.scan-interval.self")}</FormLabel>
         <FeatureBadge feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME} />
       </div>
-      <div className="textinfolabel">
+      <FormDescription>
         {t("instance.scan-interval.description")}
-      </div>
-      <div className="flex items-center gap-x-6">
-        <label className="flex items-center gap-x-2 cursor-pointer">
-          <input
-            type="radio"
-            checked={mode === "DEFAULT"}
-            disabled={!allowEdit}
-            onChange={() => handleModeChange("DEFAULT")}
-          />
+      </FormDescription>
+      <RadioGroup
+        className="gap-x-6"
+        value={mode}
+        onValueChange={(value) => handleModeChange(value as typeof mode)}
+      >
+        <RadioGroupItem value="DEFAULT" disabled={!allowEdit}>
           {t("instance.scan-interval.default-never")}
-        </label>
-        <label className="flex items-center gap-x-2 cursor-pointer">
-          <input
-            type="radio"
-            checked={mode === "CUSTOM"}
-            disabled={!allowEdit}
-            onChange={() => handleModeChange("CUSTOM")}
-          />
+        </RadioGroupItem>
+        <RadioGroupItem value="CUSTOM" disabled={!allowEdit}>
           <span>{t("common.custom")}</span>
           <Input
             type="number"
@@ -379,9 +379,9 @@ function ScanIntervalInput({
           ) : (
             <span className="text-sm">{t("common.minutes")}</span>
           )}
-        </label>
-      </div>
-    </div>
+        </RadioGroupItem>
+      </RadioGroup>
+    </FormField>
   );
 }
 
@@ -484,17 +484,15 @@ function SyncDatabases({
   };
 
   return (
-    <div className="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2">
+    <FormField className="sm:col-span-4 sm:col-start-1">
       {showLabel && (
         <div className="flex items-center gap-x-2">
-          <label className="textlabel">
-            {t("instance.sync-databases.self")}
-          </label>
+          <FormLabel>{t("instance.sync-databases.self")}</FormLabel>
         </div>
       )}
-      <div className="textinfolabel">
+      <FormDescription>
         {t("instance.sync-databases.description")}
-      </div>
+      </FormDescription>
       <div className="flex flex-col gap-y-2">
         <label className="flex items-center gap-x-2 cursor-pointer">
           <Checkbox
@@ -553,7 +551,7 @@ function SyncDatabases({
           </div>
         )}
       </div>
-    </div>
+    </FormField>
   );
 }
 
@@ -1116,11 +1114,8 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
           <div className="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
             {/* Instance Name */}
-            <div className="sm:col-span-2 sm:col-start-1">
-              <label
-                htmlFor="name"
-                className="textlabel flex flex-row items-center"
-              >
+            <FormField className="sm:col-span-2 sm:col-start-1">
+              <FormLabel htmlFor="name" className="flex flex-row items-center">
                 {t("instance.instance-name")}
                 <span className="ml-0.5 text-error">*</span>
                 {instance && (
@@ -1129,16 +1124,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     <span className="ml-1">{instance.engineVersion}</span>
                   </div>
                 )}
-              </label>
+              </FormLabel>
               <Input
                 value={basicInfo.title}
                 required
-                className="mt-1 w-full max-w-[40rem]"
+                className="w-full max-w-[40rem]"
                 disabled={!allowEdit}
                 maxLength={200}
                 onChange={(e) => updateBasicInfo({ title: e.target.value })}
               />
-            </div>
+            </FormField>
 
             {/* Activation toggle */}
             {currentPlan !== PlanType.FREE &&
@@ -1191,12 +1186,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             </div>
 
             {/* Environment */}
-            <div className="sm:col-span-2 sm:col-start-1">
-              <label htmlFor="environment" className="textlabel">
+            <FormField className="sm:col-span-2 sm:col-start-1">
+              <FormLabel htmlFor="environment">
                 {t("common.environment")}
-              </label>
+              </FormLabel>
               <EnvironmentSelect
-                className="mt-1 w-full max-w-[40rem]"
+                className="w-full max-w-[40rem]"
                 value={
                   isValidEnvironmentName(
                     `${environmentNamePrefix}${environment.id}`
@@ -1209,36 +1204,29 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   handleSelectEnvironment(value || undefined)
                 }
               />
-            </div>
+            </FormField>
 
             {/* Labels */}
-            <div className="sm:col-span-3 sm:col-start-1">
-              <label htmlFor="labels" className="textlabel">
-                {t("common.labels")}
-              </label>
-              <div className="mt-1">
-                <LabelListEditor
-                  kvList={labelKVList}
-                  onChange={setLabelKVList}
-                  readonly={!allowEdit}
-                  showErrors
-                  onErrorsChange={ctx.setLabelErrors}
-                />
-              </div>
-            </div>
+            <FormField className="sm:col-span-3 sm:col-start-1">
+              <FormLabel htmlFor="labels">{t("common.labels")}</FormLabel>
+              <LabelListEditor
+                kvList={labelKVList}
+                onChange={setLabelKVList}
+                readonly={!allowEdit}
+                showErrors
+                onErrorsChange={ctx.setLabelErrors}
+              />
+            </FormField>
 
             {/* External link (edit mode only) */}
             {!isCreating && (
-              <div className="sm:col-span-3 sm:col-start-1">
-                <label
-                  htmlFor="external-link"
-                  className="textlabel inline-flex"
-                >
-                  <span>
+              <FormField className="sm:col-span-3 sm:col-start-1">
+                <div className="inline-flex items-center">
+                  <FormLabel htmlFor="external-link">
                     {basicInfo.engine === Engine.SNOWFLAKE
                       ? t("instance.snowflake-web-console")
                       : t("instance.external-link")}
-                  </span>
+                  </FormLabel>
                   {(basicInfo.externalLink ?? "").trim().length > 0 && (
                     <button
                       className="ml-1 btn-icon"
@@ -1253,23 +1241,23 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       <ExternalLink className="size-4" />
                     </button>
                   )}
-                </label>
+                </div>
                 {basicInfo.engine === Engine.SNOWFLAKE ? (
                   <Input
                     required
-                    className="mt-1 w-full"
+                    className="w-full"
                     disabled
                     value={instanceLink}
                   />
                 ) : (
                   <>
-                    <div className="mt-1 textinfolabel">
+                    <FormDescription>
                       {t("instance.sentence.console.snowflake")}
-                    </div>
+                    </FormDescription>
                     <Input
                       value={basicInfo.externalLink ?? ""}
                       required
-                      className="mt-1 w-full"
+                      className="w-full"
                       disabled={!allowEdit}
                       placeholder={SnowflakeExtraLinkPlaceHolder}
                       onChange={(e) =>
@@ -1278,7 +1266,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     />
                   </>
                 )}
-              </div>
+              </FormField>
             )}
 
             {/* Scan Interval (edit mode only) */}
@@ -1326,57 +1314,59 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 />
               ) : (
                 <>
-                  <label htmlFor="host" className="textlabel block">
-                    {basicInfo.engine === Engine.SNOWFLAKE ? (
-                      <>
-                        {t("instance.account-locator")}
-                        <span className="mr-2 text-error"> *</span>
+                  {basicInfo.engine === Engine.SNOWFLAKE ? (
+                    <>
+                      <div className="flex items-center gap-x-2">
+                        <FormLabel htmlFor="host">
+                          {t("instance.account-locator")}
+                          <span className="text-error"> *</span>
+                        </FormLabel>
                         <LearnMoreLink
                           href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
                           className="text-sm normal-link"
                         />
-                      </>
-                    ) : basicInfo.engine === Engine.COSMOSDB ? (
-                      <>
-                        {t("instance.endpoint")}
-                        <span className="text-error"> *</span>
-                      </>
-                    ) : adminDataSource.authenticationType ===
-                      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ? (
-                      <div>
-                        <span>
-                          {t(
-                            "instance.sentence.google-cloud-sql.instance-name"
-                          )}
-                          <span className="text-error"> *</span>
-                        </span>
-                        <div className="textinfolabel mb-1">
-                          {t(
-                            "instance.sentence.google-cloud-sql.instance-name-tips",
-                            {
-                              instance: "{project-id}:{region}:{instance-name}",
-                            }
-                          )}
-                        </div>
                       </div>
-                    ) : (
-                      <>
+                    </>
+                  ) : basicInfo.engine === Engine.COSMOSDB ? (
+                    <FormLabel htmlFor="host">
+                      {t("instance.endpoint")}
+                      <span className="text-error"> *</span>
+                    </FormLabel>
+                  ) : adminDataSource.authenticationType ===
+                    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ? (
+                    <>
+                      <FormLabel htmlFor="host">
+                        {t("instance.sentence.google-cloud-sql.instance-name")}
+                        <span className="text-error"> *</span>
+                      </FormLabel>
+                      <FormDescription>
+                        {t(
+                          "instance.sentence.google-cloud-sql.instance-name-tips",
+                          {
+                            instance: "{project-id}:{region}:{instance-name}",
+                          }
+                        )}
+                      </FormDescription>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-x-1">
+                      <FormLabel htmlFor="host">
                         {t("instance.host-or-socket")}
                         {basicInfo.engine !== Engine.DYNAMODB && (
                           <span className="text-error"> *</span>
                         )}
-                        {onOpenInfoPanel && hasHostInfo && (
-                          <button
-                            type="button"
-                            className="ml-1 inline-flex items-center gap-x-0.5 text-accent text-xs"
-                            onClick={() => openInfoPanel("host")}
-                          >
-                            <Info className="size-3.5" />
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </label>
+                      </FormLabel>
+                      {onOpenInfoPanel && hasHostInfo && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                          onClick={() => openInfoPanel("host")}
+                        >
+                          <Info className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <Input
                     value={adminDataSource.host}
                     required
@@ -1390,9 +1380,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     onChange={(e) => updateAdminDS({ host: e.target.value })}
                   />
                   {basicInfo.engine === Engine.SNOWFLAKE && (
-                    <div className="mt-2 textinfolabel">
+                    <FormDescription className="mt-2">
                       {t("instance.sentence.proxy.snowflake")}
-                    </div>
+                    </FormDescription>
                   )}
                 </>
               )}
@@ -1405,101 +1395,84 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               basicInfo.engine !== Engine.COSMOSDB &&
               adminDataSource.authenticationType !==
                 DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
-                <div className="sm:col-span-1">
-                  <label htmlFor="port" className="textlabel block">
-                    {t("instance.port")}
-                  </label>
+                <FormField className="sm:col-span-1">
+                  <FormLabel htmlFor="port">{t("instance.port")}</FormLabel>
                   <Input
                     value={adminDataSource.port}
-                    className="mt-1 w-full"
+                    className="w-full"
                     placeholder={defaultPort}
                     disabled={!allowEdit || !allowEditPort}
                     onChange={handlePortChange}
                   />
-                </div>
+                </FormField>
               )}
 
             {/* MongoDB connection string schema */}
             {basicInfo.engine === Engine.MONGODB && (
-              <div className="sm:col-span-4 sm:col-start-1">
-                <label
-                  htmlFor="connectionStringSchema"
-                  className="textlabel flex flex-row items-center"
-                >
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="connectionStringSchema">
                   {t("data-source.connection-string-schema")}
-                </label>
-                <div className="flex items-center gap-x-4 mt-1">
+                </FormLabel>
+                <RadioGroup
+                  className="gap-x-4"
+                  value={currentMongoDBConnectionSchema}
+                  onValueChange={(value) =>
+                    handleMongodbConnectionStringSchemaChange(value as string)
+                  }
+                >
                   {MongoDBConnectionStringSchemaList.map((type) => (
-                    <label
-                      key={type}
-                      className="flex items-center gap-x-2 cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        checked={currentMongoDBConnectionSchema === type}
-                        onChange={() =>
-                          handleMongodbConnectionStringSchemaChange(type)
-                        }
-                      />
+                    <RadioGroupItem key={type} value={type}>
                       {type}
-                    </label>
+                    </RadioGroupItem>
                   ))}
-                </div>
-              </div>
+                </RadioGroup>
+              </FormField>
             )}
 
             {/* Redis connection type */}
             {basicInfo.engine === Engine.REDIS && (
-              <div className="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2">
-                <label
-                  htmlFor="connectionStringSchema"
-                  className="textlabel flex flex-row items-center"
-                >
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="connectionStringSchema">
                   {t("data-source.connection-type")}
-                </label>
-                <div className="flex items-center gap-x-4">
+                </FormLabel>
+                <RadioGroup
+                  className="gap-x-4"
+                  value={currentRedisConnectionType}
+                  onValueChange={(value) =>
+                    handleRedisConnectionTypeChange(value as string)
+                  }
+                >
                   {RedisConnectionType.map((type) => (
-                    <label
-                      key={type}
-                      className="flex items-center gap-x-2 cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        checked={currentRedisConnectionType === type}
-                        onChange={() => handleRedisConnectionTypeChange(type)}
-                      />
+                    <RadioGroupItem key={type} value={type}>
                       {type}
-                    </label>
+                    </RadioGroupItem>
                   ))}
-                </div>
-              </div>
+                </RadioGroup>
+              </FormField>
             )}
 
             {/* Additional addresses */}
             {showAdditionalAddresses && (
-              <div className="sm:col-span-4 sm:col-start-1">
-                <label
-                  htmlFor="additionalAddresses"
-                  className="textlabel flex flex-row items-center"
-                >
+              <FormField className="sm:col-span-4 sm:col-start-1">
+                <FormLabel htmlFor="additionalAddresses">
                   {t("data-source.additional-node-addresses")}
-                </label>
-                <div className="mt-1 grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
+                </FormLabel>
+                <FormControlGroup className="mt-1">
                   {adminDataSource.additionalAddresses.map((addr, index) => (
-                    <div key={index} className="contents">
-                      <div className="sm:col-span-8 sm:col-start-1">
+                    <FormControlRow key={index} className="items-end">
+                      <FormField className="min-w-0 flex-1">
                         {index === 0 && (
-                          <label
+                          <FormLabel
                             htmlFor="additionalAddressesHost"
-                            className="textlabel font-normal! flex flex-row items-center"
+                            className="font-normal!"
                           >
                             {t("instance.host-or-socket")}
-                          </label>
+                          </FormLabel>
                         )}
                         <Input
                           value={addr.host}
                           required
-                          className="mt-1 w-full"
+                          className="w-full"
                           disabled={!allowEdit}
                           onChange={(e) =>
                             handleAdditionalAddressHostChange(
@@ -1508,19 +1481,19 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                             )
                           }
                         />
-                      </div>
-                      <div className="sm:col-span-3">
+                      </FormField>
+                      <FormField className="w-32 shrink-0">
                         {index === 0 && (
-                          <label
+                          <FormLabel
                             htmlFor="additionalAddressesPort"
-                            className="textlabel font-normal! flex flex-row items-center"
+                            className="font-normal!"
                           >
                             {t("instance.port")}
-                          </label>
+                          </FormLabel>
                         )}
                         <Input
                           value={addr.port}
-                          className="mt-1 w-full"
+                          className="w-full"
                           placeholder={defaultPort}
                           disabled={!allowEdit || !allowEditPort}
                           onChange={(e) =>
@@ -1530,24 +1503,22 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                             )
                           }
                         />
-                      </div>
-                      <div className="h-8.5 flex flex-row items-center self-end">
-                        <button
-                          type="button"
-                          className="p-1 text-control-light hover:text-error disabled:opacity-50"
-                          disabled={!allowEdit}
-                          onClick={() => removeDSAdditionalAddress(index)}
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
-                    </div>
+                      </FormField>
+                      <button
+                        type="button"
+                        className="flex h-8.5 w-8.5 shrink-0 items-center justify-center text-control-light hover:text-error disabled:opacity-50"
+                        disabled={!allowEdit}
+                        onClick={() => removeDSAdditionalAddress(index)}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </FormControlRow>
                   ))}
-                  <div className="mt-1 sm:col-span-12 sm:col-start-1">
+                  <div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="ml-auto w-12!"
+                      className="w-12!"
                       onClick={(e) => {
                         e.preventDefault();
                         addDSAdditionalAddress();
@@ -1556,26 +1527,26 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       {t("common.add")}
                     </Button>
                   </div>
-                </div>
-              </div>
+                </FormControlGroup>
+              </FormField>
             )}
 
             {/* MongoDB replica set */}
             {basicInfo.engine === Engine.MONGODB && !adminDataSource.srv && (
-              <div className="sm:col-span-2 sm:col-start-1">
-                <label htmlFor="replicaSet" className="textlabel">
+              <FormField className="sm:col-span-2 sm:col-start-1">
+                <FormLabel htmlFor="replicaSet">
                   {t("data-source.replica-set")}
-                </label>
+                </FormLabel>
                 <Input
                   value={adminDataSource.replicaSet}
                   required
-                  className="mt-1 w-full"
+                  className="w-full"
                   disabled={!allowEdit}
                   onChange={(e) =>
                     updateAdminDS({ replicaSet: e.target.value })
                   }
                 />
-              </div>
+              </FormField>
             )}
 
             {/* MongoDB direct connection */}

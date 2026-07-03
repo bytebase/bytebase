@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Button } from "@/react/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -41,10 +42,15 @@ export function EditEnvironmentSheet({
           <SheetTitle>{t("database.edit-environment")}</SheetTitle>
         </SheetHeader>
         <SheetBody>
-          <div className="flex flex-col gap-y-1">
+          <RadioGroup
+            className="flex-col items-stretch gap-y-1"
+            value={selected}
+            onValueChange={(value) => setSelected(value as string)}
+          >
             {environments.map((env) => (
-              <label
+              <RadioGroupItem
                 key={env.name}
+                value={env.name}
                 className={cn(
                   "flex items-center gap-x-3 px-3 py-2.5 rounded-sm cursor-pointer border transition-colors",
                   selected === env.name
@@ -52,17 +58,10 @@ export function EditEnvironmentSheet({
                     : "border-transparent hover:bg-control-bg"
                 )}
               >
-                <input
-                  type="radio"
-                  name="environment"
-                  checked={selected === env.name}
-                  onChange={() => setSelected(env.name)}
-                  className="accent-accent"
-                />
                 <EnvironmentLabel environment={env} />
-              </label>
+              </RadioGroupItem>
             ))}
-          </div>
+          </RadioGroup>
         </SheetBody>
         <SheetFooter>
           <Button variant="ghost" onClick={onClose}>

@@ -20,6 +20,12 @@ import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import {
+  FormDescription,
+  FormError,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -30,6 +36,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { listRowStateClassName } from "@/react/components/ui/styles.stylex";
 import {
   Table,
   TableBody,
@@ -258,7 +265,9 @@ function UserTable({
                 key={user.name}
                 className={cn(
                   hasWorkspacePermissionV2(getViewPermission(accountType)) &&
-                    "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+                    "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg",
+                  hasWorkspacePermissionV2(getViewPermission(accountType)) &&
+                    listRowStateClassName
                 )}
                 tabIndex={
                   hasWorkspacePermissionV2(getViewPermission(accountType))
@@ -743,10 +752,8 @@ function UserForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Name */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
-              {t("common.name")}
-            </label>
+          <FormField>
+            <FormLabel>{t("common.name")}</FormLabel>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -754,42 +761,36 @@ function UserForm({
               maxLength={200}
               disabled={!allowUpdate}
             />
-          </div>
+          </FormField>
 
           {/* Email */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.email")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isEditMode}
             />
-          </div>
+          </FormField>
 
           {/* Roles */}
           {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.table.roles")}
-              </label>
+            <FormField>
+              <FormLabel>{t("settings.members.table.roles")}</FormLabel>
               <RoleSelect value={roles} onChange={setRoles} disabled={false} />
-            </div>
+            </FormField>
           )}
 
           {/* Phone */}
-          <div className="flex flex-col gap-y-2">
-            <div>
-              <label className="block text-sm font-medium text-control">
-                {t("settings.profile.phone")}
-              </label>
-              <span className="textinfolabel text-sm">
-                {t("settings.profile.phone-tips")}
-              </span>
-            </div>
+          <FormField>
+            <FormLabel>{t("settings.profile.phone")}</FormLabel>
+            <FormDescription>
+              {t("settings.profile.phone-tips")}
+            </FormDescription>
             <Input
               type="tel"
               value={phone}
@@ -797,15 +798,15 @@ function UserForm({
               autoComplete="new-password"
               disabled={!allowUpdate}
             />
-          </div>
+          </FormField>
 
           {/* Password */}
           <div className="flex flex-col gap-y-6">
-            <div>
-              <label className="block text-sm font-medium text-control">
+            <FormField>
+              <FormLabel>
                 {t("settings.profile.password")}
                 <span className="ml-0.5 text-error">*</span>
-              </label>
+              </FormLabel>
               <span
                 className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
               >
@@ -851,13 +852,13 @@ function UserForm({
                   )}
                 </button>
               </div>
-            </div>
+            </FormField>
 
-            <div>
-              <label className="block text-sm font-medium text-control">
+            <FormField>
+              <FormLabel>
                 {t("settings.profile.password-confirm")}
                 <span className="ml-0.5 text-error">*</span>
-              </label>
+              </FormLabel>
               <div className="mt-1 relative flex items-center">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -883,11 +884,11 @@ function UserForm({
                 </button>
               </div>
               {passwordMismatch && (
-                <span className="text-error text-sm mt-1 pl-1">
+                <FormError className="pl-1">
                   {t("settings.profile.password-mismatch")}
-                </span>
+                </FormError>
               )}
-            </div>
+            </FormField>
           </div>
         </div>
       </SheetBody>

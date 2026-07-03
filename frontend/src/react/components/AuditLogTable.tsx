@@ -22,7 +22,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -38,7 +43,6 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
-import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
@@ -280,22 +284,6 @@ function ExportDropdown({
   onExport: (format: ExportFormat) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const formats = [
     { format: ExportFormat.CSV, label: "CSV" },
     { format: ExportFormat.JSON, label: "JSON" },
@@ -303,37 +291,23 @@ function ExportDropdown({
   ];
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
-      <Button
-        disabled={disabled}
-        title={tooltip}
-        onClick={() => setOpen(!open)}
-      >
-        <Download className="size-4 mr-1" />
-        {t("common.export")}
-      </Button>
-      {open && !disabled && (
-        <div
-          className={cn(
-            "absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg py-1 min-w-[100px]",
-            LAYER_SURFACE_CLASS
-          )}
-        >
-          {formats.map(({ format, label }) => (
-            <button
-              key={label}
-              className="block w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
-              onClick={() => {
-                onExport(format);
-                setOpen(false);
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button disabled={disabled} title={tooltip}>
+            <Download className="size-4 mr-1" />
+            {t("common.export")}
+          </Button>
+        }
+      />
+      <DropdownMenuContent className="min-w-[100px]">
+        {formats.map(({ format, label }) => (
+          <DropdownMenuItem key={label} onClick={() => onExport(format)}>
+            {label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

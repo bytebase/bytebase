@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DatabaseTableView } from "@/react/components/database";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -62,30 +63,18 @@ export function TransferProjectSheet({
             <DatabaseTableView databases={databases} />
           </div>
 
-          <div className="shrink-0 flex items-center gap-x-6">
-            <label className="flex items-center gap-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="transfer-mode"
-                checked={mode === "project"}
-                onChange={() => setMode("project")}
-                className="accent-accent"
-              />
-              <span className="text-sm font-medium">{t("common.project")}</span>
-            </label>
-            <label className="flex items-center gap-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="transfer-mode"
-                checked={mode === "unassign"}
-                onChange={() => setMode("unassign")}
-                className="accent-accent"
-              />
-              <span className="text-sm font-medium">
-                {t("database.unassign")}
-              </span>
-            </label>
-          </div>
+          <RadioGroup
+            className="shrink-0 gap-x-6"
+            value={mode}
+            onValueChange={(value) => setMode(value as "project" | "unassign")}
+          >
+            <RadioGroupItem value="project" contentClassName="font-medium">
+              {t("common.project")}
+            </RadioGroupItem>
+            <RadioGroupItem value="unassign" contentClassName="font-medium">
+              {t("database.unassign")}
+            </RadioGroupItem>
+          </RadioGroup>
 
           {mode === "project" && (
             <div className="shrink-0">

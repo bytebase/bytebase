@@ -23,6 +23,7 @@ import {
   controlMinHeightStyle,
   menuRowStateClassName,
   menuRowStyle,
+  overlaySurfaceClassName,
 } from "./styles.stylex";
 
 export interface ComboboxOption {
@@ -391,9 +392,9 @@ export function Combobox(props: ComboboxProps) {
       ref={dropdownRef}
       style={portal ? dropdownStyle : undefined}
       className={cn(
-        "bg-background border border-control-border rounded-sm shadow-lg overflow-hidden",
-        portal && LAYER_SURFACE_CLASS,
-        !portal && "absolute z-50 mt-1 min-w-full w-max"
+        overlaySurfaceClassName,
+        LAYER_SURFACE_CLASS,
+        !portal && "absolute mt-1 min-w-full w-max"
       )}
     >
       <SearchInput
@@ -403,7 +404,7 @@ export function Combobox(props: ComboboxProps) {
         wrapperClassName="m-2"
         className="h-7"
       />
-      <div className="max-h-60 overflow-y-auto px-2 pb-2">
+      <div className="px-2 pb-2">
         {filteredGroups.every((g) => g.options.length === 0) ? (
           noResultsContent !== undefined ? (
             <div className="p-3">{noResultsContent}</div>

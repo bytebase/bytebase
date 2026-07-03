@@ -5,6 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormDescription,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -304,6 +309,9 @@ function WorkloadIdentityForm({
   const hasPermission = projectEntity
     ? hasProjectPermissionV2(projectEntity, requiredPermission)
     : hasWorkspacePermissionV2(requiredPermission);
+  const canSetRoles = projectEntity
+    ? hasProjectPermissionV2(projectEntity, "bb.projects.setIamPolicy")
+    : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
 
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
@@ -433,10 +441,8 @@ function WorkloadIdentityForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Title */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
-              {t("common.name")}
-            </label>
+          <FormField>
+            <FormLabel>{t("common.name")}</FormLabel>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -444,14 +450,14 @@ function WorkloadIdentityForm({
               maxLength={200}
               autoComplete="off"
             />
-          </div>
+          </FormField>
 
           {/* Email */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.email")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             {isEditMode ? (
               <Input value={workloadIdentity!.email} disabled />
             ) : (
@@ -468,14 +474,22 @@ function WorkloadIdentityForm({
                 </span>
               </div>
             )}
-          </div>
+          </FormField>
+
+          {/* Roles (create mode only) */}
+          {!isEditMode && canSetRoles && (
+            <FormField>
+              <FormLabel>{t("settings.members.table.roles")}</FormLabel>
+              <RoleSelect value={roles} onChange={setRoles} disabled={false} />
+            </FormField>
+          )}
 
           {/* Platform */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("settings.members.workload-identity-platform")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             <select
               value={providerType}
               onChange={(e) =>
@@ -494,16 +508,16 @@ function WorkloadIdentityForm({
                 </option>
               ))}
             </select>
-          </div>
+          </FormField>
 
           {/* Owner / Group */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {isGitLab
                 ? t("settings.members.workload-identity-group")
                 : t("settings.members.workload-identity-owner")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             <Input
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
@@ -511,15 +525,15 @@ function WorkloadIdentityForm({
               maxLength={200}
               autoComplete="off"
             />
-          </div>
+          </FormField>
 
           {/* Repository / Project */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {isGitLab
                 ? t("settings.members.workload-identity-project")
                 : t("settings.members.workload-identity-repo")}
-            </label>
+            </FormLabel>
             <Input
               value={repo}
               onChange={(e) => setRepo(e.target.value)}
@@ -527,19 +541,19 @@ function WorkloadIdentityForm({
               maxLength={200}
               autoComplete="off"
             />
-            <span className="text-xs text-control-light">
+            <FormDescription>
               {isGitLab
                 ? t("settings.members.workload-identity-project-hint")
                 : t("settings.members.workload-identity-repo-hint")}
-            </span>
-          </div>
+            </FormDescription>
+          </FormField>
 
           {/* Allowed Branches/Tags (GitLab only) */}
           {isGitLab && (
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
+            <FormField>
+              <FormLabel>
                 {t("settings.members.workload-identity-allowed-branches-tags")}
-              </label>
+              </FormLabel>
               <select
                 value={refType}
                 onChange={(e) => setRefType(e.target.value as RefType)}
@@ -555,17 +569,17 @@ function WorkloadIdentityForm({
                   {t("settings.members.workload-identity-specific-tag")}
                 </option>
               </select>
-            </div>
+            </FormField>
           )}
 
           {/* Branch / Tag */}
           {showBranchField && (
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
+            <FormField>
+              <FormLabel>
                 {isTagRefType
                   ? t("settings.members.workload-identity-tag")
                   : t("settings.members.workload-identity-branch")}
-              </label>
+              </FormLabel>
               <Input
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
@@ -573,24 +587,24 @@ function WorkloadIdentityForm({
                 maxLength={200}
                 autoComplete="off"
               />
-              <span className="text-xs text-control-light">
+              <FormDescription>
                 {isTagRefType
                   ? t("settings.members.workload-identity-tag-hint")
                   : t("settings.members.workload-identity-branch-hint")}
-              </span>
-            </div>
+              </FormDescription>
+            </FormField>
           )}
 
           {/* Advanced Settings */}
           {showAdvanced && (
             <div className="flex flex-col gap-y-6 pt-6 border-t">
               {/* Issuer URL / GitLab URL */}
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
+              <FormField>
+                <FormLabel>
                   {isGitLab
                     ? t("settings.members.workload-identity-gitlab-url")
                     : t("settings.members.workload-identity-issuer")}
-                </label>
+                </FormLabel>
                 <Input
                   value={issuerUrl}
                   onChange={(e) => setIssuerUrl(e.target.value)}
@@ -598,37 +612,37 @@ function WorkloadIdentityForm({
                   autoComplete="off"
                 />
                 {isGitLab && (
-                  <span className="text-xs text-control-light">
+                  <FormDescription>
                     {t("settings.members.workload-identity-gitlab-url-hint")}
-                  </span>
+                  </FormDescription>
                 )}
-              </div>
+              </FormField>
 
               {/* Audience */}
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
+              <FormField>
+                <FormLabel>
                   {t("settings.members.workload-identity-audience")}
-                </label>
+                </FormLabel>
                 <Input
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
                   maxLength={500}
                   autoComplete="off"
                 />
-              </div>
+              </FormField>
 
               {/* Subject Pattern */}
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
+              <FormField>
+                <FormLabel>
                   {t("settings.members.workload-identity-subject")}
-                </label>
+                </FormLabel>
                 <Input
                   value={subjectPattern}
                   onChange={(e) => setSubjectPattern(e.target.value)}
                   maxLength={500}
                   autoComplete="off"
                 />
-              </div>
+              </FormField>
             </div>
           )}
 
@@ -645,26 +659,6 @@ function WorkloadIdentityForm({
               <ChevronDown className="size-4" />
             )}
           </button>
-
-          {/* Roles (create mode only) */}
-          {!isEditMode &&
-            (projectEntity
-              ? hasProjectPermissionV2(
-                  projectEntity,
-                  "bb.projects.setIamPolicy"
-                )
-              : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.members.table.roles")}
-                </label>
-                <RoleSelect
-                  value={roles}
-                  onChange={setRoles}
-                  disabled={false}
-                />
-              </div>
-            )}
         </div>
       </SheetBody>
 

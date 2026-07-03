@@ -23,6 +23,14 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { ColorInput } from "@/react/components/ui/color-input";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormDescription,
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SegmentedControl } from "@/react/components/ui/segmented-control";
 import { usePlanFeature } from "@/react/hooks/useAppState";
@@ -174,140 +182,136 @@ export const AnnouncementSection = forwardRef<
         permissions={["bb.settings.setWorkspaceProfile"]}
         display="block"
       >
-        <div className="flex-1 lg:px-5">
-          <div className="mt-5 flex flex-col gap-y-6 lg:mt-0">
-            {/* Theme selector */}
-            <div className="flex flex-col gap-y-3">
-              <div>
-                <p className="text-base font-semibold">
-                  {t("settings.general.workspace.announcement-theme.self")}
-                </p>
-                <p className="mt-1 text-sm text-gray-400">
-                  {t(
-                    "settings.general.workspace.announcement-theme.description"
-                  )}
-                </p>
-              </div>
+        <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          {/* Theme selector */}
+          <FormField className="gap-y-3">
+            <div>
+              <FormLabel className="text-base font-semibold">
+                {t("settings.general.workspace.announcement-theme.self")}
+              </FormLabel>
+              <FormDescription className="mt-1 text-sm">
+                {t("settings.general.workspace.announcement-theme.description")}
+              </FormDescription>
+            </div>
 
-              <SegmentedControl
-                ariaLabel={t(
-                  "settings.general.workspace.announcement-theme.self"
-                )}
-                disabled={disabled}
-                value={selectedTheme}
-                onValueChange={onSelectTheme}
-                options={THEME_OPTIONS.map((option) => ({
-                  value: option,
-                  label: themeOptionLabel(option),
-                }))}
-              />
-
-              {selectedTheme === "custom" && (
-                <div className="flex flex-col gap-y-3">
-                  <div className="flex items-center gap-x-3">
-                    <label
-                      className="w-28 text-sm text-control"
-                      htmlFor="announcement-theme-background"
-                    >
-                      {t(
-                        "settings.general.workspace.announcement-theme.background"
-                      )}
-                    </label>
-                    <ColorInput
-                      id="announcement-theme-background"
-                      value={state.theme.background}
-                      disabled={disabled}
-                      ariaLabel={t(
-                        "settings.general.workspace.announcement-theme.background"
-                      )}
-                      onChange={(hex) =>
-                        setState((s) => ({
-                          ...s,
-                          theme: { ...s.theme, background: hex },
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center gap-x-3">
-                    <label
-                      className="w-28 text-sm text-control"
-                      htmlFor="announcement-theme-text"
-                    >
-                      {t("settings.general.workspace.announcement-theme.text")}
-                    </label>
-                    <ColorInput
-                      id="announcement-theme-text"
-                      value={state.theme.text}
-                      disabled={disabled}
-                      ariaLabel={t(
-                        "settings.general.workspace.announcement-theme.text"
-                      )}
-                      onChange={(hex) =>
-                        setState((s) => ({
-                          ...s,
-                          theme: { ...s.theme, text: hex },
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
+            <SegmentedControl
+              ariaLabel={t(
+                "settings.general.workspace.announcement-theme.self"
               )}
+              disabled={disabled}
+              value={selectedTheme}
+              onValueChange={onSelectTheme}
+              options={THEME_OPTIONS.map((option) => ({
+                value: option,
+                label: themeOptionLabel(option),
+              }))}
+            />
 
-              <div className="flex flex-col gap-y-2">
-                <p className="text-sm font-medium text-control">
-                  {t("common.preview")}
-                </p>
-                <AnnouncementBanner
-                  text={previewText}
-                  link={state.link}
-                  background={state.theme.background}
-                  textColor={state.theme.text}
-                  interactive={false}
-                  className="rounded-xs"
-                />
-              </div>
-            </div>
+            {selectedTheme === "custom" && (
+              <FormControlGroup>
+                <FormControlRow>
+                  <FormLabel
+                    className="w-28 text-sm text-control"
+                    htmlFor="announcement-theme-background"
+                  >
+                    {t(
+                      "settings.general.workspace.announcement-theme.background"
+                    )}
+                  </FormLabel>
+                  <ColorInput
+                    id="announcement-theme-background"
+                    value={state.theme.background}
+                    disabled={disabled}
+                    ariaLabel={t(
+                      "settings.general.workspace.announcement-theme.background"
+                    )}
+                    onChange={(hex) =>
+                      setState((s) => ({
+                        ...s,
+                        theme: { ...s.theme, background: hex },
+                      }))
+                    }
+                  />
+                </FormControlRow>
+                <FormControlRow>
+                  <FormLabel
+                    className="w-28 text-sm text-control"
+                    htmlFor="announcement-theme-text"
+                  >
+                    {t("settings.general.workspace.announcement-theme.text")}
+                  </FormLabel>
+                  <ColorInput
+                    id="announcement-theme-text"
+                    value={state.theme.text}
+                    disabled={disabled}
+                    ariaLabel={t(
+                      "settings.general.workspace.announcement-theme.text"
+                    )}
+                    onChange={(hex) =>
+                      setState((s) => ({
+                        ...s,
+                        theme: { ...s.theme, text: hex },
+                      }))
+                    }
+                  />
+                </FormControlRow>
+              </FormControlGroup>
+            )}
+          </FormField>
 
-            {/* Announcement text */}
-            <div>
-              <p className="text-base font-semibold">
-                {t("settings.general.workspace.announcement-text.self")}
-              </p>
-              <p className="mb-3 text-sm text-gray-400">
-                {t("settings.general.workspace.announcement-text.description")}
-              </p>
-              <Input
-                value={state.text}
-                className="w-full"
-                placeholder={t(
-                  "settings.general.workspace.announcement-text.placeholder"
-                )}
-                disabled={disabled}
-                onChange={(e) =>
-                  setState((s) => ({ ...s, text: e.target.value }))
-                }
-              />
-            </div>
+          <FormField className="gap-y-2">
+            <p className="text-sm font-medium text-control">
+              {t("common.preview")}
+            </p>
+            <AnnouncementBanner
+              text={previewText}
+              link={state.link}
+              background={state.theme.background}
+              textColor={state.theme.text}
+              interactive={false}
+              className="rounded-xs"
+            />
+          </FormField>
 
-            {/* Extra link */}
-            <div>
-              <p className="mb-2 text-base font-semibold">
-                {t("settings.general.workspace.extra-link.self")}
-              </p>
-              <Input
-                value={state.link}
-                className="w-full"
-                placeholder={t(
-                  "settings.general.workspace.extra-link.placeholder"
-                )}
-                disabled={disabled}
-                onChange={(e) =>
-                  setState((s) => ({ ...s, link: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-        </div>
+          {/* Announcement text */}
+          <FormField>
+            <FormLabel className="text-base font-semibold">
+              {t("settings.general.workspace.announcement-text.self")}
+            </FormLabel>
+            <FormDescription className="text-sm">
+              {t("settings.general.workspace.announcement-text.description")}
+            </FormDescription>
+            <Input
+              value={state.text}
+              className="w-full"
+              placeholder={t(
+                "settings.general.workspace.announcement-text.placeholder"
+              )}
+              disabled={disabled}
+              onChange={(e) =>
+                setState((s) => ({ ...s, text: e.target.value }))
+              }
+            />
+          </FormField>
+
+          {/* Extra link */}
+          <FormField>
+            <FormLabel className="text-base font-semibold">
+              {t("settings.general.workspace.extra-link.self")}
+            </FormLabel>
+            <Input
+              value={state.link}
+              className="w-full"
+              placeholder={t(
+                "settings.general.workspace.extra-link.placeholder"
+              )}
+              disabled={disabled}
+              onChange={(e) =>
+                setState((s) => ({ ...s, link: e.target.value }))
+              }
+            />
+          </FormField>
+        </FormFieldGroup>
       </PermissionGuard>
     </div>
   );

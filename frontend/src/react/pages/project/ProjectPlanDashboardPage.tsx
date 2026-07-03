@@ -28,6 +28,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Sheet,
@@ -1099,47 +1100,48 @@ function DatabaseGroupSelector({
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b text-left text-control-light">
-          <th className="py-2 pr-2 w-8" />
-          <th className="py-2 pr-4 font-medium">
-            {t("common.database-group")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {groups.map((group) => {
-          const isSelected = selectedGroup === group.name;
-          return (
-            <tr
-              key={group.name}
-              className={cn(
-                "border-b cursor-pointer hover:bg-control-bg",
-                isSelected && "bg-accent/5"
-              )}
-              onClick={() =>
-                onSelectedGroupChange(isSelected ? undefined : group.name)
-              }
-            >
-              <td className="py-2 pr-2">
-                <input
-                  type="radio"
-                  checked={isSelected}
-                  readOnly
-                  className="accent-accent"
-                />
-              </td>
-              <td className="py-2 pr-4">
-                <div className="flex items-center gap-x-1.5">
-                  <FolderTree className="size-4 text-control-light shrink-0" />
-                  <span>{group.title}</span>
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <RadioGroup
+      value={selectedGroup ?? ""}
+      onValueChange={(value) => onSelectedGroupChange(String(value))}
+      className="block"
+    >
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-control-light">
+            <th className="py-2 pr-2 w-8" />
+            <th className="py-2 pr-4 font-medium">
+              {t("common.database-group")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) => {
+            const isSelected = selectedGroup === group.name;
+            return (
+              <tr
+                key={group.name}
+                className={cn(
+                  "border-b cursor-pointer hover:bg-control-bg",
+                  isSelected && "bg-accent/5"
+                )}
+                onClick={() =>
+                  onSelectedGroupChange(isSelected ? undefined : group.name)
+                }
+              >
+                <td className="py-2 pr-2">
+                  <RadioGroupItem value={group.name} aria-label={group.title} />
+                </td>
+                <td className="py-2 pr-4">
+                  <div className="flex items-center gap-x-1.5">
+                    <FolderTree className="size-4 text-control-light shrink-0" />
+                    <span>{group.title}</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </RadioGroup>
   );
 }

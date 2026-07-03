@@ -14,6 +14,7 @@ import { revisionServiceClientConnect } from "@/connect";
 import { ReleaseFileTable } from "@/react/components/release/ReleaseFileTable";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -626,7 +627,14 @@ function ReleaseSelector({
       <div className="text-sm text-control-light">
         {t("database.revision.select-release-description")}
       </div>
-      <div className="overflow-x-auto rounded-sm border border-control-border">
+      <RadioGroup
+        value={selectedRelease?.name ?? ""}
+        onValueChange={(value) => {
+          const release = releases.find((release) => release.name === value);
+          onSelectedReleaseChange(release ?? null);
+        }}
+        className="block overflow-x-auto rounded-sm border border-control-border"
+      >
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-control-border bg-control-bg text-left">
@@ -643,11 +651,9 @@ function ReleaseSelector({
                 onClick={() => onSelectedReleaseChange(release)}
               >
                 <td className="px-4 py-2">
-                  <input
-                    type="radio"
-                    checked={selectedRelease?.name === release.name}
-                    onChange={() => onSelectedReleaseChange(release)}
-                    className="border-control-border"
+                  <RadioGroupItem
+                    value={release.name}
+                    aria-label={release.name.split("/").pop()}
                   />
                 </td>
                 <td className="px-4 py-2">{release.name.split("/").pop()}</td>
@@ -656,7 +662,7 @@ function ReleaseSelector({
             ))}
           </tbody>
         </table>
-      </div>
+      </RadioGroup>
     </div>
   );
 }

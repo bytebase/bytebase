@@ -17,7 +17,19 @@ import teamsIcon from "@/assets/im/teams.svg";
 import wecomIcon from "@/assets/im/wecom.png";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { WebhookType } from "@/types/proto-es/v1/common_pb";
@@ -419,28 +431,35 @@ export function IMPage() {
           {item.isConfigured ? (
             <IMTypeLabel type={item.type} label={item.typeLabel} />
           ) : (
-            <select
+            <Select
               value={item.type}
-              className="flex h-9 w-full max-w-xs rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
-              onChange={(e) => handleChangeType(i, e.target.value)}
+              onValueChange={(value) => {
+                if (value !== null) {
+                  handleChangeType(i, value);
+                }
+              }}
             >
-              <option value={item.type}>{item.typeLabel}</option>
-              {availableTypes
-                .filter((opt) => opt.type !== item.type)
-                .map((opt) => (
-                  <option key={opt.type} value={opt.type}>
-                    {opt.label}
-                  </option>
-                ))}
-            </select>
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue>{item.typeLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={item.type}>{item.typeLabel}</SelectItem>
+                {availableTypes
+                  .filter((opt) => opt.type !== item.type)
+                  .map((opt) => (
+                    <SelectItem key={opt.type} value={opt.type}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           )}
 
-          <div className="mt-4 flex flex-col gap-y-4">
+          <FormFieldGroup className="mt-4 gap-y-4">
             {item.fields.map((field) => (
-              <div key={field.key}>
-                <label className="textlabel">{field.label}</label>
+              <FormField key={field.key}>
+                <FormLabel>{field.label}</FormLabel>
                 <Input
-                  className="mt-2"
                   disabled={!allowEdit}
                   placeholder={t("common.sensitive-placeholder")}
                   value={localValues[i]?.[field.key] ?? ""}
@@ -448,9 +467,9 @@ export function IMPage() {
                     updateField(i, field.key, e.target.value)
                   }
                 />
-              </div>
+              </FormField>
             ))}
-          </div>
+          </FormFieldGroup>
 
           <div className="flex items-center justify-between mt-4 gap-x-2">
             <div>

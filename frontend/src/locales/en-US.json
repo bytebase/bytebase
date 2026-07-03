@@ -1079,7 +1079,7 @@
       "external-secret-gcp": "GCP Secret Manager",
       "external-secret-vault": "Vault (KV v2)",
       "google-iam": "Google Cloud SQL IAM",
-      "password": "Password"
+      "password": "Plain Password"
     },
     "password-write-only": "YOUR_DB_PWD - write only",
     "port": "Port",
@@ -1733,7 +1733,6 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "Allow request role is disabled for this project.",
-          "can-grant-access-directly": "You already have full access to this project, so you can grant access directly.",
           "feature-unavailable": "Request role workflow is unavailable on the current plan."
         },
         "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",

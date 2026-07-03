@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -213,11 +214,18 @@ function CredentialSourceForm({
       <label htmlFor="credential-source" className="textlabel block">
         {t("instance.iam-extension.credential-source")}
       </label>
-      <div className="textlabel mt-2 flex gap-x-4">
+      <RadioGroup
+        className="textlabel mt-2 gap-x-4"
+        value={credentialSource}
+        onValueChange={(value) =>
+          handleCredentialSourceChange(value as CredentialSource)
+        }
+      >
         {options.map((option) => (
-          <label
+          <RadioGroupItem
             key={option.value}
-            className="inline-flex items-center gap-x-1.5"
+            value={option.value}
+            disabled={!allowEdit || option.disabled}
             title={
               option.disabled
                 ? t(
@@ -226,18 +234,10 @@ function CredentialSourceForm({
                 : undefined
             }
           >
-            <input
-              type="radio"
-              name="credential-source"
-              value={option.value}
-              checked={credentialSource === option.value}
-              disabled={!allowEdit || option.disabled}
-              onChange={() => handleCredentialSourceChange(option.value)}
-            />
-            <span>{option.label}</span>
-          </label>
+            {option.label}
+          </RadioGroupItem>
         ))}
-      </div>
+      </RadioGroup>
 
       {credentialSource === "specific-credential" && (
         <>
@@ -353,23 +353,21 @@ function CloudSQLIPTypeField({
       <label className="textlabel block">
         {t("instance.cloud-sql-ip-type.label")}
       </label>
-      <div className="textlabel mt-2 flex gap-x-4">
+      <RadioGroup
+        className="textlabel mt-2 gap-x-4"
+        value={String(current)}
+        onValueChange={(next) => onChange(Number(next))}
+      >
         {options.map((option) => (
-          <label
+          <RadioGroupItem
             key={option.value}
-            className="inline-flex items-center gap-x-1.5"
+            value={String(option.value)}
+            disabled={!allowEdit}
           >
-            <input
-              type="radio"
-              name="cloud-sql-ip-type"
-              checked={current === option.value}
-              disabled={!allowEdit}
-              onChange={() => onChange(option.value)}
-            />
-            <span>{option.label}</span>
-          </label>
+            {option.label}
+          </RadioGroupItem>
         ))}
-      </div>
+      </RadioGroup>
       <p className="textinfolabel mt-1">
         {t("instance.cloud-sql-ip-type.description")}
       </p>

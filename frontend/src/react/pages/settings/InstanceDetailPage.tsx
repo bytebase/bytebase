@@ -443,7 +443,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         <TabsPanel value="overview">
           <InstanceFormProvider instance={instance}>
             <InstanceFormBody />
-            <InstanceFormButtons className="sticky bottom-0 z-10" />
+            <InstanceFormButtons />
             <UnsavedChangesGuard />
           </InstanceFormProvider>
         </TabsPanel>

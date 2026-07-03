@@ -151,8 +151,6 @@ export function useContextMenu(editStatus: EditStatusContext) {
   }, [menuState, editStatus, t]);
 
   const showMenu = useCallback((e: React.MouseEvent, node: TreeNode) => {
-    e.preventDefault();
-    e.stopPropagation();
     setMenuState({ show: true, x: e.clientX, y: e.clientY, node });
   }, []);
 

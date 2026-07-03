@@ -10,6 +10,7 @@ import {
   controlSizeStyle,
   menuRowStateClassName,
   menuRowStyle,
+  overlaySurfaceClassName,
 } from "./styles.stylex";
 
 // ---- Root ----
@@ -91,7 +92,8 @@ function SelectContent({
         <BaseSelect.Popup
           ref={ref}
           className={cn(
-            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-sm border border-control-border bg-background py-1 shadow-md",
+            "min-w-(--anchor-width)",
+            overlaySurfaceClassName,
             className
           )}
           {...props}

@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test } from "vitest";
 import { StickyActionFooter } from "./sticky-action-footer";
 import {
+  stickyActionFooterContentStyle,
   stickyActionFooterRightStyle,
   stickyActionFooterSideStyle,
   stickyActionFooterStyle,
@@ -55,14 +56,23 @@ describe("StickyActionFooter", () => {
     const right = container.querySelector(
       '[data-slot="sticky-action-footer-right"]'
     );
+    const content = container.querySelector(
+      '[data-slot="sticky-action-footer-content"]'
+    );
 
     expect(footer?.className).toContain("sticky");
     expect(footer?.className).toContain("bottom-0");
     expect(footer?.className).toContain(
       stylex.props(stickyActionFooterStyle()).className ?? ""
     );
-    expect(footer?.firstElementChild).toBe(left);
-    expect(footer?.lastElementChild).toBe(right);
+    expect(footer?.firstElementChild).toBe(content);
+    expect(content?.className).toContain("px-4");
+    expect(content?.className).toContain("sm:px-6");
+    expect(content?.className).toContain(
+      stylex.props(stickyActionFooterContentStyle()).className ?? ""
+    );
+    expect(content?.firstElementChild).toBe(left);
+    expect(content?.lastElementChild).toBe(right);
     expect(left?.textContent).toBe("Cancel");
     expect(left?.className).toContain(
       stylex.props(stickyActionFooterSideStyle()).className ?? ""

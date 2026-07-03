@@ -2,6 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
 import {
+  stickyActionFooterContentStyle,
   stickyActionFooterRightStyle,
   stickyActionFooterSideStyle,
   stickyActionFooterStyle,
@@ -27,6 +28,7 @@ function StickyActionFooter({
   ...props
 }: StickyActionFooterProps) {
   const rootStylexProps = stylex.props(stickyActionFooterStyle());
+  const contentStylexProps = stylex.props(stickyActionFooterContentStyle());
   const leftStylexProps = stylex.props(stickyActionFooterSideStyle());
   const rightStylexProps = stylex.props(
     stickyActionFooterSideStyle(),
@@ -46,18 +48,24 @@ function StickyActionFooter({
       {...props}
     >
       <div
-        data-slot="sticky-action-footer-left"
-        className={cn(leftStylexProps.className, leftClassName)}
-        style={leftStylexProps.style}
+        data-slot="sticky-action-footer-content"
+        className={cn("px-4 sm:px-6", contentStylexProps.className)}
+        style={contentStylexProps.style}
       >
-        {left}
-      </div>
-      <div
-        data-slot="sticky-action-footer-right"
-        className={cn("gap-x-2", rightStylexProps.className, rightClassName)}
-        style={rightStylexProps.style}
-      >
-        {right}
+        <div
+          data-slot="sticky-action-footer-left"
+          className={cn(leftStylexProps.className, leftClassName)}
+          style={leftStylexProps.style}
+        >
+          {left}
+        </div>
+        <div
+          data-slot="sticky-action-footer-right"
+          className={cn("gap-x-2", rightStylexProps.className, rightClassName)}
+          style={rightStylexProps.style}
+        >
+          {right}
+        </div>
       </div>
     </div>
   );

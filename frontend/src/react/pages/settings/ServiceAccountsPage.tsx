@@ -9,6 +9,7 @@ import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { FormField, FormLabel } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -565,10 +566,8 @@ function ServiceAccountForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Name */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
-              {t("common.name")}
-            </label>
+          <FormField>
+            <FormLabel>{t("common.name")}</FormLabel>
             <Input
               autoComplete="off"
               value={title}
@@ -576,14 +575,14 @@ function ServiceAccountForm({
               placeholder="Foo"
               maxLength={200}
             />
-          </div>
+          </FormField>
 
           {/* Email */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("common.email")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             {isEditMode ? (
               <Input value={serviceAccount?.email ?? ""} disabled />
             ) : (
@@ -600,7 +599,7 @@ function ServiceAccountForm({
                 </span>
               </div>
             )}
-          </div>
+          </FormField>
 
           {/* Roles (create mode only) */}
           {!isEditMode &&
@@ -610,17 +609,15 @@ function ServiceAccountForm({
                   "bb.projects.setIamPolicy"
                 )
               : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.members.table.roles")}
-                </label>
+              <FormField>
+                <FormLabel>{t("settings.members.table.roles")}</FormLabel>
                 <RoleSelect
                   value={roles}
                   onChange={setRoles}
                   disabled={false}
                   scope={project ? "project" : undefined}
                 />
-              </div>
+              </FormField>
             )}
         </div>
       </SheetBody>

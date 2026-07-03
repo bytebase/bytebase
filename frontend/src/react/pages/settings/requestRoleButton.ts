@@ -5,21 +5,8 @@ export const REQUEST_ROLE_REQUIRED_PERMISSIONS = [
   "bb.roles.list",
 ] as const satisfies readonly Permission[];
 
-export type RequestRoleButtonDisabledReason =
-  | {
-      kind: "loading";
-    }
-  | {
-      kind: "allow-request-role-disabled";
-    }
-  | {
-      kind: "can-grant-access-directly";
-    }
-  | {
-      kind: "feature-unavailable";
-    };
-
 interface RequestRoleButtonStateArgs {
+  readonly t: (key: string) => string;
   readonly projectName?: string;
   readonly projectReady: boolean;
   readonly allowRequestRole: boolean;
@@ -33,10 +20,11 @@ interface RequestRoleButtonStateArgs {
 
 interface RequestRoleButtonState {
   readonly visible: boolean;
-  readonly disabledReason?: RequestRoleButtonDisabledReason;
+  readonly disabledReason?: string;
 }
 
 export const getRequestRoleButtonState = ({
+  t,
   projectName,
   projectReady,
   allowRequestRole,
@@ -52,36 +40,31 @@ export const getRequestRoleButtonState = ({
   if (!projectReady) {
     return {
       visible: true,
-      disabledReason: {
-        kind: "loading",
-      },
+      disabledReason: t("common.loading"),
     };
   }
 
   if (!allowRequestRole) {
     return {
       visible: true,
-      disabledReason: {
-        kind: "allow-request-role-disabled",
-      },
+      disabledReason: t(
+        "project.members.request-role.disabled-reason.allow-request-role-disabled"
+      ),
     };
   }
 
   if (hasFullProjectAccess) {
     return {
-      visible: true,
-      disabledReason: {
-        kind: "can-grant-access-directly",
-      },
+      visible: false,
     };
   }
 
   if (!hasRequestRoleFeature) {
     return {
       visible: true,
-      disabledReason: {
-        kind: "feature-unavailable",
-      },
+      disabledReason: t(
+        "project.members.request-role.disabled-reason.feature-unavailable"
+      ),
     };
   }
 

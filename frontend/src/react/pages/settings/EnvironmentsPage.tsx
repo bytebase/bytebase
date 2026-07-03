@@ -40,8 +40,20 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
+import {
+  FormDescription,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
-import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
   SheetBody,
@@ -50,6 +62,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import {
   Tabs,
   TabsList,
@@ -295,23 +308,6 @@ function RolloutPolicyConfig({
     t,
   ]);
 
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showRoleDropdown) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setShowRoleDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showRoleDropdown]);
-
   return (
     <div className="flex flex-col items-start gap-y-2">
       <PermissionGuard permissions={["bb.policies.update"]} display="block">
@@ -336,50 +332,41 @@ function RolloutPolicyConfig({
               </span>
             ))}
             {canUpdatePolicy && (
-              <div className="relative" ref={dropdownRef}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline" size="sm">
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      {t("common.add")}
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent
+                  align="start"
+                  className="w-64 max-h-60 overflow-auto"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  {t("common.add")}
-                </Button>
-                {showRoleDropdown && (
-                  <div
-                    className={cn(
-                      "absolute mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
-                      LAYER_SURFACE_CLASS
-                    )}
-                  >
-                    {availableRoles.map((group) => (
-                      <div key={group.label}>
-                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
-                          {group.label}
-                        </div>
-                        {group.roles.map((role) => (
-                          <button
-                            key={role.name}
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
-                            onClick={() => {
-                              addRole(role.name);
-                              setShowRoleDropdown(false);
-                            }}
-                          >
-                            {role.title}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                    {availableRoles.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-400">
-                        {t("common.no-data")}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                  {availableRoles.map((group) => (
+                    <div key={group.label}>
+                      <DropdownMenuLabel className="uppercase">
+                        {group.label}
+                      </DropdownMenuLabel>
+                      {group.roles.map((role) => (
+                        <DropdownMenuItem
+                          key={role.name}
+                          onClick={() => addRole(role.name)}
+                        >
+                          {role.title}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ))}
+                  {availableRoles.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-control-placeholder">
+                      {t("common.no-data")}
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -437,22 +424,6 @@ function SQLReviewSectionInner(
 
   const [pendingPolicy, setPendingPolicy] = useState(currentPolicy);
   const [enforce, setEnforce] = useState(currentPolicy?.enforce ?? false);
-  const [showSelectPanel, setShowSelectPanel] = useState(false);
-  const selectPanelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showSelectPanel) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        selectPanelRef.current &&
-        !selectPanelRef.current.contains(e.target as Node)
-      ) {
-        setShowSelectPanel(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showSelectPanel]);
 
   useEffect(() => {
     setPendingPolicy(currentPolicy);
@@ -558,62 +529,52 @@ function SQLReviewSectionInner(
             </div>
           </div>
         ) : (
-          <div className="relative" ref={selectPanelRef}>
-            <Button
-              variant="outline"
-              disabled={!canUpdatePolicy}
-              onClick={() => setShowSelectPanel(!showSelectPanel)}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="outline" disabled={!canUpdatePolicy}>
+                  {t("sql-review.configure-policy")}
+                </Button>
+              }
+            />
+            <DropdownMenuContent
+              align="start"
+              className="w-80 max-h-60 overflow-auto"
             >
-              {t("sql-review.configure-policy")}
-            </Button>
-            {showSelectPanel && (
-              <div
-                className={cn(
-                  "absolute mt-1 w-80 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
-                  LAYER_SURFACE_CLASS
-                )}
+              {reviewPolicyList.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-control-placeholder">
+                  {t("common.no-data")}
+                </div>
+              ) : (
+                reviewPolicyList.map((review) => (
+                  <DropdownMenuItem
+                    key={review.id}
+                    onClick={() => {
+                      setPendingPolicy(review);
+                      setEnforce(true);
+                    }}
+                  >
+                    <span className="font-medium">{review.name}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-accent"
+                onClick={() => {
+                  router.push({
+                    name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+                    query: {
+                      attachedResource: resourcePath,
+                    },
+                  });
+                }}
               >
-                {reviewPolicyList.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-gray-400">
-                    {t("common.no-data")}
-                  </div>
-                ) : (
-                  reviewPolicyList.map((review) => (
-                    <button
-                      key={review.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg cursor-pointer"
-                      onClick={() => {
-                        setPendingPolicy(review);
-                        setEnforce(true);
-                        setShowSelectPanel(false);
-                      }}
-                    >
-                      <div className="font-medium">{review.name}</div>
-                    </button>
-                  ))
-                )}
-                <button
-                  type="button"
-                  className="w-full text-left px-3 py-2 text-sm text-accent hover:bg-control-bg cursor-pointer border-t border-control-border"
-                  onClick={() => {
-                    setShowSelectPanel(false);
-                    router.push({
-                      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-                      query: {
-                        attachedResource: resourcePath,
-                      },
-                    });
-                  }}
-                >
-                  <div className="flex items-center gap-x-1 font-medium">
-                    <Plus className="w-4 h-4" />
-                    {t("common.create")}
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
+                <Plus className="w-4 h-4" />
+                <span className="font-medium">{t("common.create")}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
@@ -829,7 +790,7 @@ function EnvironmentDetail({
       <div className="flex-1 px-4">
         <div className="flex flex-col gap-y-6">
           {/* Name section */}
-          <div className="flex flex-col gap-y-2">
+          <FormField>
             <div className="flex items-center gap-x-2">
               <input
                 type="color"
@@ -842,10 +803,10 @@ function EnvironmentDetail({
                   "cursor-pointer"
                 )}
               />
-              <span className="font-medium">
+              <FormLabel>
                 {t("common.environment-name")}
                 <span className="ml-0.5 text-error">*</span>
-              </span>
+              </FormLabel>
             </div>
             <Input
               value={editTitle}
@@ -857,16 +818,16 @@ function EnvironmentDetail({
               resourceName={t("common.environment")}
               readonly
             />
-          </div>
+          </FormField>
 
           {/* Tier section */}
-          <div className="flex flex-col gap-y-2">
+          <FormField>
             <div className="gap-y-1">
-              <label className="font-medium flex items-center gap-x-1">
+              <FormLabel>
                 {t("policy.environment-tier.name")}
                 <FeatureBadge feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS} />
-              </label>
-              <p className="text-sm text-gray-600">
+              </FormLabel>
+              <FormDescription>
                 {t("policy.environment-tier.description", { newline: "\n" })}
                 <a
                   href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
@@ -876,7 +837,7 @@ function EnvironmentDetail({
                 >
                   {t("common.learn-more")}
                 </a>
-              </p>
+              </FormDescription>
             </div>
             <label className="inline-flex items-center gap-x-2 cursor-pointer">
               <Checkbox
@@ -893,23 +854,21 @@ function EnvironmentDetail({
                 feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS}
               />
             )}
-          </div>
+          </FormField>
 
           {/* Rollout policy section */}
           {canGetPolicy && rolloutPolicy && (
-            <div className="flex flex-col gap-y-2">
+            <FormField>
               <div className="gap-y-1">
                 <div className="flex items-baseline gap-x-2">
-                  <label className="font-medium">
-                    {t("policy.rollout.name")}
-                  </label>
+                  <FormLabel>{t("policy.rollout.name")}</FormLabel>
                   {policyChanged && (
                     <span className="textlabeltip">
                       {t("policy.rollout.tip")}
                     </span>
                   )}
                 </div>
-                <div className="textinfolabel">
+                <FormDescription>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
                   })}
@@ -921,13 +880,13 @@ function EnvironmentDetail({
                   >
                     {t("common.learn-more")}
                   </a>
-                </div>
+                </FormDescription>
               </div>
               <RolloutPolicyConfig
                 policy={rolloutPolicy}
                 onChange={setRolloutPolicy}
               />
-            </div>
+            </FormField>
           )}
 
           {/* SQL Review section */}
@@ -953,12 +912,15 @@ function EnvironmentDetail({
 
       {/* Sticky bottom buttons */}
       {canEdit && hasChanges && (
-        <div className="sticky -bottom-2 bg-white py-4 px-4 border-t border-block-border flex items-center justify-end gap-x-4">
-          <Button variant="outline" onClick={revert}>
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={save}>{t("common.update")}</Button>
-        </div>
+        <StickyActionFooter
+          className="-bottom-2 bg-white"
+          left={
+            <Button variant="outline" onClick={revert}>
+              {t("common.cancel")}
+            </Button>
+          }
+          right={<Button onClick={save}>{t("common.update")}</Button>}
+        />
       )}
 
       {/* Delete confirmation dialog */}
@@ -1133,7 +1095,7 @@ function CreateSheet({
         <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
-            <div className="flex flex-col gap-y-2">
+            <FormField>
               <div className="flex items-center gap-x-2">
                 <input
                   type="color"
@@ -1145,10 +1107,10 @@ function CreateSheet({
                     "cursor-pointer"
                   )}
                 />
-                <span className="font-medium">
+                <FormLabel>
                   {t("common.environment-name")}
                   <span className="ml-0.5 text-error">*</span>
-                </span>
+                </FormLabel>
               </div>
               <Input
                 value={title}
@@ -1163,16 +1125,14 @@ function CreateSheet({
                 onChange={setResourceId}
                 onValidationChange={setResourceIdValid}
               />
-            </div>
+            </FormField>
 
             {/* Tier */}
-            <div className="flex flex-col gap-y-2">
-              <label className="font-medium">
-                {t("policy.environment-tier.name")}
-              </label>
-              <p className="text-sm text-gray-600">
+            <FormField>
+              <FormLabel>{t("policy.environment-tier.name")}</FormLabel>
+              <FormDescription>
                 {t("policy.environment-tier.description", { newline: "\n" })}
-              </p>
+              </FormDescription>
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
                 <Checkbox
                   checked={isProtected}
@@ -1187,25 +1147,23 @@ function CreateSheet({
                   feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS}
                 />
               )}
-            </div>
+            </FormField>
 
             {/* Rollout Policy */}
-            <div className="flex flex-col gap-y-2">
+            <FormField>
               <div className="gap-y-1">
-                <label className="font-medium">
-                  {t("policy.rollout.name")}
-                </label>
-                <div className="textinfolabel">
+                <FormLabel>{t("policy.rollout.name")}</FormLabel>
+                <FormDescription>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
                   })}
-                </div>
+                </FormDescription>
               </div>
               <RolloutPolicyConfig
                 policy={rolloutPolicy}
                 onChange={setRolloutPolicy}
               />
-            </div>
+            </FormField>
           </div>
         </SheetBody>
 

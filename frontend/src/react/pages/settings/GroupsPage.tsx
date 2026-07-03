@@ -25,6 +25,15 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormControlAffix,
+  FormDescription,
+  FormField,
+  FormFieldGroup,
+  FormInlineAffix,
+  FormLabel,
+  FormMessage,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -42,6 +51,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { listRowStateClassName } from "@/react/components/ui/styles.stylex";
 import {
   Table,
   TableBody,
@@ -317,7 +327,8 @@ function GroupRow({
         className={cn(
           stripeBg,
           canOpen &&
-            "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+            "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg",
+          canOpen && listRowStateClassName
         )}
         tabIndex={canOpen ? 0 : undefined}
         role={canOpen ? "button" : undefined}
@@ -689,13 +700,21 @@ function GroupForm({
     return email;
   }, [email, isEditMode, domainOptions, selectedDomain]);
 
-  const errorMessage = useMemo(() => {
+  const titleErrorMessage = useMemo(() => {
     if (!title.trim())
       return (
         t("settings.members.groups.form.title") + " " + t("common.is-required")
       );
+    return "";
+  }, [title, t]);
+
+  const emailErrorMessage = useMemo(() => {
     if (!fullEmail || !isValidEmail(fullEmail))
       return t("settings.members.groups.form.email-tips");
+    return "";
+  }, [fullEmail, t]);
+
+  const memberErrorMessage = useMemo(() => {
     // Validate member identifiers — extract email part and check format
     for (const m of members) {
       const raw = m.member.trim();
@@ -706,7 +725,10 @@ function GroupForm({
       }
     }
     return "";
-  }, [title, fullEmail, members, t]);
+  }, [members]);
+
+  const errorMessage =
+    titleErrorMessage || emailErrorMessage || memberErrorMessage;
 
   const hasChanged = useMemo(() => {
     if (!isEditMode) return true;
@@ -885,7 +907,7 @@ function GroupForm({
       </SheetHeader>
 
       <SheetBody>
-        <div className="flex flex-col gap-y-6">
+        <FormFieldGroup>
           {isExternalGroup && (
             <Alert
               variant="info"
@@ -894,27 +916,26 @@ function GroupForm({
           )}
 
           {/* Email */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("settings.members.groups.form.email")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
-            <span className="textinfolabel text-sm">
+            </FormLabel>
+            <FormDescription>
               {t("settings.members.groups.form.email-tips")}
-            </span>
-            <div className="flex items-center gap-x-1">
+            </FormDescription>
+            <FormInlineAffix>
               <Input
                 value={isEditMode ? email : email.split("@")[0]}
+                className="min-w-0 flex-1"
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isEditMode || !allowEdit}
               />
               {!isEditMode && domainOptions.length > 0 && (
                 <>
-                  <span className="text-sm text-control-light">@</span>
+                  <FormControlAffix>@</FormControlAffix>
                   {domainOptions.length === 1 ? (
-                    <span className="text-sm text-control-light whitespace-nowrap">
-                      {domainOptions[0]}
-                    </span>
+                    <FormControlAffix>{domainOptions[0]}</FormControlAffix>
                   ) : (
                     <select
                       value={selectedDomain}
@@ -931,41 +952,45 @@ function GroupForm({
                   )}
                 </>
               )}
-            </div>
-          </div>
+            </FormInlineAffix>
+            {emailErrorMessage && errorMessage === emailErrorMessage && (
+              <FormMessage>{emailErrorMessage}</FormMessage>
+            )}
+          </FormField>
 
           {/* Title */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("settings.members.groups.form.title")}
               <span className="ml-0.5 text-error">*</span>
-            </label>
+            </FormLabel>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               disabled={!allowEdit}
             />
-          </div>
+            {titleErrorMessage && errorMessage === titleErrorMessage && (
+              <FormMessage>{titleErrorMessage}</FormMessage>
+            )}
+          </FormField>
 
           {/* Description */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
+          <FormField>
+            <FormLabel>
               {t("settings.members.groups.form.description")}
-            </label>
+            </FormLabel>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
               disabled={!allowEdit}
             />
-          </div>
+          </FormField>
 
           {/* Members */}
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium text-control">
-              {t("common.members", { count: 2 })}
-            </label>
+          <FormField>
+            <FormLabel>{t("common.members", { count: 2 })}</FormLabel>
             <div className="flex flex-col gap-y-2">
               {members.map((member, index) => (
                 <div key={index} className="flex items-center gap-x-2">
@@ -1025,10 +1050,11 @@ function GroupForm({
                 </Button>
               )}
             </div>
-          </div>
-
-          {errorMessage && <p className="text-error text-sm">{errorMessage}</p>}
-        </div>
+            {memberErrorMessage && errorMessage === memberErrorMessage && (
+              <FormMessage>{memberErrorMessage}</FormMessage>
+            )}
+          </FormField>
+        </FormFieldGroup>
       </SheetBody>
 
       <SheetFooter className="justify-between">

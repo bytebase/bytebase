@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -133,34 +134,29 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
             <p className="mb-1 textinfolabel">
               {t("data-source.select-query-data-source")}
             </p>
-            <div className="max-w-44 flex flex-col gap-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="data-source"
-                  checked={selectedDataSourceId === ""}
-                  onChange={() => onDataSourceSelected("")}
-                />
-                <span>{t("data-source.automatic-query-data-source")}</span>
-              </label>
+            <RadioGroup
+              className="max-w-44 flex-col items-stretch gap-1"
+              value={selectedDataSourceId}
+              onValueChange={(value) => onDataSourceSelected(String(value))}
+            >
+              <RadioGroupItem value="">
+                {t("data-source.automatic-query-data-source")}
+              </RadioGroupItem>
               {dataSources.map((ds) => {
                 const reason = dataSourceUnaccessibleReason(ds);
                 const radio = (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="data-source"
-                      checked={selectedDataSourceId === ds.id}
-                      disabled={Boolean(reason)}
-                      onChange={() => onDataSourceSelected(ds.id)}
-                    />
+                  <RadioGroupItem
+                    value={ds.id}
+                    disabled={Boolean(reason)}
+                    contentClassName="min-w-0"
+                  >
                     <div className="max-w-36 flex items-center">
                       <span className="text-xs opacity-60 shrink-0">
                         {readableDataSourceType(ds.type)}
                       </span>
                       <span className="ml-1 truncate">{ds.username}</span>
                     </div>
-                  </label>
+                  </RadioGroupItem>
                 );
                 return (
                   <Tooltip key={ds.id} content={reason} side="right">
@@ -168,7 +164,7 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
                   </Tooltip>
                 );
               })}
-            </div>
+            </RadioGroup>
           </div>
 
           {/* Redis cluster config */}
@@ -185,54 +181,38 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
                 <p className="mb-1 textinfolabel">
                   {t("sql-editor.redis-command.self")}
                 </p>
-                <div
-                  className="max-w-44 flex flex-col gap-1"
+                <RadioGroup
+                  className="max-w-44 flex-col items-stretch gap-1"
+                  value={String(redisCommandOption)}
+                  onValueChange={(value) => {
+                    getSQLEditorEditorState().setRedisCommandOption(
+                      Number(value) as QueryOption_RedisRunCommandsOn
+                    );
+                  }}
                   aria-disabled={
                     selectedDataSource?.redisType !==
                     DataSource_RedisType.CLUSTER
                   }
                 >
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="redis-command"
-                      disabled={
-                        selectedDataSource?.redisType !==
-                        DataSource_RedisType.CLUSTER
-                      }
-                      checked={
-                        redisCommandOption ===
-                        QueryOption_RedisRunCommandsOn.SINGLE_NODE
-                      }
-                      onChange={() => {
-                        getSQLEditorEditorState().setRedisCommandOption(
-                          QueryOption_RedisRunCommandsOn.SINGLE_NODE
-                        );
-                      }}
-                    />
-                    <span>{t("sql-editor.redis-command.single-node")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="redis-command"
-                      disabled={
-                        selectedDataSource?.redisType !==
-                        DataSource_RedisType.CLUSTER
-                      }
-                      checked={
-                        redisCommandOption ===
-                        QueryOption_RedisRunCommandsOn.ALL_NODES
-                      }
-                      onChange={() => {
-                        getSQLEditorEditorState().setRedisCommandOption(
-                          QueryOption_RedisRunCommandsOn.ALL_NODES
-                        );
-                      }}
-                    />
-                    <span>{t("sql-editor.redis-command.all-nodes")}</span>
-                  </label>
-                </div>
+                  <RadioGroupItem
+                    value={String(QueryOption_RedisRunCommandsOn.SINGLE_NODE)}
+                    disabled={
+                      selectedDataSource?.redisType !==
+                      DataSource_RedisType.CLUSTER
+                    }
+                  >
+                    {t("sql-editor.redis-command.single-node")}
+                  </RadioGroupItem>
+                  <RadioGroupItem
+                    value={String(QueryOption_RedisRunCommandsOn.ALL_NODES)}
+                    disabled={
+                      selectedDataSource?.redisType !==
+                      DataSource_RedisType.CLUSTER
+                    }
+                  >
+                    {t("sql-editor.redis-command.all-nodes")}
+                  </RadioGroupItem>
+                </RadioGroup>
               </div>
             </Tooltip>
           )}

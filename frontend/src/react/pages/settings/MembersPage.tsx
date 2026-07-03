@@ -42,7 +42,14 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
+import {
+  FormDescription,
+  FormError,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Sheet,
@@ -136,10 +143,6 @@ import {
 import type { DatabaseMode } from "./types";
 
 const EMPTY_ROLE_SET = new Set<string>();
-
-const assertNever = (value: never): never => {
-  throw new Error(`Unexpected value: ${String(value)}`);
-};
 
 // ============================================================
 // MemberTable (view by members)
@@ -968,7 +971,6 @@ function DatabaseResourceSection({
   factorList,
   factorOptionConfigMap,
   factorOperatorOverrideMap,
-  formId,
 }: {
   projectName: string;
   mode: DatabaseMode;
@@ -980,7 +982,6 @@ function DatabaseResourceSection({
   factorList: Factor[];
   factorOptionConfigMap: Map<Factor, OptionConfig>;
   factorOperatorOverrideMap: Map<Factor, Operator[]>;
-  formId: string;
 }) {
   const { t } = useTranslation();
 
@@ -991,27 +992,22 @@ function DatabaseResourceSection({
   ];
 
   return (
-    <div className="flex flex-col gap-y-2">
-      <label className="block text-sm font-medium text-control">
+    <FormField>
+      <FormLabel>
         {t("common.databases")}
         <span className="ml-0.5 text-error">*</span>
-      </label>
-      <div className="flex items-center gap-x-4">
+      </FormLabel>
+      <RadioGroup
+        className="gap-x-4"
+        value={mode}
+        onValueChange={(value) => onModeChange(value as DatabaseMode)}
+      >
         {modes.map((m) => (
-          <label
-            key={m.value}
-            className="flex items-center gap-x-2 text-sm cursor-pointer"
-          >
-            <input
-              type="radio"
-              name={`db-mode-${formId}`}
-              checked={mode === m.value}
-              onChange={() => onModeChange(m.value)}
-            />
+          <RadioGroupItem key={m.value} value={m.value}>
             {m.label}
-          </label>
+          </RadioGroupItem>
         ))}
-      </div>
+      </RadioGroup>
 
       {mode === "EXPRESSION" && (
         <ExprEditor
@@ -1030,7 +1026,7 @@ function DatabaseResourceSection({
           onChange={onDatabaseResourcesChange}
         />
       )}
-    </div>
+    </FormField>
   );
 }
 
@@ -1189,24 +1185,20 @@ function ProjectRoleBindingForm({
       )}
 
       {/* Role select */}
-      <div className="flex flex-col gap-y-2">
-        <label className="block text-sm font-medium text-control">
-          {t("settings.members.assign-role")}
-        </label>
+      <FormField>
+        <FormLabel>{t("settings.members.assign-role")}</FormLabel>
         <RoleSelect
           value={form.role ? [form.role] : []}
           onChange={(roles) => handleRoleChange(roles[0] ?? "")}
           multiple={false}
           scope="project"
         />
-      </div>
+      </FormField>
 
       {/* Permissions display */}
       {permissions.length > 0 && (
-        <div className="flex flex-col gap-y-2">
-          <label className="block text-sm font-medium text-control">
-            {t("common.permissions")}
-          </label>
+        <FormField>
+          <FormLabel>{t("common.permissions")}</FormLabel>
           <div className="max-h-32 overflow-auto border rounded-sm bg-control-bg p-2">
             <div className="flex flex-wrap gap-1">
               {permissions.map((perm) => (
@@ -1219,24 +1211,24 @@ function ProjectRoleBindingForm({
               ))}
             </div>
           </div>
-        </div>
+        </FormField>
       )}
 
       {/* Reason */}
-      <div className="flex flex-col gap-y-2">
-        <label className="block text-sm font-medium text-control">
+      <FormField>
+        <FormLabel>
           {t("common.reason")}{" "}
           <span className="text-control-light font-normal">
             ({t("common.optional")})
           </span>
-        </label>
+        </FormLabel>
         <textarea
           className="w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm resize-none"
           rows={2}
           value={form.reason}
           onChange={(e) => handleReasonChange(e.target.value)}
         />
-      </div>
+      </FormField>
 
       {/* Databases (conditional on role) */}
       {showDatabases && (
@@ -1262,16 +1254,13 @@ function ProjectRoleBindingForm({
           factorList={factorList}
           factorOptionConfigMap={factorOptionConfigMap}
           factorOperatorOverrideMap={factorOperatorOverrideMap}
-          formId={form.id}
         />
       )}
 
       {/* Environments (conditional on role) */}
       {envKind && (
-        <div className="flex flex-col gap-y-2">
-          <label className="block text-sm font-medium text-control">
-            {t("common.environments")}
-          </label>
+        <FormField>
+          <FormLabel>{t("common.environments")}</FormLabel>
           <DDLWarningCallout type="drawer" kind={envKind} />
           <EnvironmentSelect
             multiple
@@ -1279,15 +1268,15 @@ function ProjectRoleBindingForm({
             value={form.environments}
             onChange={(envs) => onChange({ ...form, environments: envs })}
           />
-        </div>
+        </FormField>
       )}
 
       {/* Expiration */}
-      <div className="flex flex-col gap-y-2">
-        <label className="block text-sm font-medium text-control">
+      <FormField>
+        <FormLabel>
           {t("common.expiration")}
           <span className="ml-0.5 text-error">*</span>
-        </label>
+        </FormLabel>
         <div className="flex flex-wrap gap-1.5">
           {/* "Never" is only offered when the workspace sets no cap. */}
           {maximumRequestExpirationDays === undefined && (
@@ -1328,32 +1317,32 @@ function ProjectRoleBindingForm({
           />
         )}
         {maximumRequestExpirationDays !== undefined && (
-          <p className="text-xs text-control-light">
+          <FormDescription>
             {t("project.members.request-role.max-expiration-hint", {
               days: maximumRequestExpirationDays,
             })}
-          </p>
+          </FormDescription>
         )}
         {expirationIsInPast && (
-          <p className="text-xs text-error">
+          <FormError>
             {t("project.members.request-role.expiration-must-be-future")}
-          </p>
+          </FormError>
         )}
         {expirationExceedsMax && (
-          <p className="text-xs text-error">
+          <FormError>
             {t("project.members.request-role.expiration-exceeds-max", {
               days: maximumRequestExpirationDays,
             })}
-          </p>
+          </FormError>
         )}
         {!form.expirationCustom && form.expirationTimestampInMS && (
-          <span className="text-xs text-control-light">
+          <FormDescription>
             {t("project.members.expires-at", {
               date: formatExpirationDate(form.expirationTimestampInMS),
             })}
-          </span>
+          </FormDescription>
         )}
-      </div>
+      </FormField>
     </div>
   );
 }
@@ -1968,10 +1957,10 @@ function EditMemberRoleDrawer({
               />
             )}
             {/* Member input */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
+            <FormField>
+              <FormLabel>
                 {t("settings.members.select-account", { count: 1 })}
-              </label>
+              </FormLabel>
               {isEditMode ? (
                 <Input value={member.binding} disabled />
               ) : (
@@ -1981,7 +1970,7 @@ function EditMemberRoleDrawer({
                   includeAllUsers={!isSaaSMode}
                 />
               )}
-            </div>
+            </FormField>
 
             {/* Roles — project create mode uses rich form, otherwise simple multi-select */}
             {isProjectCreateMode ? (
@@ -1996,16 +1985,16 @@ function EditMemberRoleDrawer({
                 />
               </div>
             ) : (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
+              <FormField>
+                <FormLabel>
                   {t("settings.members.select-role", { count: 2 })}
-                </label>
+                </FormLabel>
                 <RoleSelect
                   value={selectedRoles}
                   onChange={setSelectedRoles}
                   scope={projectName ? "project" : undefined}
                 />
-              </div>
+              </FormField>
             )}
           </div>
         </SheetBody>
@@ -2232,38 +2221,17 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const requestRoleButtonState = useMemo(
     () =>
       getRequestRoleButtonState({
+        t,
         projectName,
         projectReady: !!project,
         allowRequestRole: project?.allowRequestRole ?? false,
         hasFullProjectAccess,
         hasRequestRoleFeature,
       }),
-    [projectName, project, hasFullProjectAccess, hasRequestRoleFeature]
+    [t, projectName, project, hasFullProjectAccess, hasRequestRoleFeature]
   );
 
-  const requestRoleDisabledReason = useMemo(() => {
-    const reason = requestRoleButtonState.disabledReason;
-    if (!reason) return undefined;
-
-    switch (reason.kind) {
-      case "loading":
-        return t("common.loading");
-      case "allow-request-role-disabled":
-        return t(
-          "project.members.request-role.disabled-reason.allow-request-role-disabled"
-        );
-      case "can-grant-access-directly":
-        return t(
-          "project.members.request-role.disabled-reason.can-grant-access-directly"
-        );
-      case "feature-unavailable":
-        return t(
-          "project.members.request-role.disabled-reason.feature-unavailable"
-        );
-      default:
-        return assertNever(reason);
-    }
-  }, [requestRoleButtonState.disabledReason, t]);
+  const requestRoleDisabledReason = requestRoleButtonState.disabledReason;
 
   const setIamPolicyPermissionGuard = useMemo(
     () => getSetIamPolicyPermissionGuardConfig(project),

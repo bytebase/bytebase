@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
+import { StickyActionFooter } from "../ui/sticky-action-footer";
 import type { EditDataSource } from "./common";
 import {
   calcDataSourceUpdateMask,
@@ -504,30 +505,30 @@ export function InstanceFormButtons({
     return (
       <>
         {connectionFailureDialog}
-        <div
-          className={cn(
-            "w-full py-4 border-t border-block-border flex justify-end items-center gap-x-4 bg-background",
-            className
-          )}
-        >
-          {allowCancel && (
+        <StickyActionFooter
+          className={className}
+          left={
+            allowCancel ? (
+              <Button
+                variant="outline"
+                disabled={state.isRequesting || state.isTestingConnection}
+                onClick={cancel}
+              >
+                {t("common.cancel")}
+              </Button>
+            ) : undefined
+          }
+          right={
             <Button
-              variant="outline"
-              disabled={state.isRequesting || state.isTestingConnection}
-              onClick={cancel}
+              disabled={
+                !allowCreate || state.isRequesting || state.isTestingConnection
+              }
+              onClick={tryCreate}
             >
-              {t("common.cancel")}
+              {state.isRequesting ? t("common.creating") : t("common.create")}
             </Button>
-          )}
-          <Button
-            disabled={
-              !allowCreate || state.isRequesting || state.isTestingConnection
-            }
-            onClick={tryCreate}
-          >
-            {state.isRequesting ? t("common.creating") : t("common.create")}
-          </Button>
-        </div>
+          }
+        />
       </>
     );
   }
@@ -538,37 +539,39 @@ export function InstanceFormButtons({
   return (
     <>
       {connectionFailureDialog}
-      <div
-        className={cn(
-          "w-full mt-4 py-4 border-t border-block-border flex justify-end items-center gap-x-4 bg-background",
-          className
-        )}
-      >
-        <Button
-          variant="outline"
-          disabled={state.isTestingConnection}
-          onClick={resetChanges}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          variant="ghost"
-          disabled={!allowUpdate || state.isRequesting || !allowEdit}
-          onClick={testConnectionForCurrentEditingDS}
-        >
-          {state.isTestingConnection
-            ? t("instance.testing-connection")
-            : t("instance.test-connection")}
-        </Button>
-        <Button
-          disabled={
-            !allowUpdate || state.isRequesting || state.isTestingConnection
-          }
-          onClick={doUpdate}
-        >
-          {state.isRequesting ? t("common.updating") : t("common.update")}
-        </Button>
-      </div>
+      <StickyActionFooter
+        className={cn("mt-4", className)}
+        left={
+          <Button
+            variant="outline"
+            disabled={state.isTestingConnection}
+            onClick={resetChanges}
+          >
+            {t("common.cancel")}
+          </Button>
+        }
+        right={
+          <>
+            <Button
+              variant="ghost"
+              disabled={!allowUpdate || state.isRequesting || !allowEdit}
+              onClick={testConnectionForCurrentEditingDS}
+            >
+              {state.isTestingConnection
+                ? t("instance.testing-connection")
+                : t("instance.test-connection")}
+            </Button>
+            <Button
+              disabled={
+                !allowUpdate || state.isRequesting || state.isTestingConnection
+              }
+              onClick={doUpdate}
+            >
+              {state.isRequesting ? t("common.updating") : t("common.update")}
+            </Button>
+          </>
+        }
+      />
     </>
   );
 }

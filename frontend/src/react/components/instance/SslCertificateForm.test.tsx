@@ -1,7 +1,9 @@
+import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { controlMinHeightStyle } from "@/react/components/ui/styles.stylex";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SslCertificateForm } from "./SslCertificateForm";
 
@@ -108,6 +110,9 @@ describe("SslCertificateForm", () => {
         /^z-\d+$/.test(className)
       )
     ).toBe(false);
+    expect(selectedPostureLabel?.className).toContain(
+      stylex.props(controlMinHeightStyle("sm")).className
+    );
     expect(
       selectedPostureLabel?.classList.contains("focus-within:ring-inset")
     ).toBe(true);
@@ -168,6 +173,18 @@ describe("SslCertificateForm", () => {
       "data-source.ssl.client-cert-placeholder",
       "data-source.ssl.client-key-placeholder",
     ]);
+    const segmentSizeClassName =
+      stylex.props(controlMinHeightStyle("sm")).className ?? "";
+    for (const ariaLabel of [
+      "data-source.ssl.posture.self",
+      "data-source.ssl.ca-source.self",
+      "data-source.ssl.client-cert-source.self",
+    ]) {
+      const firstSegment = container
+        .querySelector(`[aria-label="${ariaLabel}"] [aria-checked]`)
+        ?.closest("label");
+      expect(firstSegment?.className).toContain(segmentSizeClassName);
+    }
 
     act(() => {
       root.unmount();

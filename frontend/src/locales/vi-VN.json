@@ -1733,7 +1733,6 @@
       "request-role": {
         "disabled-reason": {
           "allow-request-role-disabled": "Dự án này đã tắt tính năng yêu cầu vai trò.",
-          "can-grant-access-directly": "Bạn đã có toàn quyền truy cập dự án này, nên có thể cấp quyền truy cập trực tiếp.",
           "feature-unavailable": "Quy trình yêu cầu vai trò không khả dụng trong gói hiện tại."
         },
         "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",

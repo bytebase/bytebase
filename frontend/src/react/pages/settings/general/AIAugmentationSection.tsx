@@ -15,6 +15,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { FormFieldGroup } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Select,
@@ -248,10 +249,10 @@ export const AIAugmentationSection = forwardRef<
       </div>
       <ComponentPermissionGuard
         permissions={["bb.settings.get"]}
-        className="flex-1 lg:px-4"
+        className="flex-1"
       >
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
-          <div className="flex-1 lg:px-4">
+          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
             {isSaaSMode ? (
               <Alert
                 variant="info"
@@ -260,7 +261,7 @@ export const AIAugmentationSection = forwardRef<
                 )}
               />
             ) : (
-              <div className="mt-4 lg:mt-0 flex flex-col gap-y-4">
+              <>
                 {/* Enable toggle */}
                 <div>
                   <div className="flex items-center gap-x-2">
@@ -416,9 +417,9 @@ export const AIAugmentationSection = forwardRef<
                     </div>
                   </>
                 )}
-              </div>
+              </>
             )}
-          </div>
+          </FormFieldGroup>
         </PermissionGuard>
       </ComponentPermissionGuard>
     </div>

@@ -18,6 +18,8 @@ import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import {
@@ -212,50 +214,31 @@ export function ProjectMaskingExemptionCreatePage({
 
             {/* Radio group */}
             <div className="w-full mb-2">
-              <div className="flex flex-col sm:flex-row justify-start sm:items-center gap-2 sm:gap-4">
+              <RadioGroup
+                className="flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4"
+                value={radioValue}
+                onValueChange={(value) => onRadioChange(value as RadioValue)}
+              >
                 <Tooltip content={t("issue.role-grant.all-databases-tip")}>
-                  <label className="flex items-center gap-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="resource-mode"
-                      checked={radioValue === "ALL"}
-                      onChange={() => onRadioChange("ALL")}
-                      className="accent-accent"
-                    />
-                    <span>{t("issue.role-grant.all-databases")}</span>
-                  </label>
+                  <RadioGroupItem value="ALL">
+                    {t("issue.role-grant.all-databases")}
+                  </RadioGroupItem>
                 </Tooltip>
 
-                <label className="flex items-center gap-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="resource-mode"
-                    checked={radioValue === "EXPRESSION"}
-                    onChange={() => onRadioChange("EXPRESSION")}
-                    disabled={!project}
-                    className="accent-accent"
-                  />
+                <RadioGroupItem value="EXPRESSION" disabled={!project}>
                   <div className="flex items-center gap-x-1">
                     <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
                     <span>{t("issue.role-grant.use-cel")}</span>
                   </div>
-                </label>
+                </RadioGroupItem>
 
-                <label className="flex items-center gap-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="resource-mode"
-                    checked={radioValue === "SELECT"}
-                    onChange={() => onRadioChange("SELECT")}
-                    disabled={!project}
-                    className="accent-accent"
-                  />
+                <RadioGroupItem value="SELECT" disabled={!project}>
                   <div className="flex items-center gap-x-1">
                     <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
                     <span>{t("issue.role-grant.manually-select")}</span>
                   </div>
-                </label>
-              </div>
+                </RadioGroupItem>
+              </RadioGroup>
             </div>
 
             {/* Resource selector content */}
@@ -318,16 +301,19 @@ export function ProjectMaskingExemptionCreatePage({
       </div>
 
       {/* Footer */}
-      <div className="sticky bottom-0 z-10 border-t bg-background">
-        <div className="flex justify-end items-center gap-x-4 px-4 py-3">
+      <StickyActionFooter
+        className="py-3"
+        left={
           <Button variant="outline" onClick={onDismiss}>
             {t("common.cancel")}
           </Button>
+        }
+        right={
           <Button disabled={submitDisabled || processing} onClick={onSubmit}>
             {t("common.confirm")}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Feature paywall — shared FeatureModal so the dialog content is
           driven by the subscription dynamic feature copy + plan info. */}

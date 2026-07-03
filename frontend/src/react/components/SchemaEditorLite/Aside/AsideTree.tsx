@@ -14,10 +14,15 @@ import {
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ColumnIcon } from "@/react/components/schema/icons";
 import { Badge } from "@/react/components/ui/badge";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/react/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +31,6 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { ErrorBoundary } from "@/react/components/ui/error-boundary";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
 import type {
@@ -522,6 +526,50 @@ export function AsideTree() {
     return actions;
   }, [readonly, targets, t, editStatus, tabs, rebuildTree]);
 
+  const treeSurface = (
+    <div ref={containerRef} className="flex-1 overflow-hidden">
+      {/* react-arborist hard-throws on malformed data (e.g. a falsy
+          node id) — contain that to this pane, same as the shared
+          ui/Tree primitive does. */}
+      <ErrorBoundary
+        resetKey={arboristData}
+        fallback={
+          <div className="px-2 py-1 text-sm text-control-light">
+            {t("common.render-failed")}
+          </div>
+        }
+        onError={(error) => {
+          console.error("[AsideTree] failed to render tree data:", error);
+        }}
+      >
+        <Tree
+          data={arboristData}
+          idAccessor="id"
+          searchTerm={searchPattern}
+          searchMatch={(node, term) =>
+            node.data.name.toLowerCase().includes(term.toLowerCase())
+          }
+          rowHeight={28}
+          indent={16}
+          openByDefault={false}
+          width="100%"
+          height={containerRef.current?.clientHeight ?? 400}
+        >
+          {(props) => (
+            <NodeRenderer
+              {...props}
+              nodeMap={nodeMap}
+              onNodeClick={handleNodeClick}
+              onContextMenu={readonly ? undefined : showMenu}
+              getNodeStatus={getNodeStatus}
+              selection={selection}
+            />
+          )}
+        </Tree>
+      </ErrorBoundary>
+    </div>
+  );
+
   return (
     <div className="flex size-full flex-col gap-y-2">
       <div className="sticky top-0 flex items-center gap-x-1 px-1 pt-1">
@@ -553,79 +601,29 @@ export function AsideTree() {
           </DropdownMenu>
         )}
       </div>
-      <div ref={containerRef} className="flex-1 overflow-hidden">
-        {/* react-arborist hard-throws on malformed data (e.g. a falsy
-            node id) — contain that to this pane, same as the shared
-            ui/Tree primitive does. */}
-        <ErrorBoundary
-          resetKey={arboristData}
-          fallback={
-            <div className="px-2 py-1 text-sm text-control-light">
-              {t("common.render-failed")}
-            </div>
-          }
-          onError={(error) => {
-            console.error("[AsideTree] failed to render tree data:", error);
+      {readonly ? (
+        treeSurface
+      ) : (
+        <ContextMenu
+          onOpenChange={(open) => {
+            if (!open) hideMenu();
           }}
         >
-          <Tree
-            data={arboristData}
-            idAccessor="id"
-            searchTerm={searchPattern}
-            searchMatch={(node, term) =>
-              node.data.name.toLowerCase().includes(term.toLowerCase())
-            }
-            rowHeight={28}
-            indent={16}
-            openByDefault={false}
-            width="100%"
-            height={containerRef.current?.clientHeight ?? 400}
-          >
-            {(props) => (
-              <NodeRenderer
-                {...props}
-                nodeMap={nodeMap}
-                onNodeClick={handleNodeClick}
-                onContextMenu={readonly ? undefined : showMenu}
-                getNodeStatus={getNodeStatus}
-                selection={selection}
-              />
-            )}
-          </Tree>
-        </ErrorBoundary>
-      </div>
-
-      {/* Context menu portal */}
-      {menuState.show &&
-        menuOptions.length > 0 &&
-        createPortal(
-          <div
-            className="fixed inset-0"
-            onClick={hideMenu}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              hideMenu();
-            }}
-          >
-            <div
-              className={`absolute rounded-sm border border-control-border bg-background py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
-              style={{ left: menuState.x, top: menuState.y }}
-              onClick={(e) => e.stopPropagation()}
-            >
+          <ContextMenuTrigger render={treeSurface} />
+          {menuState.show && menuOptions.length > 0 && (
+            <ContextMenuContent>
               {menuOptions.map((opt) => (
-                <button
+                <ContextMenuItem
                   key={opt.key}
-                  type="button"
-                  className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-control-bg-hover"
                   onClick={() => handleMenuSelect(opt.key)}
                 >
                   {opt.label}
-                </button>
+                </ContextMenuItem>
               ))}
-            </div>
-          </div>,
-          getLayerRoot("overlay")
-        )}
+            </ContextMenuContent>
+          )}
+        </ContextMenu>
+      )}
 
       {/* Modals */}
       {tableNameModalCtx && (

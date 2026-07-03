@@ -5,7 +5,16 @@ import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import {
+  FormControlAffix,
+  FormControlGroup,
+  FormControlRow,
+  FormDescription,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { useAppStore } from "@/react/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -551,27 +560,27 @@ export function DataSourceForm({
               {showAuthTypeRadio && (
                 <div className="sm:col-span-3 sm:col-start-1">
                   <div className="flex items-center gap-x-2">
-                    <div className="textlabel flex items-center gap-x-4">
+                    <RadioGroup
+                      className="textlabel gap-x-4"
+                      value={String(dataSource.authenticationType)}
+                      onValueChange={(value) =>
+                        update({
+                          authenticationType: Number(
+                            value
+                          ) as DataSource_AuthenticationType,
+                        })
+                      }
+                    >
                       {supportedAuthenticationTypes.map((item) => (
-                        <label
+                        <RadioGroupItem
                           key={item.value}
-                          className="flex items-center gap-x-1.5 cursor-pointer"
+                          value={String(item.value)}
+                          disabled={!allowEdit}
                         >
-                          <input
-                            type="radio"
-                            name="authenticationType"
-                            checked={
-                              dataSource.authenticationType === item.value
-                            }
-                            disabled={!allowEdit}
-                            onChange={() =>
-                              update({ authenticationType: item.value })
-                            }
-                          />
                           {item.label}
-                        </label>
+                        </RadioGroupItem>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
                 </div>
               )}
@@ -590,38 +599,35 @@ export function DataSourceForm({
               {/* Hive authentication */}
               {basicInfo.engine === Engine.HIVE && (
                 <div className="sm:col-span-3 sm:col-start-1">
-                  <div className="textlabel flex items-center gap-x-4">
-                    <label className="flex items-center gap-x-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={hiveAuthentication === "PASSWORD"}
-                        disabled={!allowEdit}
-                        onChange={() => onHiveAuthenticationChange("PASSWORD")}
-                      />
+                  <RadioGroup
+                    className="textlabel gap-x-4"
+                    value={hiveAuthentication}
+                    onValueChange={(value) =>
+                      onHiveAuthenticationChange(
+                        value as typeof hiveAuthentication
+                      )
+                    }
+                  >
+                    <RadioGroupItem value="PASSWORD" disabled={!allowEdit}>
                       Plain Password
-                    </label>
-                    <label className="flex items-center gap-x-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={hiveAuthentication === "KERBEROS"}
-                        disabled={!allowEdit}
-                        onChange={() => onHiveAuthenticationChange("KERBEROS")}
-                      />
+                    </RadioGroupItem>
+                    <RadioGroupItem value="KERBEROS" disabled={!allowEdit}>
                       Kerberos
-                    </label>
-                  </div>
+                    </RadioGroupItem>
+                  </RadioGroup>
                 </div>
               )}
 
               {/* Kerberos config */}
               {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                 <>
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel block">
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <FormLabel>
                       Principal <span className="text-error">*</span>
-                    </label>
-                    <div className="mt-2 flex items-center gap-x-2">
+                    </FormLabel>
+                    <FormControlRow>
                       <Input
+                        className="min-w-0 flex-1"
                         value={
                           dataSource.saslConfig.mechanism.value.primary ?? ""
                         }
@@ -638,8 +644,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <span>/</span>
+                      <FormControlAffix>/</FormControlAffix>
                       <Input
+                        className="min-w-0 flex-1"
                         value={
                           dataSource.saslConfig.mechanism.value.instance ?? ""
                         }
@@ -656,8 +663,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <span>@</span>
+                      <FormControlAffix>@</FormControlAffix>
                       <Input
+                        className="min-w-0 flex-1"
                         value={
                           dataSource.saslConfig.mechanism.value.realm ?? ""
                         }
@@ -674,43 +682,42 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                    </div>
-                  </div>
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel block">
+                    </FormControlRow>
+                  </FormField>
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <FormLabel>
                       KDC <span className="text-error">*</span>
-                    </label>
-                    <div className="flex items-center gap-x-2">
-                      <div className="w-fit textlabel flex gap-x-3">
+                    </FormLabel>
+                    <FormControlRow>
+                      <RadioGroup
+                        className="w-fit textlabel gap-x-3"
+                        value={
+                          dataSource.saslConfig?.mechanism?.value
+                            ?.kdcTransportProtocol ?? ""
+                        }
+                        onValueChange={(proto) => {
+                          const updated = { ...dataSource };
+                          if (
+                            updated.saslConfig?.mechanism?.case === "krbConfig"
+                          ) {
+                            updated.saslConfig.mechanism.value.kdcTransportProtocol =
+                              String(proto);
+                          }
+                          onDataSourceChange(updated);
+                        }}
+                      >
                         {["tcp", "udp"].map((proto) => (
-                          <label
+                          <RadioGroupItem
                             key={proto}
-                            className="flex items-center gap-x-1.5"
+                            value={proto}
+                            disabled={!allowEdit}
                           >
-                            <input
-                              type="radio"
-                              checked={
-                                dataSource.saslConfig?.mechanism?.value
-                                  ?.kdcTransportProtocol === proto
-                              }
-                              disabled={!allowEdit}
-                              onChange={() => {
-                                const updated = { ...dataSource };
-                                if (
-                                  updated.saslConfig?.mechanism?.case ===
-                                  "krbConfig"
-                                ) {
-                                  updated.saslConfig.mechanism.value.kdcTransportProtocol =
-                                    proto;
-                                }
-                                onDataSourceChange(updated);
-                              }}
-                            />
                             {proto.toUpperCase()}
-                          </label>
+                          </RadioGroupItem>
                         ))}
-                      </div>
+                      </RadioGroup>
                       <Input
+                        className="min-w-0 flex-1"
                         value={
                           dataSource.saslConfig.mechanism.value.kdcHost ?? ""
                         }
@@ -727,8 +734,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <span>:</span>
+                      <FormControlAffix>:</FormControlAffix>
                       <Input
+                        className="min-w-0 flex-1"
                         value={
                           dataSource.saslConfig.mechanism.value.kdcPort ?? ""
                         }
@@ -750,12 +758,12 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                    </div>
-                  </div>
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel block">
+                    </FormControlRow>
+                  </FormField>
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <FormLabel>
                       Keytab File <span className="text-error">*</span>
-                    </label>
+                    </FormLabel>
                     <div className="mt-3 border-2 border-dashed rounded-lg p-6 text-center">
                       <input
                         type="file"
@@ -771,16 +779,16 @@ export function DataSourceForm({
                         Click or Drag your .keytab file here
                       </label>
                     </div>
-                  </div>
+                  </FormField>
                 </>
               )}
 
               {/* Username field (non-Kerberos, non-Azure IAM) */}
               {dataSource.saslConfig?.mechanism?.case !== "krbConfig" &&
                 !isAzureIAM && (
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel flex items-center gap-x-1">
-                      {t("common.username")}
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <div className="flex items-center gap-x-1">
+                      <FormLabel>{t("common.username")}</FormLabel>
                       {onOpenInfoPanel && hasAuthenticationInfo && (
                         <button
                           type="button"
@@ -790,10 +798,10 @@ export function DataSourceForm({
                           <Info className="size-3.5" />
                         </button>
                       )}
-                    </label>
+                    </div>
                     <Input
                       value={dataSource.username}
-                      className="mt-2 w-full max-w-[48rem]"
+                      className="w-full max-w-[48rem]"
                       disabled={!allowEdit}
                       placeholder={
                         basicInfo.engine === Engine.CLICKHOUSE
@@ -802,7 +810,7 @@ export function DataSourceForm({
                       }
                       onChange={(e) => update({ username: e.target.value })}
                     />
-                  </div>
+                  </FormField>
                 )}
 
               {/* IAM Credential Source Form */}
@@ -817,19 +825,19 @@ export function DataSourceForm({
 
               {/* AWS Region */}
               {isAwsIAM && (
-                <div className="sm:col-span-3 sm:col-start-1">
-                  <label className="textlabel block">
+                <FormField className="sm:col-span-3 sm:col-start-1">
+                  <FormLabel>
                     {t("instance.database-region")}{" "}
                     <span className="text-error">*</span>
-                  </label>
+                  </FormLabel>
                   <Input
                     value={dataSource.region ?? ""}
-                    className="mt-2 w-full"
+                    className="w-full"
                     disabled={!allowEdit}
                     placeholder="database region, for example, us-east-1"
                     onChange={(e) => update({ region: e.target.value })}
                   />
-                </div>
+                </FormField>
               )}
 
               {/* Password / External Secret */}
@@ -838,7 +846,17 @@ export function DataSourceForm({
                   <div className="sm:col-span-3 sm:col-start-1">
                     {!hideAdvancedFeatures && (
                       <div className="mb-4">
-                        <div className="textlabel flex flex-wrap gap-x-4 gap-y-2">
+                        <RadioGroup
+                          className="textlabel flex-wrap gap-x-4 gap-y-2"
+                          value={String(passwordType)}
+                          onValueChange={(value) =>
+                            changeSecretType(
+                              Number(
+                                value
+                              ) as DataSourceExternalSecret_SecretType
+                            )
+                          }
+                        >
                           {[
                             {
                               value:
@@ -874,16 +892,12 @@ export function DataSourceForm({
                               ),
                             },
                           ].map((item) => (
-                            <label
+                            <RadioGroupItem
                               key={item.value}
-                              className="flex items-center gap-x-1.5 cursor-pointer"
+                              value={String(item.value)}
+                              disabled={!allowEdit}
+                              contentClassName="flex items-center gap-x-1.5"
                             >
-                              <input
-                                type="radio"
-                                checked={passwordType === item.value}
-                                disabled={!allowEdit}
-                                onChange={() => changeSecretType(item.value)}
-                              />
                               {item.label}
                               {item.value !==
                                 DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
@@ -892,24 +906,22 @@ export function DataSourceForm({
                                     Pro
                                   </span>
                                 )}
-                            </label>
+                            </RadioGroupItem>
                           ))}
                           <LearnMoreLink
                             href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
                             className="text-sm text-accent"
                           />
-                        </div>
+                        </RadioGroup>
                       </div>
                     )}
 
                     {/* Plain password */}
                     {passwordType ===
                       DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
-                      <div>
-                        <label className="textlabel block">
-                          {t("common.password")}
-                        </label>
-                        <div className="mt-2">
+                      <FormField>
+                        <FormLabel>{t("common.password")}</FormLabel>
+                        <div>
                           {!isCreating && allowUsingEmptyPassword && (
                             <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
                               <Checkbox
@@ -946,7 +958,7 @@ export function DataSourceForm({
                             }
                           />
                         </div>
-                      </div>
+                      </FormField>
                     )}
 
                     {/* External secret fields */}
@@ -958,17 +970,17 @@ export function DataSourceForm({
                           {passwordType ===
                             DataSourceExternalSecret_SecretType.VAULT_KV_V2 && (
                             <div className="flex flex-col gap-y-4">
-                              <div>
-                                <label className="textlabel block">
+                              <FormField>
+                                <FormLabel>
                                   {t(
                                     "instance.external-secret-vault.vault-url"
                                   )}{" "}
                                   <span className="text-error">*</span>
-                                </label>
+                                </FormLabel>
                                 <Input
                                   value={dataSource.externalSecret.url ?? ""}
                                   required
-                                  className="mt-2 w-full"
+                                  className="w-full"
                                   disabled={!allowEdit}
                                   placeholder={t(
                                     "instance.external-secret-vault.vault-url"
@@ -982,50 +994,46 @@ export function DataSourceForm({
                                     onDataSourceChange(ds);
                                   }}
                                 />
-                              </div>
-                              <div className="flex flex-col gap-y-2">
-                                <label className="textlabel block">
+                              </FormField>
+                              <FormField>
+                                <FormLabel>
                                   {t(
                                     "instance.external-secret-vault.vault-auth-type.self"
                                   )}
-                                </label>
-                                <div className="textlabel flex gap-x-4">
-                                  <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                    <input
-                                      type="radio"
-                                      checked={
-                                        dataSource.externalSecret.authType ===
-                                        DataSourceExternalSecret_AuthType.TOKEN
-                                      }
-                                      onChange={() =>
-                                        changeExternalSecretAuthType(
-                                          DataSourceExternalSecret_AuthType.TOKEN
-                                        )
-                                      }
-                                    />
+                                </FormLabel>
+                                <RadioGroup
+                                  className="textlabel gap-x-4"
+                                  value={String(
+                                    dataSource.externalSecret.authType
+                                  )}
+                                  onValueChange={(value) =>
+                                    changeExternalSecretAuthType(
+                                      Number(
+                                        value
+                                      ) as DataSourceExternalSecret_AuthType
+                                    )
+                                  }
+                                >
+                                  <RadioGroupItem
+                                    value={String(
+                                      DataSourceExternalSecret_AuthType.TOKEN
+                                    )}
+                                  >
                                     {t(
                                       "instance.external-secret-vault.vault-auth-type.token.self"
                                     )}
-                                  </label>
-                                  <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                    <input
-                                      type="radio"
-                                      checked={
-                                        dataSource.externalSecret.authType ===
-                                        DataSourceExternalSecret_AuthType.VAULT_APP_ROLE
-                                      }
-                                      onChange={() =>
-                                        changeExternalSecretAuthType(
-                                          DataSourceExternalSecret_AuthType.VAULT_APP_ROLE
-                                        )
-                                      }
-                                    />
+                                  </RadioGroupItem>
+                                  <RadioGroupItem
+                                    value={String(
+                                      DataSourceExternalSecret_AuthType.VAULT_APP_ROLE
+                                    )}
+                                  >
                                     {t(
                                       "instance.external-secret-vault.vault-auth-type.approle.self"
                                     )}
-                                  </label>
-                                </div>
-                              </div>
+                                  </RadioGroupItem>
+                                </RadioGroup>
+                              </FormField>
                               {/* Token input */}
                               {dataSource.externalSecret.authType ===
                                 DataSourceExternalSecret_AuthType.TOKEN &&
@@ -1067,71 +1075,57 @@ export function DataSourceForm({
                                     );
                                   }
                                   return (
-                                    <div>
-                                      <label className="textlabel block">
+                                    <FormField>
+                                      <FormLabel>
                                         {tokenLabel}{" "}
                                         <span className="text-error">*</span>
-                                      </label>
+                                      </FormLabel>
                                       {/* Token source is host-backed for env/file,
                                           which is disallowed in SaaS mode; only
                                           plain is offered there. */}
                                       {!isSaaSMode && (
-                                        <div className="textlabel my-1 flex gap-x-4">
-                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                            <input
-                                              type="radio"
-                                              checked={
-                                                tokenType ===
-                                                DataSourceExternalSecret_TokenType.PLAIN
-                                              }
-                                              disabled={!allowEdit}
-                                              onChange={() =>
-                                                changeTokenType(
-                                                  DataSourceExternalSecret_TokenType.PLAIN
-                                                )
-                                              }
-                                            />
+                                        <RadioGroup
+                                          className="textlabel my-1 gap-x-4"
+                                          value={String(tokenType)}
+                                          onValueChange={(value) =>
+                                            changeTokenType(
+                                              Number(
+                                                value
+                                              ) as DataSourceExternalSecret_TokenType
+                                            )
+                                          }
+                                        >
+                                          <RadioGroupItem
+                                            value={String(
+                                              DataSourceExternalSecret_TokenType.PLAIN
+                                            )}
+                                            disabled={!allowEdit}
+                                          >
                                             {t(
                                               "instance.external-secret-vault.vault-auth-type.token.type-plain"
                                             )}
-                                          </label>
-                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                            <input
-                                              type="radio"
-                                              checked={
-                                                tokenType ===
-                                                DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                              }
-                                              disabled={!allowEdit}
-                                              onChange={() =>
-                                                changeTokenType(
-                                                  DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                                )
-                                              }
-                                            />
+                                          </RadioGroupItem>
+                                          <RadioGroupItem
+                                            value={String(
+                                              DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                            )}
+                                            disabled={!allowEdit}
+                                          >
                                             {t(
                                               "instance.external-secret-vault.vault-auth-type.token.type-environment"
                                             )}
-                                          </label>
-                                          <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                            <input
-                                              type="radio"
-                                              checked={
-                                                tokenType ===
-                                                DataSourceExternalSecret_TokenType.FILE
-                                              }
-                                              disabled={!allowEdit}
-                                              onChange={() =>
-                                                changeTokenType(
-                                                  DataSourceExternalSecret_TokenType.FILE
-                                                )
-                                              }
-                                            />
+                                          </RadioGroupItem>
+                                          <RadioGroupItem
+                                            value={String(
+                                              DataSourceExternalSecret_TokenType.FILE
+                                            )}
+                                            disabled={!allowEdit}
+                                          >
                                             {t(
                                               "instance.external-secret-vault.vault-auth-type.token.type-file"
                                             )}
-                                          </label>
-                                        </div>
+                                          </RadioGroupItem>
+                                        </RadioGroup>
                                       )}
                                       <Input
                                         value={
@@ -1141,7 +1135,7 @@ export function DataSourceForm({
                                                 .authOption.value as string)
                                             : ""
                                         }
-                                        className="mt-2 w-full"
+                                        className="w-full"
                                         disabled={!allowEdit}
                                         placeholder={tokenPlaceholder}
                                         onChange={(e) => {
@@ -1156,26 +1150,26 @@ export function DataSourceForm({
                                           onDataSourceChange(ds);
                                         }}
                                       />
-                                    </div>
+                                    </FormField>
                                   );
                                 })()}
                               {/* AppRole fields */}
                               {dataSource.externalSecret.authOption?.case ===
                                 "appRole" && (
                                 <div className="flex flex-col gap-y-4">
-                                  <div>
-                                    <label className="textlabel block">
+                                  <FormField>
+                                    <FormLabel>
                                       {t(
                                         "instance.external-secret-vault.vault-auth-type.approle.role-id"
                                       )}{" "}
                                       <span className="text-error">*</span>
-                                    </label>
+                                    </FormLabel>
                                     <Input
                                       value={
                                         dataSource.externalSecret.authOption
                                           .value.roleId ?? ""
                                       }
-                                      className="mt-2 w-full"
+                                      className="w-full"
                                       disabled={!allowEdit}
                                       placeholder={`${t("instance.external-secret-vault.vault-auth-type.approle.role-id")} - ${t("common.write-only")}`}
                                       onChange={(e) => {
@@ -1199,90 +1193,68 @@ export function DataSourceForm({
                                         onDataSourceChange(ds);
                                       }}
                                     />
-                                  </div>
-                                  <div>
-                                    <label className="textlabel block">
+                                  </FormField>
+                                  <FormField>
+                                    <FormLabel>
                                       {t(
                                         "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                                       )}{" "}
                                       <span className="text-error">*</span>
-                                    </label>
+                                    </FormLabel>
                                     {/* Environment secret id reads from the host,
                                         which is disallowed in SaaS mode; only plain
                                         is offered there. */}
                                     {!isSaaSMode && (
-                                      <div className="textlabel my-1 flex gap-x-4">
-                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            checked={
-                                              dataSource.externalSecret
-                                                .authOption.value.type ===
-                                              DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
-                                            }
-                                            disabled={!allowEdit}
-                                            onChange={() => {
-                                              const ds = { ...dataSource };
-                                              if (
-                                                ds.externalSecret?.authOption
-                                                  ?.case === "appRole"
-                                              ) {
-                                                ds.externalSecret = {
-                                                  ...ds.externalSecret,
-                                                  authOption: {
-                                                    ...ds.externalSecret
-                                                      .authOption,
-                                                    value: {
-                                                      ...ds.externalSecret
-                                                        .authOption.value,
-                                                      type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
-                                                    },
-                                                  },
-                                                };
-                                              }
-                                              onDataSourceChange(ds);
-                                            }}
-                                          />
+                                      <RadioGroup
+                                        className="textlabel my-1 gap-x-4"
+                                        value={String(
+                                          dataSource.externalSecret.authOption
+                                            .value.type
+                                        )}
+                                        onValueChange={(value) => {
+                                          const ds = { ...dataSource };
+                                          if (
+                                            ds.externalSecret?.authOption
+                                              ?.case === "appRole"
+                                          ) {
+                                            ds.externalSecret = {
+                                              ...ds.externalSecret,
+                                              authOption: {
+                                                ...ds.externalSecret.authOption,
+                                                value: {
+                                                  ...ds.externalSecret
+                                                    .authOption.value,
+                                                  type: Number(
+                                                    value
+                                                  ) as DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+                                                },
+                                              },
+                                            };
+                                          }
+                                          onDataSourceChange(ds);
+                                        }}
+                                      >
+                                        <RadioGroupItem
+                                          value={String(
+                                            DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
+                                          )}
+                                          disabled={!allowEdit}
+                                        >
                                           {t(
                                             "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
                                           )}
-                                        </label>
-                                        <label className="flex items-center gap-x-1.5 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            checked={
-                                              dataSource.externalSecret
-                                                .authOption.value.type ===
-                                              DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
-                                            }
-                                            disabled={!allowEdit}
-                                            onChange={() => {
-                                              const ds = { ...dataSource };
-                                              if (
-                                                ds.externalSecret?.authOption
-                                                  ?.case === "appRole"
-                                              ) {
-                                                ds.externalSecret = {
-                                                  ...ds.externalSecret,
-                                                  authOption: {
-                                                    ...ds.externalSecret
-                                                      .authOption,
-                                                    value: {
-                                                      ...ds.externalSecret
-                                                        .authOption.value,
-                                                      type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT,
-                                                    },
-                                                  },
-                                                };
-                                              }
-                                              onDataSourceChange(ds);
-                                            }}
-                                          />
+                                        </RadioGroupItem>
+                                        <RadioGroupItem
+                                          value={String(
+                                            DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                                          )}
+                                          disabled={!allowEdit}
+                                        >
                                           {t(
                                             "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
                                           )}
-                                        </label>
-                                      </div>
+                                        </RadioGroupItem>
+                                      </RadioGroup>
                                     )}
                                     <Input
                                       value={
@@ -1312,16 +1284,16 @@ export function DataSourceForm({
                                         onDataSourceChange(ds);
                                       }}
                                     />
-                                  </div>
+                                  </FormField>
                                 </div>
                               )}
                               {/* Vault TLS config */}
-                              <div>
-                                <label className="textlabel block">
+                              <FormField>
+                                <FormLabel>
                                   {t(
                                     "instance.external-secret-vault.vault-tls-config"
                                   )}
-                                </label>
+                                </FormLabel>
                                 <SslCertificateForm
                                   verify={
                                     !dataSource.externalSecret
@@ -1365,26 +1337,26 @@ export function DataSourceForm({
                                   disabled={!allowEdit}
                                   showKeyAndCert
                                 />
-                              </div>
+                              </FormField>
                               {/* Engine name */}
-                              <div>
-                                <label className="textlabel block">
+                              <FormField>
+                                <FormLabel>
                                   {t(
                                     "instance.external-secret-vault.vault-secret-engine-name"
                                   )}{" "}
                                   <span className="text-error">*</span>
-                                </label>
-                                <div className="flex gap-x-2 text-sm textinfolabel">
+                                </FormLabel>
+                                <FormDescription>
                                   {t(
                                     "instance.external-secret-vault.vault-secret-engine-tips"
                                   )}
-                                </div>
+                                </FormDescription>
                                 <Input
                                   value={
                                     dataSource.externalSecret.engineName ?? ""
                                   }
                                   required
-                                  className="mt-2 w-full"
+                                  className="w-full"
                                   disabled={!allowEdit}
                                   placeholder={t(
                                     "instance.external-secret-vault.vault-secret-engine-name"
@@ -1398,27 +1370,27 @@ export function DataSourceForm({
                                     onDataSourceChange(ds);
                                   }}
                                 />
-                              </div>
+                              </FormField>
                             </div>
                           )}
 
                           {/* Azure Key Vault URL */}
                           {passwordType ===
                             DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                            <div>
-                              <label className="textlabel block">
+                            <FormField>
+                              <FormLabel>
                                 {t("instance.external-secret-azure.vault-url")}{" "}
                                 <span className="text-error">*</span>
-                              </label>
-                              <div className="flex gap-x-2 text-sm textinfolabel">
+                              </FormLabel>
+                              <FormDescription>
                                 {t(
                                   "instance.external-secret-azure.vault-url-tips"
                                 )}
-                              </div>
+                              </FormDescription>
                               <Input
                                 value={dataSource.externalSecret.url ?? ""}
                                 required
-                                className="mt-2 w-full"
+                                className="w-full"
                                 disabled={!allowEdit}
                                 placeholder={t(
                                   "instance.external-secret-azure.vault-url"
@@ -1432,35 +1404,35 @@ export function DataSourceForm({
                                   onDataSourceChange(ds);
                                 }}
                               />
-                            </div>
+                            </FormField>
                           )}
 
                           {/* Secret name (common) */}
-                          <div>
-                            <label className="textlabel block">
+                          <FormField>
+                            <FormLabel>
                               {secretNameLabel}{" "}
                               <span className="text-error">*</span>
-                            </label>
+                            </FormLabel>
                             {passwordType ===
                               DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER && (
-                              <div className="flex gap-x-2 text-sm textinfolabel">
+                              <FormDescription>
                                 {t(
                                   "instance.external-secret-gcp.secret-name-tips"
                                 )}
-                              </div>
+                              </FormDescription>
                             )}
                             {passwordType ===
                               DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                              <div className="flex gap-x-2 text-sm textinfolabel">
+                              <FormDescription>
                                 {t(
                                   "instance.external-secret-azure.secret-name-tips"
                                 )}
-                              </div>
+                              </FormDescription>
                             )}
                             <Input
                               value={dataSource.externalSecret.secretName ?? ""}
                               required
-                              className="mt-2 w-full"
+                              className="w-full"
                               disabled={!allowEdit}
                               placeholder={secretNameLabel}
                               onChange={(e) => {
@@ -1472,25 +1444,25 @@ export function DataSourceForm({
                                 onDataSourceChange(ds);
                               }}
                             />
-                          </div>
+                          </FormField>
 
                           {/* Secret key (not for GCP/Azure) */}
                           {passwordType !==
                             DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER &&
                             passwordType !==
                               DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                              <div>
-                                <label className="textlabel block">
+                              <FormField>
+                                <FormLabel>
                                   {secretKeyLabel}{" "}
                                   <span className="text-error">*</span>
-                                </label>
+                                </FormLabel>
                                 <Input
                                   value={
                                     dataSource.externalSecret.passwordKeyName ??
                                     ""
                                   }
                                   required
-                                  className="mt-2 w-full"
+                                  className="w-full"
                                   disabled={!allowEdit}
                                   placeholder={secretKeyLabel}
                                   onChange={(e) => {
@@ -1502,7 +1474,7 @@ export function DataSourceForm({
                                     onDataSourceChange(ds);
                                   }}
                                 />
-                              </div>
+                              </FormField>
                             )}
                         </div>
                       )}
@@ -1512,35 +1484,33 @@ export function DataSourceForm({
                       dataSource.redisType ===
                         DataSource_RedisType.SENTINEL && (
                         <>
-                          <div className="mt-2">
-                            <label className="textlabel">
+                          <FormField>
+                            <FormLabel>
                               Master Name <span className="text-error">*</span>
-                            </label>
+                            </FormLabel>
                             <Input
                               value={dataSource.masterName ?? ""}
-                              className="mt-1 w-full"
+                              className="w-full"
                               disabled={!allowEdit}
                               onChange={(e) =>
                                 update({ masterName: e.target.value })
                               }
                             />
-                          </div>
-                          <div className="mt-2">
-                            <label className="textlabel">Master Username</label>
+                          </FormField>
+                          <FormField>
+                            <FormLabel>Master Username</FormLabel>
                             <Input
                               value={dataSource.masterUsername ?? ""}
-                              className="mt-1 w-full"
+                              className="w-full"
                               disabled={!allowEdit}
                               onChange={(e) =>
                                 update({ masterUsername: e.target.value })
                               }
                             />
-                          </div>
-                          <div className="mt-2">
-                            <label className="textlabel block">
-                              Master Password
-                            </label>
-                            <div className="mt-2">
+                          </FormField>
+                          <FormField>
+                            <FormLabel>Master Password</FormLabel>
+                            <div>
                               {!isCreating && allowUsingEmptyPassword && (
                                 <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
                                   <Checkbox
@@ -1586,7 +1556,7 @@ export function DataSourceForm({
                                 }
                               />
                             </div>
-                          </div>
+                          </FormField>
                         </>
                       )}
                   </div>
@@ -1598,24 +1568,27 @@ export function DataSourceForm({
           {(basicInfo.engine === Engine.SPANNER ||
             basicInfo.engine === Engine.BIGQUERY) && (
             <>
-              <div className="sm:col-span-3 sm:col-start-1 textlabel flex gap-x-4">
+              <RadioGroup
+                className="sm:col-span-3 sm:col-start-1 textlabel gap-x-4"
+                value={String(dataSource.authenticationType)}
+                onValueChange={(value) =>
+                  update({
+                    authenticationType: Number(
+                      value
+                    ) as DataSource_AuthenticationType,
+                  })
+                }
+              >
                 {supportedAuthenticationTypes.map((item) => (
-                  <label
+                  <RadioGroupItem
                     key={item.value}
-                    className="flex items-center gap-x-1.5 cursor-pointer"
+                    value={String(item.value)}
+                    disabled={!allowEdit}
                   >
-                    <input
-                      type="radio"
-                      checked={dataSource.authenticationType === item.value}
-                      disabled={!allowEdit}
-                      onChange={() =>
-                        update({ authenticationType: item.value })
-                      }
-                    />
                     {item.label}
-                  </label>
+                  </RadioGroupItem>
                 ))}
-              </div>
+              </RadioGroup>
               <CredentialSourceForm
                 dataSource={dataSource}
                 engine={basicInfo.engine}
@@ -1639,10 +1612,8 @@ export function DataSourceForm({
           {/* Snowflake keypair */}
           {basicInfo.engine === Engine.SNOWFLAKE && (
             <>
-              <div className="sm:col-span-3 sm:col-start-1">
-                <div className="textlabel block">
-                  {t("data-source.ssh.private-key")}
-                </div>
+              <FormField className="sm:col-span-3 sm:col-start-1">
+                <FormLabel>{t("data-source.ssh.private-key")}</FormLabel>
                 <div className="flex gap-x-2 text-sm">
                   <span className="textinfolabel">
                     {t("data-source.snowflake-keypair-tip")}
@@ -1655,24 +1626,22 @@ export function DataSourceForm({
                 <textarea
                   value={dataSource.authenticationPrivateKey ?? ""}
                   disabled={!allowEdit}
-                  className="w-full h-32 mt-2 whitespace-pre-wrap rounded-sm border border-control-border p-2 text-sm font-mono"
+                  className="w-full h-32 whitespace-pre-wrap rounded-sm border border-control-border p-2 text-sm font-mono"
                   placeholder={`-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----`}
                   onChange={(e) =>
                     update({ authenticationPrivateKey: e.target.value })
                   }
                 />
-              </div>
-              <div className="sm:col-span-3 sm:col-start-1">
-                <div className="textlabel block">
-                  {t("data-source.private-key-passphrase")}
-                </div>
-                <div className="textinfolabel text-sm">
+              </FormField>
+              <FormField className="sm:col-span-3 sm:col-start-1">
+                <FormLabel>{t("data-source.private-key-passphrase")}</FormLabel>
+                <FormDescription>
                   {t("data-source.private-key-passphrase-tip")}
-                </div>
+                </FormDescription>
                 <Input
                   value={dataSource.authenticationPrivateKeyPassphrase ?? ""}
                   type="password"
-                  className="mt-2 w-full"
+                  className="w-full"
                   disabled={!allowEdit}
                   placeholder={t(
                     "data-source.private-key-passphrase-placeholder"
@@ -1683,32 +1652,31 @@ export function DataSourceForm({
                     })
                   }
                 />
-              </div>
+              </FormField>
             </>
           )}
 
           {/* Databricks */}
           {basicInfo.engine === Engine.DATABRICKS && (
             <>
-              <div>
-                <div className="textlabel mt-2">
+              <FormField>
+                <FormLabel>
                   Warehouse ID <span className="text-error">*</span>
-                </div>
+                </FormLabel>
                 <Input
                   value={dataSource.warehouseId ?? ""}
-                  className="mt-2"
                   disabled={!allowEdit}
                   onChange={(e) => update({ warehouseId: e.target.value })}
                 />
-              </div>
-              <div>
-                <div className="textlabel mt-2">
+              </FormField>
+              <FormField>
+                <FormLabel>
                   Token <span className="text-error">*</span>
-                </div>
+                </FormLabel>
                 <Input
                   type="password"
                   value={dataSource.updatedToken}
-                  className="mt-2 w-full"
+                  className="w-full"
                   autoComplete="off"
                   disabled={!allowEdit}
                   placeholder={
@@ -1720,18 +1688,16 @@ export function DataSourceForm({
                     update({ updatedToken: e.target.value.trim() })
                   }
                 />
-              </div>
+              </FormField>
             </>
           )}
 
           {/* MongoDB authentication database */}
           {showAuthenticationDatabase && (
-            <div className="sm:col-span-3 sm:col-start-1">
-              <label className="textlabel block">
-                {t("instance.authentication-database")}
-              </label>
+            <FormField className="sm:col-span-3 sm:col-start-1">
+              <FormLabel>{t("instance.authentication-database")}</FormLabel>
               <Input
-                className="mt-2 w-full"
+                className="w-full"
                 autoComplete="off"
                 placeholder="admin"
                 disabled={!allowEdit}
@@ -1740,7 +1706,7 @@ export function DataSourceForm({
                   update({ authenticationDatabase: e.target.value.trim() })
                 }
               />
-            </div>
+            </FormField>
           )}
 
           {/* Read-only replica host/port */}
@@ -1748,26 +1714,22 @@ export function DataSourceForm({
             (hasReadonlyReplicaHost || hasReadonlyReplicaPort) && (
               <>
                 {hasReadonlyReplicaHost && (
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel block">
-                      {t("data-source.read-replica-host")}
-                    </label>
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <FormLabel>{t("data-source.read-replica-host")}</FormLabel>
                     <Input
-                      className="mt-2 w-full"
+                      className="w-full"
                       autoComplete="off"
                       value={dataSource.host}
                       disabled={!allowEdit}
                       onChange={(e) => handleHostInput(e.target.value)}
                     />
-                  </div>
+                  </FormField>
                 )}
                 {hasReadonlyReplicaPort && (
-                  <div className="sm:col-span-3 sm:col-start-1">
-                    <label className="textlabel block">
-                      {t("data-source.read-replica-port")}
-                    </label>
+                  <FormField className="sm:col-span-3 sm:col-start-1">
+                    <FormLabel>{t("data-source.read-replica-port")}</FormLabel>
                     <Input
-                      className="mt-2 w-full"
+                      className="w-full"
                       autoComplete="off"
                       value={dataSource.port}
                       disabled={!allowEdit}
@@ -1777,23 +1739,23 @@ export function DataSourceForm({
                         handlePortInput(e.target.value);
                       }}
                     />
-                  </div>
+                  </FormField>
                 )}
               </>
             )}
 
           {/* Database field */}
           {showDatabase && (
-            <div className="sm:col-span-3 sm:col-start-1">
-              <label className="textlabel block">{t("common.database")}</label>
+            <FormField className="sm:col-span-3 sm:col-start-1">
+              <FormLabel>{t("common.database")}</FormLabel>
               <Input
                 value={dataSource.database ?? ""}
-                className="mt-2 w-full"
+                className="w-full"
                 disabled={!allowEdit}
                 placeholder={t("common.database")}
                 onChange={(e) => update({ database: e.target.value })}
               />
-            </div>
+            </FormField>
           )}
         </>
       )}
@@ -1803,9 +1765,11 @@ export function DataSourceForm({
         <>
           {/* SSL */}
           {showSSL && isPasswordAuth && (
-            <div className="sm:col-span-3 sm:col-start-1">
-              <div className="flex items-center justify-start gap-x-2 textlabel">
-                {t("data-source.ssl.connection-security")}
+            <FormField className="sm:col-span-3 sm:col-start-1">
+              <div className="flex items-center justify-start gap-x-2">
+                <FormLabel>
+                  {t("data-source.ssl.connection-security")}
+                </FormLabel>
                 {onOpenInfoPanel && hasSslInfo && (
                   <button
                     type="button"
@@ -1920,16 +1884,14 @@ export function DataSourceForm({
                 engineType={basicInfo.engine}
                 disabled={!allowEdit}
               />
-            </div>
+            </FormField>
           )}
 
           {/* SSH */}
           {!hideAdvancedFeatures && showSSH && isPasswordAuth && (
-            <div className="sm:col-span-3 sm:col-start-1">
+            <FormField className="sm:col-span-3 sm:col-start-1">
               <div className="flex flex-row items-center gap-x-1">
-                <label className="textlabel block">
-                  {t("data-source.ssh-connection")}
-                </label>
+                <FormLabel>{t("data-source.ssh-connection")}</FormLabel>
                 {onOpenInfoPanel && hasSshInfo && (
                   <button
                     type="button"
@@ -1946,86 +1908,86 @@ export function DataSourceForm({
                 disabled={!allowEdit}
                 onChange={handleSSHChange}
               />
-            </div>
+            </FormField>
           )}
 
           {/* Extra connection parameters */}
           {hasExtraParameters && (
-            <div className="sm:col-span-3 sm:col-start-1">
+            <FormField className="sm:col-span-3 sm:col-start-1">
               <div className="flex flex-row items-center justify-between">
-                <label className="textlabel block">
-                  {t("data-source.extra-params.self")}
-                </label>
+                <FormLabel>{t("data-source.extra-params.self")}</FormLabel>
               </div>
-              <div className="textinfolabel text-sm mt-1 mb-2">
+              <FormDescription>
                 {t("data-source.extra-params.description")}
-              </div>
+              </FormDescription>
 
-              {allowEdit && (
-                <div className="flex mt-2 mb-2 gap-x-2 bg-control-bg p-3 rounded-sm">
-                  <Input
-                    value={newParamKey}
-                    className="w-full"
-                    placeholder={t("instance.parameter-name-placeholder")}
-                    onChange={(e) => setNewParamKey(e.target.value)}
-                  />
-                  <Input
-                    value={newParamValue}
-                    className="w-full"
-                    placeholder={t("instance.parameter-value-placeholder")}
-                    onChange={(e) => setNewParamValue(e.target.value)}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!newParamKey.trim()}
-                    onClick={addNewParameter}
-                  >
-                    Add
-                  </Button>
-                </div>
-              )}
-
-              {extraConnectionParamsList.map((param, index) => (
-                <div key={param.key} className="flex mt-2 gap-x-2">
-                  <Input
-                    className="w-full"
-                    value={param.key}
-                    disabled={!allowEdit}
-                    placeholder="Parameter name"
-                    onChange={(e) =>
-                      updateExtraConnectionParamKey(index, e.target.value)
-                    }
-                  />
-                  <Input
-                    className="w-full"
-                    value={param.value}
-                    disabled={!allowEdit}
-                    placeholder="Parameter value"
-                    onChange={(e) =>
-                      updateExtraConnectionParamValue(index, e.target.value)
-                    }
-                  />
-                  {allowEdit && (
+              <FormControlGroup className="mt-2">
+                {allowEdit && (
+                  <FormControlRow>
+                    <Input
+                      value={newParamKey}
+                      className="min-w-0 flex-1"
+                      placeholder={t("instance.parameter-name-placeholder")}
+                      onChange={(e) => setNewParamKey(e.target.value)}
+                    />
+                    <Input
+                      value={newParamValue}
+                      className="min-w-0 flex-1"
+                      placeholder={t("instance.parameter-value-placeholder")}
+                      onChange={(e) => setNewParamValue(e.target.value)}
+                    />
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeExtraConnectionParam(index)}
+                      variant="outline"
+                      className="shrink-0"
+                      disabled={!newParamKey.trim()}
+                      onClick={addNewParameter}
                     >
-                      Remove
+                      Add
                     </Button>
-                  )}
-                </div>
-              ))}
+                  </FormControlRow>
+                )}
+
+                {extraConnectionParamsList.map((param, index) => (
+                  <FormControlRow key={param.key}>
+                    <Input
+                      className="min-w-0 flex-1"
+                      value={param.key}
+                      disabled={!allowEdit}
+                      placeholder="Parameter name"
+                      onChange={(e) =>
+                        updateExtraConnectionParamKey(index, e.target.value)
+                      }
+                    />
+                    <Input
+                      className="min-w-0 flex-1"
+                      value={param.value}
+                      disabled={!allowEdit}
+                      placeholder="Parameter value"
+                      onChange={(e) =>
+                        updateExtraConnectionParamValue(index, e.target.value)
+                      }
+                    />
+                    {allowEdit && (
+                      <Button
+                        variant="destructive"
+                        className="shrink-0"
+                        onClick={() => removeExtraConnectionParam(index)}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </FormControlRow>
+                ))}
+              </FormControlGroup>
 
               {extraConnectionParamsList.length === 0 && (
-                <div className="textinfolabel text-sm italic">
+                <div className="textinfolabel text-sm italic mt-2">
                   {allowEdit
                     ? t("instance.no-params-yet-add-above")
                     : t("instance.no-extra-params-configured")}
                 </div>
               )}
-            </div>
+            </FormField>
           )}
         </>
       )}
@@ -2061,26 +2023,20 @@ function OracleSIDServiceNameInput({
 
   return (
     <div className="sm:col-span-3 sm:col-start-1">
-      <div className="textlabel flex gap-x-4 mb-2">
-        <label className="flex items-center gap-x-1.5 cursor-pointer">
-          <input
-            type="radio"
-            checked={mode === "sid"}
-            onChange={() => handleModeChange("sid")}
-            disabled={!allowEdit}
-          />
+      <RadioGroup
+        className="textlabel mb-2 gap-x-4"
+        value={mode}
+        onValueChange={(value) =>
+          handleModeChange(value as "sid" | "serviceName")
+        }
+      >
+        <RadioGroupItem value="sid" disabled={!allowEdit}>
           SID
-        </label>
-        <label className="flex items-center gap-x-1.5 cursor-pointer">
-          <input
-            type="radio"
-            checked={mode === "serviceName"}
-            onChange={() => handleModeChange("serviceName")}
-            disabled={!allowEdit}
-          />
+        </RadioGroupItem>
+        <RadioGroupItem value="serviceName" disabled={!allowEdit}>
           Service Name
-        </label>
-      </div>
+        </RadioGroupItem>
+      </RadioGroup>
       <Input
         value={mode === "sid" ? sid : serviceName}
         className="w-full"

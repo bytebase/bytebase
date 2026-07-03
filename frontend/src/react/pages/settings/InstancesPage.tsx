@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -459,10 +460,15 @@ function EditEnvironmentSheet({
           <SheetTitle>{t("common.environment")}</SheetTitle>
         </SheetHeader>
         <SheetBody>
-          <div className="flex flex-col gap-y-2">
+          <RadioGroup
+            className="flex-col items-stretch gap-y-2"
+            value={selected}
+            onValueChange={(value) => setSelected(value as string)}
+          >
             {environments.map((env) => (
-              <label
+              <RadioGroupItem
                 key={env.name}
+                value={env.name}
                 className={cn(
                   "flex items-center gap-x-3 px-3 py-2 rounded-xs cursor-pointer border",
                   selected === env.name
@@ -470,13 +476,6 @@ function EditEnvironmentSheet({
                     : "border-transparent hover:bg-control-bg"
                 )}
               >
-                <input
-                  type="radio"
-                  name="environment"
-                  checked={selected === env.name}
-                  onChange={() => setSelected(env.name)}
-                  className="accent-accent"
-                />
                 <div className="flex items-center gap-x-2">
                   <span
                     className="inline-block size-3 rounded-full"
@@ -486,9 +485,9 @@ function EditEnvironmentSheet({
                   />
                   <span>{env.title}</span>
                 </div>
-              </label>
+              </RadioGroupItem>
             ))}
-          </div>
+          </RadioGroup>
         </SheetBody>
         <SheetFooter>
           <Button variant="ghost" onClick={onClose}>

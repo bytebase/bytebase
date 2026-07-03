@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -592,22 +593,21 @@ function ProviderConfigForm({
             {t("settings.sso.form.authentication-style")}{" "}
             <span className="text-error">*</span>
           </label>
-          <div className="flex flex-col gap-y-3">
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="oauth2-auth-style"
-                checked={
-                  configForOAuth2.authStyle === OAuth2AuthStyle.IN_PARAMS
-                }
-                onChange={() =>
-                  onUpdateOAuth2({
-                    ...configForOAuth2,
-                    authStyle: OAuth2AuthStyle.IN_PARAMS,
-                  })
-                }
-                className="mt-1"
-              />
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForOAuth2.authStyle)}
+            onValueChange={(value) =>
+              onUpdateOAuth2({
+                ...configForOAuth2,
+                authStyle: Number(value) as OAuth2AuthStyle,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_PARAMS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
@@ -616,22 +616,12 @@ function ProviderConfigForm({
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
-            </label>
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="oauth2-auth-style"
-                checked={
-                  configForOAuth2.authStyle === OAuth2AuthStyle.IN_HEADER
-                }
-                onChange={() =>
-                  onUpdateOAuth2({
-                    ...configForOAuth2,
-                    authStyle: OAuth2AuthStyle.IN_HEADER,
-                  })
-                }
-                className="mt-1"
-              />
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_HEADER)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
@@ -640,8 +630,8 @@ function ProviderConfigForm({
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
-            </label>
-          </div>
+            </RadioGroupItem>
+          </RadioGroup>
         </div>
 
         <div>
@@ -738,20 +728,21 @@ function ProviderConfigForm({
             {t("settings.sso.form.authentication-style")}{" "}
             <span className="text-error">*</span>
           </label>
-          <div className="flex flex-col gap-y-3">
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="oidc-auth-style"
-                checked={configForOIDC.authStyle === OAuth2AuthStyle.IN_PARAMS}
-                onChange={() =>
-                  onUpdateOIDC({
-                    ...configForOIDC,
-                    authStyle: OAuth2AuthStyle.IN_PARAMS,
-                  })
-                }
-                className="mt-1"
-              />
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForOIDC.authStyle)}
+            onValueChange={(value) =>
+              onUpdateOIDC({
+                ...configForOIDC,
+                authStyle: Number(value) as OAuth2AuthStyle,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_PARAMS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
@@ -760,20 +751,12 @@ function ProviderConfigForm({
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
-            </label>
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="oidc-auth-style"
-                checked={configForOIDC.authStyle === OAuth2AuthStyle.IN_HEADER}
-                onChange={() =>
-                  onUpdateOIDC({
-                    ...configForOIDC,
-                    authStyle: OAuth2AuthStyle.IN_HEADER,
-                  })
-                }
-                className="mt-1"
-              />
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(OAuth2AuthStyle.IN_HEADER)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
@@ -782,8 +765,8 @@ function ProviderConfigForm({
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
-            </label>
-          </div>
+            </RadioGroupItem>
+          </RadioGroup>
         </div>
 
         <div>
@@ -920,24 +903,25 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-protocol")}{" "}
             <span className="text-error">*</span>
           </label>
-          <div className="flex flex-col gap-y-3">
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="ldap-security"
-                checked={
-                  configForLDAP.securityProtocol ===
-                  LDAPIdentityProviderConfig_SecurityProtocol.START_TLS
-                }
-                onChange={() =>
-                  onUpdateLDAP({
-                    ...configForLDAP,
-                    securityProtocol:
-                      LDAPIdentityProviderConfig_SecurityProtocol.START_TLS,
-                  })
-                }
-                className="mt-1"
-              />
+          <RadioGroup
+            className="flex-col items-stretch gap-y-3"
+            value={String(configForLDAP.securityProtocol)}
+            onValueChange={(value) =>
+              onUpdateLDAP({
+                ...configForLDAP,
+                securityProtocol: Number(
+                  value
+                ) as LDAPIdentityProviderConfig_SecurityProtocol,
+              })
+            }
+          >
+            <RadioGroupItem
+              value={String(
+                LDAPIdentityProviderConfig_SecurityProtocol.START_TLS
+              )}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.starttls")}
@@ -946,24 +930,12 @@ function ProviderConfigForm({
                   {t("settings.sso.form.starttls-description")}
                 </div>
               </div>
-            </label>
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="ldap-security"
-                checked={
-                  configForLDAP.securityProtocol ===
-                  LDAPIdentityProviderConfig_SecurityProtocol.LDAPS
-                }
-                onChange={() =>
-                  onUpdateLDAP({
-                    ...configForLDAP,
-                    securityProtocol:
-                      LDAPIdentityProviderConfig_SecurityProtocol.LDAPS,
-                  })
-                }
-                className="mt-1"
-              />
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(LDAPIdentityProviderConfig_SecurityProtocol.LDAPS)}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">
                   {t("settings.sso.form.ldaps")}
@@ -972,32 +944,22 @@ function ProviderConfigForm({
                   {t("settings.sso.form.ldaps-description")}
                 </div>
               </div>
-            </label>
-            <label className="flex items-start gap-x-3 cursor-pointer">
-              <input
-                type="radio"
-                name="ldap-security"
-                checked={
-                  configForLDAP.securityProtocol ===
-                  LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED
-                }
-                onChange={() =>
-                  onUpdateLDAP({
-                    ...configForLDAP,
-                    securityProtocol:
-                      LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED,
-                  })
-                }
-                className="mt-1"
-              />
+            </RadioGroupItem>
+            <RadioGroupItem
+              value={String(
+                LDAPIdentityProviderConfig_SecurityProtocol.SECURITY_PROTOCOL_UNSPECIFIED
+              )}
+              className="items-start gap-x-3"
+              radioClassName="mt-1"
+            >
               <div>
                 <div className="font-medium">{t("settings.sso.form.none")}</div>
                 <div className="text-sm text-gray-600">
                   {t("settings.sso.form.none-description")}
                 </div>
               </div>
-            </label>
-          </div>
+            </RadioGroupItem>
+          </RadioGroup>
         </div>
 
         <div>
@@ -1703,29 +1665,48 @@ function CreateWizardDrawer({
                       {t("settings.sso.form.type-description")}
                     </p>
                   </div>
-                  <div className="max-w-2xl mx-auto w-full">
+                  <RadioGroup
+                    className="max-w-2xl mx-auto w-full flex-col items-stretch gap-4"
+                    value={String(selectedType)}
+                    onValueChange={(value) => {
+                      const item = PROVIDER_TYPE_LIST.find(
+                        (item) => String(item.type) === value
+                      );
+                      if (
+                        item &&
+                        useAppStore.getState().hasFeature(item.feature)
+                      ) {
+                        handleTypeChange(item.type);
+                      }
+                    }}
+                  >
                     {PROVIDER_TYPE_LIST.map((item) => {
                       const Icon = getProviderIcon(item.type);
                       const hasFeature = useAppStore
                         .getState()
                         .hasFeature(item.feature);
                       return (
-                        <label
+                        <div
                           key={item.type}
-                          className={`block border rounded-sm mb-4 p-4 transition-colors cursor-pointer ${
+                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
                             selectedType === item.type
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
                           } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => {
+                            if (hasFeature) {
+                              handleTypeChange(item.type);
+                            }
+                          }}
                         >
                           <div className="flex items-start gap-x-3">
-                            <input
-                              type="radio"
-                              name="provider-type"
-                              checked={selectedType === item.type}
+                            <RadioGroupItem
+                              value={String(item.type)}
+                              aria-label={identityProviderTypeToString(
+                                item.type
+                              )}
                               disabled={!hasFeature}
-                              onChange={() => handleTypeChange(item.type)}
-                              className="mt-1.5"
+                              radioClassName="mt-1.5"
                             />
                             <Icon
                               className="w-6 h-6 mt-1 shrink-0"
@@ -1742,10 +1723,10 @@ function CreateWizardDrawer({
                               </p>
                             </div>
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
-                  </div>
+                  </RadioGroup>
                 </div>
               )}
 
@@ -1760,29 +1741,45 @@ function CreateWizardDrawer({
                       {t("settings.sso.form.template-description")}
                     </p>
                   </div>
-                  <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <RadioGroup
+                    className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    value={selectedTemplate?.title ?? ""}
+                    onValueChange={(value) => {
+                      const template = templateList.find(
+                        (template) => template.title === value
+                      );
+                      if (
+                        template &&
+                        useAppStore.getState().hasFeature(template.feature)
+                      ) {
+                        applyTemplate(template);
+                      }
+                    }}
+                  >
                     {templateList.map((tmpl) => {
                       const Icon = getTemplateIcon(tmpl.title);
                       const hasFeature = useAppStore
                         .getState()
                         .hasFeature(tmpl.feature);
                       return (
-                        <label
+                        <div
                           key={tmpl.title}
                           className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
                             selectedTemplate?.title === tmpl.title
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
                           } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => {
+                            if (hasFeature) {
+                              applyTemplate(tmpl);
+                            }
+                          }}
                         >
                           <div className="flex items-center gap-x-3">
-                            <input
-                              type="radio"
-                              name="template"
-                              checked={selectedTemplate?.title === tmpl.title}
+                            <RadioGroupItem
+                              value={tmpl.title}
+                              aria-label={tmpl.title}
                               disabled={!hasFeature}
-                              onChange={() => applyTemplate(tmpl)}
-                              className="shrink-0"
                             />
                             <Icon
                               className="w-8 h-8 shrink-0"
@@ -1797,10 +1794,10 @@ function CreateWizardDrawer({
                               </p>
                             </div>
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
-                  </div>
+                  </RadioGroup>
                 </div>
               )}
 
