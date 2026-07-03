@@ -27,6 +27,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+just for testing
+
 const (
 	issuer = "bytebase"
 	// Signing key section. For now, this is only used for signing, not for verifying since we only
