@@ -1203,28 +1203,26 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
 		}
-		if !plan.Config.GetHasRollout() {
-			approvalInputVersion := plan.Config.GetApprovalInputVersion()
-			updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone:  false,
-					ApprovalInputVersion: approvalInputVersion,
-				},
-			}, approvalInputVersion, issue.Payload.Labels)
+		approvalInputVersion := plan.Config.GetApprovalInputVersion()
+		updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollout(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  false,
+				ApprovalInputVersion: approvalInputVersion,
+			},
+		}, approvalInputVersion, issue.Payload.Labels)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to reset approval finding after issue label update"))
+		}
+		if updated {
+			updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+				ProjectIDs: []string{issue.ProjectID},
+				UID:        &issue.UID,
+			})
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to reset approval finding after issue label update"))
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get updated issue"))
 			}
-			if updated {
-				updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-					ProjectIDs: []string{issue.ProjectID},
-					UID:        &issue.UID,
-				})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get updated issue"))
-				}
-				issue = updatedIssue
-				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
-			}
+			issue = updatedIssue
+			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 		}
 	}
 

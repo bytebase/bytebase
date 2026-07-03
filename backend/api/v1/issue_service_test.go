@@ -29,6 +29,7 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	updateIssueLabels(ctx, t, service, issue, []string{"environment:staging"})
 
 	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, []string{"environment:staging"}, got.Payload.GetLabels())
 	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 }
@@ -47,8 +48,24 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	updateIssueLabels(ctx, t, service, issue, []string{"environment:staging"})
 
 	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, []string{"environment:staging"}, got.Payload.GetLabels())
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	updateIssueLabels(ctx, t, service, issue, []string{" environment:prod ", "environment:prod"})
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, []string{"environment:prod"}, got.Payload.GetLabels())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Len(t, service.bus.ApprovalCheckChan, 0)
 }
 
 func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store {

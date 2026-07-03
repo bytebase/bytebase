@@ -316,13 +316,9 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx contex
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to marshal payload")
 	}
-	canonicalLabels := CanonicalizeIssueLabels(labels)
-	if canonicalLabels == nil {
-		canonicalLabels = []string{}
-	}
-	labelBytes, err := json.Marshal(canonicalLabels)
+	labelBytes, err := marshalCanonicalIssueLabels(labels)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal issue labels")
+		return false, err
 	}
 
 	q := qb.Q().Space(`
@@ -354,6 +350,60 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx contex
 		return false, errors.Wrapf(err, "failed to inspect issue update")
 	}
 	return rowsAffected > 0, nil
+}
+
+func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollout(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64, labels []string) (bool, error) {
+	p, err := protojson.Marshal(payload)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to marshal payload")
+	}
+	labelBytes, err := marshalCanonicalIssueLabels(labels)
+	if err != nil {
+		return false, err
+	}
+
+	q := qb.Q().Space(`
+		UPDATE issue
+		SET
+			updated_at = ?,
+			payload = payload || ?
+		WHERE project = ?
+		  AND id = ?
+		  AND COALESCE(payload->'labels', '[]'::jsonb) = ?::jsonb
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = issue.project
+			  AND plan.id = issue.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+			  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
+		  )`, time.Now(), p, projectID, uid, string(labelBytes), approvalInputVersion)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to inspect issue update")
+	}
+	return rowsAffected > 0, nil
+}
+
+func marshalCanonicalIssueLabels(labels []string) ([]byte, error) {
+	canonicalLabels := CanonicalizeIssueLabels(labels)
+	if canonicalLabels == nil {
+		canonicalLabels = []string{}
+	}
+	labelBytes, err := json.Marshal(canonicalLabels)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal issue labels")
+	}
+	return labelBytes, nil
 }
 
 // ResetIssueApprovalFindingIfPlanApprovalInputVersion avoids clobbering approval work that raced
