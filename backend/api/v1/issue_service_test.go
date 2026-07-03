@@ -34,6 +34,21 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 }
 
+func TestUpdateIssueLabelsClearedBeforeRolloutResetsApproval(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	updateIssueLabels(ctx, t, service, issue, nil)
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Empty(t, got.Payload.GetLabels())
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Len(t, service.bus.ApprovalCheckChan, 1)
+}
+
 func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -51,6 +66,7 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	require.Equal(t, []string{"environment:staging"}, got.Payload.GetLabels())
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Len(t, service.bus.ApprovalCheckChan, 0)
 }
 
 func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {

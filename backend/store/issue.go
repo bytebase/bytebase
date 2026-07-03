@@ -328,7 +328,7 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx contex
 			payload = payload || ?
 		WHERE project = ?
 		  AND id = ?
-		  AND COALESCE(payload->'labels', '[]'::jsonb) = ?::jsonb
+		  AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb
 		  AND EXISTS (
 			SELECT 1
 			FROM plan
@@ -369,7 +369,7 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollou
 			payload = payload || ?
 		WHERE project = ?
 		  AND id = ?
-		  AND COALESCE(payload->'labels', '[]'::jsonb) = ?::jsonb
+		  AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb
 		  AND EXISTS (
 			SELECT 1
 			FROM plan

@@ -445,6 +445,54 @@ func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsUpdatesEmptyLabels
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 }
 
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsUpdatesJSONNullLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels:    []string{"prod"},
+			RiskLevel: storepb.RiskLevel_LOW,
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{RemoveLabels: true})
+	require.NoError(t, err)
+	require.Empty(t, updatedIssue.Payload.GetLabels())
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		},
+	}, 2, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Empty(t, got.Payload.GetLabels())
+	require.Equal(t, storepb.RiskLevel_HIGH, got.Payload.GetRiskLevel())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
 func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsSkipsStaleLabels(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)
@@ -533,6 +581,55 @@ func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRolloutUpdate
 
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
 	require.NoError(t, err)
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRolloutUpdatesJSONNullLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels: []string{"prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{RemoveLabels: true})
+	require.NoError(t, err)
+	require.Empty(t, updatedIssue.Payload.GetLabels())
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollout(ctx, "project-a", issue.UID, &storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  false,
+			ApprovalInputVersion: 2,
+		},
+	}, 2, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Empty(t, got.Payload.GetLabels())
 	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 }
