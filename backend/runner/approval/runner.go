@@ -411,10 +411,19 @@ type specTarget struct {
 // unfoldDatabaseTargets unfolds database groups and returns all database targets.
 // If the targets list contains a single database group reference, it unfolds it to individual databases.
 // Otherwise, it returns the targets as-is.
-func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets []string, projectID string, allDatabases []*store.DatabaseMessage) ([]string, error) {
+func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets []string, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]string, error) {
 	// Check if this is a database group (single target)
 	if len(dbTargets) == 1 {
-		if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(dbTargets[0]); err == nil {
+		target := dbTargets[0]
+		if databaseGroup != nil && databaseGroup.Name == target {
+			var unfolded []string
+			for _, db := range databaseGroup.MatchedDatabases {
+				unfolded = append(unfolded, db.Name)
+			}
+			return unfolded, nil
+		}
+
+		if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			// This is a database group - unfold it
 			databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 				ResourceID: &databaseGroupID,
@@ -444,21 +453,80 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 }
 
 // unfoldSpecTargets unfolds database groups in specs and returns all database targets.
-func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]specTarget, error) {
-	// Batch fetch all databases for the project
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+// allDatabases must be nil or the full unfiltered project database list; callers pass it
+// through to keep database-group matching and direct database lookup on the same snapshot.
+func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]specTarget, error) {
+	var databaseMap map[string]*store.DatabaseMessage
+	buildDatabaseMap := func(databases []*store.DatabaseMessage) map[string]*store.DatabaseMessage {
+		m := make(map[string]*store.DatabaseMessage, len(databases))
+		for _, db := range databases {
+			m[common.FormatDatabase(db.InstanceID, db.DatabaseName)] = db
+		}
+		return m
 	}
-
-	// Build a map for quick lookup: instanceID/databaseName -> DatabaseMessage
-	databaseMap := make(map[string]*store.DatabaseMessage)
-	for _, db := range allDatabases {
-		key := common.FormatDatabase(db.InstanceID, db.DatabaseName)
-		databaseMap[key] = db
+	getAllDatabases := func() error {
+		if allDatabases == nil {
+			var err error
+			allDatabases, err = stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+			if err != nil {
+				return errors.Wrapf(err, "failed to list databases for project %q", projectID)
+			}
+		}
+		if databaseMap == nil {
+			databaseMap = buildDatabaseMap(allDatabases)
+		}
+		return nil
 	}
+	getDatabase := func(target string) (*store.DatabaseMessage, error) {
+		if databaseMap != nil {
+			if db := databaseMap[target]; db != nil {
+				return db, nil
+			}
+		}
 
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse database target %q", target)
+		}
+		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+			ProjectID:    &projectID,
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database %q", target)
+		}
+		if len(databases) == 0 {
+			return nil, errors.Errorf("database %q not found", target)
+		}
+		return databases[0], nil
+	}
 	var targets []specTarget
+	appendTargets := func(dbTargets []string, sheetSha256 string) error {
+		if len(dbTargets) == 1 {
+			if _, _, err := common.GetProjectIDDatabaseGroupID(dbTargets[0]); err == nil {
+				if err := getAllDatabases(); err != nil {
+					return err
+				}
+			}
+		}
+
+		unfolded, err := unfoldDatabaseTargets(ctx, stores, dbTargets, projectID, allDatabases, databaseGroup)
+		if err != nil {
+			return err
+		}
+		for _, target := range unfolded {
+			db, err := getDatabase(target)
+			if err != nil {
+				return err
+			}
+			targets = append(targets, specTarget{
+				database:    db,
+				sheetSha256: sheetSha256,
+			})
+		}
+		return nil
+	}
 
 	for _, spec := range specs {
 		switch config := spec.Config.(type) {
@@ -479,37 +547,13 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 			})
 
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ChangeDatabaseConfig.Targets, projectID, allDatabases)
-			if err != nil {
+			if err := appendTargets(config.ChangeDatabaseConfig.Targets, config.ChangeDatabaseConfig.SheetSha256); err != nil {
 				return nil, err
-			}
-
-			for _, target := range dbTargets {
-				db := databaseMap[target]
-				if db == nil {
-					return nil, errors.Errorf("database %q not found", target)
-				}
-				targets = append(targets, specTarget{
-					database:    db,
-					sheetSha256: config.ChangeDatabaseConfig.SheetSha256,
-				})
 			}
 
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ExportDataConfig.Targets, projectID, allDatabases)
-			if err != nil {
+			if err := appendTargets(config.ExportDataConfig.Targets, config.ExportDataConfig.SheetSha256); err != nil {
 				return nil, err
-			}
-
-			for _, target := range dbTargets {
-				db := databaseMap[target]
-				if db == nil {
-					return nil, errors.Errorf("database %q not found", target)
-				}
-				targets = append(targets, specTarget{
-					database:    db,
-					sheetSha256: config.ExportDataConfig.SheetSha256,
-				})
 			}
 		default:
 		}
@@ -575,7 +619,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 
 	// Unfold database groups and get all targets
-	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID, nil, nil)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
@@ -671,7 +715,7 @@ func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, is
 	}
 
 	// Unfold database groups and get all targets (only EXPORT_DATA targets)
-	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID, nil, nil)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
