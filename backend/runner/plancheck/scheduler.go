@@ -86,49 +86,60 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	}
 
 	for _, c := range claimed {
-		go s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID)
+		go s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion)
 	}
 }
 
-func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int64, planUID int64) {
+func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int64, planUID int64, approvalInputVersion int64) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
-	planCheckRef := bus.PlanCheckRunRef{ProjectID: projectID, UID: uid}
+	planCheckRef := bus.PlanCheckRunRef{ProjectID: projectID, UID: uid, ApprovalInputVersion: approvalInputVersion}
 	s.bus.RunningPlanCheckRunsCancelFunc.Store(planCheckRef, cancel)
 	defer s.bus.RunningPlanCheckRunsCancelFunc.Delete(planCheckRef)
 
 	// Fetch plan to derive check targets at runtime
 	plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{ProjectID: projectID, UID: &planUID})
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		return
 	}
 	if plan == nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, "plan not found")
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, "plan not found")
+		return
+	}
+
+	if plan.Config.GetApprovalInputVersion() != approvalInputVersion {
+		slog.Info("skip stale plan check run",
+			slog.String("project", projectID),
+			slog.Int64("plan_id", planUID),
+			slog.Int64("plan_check_run_id", uid),
+			slog.Int64("claimed_approval_input_version", approvalInputVersion),
+			slog.Int64("current_approval_input_version", plan.Config.GetApprovalInputVersion()))
+		s.markPlanCheckRunCanceled(ctxWithCancel, projectID, uid, approvalInputVersion, "stale plan check run")
 		return
 	}
 
 	project, err := s.store.GetProjectByResourceID(ctxWithCancel, plan.ProjectID)
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		return
 	}
 	if project == nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, "project not found")
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, "project not found")
 		return
 	}
 
 	// Get database group if needed (for spec expansion)
 	databaseGroup, err := s.getDatabaseGroupForPlan(ctxWithCancel, plan)
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		return
 	}
 
 	// Derive check targets from plan
 	targets, err := DeriveCheckTargets(ctxWithCancel, s.store, project, plan, databaseGroup)
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		return
 	}
 
@@ -143,26 +154,37 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 	}
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			s.markPlanCheckRunCanceled(ctxWithCancel, projectID, uid, err.Error())
+			s.markPlanCheckRunCanceled(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		} else {
-			s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
+			s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		}
 	} else {
-		s.markPlanCheckRunDone(ctxWithCancel, projectID, uid, planUID, results)
+		s.markPlanCheckRunDone(ctxWithCancel, projectID, uid, planUID, approvalInputVersion, results)
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, uid int64, planUID int64, results []*storepb.PlanCheckRunResult_Result) {
+func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, uid int64, planUID int64, approvalInputVersion int64, results []*storepb.PlanCheckRunResult_Result) {
 	result := &storepb.PlanCheckRunResult{
-		Results: results,
+		Results:              results,
+		ApprovalInputVersion: approvalInputVersion,
 	}
-	if err := s.store.UpdatePlanCheckRun(ctx,
+	updated, err := s.store.UpdatePlanCheckRunIfApprovalInputVersion(ctx,
 		projectID,
 		store.PlanCheckRunStatusDone,
 		result,
 		uid,
-	); err != nil {
+		approvalInputVersion,
+	)
+	if err != nil {
 		slog.Error("failed to mark plan check run done", log.BBError(err))
+		return
+	}
+	if !updated {
+		slog.Info("skip stale plan check run done update",
+			slog.String("project", projectID),
+			slog.Int64("plan_id", planUID),
+			slog.Int64("plan_check_run_id", uid),
+			slog.Int64("claimed_approval_input_version", approvalInputVersion))
 		return
 	}
 
@@ -181,31 +203,51 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, 
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, projectID string, uid int64, reason string) {
+func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, projectID string, uid int64, approvalInputVersion int64, reason string) {
 	result := &storepb.PlanCheckRunResult{
-		Error: reason,
+		Error:                reason,
+		ApprovalInputVersion: approvalInputVersion,
 	}
-	if err := s.store.UpdatePlanCheckRun(ctx,
+	updated, err := s.store.UpdatePlanCheckRunIfApprovalInputVersion(ctx,
 		projectID,
 		store.PlanCheckRunStatusFailed,
 		result,
 		uid,
-	); err != nil {
+		approvalInputVersion,
+	)
+	if err != nil {
 		slog.Error("failed to mark plan check run failed", log.BBError(err))
+		return
+	}
+	if !updated {
+		slog.Info("skip stale plan check run failed update",
+			slog.String("project", projectID),
+			slog.Int64("plan_check_run_id", uid),
+			slog.Int64("claimed_approval_input_version", approvalInputVersion))
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, projectID string, uid int64, reason string) {
+func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, projectID string, uid int64, approvalInputVersion int64, reason string) {
 	result := &storepb.PlanCheckRunResult{
-		Error: reason,
+		Error:                reason,
+		ApprovalInputVersion: approvalInputVersion,
 	}
-	if err := s.store.UpdatePlanCheckRun(ctx,
+	updated, err := s.store.UpdatePlanCheckRunIfApprovalInputVersion(ctx,
 		projectID,
 		store.PlanCheckRunStatusCanceled,
 		result,
 		uid,
-	); err != nil {
+		approvalInputVersion,
+	)
+	if err != nil {
 		slog.Error("failed to mark plan check run canceled", log.BBError(err))
+		return
+	}
+	if !updated {
+		slog.Info("skip stale plan check run canceled update",
+			slog.String("project", projectID),
+			slog.Int64("plan_check_run_id", uid),
+			slog.Int64("claimed_approval_input_version", approvalInputVersion))
 	}
 }
 

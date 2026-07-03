@@ -73,12 +73,13 @@ func (Signal_Type) EnumDescriptor() ([]byte, []int) {
 
 // Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coordination.
 type Signal struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          Signal_Type            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.Signal_Type" json:"type,omitempty"`
-	Uid           int64                  `protobuf:"varint,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	Project       string                 `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Type                 Signal_Type            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.Signal_Type" json:"type,omitempty"`
+	Uid                  int64                  `protobuf:"varint,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Project              string                 `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
+	ApprovalInputVersion int64                  `protobuf:"varint,4,opt,name=approval_input_version,json=approvalInputVersion,proto3" json:"approval_input_version,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Signal) Reset() {
@@ -132,15 +133,23 @@ func (x *Signal) GetProject() string {
 	return ""
 }
 
+func (x *Signal) GetApprovalInputVersion() int64 {
+	if x != nil {
+		return x.ApprovalInputVersion
+	}
+	return 0
+}
+
 var File_store_signal_proto protoreflect.FileDescriptor
 
 const file_store_signal_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/signal.proto\x12\x0ebytebase.store\"\xb3\x01\n" +
+	"\x12store/signal.proto\x12\x0ebytebase.store\"\xe9\x01\n" +
 	"\x06Signal\x12/\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.Signal.TypeR\x04type\x12\x10\n" +
 	"\x03uid\x18\x02 \x01(\x03R\x03uid\x12\x18\n" +
-	"\aproject\x18\x03 \x01(\tR\aproject\"L\n" +
+	"\aproject\x18\x03 \x01(\tR\aproject\x124\n" +
+	"\x16approval_input_version\x18\x04 \x01(\x03R\x14approvalInputVersion\"L\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15CANCEL_PLAN_CHECK_RUN\x10\x01\x12\x13\n" +

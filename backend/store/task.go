@@ -503,6 +503,65 @@ func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64
 	}
 	defer tx.Rollback()
 
+	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return tasks, nil
+}
+
+// CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
+// If approvalInputVersion is set, the transaction creates no tasks unless the plan
+// still has that approval input version.
+func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, approvalInputVersion *int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	var updatedPlanUID int64
+	if err := tx.QueryRowContext(ctx, `
+		UPDATE plan
+		SET
+			updated_at = CASE
+				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN $1
+				ELSE updated_at
+			END,
+			config = CASE
+				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
+				ELSE config
+			END
+		WHERE project = $2
+		  AND id = $3
+		  AND (
+			$4::bigint IS NULL
+			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
+		  )
+		RETURNING id`,
+		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil, nil
+		}
+		return false, nil, errors.Wrapf(err, "failed to mark plan has rollout")
+	}
+
+	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
+	if err != nil {
+		return false, nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return true, tasks, nil
+}
+
+func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
 		ProjectID: projectID,
@@ -554,14 +613,7 @@ func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create tasks")
 		}
-		if err := tx.Commit(); err != nil {
-			return nil, errors.Wrapf(err, "failed to commit tx")
-		}
 		return tasks, nil
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return []*TaskMessage{}, nil
