@@ -459,10 +459,19 @@ type specTarget struct {
 // unfoldDatabaseTargets unfolds database groups and returns all database targets.
 // If the targets list contains a single database group reference, it unfolds it to individual databases.
 // Otherwise, it returns the targets as-is.
-func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets []string, projectID string, allDatabases []*store.DatabaseMessage) ([]string, error) {
+func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets []string, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]string, error) {
 	// Check if this is a database group (single target)
 	if len(dbTargets) == 1 {
-		if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(dbTargets[0]); err == nil {
+		target := dbTargets[0]
+		if databaseGroup != nil && databaseGroup.Name == target {
+			var unfolded []string
+			for _, db := range databaseGroup.MatchedDatabases {
+				unfolded = append(unfolded, db.Name)
+			}
+			return unfolded, nil
+		}
+
+		if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			// This is a database group - unfold it
 			databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 				ResourceID: &databaseGroupID,
@@ -492,11 +501,14 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 }
 
 // unfoldSpecTargets unfolds database groups in specs and returns all database targets.
-func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]specTarget, error) {
+func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]specTarget, error) {
 	// Batch fetch all databases for the project
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+	if allDatabases == nil {
+		var err error
+		allDatabases, err = stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+		}
 	}
 
 	// Build a map for quick lookup: instanceID/databaseName -> DatabaseMessage
@@ -527,7 +539,7 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 			})
 
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ChangeDatabaseConfig.Targets, projectID, allDatabases)
+			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ChangeDatabaseConfig.Targets, projectID, allDatabases, databaseGroup)
 			if err != nil {
 				return nil, err
 			}
@@ -544,7 +556,7 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 			}
 
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ExportDataConfig.Targets, projectID, allDatabases)
+			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ExportDataConfig.Targets, projectID, allDatabases, databaseGroup)
 			if err != nil {
 				return nil, err
 			}
@@ -616,10 +628,28 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 	approvalInputVersion := plan.Config.GetApprovalInputVersion()
 
-	checksExpected, err := planChecksExpectedForApproval(ctx, stores, nil, plan)
+	project, err := stores.GetProjectByResourceID(ctx, plan.ProjectID)
+	if err != nil {
+		return nil, approvalInputVersion, false, errors.Wrap(err, "failed to get project")
+	}
+	if project == nil {
+		return nil, approvalInputVersion, false, errors.Errorf("project %s not found", plan.ProjectID)
+	}
+
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
+	if err != nil {
+		return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
+	}
+
+	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, allDatabases)
+	if err != nil {
+		return nil, approvalInputVersion, false, err
+	}
+	checkTargets, err := plancheck.DeriveCheckTargets(ctx, stores, project, plan, databaseGroup)
 	if err != nil {
 		return nil, approvalInputVersion, false, errors.Wrap(err, "failed to derive plan check targets")
 	}
+	checksExpected := len(checkTargets) > 0
 
 	planCheckRun, err := stores.GetPlanCheckRun(ctx, issue.ProjectID, plan.UID)
 	if err != nil {
@@ -695,7 +725,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 
 	// Unfold database groups and get all targets
-	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID, allDatabases, databaseGroup)
 	if err != nil {
 		return nil, approvalInputVersion, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
@@ -789,7 +819,7 @@ func planChecksExpectedForApproval(ctx context.Context, stores *store.Store, pro
 		}
 	}
 
-	databaseGroup, err := getDatabaseGroupForPlanApproval(ctx, stores, plan)
+	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, nil)
 	if err != nil {
 		return false, err
 	}
@@ -799,54 +829,6 @@ func planChecksExpectedForApproval(ctx context.Context, stores *store.Store, pro
 		return false, err
 	}
 	return len(targets) > 0, nil
-}
-
-func getDatabaseGroupForPlanApproval(ctx context.Context, stores *store.Store, plan *store.PlanMessage) (*v1pb.DatabaseGroup, error) {
-	for _, spec := range plan.Config.GetSpecs() {
-		cfg, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
-		if !ok {
-			continue
-		}
-		if len(cfg.ChangeDatabaseConfig.Targets) != 1 {
-			continue
-		}
-
-		target := cfg.ChangeDatabaseConfig.Targets[0]
-		_, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target)
-		if err != nil {
-			continue
-		}
-
-		dbGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-			ResourceID: &databaseGroupID,
-			ProjectIDs: []string{plan.ProjectID},
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database group %q", target)
-		}
-		if dbGroup == nil {
-			return nil, errors.Errorf("database group %q not found", target)
-		}
-
-		allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
-		}
-
-		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get matched databases for group %q", databaseGroupID)
-		}
-
-		result := &v1pb.DatabaseGroup{Name: target}
-		for _, db := range matchedDatabases {
-			result.MatchedDatabases = append(result.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-				Name: common.FormatDatabase(db.InstanceID, db.DatabaseName),
-			})
-		}
-		return result, nil
-	}
-	return nil, nil
 }
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
@@ -863,7 +845,7 @@ func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, is
 	}
 
 	// Unfold database groups and get all targets (only EXPORT_DATA targets)
-	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID, nil, nil)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}

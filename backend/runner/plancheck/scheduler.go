@@ -10,14 +10,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -130,7 +127,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 	}
 
 	// Get database group if needed (for spec expansion)
-	databaseGroup, err := s.getDatabaseGroupForPlan(ctxWithCancel, plan)
+	databaseGroup, err := GetDatabaseGroupForPlan(ctxWithCancel, s.store, plan, nil)
 	if err != nil {
 		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, approvalInputVersion, err.Error())
 		return
@@ -249,61 +246,4 @@ func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, projectID stri
 			slog.Int64("plan_check_run_id", uid),
 			slog.Int64("claimed_approval_input_version", approvalInputVersion))
 	}
-}
-
-// getDatabaseGroupForPlan checks if the plan targets a database group and returns it with matched databases.
-// Returns nil if the plan does not target a database group.
-func (s *Scheduler) getDatabaseGroupForPlan(ctx context.Context, plan *store.PlanMessage) (*v1pb.DatabaseGroup, error) {
-	for _, spec := range plan.Config.Specs {
-		cfg, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig)
-		if !ok {
-			continue
-		}
-		if len(cfg.ChangeDatabaseConfig.Targets) != 1 {
-			continue
-		}
-
-		target := cfg.ChangeDatabaseConfig.Targets[0]
-		_, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target)
-		if err != nil {
-			// Not a database group reference, skip
-			continue
-		}
-
-		// Found a database group reference - fetch and expand it
-		dbGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-			ResourceID: &databaseGroupID,
-			ProjectIDs: []string{plan.ProjectID},
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database group %q", target)
-		}
-		if dbGroup == nil {
-			return nil, errors.Errorf("database group %q not found", target)
-		}
-
-		// Get all databases in the project to compute matches
-		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
-		}
-
-		// Compute matched databases using CEL expression
-		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get matched databases for group %q", databaseGroupID)
-		}
-
-		// Convert to v1pb.DatabaseGroup format
-		result := &v1pb.DatabaseGroup{
-			Name: target,
-		}
-		for _, db := range matchedDatabases {
-			result.MatchedDatabases = append(result.MatchedDatabases, &v1pb.DatabaseGroup_Database{
-				Name: common.FormatDatabase(db.InstanceID, db.DatabaseName),
-			})
-		}
-		return result, nil
-	}
-	return nil, nil
 }
