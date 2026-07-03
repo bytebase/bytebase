@@ -1113,6 +1113,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 	patch := &store.UpdateIssueMessage{}
 	var issueCommentCreates []*store.IssueCommentMessage
+	var labelsChanged bool
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
@@ -1164,6 +1165,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			if slices.Equal(issue.Payload.Labels, labels) {
 				continue
 			}
+			labelsChanged = true
 			if len(labels) == 0 {
 				patch.RemoveLabels = true
 			} else {
@@ -1191,6 +1193,39 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
+	}
+
+	if labelsChanged && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
+		}
+		if plan == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
+		}
+		if !plan.Config.GetHasRollout() {
+			approvalInputVersion := plan.Config.GetApprovalInputVersion()
+			updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
+				Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone:  false,
+					ApprovalInputVersion: approvalInputVersion,
+				},
+			}, approvalInputVersion, issue.Payload.Labels)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to reset approval finding after issue label update"))
+			}
+			if updated {
+				updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+					ProjectIDs: []string{issue.ProjectID},
+					UID:        &issue.UID,
+				})
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get updated issue"))
+				}
+				issue = updatedIssue
+				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+			}
+		}
 	}
 
 	for _, ic := range issueCommentCreates {
