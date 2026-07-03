@@ -1,13 +1,19 @@
 package approval
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/migrator"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -235,35 +241,252 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 	}].GetSqlSummaryReport().GetAffectedRows())
 }
 
-func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
+func TestDeriveCheckTargetsSkipsCreateDatabaseAndReleaseSpecs(t *testing.T) {
+	project := &store.ProjectMessage{ResourceID: "project"}
+	plan := &store.PlanMessage{
+		ProjectID: "project",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Release: "projects/project/releases/release",
+						},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Targets: []string{"instances/prod/databases/app"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got, err := plancheck.DeriveCheckTargets(context.Background(), nil, project, plan, nil)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, "instances/prod/databases/app", got[0].Target)
+}
+
+func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 	tests := []struct {
 		name         string
+		planVersion  int64
 		planCheckRun *store.PlanCheckRunMessage
-		want         bool
+		wantCurrent  bool
+		wantPending  bool
 	}{
 		{
-			name:         "nil plan check run is ready to evaluate",
+			name:         "nil run waits for plan check",
+			planVersion:  0,
 			planCheckRun: nil,
+			wantPending:  true,
 		},
 		{
-			name:         "AVAILABLE is not ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusAvailable},
-			want:         true,
+			name:        "available run is pending",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusAvailable,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantPending: true,
 		},
 		{
-			name:         "RUNNING is not ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusRunning},
-			want:         true,
+			name:        "running run is pending",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusRunning,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantPending: true,
 		},
 		{
-			name:         "DONE is ready",
-			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusDone},
+			name:        "done matching version is current",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+			},
+			wantCurrent: true,
+		},
+		{
+			name:        "done stale version is not current",
+			planVersion: 2,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: 1},
+			},
+		},
+		{
+			name:        "missing result defaults to version zero",
+			planVersion: 0,
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{},
+			},
+			wantCurrent: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, isPlanCheckRunPendingApprovalEvaluation(tt.planCheckRun))
+			current, pending := isPlanCheckRunCurrentForApprovalInputVersion(tt.planCheckRun, tt.planVersion)
+			require.Equal(t, tt.wantCurrent, current)
+			require.Equal(t, tt.wantPending, pending)
 		})
 	}
+}
+
+func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
+	database := &store.DatabaseMessage{
+		InstanceID:   "prod",
+		DatabaseName: "app",
+	}
+	databaseGroup := &v1pb.DatabaseGroup{
+		Name: "projects/project/databaseGroups/group",
+		MatchedDatabases: []*v1pb.DatabaseGroup_Database{{
+			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		}},
+	}
+
+	got, err := unfoldDatabaseTargets(
+		context.Background(),
+		// nil store is intentional: the resolved-group path must not touch the store.
+		nil,
+		[]string{databaseGroup.Name},
+		"project",
+		[]*store.DatabaseMessage{database},
+		databaseGroup,
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{common.FormatDatabase(database.InstanceID, database.DatabaseName)}, got)
+}
+
+func TestUnfoldDatabaseTargetsFallsBackWhenResolvedGroupNameDiffers(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	allDatabases := setupApprovalDatabaseGroupFixture(ctx, t, s)
+
+	got, err := unfoldDatabaseTargets(
+		ctx,
+		s,
+		[]string{"projects/project-a/databaseGroups/group"},
+		"project-a",
+		allDatabases,
+		&v1pb.DatabaseGroup{Name: "projects/project-a/databaseGroups/other"},
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{"instances/prod/databases/app"}, got)
+}
+
+func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{"instances/prod/databases/app"},
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	celVarsList, approvalInputVersion, done, err := buildCELVariablesForDatabaseChange(ctx, s, issue)
+	require.NoError(t, err)
+	require.False(t, done)
+	require.Nil(t, celVarsList)
+	require.EqualValues(t, 2, approvalInputVersion)
+
+	planCheckRun, err := s.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NotNil(t, planCheckRun)
+	require.Equal(t, store.PlanCheckRunStatusAvailable, planCheckRun.Status)
+	require.EqualValues(t, 2, planCheckRun.Result.GetApprovalInputVersion())
+}
+
+func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
+	t.Helper()
+
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+	`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
+	return s
+}
+
+func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *store.Store) []*store.DatabaseMessage {
+	t.Helper()
+
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "prod",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+	_, err = s.CreateDatabaseGroup(ctx, &store.DatabaseGroupMessage{
+		ProjectID:  "project-a",
+		ResourceID: "group",
+		Title:      "group",
+		Expression: &expr.Expr{Expression: `resource.database_name == "app"`},
+	})
+	require.NoError(t, err)
+
+	projectID := "project-a"
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	require.NoError(t, err)
+	return allDatabases
 }
