@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -380,6 +381,30 @@ func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 			require.Equal(t, tt.wantPending, pending)
 		})
 	}
+}
+
+func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
+	database := &store.DatabaseMessage{
+		InstanceID:   "instances/prod",
+		DatabaseName: "app",
+	}
+	databaseGroup := &v1pb.DatabaseGroup{
+		Name: "projects/project/databaseGroups/group",
+		MatchedDatabases: []*v1pb.DatabaseGroup_Database{{
+			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		}},
+	}
+
+	got, err := unfoldDatabaseTargets(
+		context.Background(),
+		nil,
+		[]string{databaseGroup.Name},
+		"project",
+		[]*store.DatabaseMessage{database},
+		databaseGroup,
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{common.FormatDatabase(database.InstanceID, database.DatabaseName)}, got)
 }
 
 func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing.T) {
