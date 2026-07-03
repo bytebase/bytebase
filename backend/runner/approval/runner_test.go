@@ -203,6 +203,42 @@ func TestApprovalTemplateMatchesUnspecifiedStatementSQLType(t *testing.T) {
 	a.Equal("Unspecified SQL type rule", approvalTemplate.Title)
 }
 
+func TestApprovalTemplateMatchesIssueLabels(t *testing.T) {
+	a := require.New(t)
+
+	celVars := map[string]any{
+		common.CELAttributeResourceProjectID: "project",
+		common.CELAttributeIssueLabels:       []string{"prod", "security"},
+	}
+	injectRiskLevelIntoCELVars([]map[string]any{celVars}, storepb.RiskLevel_HIGH)
+
+	approvalTemplate, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+		Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+			{
+				Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+				Condition: &expr.Expr{Expression: `"prod" in issue.labels && risk.level == "HIGH"`},
+				Template:  &storepb.ApprovalTemplate{Title: "Production label rule"},
+			},
+		},
+	}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, []map[string]any{celVars})
+	a.NoError(err)
+	a.NotNil(approvalTemplate)
+	a.Equal("Production label rule", approvalTemplate.Title)
+}
+
+func TestInjectIssueLabelsIntoCELVars(t *testing.T) {
+	celVarsList := []map[string]any{
+		{common.CELAttributeResourceProjectID: "project-a"},
+		{common.CELAttributeResourceProjectID: "project-a"},
+	}
+
+	injectIssueLabelsIntoCELVars(celVarsList, []string{" security ", "prod", "prod"})
+
+	for _, celVars := range celVarsList {
+		require.Equal(t, []string{"prod", "security"}, celVars[common.CELAttributeIssueLabels])
+	}
+}
+
 func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 	results := []*storepb.PlanCheckRunResult_Result{
 		{
