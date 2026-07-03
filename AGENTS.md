@@ -32,7 +32,7 @@ Bytebase is the standard for database development. Every product and engineering
 
 ### Frontend Code Changes
 
-1. **Fix** — Run `pnpm --dir frontend fix` to auto-fix ESLint + Biome issues (format, lint, organize imports)
+1. **Fix** — Run `pnpm --dir frontend fix` to auto-fix Biome issues (format, lint, organize imports)
 2. **Check** — Run `pnpm --dir frontend check` to validate without modifying files (for CI)
 3. **Type check** — Run `pnpm --dir frontend type-check`
 4. **Test** — Run `pnpm --dir frontend test`
@@ -73,7 +73,7 @@ pnpm --dir frontend i
 # Dev server
 pnpm --dir frontend dev
 
-# Fix (ESLint + Biome: format, lint, organize imports)
+# Fix (Biome: format, lint, organize imports)
 pnpm --dir frontend fix
 
 # Check (validate without modifying, for CI)
@@ -136,9 +136,9 @@ psql -U bbdev bbdev
   - **No Empty Objects**: Do not add empty JSON objects (e.g., `"key": {}`) to locale files. Remove any empty objects you encounter
 - **Button Spacing**: Use `gap-x-2` for ALL button groups (modals, drawers, toolbars, inline actions). Never use `space-x` for buttons. See `./frontend/.claude/BUTTON_SPACING_STANDARDIZATION.md` for full guidelines
 
-### React (New Code)
+### React
 
-The frontend is migrating from Vue to React. **All new UI code should be written in React.**
+The frontend is built entirely in React. **All UI code is React** — use the stack and component patterns below.
 
 **Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
 
@@ -146,7 +146,7 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
 - Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/react/components/ui/`
 - Use `useTranslation()` from `react-i18next` for i18n
-- Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens shared with the Vue layer
+- Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens, defined in `./frontend/src/assets/css/tailwind.css`
 
 **Shared UI primitives**:
 - For React UI code, prefer shared components from `./frontend/src/react/components/ui/` over native HTML controls or ad hoc styled elements
@@ -161,10 +161,9 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Custom utilities use `@utility`, design tokens use `@theme`
 - Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
 
-**Accessing Vue state from React**:
-- `useVueState(getter)` — React hook that subscribes to Vue reactive state (Pinia stores, refs, computed) via `useSyncExternalStore`. React components access stores directly — no bridge layer needed
-- React pages are self-contained: import Pinia stores, `router`, utility functions directly
-- React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked separately via `tsconfig.react.json` (excluded from vue-tsc)
+**State & build**:
+- React app state lives under `./frontend/src/react/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/react/router/`
+- React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked with `tsc --build` via `pnpm --dir frontend type-check`
 
 ## Naming
 
