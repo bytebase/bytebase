@@ -1,13 +1,19 @@
 package approval
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/migrator"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -235,7 +241,42 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 	}].GetSqlSummaryReport().GetAffectedRows())
 }
 
-func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
+func TestDeriveCheckTargetsSkipsCreateDatabaseAndReleaseSpecs(t *testing.T) {
+	project := &store.ProjectMessage{ResourceID: "project"}
+	plan := &store.PlanMessage{
+		ProjectID: "project",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Release: "projects/project/releases/release",
+						},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Targets: []string{"instances/prod/databases/app"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got, err := plancheck.DeriveCheckTargets(context.Background(), nil, project, plan, nil)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, "instances/prod/databases/app", got[0].Target)
+}
+
+func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 	tests := []struct {
 		name         string
 		planCheckRun *store.PlanCheckRunMessage
@@ -266,4 +307,139 @@ func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
 			require.Equal(t, tt.want, isPlanCheckRunPendingApprovalEvaluation(tt.planCheckRun))
 		})
 	}
+}
+
+func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
+	database := &store.DatabaseMessage{
+		InstanceID:   "prod",
+		DatabaseName: "app",
+	}
+	databaseGroup := &v1pb.DatabaseGroup{
+		Name: "projects/project/databaseGroups/group",
+		MatchedDatabases: []*v1pb.DatabaseGroup_Database{{
+			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		}},
+	}
+
+	got, err := unfoldDatabaseTargets(
+		context.Background(),
+		// nil store is intentional: the resolved-group path must not touch the store.
+		nil,
+		[]string{databaseGroup.Name},
+		"project",
+		[]*store.DatabaseMessage{database},
+		databaseGroup,
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{common.FormatDatabase(database.InstanceID, database.DatabaseName)}, got)
+}
+
+func TestUnfoldDatabaseTargetsFallsBackWhenResolvedGroupNameDiffers(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	allDatabases := setupApprovalDatabaseGroupFixture(ctx, t, s)
+
+	got, err := unfoldDatabaseTargets(
+		ctx,
+		s,
+		[]string{"projects/project-a/databaseGroups/group"},
+		"project-a",
+		allDatabases,
+		&v1pb.DatabaseGroup{Name: "projects/project-a/databaseGroups/other"},
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{"instances/prod/databases/app"}, got)
+}
+
+func TestUnfoldSpecTargetsDirectTargetDoesNotListProjectDatabases(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	setupApprovalDatabaseGroupFixture(ctx, t, s)
+
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "other",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = s.GetDB().ExecContext(ctx, `
+		INSERT INTO db (instance, name, project, metadata)
+		VALUES ($1, $2, $3, $4::jsonb)
+	`, "other", "broken", "project-a", `{"labels":"not-a-map"}`)
+	require.NoError(t, err)
+
+	targets, err := unfoldSpecTargets(ctx, s, []*storepb.PlanConfig_Spec{{
+		Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+				Targets: []string{"instances/prod/databases/app"},
+			},
+		},
+	}}, "project-a", nil, nil)
+	require.NoError(t, err)
+	require.Len(t, targets, 1)
+	require.Equal(t, "prod", targets[0].database.InstanceID)
+	require.Equal(t, "app", targets[0].database.DatabaseName)
+}
+
+func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
+	t.Helper()
+
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+	`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
+	return s
+}
+
+func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *store.Store) []*store.DatabaseMessage {
+	t.Helper()
+
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "prod",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+	_, err = s.CreateDatabaseGroup(ctx, &store.DatabaseGroupMessage{
+		ProjectID:  "project-a",
+		ResourceID: "group",
+		Title:      "group",
+		Expression: &expr.Expr{Expression: `resource.database_name == "app"`},
+	})
+	require.NoError(t, err)
+
+	projectID := "project-a"
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	require.NoError(t, err)
+	return allDatabases
 }
