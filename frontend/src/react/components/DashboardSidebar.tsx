@@ -291,9 +291,9 @@ function filterSidebarList(items: SidebarItem[]): SidebarItem[] {
 // ---------------------------------------------------------------------------
 
 const parentRouteClass =
-  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-gray-700 outline-item text-sm!";
+  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-gray-700 outline-item whitespace-nowrap text-sm!";
 const childRouteClass =
-  "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-xs";
+  "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-xs whitespace-nowrap";
 
 export function DashboardSidebar() {
   const rawItems = useSidebarItems();

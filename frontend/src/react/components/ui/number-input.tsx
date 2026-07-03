@@ -1,7 +1,9 @@
 import { NumberField } from "@base-ui/react/number-field";
-import { cva, type VariantProps } from "class-variance-authority";
+import * as stylex from "@stylexjs/stylex";
+import { cva } from "class-variance-authority";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
+import { type ControlSize, controlSizeStyle } from "./styles.stylex";
 
 // Mirrors the sizing/appearance of ./input.tsx so NumberInput visually matches
 // the regular Input at every size.
@@ -12,35 +14,22 @@ const numberInputClasses = cva(
     "focus:outline-hidden",
     "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50",
     "read-only:cursor-default read-only:bg-control-bg read-only:focus:ring-0 read-only:focus:border-control-border"
-  ),
-  {
-    variants: {
-      size: {
-        xs: "h-6 px-2 text-xs leading-4",
-        sm: "h-7 px-2 text-xs leading-4",
-        md: "h-9 px-3 text-sm leading-5",
-        lg: "h-10 px-4 text-sm leading-5",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
+  )
 );
 
 type NumberFieldRootProps = ComponentPropsWithoutRef<typeof NumberField.Root>;
 
 interface NumberInputProps
   extends Omit<
-      NumberFieldRootProps,
-      "className" | "render" | "size" | "prefix"
-    >,
-    VariantProps<typeof numberInputClasses> {
+    NumberFieldRootProps,
+    "className" | "render" | "size" | "prefix"
+  > {
   /** Applied to the outer wrapper; use for layout/width classes (e.g. "w-60"). */
   className?: string;
   /** Applied to the underlying input element for extra input-specific styling. */
   inputClassName?: string;
   placeholder?: string;
+  size?: ControlSize;
   /** Content rendered inside the field to the right of the input (e.g. unit). */
   suffix?: ReactNode;
   /** Content rendered inside the field to the left of the input. */
@@ -50,15 +39,17 @@ interface NumberInputProps
 function NumberInput({
   className,
   inputClassName,
-  size,
+  size = "md",
   suffix,
   prefix,
   placeholder,
   ...rootProps
 }: NumberInputProps) {
   const hasAffix = Boolean(prefix || suffix);
+  const stylexProps = stylex.props(controlSizeStyle(size));
   const inputClasses = cn(
-    numberInputClasses({ size }),
+    numberInputClasses(),
+    stylexProps.className,
     prefix && "pl-10",
     suffix && "pr-12",
     inputClassName
@@ -67,7 +58,11 @@ function NumberInput({
   if (!hasAffix) {
     return (
       <NumberField.Root {...rootProps} className={className}>
-        <NumberField.Input placeholder={placeholder} className={inputClasses} />
+        <NumberField.Input
+          placeholder={placeholder}
+          className={inputClasses}
+          style={stylexProps.style}
+        />
       </NumberField.Root>
     );
   }
@@ -80,7 +75,11 @@ function NumberInput({
             {prefix}
           </span>
         )}
-        <NumberField.Input placeholder={placeholder} className={inputClasses} />
+        <NumberField.Input
+          placeholder={placeholder}
+          className={inputClasses}
+          style={stylexProps.style}
+        />
         {suffix && (
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-control-light">
             {suffix}

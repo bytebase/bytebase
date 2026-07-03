@@ -12,7 +12,7 @@ type SearchInputProps = Omit<ComponentProps<typeof Input>, "className"> & {
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
   function SearchInput(
-    { className, wrapperClassName, placeholder, ...props },
+    { className, wrapperClassName, placeholder, style, ...props },
     ref
   ) {
     const { t } = useTranslation();
@@ -24,6 +24,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           autoComplete="off"
           className={cn("pl-8", className)}
           placeholder={placeholder ?? t("common.type-to-search")}
+          style={{ ...style, paddingInlineStart: "2rem" }}
           {...props}
         />
       </div>

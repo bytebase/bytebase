@@ -1,3 +1,4 @@
+import * as stylex from "@stylexjs/stylex";
 import { Check, ChevronDown, X } from "lucide-react";
 import {
   useCallback,
@@ -17,6 +18,12 @@ import {
 } from "./combobox-position";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 import { SearchInput } from "./search-input";
+import {
+  type ControlSize,
+  controlMinHeightStyle,
+  menuRowStateClassName,
+  menuRowStyle,
+} from "./styles.stylex";
 
 export interface ComboboxOption {
   value: string;
@@ -65,8 +72,8 @@ type ComboboxBaseProps = {
   className?: string;
   disabled?: boolean;
   clearable?: boolean;
-  /** Trigger size — matches the Input component's tier names. Defaults to `md`. */
-  size?: "sm" | "md";
+  /** Trigger size — matches the shared control size tier names. Defaults to `md`. */
+  size?: ControlSize;
   /** Render dropdown via portal (use when inside overflow:hidden containers like modals) */
   portal?: boolean;
 };
@@ -319,17 +326,19 @@ export function Combobox(props: ComboboxProps) {
   // ---- Render option row ----
   const renderOptionRow = (option: ComboboxOption) => {
     const isSelected = selectedValues.includes(option.value);
+    const stylexProps = stylex.props(menuRowStyle("sm"));
     return (
       <button
         key={option.value}
         type="button"
         disabled={option.disabled}
+        data-selected={isSelected || undefined}
         className={cn(
-          "w-full text-left px-3 py-1.5 text-sm flex items-center gap-x-2 transition-colors",
-          "hover:bg-control-bg",
-          isSelected && "bg-accent/5",
-          option.disabled && "opacity-50 cursor-not-allowed"
+          stylexProps.className,
+          menuRowStateClassName,
+          option.disabled && "cursor-not-allowed"
         )}
+        style={stylexProps.style}
         onClick={() => !option.disabled && handleSelect(option.value)}
       >
         {multiple && (
@@ -374,6 +383,8 @@ export function Combobox(props: ComboboxProps) {
     );
   };
 
+  const triggerStylexProps = stylex.props(controlMinHeightStyle(size));
+
   // ---- Render dropdown content ----
   const dropdownContent = (
     <div
@@ -392,7 +403,7 @@ export function Combobox(props: ComboboxProps) {
         wrapperClassName="m-2"
         className="h-7"
       />
-      <div className="max-h-60 overflow-y-auto">
+      <div className="max-h-60 overflow-y-auto px-2 pb-2">
         {filteredGroups.every((g) => g.options.length === 0) ? (
           noResultsContent !== undefined ? (
             <div className="p-3">{noResultsContent}</div>
@@ -428,13 +439,12 @@ export function Combobox(props: ComboboxProps) {
           // looks broken. Keep the trigger on a single line in that case
           // and let the label truncate inside `renderTrigger`.
           "flex items-center gap-1 w-full rounded-xs border border-control-border bg-background py-1 cursor-pointer",
-          size === "sm"
-            ? "min-h-7 px-2 text-xs leading-4"
-            : "min-h-9 px-3 text-sm leading-5",
+          triggerStylexProps.className,
           multiple && "flex-wrap",
           disabled && "opacity-50 cursor-not-allowed",
           open && "border-accent"
         )}
+        style={triggerStylexProps.style}
         onClick={() => {
           if (!disabled) {
             setOpen(!open);

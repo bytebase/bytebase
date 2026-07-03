@@ -1,3 +1,4 @@
+import * as stylex from "@stylexjs/stylex";
 import { act, type ReactElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -10,6 +11,7 @@ import {
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
 } from "@/utils/cel-attributes";
 import { ExprEditor, type OptionConfig } from "./ExprEditor";
+import { controlSizeStyle } from "./ui/styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -23,6 +25,12 @@ class ResizeObserverStub implements ResizeObserver {
 }
 
 globalThis.ResizeObserver = ResizeObserverStub;
+
+const expectClasses = (className: string | undefined, expected: string) => {
+  for (const expectedClass of expected.split(" ")) {
+    expect(className ?? "").toContain(expectedClass);
+  }
+};
 
 const { MockExprType } = vi.hoisted(() => ({
   MockExprType: {
@@ -322,8 +330,13 @@ describe("ExprEditor", () => {
     );
 
     expect(input).toBeInstanceOf(HTMLInputElement);
-    expect(input?.className).toContain("h-9");
-    expect(input?.className).not.toContain("h-7");
+    expectClasses(
+      input?.className,
+      stylex.props(controlSizeStyle("md")).className ?? ""
+    );
+    expect(input?.className).not.toContain(
+      stylex.props(controlSizeStyle("sm")).className ?? ""
+    );
 
     unmount();
   });

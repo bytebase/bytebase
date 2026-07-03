@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { transform as esbuildTransform } from "esbuild";
 import yaml from "@rollup/plugin-yaml";
+import stylex from "@stylexjs/unplugin";
 import tailwindcss from "@tailwindcss/vite";
 import legacy from "@vitejs/plugin-legacy";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
@@ -43,6 +44,13 @@ export default defineConfig({
         return { code: result.code, map: result.map || null };
       },
     },
+    stylex.vite({
+      // Avoid the plugin's dev HTML injection: it inserts StyleX layers before
+      // Tailwind, letting Preflight override control typography and padding.
+      devMode: "css-only",
+      runtimeInjection: false,
+      useCSSLayers: true,
+    }),
     tailwindcss(),
     yaml(),
     ...(process.env.VITEST

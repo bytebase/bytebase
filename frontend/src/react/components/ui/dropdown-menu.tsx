@@ -1,7 +1,9 @@
 import { Menu as BaseMenu } from "@base-ui/react/menu";
+import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
+import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
 
 // ---- Root ----
 // Default to non-modal: row action menus should let users click through to
@@ -103,17 +105,13 @@ function DropdownMenuItem({
   ref,
   ...props
 }: ComponentProps<typeof BaseMenu.Item>) {
+  const stylexProps = stylex.props(menuRowStyle("sm"));
   return (
     <BaseMenu.Item
-      ref={ref}
-      className={cn(
-        "relative flex items-center gap-x-2 px-3 py-2 text-sm cursor-pointer select-none",
-        "hover:bg-control-bg focus:bg-control-bg outline-hidden",
-        "data-highlighted:bg-control-bg",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
-        className
-      )}
       {...props}
+      ref={ref}
+      className={cn(stylexProps.className, menuRowStateClassName, className)}
+      style={{ ...stylexProps.style, ...props.style }}
     >
       {children}
     </BaseMenu.Item>
@@ -126,17 +124,13 @@ function DropdownMenuSubmenuTrigger({
   ref,
   ...props
 }: ComponentProps<typeof BaseMenu.SubmenuTrigger>) {
+  const stylexProps = stylex.props(menuRowStyle("sm"));
   return (
     <BaseMenu.SubmenuTrigger
-      ref={ref}
-      className={cn(
-        "relative flex items-center gap-x-2 px-3 py-2 text-sm cursor-pointer select-none",
-        "hover:bg-control-bg focus:bg-control-bg outline-hidden",
-        "data-highlighted:bg-control-bg",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
-        className
-      )}
       {...props}
+      ref={ref}
+      className={cn(stylexProps.className, menuRowStateClassName, className)}
+      style={{ ...stylexProps.style, ...props.style }}
     >
       {children}
     </BaseMenu.SubmenuTrigger>
@@ -158,10 +152,29 @@ function DropdownMenuSeparator({
   );
 }
 
+// ---- Label ----
+// Non-interactive section header. Rendered as a plain <div> so grouped
+// dropdown menus share the same typography without becoming focusable items.
+function DropdownMenuLabel({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "px-2 py-1.5 text-xs font-semibold text-control-light",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
 export {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSubmenu,
   DropdownMenuSubmenuContent,

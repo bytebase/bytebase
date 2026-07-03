@@ -57,4 +57,41 @@ describe("RadioGroupItem", () => {
 
     unmount();
   });
+
+  test("uses the semantic accent token for checked and focus states", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        RadioGroup,
+        { value: "workspace", onValueChange: () => undefined },
+        createElement(RadioGroupItem, { value: "workspace" }, "Workspace")
+      )
+    );
+
+    expect(getRadio(container).className).toContain(
+      "data-[checked]:border-[rgb(var(--color-accent))]"
+    );
+    expect(getRadio(container).className).toContain(
+      "focus-visible:ring-[rgb(var(--color-accent))]"
+    );
+
+    unmount();
+  });
+
+  test("allows the radio control to be offset for rich labels", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        RadioGroup,
+        { value: "workspace", onValueChange: () => undefined },
+        createElement(
+          RadioGroupItem,
+          { value: "workspace", radioClassName: "mt-1" },
+          createElement("div", null, "Workspace")
+        )
+      )
+    );
+
+    expect(getRadio(container).className).toContain("mt-1");
+
+    unmount();
+  });
 });

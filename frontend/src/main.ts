@@ -3,6 +3,7 @@ import "./init";
 import "regenerator-runtime/runtime";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/tailwind.css";
+import "./stylex-dev-css";
 // Side-effect: configures the shared dayjs singleton (localizedFormat) and
 // registers the SQL highlight.js language + theme used across the app.
 import "./plugins/dayjs";

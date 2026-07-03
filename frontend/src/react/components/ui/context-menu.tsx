@@ -1,4 +1,5 @@
 import { ContextMenu as BaseContextMenu } from "@base-ui/react/context-menu";
+import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 import {
@@ -6,6 +7,7 @@ import {
   LAYER_SURFACE_CLASS,
   usePreserveHigherLayerAccess,
 } from "./layer";
+import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
 
 // ---- Root ----
 // Wraps BaseContextMenu.Root. ContextMenu has no `modal` prop (it is omitted
@@ -51,17 +53,13 @@ function ContextMenuItem({
   ref,
   ...props
 }: ComponentProps<typeof BaseContextMenu.Item>) {
+  const stylexProps = stylex.props(menuRowStyle("sm"));
   return (
     <BaseContextMenu.Item
-      ref={ref}
-      className={cn(
-        "relative flex items-center gap-x-2 px-2 py-1.5 text-sm cursor-pointer select-none",
-        "hover:bg-control-bg focus:bg-control-bg outline-hidden",
-        "data-highlighted:bg-control-bg",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
-        className
-      )}
       {...props}
+      ref={ref}
+      className={cn(stylexProps.className, menuRowStateClassName, className)}
+      style={{ ...stylexProps.style, ...props.style }}
     >
       {children}
     </BaseContextMenu.Item>

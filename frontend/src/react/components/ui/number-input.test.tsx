@@ -1,7 +1,9 @@
+import * as stylex from "@stylexjs/stylex";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test } from "vitest";
 import { NumberInput } from "./number-input";
+import { controlSizeStyle } from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -16,6 +18,12 @@ function mount(node: React.ReactNode) {
   });
   return { container, root };
 }
+
+const expectClasses = (className: string | undefined, expected: string) => {
+  for (const expectedClass of expected.split(" ")) {
+    expect(className ?? "").toContain(expectedClass);
+  }
+};
 
 describe("NumberInput", () => {
   afterEach(() => {
@@ -59,7 +67,10 @@ describe("NumberInput", () => {
     const wrapper = container.firstElementChild as HTMLElement | null;
     const input = container.querySelector("input");
     expect(wrapper?.className).toContain("w-60");
-    expect(input?.className).toContain("h-7");
+    expectClasses(
+      input?.className,
+      stylex.props(controlSizeStyle("sm")).className ?? ""
+    );
   });
 
   test("forwards the disabled prop to the underlying input", () => {

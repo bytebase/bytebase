@@ -1,10 +1,17 @@
 import { Button as BaseButton } from "@base-ui/react/button";
+import * as stylex from "@stylexjs/stylex";
 import { cva, type VariantProps } from "class-variance-authority";
+import type { ClassValue } from "clsx";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import {
+  buttonGapStyle,
+  type ControlSize,
+  controlSizeStyle,
+} from "./styles.stylex";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xs text-sm font-medium whitespace-nowrap cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+const buttonVariantClasses = cva(
+  "inline-flex items-center justify-center rounded-xs font-medium whitespace-nowrap cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -17,31 +24,60 @@ const buttonVariants = cva(
           "border border-control-border border-error text-error hover:bg-error hover:text-white",
         link: "text-accent underline-offset-4 hover:underline",
       },
-      size: {
-        // `default` is an alias for `md` — both render identically.
-        default: "h-9 px-3 text-sm leading-5",
-        xs: "h-6 px-1.5 text-xs leading-4 gap-1.5",
-        sm: "h-7 px-2 text-xs leading-4",
-        md: "h-9 px-3 text-sm leading-5",
-        lg: "h-10 px-4 text-sm leading-5",
-      },
     },
     defaultVariants: {
       variant: "default",
-      size: "default",
     },
   }
 );
 
-type ButtonProps = ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants>;
+type ButtonVariantProps = VariantProps<typeof buttonVariantClasses> & {
+  class?: ClassValue;
+  className?: ClassValue;
+  size?: ControlSize | "default";
+};
 
-function Button({ className, variant, size, ref, ...props }: ButtonProps) {
+function buttonVariants({
+  class: classValue,
+  className,
+  size = "default",
+  variant,
+}: ButtonVariantProps = {}) {
+  const resolvedSize = size === "default" ? "md" : size;
+  const stylexProps = stylex.props(
+    controlSizeStyle(resolvedSize),
+    buttonGapStyle(resolvedSize)
+  );
+  return cn(
+    buttonVariantClasses({ variant }),
+    stylexProps.className,
+    classValue,
+    className
+  );
+}
+
+type ButtonProps = ComponentProps<"button"> & ButtonVariantProps;
+
+function Button({
+  class: classValue,
+  className,
+  variant,
+  size = "default",
+  ref,
+  style,
+  ...props
+}: ButtonProps) {
   return (
     <BaseButton
-      ref={ref}
-      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      ref={ref}
+      className={buttonVariants({
+        class: classValue,
+        className,
+        size,
+        variant,
+      })}
+      style={style}
     />
   );
 }

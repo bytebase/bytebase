@@ -1,7 +1,9 @@
-import { act, type ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
+import { act, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Select, SelectContent, SelectTrigger } from "./select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "./select";
+import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -33,7 +35,19 @@ vi.mock("@base-ui/react/select", () => ({
       return <div>{children}</div>;
     },
     Popup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    Item: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Item: ({
+      children,
+      ...props
+    }: {
+      children: ReactNode;
+      className?: string;
+      role?: string;
+      style?: CSSProperties;
+    }) => (
+      <div role="option" {...props}>
+        {children}
+      </div>
+    ),
     ItemIndicator: ({ children }: { children: ReactNode }) => <>{children}</>,
     ItemText: ({ children }: { children: ReactNode }) => <>{children}</>,
   },
@@ -127,6 +141,38 @@ describe("SelectTrigger", () => {
     expect(container.querySelector("button")?.className).toContain(
       "cursor-pointer"
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+});
+
+describe("SelectItem", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  test("uses shared menu row classes for options", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Select>
+          <SelectContent>
+            <SelectItem value="alpha">Alpha</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+    });
+
+    const option = container.querySelector("[role='option']");
+    expect(option?.className).toContain(
+      stylex.props(menuRowStyle("sm")).className ?? ""
+    );
+    expect(option?.className).toContain(menuRowStateClassName);
 
     await act(async () => {
       root.unmount();
