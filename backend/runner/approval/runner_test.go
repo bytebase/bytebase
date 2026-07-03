@@ -13,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -240,78 +241,39 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 	}].GetSqlSummaryReport().GetAffectedRows())
 }
 
-func TestPlanChecksExpectedForApproval(t *testing.T) {
-	tests := []struct {
-		name string
-		plan *store.PlanMessage
-		want bool
-	}{
-		{
-			name: "create database does not expect checks",
-			plan: &store.PlanMessage{
-				ProjectID: "project",
-				Config: &storepb.PlanConfig{
-					Specs: []*storepb.PlanConfig_Spec{{
-						Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
-							CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+func TestDeriveCheckTargetsSkipsCreateDatabaseAndReleaseSpecs(t *testing.T) {
+	project := &store.ProjectMessage{ResourceID: "project"}
+	plan := &store.PlanMessage{
+		ProjectID: "project",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Release: "projects/project/releases/release",
 						},
-					}},
+					},
+				},
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Targets: []string{"instances/prod/databases/app"},
+						},
+					},
 				},
 			},
-		},
-		{
-			name: "release backed change does not expect checks",
-			plan: &store.PlanMessage{
-				ProjectID: "project",
-				Config: &storepb.PlanConfig{
-					Specs: []*storepb.PlanConfig_Spec{{
-						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-								Release: "projects/project/releases/release",
-							},
-						},
-					}},
-				},
-			},
-		},
-		{
-			name: "empty expanded targets do not expect checks",
-			plan: &store.PlanMessage{
-				ProjectID: "project",
-				Config: &storepb.PlanConfig{
-					Specs: []*storepb.PlanConfig_Spec{{
-						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
-						},
-					}},
-				},
-			},
-		},
-		{
-			name: "change target expects checks",
-			plan: &store.PlanMessage{
-				ProjectID: "project",
-				Config: &storepb.PlanConfig{
-					Specs: []*storepb.PlanConfig_Spec{{
-						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-								Targets: []string{"instances/prod/databases/app"},
-							},
-						},
-					}},
-				},
-			},
-			want: true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := planChecksExpectedForApproval(context.Background(), nil, &store.ProjectMessage{ResourceID: "project"}, tt.plan)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
-		})
-	}
+	got, err := plancheck.DeriveCheckTargets(context.Background(), nil, project, plan, nil)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, "instances/prod/databases/app", got[0].Target)
 }
 
 func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
@@ -385,7 +347,7 @@ func TestIsPlanCheckRunCurrentForApprovalInputVersion(t *testing.T) {
 
 func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
 	database := &store.DatabaseMessage{
-		InstanceID:   "instances/prod",
+		InstanceID:   "prod",
 		DatabaseName: "app",
 	}
 	databaseGroup := &v1pb.DatabaseGroup{
@@ -397,6 +359,7 @@ func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
 
 	got, err := unfoldDatabaseTargets(
 		context.Background(),
+		// nil store is intentional: the resolved-group path must not touch the store.
 		nil,
 		[]string{databaseGroup.Name},
 		"project",
@@ -405,6 +368,23 @@ func TestUnfoldDatabaseTargetsUsesResolvedDatabaseGroup(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.Equal(t, []string{common.FormatDatabase(database.InstanceID, database.DatabaseName)}, got)
+}
+
+func TestUnfoldDatabaseTargetsFallsBackWhenResolvedGroupNameDiffers(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	allDatabases := setupApprovalDatabaseGroupFixture(ctx, t, s)
+
+	got, err := unfoldDatabaseTargets(
+		ctx,
+		s,
+		[]string{"projects/project-a/databaseGroups/group"},
+		"project-a",
+		allDatabases,
+		&v1pb.DatabaseGroup{Name: "projects/project-a/databaseGroups/other"},
+	)
+	require.NoError(t, err)
+	require.Equal(t, []string{"instances/prod/databases/app"}, got)
 }
 
 func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing.T) {
@@ -476,4 +456,37 @@ func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
+}
+
+func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *store.Store) []*store.DatabaseMessage {
+	t.Helper()
+
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "prod",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+	_, err = s.CreateDatabaseGroup(ctx, &store.DatabaseGroupMessage{
+		ProjectID:  "project-a",
+		ResourceID: "group",
+		Title:      "group",
+		Expression: &expr.Expr{Expression: `resource.database_name == "app"`},
+	})
+	require.NoError(t, err)
+
+	projectID := "project-a"
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	require.NoError(t, err)
+	return allDatabases
 }

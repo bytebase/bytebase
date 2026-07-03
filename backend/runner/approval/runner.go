@@ -501,6 +501,8 @@ func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets [
 }
 
 // unfoldSpecTargets unfolds database groups in specs and returns all database targets.
+// allDatabases must be nil or the full unfiltered project database list; callers pass it
+// through to keep database-group matching and direct database lookup on the same snapshot.
 func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string, allDatabases []*store.DatabaseMessage, databaseGroup *v1pb.DatabaseGroup) ([]specTarget, error) {
 	// Batch fetch all databases for the project
 	if allDatabases == nil {
@@ -636,14 +638,17 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, approvalInputVersion, false, errors.Errorf("project %s not found", plan.ProjectID)
 	}
 
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
-	if err != nil {
-		return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
-	}
-
-	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, allDatabases)
-	if err != nil {
-		return nil, approvalInputVersion, false, err
+	var allDatabases []*store.DatabaseMessage
+	var databaseGroup *v1pb.DatabaseGroup
+	if plancheck.HasDatabaseGroupTarget(plan.Config.GetSpecs()) {
+		allDatabases, err = stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &plan.ProjectID})
+		if err != nil {
+			return nil, approvalInputVersion, false, errors.Wrapf(err, "failed to list databases for project %q", plan.ProjectID)
+		}
+		databaseGroup, err = plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, allDatabases)
+		if err != nil {
+			return nil, approvalInputVersion, false, err
+		}
 	}
 	checkTargets, err := plancheck.DeriveCheckTargets(ctx, stores, project, plan, databaseGroup)
 	if err != nil {
@@ -805,30 +810,6 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	}
 
 	return celVarsList, approvalInputVersion, true, nil
-}
-
-func planChecksExpectedForApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, plan *store.PlanMessage) (bool, error) {
-	if project == nil {
-		var err error
-		project, err = stores.GetProjectByResourceID(ctx, plan.ProjectID)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to get project")
-		}
-		if project == nil {
-			return false, errors.Errorf("project %s not found", plan.ProjectID)
-		}
-	}
-
-	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, nil)
-	if err != nil {
-		return false, err
-	}
-
-	targets, err := plancheck.DeriveCheckTargets(ctx, stores, project, plan, databaseGroup)
-	if err != nil {
-		return false, err
-	}
-	return len(targets) > 0, nil
 }
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
