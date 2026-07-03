@@ -38,6 +38,8 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.Variable(CELAttributeRequestExport, cel.BoolType),
 	// Risk scope
 	cel.Variable(CELAttributeRiskLevel, cel.StringType),
+	// Issue scope
+	cel.Variable(CELAttributeIssueLabels, cel.ListType(cel.StringType)),
 	// String extension functions (split, join, trim, etc.)
 	ext.Strings(),
 	// Size limit

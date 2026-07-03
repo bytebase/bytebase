@@ -209,6 +209,30 @@ func TestApprovalFactorsIncludesRiskLevel(t *testing.T) {
 	a.Nil(issues)
 }
 
+func TestApprovalFactorsIncludesIssueLabels(t *testing.T) {
+	a := require.New(t)
+
+	e, err := cel.NewEnv(ApprovalFactors...)
+	a.NoError(err)
+
+	_, issues := e.Compile(`"prod" in issue.labels`)
+	a.Nil(issues)
+
+	_, issues = e.Compile(`!("security" in issue.labels) && risk.level == "HIGH"`)
+	a.Nil(issues)
+}
+
+func TestFallbackApprovalFactorsExcludesIssueLabels(t *testing.T) {
+	a := require.New(t)
+
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	a.NoError(err)
+
+	_, issues := e.Compile(`"prod" in issue.labels`)
+	a.NotNil(issues)
+	a.Error(issues.Err())
+}
+
 func TestStringsExtensionEnabled(t *testing.T) {
 	a := require.New(t)
 
