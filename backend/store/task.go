@@ -497,13 +497,32 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 
 // CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
 // If approvalInputVersion is set, the transaction creates no tasks unless the plan
-// still has that approval input version.
-func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, approvalInputVersion *int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+// still has that approval input version. If approvalIssueUID is also set, the
+// transaction additionally requires the issue approval to still be done for that
+// approval input version.
+func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, approvalInputVersion *int64, approvalIssueUID *int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
+
+	if approvalIssueUID != nil {
+		var lockedIssueUID int64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM issue
+			WHERE project = $1
+			  AND id = $2
+			  AND plan_id = $3
+			FOR UPDATE`,
+			projectID, approvalIssueUID, planUID).Scan(&lockedIssueUID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return false, nil, nil
+			}
+			return false, nil, errors.Wrapf(err, "failed to lock issue approval")
+		}
+	}
 
 	var updatedPlanUID int64
 	if err := tx.QueryRowContext(ctx, `
@@ -523,8 +542,20 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 			$4::bigint IS NULL
 			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
 		  )
+		  AND (
+			$5::bigint IS NULL
+			OR EXISTS (
+				SELECT 1
+				FROM issue
+				WHERE issue.project = plan.project
+				  AND issue.id = $5
+				  AND issue.plan_id = plan.id
+				  AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false)
+				  AND COALESCE((issue.payload->'approval'->>'approvalInputVersion')::bigint, 0) = $4
+			)
+		  )
 		RETURNING id`,
-		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
+		time.Now(), projectID, planUID, approvalInputVersion, approvalIssueUID).Scan(&updatedPlanUID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil, nil
 		}

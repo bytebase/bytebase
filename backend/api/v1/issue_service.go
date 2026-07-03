@@ -1113,7 +1113,8 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 	patch := &store.UpdateIssueMessage{}
 	var issueCommentCreates []*store.IssueCommentMessage
-	var labelsChanged bool
+	var labelsChangedWithApprovalReset bool
+	var labelsForApprovalReset []string
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
@@ -1165,14 +1166,18 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			if slices.Equal(issue.Payload.Labels, labels) {
 				continue
 			}
-			labelsChanged = true
-			if len(labels) == 0 {
-				patch.RemoveLabels = true
+			if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+				labelsChangedWithApprovalReset = true
+				labelsForApprovalReset = labels
 			} else {
-				if patch.PayloadUpsert == nil {
-					patch.PayloadUpsert = &storepb.Issue{}
+				if len(labels) == 0 {
+					patch.RemoveLabels = true
+				} else {
+					if patch.PayloadUpsert == nil {
+						patch.PayloadUpsert = &storepb.Issue{}
+					}
+					patch.PayloadUpsert.Labels = labels
 				}
-				patch.PayloadUpsert.Labels = labels
 			}
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
@@ -1190,12 +1195,14 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
+	if hasIssueUpdatePatch(patch) {
+		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
+		}
 	}
 
-	if labelsChanged && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+	if labelsChangedWithApprovalReset {
 		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
@@ -1204,24 +1211,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
 		}
 		approvalInputVersion := plan.Config.GetApprovalInputVersion()
-		updated, err := s.store.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollout(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone:  false,
-				ApprovalInputVersion: approvalInputVersion,
-			},
-		}, approvalInputVersion, issue.Payload.Labels)
+		updatedIssue, approvalReset, err := s.store.UpdateIssueLabelsAndMaybeResetApprovalIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, labelsForApprovalReset, approvalInputVersion)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to reset approval finding after issue label update"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue labels"))
 		}
-		if updated {
-			updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-				ProjectIDs: []string{issue.ProjectID},
-				UID:        &issue.UID,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get updated issue"))
-			}
-			issue = updatedIssue
+		issue = updatedIssue
+		if approvalReset {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 		}
 	}
@@ -1238,6 +1233,14 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
+}
+
+func hasIssueUpdatePatch(patch *store.UpdateIssueMessage) bool {
+	return patch.Title != nil ||
+		patch.Status != nil ||
+		patch.Description != nil ||
+		patch.PayloadUpsert != nil ||
+		patch.RemoveLabels
 }
 
 // BatchUpdateIssuesStatus batch updates issues status.

@@ -406,6 +406,71 @@ func marshalCanonicalIssueLabels(labels []string) ([]byte, error) {
 	return labelBytes, nil
 }
 
+func marshalIssueLabelsPatch(labels []string) ([]byte, error) {
+	canonicalLabels := CanonicalizeIssueLabels(labels)
+	if canonicalLabels == nil {
+		return []byte(`{"labels":null}`), nil
+	}
+	labelBytes, err := protojson.Marshal(&storepb.Issue{Labels: canonicalLabels})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal issue labels")
+	}
+	return labelBytes, nil
+}
+
+func (s *Store) UpdateIssueLabelsAndMaybeResetApprovalIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, labels []string, approvalInputVersion int64) (*IssueMessage, bool, error) {
+	labelPatch, err := marshalIssueLabelsPatch(labels)
+	if err != nil {
+		return nil, false, err
+	}
+	approvalReset, err := protojson.Marshal(&storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  false,
+			ApprovalInputVersion: approvalInputVersion,
+		},
+	})
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "failed to marshal approval reset")
+	}
+
+	var approvalResetApplied bool
+	if err := s.GetDB().QueryRowContext(ctx, `
+		UPDATE issue
+		SET
+			updated_at = $1,
+			payload = payload || $2::jsonb || CASE
+				WHEN EXISTS (
+					SELECT 1
+					FROM plan
+					WHERE plan.project = issue.project
+					  AND plan.id = issue.plan_id
+					  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $3
+					  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
+				)
+				THEN $4::jsonb
+				ELSE '{}'::jsonb
+			END
+		WHERE project = $5
+		  AND id = $6
+		RETURNING EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = issue.project
+			  AND plan.id = issue.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $3
+			  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
+		)`,
+		time.Now(), string(labelPatch), approvalInputVersion, string(approvalReset), projectID, uid).Scan(&approvalResetApplied); err != nil {
+		return nil, false, err
+	}
+
+	issue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+	if err != nil {
+		return nil, false, err
+	}
+	return issue, approvalResetApplied, nil
+}
+
 // ResetIssueApprovalFindingIfPlanApprovalInputVersion avoids clobbering approval work that raced
 // ahead after a new plan check row became visible for the same plan version.
 func (s *Store) ResetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, approvalInputVersion int64) (bool, error) {

@@ -408,11 +408,15 @@ func CreateRolloutAndPendingTasks(
 	}
 
 	var approvalInputVersion *int64
+	var approvalIssueUID *int64
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
 		v := plan.Config.GetApprovalInputVersion()
 		approvalInputVersion = &v
+		if project.Setting.RequireIssueApproval {
+			approvalIssueUID = &issue.UID
+		}
 	}
-	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, approvalInputVersion, tasks)
+	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, approvalInputVersion, approvalIssueUID, tasks)
 	if err != nil {
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}

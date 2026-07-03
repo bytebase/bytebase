@@ -114,7 +114,7 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	staleVersion := int64(1)
-	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &staleVersion, nil)
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &staleVersion, nil, nil)
 	require.NoError(t, err)
 	require.False(t, updated)
 	require.Empty(t, createdTasks)
@@ -126,7 +126,7 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	requirePlanSpecID(t, got.Config, "spec-a")
 
 	currentVersion := int64(2)
-	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &currentVersion, nil)
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &currentVersion, nil, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
 	require.Empty(t, createdTasks)
@@ -136,6 +136,76 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	require.True(t, got.Config.GetHasRollout())
 	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
 	requirePlanSpecID(t, got.Config, "spec-a")
+}
+
+func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "spec-a"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels: []string{"prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, approvalReset, err := s.UpdateIssueLabelsAndMaybeResetApprovalIfPlanApprovalInputVersion(ctx, "project-a", issue.UID, []string{"security"}, 2)
+	require.NoError(t, err)
+	require.True(t, approvalReset)
+	require.Equal(t, []string{"security"}, updatedIssue.Payload.Labels)
+	require.False(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
+
+	approvalInputVersion := int64(2)
+	updatedRollout, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, &issue.UID, nil)
+	require.NoError(t, err)
+	require.False(t, updatedRollout)
+	require.Empty(t, createdTasks)
+
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.False(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, "project-a", issue.UID, &storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		},
+	}, 2, []string{"security"})
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	updatedRollout, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, &issue.UID, nil)
+	require.NoError(t, err)
+	require.True(t, updatedRollout)
+	require.Empty(t, createdTasks)
+
+	got, err = s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
 }
 
 func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
@@ -150,7 +220,7 @@ func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
 	}, "creator@example.com")
 	require.NoError(t, err)
 
-	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, nil, []*store.TaskMessage{
 		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
 	})
 	require.NoError(t, err)
@@ -161,7 +231,7 @@ func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, got.Config.GetHasRollout())
 
-	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, nil, []*store.TaskMessage{
 		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
 		newTestRolloutTask("instance-a", "database-b", "sheet-b"),
 	})
@@ -192,7 +262,7 @@ func TestUpdatePlanRequireNoRolloutDoesNotOverwriteRollout(t *testing.T) {
 	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
 
 	approvalInputVersion := int64(1)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -231,7 +301,7 @@ func TestUpdatePlanRequireNoRolloutRejectsConfigUpdateAfterRollout(t *testing.T)
 	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
 
 	approvalInputVersion := int64(1)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -664,7 +734,7 @@ func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRolloutSkipsA
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 

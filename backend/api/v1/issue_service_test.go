@@ -56,7 +56,7 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -67,6 +67,41 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 	require.Len(t, service.bus.ApprovalCheckChan, 0)
+}
+
+func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequired(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	_, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  false,
+			ApprovalInputVersion: 2,
+		},
+	}, 2)
+	require.NoError(t, err)
+
+	stalePlan := *plan
+	stalePlan.Config = &storepb.PlanConfig{ApprovalInputVersion: 1}
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", &stalePlan, issue, &store.ProjectMessage{
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: false},
+	}, []*store.TaskMessage{})
+	require.Error(t, err)
+	require.True(t, IsStaleRolloutApprovalError(err))
+
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, issue, &store.ProjectMessage{
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: false},
+	}, []*store.TaskMessage{})
+	require.NoError(t, err)
+
+	gotPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, gotPlan.Config.GetHasRollout())
+
+	gotIssue := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, storepb.Issue_DONE, gotIssue.Status)
 }
 
 func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
