@@ -495,25 +495,6 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 	return nil
 }
 
-// CreateTasks creates tasks for a plan.
-func (s *Store) CreateTasks(ctx context.Context, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return tasks, nil
-}
-
 // CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
 // If approvalInputVersion is set, the transaction creates no tasks unless the plan
 // still has that approval input version.
