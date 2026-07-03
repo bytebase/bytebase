@@ -368,6 +368,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
+		if errors.Is(err, store.ErrPlanHasRollout) {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update specs for plan that has a rollout"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 

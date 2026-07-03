@@ -318,6 +318,24 @@ func TestApprovalActionRejectsStaleApprovalInputVersion(t *testing.T) {
 
 	stores := getStore(t, ctl.server)
 
+	t.Run("ApproveIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-approve")
+
+		withImpersonation(ctx, t, ctl, approver, func() {
+			_, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+				Name:    issue.Name,
+				Comment: "approve stale approval",
+			}))
+			require.Error(t, err)
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+		})
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_PENDING, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+
 	t.Run("RejectIssue", func(t *testing.T) {
 		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-reject")
 

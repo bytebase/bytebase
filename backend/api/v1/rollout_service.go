@@ -41,6 +41,13 @@ type RolloutService struct {
 	iamManager     *iam.Manager
 }
 
+var errStaleRolloutApproval = errors.New("cannot create rollout because issue approval is stale")
+
+// IsStaleRolloutApprovalError reports whether rollout creation lost the approval-version race.
+func IsStaleRolloutApprovalError(err error) bool {
+	return errors.Is(err, errStaleRolloutApproval)
+}
+
 // NewRolloutService returns a rollout service instance.
 func NewRolloutService(store *store.Store, dbFactory *dbfactory.DBFactory, bus *bus.Bus, webhookManager *webhook.Manager, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
@@ -300,6 +307,9 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
+		if IsStaleRolloutApprovalError(err) {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -407,7 +417,7 @@ func CreateRolloutAndPendingTasks(
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}
 	if !marked {
-		return errors.New("cannot create rollout because issue approval is stale")
+		return errStaleRolloutApproval
 	}
 	tasks = createdTasks
 

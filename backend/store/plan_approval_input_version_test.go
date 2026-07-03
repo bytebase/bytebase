@@ -242,6 +242,7 @@ func TestUpdatePlanRequireNoRolloutRejectsConfigUpdateAfterRollout(t *testing.T)
 		RequireNoRollout: true,
 	})
 	require.Error(t, err)
+	require.ErrorIs(t, err, store.ErrPlanHasRollout)
 
 	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
 	require.NoError(t, err)

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
@@ -17,6 +18,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+// ErrPlanHasRollout indicates that a plan update was rejected because rollout already started.
+var ErrPlanHasRollout = errors.New("plan has rollout")
 
 // PlanMessage is the message for plan.
 type PlanMessage struct {
@@ -275,6 +279,9 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		&config,
 		&plan.Deleted,
 	); err != nil {
+		if patch.RequireNoRollout && errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrPlanHasRollout
+		}
 		return nil, errors.Wrapf(err, "failed to update plan")
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {

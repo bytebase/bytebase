@@ -176,6 +176,12 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Create rollout and pending tasks
 	// Use issue creator's email since this is auto-rollout for their issue
 	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, issue.CreatorEmail, plan, issue, project, nil); err != nil {
+		if apiv1.IsStaleRolloutApprovalError(err) {
+			slog.Info("skip auto-rollout because issue approval is stale",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)))
+			return
+		}
 		slog.Error("failed to create rollout and pending tasks",
 			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
