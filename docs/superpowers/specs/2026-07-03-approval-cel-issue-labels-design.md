@@ -19,6 +19,7 @@ allow `resource.project_id`.
 - Represent labels as a CEL `list<string>`, so expressions such as
   `"prod" in issue.labels` work naturally.
 - Use canonical issue labels for evaluation.
+- Reject approval payload writes computed from stale issue labels.
 - Surface `issue.labels` in the custom approval CEL editor.
 - Keep fallback approval rules unchanged.
 
@@ -28,7 +29,8 @@ allow `resource.project_id`.
   or fallback approval rules.
 - Do not add a project-label dropdown in the CEL editor.
 - Do not change issue-label update, approval reset, or plan/issue lifecycle
-  behavior in this slice.
+  behavior in this slice, except for the stale-label write guard required by
+  label-based approval CEL.
 - Do not introduce a separate label matcher outside CEL.
 
 ## Backend Design
@@ -47,6 +49,23 @@ per-target CEL variable map evaluates to true.
 
 The attribute is attached only in the `DATABASE_CHANGE` path. Other issue types
 continue to receive the variables they receive today.
+
+Because labels become approval-affecting input, the approval runner must keep
+the canonical label slice it used while computing the approval template. The
+final database write must be conditional on both freshness dimensions:
+
+- The plan still has the approval input version observed by the runner.
+- The issue still has the same canonical labels observed by the runner.
+
+If the conditional update affects zero rows, the runner discards the computed
+approval payload. This matches the existing stale plan-version behavior and
+prevents an older runner from writing approval state after issue labels changed.
+The label comparison should use canonical value equality. Empty and missing
+labels compare as the same empty list.
+
+This design does not require a new plan-version mechanism. It uses the existing
+`approvalInputVersion` guard for plan inputs and adds the missing issue-label
+guard for the new approval-affecting input.
 
 ## Frontend Design
 
@@ -73,6 +92,11 @@ environment.
 Missing labels evaluate as an empty canonical string list. Duplicate or
 out-of-order labels are normalized before evaluation.
 
+If labels change while approval finding is running, the stale runner may finish,
+but its approval payload write is rejected by the label freshness guard. The
+current reset/retry path remains responsible for scheduling a fresh approval
+finding pass.
+
 ## Testing
 
 Add backend tests that verify:
@@ -82,6 +106,10 @@ Add backend tests that verify:
 - A `CHANGE_DATABASE` approval rule using `"prod" in issue.labels` matches when
   the issue has that label.
 - Canonicalization makes duplicate or unordered labels behave consistently.
+- A stale approval payload write is rejected when issue labels changed after the
+  runner observed them.
+- The existing plan approval input version guard still rejects stale plan-input
+  writes.
 
 Add frontend coverage where practical for the factor list, or otherwise rely on
 the existing frontend check and type-check gates for the small constant/map
