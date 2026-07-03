@@ -16,6 +16,7 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
@@ -1156,19 +1157,21 @@ export function ProjectSettingsPage() {
         {/* Save / Cancel Bar */}
         {/* ============================================================= */}
         {allowEdit && isDirty && (
-          <div className="sticky bottom-0 z-10">
-            <div className="flex justify-end gap-x-4 w-full py-4 border-t border-block-border bg-background">
+          <StickyActionFooter
+            left={
               <Button variant="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>
+            }
+            right={
               <Button
                 onClick={handleSave}
                 disabled={labelErrors.length > 0 || saving || !title.trim()}
               >
                 {t("common.update")}
               </Button>
-            </div>
-          </div>
+            }
+          />
         )}
       </div>
 

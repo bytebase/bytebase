@@ -2,6 +2,7 @@ import { Info } from "lucide-react";
 import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
+import { FormField, FormLabel } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   SegmentedControl,
@@ -158,6 +159,7 @@ function CaSourceSelector({
       options={options}
       disabled={disabled}
       className="mt-2"
+      size="sm"
     />
   );
 }
@@ -207,6 +209,7 @@ function ClientCertSourceSelector({
       options={options}
       disabled={disabled}
       className="mt-2"
+      size="sm"
     />
   );
 }
@@ -355,7 +358,7 @@ export function SslCertificateForm({
     visibleValue: string
   ) => (
     <div className="flex items-center gap-x-2">
-      <label className="textlabel block">{label}</label>
+      <FormLabel>{label}</FormLabel>
       {showConfiguredBadge(hasStoredValue, visibleValue) && (
         <Badge data-testid="tls-configured-badge" variant="success">
           {resolvedConfiguredLabel}
@@ -391,6 +394,7 @@ export function SslCertificateForm({
           ariaLabel={t("data-source.ssl.posture.self")}
           options={options}
           disabled={disabled}
+          size="sm"
         />
       </div>
     );
@@ -403,7 +407,7 @@ export function SslCertificateForm({
 
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_FILE_PATH) {
       return (
-        <div className="flex flex-col gap-y-1">
+        <FormField>
           {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
           <Input
             data-testid="tls-ca-path-input"
@@ -412,12 +416,12 @@ export function SslCertificateForm({
             disabled={disabled || isSaaSMode}
             placeholder={resolvedCaPathLabel}
           />
-        </div>
+        </FormField>
       );
     }
 
     return (
-      <div className="flex flex-col gap-y-1">
+      <FormField>
         {renderLabel(resolvedCaLabel, hasCa, ca)}
         <DroppableTextarea
           value={ca}
@@ -425,7 +429,7 @@ export function SslCertificateForm({
           disabled={disabled}
           placeholder={resolvedCaPlaceholder}
         />
-      </div>
+      </FormField>
     );
   };
 
@@ -439,7 +443,7 @@ export function SslCertificateForm({
     if (source === LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH) {
       return (
         <div className="flex flex-col gap-y-2">
-          <div className="flex flex-col gap-y-1">
+          <FormField>
             {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
             <Input
               data-testid="tls-cert-path-input"
@@ -448,8 +452,8 @@ export function SslCertificateForm({
               disabled={disabled || isSaaSMode}
               placeholder={resolvedCertPathLabel}
             />
-          </div>
-          <div className="flex flex-col gap-y-1">
+          </FormField>
+          <FormField>
             {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
             <Input
               data-testid="tls-key-path-input"
@@ -458,14 +462,14 @@ export function SslCertificateForm({
               disabled={disabled || isSaaSMode}
               placeholder={resolvedKeyPathLabel}
             />
-          </div>
+          </FormField>
         </div>
       );
     }
 
     return (
       <div className="flex flex-col gap-y-2">
-        <div className="flex flex-col gap-y-1">
+        <FormField>
           {renderLabel(resolvedCertLabel, hasCert, cert)}
           <DroppableTextarea
             value={cert}
@@ -473,8 +477,8 @@ export function SslCertificateForm({
             disabled={disabled}
             placeholder={resolvedCertPlaceholder}
           />
-        </div>
-        <div className="flex flex-col gap-y-1">
+        </FormField>
+        <FormField>
           {renderLabel(resolvedKeyLabel, hasKey, sslKey)}
           <DroppableTextarea
             value={sslKey}
@@ -482,7 +486,7 @@ export function SslCertificateForm({
             disabled={disabled}
             placeholder={resolvedKeyPlaceholder}
           />
-        </div>
+        </FormField>
       </div>
     );
   };
@@ -491,7 +495,7 @@ export function SslCertificateForm({
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_FILE_PATH) {
       return (
         <div className="flex flex-col gap-y-2">
-          <div className="flex flex-col gap-y-1">
+          <FormField>
             {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
             <Input
               data-testid="tls-ca-path-input"
@@ -500,9 +504,9 @@ export function SslCertificateForm({
               disabled={disabled || isSaaSMode}
               placeholder={resolvedCaPathLabel}
             />
-          </div>
+          </FormField>
           {showKeyAndCertFields && (
-            <div className="flex flex-col gap-y-1">
+            <FormField>
               {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
               <Input
                 data-testid="tls-cert-path-input"
@@ -511,10 +515,10 @@ export function SslCertificateForm({
                 disabled={disabled || isSaaSMode}
                 placeholder={resolvedCertPathLabel}
               />
-            </div>
+            </FormField>
           )}
           {showKeyAndCertFields && (
-            <div className="flex flex-col gap-y-1">
+            <FormField>
               {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
               <Input
                 data-testid="tls-key-path-input"
@@ -523,7 +527,7 @@ export function SslCertificateForm({
                 disabled={disabled || isSaaSMode}
                 placeholder={resolvedKeyPathLabel}
               />
-            </div>
+            </FormField>
           )}
         </div>
       );
@@ -611,7 +615,7 @@ export function SslCertificateForm({
           onCheckedChange={(val) => onVerifyChange?.(val)}
           disabled={disabled}
         />
-        <label className="textlabel block">{resolvedVerifyLabel}</label>
+        <FormLabel>{resolvedVerifyLabel}</FormLabel>
         {showTooltip && (
           <Tooltip
             content={t("data-source.ssl.verify-certificate-tooltip")}
@@ -648,17 +652,15 @@ export function SslCertificateForm({
           )}
           <div className="flex flex-col gap-y-2">
             {showCaSourceUi && (
-              <div className="flex flex-col gap-y-1">
-                <label className="textlabel block">
-                  {t("data-source.ssl.ca-source.self")}
-                </label>
+              <FormField>
+                <FormLabel>{t("data-source.ssl.ca-source.self")}</FormLabel>
                 <CaSourceSelector
                   value={resolvedCaSource}
                   onChange={onCaSourceChange!}
                   disabled={disabled}
                   isSaaSMode={isSaaSMode}
                 />
-              </div>
+              </FormField>
             )}
             {renderCaMaterial()}
           </div>
@@ -671,17 +673,17 @@ export function SslCertificateForm({
             </legend>
             <div className="flex flex-col gap-y-2">
               {showClientCertSourceUi && (
-                <div className="flex flex-col gap-y-1">
-                  <label className="textlabel block">
+                <FormField>
+                  <FormLabel>
                     {t("data-source.ssl.client-cert-source.self")}
-                  </label>
+                  </FormLabel>
                   <ClientCertSourceSelector
                     value={clientIdentitySource}
                     onChange={onClientCertSourceChange!}
                     disabled={disabled}
                     isSaaSMode={isSaaSMode}
                   />
-                </div>
+                </FormField>
               )}
               {renderClientCertMaterial(clientIdentitySource)}
             </div>
@@ -707,9 +709,7 @@ export function SslCertificateForm({
             onCheckedChange={(val) => onUseSslChange?.(val)}
             disabled={disabled}
           />
-          <label className="textlabel block">
-            {t("data-source.ssl-connection")}
-          </label>
+          <FormLabel>{t("data-source.ssl-connection")}</FormLabel>
         </div>
       )}
 
@@ -723,17 +723,15 @@ export function SslCertificateForm({
             <>
               <div className="flex flex-col gap-y-2">
                 {showCaSourceUi && (
-                  <div className="flex flex-col gap-y-1">
-                    <label className="textlabel block">
-                      {t("data-source.ssl.ca-source.self")}
-                    </label>
+                  <FormField>
+                    <FormLabel>{t("data-source.ssl.ca-source.self")}</FormLabel>
                     <CaSourceSelector
                       value={resolvedCaSource}
                       onChange={onCaSourceChange!}
                       disabled={disabled}
                       isSaaSMode={isSaaSMode}
                     />
-                  </div>
+                  </FormField>
                 )}
                 {renderCaMaterial()}
               </div>
@@ -741,10 +739,10 @@ export function SslCertificateForm({
               {showKeyAndCertFields && (
                 <div className="flex flex-col gap-y-2">
                   {showClientCertSourceUi && (
-                    <div className="flex flex-col gap-y-1">
-                      <label className="textlabel block">
+                    <FormField>
+                      <FormLabel>
                         {t("data-source.ssl.client-cert-source.self")}
-                      </label>
+                      </FormLabel>
                       <ClientCertSourceSelector
                         value={resolvedClientCertSource}
                         onChange={onClientCertSourceChange!}
@@ -752,7 +750,7 @@ export function SslCertificateForm({
                         isSaaSMode={isSaaSMode}
                         allowNone
                       />
-                    </div>
+                    </FormField>
                   )}
                   {renderClientCertMaterial()}
                 </div>

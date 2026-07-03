@@ -3,7 +3,11 @@ import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
-import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
+import {
+  menuRowStateClassName,
+  menuRowStyle,
+  overlaySurfaceClassName,
+} from "./styles.stylex";
 
 // ---- Root ----
 // Default to non-modal: row action menus should let users click through to
@@ -49,11 +53,7 @@ function DropdownMenuContent({
       >
         <BaseMenu.Popup
           ref={ref}
-          className={cn(
-            "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
-            "focus:outline-hidden",
-            className
-          )}
+          className={cn("min-w-[10rem]", overlaySurfaceClassName, className)}
           {...props}
         >
           {children}
@@ -84,11 +84,7 @@ function DropdownMenuSubmenuContent({
       >
         <BaseMenu.Popup
           ref={ref}
-          className={cn(
-            "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
-            "focus:outline-hidden",
-            className
-          )}
+          className={cn("min-w-[10rem]", overlaySurfaceClassName, className)}
           {...props}
         >
           {children}

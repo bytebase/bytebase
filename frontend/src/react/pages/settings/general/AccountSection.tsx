@@ -18,8 +18,10 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { FormFieldGroup } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { usePlanFeature, useServerState } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import {
@@ -421,7 +423,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <div className="flex-1 lg:px-4">
+          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
             {/* Sub-section 1: Disallow signup (non-SaaS only) */}
             {!isSaaSMode && (
               <>
@@ -767,40 +769,34 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     setTokenState((s) => ({ ...s, accessTokenDuration: v }))
                   }
                 />
-                <label className="flex items-center gap-x-1">
-                  <input
-                    type="radio"
-                    name="accessTokenTimeFormat"
+                <RadioGroup
+                  className="gap-x-4"
+                  value={tokenState.accessTokenTimeFormat}
+                  onValueChange={(value) =>
+                    setTokenState((s) => ({
+                      ...s,
+                      accessTokenTimeFormat:
+                        value as TokenState["accessTokenTimeFormat"],
+                    }))
+                  }
+                >
+                  <RadioGroupItem
                     value="MINUTES"
-                    checked={tokenState.accessTokenTimeFormat === "MINUTES"}
                     disabled={disabled || !hasSecureTokenFeature}
-                    onChange={() =>
-                      setTokenState((s) => ({
-                        ...s,
-                        accessTokenTimeFormat: "MINUTES",
-                      }))
-                    }
-                  />
-                  {t(
-                    "settings.general.workspace.access-token-duration.minutes"
-                  )}
-                </label>
-                <label className="flex items-center gap-x-1">
-                  <input
-                    type="radio"
-                    name="accessTokenTimeFormat"
+                  >
+                    {t(
+                      "settings.general.workspace.access-token-duration.minutes"
+                    )}
+                  </RadioGroupItem>
+                  <RadioGroupItem
                     value="HOURS"
-                    checked={tokenState.accessTokenTimeFormat === "HOURS"}
                     disabled={disabled || !hasSecureTokenFeature}
-                    onChange={() =>
-                      setTokenState((s) => ({
-                        ...s,
-                        accessTokenTimeFormat: "HOURS",
-                      }))
-                    }
-                  />
-                  {t("settings.general.workspace.access-token-duration.hours")}
-                </label>
+                  >
+                    {t(
+                      "settings.general.workspace.access-token-duration.hours"
+                    )}
+                  </RadioGroupItem>
+                </RadioGroup>
               </div>
             </div>
 
@@ -835,38 +831,34 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     setTokenState((s) => ({ ...s, refreshTokenDuration: v }))
                   }
                 />
-                <label className="flex items-center gap-x-1">
-                  <input
-                    type="radio"
-                    name="refreshTokenTimeFormat"
+                <RadioGroup
+                  className="gap-x-4"
+                  value={tokenState.refreshTokenTimeFormat}
+                  onValueChange={(value) =>
+                    setTokenState((s) => ({
+                      ...s,
+                      refreshTokenTimeFormat:
+                        value as TokenState["refreshTokenTimeFormat"],
+                    }))
+                  }
+                >
+                  <RadioGroupItem
                     value="HOURS"
-                    checked={tokenState.refreshTokenTimeFormat === "HOURS"}
                     disabled={disabled || !hasSecureTokenFeature}
-                    onChange={() =>
-                      setTokenState((s) => ({
-                        ...s,
-                        refreshTokenTimeFormat: "HOURS",
-                      }))
-                    }
-                  />
-                  {t("settings.general.workspace.refresh-token-duration.hours")}
-                </label>
-                <label className="flex items-center gap-x-1">
-                  <input
-                    type="radio"
-                    name="refreshTokenTimeFormat"
+                  >
+                    {t(
+                      "settings.general.workspace.refresh-token-duration.hours"
+                    )}
+                  </RadioGroupItem>
+                  <RadioGroupItem
                     value="DAYS"
-                    checked={tokenState.refreshTokenTimeFormat === "DAYS"}
                     disabled={disabled || !hasSecureTokenFeature}
-                    onChange={() =>
-                      setTokenState((s) => ({
-                        ...s,
-                        refreshTokenTimeFormat: "DAYS",
-                      }))
-                    }
-                  />
-                  {t("settings.general.workspace.refresh-token-duration.days")}
-                </label>
+                  >
+                    {t(
+                      "settings.general.workspace.refresh-token-duration.days"
+                    )}
+                  </RadioGroupItem>
+                </RadioGroup>
               </div>
             </div>
 
@@ -908,7 +900,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 </span>
               </div>
             </div>
-          </div>
+          </FormFieldGroup>
         </PermissionGuard>
       </div>
     );

@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { FormFieldGroup } from "@/react/components/ui/form";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -82,7 +83,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
             <FeatureBadge feature={PlanFeature.FEATURE_AUDIT_LOG} />
           </div>
         </div>
-        <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
+        <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
           {/* Audit log stdout toggle */}
           <label className="flex items-start gap-x-3 cursor-pointer">
             <Checkbox
@@ -125,7 +126,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
               </div>
             </div>
           </label>
-        </div>
+        </FormFieldGroup>
       </div>
     );
   }

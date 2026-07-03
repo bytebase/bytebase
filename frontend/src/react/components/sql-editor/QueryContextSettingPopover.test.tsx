@@ -154,6 +154,13 @@ const setTabMode = (mode: string) => {
   };
 };
 
+const getRedisRadios = (content: Element | null) =>
+  Array.from(
+    content?.querySelectorAll<HTMLElement>('[role="radio"]') ?? []
+  ).filter((radio) =>
+    radio.parentElement?.textContent?.includes("sql-editor.redis-command")
+  );
+
 beforeEach(async () => {
   vi.clearAllMocks();
 
@@ -215,8 +222,8 @@ describe("QueryContextSettingPopover", () => {
     );
     render();
     const content = container.querySelector("[data-testid='popover-content']");
-    // Should have radio inputs for each data source + automatic
-    const radios = content?.querySelectorAll("input[type='radio']") ?? [];
+    // Should have radio options for each data source + automatic.
+    const radios = content?.querySelectorAll('[role="radio"]') ?? [];
     // automatic + 2 data sources = 3
     expect(radios.length).toBeGreaterThanOrEqual(3);
     unmount();
@@ -246,8 +253,7 @@ describe("QueryContextSettingPopover", () => {
     );
     render();
     const content = container.querySelector("[data-testid='popover-content']");
-    const redisRadios =
-      content?.querySelectorAll("input[name='redis-command']") ?? [];
+    const redisRadios = getRedisRadios(content);
     expect(redisRadios.length).toBe(0);
     unmount();
   });
@@ -263,8 +269,7 @@ describe("QueryContextSettingPopover", () => {
     );
     render();
     const content = container.querySelector("[data-testid='popover-content']");
-    const redisRadios =
-      content?.querySelectorAll("input[name='redis-command']") ?? [];
+    const redisRadios = getRedisRadios(content);
     expect(redisRadios.length).toBe(2);
     unmount();
   });

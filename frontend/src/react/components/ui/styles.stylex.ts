@@ -304,6 +304,9 @@ export function formControlAffixStyle() {
 
 const stickyActionFooterStyles = stylex.create({
   root: {
+    width: "100%",
+  },
+  content: {
     alignItems: "center",
     display: "flex",
     justifyContent: "space-between",
@@ -321,6 +324,10 @@ export function stickyActionFooterStyle() {
   return stickyActionFooterStyles.root;
 }
 
+export function stickyActionFooterContentStyle() {
+  return stickyActionFooterStyles.content;
+}
+
 export function stickyActionFooterSideStyle() {
   return stickyActionFooterStyles.side;
 }
@@ -328,6 +335,19 @@ export function stickyActionFooterSideStyle() {
 export function stickyActionFooterRightStyle() {
   return stickyActionFooterStyles.right;
 }
+
+export const overlaySurfaceClassName = [
+  "max-h-60",
+  "overflow-y-auto",
+  "overflow-x-hidden",
+  "rounded-sm",
+  "border",
+  "border-control-border",
+  "bg-background",
+  "py-1",
+  "shadow-md",
+  "focus:outline-hidden",
+].join(" ");
 
 const rowBaseStyles = stylex.create({
   base: {
@@ -371,6 +391,18 @@ export const menuRowStateClassName = [
   "data-disabled:opacity-50",
 ].join(" ");
 
+export const listRowStateClassName = [
+  "hover:bg-control-bg",
+  "data-selected:bg-accent/5",
+  "aria-selected:bg-accent/5",
+  "disabled:pointer-events-none",
+  "disabled:opacity-50",
+  "aria-disabled:pointer-events-none",
+  "aria-disabled:opacity-50",
+  "data-disabled:pointer-events-none",
+  "data-disabled:opacity-50",
+].join(" ");
+
 const rowSizeStyles = stylex.create({
   sm: {
     columnGap: 8,
@@ -393,6 +425,22 @@ const listRowStyles = stylex.create({
     textAlign: "start",
     width: "100%",
   },
+  icon: {
+    color: "rgb(var(--color-control-light))",
+    flexShrink: 0,
+    height: 16,
+    width: 16,
+  },
+  primaryText: {
+    color: "rgb(var(--color-control))",
+    minWidth: 0,
+  },
+  secondaryText: {
+    color: "rgb(var(--color-control-light))",
+    fontSize: 12,
+    lineHeight: "16px",
+    minWidth: 0,
+  },
 });
 
 export type RowSize = keyof typeof rowSizeStyles;
@@ -403,6 +451,18 @@ export function menuRowStyle(size: RowSize = "sm") {
 
 export function listRowStyle(size: RowSize = "sm") {
   return [rowBaseStyles.base, rowSizeStyles[size], listRowStyles.base];
+}
+
+export function listRowIconStyle() {
+  return listRowStyles.icon;
+}
+
+export function listRowPrimaryTextStyle() {
+  return listRowStyles.primaryText;
+}
+
+export function listRowSecondaryTextStyle() {
+  return listRowStyles.secondaryText;
 }
 
 export function interactiveRowStyle(size: RowSize = "sm") {

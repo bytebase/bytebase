@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { ArrowUpDown, Check, Loader2 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import {
@@ -16,8 +16,14 @@ import { SelectionActionBar } from "@/react/components/SelectionActionBar";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
-import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
   SheetBody,
@@ -28,7 +34,6 @@ import {
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
@@ -110,9 +115,6 @@ function IssueSortDropdown({
   onOrderByChange: (v: string) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  useClickOutside(containerRef, open, () => setOpen(false));
 
   const sortOptions = useMemo(
     () => [
@@ -136,57 +138,53 @@ function IssueSortDropdown({
 
   const handleSelect = (key: string) => {
     onOrderByChange(key === orderBy ? "" : key);
-    setOpen(false);
   };
 
   return (
-    <div ref={containerRef} className="relative">
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(
-          orderBy
-            ? "text-accent! hover:text-accent"
-            : "text-control-placeholder hover:text-control"
-        )}
-        onClick={() => setOpen(!open)}
-      >
-        <ArrowUpDown className="size-4" />
-        <span className="hidden md:inline ml-1">{t("issue.sort.sort")}</span>
-      </Button>
-      {open && (
-        <div
-          className={cn(
-            "absolute right-0 top-full mt-1 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1",
-            LAYER_SURFACE_CLASS
-          )}
-        >
-          {sortOptions.map((group) => (
-            <div key={group.label}>
-              <div className="px-3 py-1.5 text-xs text-control-light font-medium">
-                {group.label}
-              </div>
-              {group.children.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg flex items-center gap-x-2"
-                  onClick={() => handleSelect(opt.key)}
-                >
-                  <Check
-                    className={cn(
-                      "size-3",
-                      orderBy === opt.key ? "text-accent" : "text-transparent"
-                    )}
-                  />
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              orderBy
+                ? "text-accent! hover:text-accent"
+                : "text-control-placeholder hover:text-control"
+            )}
+          >
+            <ArrowUpDown className="size-4" />
+            <span className="hidden md:inline ml-1">
+              {t("issue.sort.sort")}
+            </span>
+          </Button>
+        }
+      />
+      <DropdownMenuContent className="min-w-[180px]">
+        {sortOptions.map((group) => (
+          <div key={group.label}>
+            <DropdownMenuLabel className="px-3 font-medium">
+              {group.label}
+            </DropdownMenuLabel>
+            {group.children.map((opt) => (
+              <DropdownMenuItem
+                key={opt.key}
+                className="gap-x-2"
+                onClick={() => handleSelect(opt.key)}
+              >
+                <Check
+                  className={cn(
+                    "size-3",
+                    orderBy === opt.key ? "text-accent" : "text-transparent"
+                  )}
+                />
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

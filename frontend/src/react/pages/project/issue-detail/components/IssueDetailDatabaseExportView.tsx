@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
@@ -307,23 +308,17 @@ function IssueDetailDatabaseExportOptions() {
         <div className="flex items-center gap-4">
           <span className="text-sm">{t("issue.data-export.format")}</span>
           {optionsEditable ? (
-            <div className="flex flex-wrap items-center gap-4">
+            <RadioGroup
+              className="flex-wrap gap-4"
+              value={String(editableConfig.format)}
+              onValueChange={(value) => handleFormatChange(String(value))}
+            >
               {EXPORT_FORMATS.map((item) => (
-                <label
-                  key={item.value}
-                  className="inline-flex cursor-pointer items-center gap-2 text-sm"
-                >
-                  <input
-                    checked={editableConfig.format === item.value}
-                    className="h-4 w-4"
-                    name="export-format"
-                    onChange={() => handleFormatChange(String(item.value))}
-                    type="radio"
-                  />
-                  <span>{item.label}</span>
-                </label>
+                <RadioGroupItem key={item.value} value={String(item.value)}>
+                  {item.label}
+                </RadioGroupItem>
               ))}
-            </div>
+            </RadioGroup>
           ) : (
             <span className="text-sm font-medium leading-6">
               {selectedFormatLabel}

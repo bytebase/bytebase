@@ -16,6 +16,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { FormFieldGroup } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature, useWorkspace } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -176,7 +177,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
         <PermissionGuard permissions={["bb.workspaces.update"]} display="block">
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
             {/* Workspace ID */}
             <div>
               <label className="text-base font-semibold">
@@ -275,7 +276,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                 </div>
               )}
             </div>
-          </div>
+          </FormFieldGroup>
         </PermissionGuard>
       </div>
     );

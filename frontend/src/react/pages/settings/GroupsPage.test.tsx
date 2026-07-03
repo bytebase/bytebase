@@ -313,6 +313,33 @@ async function renderPage(): Promise<void> {
 }
 
 describe("GroupsPage create group sheet", () => {
+  it("renders the title-required error under the title field", async () => {
+    await renderPage();
+
+    const createButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+    });
+
+    const sheet = container.querySelector(
+      "[data-testid='sheet']"
+    ) as HTMLDivElement;
+    const titleInput = sheet.querySelector(
+      "input[maxlength='200']"
+    ) as HTMLInputElement;
+    const titleField = titleInput.closest('[data-slot="form-field"]');
+    const titleMessage = titleField?.querySelector(
+      '[data-slot="form-message"]'
+    );
+
+    expect(titleMessage?.getAttribute("role")).toBe("alert");
+    expect(titleMessage?.textContent).toBe(
+      "settings.members.groups.form.title common.is-required"
+    );
+  });
+
   it("asks for explicit confirmation before closing with unsaved changes", async () => {
     await renderPage();
 

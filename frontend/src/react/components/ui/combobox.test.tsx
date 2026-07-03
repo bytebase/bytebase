@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { Combobox } from "./combobox";
 import { Dialog, DialogContent } from "./dialog";
 import { LAYER_BACKDROP_CLASS, LAYER_SURFACE_CLASS } from "./layer";
+import { overlaySurfaceClassName } from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -53,11 +54,16 @@ describe("Combobox", () => {
 
     expect(overlayRoot?.innerHTML).toContain(LAYER_BACKDROP_CLASS);
 
-    const dropdown = overlayRoot?.querySelector(
-      "div.bg-background.border.border-control-border.rounded-sm.shadow-lg.overflow-hidden"
-    ) as HTMLDivElement | null;
+    const dropdown = Array.from(
+      overlayRoot?.querySelectorAll("div") ?? []
+    ).find(
+      (element) =>
+        element.className.includes(overlaySurfaceClassName) &&
+        element.textContent?.includes("Alpha")
+    ) as HTMLDivElement | undefined;
     expect(dropdown).toBeInstanceOf(HTMLDivElement);
     expect(dropdown?.textContent).toContain("Alpha");
+    expect(dropdown?.className).toContain(overlaySurfaceClassName);
     expect(dropdown?.className).toContain(LAYER_SURFACE_CLASS);
     expect(overlayRoot?.lastElementChild).toBe(dropdown);
     expect(dropdown?.querySelector("input")?.style.paddingInlineStart).toBe(

@@ -396,12 +396,11 @@ describe("MembersPage project role grant drawer", () => {
     });
     await flush();
 
-    const expressionRadio = [...container.querySelectorAll("input")].find(
-      (input) =>
-        input instanceof HTMLInputElement &&
-        input.type === "radio" &&
-        input.parentElement?.textContent === "CEL Expression"
-    ) as HTMLInputElement;
+    const expressionRadio = [
+      ...container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ].find(
+      (radio) => radio.parentElement?.textContent === "CEL Expression"
+    ) as HTMLElement;
     await act(async () => {
       expressionRadio.click();
     });
@@ -445,12 +444,11 @@ describe("MembersPage project role grant drawer", () => {
     });
     await flush();
 
-    const expressionRadio = [...container.querySelectorAll("input")].find(
-      (input) =>
-        input instanceof HTMLInputElement &&
-        input.type === "radio" &&
-        input.parentElement?.textContent === "CEL Expression"
-    ) as HTMLInputElement;
+    const expressionRadio = [
+      ...container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ].find(
+      (radio) => radio.parentElement?.textContent === "CEL Expression"
+    ) as HTMLElement;
     await act(async () => {
       expressionRadio.click();
     });

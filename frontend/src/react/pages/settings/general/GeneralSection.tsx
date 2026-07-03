@@ -21,7 +21,14 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  FormDescription,
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { useServerState } from "@/react/hooks/useAppState";
 import { router } from "@/react/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/react/router/handles";
@@ -133,29 +140,29 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
             {/* Database change mode */}
-            <div>
+            <FormField>
               <div className="mb-4 text-base font-semibold">
                 {t("settings.general.workspace.default-landing-page.self")}
               </div>
-              <div className="w-full flex flex-col gap-4">
-                <label className="flex items-start gap-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="databaseChangeMode"
-                    className="mt-1"
-                    disabled={!canEdit}
-                    checked={
-                      state.databaseChangeMode === DatabaseChangeMode.PIPELINE
-                    }
-                    onChange={() =>
-                      setState((s) => ({
-                        ...s,
-                        databaseChangeMode: DatabaseChangeMode.PIPELINE,
-                      }))
-                    }
-                  />
+              <RadioGroup
+                className="flex-col items-stretch gap-4"
+                value={String(state.databaseChangeMode)}
+                onValueChange={(value) =>
+                  setState((s) => ({
+                    ...s,
+                    databaseChangeMode: Number(value),
+                  }))
+                }
+              >
+                <RadioGroupItem
+                  value={String(DatabaseChangeMode.PIPELINE)}
+                  disabled={!canEdit}
+                  className="items-start gap-x-3"
+                  contentClassName="flex flex-col gap-1"
+                  radioClassName="mt-1"
+                >
                   <div className="flex flex-col gap-1">
                     <div className="textinfo font-semibold">
                       {t(
@@ -168,23 +175,14 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                       )}
                     </div>
                   </div>
-                </label>
-                <label className="flex items-start gap-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="databaseChangeMode"
-                    className="mt-1"
-                    disabled={!canEdit}
-                    checked={
-                      state.databaseChangeMode === DatabaseChangeMode.EDITOR
-                    }
-                    onChange={() =>
-                      setState((s) => ({
-                        ...s,
-                        databaseChangeMode: DatabaseChangeMode.EDITOR,
-                      }))
-                    }
-                  />
+                </RadioGroupItem>
+                <RadioGroupItem
+                  value={String(DatabaseChangeMode.EDITOR)}
+                  disabled={!canEdit}
+                  className="items-start gap-x-3"
+                  contentClassName="flex flex-col gap-1"
+                  radioClassName="mt-1"
+                >
                   <div className="flex flex-col gap-1">
                     <div className="textinfo font-semibold">
                       {t(
@@ -197,29 +195,26 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                       )}
                     </div>
                   </div>
-                </label>
-              </div>
-            </div>
+                </RadioGroupItem>
+              </RadioGroup>
+            </FormField>
 
             {/* External URL — hidden in SaaS/cloud mode */}
             {!isSaaSMode && (
-              <div>
-                <label className="flex items-center gap-x-2">
-                  <span className="text-base font-semibold">
-                    {t("settings.general.workspace.external-url.self")}
-                  </span>
-                </label>
-                <div className="mb-3 text-sm text-control-placeholder">
+              <FormField>
+                <FormLabel className="text-base font-semibold">
+                  {t("settings.general.workspace.external-url.self")}
+                </FormLabel>
+                <FormDescription className="text-sm">
                   {t("settings.general.workspace.external-url.description")}{" "}
                   <LearnMoreLink
                     href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
                     className="text-accent"
                   />
-                </div>
+                </FormDescription>
                 {externalUrlFromFlag && (
                   <Alert
                     variant="info"
-                    className="mb-3"
                     description={t(
                       "settings.general.workspace.external-url.cannot-edit-flag"
                     )}
@@ -233,9 +228,9 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                     setState((s) => ({ ...s, externalUrl: e.target.value }))
                   }
                 />
-              </div>
+              </FormField>
             )}
-          </div>
+          </FormFieldGroup>
         </PermissionGuard>
 
         {/* Modal after switching to Editor mode */}

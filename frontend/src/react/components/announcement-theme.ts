@@ -10,14 +10,14 @@ export type AnnouncementPresetKey = "info" | "warning" | "critical";
 
 /**
  * Built-in presets are a frontend-only concept that seed the two banner colors.
- * Each value is a #rrggbb hex color. The backgrounds match `--color-info` /
- * `--color-warning` / `--color-error`, all with white text.
+ * Each value is a #rrggbb hex color. The normal background matches
+ * `--color-accent`; warning and critical match their semantic tokens.
  */
 export const ANNOUNCEMENT_PRESETS: Record<
   AnnouncementPresetKey,
   AnnouncementTheme
 > = {
-  info: { background: "#2563eb", text: "#ffffff" },
+  info: { background: "#4f46e5", text: "#ffffff" },
   warning: { background: "#f59e0b", text: "#ffffff" },
   critical: { background: "#dc2626", text: "#ffffff" },
 };

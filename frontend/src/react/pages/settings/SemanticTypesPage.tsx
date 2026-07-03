@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -849,44 +850,30 @@ function MaskingAlgorithmDrawer({
                           "settings.sensitive-data.algorithms.inner-outer-mask.outer-label"
                         )}
                   </p>
-                  <div className="flex gap-x-4 mt-2">
-                    <label className="flex items-center gap-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="innerOuterType"
-                        checked={
-                          innerOuterType ===
-                          Algorithm_InnerOuterMask_MaskType.INNER
-                        }
-                        onChange={() =>
-                          setInnerOuterType(
-                            Algorithm_InnerOuterMask_MaskType.INNER
-                          )
-                        }
-                      />
+                  <RadioGroup
+                    className="mt-2 gap-x-4"
+                    value={String(innerOuterType)}
+                    onValueChange={(value) =>
+                      setInnerOuterType(
+                        Number(value) as Algorithm_InnerOuterMask_MaskType
+                      )
+                    }
+                  >
+                    <RadioGroupItem
+                      value={String(Algorithm_InnerOuterMask_MaskType.INNER)}
+                    >
                       {t(
                         "settings.sensitive-data.algorithms.inner-outer-mask.inner-mask"
                       )}
-                    </label>
-                    <label className="flex items-center gap-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="innerOuterType"
-                        checked={
-                          innerOuterType ===
-                          Algorithm_InnerOuterMask_MaskType.OUTER
-                        }
-                        onChange={() =>
-                          setInnerOuterType(
-                            Algorithm_InnerOuterMask_MaskType.OUTER
-                          )
-                        }
-                      />
+                    </RadioGroupItem>
+                    <RadioGroupItem
+                      value={String(Algorithm_InnerOuterMask_MaskType.OUTER)}
+                    >
                       {t(
                         "settings.sensitive-data.algorithms.inner-outer-mask.outer-mask"
                       )}
-                    </label>
-                  </div>
+                    </RadioGroupItem>
+                  </RadioGroup>
                 </div>
                 <div className="flex gap-x-2 items-end">
                   <div className="flex flex-col gap-y-1">

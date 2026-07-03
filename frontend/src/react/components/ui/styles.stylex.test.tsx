@@ -37,9 +37,15 @@ import {
   formLabelStyle,
   formMessageStyle,
   interactiveRowStyle,
+  listRowIconStyle,
+  listRowPrimaryTextStyle,
+  listRowSecondaryTextStyle,
+  listRowStateClassName,
   listRowStyle,
   menuRowStateClassName,
   menuRowStyle,
+  overlaySurfaceClassName,
+  stickyActionFooterContentStyle,
   stickyActionFooterRightStyle,
   stickyActionFooterSideStyle,
   stickyActionFooterStyle,
@@ -104,13 +110,30 @@ describe("StyleX common UI style contracts", () => {
     expectStyleXClass(stylex.props(formMessageStyle()).className);
     expectStyleXClass(stylex.props(menuRowStyle("md")).className);
     expectStyleXClass(stylex.props(listRowStyle("sm")).className);
+    expectStyleXClass(stylex.props(listRowIconStyle()).className);
+    expectStyleXClass(stylex.props(listRowPrimaryTextStyle()).className);
+    expectStyleXClass(stylex.props(listRowSecondaryTextStyle()).className);
     expectClasses(
       menuRowStateClassName,
       "data-highlighted:bg-control-bg data-disabled:pointer-events-none data-disabled:opacity-50 data-selected:bg-accent/5 aria-selected:bg-accent/5 aria-disabled:pointer-events-none aria-disabled:opacity-50"
     );
     expectStyleXClass(stylex.props(stickyActionFooterStyle()).className);
+    expectStyleXClass(stylex.props(stickyActionFooterContentStyle()).className);
     expectStyleXClass(stylex.props(stickyActionFooterSideStyle()).className);
     expectStyleXClass(stylex.props(stickyActionFooterRightStyle()).className);
+    expectClasses(
+      overlaySurfaceClassName,
+      "max-h-60 overflow-y-auto overflow-x-hidden rounded-sm border border-control-border bg-background py-1 shadow-md focus:outline-hidden"
+    );
+  });
+
+  test("keeps list row state separate from menu row state", () => {
+    expectClasses(
+      listRowStateClassName,
+      "hover:bg-control-bg data-selected:bg-accent/5 aria-selected:bg-accent/5 disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+    );
+    expect(listRowStateClassName).not.toContain("data-highlighted:");
+    expect(menuRowStateClassName).toContain("data-highlighted:bg-control-bg");
   });
 
   test("applies StyleX classes to shared primitive consumers", () => {

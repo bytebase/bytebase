@@ -10,6 +10,7 @@ import {
 } from "@/react/components/issue-activity/activityIcons";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -88,29 +89,33 @@ export function ReviewActionPopover({
         onChange={setComment}
         onSubmit={() => void submit()}
       />
-      <div className="flex flex-col gap-y-2.5">
+      <RadioGroup
+        className="flex-col items-stretch gap-y-2.5"
+        value={action}
+        onValueChange={(value) => setAction(value as ReviewAction)}
+      >
         <ReviewOption
           description={t("issue.review.comment-description")}
           icon={<MessageCircle className="size-4 text-control" />}
           label={t("common.comment")}
-          onSelect={() => setAction("COMMENT")}
           selected={action === "COMMENT"}
+          value="COMMENT"
         />
         <ReviewOption
           description={t("issue.review.approve-description")}
           icon={<DecisionIcon spec={REVIEW_DECISION_ICON.approved} />}
           label={t("common.approve")}
-          onSelect={() => setAction("APPROVE")}
           selected={action === "APPROVE"}
+          value="APPROVE"
         />
         <ReviewOption
           description={t("issue.review.reject-description")}
           icon={<DecisionIcon spec={REVIEW_DECISION_ICON.rejected} />}
           label={t("common.reject")}
-          onSelect={() => setAction("REJECT")}
           selected={action === "REJECT"}
+          value="REJECT"
         />
-      </div>
+      </RadioGroup>
       <div className="flex items-center justify-start gap-x-2 pt-1">
         <Tooltip
           content={
@@ -149,28 +154,25 @@ function ReviewOption({
   description,
   icon,
   label,
-  onSelect,
   selected,
+  value,
 }: {
   description?: string;
   icon?: ReactNode;
   label: string;
-  onSelect: () => void;
   selected: boolean;
+  value: ReviewAction;
 }) {
   return (
-    <label
+    <RadioGroupItem
+      value={value}
+      radioClassName="mt-1"
       className={cn(
-        "flex cursor-pointer items-start gap-3 text-left transition-colors",
+        "items-start gap-3 text-left transition-colors",
         selected ? "text-main" : "text-control"
       )}
+      contentClassName="flex items-start gap-3"
     >
-      <input
-        checked={selected}
-        className="mt-1 size-4 accent-accent"
-        onChange={onSelect}
-        type="radio"
-      />
       {icon && <span className="mt-1 shrink-0">{icon}</span>}
       <span className="flex flex-col">
         <span className="text-sm font-medium leading-6">{label}</span>
@@ -178,6 +180,6 @@ function ReviewOption({
           <span className="text-xs text-control-light">{description}</span>
         )}
       </span>
-    </label>
+    </RadioGroupItem>
   );
 }

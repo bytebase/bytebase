@@ -15,6 +15,7 @@ import { MatchedDatabaseView } from "@/react/components/MatchedDatabaseView";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import {
   FactorList,
   getDatabaseGroupOptionConfigMap,
@@ -246,16 +247,19 @@ export function DatabaseGroupForm({
       </div>
 
       {!readonly && (
-        <div className="sticky bottom-0 z-10">
-          <div className="flex justify-end w-full pt-4 pb-2 px-4 border-t border-block-border bg-background gap-x-4">
+        <StickyActionFooter
+          className="pt-4 pb-2"
+          left={
             <Button variant="outline" onClick={onDismiss}>
               {t("common.cancel")}
             </Button>
+          }
+          right={
             <Button disabled={!allowConfirm} onClick={doConfirm}>
               {isCreating ? t("common.create") : t("common.update")}
             </Button>
-          </div>
-        </div>
+          }
+        />
       )}
     </div>
   );

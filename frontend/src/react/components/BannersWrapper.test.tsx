@@ -261,8 +261,8 @@ describe("BannersWrapper", () => {
     const banner = Array.from(container.querySelectorAll("div")).find((el) =>
       el.textContent?.includes("Untheméd banner")
     );
-    // info preset background: "#2563eb", white text.
-    expect(banner?.style.backgroundColor).toBe("rgb(37, 99, 235)");
+    // info preset background follows --color-accent (#4f46e5), white text.
+    expect(banner?.style.backgroundColor).toBe("rgb(79, 70, 229)");
     expect(banner?.style.color).toBe("rgb(255, 255, 255)");
     unmount();
   });

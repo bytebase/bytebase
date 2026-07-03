@@ -27,6 +27,13 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import {
+  FormDescription,
+  FormError,
+  FormField,
+  FormLabel,
+} from "@/react/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -497,11 +504,11 @@ function RequestRoleForm({
               }
             />
           )}
-          <div className="flex flex-col gap-y-1">
-            <label className="text-sm font-medium">
+          <FormField>
+            <FormLabel>
               {t("common.role.self")}
               <span className="text-error ml-0.5">*</span>
-            </label>
+            </FormLabel>
             <RoleSelect
               scope="project"
               multiple={false}
@@ -518,53 +525,48 @@ function RequestRoleForm({
               filterRole={roleMatchesRequiredPermissions}
             />
             {!!role && !selectedRoleMatchesRequiredPermissions && (
-              <p className="text-xs text-error">
+              <FormError>
                 {t("common.missing-required-permission", {
                   permissions: requiredPermissionList.join(", "),
                 })}
-              </p>
+              </FormError>
             )}
-          </div>
-          <div className="flex flex-col gap-y-1">
-            <label className="text-sm font-medium">
+          </FormField>
+          <FormField>
+            <FormLabel>
               {t("common.reason")}
               {reasonRequired && <span className="text-error ml-0.5">*</span>}
-            </label>
+            </FormLabel>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={t("common.reason")}
               rows={3}
             />
-          </div>
+          </FormField>
           {showDatabases && (
-            <div className="flex flex-col gap-y-2">
-              <label className="text-sm font-medium">
+            <FormField>
+              <FormLabel>
                 {t("common.databases")}
                 <span className="text-error ml-0.5">*</span>
-              </label>
-              <div className="flex items-center gap-x-4">
+              </FormLabel>
+              <RadioGroup
+                className="gap-x-4"
+                value={databaseMode}
+                onValueChange={(value) => {
+                  setDatabaseMode(value as DatabaseMode);
+                  setDatabaseResources([]);
+                  setExprGroup(wrapAsGroup(emptySimpleExpr()));
+                }}
+              >
                 {(["ALL", "EXPRESSION", "SELECT"] as DatabaseMode[]).map(
                   (m) => (
-                    <label
-                      key={m}
-                      className="flex items-center gap-x-2 text-sm cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        name="request-role-db-mode"
-                        checked={databaseMode === m}
-                        onChange={() => {
-                          setDatabaseMode(m);
-                          setDatabaseResources([]);
-                          setExprGroup(wrapAsGroup(emptySimpleExpr()));
-                        }}
-                      />
+                    <RadioGroupItem key={m} value={m}>
                       {t(databaseModeLabelKey(m))}
-                    </label>
+                    </RadioGroupItem>
                   )
                 )}
-              </div>
+              </RadioGroup>
               {databaseMode === "EXPRESSION" && (
                 <ExprEditor
                   expr={exprGroup}
@@ -581,13 +583,11 @@ function RequestRoleForm({
                   onChange={setDatabaseResources}
                 />
               )}
-            </div>
+            </FormField>
           )}
           {envKind && (
-            <div className="flex flex-col gap-y-2">
-              <label className="text-sm font-medium">
-                {t("common.environments")}
-              </label>
+            <FormField>
+              <FormLabel>{t("common.environments")}</FormLabel>
               <DDLWarningCallout type="drawer" kind={envKind} />
               <EnvironmentSelect
                 multiple
@@ -595,15 +595,15 @@ function RequestRoleForm({
                 value={environments}
                 onChange={setEnvironments}
               />
-            </div>
+            </FormField>
           )}
-          <div className="flex flex-col gap-y-1">
-            <label className="text-sm font-medium">
+          <FormField>
+            <FormLabel>
               {t("common.expiration")}
               {expirationRequired && (
                 <span className="text-error ml-0.5">*</span>
               )}
-            </label>
+            </FormLabel>
             <ExpirationPicker
               value={expirationTimestamp}
               onChange={setExpirationTimestamp}
@@ -611,25 +611,25 @@ function RequestRoleForm({
               maxDate={maxDatetime}
             />
             {maximumRequestExpirationDays !== undefined && (
-              <p className="text-xs text-control-light">
+              <FormDescription>
                 {t("project.members.request-role.max-expiration-hint", {
                   days: maximumRequestExpirationDays,
                 })}
-              </p>
+              </FormDescription>
             )}
             {expirationIsInPast && (
-              <p className="text-xs text-error">
+              <FormError>
                 {t("project.members.request-role.expiration-must-be-future")}
-              </p>
+              </FormError>
             )}
             {expirationExceedsMax && (
-              <p className="text-xs text-error">
+              <FormError>
                 {t("project.members.request-role.expiration-exceeds-max", {
                   days: maximumRequestExpirationDays,
                 })}
-              </p>
+              </FormError>
             )}
-          </div>
+          </FormField>
           {showLabelSelect && (
             <IssueLabelSelect
               labels={project.issueLabels}

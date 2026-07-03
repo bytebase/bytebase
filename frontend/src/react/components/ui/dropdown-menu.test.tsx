@@ -9,7 +9,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
-import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
+import {
+  menuRowStateClassName,
+  menuRowStyle,
+  overlaySurfaceClassName,
+} from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -55,6 +59,8 @@ describe("DropdownMenu", () => {
     const item = Array.from(
       document.querySelectorAll("[role='menuitem']")
     ).find((el) => el.textContent === "Action");
+    const surface = item?.parentElement;
+    expect(surface?.className).toContain(overlaySurfaceClassName);
     expect(item?.className).toContain(
       stylex.props(menuRowStyle("sm")).className ?? ""
     );

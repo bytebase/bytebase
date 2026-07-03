@@ -12,6 +12,7 @@ import {
   DropdownMenuSubmenuTrigger,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   useAppFeature,
   useOptionalCurrentUser,
@@ -53,6 +54,23 @@ export function ProfileMenuTrigger({
   const resetQuickstartProgress = useQuickstartReset();
   const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
   const currentPlan = subscription?.plan ?? PlanType.FREE;
+  const devLicenseOptions = [
+    {
+      label: t("subscription.plan.free.title"),
+      value: "",
+      plan: PlanType.FREE,
+    },
+    {
+      label: t("subscription.plan.team.title"),
+      value: import.meta.env.BB_DEV_TEAM_LICENSE as string,
+      plan: PlanType.TEAM,
+    },
+    {
+      label: t("subscription.plan.enterprise.title"),
+      value: import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string,
+      plan: PlanType.ENTERPRISE,
+    },
+  ];
   const quickStartEnabled =
     !hideQuickStart &&
     Boolean(serverInfo?.enableSample) &&
@@ -144,27 +162,31 @@ export function ProfileMenuTrigger({
               <ChevronRight className="h-4 w-4 text-control-light" />
             </DropdownMenuSubmenuTrigger>
             <DropdownMenuSubmenuContent className="w-48">
-              {HEADER_LANGUAGE_OPTIONS.map((item) => (
-                <DropdownMenuItem
-                  key={item.value}
-                  className={
-                    item.value === i18n.language ? "bg-control-bg" : ""
-                  }
-                  onClick={() => {
-                    setAppLocale(item.value);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="mr-2">
-                    <input
-                      type="radio"
-                      readOnly
-                      checked={item.value === i18n.language}
-                    />
-                  </span>
-                  {item.label}
-                </DropdownMenuItem>
-              ))}
+              <RadioGroup
+                className="flex-col items-stretch gap-0"
+                value={i18n.language}
+                onValueChange={(value) => {
+                  setAppLocale(String(value));
+                  setOpen(false);
+                }}
+              >
+                {HEADER_LANGUAGE_OPTIONS.map((item) => (
+                  <DropdownMenuItem
+                    key={item.value}
+                    className={
+                      item.value === i18n.language ? "bg-control-bg" : ""
+                    }
+                    onClick={() => {
+                      setAppLocale(item.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <RadioGroupItem value={item.value}>
+                      {item.label}
+                    </RadioGroupItem>
+                  </DropdownMenuItem>
+                ))}
+              </RadioGroup>
             </DropdownMenuSubmenuContent>
           </DropdownMenuSubmenu>
 
@@ -175,38 +197,32 @@ export function ProfileMenuTrigger({
                 <ChevronRight className="h-4 w-4 text-control-light" />
               </DropdownMenuSubmenuTrigger>
               <DropdownMenuSubmenuContent className="w-48">
-                {[
-                  {
-                    label: t("subscription.plan.free.title"),
-                    value: "",
-                    plan: PlanType.FREE,
-                  },
-                  {
-                    label: t("subscription.plan.team.title"),
-                    value: import.meta.env.BB_DEV_TEAM_LICENSE as string,
-                    plan: PlanType.TEAM,
-                  },
-                  {
-                    label: t("subscription.plan.enterprise.title"),
-                    value: import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string,
-                    plan: PlanType.ENTERPRISE,
-                  },
-                ].map((item) => (
-                  <DropdownMenuItem
-                    key={item.plan}
-                    className={item.plan === currentPlan ? "bg-control-bg" : ""}
-                    onClick={() => switchPlan(item.value)}
-                  >
-                    <span className="mr-2">
-                      <input
-                        type="radio"
-                        readOnly
-                        checked={item.plan === currentPlan}
-                      />
-                    </span>
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
+                <RadioGroup
+                  className="flex-col items-stretch gap-0"
+                  value={String(currentPlan)}
+                  onValueChange={(value) => {
+                    const item = devLicenseOptions.find(
+                      (item) => String(item.plan) === value
+                    );
+                    if (item) {
+                      switchPlan(item.value);
+                    }
+                  }}
+                >
+                  {devLicenseOptions.map((item) => (
+                    <DropdownMenuItem
+                      key={item.plan}
+                      className={
+                        item.plan === currentPlan ? "bg-control-bg" : ""
+                      }
+                      onClick={() => switchPlan(item.value)}
+                    >
+                      <RadioGroupItem value={String(item.plan)}>
+                        {item.label}
+                      </RadioGroupItem>
+                    </DropdownMenuItem>
+                  ))}
+                </RadioGroup>
               </DropdownMenuSubmenuContent>
             </DropdownMenuSubmenu>
           ) : null}

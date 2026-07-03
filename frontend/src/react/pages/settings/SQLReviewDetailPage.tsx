@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import {
   getRuleMapValidationErrorTitle,
   rulesToTemplate,
@@ -381,12 +382,15 @@ export function SQLReviewDetailPage({
 
       {/* Sticky save bar when rules changed */}
       {rulesUpdated && (
-        <div className="w-full mt-4 py-2 border-t border-control-border flex justify-end gap-x-4 bg-background sticky bottom-0 z-10">
-          <Button variant="outline" onClick={onCancelChanges}>
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={onApplyChanges}>{t("common.update")}</Button>
-        </div>
+        <StickyActionFooter
+          className="mt-4 py-2 border-control-border"
+          left={
+            <Button variant="outline" onClick={onCancelChanges}>
+              {t("common.cancel")}
+            </Button>
+          }
+          right={<Button onClick={onApplyChanges}>{t("common.update")}</Button>}
+        />
       )}
 
       {/* Disable confirmation dialog */}

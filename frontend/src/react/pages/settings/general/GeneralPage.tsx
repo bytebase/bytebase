@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import { useServerState } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/store";
@@ -207,14 +208,15 @@ export function GeneralPage() {
       {isSaaSMode && <DangerZoneSection />}
 
       {isDirty && (
-        <div className="sticky bottom-0 z-10 -mb-4">
-          <div className="flex justify-end gap-x-4 w-full py-4 border-t border-block-border bg-background">
+        <StickyActionFooter
+          className="-mb-4"
+          left={
             <Button variant="outline" onClick={handleRevert}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleUpdate}>{t("common.update")}</Button>
-          </div>
-        </div>
+          }
+          right={<Button onClick={handleUpdate}>{t("common.update")}</Button>}
+        />
       )}
     </div>
   );

@@ -32,7 +32,14 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -106,14 +113,10 @@ export function IssueDetailActionBar() {
     "ROLLOUT_START" | "ROLLOUT_CANCEL" | undefined
   >();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useProjectByName(projectName);
   void projectsByName;
   const { isSpecEmpty } = useIssueDetailSpecValidation(page.plan?.specs ?? []);
-
-  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   const context = useMemo<ActionContext | undefined>(() => {
     if (!page.plan || !project || !currentUser) {
@@ -489,65 +492,45 @@ export function IssueDetailActionBar() {
           ))}
 
         {secondaryActions.length > 0 && (
-          <div className="relative" ref={menuRef}>
+          <DropdownMenu>
             <Tooltip
               content={
                 primaryAction ? getDisabledReason(primaryAction) : undefined
               }
             >
-              <span className="inline-flex">
-                <Button
-                  aria-label={t("common.more")}
-                  className="px-1"
-                  disabled={Boolean(
-                    primaryAction && isActionDisabled(primaryAction)
-                  )}
-                  onClick={() => setMenuOpen((open) => !open)}
-                  variant="ghost"
-                >
-                  <EllipsisVertical className="h-4 w-4" />
-                </Button>
-              </span>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={t("common.more")}
+                    className="px-1"
+                    disabled={Boolean(
+                      primaryAction && isActionDisabled(primaryAction)
+                    )}
+                    variant="ghost"
+                  >
+                    <EllipsisVertical className="h-4 w-4" />
+                  </Button>
+                }
+              />
             </Tooltip>
-            {menuOpen && (
-              <div
-                className={cn(
-                  "absolute right-0 top-full mt-1 min-w-44 overflow-hidden rounded-sm border border-control-border bg-white py-1 shadow-lg",
-                  LAYER_SURFACE_CLASS
-                )}
-              >
-                {secondaryActions.map((action) => {
-                  const disabled = isActionDisabled(action) || isSubmitting;
-                  return (
-                    <Tooltip
-                      key={action.id}
-                      content={disabled ? getDisabledReason(action) : undefined}
-                      side="left"
-                    >
-                      <span className="block">
-                        <button
-                          className={cn(
-                            "flex w-full items-center px-3 py-2 text-left text-sm",
-                            disabled
-                              ? "cursor-not-allowed text-control-placeholder"
-                              : "hover:bg-control-bg"
-                          )}
-                          disabled={disabled}
-                          onClick={() => {
-                            setMenuOpen(false);
-                            void executeAction(action.id);
-                          }}
-                          type="button"
-                        >
-                          {action.label(context)}
-                        </button>
-                      </span>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+            <DropdownMenuContent className="min-w-44">
+              {secondaryActions.map((action) => {
+                const disabled = isActionDisabled(action) || isSubmitting;
+                return (
+                  <DropdownMenuItem
+                    key={action.id}
+                    disabled={disabled}
+                    title={disabled ? getDisabledReason(action) : undefined}
+                    onClick={() => {
+                      void executeAction(action.id);
+                    }}
+                  >
+                    {action.label(context)}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -724,6 +707,8 @@ function IssueDetailConfirmDialog({
   );
 }
 
+type IssueReviewAction = "COMMENT" | "APPROVE" | "REJECT";
+
 function IssueDetailReviewPopover({
   context,
   mobile,
@@ -744,9 +729,8 @@ function IssueDetailReviewPopover({
   const popoverRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
-  const [selectedAction, setSelectedAction] = useState<
-    "COMMENT" | "APPROVE" | "REJECT"
-  >("COMMENT");
+  const [selectedAction, setSelectedAction] =
+    useState<IssueReviewAction>("COMMENT");
   const issue = page.issue;
   const submitDisabled =
     loading || (selectedAction === "COMMENT" && comment.trim().length === 0);
@@ -851,21 +835,25 @@ function IssueDetailReviewPopover({
         }}
       />
 
-      <div className="flex flex-col gap-y-2.5">
+      <RadioGroup
+        className="flex-col items-stretch gap-y-2.5"
+        value={selectedAction}
+        onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
+      >
         <IssueDetailReviewOption
           description={t("issue.review.comment-description")}
           icon={<MessageCircle className="size-4 text-control" />}
           label={t("common.comment")}
-          onSelect={() => setSelectedAction("COMMENT")}
           selected={selectedAction === "COMMENT"}
+          value="COMMENT"
         />
         {context.permissions.isApprovalCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.approve-description")}
             icon={<Check className="size-4 text-success" />}
             label={t("common.approve")}
-            onSelect={() => setSelectedAction("APPROVE")}
             selected={selectedAction === "APPROVE"}
+            value="APPROVE"
           />
         )}
         {context.permissions.isApprovalCandidate && (
@@ -873,11 +861,11 @@ function IssueDetailReviewPopover({
             description={t("issue.review.reject-description")}
             icon={<X className="size-4 text-error" />}
             label={t("common.reject")}
-            onSelect={() => setSelectedAction("REJECT")}
             selected={selectedAction === "REJECT"}
+            value="REJECT"
           />
         )}
-      </div>
+      </RadioGroup>
 
       <div className="flex items-center justify-start gap-x-2 pt-1">
         <Button
@@ -930,28 +918,25 @@ function IssueDetailReviewOption({
   description,
   icon,
   label,
-  onSelect,
   selected,
+  value,
 }: {
   description?: string;
   icon?: ReactNode;
   label: string;
-  onSelect: () => void;
   selected: boolean;
+  value: IssueReviewAction;
 }) {
   return (
-    <label
+    <RadioGroupItem
+      value={value}
+      radioClassName="mt-1"
       className={cn(
-        "flex cursor-pointer items-start gap-3 text-left transition-colors",
+        "items-start gap-3 text-left transition-colors",
         selected ? "text-main" : "text-control"
       )}
+      contentClassName="flex items-start gap-3"
     >
-      <input
-        checked={selected}
-        className="mt-1 h-4 w-4 accent-accent"
-        onChange={onSelect}
-        type="radio"
-      />
       {icon && <span className="mt-1 shrink-0">{icon}</span>}
       <span className="flex flex-col">
         <span className="text-sm font-medium leading-6">{label}</span>
@@ -959,7 +944,7 @@ function IssueDetailReviewOption({
           <span className="text-xs text-control-light">{description}</span>
         )}
       </span>
-    </label>
+    </RadioGroupItem>
   );
 }
 

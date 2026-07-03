@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
+import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { router } from "@/react/router";
@@ -358,7 +360,11 @@ export function ProjectWebhookForm({
                 {t("project.webhook.destination")}{" "}
                 <span className="text-error">*</span>
               </label>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-7 mt-1">
+              <RadioGroup
+                className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-7"
+                value={String(state.type)}
+                onValueChange={(value) => updateField("type", Number(value))}
+              >
                 {webhookTypeItemList.map((item) => (
                   <div
                     key={item.type}
@@ -375,16 +381,15 @@ export function ProjectWebhookForm({
                         {item.name}
                       </p>
                       <div className="mt-3">
-                        <input
-                          type="radio"
-                          checked={state.type === item.type}
-                          onChange={() => updateField("type", item.type)}
+                        <RadioGroupItem
+                          value={String(item.type)}
+                          aria-label={item.name}
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
+              </RadioGroup>
             </div>
           )}
 
@@ -535,43 +540,37 @@ export function ProjectWebhookForm({
       </div>
 
       {/* Footer */}
-      <div className="w-full sticky bottom-0 z-10">
-        <div className="w-full py-4 px-4 border-t border-block-border bg-background">
-          <div className="flex justify-end items-center gap-x-4">
-            {create ? (
-              <Button variant="outline" onClick={cancel}>
-                {t("common.cancel")}
-              </Button>
-            ) : (
-              valueChanged && (
-                <Button variant="outline" onClick={discardChanges}>
-                  {t("common.discard-changes")}
-                </Button>
-              )
-            )}
-            {allowEdit &&
-              (create ? (
-                <Button
-                  disabled={!allowCreate || loading}
-                  onClick={createWebhook}
-                >
-                  {t("common.create")}
-                </Button>
-              ) : (
-                <Button
-                  disabled={
-                    loading ||
-                    !valueChanged ||
-                    state.notificationTypes.length === 0
-                  }
-                  onClick={updateWebhook}
-                >
-                  {t("common.update")}
-                </Button>
-              ))}
-          </div>
-        </div>
-      </div>
+      <StickyActionFooter
+        className="w-full"
+        left={
+          create ? (
+            <Button variant="outline" onClick={cancel}>
+              {t("common.cancel")}
+            </Button>
+          ) : valueChanged ? (
+            <Button variant="outline" onClick={discardChanges}>
+              {t("common.discard-changes")}
+            </Button>
+          ) : undefined
+        }
+        right={
+          allowEdit &&
+          (create ? (
+            <Button disabled={!allowCreate || loading} onClick={createWebhook}>
+              {t("common.create")}
+            </Button>
+          ) : (
+            <Button
+              disabled={
+                loading || !valueChanged || state.notificationTypes.length === 0
+              }
+              onClick={updateWebhook}
+            >
+              {t("common.update")}
+            </Button>
+          ))
+        }
+      />
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

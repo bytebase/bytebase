@@ -6,6 +6,7 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { UserCell } from "@/react/components/UserCell";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { listRowStateClassName } from "@/react/components/ui/styles.stylex";
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
   ensureWorkloadIdentityFullName,
@@ -139,7 +141,10 @@ function WorkloadIdentityTable({
                   key={user.name}
                   className={
                     canOpenDetail
-                      ? "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+                      ? cn(
+                          "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg",
+                          listRowStateClassName
+                        )
                       : undefined
                   }
                   tabIndex={canOpenDetail ? 0 : undefined}

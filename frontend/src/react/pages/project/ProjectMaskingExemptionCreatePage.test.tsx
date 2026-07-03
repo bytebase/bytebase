@@ -255,7 +255,7 @@ const submittedExpression = (): string | undefined => {
 
 const clickRadio = async (container: HTMLElement, index: number) => {
   const radios = Array.from(
-    container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    container.querySelectorAll<HTMLElement>('[role="radio"]')
   );
   await click(radios[index]!);
 };

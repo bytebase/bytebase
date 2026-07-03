@@ -26,6 +26,7 @@ import {
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import {
   buildMaskingExemption,
@@ -416,30 +417,21 @@ export function GrantAccessDialog({
               </div>
 
               <div className="w-full mb-2">
-                <div className="flex flex-col sm:flex-row justify-start sm:items-center gap-2 sm:gap-4">
+                <RadioGroup
+                  className="flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4"
+                  value={radioValue}
+                  onValueChange={(value) => onRadioChange(value as RadioValue)}
+                >
                   <Tooltip content={t("issue.role-grant.all-databases-tip")}>
-                    <label className="flex items-center gap-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="resource-mode"
-                        checked={radioValue === "ALL"}
-                        onChange={() => onRadioChange("ALL")}
-                        disabled={modeChangeProcessing}
-                        className="accent-accent"
-                      />
-                      <span>{t("issue.role-grant.all-databases")}</span>
-                    </label>
+                    <RadioGroupItem value="ALL" disabled={modeChangeProcessing}>
+                      {t("issue.role-grant.all-databases")}
+                    </RadioGroupItem>
                   </Tooltip>
 
-                  <label className="flex items-center gap-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="resource-mode"
-                      checked={radioValue === "EXPRESSION"}
-                      onChange={() => onRadioChange("EXPRESSION")}
-                      disabled={modeChangeProcessing}
-                      className="accent-accent"
-                    />
+                  <RadioGroupItem
+                    value="EXPRESSION"
+                    disabled={modeChangeProcessing}
+                  >
                     <div className="flex items-center gap-x-1">
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
@@ -447,17 +439,12 @@ export function GrantAccessDialog({
                       />
                       <span>{t("issue.role-grant.use-cel")}</span>
                     </div>
-                  </label>
+                  </RadioGroupItem>
 
-                  <label className="flex items-center gap-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="resource-mode"
-                      checked={radioValue === "SELECT"}
-                      onChange={() => onRadioChange("SELECT")}
-                      disabled={modeChangeProcessing}
-                      className="accent-accent"
-                    />
+                  <RadioGroupItem
+                    value="SELECT"
+                    disabled={modeChangeProcessing}
+                  >
                     <div className="flex items-center gap-x-1">
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
@@ -465,8 +452,8 @@ export function GrantAccessDialog({
                       />
                       <span>{t("issue.role-grant.manually-select")}</span>
                     </div>
-                  </label>
-                </div>
+                  </RadioGroupItem>
+                </RadioGroup>
               </div>
 
               {radioValue === "SELECT" && (

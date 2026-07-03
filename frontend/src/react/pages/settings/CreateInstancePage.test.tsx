@@ -94,8 +94,8 @@ describe("CreateInstancePage", () => {
     const buttons = container.querySelector(
       "[data-testid='instance-form-buttons']"
     );
-    expect(buttons).toHaveClass("px-4");
-    expect(buttons).toHaveClass("sm:px-6");
+    expect(buttons).not.toHaveClass("px-4");
+    expect(buttons).not.toHaveClass("sm:px-6");
 
     act(() => {
       root.unmount();

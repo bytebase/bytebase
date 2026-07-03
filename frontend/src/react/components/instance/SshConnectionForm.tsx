@@ -1,6 +1,7 @@
-import { type DragEvent, useCallback, useEffect, useId, useState } from "react";
+import { type DragEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 
 const SSH_TYPES = ["NONE", "TUNNEL+PK"] as const;
@@ -41,7 +42,6 @@ export function SshConnectionForm({
   onChange,
 }: SshConnectionFormProps) {
   const { t } = useTranslation();
-  const radioGroupId = useId();
   const [sshType, setSshType] = useState<SshType>(() => guessSshType(value));
 
   // Sync type from props when value changes externally.
@@ -95,30 +95,22 @@ export function SshConnectionForm({
   return (
     <>
       {/* SSH type radio buttons */}
-      <div className="flex flex-row items-center gap-x-4 mt-2">
-        {SSH_TYPES.map((type) => {
-          const id = `${radioGroupId}-${type}`;
-          return (
-            <label
-              key={type}
-              htmlFor={id}
-              className="flex items-center gap-x-1.5 cursor-pointer text-sm text-main"
-            >
-              <input
-                id={id}
-                type="radio"
-                name={radioGroupId}
-                value={type}
-                checked={sshType === type}
-                disabled={disabled}
-                onChange={() => handleSelectType(type)}
-                className="accent-accent"
-              />
-              {getSshTypeLabel(type)}
-            </label>
-          );
-        })}
-      </div>
+      <RadioGroup
+        className="gap-x-4 mt-2"
+        value={sshType}
+        onValueChange={(value) => handleSelectType(value as SshType)}
+      >
+        {SSH_TYPES.map((type) => (
+          <RadioGroupItem
+            key={type}
+            value={type}
+            disabled={disabled}
+            className="text-main"
+          >
+            {getSshTypeLabel(type)}
+          </RadioGroupItem>
+        ))}
+      </RadioGroup>
 
       {sshType !== "NONE" && (
         <>
