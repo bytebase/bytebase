@@ -1,3 +1,4 @@
+import * as stylex from "@stylexjs/stylex";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -9,6 +10,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "./context-menu";
+import { menuRowStateClassName, menuRowStyle } from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -259,6 +261,54 @@ describe("ContextMenu", () => {
       expect(document.body.textContent).toContain("Item one");
       expect(document.body.textContent).toContain("Item two");
     });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("uses shared menu row state classes for items", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <div data-testid="trigger">Right-click me</div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem>Action</ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      );
+    });
+
+    const trigger = container.querySelector("[data-testid='trigger']");
+
+    await act(async () => {
+      trigger?.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 50,
+          clientY: 50,
+        })
+      );
+    });
+
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("Action");
+    });
+
+    const item = Array.from(
+      document.querySelectorAll("[role='menuitem']")
+    ).find((el) => el.textContent === "Action");
+    expect(item?.className).toContain(
+      stylex.props(menuRowStyle("sm")).className ?? ""
+    );
+    expect(item?.className).toContain(menuRowStateClassName);
 
     await act(async () => {
       root.unmount();

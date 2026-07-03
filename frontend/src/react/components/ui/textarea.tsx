@@ -1,6 +1,8 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import * as stylex from "@stylexjs/stylex";
+import { cva } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import { type ControlSize, controlMultilineSizeStyle } from "./styles.stylex";
 
 const textareaVariants = cva(
   cn(
@@ -8,31 +10,27 @@ const textareaVariants = cva(
     "placeholder:text-control-placeholder",
     "focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent",
     "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50"
-  ),
-  {
-    variants: {
-      size: {
-        xs: "px-2 py-1 text-xs leading-4",
-        sm: "px-2 py-1.5 text-xs leading-4",
-        md: "px-3 py-2 text-sm leading-5",
-        lg: "px-4 py-2 text-sm leading-5",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
+  )
 );
 
-type TextareaProps = Omit<ComponentProps<"textarea">, "size"> &
-  VariantProps<typeof textareaVariants>;
+type TextareaProps = Omit<ComponentProps<"textarea">, "size"> & {
+  size?: ControlSize;
+};
 
-function Textarea({ className, size, ref, ...props }: TextareaProps) {
+function Textarea({
+  className,
+  size = "md",
+  ref,
+  style,
+  ...props
+}: TextareaProps) {
+  const stylexProps = stylex.props(controlMultilineSizeStyle(size));
   return (
     <textarea
-      ref={ref}
-      className={cn(textareaVariants({ size }), className)}
       {...props}
+      ref={ref}
+      className={cn(textareaVariants(), stylexProps.className, className)}
+      style={{ ...stylexProps.style, ...style }}
     />
   );
 }

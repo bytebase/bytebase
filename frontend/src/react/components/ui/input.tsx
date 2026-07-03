@@ -1,7 +1,9 @@
 import { Input as BaseInput } from "@base-ui/react/input";
-import { cva, type VariantProps } from "class-variance-authority";
+import * as stylex from "@stylexjs/stylex";
+import { cva } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import { type ControlSize, controlSizeStyle } from "./styles.stylex";
 
 const inputVariants = cva(
   cn(
@@ -10,31 +12,21 @@ const inputVariants = cva(
     "focus:outline-hidden",
     "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50",
     "read-only:cursor-default read-only:bg-control-bg read-only:focus:ring-0 read-only:focus:border-control-border"
-  ),
-  {
-    variants: {
-      size: {
-        xs: "h-6 px-2 text-xs leading-4",
-        sm: "h-7 px-2 text-xs leading-4",
-        md: "h-9 px-3 text-sm leading-5",
-        lg: "h-10 px-4 text-sm leading-5",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
+  )
 );
 
-type InputProps = Omit<ComponentProps<"input">, "size"> &
-  VariantProps<typeof inputVariants>;
+type InputProps = Omit<ComponentProps<"input">, "size"> & {
+  size?: ControlSize;
+};
 
-function Input({ className, size, ref, ...props }: InputProps) {
+function Input({ className, size = "md", ref, style, ...props }: InputProps) {
+  const stylexProps = stylex.props(controlSizeStyle(size));
   return (
     <BaseInput
-      ref={ref}
-      className={cn(inputVariants({ size }), className)}
       {...props}
+      ref={ref}
+      className={cn(inputVariants(), stylexProps.className, className)}
+      style={{ ...stylexProps.style, ...style }}
     />
   );
 }

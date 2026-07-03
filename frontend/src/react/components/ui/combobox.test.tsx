@@ -60,6 +60,13 @@ describe("Combobox", () => {
     expect(dropdown?.textContent).toContain("Alpha");
     expect(dropdown?.className).toContain(LAYER_SURFACE_CLASS);
     expect(overlayRoot?.lastElementChild).toBe(dropdown);
+    expect(dropdown?.querySelector("input")?.style.paddingInlineStart).toBe(
+      "2rem"
+    );
+    const option = Array.from(dropdown?.querySelectorAll("button") ?? []).find(
+      (button) => button.textContent?.includes("Alpha")
+    );
+    expect(option?.parentElement?.parentElement?.className).toContain("px-2");
 
     act(() => {
       root.unmount();

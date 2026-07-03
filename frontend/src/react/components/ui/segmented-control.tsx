@@ -1,8 +1,10 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
+import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
+import { type ControlSize, controlMinHeightStyle } from "./styles.stylex";
 
 export interface SegmentedControlOption<T extends string> {
   value: T;
@@ -18,8 +20,8 @@ interface SegmentedControlProps<T extends string> {
   ariaLabel: string;
   disabled?: boolean;
   className?: string;
-  /** Segment size — matches the Input/Combobox size tier names. Defaults to `md`. */
-  size?: "sm" | "md";
+  /** Segment size — matches the shared control size tier names. Defaults to `md`. */
+  size?: ControlSize;
 }
 
 export function SegmentedControl<T extends string>({
@@ -31,8 +33,6 @@ export function SegmentedControl<T extends string>({
   className,
   size = "md",
 }: SegmentedControlProps<T>) {
-  const segmentSizeClasses =
-    size === "sm" ? "min-h-7 px-2 text-xs" : "min-h-8 px-3 text-sm";
   return (
     <BaseRadioGroup
       value={value}
@@ -51,12 +51,13 @@ export function SegmentedControl<T extends string>({
         const previousSelected =
           index > 0 && options[index - 1]?.value === value;
         const optionDisabled = disabled || option.disabled;
+        const stylexProps = stylex.props(controlMinHeightStyle(size));
         const segment = (
           <label
             key={option.value}
             className={cn(
               "relative inline-flex items-center justify-center transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
-              segmentSizeClasses,
+              stylexProps.className,
               index > 0 &&
                 !previousSelected &&
                 "border-l border-control-border",
@@ -67,6 +68,7 @@ export function SegmentedControl<T extends string>({
                 ? "cursor-not-allowed opacity-50 hover:bg-background"
                 : "cursor-pointer"
             )}
+            style={stylexProps.style}
           >
             <Radio.Root
               value={option.value}

@@ -1,9 +1,16 @@
 import { Select as BaseSelect } from "@base-ui/react/select";
-import { cva, type VariantProps } from "class-variance-authority";
+import * as stylex from "@stylexjs/stylex";
+import { cva } from "class-variance-authority";
 import { Check, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
+import {
+  type ControlSize,
+  controlSizeStyle,
+  menuRowStateClassName,
+  menuRowStyle,
+} from "./styles.stylex";
 
 // ---- Root ----
 const Select = BaseSelect.Root;
@@ -15,37 +22,28 @@ const selectTriggerVariants = cva(
     "cursor-pointer",
     "hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent",
     "disabled:pointer-events-none disabled:opacity-50"
-  ),
-  {
-    variants: {
-      size: {
-        xs: "h-6 px-2 text-xs leading-4",
-        sm: "h-7 px-2 text-xs leading-4",
-        md: "h-9 px-3 text-sm leading-5",
-        lg: "h-10 px-4 text-sm leading-5",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
+  )
 );
 
-type SelectTriggerProps = ComponentProps<typeof BaseSelect.Trigger> &
-  VariantProps<typeof selectTriggerVariants>;
+type SelectTriggerProps = ComponentProps<typeof BaseSelect.Trigger> & {
+  size?: ControlSize;
+};
 
 function SelectTrigger({
   className,
   children,
   ref,
-  size,
+  size = "md",
+  style,
   ...props
 }: SelectTriggerProps) {
+  const stylexProps = stylex.props(controlSizeStyle(size));
   return (
     <BaseSelect.Trigger
-      ref={ref}
-      className={cn(selectTriggerVariants({ size }), className)}
       {...props}
+      ref={ref}
+      className={cn(selectTriggerVariants(), stylexProps.className, className)}
+      style={{ ...stylexProps.style, ...style }}
     >
       {children}
       <BaseSelect.Icon>
@@ -112,20 +110,19 @@ function SelectItem({
   ref,
   ...props
 }: ComponentProps<typeof BaseSelect.Item>) {
+  const stylexProps = stylex.props(menuRowStyle("sm"));
   return (
     <BaseSelect.Item
-      ref={ref}
-      className={cn(
-        "relative flex items-center gap-2 px-2 py-1.5 pl-7 text-sm cursor-pointer select-none",
-        "hover:bg-control-bg focus:bg-control-bg outline-hidden",
-        "data-highlighted:bg-control-bg",
-        className
-      )}
       {...props}
+      ref={ref}
+      className={cn(stylexProps.className, menuRowStateClassName, className)}
+      style={{ ...stylexProps.style, ...props.style }}
     >
-      <BaseSelect.ItemIndicator className="absolute left-1.5">
-        <Check className="size-3.5" />
-      </BaseSelect.ItemIndicator>
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        <BaseSelect.ItemIndicator>
+          <Check className="size-3.5" />
+        </BaseSelect.ItemIndicator>
+      </span>
       <BaseSelect.ItemText>{children}</BaseSelect.ItemText>
     </BaseSelect.Item>
   );

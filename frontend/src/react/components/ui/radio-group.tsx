@@ -17,9 +17,15 @@ function RadioGroup({
 function RadioGroupItem({
   children,
   className,
+  contentClassName,
+  radioClassName,
   value,
   ...props
-}: React.ComponentProps<typeof Radio.Root> & { children?: React.ReactNode }) {
+}: React.ComponentProps<typeof Radio.Root> & {
+  children?: React.ReactNode;
+  contentClassName?: string;
+  radioClassName?: string;
+}) {
   return (
     <label
       className={cn("flex items-center gap-x-2 cursor-pointer", className)}
@@ -28,13 +34,16 @@ function RadioGroupItem({
         value={value}
         className={cn(
           "flex size-4 shrink-0 items-center justify-center rounded-full border border-control-border",
-          "data-[checked]:border-accent data-[checked]:border-[5px]",
-          "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-          "disabled:cursor-not-allowed disabled:opacity-50"
+          "data-[checked]:border-[rgb(var(--color-accent))] data-[checked]:border-[5px]",
+          "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[rgb(var(--color-accent))] focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          radioClassName
         )}
         {...props}
       />
-      {children && <span className="text-sm">{children}</span>}
+      {children && (
+        <div className={cn("text-sm", contentClassName)}>{children}</div>
+      )}
     </label>
   );
 }

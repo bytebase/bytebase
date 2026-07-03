@@ -1,7 +1,9 @@
+import * as stylex from "@stylexjs/stylex";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test } from "vitest";
 import { NumberInput } from "./number-input";
+import { controlSizeStyle } from "./styles.stylex";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -16,6 +18,12 @@ function mount(node: React.ReactNode) {
   });
   return { container, root };
 }
+
+const expectClasses = (className: string | undefined, expected: string) => {
+  for (const expectedClass of expected.split(" ")) {
+    expect(className ?? "").toContain(expectedClass);
+  }
+};
 
 describe("NumberInput", () => {
   afterEach(() => {
@@ -47,6 +55,21 @@ describe("NumberInput", () => {
     expect(container.querySelector("input")).toBeInstanceOf(HTMLInputElement);
   });
 
+  test("keeps affix padding overridable by inputClassName", () => {
+    const { container } = mount(
+      <NumberInput
+        value={10}
+        onValueChange={() => {}}
+        suffix="MB"
+        inputClassName="pr-16"
+      />
+    );
+    const input = container.querySelector("input");
+
+    expect(input?.className).toContain("pr-16");
+    expect(input?.className).not.toContain("pr-12");
+  });
+
   test("applies className to the outer wrapper and size variant to the input", () => {
     const { container } = mount(
       <NumberInput
@@ -59,7 +82,12 @@ describe("NumberInput", () => {
     const wrapper = container.firstElementChild as HTMLElement | null;
     const input = container.querySelector("input");
     expect(wrapper?.className).toContain("w-60");
-    expect(input?.className).toContain("h-7");
+    expectClasses(
+      input?.className,
+      stylex.props(controlSizeStyle("sm", { paddingInline: false }))
+        .className ?? ""
+    );
+    expect(input?.className).toContain("px-2");
   });
 
   test("forwards the disabled prop to the underlying input", () => {
