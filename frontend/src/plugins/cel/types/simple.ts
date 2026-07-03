@@ -1,7 +1,10 @@
 /// Define a simplified version (less nested) of CEL Expr.
 /// Convenient for local editing.
-import type {
+import {
   BooleanFactor,
+  isListFactor,
+  isStringFactor,
+  ListFactor,
   NumberFactor,
   StringFactor,
   TimestampFactor,
@@ -13,7 +16,9 @@ import {
   isCollectionOperator,
   isCompareOperator,
   isEqualityOperator,
+  isListMembershipOperator,
   isStringOperator,
+  type ListMembershipOperator,
   type LogicalOperator,
   type StringOperator,
 } from "./operator";
@@ -51,11 +56,17 @@ export interface StringExpr extends BaseConditionExpr {
   args: [StringFactor, string];
 }
 
+export interface ListMembershipExpr extends BaseConditionExpr {
+  operator: ListMembershipOperator;
+  args: [ListFactor, string];
+}
+
 export type ConditionExpr =
   | EqualityExpr
   | CompareExpr
   | CollectionExpr
-  | StringExpr;
+  | StringExpr
+  | ListMembershipExpr;
 
 // RawStringExpr is used to represent a string that is unable to be parsed as a condition.
 export type RawStringExpr = {
@@ -96,7 +107,21 @@ export const isCollectionExpr = (expr: SimpleExpr): expr is CollectionExpr => {
 };
 
 export const isStringExpr = (expr: SimpleExpr): expr is StringExpr => {
-  return isConditionExpr(expr) && isStringOperator(expr.operator);
+  return (
+    isConditionExpr(expr) &&
+    isStringOperator(expr.operator) &&
+    isStringFactor(expr.args[0])
+  );
+};
+
+export const isListMembershipExpr = (
+  expr: SimpleExpr
+): expr is ListMembershipExpr => {
+  return (
+    isConditionExpr(expr) &&
+    isListMembershipOperator(expr.operator) &&
+    isListFactor(expr.args[0])
+  );
 };
 
 export const isRawStringExpr = (expr: SimpleExpr): expr is RawStringExpr => {

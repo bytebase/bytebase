@@ -19,6 +19,7 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 import {
+  CEL_ATTRIBUTE_ISSUE_LABELS,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
@@ -123,6 +124,7 @@ export const ApprovalSourceFactorMap: Map<
       ...schemaObjectNameFactorList,
       ...migrationFactorList,
       CEL_ATTRIBUTE_RISK_LEVEL,
+      CEL_ATTRIBUTE_ISSUE_LABELS,
     ],
   ],
   [

@@ -20,6 +20,7 @@ import {
   isConditionExpr,
   isConditionGroupExpr,
   isEqualityExpr,
+  isListMembershipExpr,
   isRawStringExpr,
   isStringExpr,
 } from "../types";
@@ -68,6 +69,18 @@ export const buildCELExpr = async (
         wrapIdentExpr(factor),
         wrapConstExpr(value),
       ]);
+    }
+    if (isListMembershipExpr(condition)) {
+      const { operator, args } = condition;
+      const [factor, value] = args;
+      const membership = wrapCallExpr("@in", [
+        wrapConstExpr(value),
+        wrapIdentExpr(factor),
+      ]);
+      if (operator === "@not_contains") {
+        return wrapCallExpr("!_", [membership]);
+      }
+      return membership;
     }
     if (isStringExpr(condition)) {
       const { operator, args } = condition;
