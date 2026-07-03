@@ -47,6 +47,7 @@ export type ControlSize = keyof typeof controlSize;
 
 interface ControlSizeOptions {
   gap?: boolean;
+  paddingInline?: boolean;
 }
 
 const controlHeightStyles = stylex.create({
@@ -164,11 +165,11 @@ const controlMultilinePaddingStyles = stylex.create({
 
 export function controlSizeStyle(
   size: ControlSize,
-  { gap }: ControlSizeOptions = {}
+  { gap, paddingInline = true }: ControlSizeOptions = {}
 ) {
   return [
     controlHeightStyles[size],
-    controlPaddingInlineStyles[size],
+    paddingInline && controlPaddingInlineStyles[size],
     controlTextStyles[size],
     gap && controlGapStyles[size],
   ];
@@ -180,11 +181,11 @@ export function buttonGapStyle(size: ControlSize) {
 
 export function controlMinHeightStyle(
   size: ControlSize,
-  { gap }: ControlSizeOptions = {}
+  { gap, paddingInline = true }: ControlSizeOptions = {}
 ) {
   return [
     controlMinHeightStyles[size],
-    controlPaddingInlineStyles[size],
+    paddingInline && controlPaddingInlineStyles[size],
     controlTextStyles[size],
     gap && controlGapStyles[size],
   ];
@@ -395,7 +396,6 @@ const listRowStyles = stylex.create({
 });
 
 export type RowSize = keyof typeof rowSizeStyles;
-export type InteractiveRowSize = RowSize;
 
 export function menuRowStyle(size: RowSize = "sm") {
   return [rowBaseStyles.base, rowSizeStyles[size]];
@@ -405,6 +405,6 @@ export function listRowStyle(size: RowSize = "sm") {
   return [rowBaseStyles.base, rowSizeStyles[size], listRowStyles.base];
 }
 
-export function interactiveRowStyle(size: InteractiveRowSize = "sm") {
+export function interactiveRowStyle(size: RowSize = "sm") {
   return listRowStyle(size);
 }

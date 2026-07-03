@@ -17,6 +17,17 @@ const numberInputClasses = cva(
   )
 );
 
+const numberInputPaddingClasses = cva("", {
+  variants: {
+    size: {
+      xs: "px-1.5",
+      sm: "px-2",
+      md: "px-3",
+      lg: "px-4",
+    },
+  },
+});
+
 type NumberFieldRootProps = ComponentPropsWithoutRef<typeof NumberField.Root>;
 
 interface NumberInputProps
@@ -46,10 +57,13 @@ function NumberInput({
   ...rootProps
 }: NumberInputProps) {
   const hasAffix = Boolean(prefix || suffix);
-  const stylexProps = stylex.props(controlSizeStyle(size));
+  const stylexProps = stylex.props(
+    controlSizeStyle(size, { paddingInline: false })
+  );
   const inputClasses = cn(
     numberInputClasses(),
     stylexProps.className,
+    numberInputPaddingClasses({ size }),
     prefix && "pl-10",
     suffix && "pr-12",
     inputClassName

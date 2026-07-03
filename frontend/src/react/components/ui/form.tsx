@@ -138,6 +138,7 @@ function FormControlAffix({
 
 function FormLabel({
   className,
+  htmlFor,
   ref,
   style,
   ...props
@@ -147,6 +148,7 @@ function FormLabel({
     <label
       ref={ref}
       data-slot="form-label"
+      htmlFor={htmlFor}
       className={cn(stylexProps.className, className)}
       style={{ ...stylexProps.style, ...style }}
       {...props}

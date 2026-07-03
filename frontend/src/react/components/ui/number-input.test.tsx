@@ -55,6 +55,21 @@ describe("NumberInput", () => {
     expect(container.querySelector("input")).toBeInstanceOf(HTMLInputElement);
   });
 
+  test("keeps affix padding overridable by inputClassName", () => {
+    const { container } = mount(
+      <NumberInput
+        value={10}
+        onValueChange={() => {}}
+        suffix="MB"
+        inputClassName="pr-16"
+      />
+    );
+    const input = container.querySelector("input");
+
+    expect(input?.className).toContain("pr-16");
+    expect(input?.className).not.toContain("pr-12");
+  });
+
   test("applies className to the outer wrapper and size variant to the input", () => {
     const { container } = mount(
       <NumberInput
@@ -69,8 +84,10 @@ describe("NumberInput", () => {
     expect(wrapper?.className).toContain("w-60");
     expectClasses(
       input?.className,
-      stylex.props(controlSizeStyle("sm")).className ?? ""
+      stylex.props(controlSizeStyle("sm", { paddingInline: false }))
+        .className ?? ""
     );
+    expect(input?.className).toContain("px-2");
   });
 
   test("forwards the disabled prop to the underlying input", () => {

@@ -7,12 +7,14 @@ import {
   stickyActionFooterStyle,
 } from "./styles.stylex";
 
-interface StickyActionFooterProps extends ComponentProps<"div"> {
-  left?: ReactNode;
-  right?: ReactNode;
-  leftClassName?: string;
-  rightClassName?: string;
-}
+type StickyActionFooterProps = Readonly<
+  ComponentProps<"div"> & {
+    left?: ReactNode;
+    right?: ReactNode;
+    leftClassName?: string;
+    rightClassName?: string;
+  }
+>;
 
 function StickyActionFooter({
   className,

@@ -22,7 +22,6 @@ import { NumberInput } from "./number-input";
 import { SegmentedControl } from "./segmented-control";
 import { Select, SelectTrigger } from "./select";
 import {
-  buttonGapStyle,
   controlMinHeightStyle,
   controlMultilineSizeStyle,
   controlSizeStyle,
@@ -182,7 +181,7 @@ describe("StyleX common UI style contracts", () => {
 
     expectClasses(
       button.container.querySelector("button")?.className,
-      stylex.props(controlSizeStyle("sm"), buttonGapStyle("sm")).className ?? ""
+      "h-7 px-2 text-xs leading-4 gap-1"
     );
     expectClasses(
       input.container.querySelector("input")?.className,
@@ -198,7 +197,12 @@ describe("StyleX common UI style contracts", () => {
     );
     expectClasses(
       numberInput.container.querySelector("input")?.className,
-      stylex.props(controlSizeStyle("lg")).className ?? ""
+      stylex.props(controlSizeStyle("lg", { paddingInline: false }))
+        .className ?? ""
+    );
+    expectClasses(
+      numberInput.container.querySelector("input")?.className,
+      "px-4"
     );
     expectClasses(
       textarea.container.querySelector("textarea")?.className,
