@@ -316,7 +316,11 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx contex
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to marshal payload")
 	}
-	labelBytes, err := json.Marshal(CanonicalizeIssueLabels(labels))
+	canonicalLabels := CanonicalizeIssueLabels(labels)
+	if canonicalLabels == nil {
+		canonicalLabels = []string{}
+	}
+	labelBytes, err := json.Marshal(canonicalLabels)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to marshal issue labels")
 	}
