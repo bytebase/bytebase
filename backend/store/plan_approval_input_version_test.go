@@ -362,6 +362,96 @@ func TestUpdateIssuePayloadIfPlanApprovalInputVersionSkipsIssueWithoutPlan(t *te
 	require.Nil(t, got.Payload.GetApproval())
 }
 
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsUpdatesMatchingLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels:    []string{"prod", "security"},
+			RiskLevel: storepb.RiskLevel_LOW,
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		},
+	}, 2, []string{"security", "prod", "prod"})
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Equal(t, storepb.RiskLevel_HIGH, got.Payload.GetRiskLevel())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+}
+
+func TestUpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsSkipsStaleLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels:    []string{"prod"},
+			RiskLevel: storepb.RiskLevel_LOW,
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Labels: []string{"stage"}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"stage"}, updatedIssue.Payload.GetLabels())
+
+	updated, err := s.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, "project-a", issue.UID, &storepb.Issue{
+		RiskLevel: storepb.RiskLevel_HIGH,
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		},
+	}, 2, []string{"prod"})
+	require.NoError(t, err)
+	require.False(t, updated)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Equal(t, storepb.RiskLevel_LOW, got.Payload.GetRiskLevel())
+	require.Nil(t, got.Payload.GetApproval())
+}
+
 func TestResetIssueApprovalFindingIfPlanApprovalInputVersionSkipsCurrentDoneApproval(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)

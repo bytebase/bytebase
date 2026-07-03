@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -294,6 +295,47 @@ func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersion(ctx context.Context
 			  AND plan.id = issue.plan_id
 			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
 		  )`, time.Now(), p, projectID, uid, approvalInputVersion)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to inspect issue update")
+	}
+	return rowsAffected > 0, nil
+}
+
+func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64, labels []string) (bool, error) {
+	p, err := protojson.Marshal(payload)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to marshal payload")
+	}
+	labelBytes, err := json.Marshal(CanonicalizeIssueLabels(labels))
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to marshal issue labels")
+	}
+
+	q := qb.Q().Space(`
+		UPDATE issue
+		SET
+			updated_at = ?,
+			payload = payload || ?
+		WHERE project = ?
+		  AND id = ?
+		  AND COALESCE(payload->'labels', '[]'::jsonb) = ?::jsonb
+		  AND EXISTS (
+			SELECT 1
+			FROM plan
+			WHERE plan.project = issue.project
+			  AND plan.id = issue.plan_id
+			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
+		  )`, time.Now(), p, projectID, uid, string(labelBytes), approvalInputVersion)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
