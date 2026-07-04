@@ -2163,10 +2163,10 @@
             "self": "模型名称"
           },
           "provider": {
-            "azure_open_ai": "Azure Open AI",
+            "azure_open_ai": "Azure OpenAI",
             "claude": "Claude",
             "gemini": "Gemini",
-            "open_ai": "Open AI",
+            "open_ai": "OpenAI",
             "self": "AI 提供方"
           },
           "self": "AI 助手"
