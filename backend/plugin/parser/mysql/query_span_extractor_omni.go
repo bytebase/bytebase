@@ -1446,6 +1446,8 @@ func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprN
 		collectOmniAccessTablesFromExpr(result, e.Array, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ParenExpr:
 		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.WeightStringExpr:
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	default:
 	}
 }
