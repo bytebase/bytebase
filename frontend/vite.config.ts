@@ -44,14 +44,15 @@ export default defineConfig({
         return { code: result.code, map: result.map || null };
       },
     },
+    tailwindcss(),
     stylex.vite({
-      // Avoid the plugin's dev HTML injection: it inserts StyleX layers before
-      // Tailwind, letting Preflight override control typography and padding.
+      // Keep StyleX after Tailwind so production extraction can append into the
+      // linked Vite CSS asset loaded by the main app.
+      cssInjectionTarget: (fileName) => /(^|\/)main-[^/]+\.css$/.test(fileName),
       devMode: "css-only",
       runtimeInjection: false,
       useCSSLayers: true,
     }),
-    tailwindcss(),
     yaml(),
     ...(process.env.VITEST
       ? []
