@@ -239,3 +239,44 @@ func TestMySQLSDLDumpWithRoutinesPassesGate(t *testing.T) {
 	}
 	require.True(t, sawSet, "the dump must have produced at least one SET the gate had to allow")
 }
+
+// TestMySQLSDLDumpEmptyModePassesGate is the BYT-9832 empty-mode (round-3 P2) regression guard:
+// a routine synced under an intentional EMPTY sql_mode is now bracketed with an explicit
+// empty-mode SET (rather than emitted bare), and that empty-value framing must still pass the
+// narrowed SDL gate — isSDLSessionContextSet keys on the LHS (session sql_mode), not the RHS
+// value, so an empty value is fine. Runs the real production dumper -> real gate and asserts
+// every statement passes.
+func TestMySQLSDLDumpEmptyModePassesGate(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "probe_empty",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Functions: []*storepb.FunctionMetadata{
+					{Name: "fe", Definition: `CREATE FUNCTION fe() RETURNS INT DETERMINISTIC RETURN 1`, SqlMode: ""},
+				},
+			},
+		},
+	}
+
+	sdl, err := schema.GetDatabaseDefinition(storepb.Engine_MYSQL, schema.GetDefinitionContext{SDLFormat: true}, meta)
+	require.NoError(t, err)
+	// The empty mode must be emitted EXPLICITLY, not suppressed.
+	require.Contains(t, sdl, "SET sql_mode = '';", "empty-mode routine must emit an explicit empty-mode SET")
+
+	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sdl)
+	require.NoError(t, err, "the emitted empty-mode SDL must parse for the gate to run")
+	got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.NotEmpty(t, got)
+
+	sawSet := false
+	for _, stmt := range got {
+		require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, stmt.Type),
+			"statement type %s at line %d must be allowed in MySQL SDL (empty-mode regression):\n%s",
+			stmt.Type, stmt.Line, stmt.Text)
+		if stmt.Type == storepb.StatementType_SET {
+			sawSet = true
+		}
+	}
+	require.True(t, sawSet, "the empty-mode dump must have produced the SET sql_mode='' the gate had to allow")
+}

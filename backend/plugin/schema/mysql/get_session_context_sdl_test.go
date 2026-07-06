@@ -97,9 +97,13 @@ func TestSDLSessionContextWriterOutput(t *testing.T) {
 	require.Empty(t, selfDiff, "self-diff must be empty, got:\n%s", selfDiff)
 }
 
-// TestSDLSessionContextDefaultModeNoBrackets confirms an object with an empty SqlMode emits NO
-// save/restore bracket (bare CREATE), so default-mode dumps are unchanged.
-func TestSDLSessionContextDefaultModeNoBrackets(t *testing.T) {
+// TestSDLSessionContextEmptyModeBracketed pins the BYT-9832 empty-mode fix: a synced object
+// authored under an EMPTY sql_mode (a valid, intentional empty mode, distinct from "unset") is
+// STILL bracketed, emitting an explicit empty-mode SET. Suppressing it (the old behavior) let a
+// re-apply on a session with a non-empty default sql_mode recreate the routine under that
+// default, silently changing semantics. The emitted framing must LoadSDL cleanly and self-diff
+// empty (the empty-value SET is as cosmetic to the routine diff as any other).
+func TestSDLSessionContextEmptyModeBracketed(t *testing.T) {
 	meta := &storepb.DatabaseSchemaMetadata{
 		Name: "probe2",
 		Schemas: []*storepb.SchemaMetadata{
@@ -112,8 +116,29 @@ func TestSDLSessionContextDefaultModeNoBrackets(t *testing.T) {
 	}
 	sdl, err := getSDLFormat(meta)
 	require.NoError(t, err)
-	require.NotContains(t, sdl, "SET sql_mode", "empty-sql_mode routine must not emit any SET")
-	require.NotContains(t, sdl, "@saved_sql_mode", "empty-sql_mode routine must not save/restore")
+	require.Contains(t, sdl, "SET @saved_sql_mode = @@sql_mode;", "empty-mode routine must still save sql_mode")
+	require.Contains(t, sdl, "SET sql_mode = '';", "empty-mode routine must emit an explicit empty-mode SET")
+	require.Contains(t, sdl, "SET sql_mode = @saved_sql_mode;", "empty-mode routine must restore sql_mode")
+
+	_, err = catalog.LoadSDLWithVersion(withDatabaseContext(sdl), catalog.MySQL80)
+	require.NoError(t, err, "empty-mode framing must LoadSDL cleanly")
+
+	selfDiff, err := mysqlDiffSDLMigration(sdl, sdl, "8.0")
+	require.NoError(t, err)
+	require.Empty(t, selfDiff, "empty-mode self-diff must be empty, got:\n%s", selfDiff)
+}
+
+// TestSDLSessionContextEmptyValuesRoundTripThroughOmni proves an empty-value SET frame is
+// cosmetic to the omni diff exactly like a non-empty one: a routine bracketed with an
+// empty-mode SET diffs empty against its bare form.
+func TestSDLSessionContextEmptyValuesRoundTripThroughOmni(t *testing.T) {
+	bracketed := "SET @saved_sql_mode = @@sql_mode;\nSET sql_mode = '';\n" +
+		"CREATE FUNCTION f() RETURNS INT DETERMINISTIC RETURN 1;\nSET sql_mode = @saved_sql_mode;\n"
+	bare := "CREATE FUNCTION f() RETURNS INT DETERMINISTIC RETURN 1;\n"
+
+	diff, err := mysqlDiffSDLMigration(bracketed, bare, "8.0")
+	require.NoError(t, err)
+	require.Empty(t, diff, "empty-mode bracketed vs bare must diff empty, got:\n%s", diff)
 }
 
 // TestSDLSessionContextCosmeticToDiff proves the emitted SET framing does not perturb the omni

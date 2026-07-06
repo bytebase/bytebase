@@ -1868,18 +1868,20 @@ func stripViewBodyDatabaseQualifier(body, dbName string) string {
 	return out.String()
 }
 
-// SDL session-context save/restore variable names. Each routine/trigger/event that carries a
-// captured non-empty sql_mode (or, for events, a captured non-empty time_zone) is bracketed
-// with a SET/restore pair so the object is (re)created under its captured context. The SET is
-// emitted for EVERY object whose synced mode is non-empty — including one that equals the
-// origin server's default — so each object fully specifies its own context and the dump does
-// not depend on a fragile comparison against some "default" the SDL has no reliable notion of.
-// Using a session USER VARIABLE to save and restore the previous value keeps the block
-// concat-safe: the multi-file export writes each object to its own file and the action
-// concatenates them into a single session (action/command/file.go), and the live apply runs
-// all statements on one connection (backend/plugin/db/mysql), so a bare `SET sql_mode=X` would
-// LEAK X into the next object. Restoring @@sql_mode/@@time_zone after every CREATE makes each
-// object fully self-describing and order-independent.
+// SDL session-context save/restore variable names. Each SYNCED routine/trigger/event is
+// bracketed with a SET/restore pair so the object is (re)created under its captured context.
+// The SET is emitted for EVERY such object — including one whose captured mode equals the
+// origin server's default, AND one whose captured mode is the intentional EMPTY "" mode — so
+// each object fully specifies its own context and the dump does not depend on a fragile
+// comparison against some "default" the SDL has no reliable notion of. "" is a real, captured
+// value (information_schema SQL_MODE / TIME_ZONE are NOT NULL, so sync always has a value),
+// distinct from "unset"; suppressing the bracket for "" would let the applier's default mode
+// leak in and silently change semantics. Using a session USER VARIABLE to save and restore
+// the previous value keeps the block concat-safe: the multi-file export writes each object to
+// its own file and the action concatenates them into a single session (action/command/file.go),
+// and the live apply runs all statements on one connection (backend/plugin/db/mysql), so a
+// bare `SET sql_mode=X` would LEAK X into the next object. Restoring @@sql_mode/@@time_zone
+// after every CREATE makes each object fully self-describing and order-independent.
 const (
 	sdlSaveSQLMode     = "SET @saved_sql_mode = @@sql_mode;\n"
 	sdlRestoreSQLMode  = "SET sql_mode = @saved_sql_mode;\n"
@@ -1888,20 +1890,34 @@ const (
 )
 
 // writeSDLSessionContextPrefix emits the concat-safe `SET @saved…; SET …` preamble that
-// establishes the authored session context before an SDL CREATE. sqlMode is always
-// bracketed when non-empty; timeZone is bracketed only when useTimeZone is true (events).
-// It returns the paired suffix that the caller must append AFTER the CREATE to restore the
-// prior session state. When neither is set, both strings are empty and the CREATE is
-// emitted bare. The SET forms mirror the mysqldump-style writer (setSQLMode/setTimezone)
-// and are accepted by omni's SDL loader (LoadSDL allows SET; the value is cosmetic to the
+// establishes the authored session context before an SDL CREATE. It returns the paired
+// suffix the caller must append AFTER the CREATE to restore the prior session state.
+//
+// Bracketing is driven by PRESENCE, not by the value being non-empty: bracketSQLMode and
+// bracketTimeZone say "this object carries a captured value; frame it — even when empty".
+// The three callers (writeRoutineSDL / writeTriggerSDL / writeEventSDL) operate only on
+// synced metadata, where the source information_schema columns (ROUTINES/TRIGGERS/EVENTS
+// SQL_MODE, EVENTS.TIME_ZONE) are NOT NULL, so the callers always have a real value — an
+// EMPTY sql_mode is a valid, intentional empty mode (a routine authored while the session
+// sql_mode was empty), NOT "no context". Emitting an explicit empty-mode SET for that case is
+// what makes the object self-describing: re-applying the SDL on a session whose default
+// sql_mode is the usual non-empty server default would otherwise recreate the object under
+// that default and silently change its semantics (the next export would then show a different
+// mode).
+//
+// A session USER VARIABLE saves/restores the previous value so the block is concat-safe:
+// the multi-file export writes each object to its own file and the action concatenates them
+// into one session (action/command/file.go), and the live apply runs all statements on one
+// connection (backend/plugin/db/mysql), so a bare `SET sql_mode=X` would LEAK X into the next
+// object. The SET forms mirror the mysqldump-style writer (setSQLMode/setTimezone) and are
+// accepted by omni's SDL loader (LoadSDL allows SET; the value is cosmetic to the
 // routine/trigger/event diff, which compares bodies opaquely).
 //
-// The prefix saves+sets time_zone (when used) then sql_mode; the returned suffix restores
+// The prefix saves+sets time_zone (when bracketed) then sql_mode; the returned suffix restores
 // them in strict LIFO order — sql_mode first, then time_zone — so the brackets nest properly
 // (@@time_zone is the outermost, restored last). Restoring saved user variables is order-
 // independent in practice, but the LIFO discipline keeps the framing unambiguous.
-func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode, timeZone string, useTimeZone bool) (suffix string, err error) {
-	bracketTimeZone := useTimeZone && timeZone != ""
+func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode string, bracketSQLMode bool, timeZone string, bracketTimeZone bool) (suffix string, err error) {
 	if bracketTimeZone {
 		if _, err := buf.WriteString(sdlSaveTimeZone); err != nil {
 			return "", err
@@ -1910,7 +1926,7 @@ func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode, timeZone string
 			return "", err
 		}
 	}
-	if sqlMode != "" {
+	if bracketSQLMode {
 		if _, err := buf.WriteString(sdlSaveSQLMode); err != nil {
 			return "", err
 		}
@@ -1920,7 +1936,7 @@ func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode, timeZone string
 	}
 	// Suffix restores in reverse of the save order: sql_mode (inner) before time_zone (outer).
 	var restore strings.Builder
-	if sqlMode != "" {
+	if bracketSQLMode {
 		restore.WriteString(sdlRestoreSQLMode)
 	}
 	if bracketTimeZone {
@@ -1939,16 +1955,18 @@ func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode, timeZone string
 // somehow survives, is stripped to match omni's DEFINER-agnostic routine identity.
 //
 // sqlMode is the session sql_mode the routine was authored under (RoutineMetadata.sql_mode
-// from sync). When non-empty it brackets the CREATE with a concat-safe save/restore SET
-// (see writeSDLSessionContextPrefix) so re-applying the dumped SDL recreates the routine
-// under its authored mode rather than the applier's default — a routine written under
-// ANSI_QUOTES or NO_BACKSLASH_ESCAPES otherwise silently changes behavior.
+// from sync, always populated from the NOT-NULL information_schema column). The CREATE is
+// ALWAYS bracketed with a concat-safe save/restore SET (see writeSDLSessionContextPrefix) —
+// including for an empty "" mode — so re-applying the dumped SDL recreates the routine under
+// its authored mode rather than the applier's default. A routine written under ANSI_QUOTES or
+// NO_BACKSLASH_ESCAPES, or one authored under an intentional empty mode, otherwise silently
+// changes behavior on a server with a non-empty default sql_mode.
 func writeRoutineSDL(buf *strings.Builder, definition, sqlMode string) error {
 	def := strings.TrimSpace(stripLeadingDefiner(definition))
 	if def == "" {
 		return nil
 	}
-	restore, err := writeSDLSessionContextPrefix(buf, sqlMode, "", false)
+	restore, err := writeSDLSessionContextPrefix(buf, sqlMode, true, "", false)
 	if err != nil {
 		return err
 	}
@@ -1971,10 +1989,12 @@ func writeRoutineSDL(buf *strings.Builder, definition, sqlMode string) error {
 // <body>`. DEFINER is omitted (omni's trigger differ ignores it) and the body is
 // emitted verbatim (compared byte for byte after trimming).
 //
-// A trigger carrying a captured non-empty sql_mode (TriggerMetadata.sql_mode) is bracketed
-// with the concat-safe save/restore SET so the body is re-parsed under that mode on apply.
+// The trigger's captured sql_mode (TriggerMetadata.sql_mode from sync, always populated from
+// the NOT-NULL information_schema column) ALWAYS brackets the CREATE with the concat-safe
+// save/restore SET — including an empty "" mode — so the body is re-parsed under that exact
+// mode on apply rather than the applier's default.
 func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
-	restore, err := writeSDLSessionContextPrefix(buf, trigger.SqlMode, "", false)
+	restore, err := writeSDLSessionContextPrefix(buf, trigger.SqlMode, true, "", false)
 	if err != nil {
 		return err
 	}
@@ -1998,16 +2018,18 @@ func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.Tr
 // event differ normalizes STARTS out of the canonical schedule key, so it does not
 // perturb the no-op.
 //
-// An event carries BOTH a sql_mode and a time_zone (EventMetadata.sql_mode/time_zone). The
-// time_zone matters because the schedule (AT / STARTS / EVERY … ENDS) is interpreted in the
-// session time zone, so recreating under a different zone shifts the fire times; both are
-// bracketed with the concat-safe save/restore SET.
+// An event carries BOTH a sql_mode and a time_zone (EventMetadata.sql_mode/time_zone from
+// sync, both always populated from the NOT-NULL information_schema EVENTS columns —
+// TIME_ZONE is typically 'SYSTEM'). BOTH are ALWAYS bracketed with the concat-safe
+// save/restore SET, including empty values. The time_zone matters because the schedule
+// (AT / STARTS / EVERY … ENDS) is interpreted in the session time zone, so recreating under
+// a different zone shifts the fire times.
 func writeEventSDL(buf *strings.Builder, event *storepb.EventMetadata) error {
 	def := strings.TrimSpace(stripLeadingDefiner(event.Definition))
 	if def == "" {
 		return nil
 	}
-	restore, err := writeSDLSessionContextPrefix(buf, event.SqlMode, event.TimeZone, true)
+	restore, err := writeSDLSessionContextPrefix(buf, event.SqlMode, true, event.TimeZone, true)
 	if err != nil {
 		return err
 	}

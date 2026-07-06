@@ -155,6 +155,80 @@ SET sql_mode = '';
 	}
 }
 
+// TestSDLSessionContextEmptyModeLive is the BYT-9832 round-3 proof: a routine authored under an
+// intentional EMPTY sql_mode must survive the SDL export/re-apply as empty — not silently pick
+// up the applier's (non-empty) default. The dump must now carry an explicit empty-mode SET
+// (before the fix the empty mode was suppressed and the CREATE emitted bare). The scratch DB is
+// re-created on a session whose sql_mode is the server's usual NON-empty default, so a bare
+// CREATE would recreate `fe` under that default; the explicit empty-mode SET is what forces the
+// empty mode. Verified via information_schema, plus an omni self-diff.
+//
+//nolint:tparallel
+func TestSDLSessionContextEmptyModeLive(t *testing.T) {
+	skipUnlessLiveOracle(t)
+	ctx := context.Background()
+
+	// fe is created under an explicit empty sql_mode. A neighbor gb under a non-default,
+	// non-empty mode makes the "empty is preserved, not defaulted, and does not leak" assertion
+	// meaningful: if empty were suppressed, fe would inherit either the applier default or gb's
+	// mode. Both bodies are mode-neutral so the dump round-trips through omni.
+	originDDL := `CREATE TABLE t (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET sql_mode = '';
+CREATE FUNCTION fe() RETURNS INT DETERMINISTIC RETURN 1;
+
+SET sql_mode = 'NO_BACKSLASH_ESCAPES';
+CREATE FUNCTION gb() RETURNS INT DETERMINISTIC RETURN 2;
+SET sql_mode = '';
+`
+
+	for _, srv := range liveServers {
+		srv := srv
+		t.Run(srv.name, func(t *testing.T) {
+			originDB := newLiveDatabase(ctx, t, srv, "sdl_sesctx_empty_origin")
+			require.NoError(t, applyDDL(ctx, t, srv, originDB, originDDL))
+
+			// Sanity: the origin fe really has an empty mode in information_schema.
+			odbh, closeODB := rawDB(ctx, t, srv, originDB)
+			require.Equal(t, "", routineSQLMode(ctx, t, odbh, originDB, "fe"),
+				"[%s] origin fe must have an empty sql_mode", srv.name)
+			closeODB()
+
+			source := dumpSDL(ctx, t, srv, originDB)
+			t.Logf("[%s] empty-mode dump:\n%s", srv.name, source)
+			require.Contains(t, source, "SET sql_mode = '';",
+				"[%s] dump must emit an EXPLICIT empty-mode SET (not a bare CREATE)", srv.name)
+			require.Contains(t, source, "SET @saved_sql_mode = @@sql_mode;",
+				"[%s] empty-mode object must still save/restore", srv.name)
+
+			// Round-trips through omni (empty-value SET is cosmetic to the diff).
+			selfDiff, err := mysqlDiffSDLMigration(source, source, srv.version)
+			require.NoError(t, err)
+			require.Empty(t, selfDiff, "[%s] empty-mode source-vs-source must be empty, got:\n%s", srv.name, selfDiff)
+
+			// Re-apply to a fresh scratch DB. The driver session starts at the server's usual
+			// NON-empty default sql_mode, so a bare fe CREATE would inherit that default.
+			scratchDB := newLiveDatabase(ctx, t, srv, "sdl_sesctx_empty_scratch")
+			require.NoError(t, applyDDL(ctx, t, srv, scratchDB, source),
+				"[%s] empty-mode SDL must re-apply cleanly", srv.name)
+
+			dbh, closeDB := rawDB(ctx, t, srv, scratchDB)
+			defer closeDB()
+			feMode := routineSQLMode(ctx, t, dbh, scratchDB, "fe")
+			require.Equal(t, "", feMode,
+				"[%s] re-applied fe must carry the authored EMPTY sql_mode, not the applier default (got %q)", srv.name, feMode)
+			require.Contains(t, routineSQLMode(ctx, t, dbh, scratchDB, "gb"), "NO_BACKSLASH_ESCAPES",
+				"[%s] neighbor gb must carry its own mode", srv.name)
+
+			// Re-dump self-diff empty: the scratch schema equals the origin dump.
+			redump := dumpSDL(ctx, t, srv, scratchDB)
+			diff, err := mysqlDiffSDLMigration(redump, source, srv.version)
+			require.NoError(t, err)
+			require.Empty(t, diff, "[%s] empty-mode re-dump must equal origin dump, residual:\n%s", srv.name, diff)
+		})
+	}
+}
+
 // TestSDLSessionContextAnsiQuotesLive is the BYT-9832 proof for the ANSI_QUOTES mode, which the
 // omni SDL parser cannot round-trip (double-quoted identifiers). It asserts the part the fix
 // delivers: the dump carries the save/restore SET framing, and re-applying it to a live server
