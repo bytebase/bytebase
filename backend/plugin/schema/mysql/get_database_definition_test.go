@@ -357,3 +357,27 @@ func TestStripLeadingDefiner(t *testing.T) {
 		})
 	}
 }
+
+// TestPrintColumnClauseSRIDPresence pins the presence semantics of the SRID attribute
+// (X5): explicit SRID 0 must be emitted (it is a valid spatial reference system,
+// distinct from "no SRID"), and an unset SRID emits nothing.
+func TestPrintColumnClauseSRIDPresence(t *testing.T) {
+	srid := func(v uint32) *uint32 { return &v }
+	table := &storepb.TableMetadata{Name: "t"}
+
+	render := func(col *storepb.ColumnMetadata) string {
+		var buf strings.Builder
+		require.NoError(t, printColumnClause(&buf, col, table))
+		return buf.String()
+	}
+
+	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 0 */",
+		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)}))
+	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 4326 */",
+		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)}))
+	// Custom SRSs above int32 range must render unmangled.
+	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 3000000000 */",
+		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(3000000000)}))
+	require.Equal(t, "  `pt` point NOT NULL",
+		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false}))
+}

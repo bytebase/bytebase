@@ -122,3 +122,91 @@ func TestWalkThroughOmniCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
+
+// TestWalkThroughOmniSRIDInvisible verifies the omni catalog -> storepb.ColumnMetadata
+// conversion (tableToProto) carries the spatial SRID (presence + value, including the
+// valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughOmni
+// simulation path — used to compute the schema a changeset would produce — would silently
+// drop these attributes, mirroring the v1-converter gap.
+func TestWalkThroughOmniSRIDInvisible(t *testing.T) {
+	state := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
+	statement := "CREATE TABLE t (" +
+		"id INT PRIMARY KEY, " +
+		"g4326 GEOMETRY NOT NULL SRID 4326, " +
+		"g0 GEOMETRY NOT NULL SRID 0, " +
+		"gnone GEOMETRY NOT NULL, " +
+		"secret INT INVISIBLE NOT NULL DEFAULT 0);"
+	sm := sheet.NewManager()
+	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
+	asts := base.ExtractASTs(stmts)
+
+	advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	require.Nil(t, advice)
+
+	cols := map[string]*storepb.ColumnMetadata{}
+	for _, c := range state.GetProto().GetSchemas()[0].GetTables()[0].GetColumns() {
+		cols[c.GetName()] = c
+	}
+
+	// Explicit SRID must round-trip as presence (nil vs non-nil) plus value.
+	require.NotNil(t, cols["g4326"].Srid)
+	require.Equal(t, uint32(4326), *cols["g4326"].Srid)
+	// Explicit SRID 0 is present-and-distinct from "no SRID"; presence must survive.
+	require.NotNil(t, cols["g0"].Srid, "explicit SRID 0 must be captured as present")
+	require.Equal(t, uint32(0), *cols["g0"].Srid)
+	// A no-SRID spatial column must stay unset (no phantom SRID 0).
+	require.Nil(t, cols["gnone"].Srid)
+	// INVISIBLE captured; visible columns stay visible.
+	require.True(t, cols["secret"].IsInvisible)
+	require.False(t, cols["g4326"].IsInvisible)
+}
+
+// TestWalkThroughOmniSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughOmni
+// round-trip: when the walk-through starts from already-synced metadata that carries SRID
+// / INVISIBLE columns, the proto->catalog seeding (wtBuildColumnDef) must install those
+// attributes into the omni catalog so that running an UNRELATED DDL does not strip them
+// from the resulting proto. Without seeding, the pre-existing columns load as
+// plain/no-SRID and — because columnsEqual now compares these fields — surface as phantom
+// changes.
+func TestWalkThroughOmniSRIDInvisibleSeeded(t *testing.T) {
+	origin := &storepb.DatabaseSchemaMetadata{
+		Name: "test",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "",
+			Tables: []*storepb.TableMetadata{
+				{
+					Name: "geo",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "id", Position: 1, Type: "int", Nullable: false, Default: "AUTO_INCREMENT"},
+						{Name: "pt", Position: 2, Type: "point", Nullable: false, Srid: func() *uint32 { v := uint32(4326); return &v }()},
+						{Name: "secret", Position: 3, Type: "int", Nullable: false, Default: "0", IsInvisible: true},
+					},
+					Indexes: []*storepb.IndexMetadata{
+						{Name: "PRIMARY", Expressions: []string{"id"}, Primary: true, Unique: true},
+					},
+				},
+			},
+		}},
+	}
+	state := model.NewDatabaseMetadata(origin, nil, nil, storepb.Engine_MYSQL, true)
+
+	// An unrelated DDL against a different table: it must not perturb geo's SRID/INVISIBLE.
+	statement := "CREATE TABLE unrelated (x INT PRIMARY KEY);"
+	sm := sheet.NewManager()
+	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
+	asts := base.ExtractASTs(stmts)
+	advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	require.Nil(t, advice)
+
+	geo := state.GetSchemaMetadata("").GetTable("geo")
+	require.NotNil(t, geo)
+	cols := map[string]*storepb.ColumnMetadata{}
+	for _, c := range geo.GetProto().GetColumns() {
+		cols[c.GetName()] = c
+	}
+	// The pre-synced SRID + INVISIBLE attributes must survive the seed -> catalog ->
+	// proto round-trip unchanged.
+	require.NotNil(t, cols["pt"].Srid, "seeded SRID must survive (no phantom strip)")
+	require.Equal(t, uint32(4326), *cols["pt"].Srid)
+	require.True(t, cols["secret"].IsInvisible, "seeded INVISIBLE must survive")
+}

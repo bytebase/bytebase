@@ -737,9 +737,9 @@ func TestGetViewDefFromCreateView(t *testing.T) {
 }
 
 // TestIsStockMySQL pins the single stock-MySQL predicate gating stock-only
-// information_schema surfaces (the binary-default decode): MariaDB, OceanBase, and TiDB
-// report MySQL-like versions but lack them, so a compatible engine registered as MYSQL
-// must not trip the stock-only queries.
+// information_schema surfaces (the SRS_ID column select and the binary-default decode):
+// MariaDB, OceanBase, and TiDB report MySQL-like versions but lack them, so a
+// compatible engine registered as MYSQL must not trip the stock-only queries.
 func TestIsStockMySQL(t *testing.T) {
 	testCases := []struct {
 		rest string

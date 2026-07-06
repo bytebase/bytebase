@@ -473,6 +473,8 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		IdentityIncrement:     column.IdentityIncrement,
 		DefaultConstraintName: column.DefaultConstraintName,
 		Default:               column.Default,
+		Srid:                  column.Srid,
+		IsInvisible:           column.IsInvisible,
 	}
 	switch column.IdentityGeneration {
 	case storepb.ColumnMetadata_ALWAYS:
@@ -1063,6 +1065,8 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		IdentityIncrement:     column.IdentityIncrement,
 		DefaultConstraintName: column.DefaultConstraintName,
 		Default:               column.Default,
+		Srid:                  column.Srid,
+		IsInvisible:           column.IsInvisible,
 	}
 
 	switch column.IdentityGeneration {

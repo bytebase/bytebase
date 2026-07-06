@@ -545,6 +545,10 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(" NOT NULL")
 		}
 
+		// Spatial SRID (MySQL 8.0): after NOT NULL, before DEFAULT — the SDL dumper's
+		// canonical position (see printColumnClause).
+		writeColumnSRIDAttribute(buf, col)
+
 		// Handle AUTO_INCREMENT before default value
 		if hasAutoIncrement(col) {
 			_, _ = buf.WriteString(" AUTO_INCREMENT")
@@ -583,6 +587,9 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(col.Comment)
 			_, _ = buf.WriteString("'")
 		}
+
+		// INVISIBLE column (MySQL 8.0.23+): the final attribute, matching the SDL dumper.
+		writeColumnInvisibleAttribute(buf, col)
 	}
 
 	// Write primary key constraint inline if exists
@@ -669,12 +676,12 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 	return nil
 }
 
-func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
-	_, _ = buf.WriteString("ALTER TABLE `")
-	_, _ = buf.WriteString(table)
-	_, _ = buf.WriteString("` ADD COLUMN `")
-	_, _ = buf.WriteString(column.Name)
-	_, _ = buf.WriteString("` ")
+// writeColumnDefinitionBody emits the column definition following the leading
+// “ `name` “ — the type and every attribute in canonical order (charset/collation,
+// NOT NULL, SRID, AUTO_INCREMENT/DEFAULT, ON UPDATE, generated, comment, INVISIBLE).
+// Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn (MODIFY COLUMN), which
+// differ only in the leading clause.
+func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetadata) {
 	_, _ = buf.WriteString(column.Type)
 
 	if column.CharacterSet != "" {
@@ -689,6 +696,10 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	if !column.Nullable {
 		_, _ = buf.WriteString(" NOT NULL")
 	}
+
+	// Spatial SRID (MySQL 8.0): after NOT NULL, before DEFAULT — the SDL dumper's
+	// canonical position (see printColumnClause).
+	writeColumnSRIDAttribute(buf, column)
 
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
@@ -726,6 +737,18 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
+
+	// INVISIBLE column (MySQL 8.0.23+): the final attribute, matching the SDL dumper.
+	writeColumnInvisibleAttribute(buf, column)
+}
+
+func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
+	_, _ = buf.WriteString("ALTER TABLE `")
+	_, _ = buf.WriteString(table)
+	_, _ = buf.WriteString("` ADD COLUMN `")
+	_, _ = buf.WriteString(column.Name)
+	_, _ = buf.WriteString("` ")
+	writeColumnDefinitionBody(buf, column)
 
 	// TODO: Add column position support (FIRST, AFTER column_name)
 
@@ -739,57 +762,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	_, _ = buf.WriteString("` MODIFY COLUMN `")
 	_, _ = buf.WriteString(column.Name)
 	_, _ = buf.WriteString("` ")
-	_, _ = buf.WriteString(column.Type)
-
-	if column.CharacterSet != "" {
-		_, _ = buf.WriteString(" CHARACTER SET ")
-		_, _ = buf.WriteString(column.CharacterSet)
-	}
-	if column.Collation != "" {
-		_, _ = buf.WriteString(" COLLATE ")
-		_, _ = buf.WriteString(column.Collation)
-	}
-
-	if !column.Nullable {
-		_, _ = buf.WriteString(" NOT NULL")
-	}
-
-	// Handle AUTO_INCREMENT before default value
-	if hasAutoIncrement(column) {
-		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && column.Generation == nil {
-		// Don't add DEFAULT if this is a generated column
-		_, _ = buf.WriteString(" DEFAULT ")
-		_, _ = buf.WriteString(getDefaultExpression(column))
-	}
-
-	// Handle ON UPDATE
-	if column.OnUpdate != "" {
-		_, _ = buf.WriteString(" ON UPDATE ")
-		_, _ = buf.WriteString(column.OnUpdate)
-	}
-
-	// Handle generated columns
-	if column.Generation != nil && column.Generation.Expression != "" {
-		_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
-		_, _ = buf.WriteString(column.Generation.Expression)
-		_, _ = buf.WriteString(") ")
-		switch column.Generation.Type {
-		case storepb.GenerationMetadata_TYPE_STORED:
-			_, _ = buf.WriteString("STORED")
-		case storepb.GenerationMetadata_TYPE_VIRTUAL:
-			_, _ = buf.WriteString("VIRTUAL")
-		default:
-			// Default to VIRTUAL for unknown types
-			_, _ = buf.WriteString("VIRTUAL")
-		}
-	}
-
-	if column.Comment != "" {
-		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(column.Comment)
-		_, _ = buf.WriteString("'")
-	}
+	writeColumnDefinitionBody(buf, column)
 
 	_, _ = buf.WriteString(";\n\n")
 	return nil

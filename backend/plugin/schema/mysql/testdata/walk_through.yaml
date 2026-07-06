@@ -592,7 +592,8 @@
                   "position": 1,
                   "default": "'1'",
                   "nullable": true,
-                  "type": "int"
+                  "type": "int",
+                  "isInvisible": true
                 },
                 {
                   "name": "d",

@@ -559,6 +559,18 @@ message ColumnMetadata {
   // This field is populated when syncing from the database. When empty (e.g., when parsing
   // from SQL files), the system cannot automatically drop the constraint.
   string default_constraint_name = 20;
+
+  // The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+  // Unset means the column declares no SRID; presence carries the explicit SRID,
+  // including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+  // int32). Captured from information_schema.COLUMNS.SRS_ID and rendered as the
+  // `/*!80003 SRID n */` column attribute.
+  optional uint32 srid = 21;
+
+  // Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+  // Captured from information_schema.COLUMNS.EXTRA containing INVISIBLE and
+  // rendered as the `/*!80023 INVISIBLE */` column attribute.
+  bool is_invisible = 22;
 }
 
 message GenerationMetadata {
