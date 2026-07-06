@@ -7,7 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	ast "github.com/bytebase/omni/mssql/ast"
+	"github.com/bytebase/omni/mssql/ast"
 )
 
 // pseudoColumnKind classifies T-SQL pseudo-column references the omni parser
@@ -165,7 +165,7 @@ func (q *omniQuerySpanExtractor) isIdentityColumnResult(column base.QuerySpanRes
 	return false
 }
 
-func (q *omniQuerySpanExtractor) resolveGraphPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
+func (*omniQuerySpanExtractor) resolveGraphPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
 	if len(sources) == 0 {
 		return base.QuerySpanResult{}, errors.Errorf("no table in scope for graph pseudo-column %q", v.Column)
 	}
