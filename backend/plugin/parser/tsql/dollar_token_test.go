@@ -30,9 +30,12 @@ OUTPUT $action, INSERTED.k, INSERTED.v;`,
 		// Partition function, bare and database-qualified.
 		"SELECT $PARTITION.pf1(10);",
 		"SELECT db1.$PARTITION.pf1(10);",
-		// Graph edge INSERT and UPDATE SET targets.
+		// OUTPUT $action INTO a table variable — the second customer shape.
+		"MERGE INTO dst AS d USING src AS s ON d.k = s.k WHEN MATCHED THEN UPDATE SET d.v = s.v OUTPUT $action, INSERTED.k INTO @changes;",
+		// Graph edge INSERT, UPDATE SET targets, and index keys.
 		"INSERT INTO e ($from_id, $to_id) VALUES ('a', 'b');",
 		"UPDATE e SET $from_id = 'x';",
+		"CREATE INDEX ix ON Person ($node_id);",
 		// IDENTITYCOL / ROWGUIDCOL keyword column refs.
 		"SELECT IDENTITYCOL, ROWGUIDCOL FROM t;",
 	}
