@@ -94,6 +94,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [matchCount, setMatchCount] = useState(0);
+  const [highlightedContentVersion, setHighlightedContentVersion] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -214,7 +215,14 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     if (activeMatch instanceof HTMLElement) {
       activeMatch.scrollIntoView?.({ block: "center", inline: "nearest" });
     }
-  }, [activeMatchIndex, content, format, matchCount, searchQuery]);
+  }, [
+    activeMatchIndex,
+    content,
+    format,
+    highlightedContentVersion,
+    matchCount,
+    searchQuery,
+  ]);
 
   const copyContent = useMemo(() => {
     const raw = content ?? "";
@@ -255,6 +263,10 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
       renderTextWithSearchMatches(content ?? "", searchQuery, activeMatchIndex),
     [activeMatchIndex, content, searchQuery]
   );
+
+  const handleHighlightedContentChange = useCallback(() => {
+    setHighlightedContentVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     if (!(guessedIsJSON && format)) {
@@ -475,6 +487,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     searchQuery={searchQuery}
                     activeMatchIndex={activeMatchIndex}
                     onMatchCountChange={setMatchCount}
+                    onHighlightedContentChange={handleHighlightedContentChange}
                   />
                 </>
               ) : content && content.length > 0 ? (

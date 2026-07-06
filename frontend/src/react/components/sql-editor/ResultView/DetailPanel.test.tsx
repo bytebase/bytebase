@@ -146,6 +146,26 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
+const flushAsyncRender = async () => {
+  await act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+  });
+};
+
+const waitForAssertion = async (assertion: () => void) => {
+  let lastError: unknown;
+  for (let i = 0; i < 20; i++) {
+    await flushAsyncRender();
+    try {
+      assertion();
+      return;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+};
+
 const getDetailContentRegion = (expectedText = "longbridge") => {
   const candidates = Array.from(document.body.querySelectorAll("div"));
   const contentRegion = candidates.find(
@@ -335,6 +355,68 @@ describe("DetailPanel", () => {
 
     expect(document.body.textContent).toContain("1 / 2");
     expect(scrollIntoView).toHaveBeenCalled();
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    unmount();
+  });
+
+  test("scrolls formatted JSON matches after the async highlighted render", async () => {
+    localStorage.setItem("bb.sql-editor.detail-panel.format", "true");
+    const scrolledContent: string[] = [];
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = function () {
+      scrolledContent.push(
+        this.closest(".overflow-auto")?.textContent?.trim() ?? ""
+      );
+    };
+    const jsonRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [
+            textValue('{"name":"alpha","first":"needle","second":"needle"}'),
+          ],
+        }),
+      },
+      {
+        key: 1,
+        item: create(QueryRowSchema, {
+          values: [
+            textValue('{"name":"beta","first":"needle","second":"needle"}'),
+          ],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel panelRows={jsonRows} />
+    );
+    render();
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement | null;
+    expect(input).toBeInstanceOf(HTMLInputElement);
+
+    act(() => {
+      setInputValue(input!, "needle");
+    });
+    await waitForAssertion(() => {
+      expect(document.body.textContent).toContain("1 / 2");
+    });
+    scrolledContent.length = 0;
+
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    await waitForAssertion(() => {
+      expect(scrolledContent.some((text) => text.includes("beta"))).toBe(true);
+    });
 
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     unmount();

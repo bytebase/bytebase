@@ -1,5 +1,5 @@
 import { escape } from "lodash-es";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { highlightHtmlText } from "./detail-panel-search";
 
 interface PrettyJSONProps {
@@ -7,6 +7,7 @@ interface PrettyJSONProps {
   searchQuery?: string;
   activeMatchIndex?: number;
   onMatchCountChange?: (count: number) => void;
+  onHighlightedContentChange?: () => void;
 }
 
 /**
@@ -20,7 +21,8 @@ export function PrettyJSON({
   searchQuery = "",
   activeMatchIndex = 0,
   onMatchCountChange,
-}: PrettyJSONProps) {
+  onHighlightedContentChange,
+}: Readonly<PrettyJSONProps>) {
   const [html, setHtml] = useState<string>("");
 
   useEffect(() => {
@@ -54,6 +56,10 @@ export function PrettyJSON({
   useEffect(() => {
     onMatchCountChange?.(highlighted.count);
   }, [highlighted.count, onMatchCountChange]);
+
+  useLayoutEffect(() => {
+    onHighlightedContentChange?.();
+  }, [highlighted.html, onHighlightedContentChange]);
 
   return <div dangerouslySetInnerHTML={{ __html: highlighted.html }} />;
 }
