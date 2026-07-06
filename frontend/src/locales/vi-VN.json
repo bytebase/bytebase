@@ -2878,6 +2878,11 @@
     "request-export": "Yêu cầu xuất dữ liệu",
     "request-jit": "Yêu cầu truy cập just-in-time",
     "request-query": "Yêu cầu truy vấn",
+    "result-detail": {
+      "next-match": "Kết quả tiếp theo",
+      "previous-match": "Kết quả trước",
+      "search": "Tìm trong chi tiết"
+    },
     "result-limit": {
       "self": "Giới hạn kết quả"
     },

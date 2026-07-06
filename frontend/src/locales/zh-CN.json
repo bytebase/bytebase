@@ -2878,6 +2878,11 @@
     "request-export": "申请导出",
     "request-jit": "申请即时访问",
     "request-query": "请求查询",
+    "result-detail": {
+      "next-match": "下一个匹配项",
+      "previous-match": "上一个匹配项",
+      "search": "搜索详情"
+    },
     "result-limit": {
       "self": "结果限制"
     },

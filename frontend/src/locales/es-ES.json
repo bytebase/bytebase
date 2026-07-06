@@ -2878,6 +2878,11 @@
     "request-export": "Solicitar exportación",
     "request-jit": "Solicitar acceso just-in-time",
     "request-query": "Solicitar consulta",
+    "result-detail": {
+      "next-match": "Siguiente coincidencia",
+      "previous-match": "Coincidencia anterior",
+      "search": "Buscar en detalles"
+    },
     "result-limit": {
       "self": "Límite de resultados"
     },

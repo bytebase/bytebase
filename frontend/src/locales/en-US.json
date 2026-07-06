@@ -2878,6 +2878,11 @@
     "request-export": "Request export",
     "request-jit": "Request just-in-time access",
     "request-query": "Request query",
+    "result-detail": {
+      "next-match": "Next match",
+      "previous-match": "Previous match",
+      "search": "Search detail"
+    },
     "result-limit": {
       "self": "Result limit"
     },
