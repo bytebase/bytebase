@@ -25,6 +25,10 @@ var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 					{Name: "t", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
 					{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
 					{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}}},
+					{Name: "ident_t", Columns: []*storepb.ColumnMetadata{{Name: "id", IsIdentity: true}, {Name: "payload"}}},
+					{Name: "ident_t2", Columns: []*storepb.ColumnMetadata{{Name: "seq", IsIdentity: true}, {Name: "v"}}},
+					{Name: "bare_edge"},
+					{Name: "weird", Columns: []*storepb.ColumnMetadata{{Name: "$node_id"}, {Name: "IDENTITYCOL"}}},
 				},
 				Views: []*storepb.ViewMetadata{
 					{Name: "vw", Definition: "CREATE VIEW [dbo].[vw] AS SELECT a, b FROM t"},
