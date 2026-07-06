@@ -748,6 +748,16 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 			return base.QuerySpanResult{}, err
 		}
 		return base.QuerySpanResult{Name: q.omniExprName(e), SourceColumns: sourceColumns, IsPlainField: false}, nil
+	case *ast.KeywordArg:
+		// Keyword arguments (TIMESTAMPDIFF(SECOND, ...), GET_FORMAT(DATE, ...))
+		// are unit selectors, not column references — no lineage.
+		return base.QuerySpanResult{Name: e.Keyword, SourceColumns: base.SourceColumnSet{}, IsPlainField: false}, nil
+	case *ast.WeightStringExpr:
+		sourceColumns, err := q.mergeOmniExprSources(e.Expr)
+		if err != nil {
+			return base.QuerySpanResult{}, err
+		}
+		return base.QuerySpanResult{Name: q.omniExprName(e), SourceColumns: sourceColumns, IsPlainField: false}, nil
 	default:
 		return base.QuerySpanResult{}, errors.Errorf("unsupported omni MySQL expression %T", expr)
 	}
@@ -1435,6 +1445,8 @@ func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprN
 		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase, normalizeStarRocksCluster)
 		collectOmniAccessTablesFromExpr(result, e.Array, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ParenExpr:
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.WeightStringExpr:
 		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	default:
 	}
