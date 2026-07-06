@@ -59,6 +59,14 @@ func (q *omniQuerySpanExtractor) resolvePseudoColumnRef(v *ast.ColumnRef) (base.
 	if kind == pseudoColumnNone {
 		return base.QuerySpanResult{}, false, nil
 	}
+	// Delimited identifiers are never pseudo-columns in T-SQL: [IDENTITYCOL]
+	// and [$node_id] reference real columns with those names. omni strips the
+	// delimiters from ColumnRef.Column, so check the source text — a
+	// delimited column segment makes the ref end with ']' or '"', which a
+	// bare pseudo-column or keyword never does.
+	if q.columnSegmentIsDelimited(v) {
+		return base.QuerySpanResult{}, false, nil
+	}
 
 	sources := q.pseudoColumnCandidateSources(v)
 	switch kind {
@@ -71,6 +79,17 @@ func (q *omniQuerySpanExtractor) resolvePseudoColumnRef(v *ast.ColumnRef) (base.
 	default:
 		return base.QuerySpanResult{}, false, nil
 	}
+}
+
+// columnSegmentIsDelimited reports whether the reference's column segment is
+// bracket- or quote-delimited in the original source.
+func (q *omniQuerySpanExtractor) columnSegmentIsDelimited(v *ast.ColumnRef) bool {
+	end := v.Loc.End
+	if end <= 0 || end > len(q.source) {
+		return false
+	}
+	last := q.source[end-1]
+	return last == ']' || last == '"'
 }
 
 // pseudoColumnCandidateSources returns the in-scope table sources the

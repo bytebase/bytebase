@@ -116,6 +116,42 @@ func TestOmniQuerySpanPseudoColumns(t *testing.T) {
 		require.ErrorContains(t, err, "no columns in the catalog")
 	})
 
+	// Delimited identifiers are never pseudo-columns: [IDENTITYCOL] and
+	// [$node_id] reference real columns with those names.
+	t.Run("delimited_identifiers_are_real_columns", func(t *testing.T) {
+		for _, sql := range []string{
+			"SELECT [$node_id] FROM weird",
+			"SELECT weird.[$node_id] FROM weird",
+		} {
+			q := newOmniTestExtractor(t, "db")
+			span, err := q.getOmniQuerySpan(context.Background(), sql)
+			require.NoError(t, err, sql)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, base.SourceColumnSet{
+				{Database: "db", Schema: "dbo", Table: "weird", Column: "$node_id"}: true,
+			}, span.Results[0].SourceColumns, sql)
+		}
+		q := newOmniTestExtractor(t, "db")
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT [IDENTITYCOL] FROM weird")
+		require.NoError(t, err)
+		require.Equal(t, base.SourceColumnSet{
+			{Database: "db", Schema: "dbo", Table: "weird", Column: "IDENTITYCOL"}: true,
+		}, span.Results[0].SourceColumns)
+	})
+
+	// A delimited TABLE with a bare column segment stays a pseudo-column:
+	// [weird].$node_id is the graph reference, not the real $node_id column.
+	t.Run("delimited_table_bare_column_stays_pseudo", func(t *testing.T) {
+		q := newOmniTestExtractor(t, "db")
+		span, err := q.getOmniQuerySpan(context.Background(), "SELECT [weird].$node_id FROM weird")
+		require.NoError(t, err)
+		require.Len(t, span.Results, 1)
+		require.Equal(t, base.SourceColumnSet{
+			{Database: "db", Schema: "dbo", Table: "weird", Column: "$node_id"}:    true,
+			{Database: "db", Schema: "dbo", Table: "weird", Column: "IDENTITYCOL"}: true,
+		}, span.Results[0].SourceColumns)
+	})
+
 	t.Run("rowguid_stays_fail_closed", func(t *testing.T) {
 		q := newOmniTestExtractor(t, "db")
 		_, err := q.getOmniQuerySpan(context.Background(), "SELECT $ROWGUID FROM t")
