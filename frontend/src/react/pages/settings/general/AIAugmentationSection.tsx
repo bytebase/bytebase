@@ -15,7 +15,11 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Select,
@@ -224,40 +228,39 @@ export const AIAugmentationSection = forwardRef<
             ) : (
               <>
                 {/* Enable toggle */}
-                <div>
-                  <div className="flex items-center gap-x-2">
-                    <Checkbox
-                      checked={state.enabled}
-                      disabled={!canEdit}
-                      onCheckedChange={(checked) => toggleEnabled(checked)}
-                    />
-                    <span className="text-base font-semibold">
+                <FormField
+                  title={
+                    <span className="flex items-center gap-x-2">
+                      <Checkbox
+                        checked={state.enabled}
+                        disabled={!canEdit}
+                        onCheckedChange={(checked) => toggleEnabled(checked)}
+                      />
                       {t(
                         "settings.general.workspace.ai-assistant.enable-ai-assistant"
                       )}
                     </span>
-                  </div>
-                  <div className="mt-1 mb-3 text-sm text-control-placeholder">
-                    {t("settings.general.workspace.ai-assistant.description")}{" "}
-                    <LearnMoreLink
-                      href="https://docs.bytebase.com/ai-assistant?source=console"
-                      className="text-accent text-sm ml-1"
-                    />
-                  </div>
-                </div>
+                  }
+                  description={
+                    <>
+                      {t("settings.general.workspace.ai-assistant.description")}{" "}
+                      <LearnMoreLink
+                        href="https://docs.bytebase.com/ai-assistant?source=console"
+                        className="text-accent text-sm ml-1"
+                      />
+                    </>
+                  }
+                />
 
                 {/* Collapsible fields when enabled */}
                 {state.enabled && (
                   <>
                     {/* Provider */}
-                    <div>
-                      <label className="flex items-center gap-x-2 mb-2">
-                        <span className="text-base font-semibold">
-                          {t(
-                            "settings.general.workspace.ai-assistant.provider.self"
-                          )}
-                        </span>
-                      </label>
+                    <FormField
+                      title={t(
+                        "settings.general.workspace.ai-assistant.provider.self"
+                      )}
+                    >
                       <Select
                         value={String(state.provider)}
                         disabled={!canEdit}
@@ -278,44 +281,39 @@ export const AIAugmentationSection = forwardRef<
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                    </FormField>
 
                     {/* API Key */}
-                    <div>
-                      <label className="flex items-center gap-x-2">
-                        <span className="text-base font-semibold">
-                          {t(
-                            "settings.general.workspace.ai-assistant.api-key.self"
-                          )}
-                        </span>
-                      </label>
-                      <div className="mb-3 text-sm text-control-placeholder">
-                        {t(
-                          "settings.general.workspace.ai-assistant.api-key.description",
-                          {
-                            viewDoc: "__LINK__",
-                            interpolation: { escapeValue: false },
-                          }
-                        )
-                          .split("__LINK__")
-                          .map((part, i) => (
-                            <span key={i}>
-                              {part}
-                              {i === 0 && (
-                                <a
-                                  href={providerDefault.apiKeyDoc}
-                                  className="normal-link"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {t(
-                                    "settings.general.workspace.ai-assistant.api-key.find-my-key"
-                                  )}
-                                </a>
-                              )}
-                            </span>
-                          ))}
-                      </div>
+                    <FormField
+                      title={t(
+                        "settings.general.workspace.ai-assistant.api-key.self"
+                      )}
+                      description={t(
+                        "settings.general.workspace.ai-assistant.api-key.description",
+                        {
+                          viewDoc: "__LINK__",
+                          interpolation: { escapeValue: false },
+                        }
+                      )
+                        .split("__LINK__")
+                        .map((part, i) => (
+                          <span key={i}>
+                            {part}
+                            {i === 0 && (
+                              <a
+                                href={providerDefault.apiKeyDoc}
+                                className="normal-link"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {t(
+                                  "settings.general.workspace.ai-assistant.api-key.find-my-key"
+                                )}
+                              </a>
+                            )}
+                          </span>
+                        ))}
+                    >
                       <Input
                         value={state.apiKey}
                         disabled={!canEdit}
@@ -326,22 +324,17 @@ export const AIAugmentationSection = forwardRef<
                           setState((s) => ({ ...s, apiKey: e.target.value }))
                         }
                       />
-                    </div>
+                    </FormField>
 
                     {/* Endpoint */}
-                    <div>
-                      <label className="flex items-center gap-x-2">
-                        <span className="text-base font-semibold">
-                          {t(
-                            "settings.general.workspace.ai-assistant.endpoint.self"
-                          )}
-                        </span>
-                      </label>
-                      <div className="mb-3 text-sm text-control-placeholder">
-                        {t(
-                          "settings.general.workspace.ai-assistant.endpoint.description"
-                        )}
-                      </div>
+                    <FormField
+                      title={t(
+                        "settings.general.workspace.ai-assistant.endpoint.self"
+                      )}
+                      description={t(
+                        "settings.general.workspace.ai-assistant.endpoint.description"
+                      )}
+                    >
                       <Input
                         value={state.endpoint}
                         required
@@ -354,22 +347,17 @@ export const AIAugmentationSection = forwardRef<
                           }))
                         }
                       />
-                    </div>
+                    </FormField>
 
                     {/* Model */}
-                    <div>
-                      <label className="flex items-center gap-x-2">
-                        <span className="text-base font-semibold">
-                          {t(
-                            "settings.general.workspace.ai-assistant.model.self"
-                          )}
-                        </span>
-                      </label>
-                      <div className="mb-3 text-sm text-control-placeholder">
-                        {t(
-                          "settings.general.workspace.ai-assistant.model.description"
-                        )}
-                      </div>
+                    <FormField
+                      title={t(
+                        "settings.general.workspace.ai-assistant.model.self"
+                      )}
+                      description={t(
+                        "settings.general.workspace.ai-assistant.model.description"
+                      )}
+                    >
                       <Input
                         value={state.model}
                         required
@@ -378,7 +366,7 @@ export const AIAugmentationSection = forwardRef<
                           setState((s) => ({ ...s, model: e.target.value }))
                         }
                       />
-                    </div>
+                    </FormField>
                   </>
                 )}
               </>

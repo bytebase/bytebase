@@ -16,7 +16,11 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature, useWorkspace } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -176,39 +180,33 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
         <PermissionGuard permissions={["bb.workspaces.update"]} display="block">
           <FormFieldGroup>
             {/* Workspace ID */}
-            <div>
-              <label className="text-base font-semibold">
-                {t("settings.general.workspace.id")}
-              </label>
-              <Input value={workspaceID} disabled className="mt-1" />
-            </div>
+            <FormField title={t("settings.general.workspace.id")}>
+              <Input value={workspaceID} disabled />
+            </FormField>
 
             {/* Workspace Title */}
-            <div>
-              <label className="text-base font-semibold">
-                {t("settings.general.workspace.title")}
-              </label>
+            <FormField title={t("settings.general.workspace.title")}>
               <Input
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
                 disabled={!canEdit}
-                className="mt-1"
               />
-            </div>
+            </FormField>
 
             {/* Logo */}
-            <div>
-              <div className="mb-4 mt-4 lg:mt-0">
-                <div className="flex items-center gap-x-2 text-base font-semibold">
+            <FormField
+              title={
+                <span className="flex items-center gap-x-2">
                   {t("settings.general.workspace.logo")}
                   <FeatureBadge
                     feature={PlanFeature.FEATURE_CUSTOM_LOGO}
                     clickable
                   />
-                </div>
-                <p className="mb-3 text-sm text-gray-400">
-                  {t("settings.general.workspace.logo-aspect")}
-                </p>
+                </span>
+              }
+              description={t("settings.general.workspace.logo-aspect")}
+            >
+              <div>
                 <div
                   className={`flex justify-center border-2 border-gray-300 border-dashed rounded-xs relative h-48 transition-all ${
                     dropActive ? "bg-gray-300 opacity-100" : ""
@@ -272,7 +270,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                   </Button>
                 </div>
               )}
-            </div>
+            </FormField>
           </FormFieldGroup>
         </PermissionGuard>
       </FormSection>

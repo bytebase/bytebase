@@ -258,10 +258,7 @@ export const AnnouncementSection = forwardRef<
             )}
           </FormField>
 
-          <FormField className="gap-y-2">
-            <p className="text-sm font-medium text-control">
-              {t("common.preview")}
-            </p>
+          <FormField title={t("common.preview")}>
             <AnnouncementBanner
               text={previewText}
               link={state.link}

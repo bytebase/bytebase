@@ -17,7 +17,11 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -217,43 +221,38 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         >
           <FormFieldGroup>
             {/* Watermark */}
-            <div>
-              <div className="flex items-center gap-x-2">
-                <Checkbox
-                  checked={state.enableWatermark}
-                  disabled={!canEdit || !hasWatermarkFeature}
-                  onCheckedChange={(checked) =>
-                    setState((prev) => ({
-                      ...prev,
-                      enableWatermark: checked,
-                    }))
-                  }
-                />
-                <span className="text-base font-semibold">
+            <FormField
+              title={
+                <span className="flex items-center gap-x-2">
+                  <Checkbox
+                    checked={state.enableWatermark}
+                    disabled={!canEdit || !hasWatermarkFeature}
+                    onCheckedChange={(checked) =>
+                      setState((prev) => ({
+                        ...prev,
+                        enableWatermark: checked,
+                      }))
+                    }
+                  />
                   {t("settings.general.workspace.watermark.enable")}
+                  <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
                 </span>
-                <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
-              </div>
-              <div className="mt-1 text-sm text-gray-400">
-                {t("settings.general.workspace.watermark.description")}
-              </div>
-            </div>
+              }
+              description={t(
+                "settings.general.workspace.watermark.description"
+              )}
+            />
 
             {/* Maximum Role Expiration */}
-            <div>
-              <p className="text-base font-semibold flex flex-row justify-start items-center">
-                <span className="mr-2">
-                  {t(
-                    "settings.general.workspace.maximum-request-expiration.self"
-                  )}
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.maximum-request-expiration.description"
-                )}
-              </p>
-              <div className="mt-3 w-full flex flex-row">
+            <FormField
+              title={t(
+                "settings.general.workspace.maximum-request-expiration.self"
+              )}
+              description={t(
+                "settings.general.workspace.maximum-request-expiration.description"
+              )}
+            >
+              <div className="w-full flex flex-row">
                 <div className="flex items-center gap-4">
                   <div className="relative w-60">
                     <Input
@@ -298,22 +297,17 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                   </label>
                 </div>
               </div>
-            </div>
+            </FormField>
 
             {/* Domain Restriction */}
-            <div>
-              <h3
-                id="domain-restriction"
-                className="text-base font-semibold flex flex-row justify-start items-center"
-              >
-                <span className="mr-2">
-                  {t("settings.general.workspace.domain-restriction.self")}
-                </span>
-              </h3>
-              <p className="text-sm text-gray-400 mt-1">
-                {t("settings.general.workspace.domain-restriction.description")}
-              </p>
-              <div className="w-full flex flex-col gap-2 mt-2">
+            <FormField
+              id="domain-restriction"
+              title={t("settings.general.workspace.domain-restriction.self")}
+              description={t(
+                "settings.general.workspace.domain-restriction.description"
+              )}
+            >
+              <div className="w-full flex flex-col gap-2">
                 {/* Domain tags + input */}
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
@@ -348,43 +342,43 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
 
                 {/* Enforce restriction checkbox */}
                 <div className="w-full flex flex-row justify-between items-center">
-                  <label className="flex items-start gap-x-2">
-                    <Checkbox
-                      checked={state.enableRestriction}
-                      className="mt-1"
-                      disabled={
-                        !canEdit ||
-                        validDomains.length === 0 ||
-                        !hasDomainRestrictionFeature
-                      }
-                      onCheckedChange={(checked) =>
-                        setState((prev) => ({
-                          ...prev,
-                          enableRestriction: checked,
-                        }))
-                      }
-                    />
-                    <div>
-                      <div className="text-base font-semibold flex items-center gap-x-2">
-                        {t(
-                          "settings.general.workspace.domain-restriction.members-restriction.self"
-                        )}
-                        <FeatureBadge
-                          feature={
-                            PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                  <FormField
+                    title={
+                      <span className="flex items-start gap-x-2">
+                        <Checkbox
+                          checked={state.enableRestriction}
+                          className="mt-1"
+                          disabled={
+                            !canEdit ||
+                            validDomains.length === 0 ||
+                            !hasDomainRestrictionFeature
+                          }
+                          onCheckedChange={(checked) =>
+                            setState((prev) => ({
+                              ...prev,
+                              enableRestriction: checked,
+                            }))
                           }
                         />
-                      </div>
-                      <p className="text-sm text-gray-400 leading-tight">
-                        {t(
-                          "settings.general.workspace.domain-restriction.members-restriction.description"
-                        )}
-                      </p>
-                    </div>
-                  </label>
+                        <span className="flex items-center gap-x-2">
+                          {t(
+                            "settings.general.workspace.domain-restriction.members-restriction.self"
+                          )}
+                          <FeatureBadge
+                            feature={
+                              PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                            }
+                          />
+                        </span>
+                      </span>
+                    }
+                    description={t(
+                      "settings.general.workspace.domain-restriction.members-restriction.description"
+                    )}
+                  />
                 </div>
               </div>
-            </div>
+            </FormField>
           </FormFieldGroup>
         </PermissionGuard>
       </FormSection>

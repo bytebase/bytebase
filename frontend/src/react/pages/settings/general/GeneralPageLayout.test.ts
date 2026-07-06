@@ -45,7 +45,7 @@ describe("GeneralPage section layout", () => {
   });
 
   test("uses merged form field props for migrated field headings", () => {
-    for (const file of ["AnnouncementSection.tsx", "GeneralSection.tsx"]) {
+    for (const file of configurableSections) {
       const source = readFileSync(join(sectionDir, file), "utf8");
 
       expect(source, file).toContain("<FormField");
@@ -55,6 +55,8 @@ describe("GeneralPage section layout", () => {
       expect(source, file).not.toContain(
         '<FormLabel className="text-base font-semibold">'
       );
+      expect(source, file).not.toContain("text-base font-semibold");
+      expect(source, file).not.toContain("text-sm font-medium text-control");
     }
   });
 });
