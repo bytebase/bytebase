@@ -853,8 +853,8 @@ var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 // export containing any routine/event/trigger would be rejected as "Disallowed statement
 // in SDL file". SET stays a CLASSIFIED type (StatementType_SET, not UNSPECIFIED), so the
 // fail-closed posture for genuinely-unknown statements (GRANT, CALL, …) is preserved —
-// only SET is allow-listed, and only for MySQL. PostgreSQL's own SET dump (SET
-// default_tablespace=”) is already handled by pg dropping UNSPECIFIED entries, so PG
+// only SET is allow-listed, and only for MySQL. PostgreSQL's own SET dump (a
+// default_tablespace reset) is already handled by pg dropping UNSPECIFIED entries, so PG
 // needs no SET allowance here.
 var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
 	storepb.Engine_MYSQL: {
