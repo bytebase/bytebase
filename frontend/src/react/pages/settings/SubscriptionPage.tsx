@@ -6,8 +6,14 @@ import { useTranslation } from "react-i18next";
 import { subscriptionServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormField,
+  FormFieldGroup,
+  FormLabel,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
 import {
@@ -276,21 +282,23 @@ export function SubscriptionPage({
       {/* Workspace ID (self-hosted only) */}
       {!isSaaSMode && (
         <>
-          <div>
-            <label className="flex items-center gap-x-2">
-              <span className="text-main">
-                {t("settings.general.workspace.id")}
-              </span>
-            </label>
-            <div className="mb-3 text-sm text-control-placeholder">
-              {t("settings.general.workspace.id-description")}
-            </div>
-            <div className="mb-4 flex items-center gap-x-2">
+          <FormField
+            title={t("settings.general.workspace.id")}
+            description={t("settings.general.workspace.id-description")}
+          >
+            <div className="flex items-center gap-x-2">
               <Input
+                id="subscription-workspace-id"
                 readOnly
                 value={workspaceId}
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
+              <FormLabel
+                htmlFor="subscription-workspace-id"
+                className="sr-only"
+              >
+                {t("settings.general.workspace.id")}
+              </FormLabel>
               <Button
                 variant="ghost"
                 size="sm"
@@ -305,7 +313,7 @@ export function SubscriptionPage({
                 </span>
               )}
             </div>
-          </div>
+          </FormField>
           <hr className="my-6 border-t border-block-border" />
         </>
       )}
@@ -317,51 +325,52 @@ export function SubscriptionPage({
 
       {/* Self-hosted: Upload license */}
       {!isSaaSMode && isSelfHostLicense && (
-        <div className="w-full mt-4 flex flex-col">
-          <label className="flex items-center gap-x-2">
-            <span className="text-main">
-              {t("subscription.upload-license")}
-            </span>
-          </label>
-          <div className="mb-3 text-sm text-control-placeholder">
-            {t("subscription.description")} {t("subscription.plan-compare")}{" "}
-            <a
-              href="https://www.bytebase.com/pricing?source=console"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent hover:underline"
-            >
-              {t("common.learn-more")} &gt;
-            </a>
-            {showTrial && allowManage && (
-              <Button
-                variant="link"
-                size="sm"
-                className="ml-1"
-                onClick={onRequireEnterprise}
-              >
-                {t("subscription.plan.try")}
-              </Button>
-            )}
-          </div>
-          <Textarea
-            value={license}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setLicense(e.target.value)
+        <FormFieldGroup className="mt-4">
+          <FormField
+            title={t("subscription.upload-license")}
+            description={
+              <>
+                {t("subscription.description")} {t("subscription.plan-compare")}{" "}
+                <LearnMoreLink
+                  href="https://www.bytebase.com/pricing?source=console"
+                  className="text-accent"
+                />
+                {showTrial && allowManage && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="ml-1"
+                    onClick={onRequireEnterprise}
+                  >
+                    {t("subscription.plan.try")}
+                  </Button>
+                )}
+              </>
             }
-            disabled={!allowManage}
-            placeholder={t("common.sensitive-placeholder")}
-          />
-          <div className="ml-auto mt-3">
-            <Button
-              disabled={disabled || !allowManage}
-              onClick={handleUpload}
-              className="capitalize"
-            >
+          >
+            <FormLabel htmlFor="subscription-license" className="sr-only">
               {t("subscription.upload-license")}
-            </Button>
-          </div>
-        </div>
+            </FormLabel>
+            <Textarea
+              id="subscription-license"
+              value={license}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                setLicense(e.target.value)
+              }
+              disabled={!allowManage}
+              placeholder={t("common.sensitive-placeholder")}
+            />
+            <div className="ml-auto mt-3">
+              <Button
+                disabled={disabled || !allowManage}
+                onClick={handleUpload}
+                className="capitalize"
+              >
+                {t("subscription.upload-license")}
+              </Button>
+            </div>
+          </FormField>
+        </FormFieldGroup>
       )}
       {!hasUnifiedInstanceLicense && (
         <InstanceAssignmentSheet

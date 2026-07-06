@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { useAppStore } from "@/react/stores/app";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -68,11 +68,8 @@ export const ProductImprovementSection = forwardRef<
   }, [state, onDirtyChange]);
 
   return (
-    <div id="product-improvement" className="py-6 lg:flex">
-      <div className="text-left lg:w-1/4">
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-      <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+    <FormSection id="product-improvement" title={title}>
+      <FormFieldGroup>
         <label className="flex items-start gap-x-3 cursor-pointer">
           <Checkbox
             checked={state.enableMetricCollection}
@@ -95,6 +92,6 @@ export const ProductImprovementSection = forwardRef<
           </div>
         </label>
       </FormFieldGroup>
-    </div>
+    </FormSection>
   );
 });

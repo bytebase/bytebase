@@ -15,7 +15,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Select,
@@ -61,7 +61,7 @@ export const AIAugmentationSection = forwardRef<
   AIAugmentationSectionProps
 >(function AIAugmentationSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
 
   const { isSaaSMode } = useServerState();
   const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
@@ -210,18 +210,10 @@ export const AIAugmentationSection = forwardRef<
   };
 
   return (
-    <div id="ai" ref={containerRef} className="py-6 lg:flex">
-      <div className="text-left lg:w-1/4">
-        <div className="flex items-center gap-x-2">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
-      </div>
-      <ComponentPermissionGuard
-        permissions={["bb.settings.get"]}
-        className="flex-1"
-      >
+    <FormSection id="ai" ref={containerRef} title={title}>
+      <ComponentPermissionGuard permissions={["bb.settings.get"]}>
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <FormFieldGroup>
             {isSaaSMode ? (
               <Alert
                 variant="info"
@@ -356,7 +348,10 @@ export const AIAugmentationSection = forwardRef<
                         disabled={!canEdit}
                         placeholder={providerDefault.endpoint}
                         onChange={(e) =>
-                          setState((s) => ({ ...s, endpoint: e.target.value }))
+                          setState((s) => ({
+                            ...s,
+                            endpoint: e.target.value,
+                          }))
                         }
                       />
                     </div>
@@ -391,6 +386,6 @@ export const AIAugmentationSection = forwardRef<
           </FormFieldGroup>
         </PermissionGuard>
       </ComponentPermissionGuard>
-    </div>
+    </FormSection>
   );
 });

@@ -42,12 +42,7 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
-import {
-  FormDescription,
-  FormError,
-  FormField,
-  FormLabel,
-} from "@/react/components/ui/form";
+import { FormError, FormField } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -992,11 +987,14 @@ function DatabaseResourceSection({
   ];
 
   return (
-    <FormField>
-      <FormLabel>
-        {t("common.databases")}
-        <span className="ml-0.5 text-error">*</span>
-      </FormLabel>
+    <FormField
+      title={
+        <>
+          {t("common.databases")}
+          <span className="ml-0.5 text-error">*</span>
+        </>
+      }
+    >
       <RadioGroup
         className="gap-x-4"
         value={mode}
@@ -1185,8 +1183,7 @@ function ProjectRoleBindingForm({
       )}
 
       {/* Role select */}
-      <FormField>
-        <FormLabel>{t("settings.members.assign-role")}</FormLabel>
+      <FormField title={<>{t("settings.members.assign-role")}</>}>
         <RoleSelect
           value={form.role ? [form.role] : []}
           onChange={(roles) => handleRoleChange(roles[0] ?? "")}
@@ -1197,8 +1194,7 @@ function ProjectRoleBindingForm({
 
       {/* Permissions display */}
       {permissions.length > 0 && (
-        <FormField>
-          <FormLabel>{t("common.permissions")}</FormLabel>
+        <FormField title={<>{t("common.permissions")}</>}>
           <div className="max-h-32 overflow-auto border rounded-sm bg-control-bg p-2">
             <div className="flex flex-wrap gap-1">
               {permissions.map((perm) => (
@@ -1215,13 +1211,16 @@ function ProjectRoleBindingForm({
       )}
 
       {/* Reason */}
-      <FormField>
-        <FormLabel>
-          {t("common.reason")}{" "}
-          <span className="text-control-light font-normal">
-            ({t("common.optional")})
-          </span>
-        </FormLabel>
+      <FormField
+        title={
+          <>
+            {t("common.reason")}{" "}
+            <span className="text-control-light font-normal">
+              ({t("common.optional")})
+            </span>
+          </>
+        }
+      >
         <textarea
           className="w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm resize-none"
           rows={2}
@@ -1259,8 +1258,7 @@ function ProjectRoleBindingForm({
 
       {/* Environments (conditional on role) */}
       {envKind && (
-        <FormField>
-          <FormLabel>{t("common.environments")}</FormLabel>
+        <FormField title={<>{t("common.environments")}</>}>
           <DDLWarningCallout type="drawer" kind={envKind} />
           <EnvironmentSelect
             multiple
@@ -1272,11 +1270,21 @@ function ProjectRoleBindingForm({
       )}
 
       {/* Expiration */}
-      <FormField>
-        <FormLabel>
-          {t("common.expiration")}
-          <span className="ml-0.5 text-error">*</span>
-        </FormLabel>
+      <FormField
+        title={
+          <>
+            {t("common.expiration")}
+            <span className="ml-0.5 text-error">*</span>
+          </>
+        }
+        description={
+          maximumRequestExpirationDays !== undefined
+            ? t("project.members.request-role.max-expiration-hint", {
+                days: maximumRequestExpirationDays,
+              })
+            : undefined
+        }
+      >
         <div className="flex flex-wrap gap-1.5">
           {/* "Never" is only offered when the workspace sets no cap. */}
           {maximumRequestExpirationDays === undefined && (
@@ -1316,13 +1324,6 @@ function ProjectRoleBindingForm({
             maxDate={maxDatetime}
           />
         )}
-        {maximumRequestExpirationDays !== undefined && (
-          <FormDescription>
-            {t("project.members.request-role.max-expiration-hint", {
-              days: maximumRequestExpirationDays,
-            })}
-          </FormDescription>
-        )}
         {expirationIsInPast && (
           <FormError>
             {t("project.members.request-role.expiration-must-be-future")}
@@ -1336,11 +1337,11 @@ function ProjectRoleBindingForm({
           </FormError>
         )}
         {!form.expirationCustom && form.expirationTimestampInMS && (
-          <FormDescription>
+          <p className="text-xs leading-4 text-control-light">
             {t("project.members.expires-at", {
               date: formatExpirationDate(form.expirationTimestampInMS),
             })}
-          </FormDescription>
+          </p>
         )}
       </FormField>
     </div>
@@ -1957,10 +1958,9 @@ function EditMemberRoleDrawer({
               />
             )}
             {/* Member input */}
-            <FormField>
-              <FormLabel>
-                {t("settings.members.select-account", { count: 1 })}
-              </FormLabel>
+            <FormField
+              title={<>{t("settings.members.select-account", { count: 1 })}</>}
+            >
               {isEditMode ? (
                 <Input value={member.binding} disabled />
               ) : (
@@ -1985,10 +1985,9 @@ function EditMemberRoleDrawer({
                 />
               </div>
             ) : (
-              <FormField>
-                <FormLabel>
-                  {t("settings.members.select-role", { count: 2 })}
-                </FormLabel>
+              <FormField
+                title={<>{t("settings.members.select-role", { count: 2 })}</>}
+              >
                 <RoleSelect
                   value={selectedRoles}
                   onChange={setSelectedRoles}

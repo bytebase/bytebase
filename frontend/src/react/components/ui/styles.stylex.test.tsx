@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import * as stylex from "@stylexjs/stylex";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -5,17 +6,13 @@ import { afterEach, describe, expect, test } from "vitest";
 import { Button } from "./button";
 import { Combobox } from "./combobox";
 import {
-  FormControlAffix,
   FormControlGroup,
   FormControlRow,
-  FormDescription,
   FormError,
   FormField,
   FormFieldGroup,
-  FormFieldRow,
-  FormInlineAffix,
   FormLabel,
-  FormMessage,
+  FormTitle,
 } from "./form";
 import { Input } from "./input";
 import { NumberInput } from "./number-input";
@@ -25,17 +22,13 @@ import {
   controlMinHeightStyle,
   controlMultilineSizeStyle,
   controlSizeStyle,
-  formControlAffixStyle,
   formControlGroupStyle,
   formControlRowStyle,
-  formDescriptionStyle,
   formErrorStyle,
   formFieldGroupStyle,
-  formFieldRowStyle,
   formFieldStyle,
-  formInlineAffixStyle,
+  formFieldTitleStyle,
   formLabelStyle,
-  formMessageStyle,
   interactiveRowStyle,
   listRowIconStyle,
   listRowPrimaryTextStyle,
@@ -84,6 +77,19 @@ const expectClasses = (className: string | undefined, expected: string) => {
   }
 };
 
+const styleSource = readFileSync(
+  "src/react/components/ui/styles.stylex.ts",
+  "utf8"
+);
+
+const extractStyleBlock = (styleName: string) => {
+  const match = styleSource.match(
+    new RegExp(`\\n  ${styleName}: \\{([\\s\\S]*?)\\n  \\},`)
+  );
+  expect(match, `${styleName} style block should exist`).not.toBeNull();
+  return match?.[1] ?? "";
+};
+
 describe("StyleX common UI style contracts", () => {
   afterEach(() => {
     document.body.innerHTML = "";
@@ -99,15 +105,10 @@ describe("StyleX common UI style contracts", () => {
   test("returns StyleX props for shared form, menu, and list row styles", () => {
     expectStyleXClass(stylex.props(formFieldStyle()).className);
     expectStyleXClass(stylex.props(formFieldGroupStyle()).className);
-    expectStyleXClass(stylex.props(formFieldRowStyle()).className);
     expectStyleXClass(stylex.props(formControlGroupStyle()).className);
     expectStyleXClass(stylex.props(formControlRowStyle()).className);
-    expectStyleXClass(stylex.props(formInlineAffixStyle()).className);
-    expectStyleXClass(stylex.props(formControlAffixStyle()).className);
     expectStyleXClass(stylex.props(formLabelStyle()).className);
-    expectStyleXClass(stylex.props(formDescriptionStyle()).className);
     expectStyleXClass(stylex.props(formErrorStyle()).className);
-    expectStyleXClass(stylex.props(formMessageStyle()).className);
     expectStyleXClass(stylex.props(menuRowStyle("md")).className);
     expectStyleXClass(stylex.props(listRowStyle("sm")).className);
     expectStyleXClass(stylex.props(listRowIconStyle()).className);
@@ -125,6 +126,15 @@ describe("StyleX common UI style contracts", () => {
       overlaySurfaceClassName,
       "max-h-60 overflow-y-auto overflow-x-hidden rounded-sm border border-control-border bg-background py-1 shadow-md focus:outline-hidden"
     );
+  });
+
+  test("keeps form labels visually distinct from field titles", () => {
+    const labelStyle = extractStyleBlock("label");
+
+    expect(labelStyle).toContain('color: "rgb(var(--color-control))"');
+    expect(labelStyle).toContain("fontSize: 14");
+    expect(labelStyle).toContain("fontWeight: 500");
+    expect(labelStyle).toContain('lineHeight: "20px"');
   });
 
   test("keeps list row state separate from menu row state", () => {
@@ -170,8 +180,8 @@ describe("StyleX common UI style contracts", () => {
     const textarea = renderIntoContainer(
       createElement(Textarea, { size: "lg" })
     );
-    const formMessage = renderIntoContainer(
-      createElement(FormMessage, null, "Title is required.")
+    const formError = renderIntoContainer(
+      createElement(FormError, null, "Title is required.")
     );
     const controlGroup = renderIntoContainer(
       createElement(
@@ -184,24 +194,9 @@ describe("StyleX common UI style contracts", () => {
       createElement(
         FormFieldGroup,
         null,
-        createElement(
-          FormFieldRow,
-          null,
-          createElement(FormLabel, null, "Environment"),
-          createElement(Input)
-        )
+        createElement(FormField, { title: "Environment" }, createElement(Input))
       )
     );
-    const inlineAffix = renderIntoContainer(
-      createElement(
-        FormInlineAffix,
-        null,
-        createElement(Input),
-        createElement(FormControlAffix, null, "@"),
-        createElement(FormControlAffix, null, "example.com")
-      )
-    );
-
     expectClasses(
       button.container.querySelector("button")?.className,
       "h-7 px-2 text-xs leading-4 gap-1"
@@ -232,9 +227,8 @@ describe("StyleX common UI style contracts", () => {
       stylex.props(controlMultilineSizeStyle("lg")).className ?? ""
     );
     expectClasses(
-      formMessage.container.querySelector('[data-slot="form-message"]')
-        ?.className,
-      stylex.props(formMessageStyle()).className ?? ""
+      formError.container.querySelector('[data-slot="form-error"]')?.className,
+      stylex.props(formErrorStyle()).className ?? ""
     );
     expectClasses(
       controlGroup.container.querySelector('[data-slot="form-control-group"]')
@@ -251,32 +245,15 @@ describe("StyleX common UI style contracts", () => {
         ?.className,
       stylex.props(formFieldGroupStyle()).className ?? ""
     );
-    expectClasses(
-      fieldGroup.container.querySelector('[data-slot="form-field-row"]')
-        ?.className,
-      stylex.props(formFieldRowStyle()).className ?? ""
-    );
-    expectClasses(
-      inlineAffix.container.querySelector('[data-slot="form-inline-affix"]')
-        ?.className,
-      stylex.props(formInlineAffixStyle()).className ?? ""
-    );
-    expectClasses(
-      inlineAffix.container.querySelector('[data-slot="form-control-affix"]')
-        ?.className,
-      stylex.props(formControlAffixStyle()).className ?? ""
-    );
-
     button.unmount();
     input.unmount();
     segmentedControl.unmount();
     select.unmount();
     numberInput.unmount();
     textarea.unmount();
-    formMessage.unmount();
+    formError.unmount();
     controlGroup.unmount();
     fieldGroup.unmount();
-    inlineAffix.unmount();
   });
 
   test("applies shared menu row contract to combobox option rows", () => {
@@ -322,9 +299,9 @@ describe("StyleX common UI style contracts", () => {
     const form = renderIntoContainer(
       createElement(
         FormField,
-        null,
-        createElement(FormLabel, null, "Project"),
-        createElement(FormDescription, null, "Select a project."),
+        { description: "Select a project.", title: "Project" },
+        createElement(FormTitle, null, "Database name"),
+        createElement(FormLabel, { htmlFor: "project" }, "Project"),
         createElement(FormError, null, "Project is required.")
       )
     );
@@ -334,12 +311,16 @@ describe("StyleX common UI style contracts", () => {
       stylex.props(formFieldStyle()).className ?? ""
     );
     expectClasses(
+      form.container.querySelector("[data-slot='form-field-title']")?.className,
+      stylex.props(formFieldTitleStyle()).className ?? ""
+    );
+    expectClasses(
       form.container.querySelector("label")?.className,
       stylex.props(formLabelStyle()).className ?? ""
     );
     expectClasses(
-      form.container.querySelector("[data-slot='form-description']")?.className,
-      stylex.props(formDescriptionStyle()).className ?? ""
+      form.container.querySelector("[data-slot='form-field']")?.className,
+      stylex.props(formFieldStyle()).className ?? ""
     );
     expectClasses(
       form.container.querySelector("[data-slot='form-error']")?.className,

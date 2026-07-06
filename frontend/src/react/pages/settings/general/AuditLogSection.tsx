@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -76,14 +76,16 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
     }, [state, onDirtyChange]);
 
     return (
-      <div id="audit-log-stdout" className="py-6 lg:flex">
-        <div className="text-left lg:w-1/4">
-          <div className="flex items-center gap-x-2">
-            <h1 className="text-2xl font-bold">{title}</h1>
+      <FormSection
+        id="audit-log-stdout"
+        title={
+          <span className="inline-flex items-center gap-x-2">
+            {title}
             <FeatureBadge feature={PlanFeature.FEATURE_AUDIT_LOG} />
-          </div>
-        </div>
-        <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          </span>
+        }
+      >
+        <FormFieldGroup>
           {/* Audit log stdout toggle */}
           <label className="flex items-start gap-x-3 cursor-pointer">
             <Checkbox
@@ -127,7 +129,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
             </div>
           </label>
         </FormFieldGroup>
-      </div>
+      </FormSection>
     );
   }
 );

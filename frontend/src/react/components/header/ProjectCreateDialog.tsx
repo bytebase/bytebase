@@ -6,6 +6,11 @@ import {
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormField,
+  FormFieldGroup,
+  FormTitle,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -145,14 +150,15 @@ export function ProjectCreateDialog({
         </SheetHeader>
 
         <SheetBody>
-          <div className="flex flex-col gap-y-6">
-            <div>
-              <label className="text-base leading-6 font-medium text-control">
+          <FormFieldGroup>
+            <FormField>
+              <FormTitle id="create-project-title-title">
                 {t("project.create-modal.project-name")}
                 <span className="ml-0.5 text-error">*</span>
-              </label>
+              </FormTitle>
               <Input
-                className="mt-2 mb-1"
+                id="create-project-title"
+                aria-labelledby="create-project-title-title"
                 value={title}
                 maxLength={200}
                 placeholder={t("project.create-modal.project-name")}
@@ -168,8 +174,8 @@ export function ProjectCreateDialog({
                 onChange={setResourceId}
                 onValidationChange={setIsResourceIdValid}
               />
-            </div>
-          </div>
+            </FormField>
+          </FormFieldGroup>
 
           {isCreating && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50">

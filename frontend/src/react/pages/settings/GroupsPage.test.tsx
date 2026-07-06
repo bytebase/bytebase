@@ -330,9 +330,7 @@ describe("GroupsPage create group sheet", () => {
       "input[maxlength='200']"
     ) as HTMLInputElement;
     const titleField = titleInput.closest('[data-slot="form-field"]');
-    const titleMessage = titleField?.querySelector(
-      '[data-slot="form-message"]'
-    );
+    const titleMessage = titleField?.querySelector('[data-slot="form-error"]');
 
     expect(titleMessage?.getAttribute("role")).toBe("alert");
     expect(titleMessage?.textContent).toBe(

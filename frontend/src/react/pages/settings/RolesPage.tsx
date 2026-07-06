@@ -27,6 +27,11 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  FormField,
+  FormFieldGroup,
+  FormTitle,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -525,14 +530,16 @@ function RoleSheet({
         </SheetHeader>
 
         <SheetBody>
-          <div className="flex flex-col gap-y-5">
+          <FormFieldGroup>
             {/* Title */}
-            <div className="flex flex-col gap-y-1.5">
-              <label className="text-sm font-medium text-main">
+            <FormField>
+              <FormTitle id="role-sheet-title-title">
                 {t("role.title")}
                 <span className="ml-0.5 text-error">*</span>
-              </label>
+              </FormTitle>
               <Input
+                id="role-sheet-title"
+                aria-labelledby="role-sheet-title-title"
                 value={editRole.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder={t("role.setting.title-placeholder")}
@@ -563,14 +570,16 @@ function RoleSheet({
                   readonly
                 />
               )}
-            </div>
+            </FormField>
 
             {/* Description */}
-            <div className="flex flex-col gap-y-1.5">
-              <label className="text-sm font-medium text-main">
+            <FormField>
+              <FormTitle id="role-sheet-description-title">
                 {t("common.description")}
-              </label>
+              </FormTitle>
               <Textarea
+                id="role-sheet-description"
+                aria-labelledby="role-sheet-description-title"
                 value={editRole.description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder={t("role.setting.description-placeholder")}
@@ -578,27 +587,28 @@ function RoleSheet({
                 disabled={isBuiltin}
                 className="min-h-[80px]"
               />
-            </div>
+            </FormField>
 
             {/* Permissions */}
-            <div className="flex flex-col gap-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-main">
-                  {t("common.permissions")}
-                  <span className="ml-0.5 text-error">*</span>
-                </label>
-                {!isBuiltin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowImportModal(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    {t("role.import-from-role")}
-                  </Button>
-                )}
-              </div>
-
+            <FormField>
+              <FormTitle>
+                <div className="flex items-center justify-between gap-x-4">
+                  <span>
+                    {t("common.permissions")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </span>
+                  {!isBuiltin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowImportModal(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {t("role.import-from-role")}
+                    </Button>
+                  )}
+                </div>
+              </FormTitle>
               {missedBasicPermissions.length > 0 && !isBuiltin && (
                 <Alert
                   variant="error"
@@ -626,8 +636,8 @@ function RoleSheet({
                 onChange={handlePermissionsChange}
                 disabled={isBuiltin}
               />
-            </div>
-          </div>
+            </FormField>
+          </FormFieldGroup>
         </SheetBody>
 
         {!isBuiltin && (

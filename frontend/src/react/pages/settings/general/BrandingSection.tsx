@@ -16,7 +16,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature, useWorkspace } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -172,12 +172,9 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
     const uploadDisabled = !canEdit || !hasBrandingFeature;
 
     return (
-      <div id="branding" className="py-6 lg:flex">
-        <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
+      <FormSection id="branding" title={title}>
         <PermissionGuard permissions={["bb.workspaces.update"]} display="block">
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <FormFieldGroup>
             {/* Workspace ID */}
             <div>
               <label className="text-base font-semibold">
@@ -278,7 +275,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
             </div>
           </FormFieldGroup>
         </PermissionGuard>
-      </div>
+      </FormSection>
     );
   }
 );

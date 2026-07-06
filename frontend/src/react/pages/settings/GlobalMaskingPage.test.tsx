@@ -150,6 +150,7 @@ vi.mock("@bufbuild/protobuf", () => ({
 vi.mock("lucide-react", () => ({
   ChevronDown: () => createElement("span", {}),
   ChevronUp: () => createElement("span", {}),
+  ExternalLink: () => createElement("span", {}),
   ListOrdered: () => createElement("span", {}),
   Pencil: () => createElement("span", {}),
   Plus: () => createElement("span", {}),

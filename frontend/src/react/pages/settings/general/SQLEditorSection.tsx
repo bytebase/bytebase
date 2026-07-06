@@ -34,7 +34,7 @@ import type {
 } from "@/react/components/sql-editor/theme/types";
 import { resolveWorkspaceTheme } from "@/react/components/sql-editor/theme/useWorkspaceSQLEditorTheme";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { SegmentedControl } from "@/react/components/ui/segmented-control";
 import {
@@ -417,11 +417,8 @@ export const SQLEditorSection = forwardRef<
   };
 
   return (
-    <div id="security" className="py-6 lg:flex gap-y-4 lg:gap-y-0">
-      <div className="text-left lg:w-1/4">
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-      <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+    <FormSection id="security" title={title}>
+      <FormFieldGroup>
         {/* Data Export toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div className="w-full inline-flex items-center gap-x-2">
@@ -645,6 +642,6 @@ export const SQLEditorSection = forwardRef<
           </div>
         </PermissionGuard>
       </FormFieldGroup>
-    </div>
+    </FormSection>
   );
 });

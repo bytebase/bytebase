@@ -115,4 +115,49 @@ describe("CreateWorkloadIdentitySheet", () => {
       root.unmount();
     });
   });
+
+  test("places repository and branch helper text under the field title", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <CreateWorkloadIdentitySheet
+          open
+          onClose={() => undefined}
+          onCreated={() => undefined}
+        />
+      );
+    });
+
+    const fields = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    );
+    const repositoryField = fields.find((field) =>
+      field.textContent?.includes("settings.members.workload-identity-repo")
+    );
+    const branchField = fields.find((field) =>
+      field.textContent?.includes("settings.members.workload-identity-branch")
+    );
+
+    for (const field of [repositoryField, branchField]) {
+      expect(field).toBeTruthy();
+      const header = field?.querySelector('[data-slot="form-field-header"]');
+      const input = field?.querySelector("input");
+
+      expect(header).toBeTruthy();
+      expect(header?.textContent).toContain("hint");
+      expect(
+        header && input
+          ? Node.DOCUMENT_POSITION_FOLLOWING &
+              header.compareDocumentPosition(input)
+          : 0
+      ).toBeTruthy();
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

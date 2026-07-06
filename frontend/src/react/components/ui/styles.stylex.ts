@@ -196,13 +196,6 @@ export function controlMultilineSizeStyle(size: ControlSize) {
 }
 
 const formStyles = stylex.create({
-  affix: {
-    color: "rgb(var(--color-control-light))",
-    flexShrink: 0,
-    fontSize: 14,
-    lineHeight: "20px",
-    whiteSpace: "nowrap",
-  },
   controlGroup: {
     display: "flex",
     flexDirection: "column",
@@ -224,18 +217,21 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 24,
   },
-  fieldRow: {
-    alignItems: "center",
-    columnGap: 16,
-    display: "grid",
-    gridTemplateColumns: "minmax(10rem, 14rem) minmax(0, 1fr)",
-  },
-  inlineAffix: {
-    alignItems: "center",
-    columnGap: 4,
+  fieldHeader: {
     display: "flex",
-    minWidth: 0,
-    width: "100%",
+    flexDirection: "column",
+    rowGap: 0,
+  },
+  fieldTitle: {
+    color: "rgb(var(--color-main))",
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: "24px",
+  },
+  fieldDescription: {
+    color: "rgb(var(--color-control-placeholder))",
+    fontSize: 14,
+    lineHeight: "20px",
   },
   label: {
     alignItems: "center",
@@ -246,15 +242,38 @@ const formStyles = stylex.create({
     fontWeight: 500,
     lineHeight: "20px",
   },
-  description: {
-    color: "rgb(var(--color-control-light))",
-    fontSize: 12,
-    lineHeight: "16px",
-  },
   error: {
     color: "rgb(var(--color-error))",
     fontSize: 12,
     lineHeight: "16px",
+  },
+  section: {
+    paddingBlock: 24,
+    rowGap: 16,
+    "@media (min-width: 1024px)": {
+      display: "flex",
+      rowGap: 0,
+    },
+  },
+  sectionContent: {
+    flex: 1,
+    marginTop: 16,
+    "@media (min-width: 1024px)": {
+      marginTop: 0,
+      paddingInline: 16,
+    },
+  },
+  sectionHeader: {
+    textAlign: "left",
+    "@media (min-width: 1024px)": {
+      width: "25%",
+    },
+  },
+  sectionTitle: {
+    color: "rgb(var(--color-main))",
+    fontSize: 24,
+    fontWeight: 700,
+    lineHeight: "32px",
   },
 });
 
@@ -266,15 +285,7 @@ export function formLabelStyle() {
   return formStyles.label;
 }
 
-export function formDescriptionStyle() {
-  return formStyles.description;
-}
-
 export function formErrorStyle() {
-  return formStyles.error;
-}
-
-export function formMessageStyle() {
   return formStyles.error;
 }
 
@@ -290,16 +301,32 @@ export function formFieldGroupStyle() {
   return formStyles.fieldGroup;
 }
 
-export function formFieldRowStyle() {
-  return formStyles.fieldRow;
+export function formFieldHeaderStyle() {
+  return formStyles.fieldHeader;
 }
 
-export function formInlineAffixStyle() {
-  return formStyles.inlineAffix;
+export function formFieldTitleStyle() {
+  return formStyles.fieldTitle;
 }
 
-export function formControlAffixStyle() {
-  return formStyles.affix;
+export function formFieldDescriptionStyle() {
+  return formStyles.fieldDescription;
+}
+
+export function formSectionStyle() {
+  return formStyles.section;
+}
+
+export function formSectionHeaderStyle() {
+  return formStyles.sectionHeader;
+}
+
+export function formSectionTitleStyle() {
+  return formStyles.sectionTitle;
+}
+
+export function formSectionContentStyle() {
+  return formStyles.sectionContent;
 }
 
 const stickyActionFooterStyles = stylex.create({

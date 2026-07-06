@@ -23,7 +23,6 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
-  FormDescription,
   FormField,
   FormLabel,
 } from "@/react/components/ui/form";
@@ -119,11 +118,14 @@ function SpannerHostInput({
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-      <FormField>
-        <FormLabel>
-          {t("instance.project-id")}
-          <span style={{ color: "red" }}> *</span>
-        </FormLabel>
+      <FormField
+        title={
+          <>
+            {t("instance.project-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
         <Input
           value={projectId}
           required
@@ -137,11 +139,14 @@ function SpannerHostInput({
           }}
         />
       </FormField>
-      <FormField>
-        <FormLabel>
-          {t("instance.instance-id")}
-          <span style={{ color: "red" }}> *</span>
-        </FormLabel>
+      <FormField
+        title={
+          <>
+            {t("instance.instance-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
         <Input
           value={instanceId}
           required
@@ -155,7 +160,7 @@ function SpannerHostInput({
           }}
         />
       </FormField>
-      <FormDescription className="col-span-2">
+      <p className="col-span-2 text-xs leading-4 text-control-light">
         {t("instance.find-gcp-project-id-and-instance-id")}{" "}
         <a
           href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
@@ -166,7 +171,7 @@ function SpannerHostInput({
           {t("common.detailed-guide")}
           <ExternalLink className="size-4 ml-1" />
         </a>
-      </FormDescription>
+      </p>
     </div>
   );
 }
@@ -194,11 +199,14 @@ function BigQueryHostInput({
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-      <FormField>
-        <FormLabel>
-          {t("instance.project-id")}
-          <span style={{ color: "red" }}> *</span>
-        </FormLabel>
+      <FormField
+        title={
+          <>
+            {t("instance.project-id")}
+            <span style={{ color: "red" }}> *</span>
+          </>
+        }
+      >
         <Input
           value={projectId}
           required
@@ -217,7 +225,7 @@ function BigQueryHostInput({
           }}
         />
       </FormField>
-      <FormDescription className="col-span-2">
+      <p className="col-span-2 text-xs leading-4 text-control-light">
         {t("instance.find-gcp-project-id")}{" "}
         <a
           href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
@@ -228,7 +236,7 @@ function BigQueryHostInput({
           {t("common.detailed-guide")}
           <ExternalLink className="size-4 ml-1" />
         </a>
-      </FormDescription>
+      </p>
     </div>
   );
 }
@@ -344,14 +352,18 @@ function ScanIntervalInput({
   if (hideAdvancedFeatures) return null;
 
   return (
-    <FormField className="sm:col-span-4 sm:col-start-1">
-      <div className="flex items-center gap-x-2">
-        <FormLabel>{t("instance.scan-interval.self")}</FormLabel>
-        <FeatureBadge feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME} />
-      </div>
-      <FormDescription>
-        {t("instance.scan-interval.description")}
-      </FormDescription>
+    <FormField
+      className="sm:col-span-4 sm:col-start-1"
+      title={
+        <span className="flex items-center gap-x-2">
+          {t("instance.scan-interval.self")}
+          <FeatureBadge
+            feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME}
+          />
+        </span>
+      }
+      description={t("instance.scan-interval.description")}
+    >
       <RadioGroup
         className="gap-x-6"
         value={mode}
@@ -484,15 +496,13 @@ function SyncDatabases({
   };
 
   return (
-    <FormField className="sm:col-span-4 sm:col-start-1">
-      {showLabel && (
-        <div className="flex items-center gap-x-2">
-          <FormLabel>{t("instance.sync-databases.self")}</FormLabel>
-        </div>
-      )}
-      <FormDescription>
-        {t("instance.sync-databases.description")}
-      </FormDescription>
+    <FormField
+      className="sm:col-span-4 sm:col-start-1"
+      title={showLabel ? t("instance.sync-databases.self") : undefined}
+      description={
+        showLabel ? t("instance.sync-databases.description") : undefined
+      }
+    >
       <div className="flex flex-col gap-y-2">
         <label className="flex items-center gap-x-2 cursor-pointer">
           <Checkbox
@@ -1251,9 +1261,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   />
                 ) : (
                   <>
-                    <FormDescription>
+                    <p className="text-xs leading-4 text-control-light">
                       {t("instance.sentence.console.snowflake")}
-                    </FormDescription>
+                    </p>
                     <Input
                       value={basicInfo.externalLink ?? ""}
                       required
@@ -1339,14 +1349,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         {t("instance.sentence.google-cloud-sql.instance-name")}
                         <span className="text-error"> *</span>
                       </FormLabel>
-                      <FormDescription>
+                      <p className="text-xs leading-4 text-control-light">
                         {t(
                           "instance.sentence.google-cloud-sql.instance-name-tips",
                           {
                             instance: "{project-id}:{region}:{instance-name}",
                           }
                         )}
-                      </FormDescription>
+                      </p>
                     </>
                   ) : (
                     <div className="flex items-center gap-x-1">
@@ -1380,9 +1390,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     onChange={(e) => updateAdminDS({ host: e.target.value })}
                   />
                   {basicInfo.engine === Engine.SNOWFLAKE && (
-                    <FormDescription className="mt-2">
+                    <p className="mt-2 text-xs leading-4 text-control-light">
                       {t("instance.sentence.proxy.snowflake")}
-                    </FormDescription>
+                    </p>
                   )}
                 </>
               )}

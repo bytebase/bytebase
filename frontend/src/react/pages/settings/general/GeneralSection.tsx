@@ -22,10 +22,9 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import {
-  FormDescription,
   FormField,
   FormFieldGroup,
-  FormLabel,
+  FormSection,
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
@@ -130,108 +129,108 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
     };
 
     return (
-      <div className="pb-6 lg:flex">
-        <div className="text-left lg:w-1/4">
-          <div className="flex items-center gap-x-2">
-            <h1 className="text-2xl font-bold">{title}</h1>
-          </div>
-        </div>
-        <PermissionGuard
-          permissions={["bb.settings.setWorkspaceProfile"]}
-          display="block"
-        >
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            {/* Database change mode */}
-            <FormField>
-              <div className="mb-4 text-base font-semibold">
-                {t("settings.general.workspace.default-landing-page.self")}
-              </div>
-              <RadioGroup
-                className="flex-col items-stretch gap-4"
-                value={String(state.databaseChangeMode)}
-                onValueChange={(value) =>
-                  setState((s) => ({
-                    ...s,
-                    databaseChangeMode: Number(value),
-                  }))
-                }
-              >
-                <RadioGroupItem
-                  value={String(DatabaseChangeMode.PIPELINE)}
-                  disabled={!canEdit}
-                  className="items-start gap-x-3"
-                  contentClassName="flex flex-col gap-1"
-                  radioClassName="mt-1"
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="textinfo font-semibold">
-                      {t(
-                        "settings.general.workspace.default-landing-page.workspace.self"
-                      )}
-                    </div>
-                    <div className="textinfolabel">
-                      {t(
-                        "settings.general.workspace.default-landing-page.workspace.description"
-                      )}
-                    </div>
-                  </div>
-                </RadioGroupItem>
-                <RadioGroupItem
-                  value={String(DatabaseChangeMode.EDITOR)}
-                  disabled={!canEdit}
-                  className="items-start gap-x-3"
-                  contentClassName="flex flex-col gap-1"
-                  radioClassName="mt-1"
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="textinfo font-semibold">
-                      {t(
-                        "settings.general.workspace.default-landing-page.sql-editor.self"
-                      )}
-                    </div>
-                    <div className="textinfolabel">
-                      {t(
-                        "settings.general.workspace.default-landing-page.sql-editor.description"
-                      )}
-                    </div>
-                  </div>
-                </RadioGroupItem>
-              </RadioGroup>
-            </FormField>
-
-            {/* External URL — hidden in SaaS/cloud mode */}
-            {!isSaaSMode && (
-              <FormField>
-                <FormLabel className="text-base font-semibold">
-                  {t("settings.general.workspace.external-url.self")}
-                </FormLabel>
-                <FormDescription className="text-sm">
-                  {t("settings.general.workspace.external-url.description")}{" "}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                    className="text-accent"
-                  />
-                </FormDescription>
-                {externalUrlFromFlag && (
-                  <Alert
-                    variant="info"
-                    description={t(
-                      "settings.general.workspace.external-url.cannot-edit-flag"
-                    )}
-                  />
+      <>
+        <FormSection title={title}>
+          <PermissionGuard
+            permissions={["bb.settings.setWorkspaceProfile"]}
+            display="block"
+          >
+            <FormFieldGroup>
+              {/* Database change mode */}
+              <FormField
+                title={t(
+                  "settings.general.workspace.default-landing-page.self"
                 )}
-                <Input
-                  value={state.externalUrl}
-                  className="w-full"
-                  disabled={!canEdit || externalUrlFromFlag}
-                  onChange={(e) =>
-                    setState((s) => ({ ...s, externalUrl: e.target.value }))
+                className="gap-y-4"
+              >
+                <RadioGroup
+                  className="flex-col items-stretch gap-4"
+                  value={String(state.databaseChangeMode)}
+                  onValueChange={(value) =>
+                    setState((s) => ({
+                      ...s,
+                      databaseChangeMode: Number(value),
+                    }))
                   }
-                />
+                >
+                  <RadioGroupItem
+                    value={String(DatabaseChangeMode.PIPELINE)}
+                    disabled={!canEdit}
+                    className="items-start gap-x-3"
+                    contentClassName="flex flex-col gap-1"
+                    radioClassName="mt-1"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <div className="textinfo font-semibold">
+                        {t(
+                          "settings.general.workspace.default-landing-page.workspace.self"
+                        )}
+                      </div>
+                      <div className="textinfolabel">
+                        {t(
+                          "settings.general.workspace.default-landing-page.workspace.description"
+                        )}
+                      </div>
+                    </div>
+                  </RadioGroupItem>
+                  <RadioGroupItem
+                    value={String(DatabaseChangeMode.EDITOR)}
+                    disabled={!canEdit}
+                    className="items-start gap-x-3"
+                    contentClassName="flex flex-col gap-1"
+                    radioClassName="mt-1"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <div className="textinfo font-semibold">
+                        {t(
+                          "settings.general.workspace.default-landing-page.sql-editor.self"
+                        )}
+                      </div>
+                      <div className="textinfolabel">
+                        {t(
+                          "settings.general.workspace.default-landing-page.sql-editor.description"
+                        )}
+                      </div>
+                    </div>
+                  </RadioGroupItem>
+                </RadioGroup>
               </FormField>
-            )}
-          </FormFieldGroup>
-        </PermissionGuard>
+
+              {/* External URL — hidden in SaaS/cloud mode */}
+              {!isSaaSMode && (
+                <FormField
+                  title={t("settings.general.workspace.external-url.self")}
+                  description={
+                    <>
+                      {t("settings.general.workspace.external-url.description")}{" "}
+                      <LearnMoreLink
+                        href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
+                        className="text-accent"
+                      />
+                    </>
+                  }
+                >
+                  {externalUrlFromFlag && (
+                    <Alert
+                      variant="info"
+                      description={t(
+                        "settings.general.workspace.external-url.cannot-edit-flag"
+                      )}
+                    />
+                  )}
+                  <Input
+                    value={state.externalUrl}
+                    className="w-full"
+                    disabled={!canEdit || externalUrlFromFlag}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, externalUrl: e.target.value }))
+                    }
+                  />
+                </FormField>
+              )}
+            </FormFieldGroup>
+          </PermissionGuard>
+        </FormSection>
 
         {/* Modal after switching to Editor mode */}
         {showModal && (
@@ -263,7 +262,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             </DialogContent>
           </Dialog>
         )}
-      </div>
+      </>
     );
   }
 );

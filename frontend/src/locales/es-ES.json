@@ -495,6 +495,7 @@
   "create-db": {
     "cluster": "Clúster",
     "database-owner-name": "Nombre del propietario de la base de datos",
+    "issue-title": "Título del problema",
     "new-collection-name": "Nuevo Nombre de Colección",
     "new-database-name": "Nuevo nombre de la base de datos",
     "reserved-db-error": "{{databaseName}} es un nombre reservado"

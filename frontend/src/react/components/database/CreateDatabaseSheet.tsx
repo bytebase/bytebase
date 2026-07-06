@@ -11,6 +11,12 @@ import {
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
+import {
+  FormError,
+  FormField,
+  FormFieldGroup,
+  FormTitle,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -316,175 +322,195 @@ export function CreateDatabaseSheet({
           <SheetTitle>{t("quick-action.create-db")}</SheetTitle>
         </SheetHeader>
 
-        <SheetBody className="gap-y-4">
-          {!fixedProjectName && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t("common.project")} <span className="text-error">*</span>
-              </label>
-              <ProjectSelect
-                value={projectName}
-                onChange={(name) => setProjectName(name)}
+        <SheetBody>
+          <FormFieldGroup>
+            {!fixedProjectName && (
+              <FormField
+                title={
+                  <>
+                    {t("common.project")} <span className="text-error">*</span>
+                  </>
+                }
+              >
+                <ProjectSelect
+                  value={projectName}
+                  onChange={(name) => setProjectName(name)}
+                  portal
+                />
+              </FormField>
+            )}
+
+            {selectedProject && projectIssueLabels.length > 0 && (
+              <IssueLabelSelect
+                labels={projectIssueLabels}
+                selected={issueLabels}
+                required={forceIssueLabels}
+                onChange={setIssueLabels}
+              />
+            )}
+
+            <FormField
+              title={
+                <>
+                  {t("common.instance")} <span className="text-error">*</span>
+                </>
+              }
+            >
+              <InstanceSelect
+                value={instanceName}
+                onChange={handleInstanceChange}
+                engines={enginesSupportCreateDatabase()}
                 portal
               />
-            </div>
-          )}
+            </FormField>
 
-          {selectedProject && projectIssueLabels.length > 0 && (
-            <IssueLabelSelect
-              labels={projectIssueLabels}
-              selected={issueLabels}
-              required={forceIssueLabels}
-              onChange={setIssueLabels}
-            />
-          )}
+            <FormField>
+              <FormTitle id="create-database-name-title">
+                {t("create-db.new-database-name")}{" "}
+                <span className="text-error">*</span>
+              </FormTitle>
+              <Input
+                id="create-database-name"
+                aria-labelledby="create-database-name-title"
+                value={databaseName}
+                onChange={(e) => setDatabaseName(e.target.value)}
+                placeholder={t("create-db.new-database-name")}
+                className={cn(isReservedName && "border-error")}
+              />
+              {isReservedName && (
+                <FormError>
+                  {t("create-db.reserved-db-error", { databaseName })}
+                </FormError>
+              )}
+            </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t("common.instance")} <span className="text-error">*</span>
-            </label>
-            <InstanceSelect
-              value={instanceName}
-              onChange={handleInstanceChange}
-              engines={enginesSupportCreateDatabase()}
-              portal
-            />
-          </div>
+            <FormField>
+              <FormTitle id="create-database-title-title">
+                {t("create-db.issue-title")}
+                {enforceIssueTitle && <span className="text-error"> *</span>}
+              </FormTitle>
+              <Input
+                id="create-database-title"
+                aria-labelledby="create-database-title-title"
+                value={title}
+                placeholder={t("create-db.issue-title")}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setTitle(next);
+                  // Invariant: titleEdited ⇒ title is non-empty user intent.
+                  // When the user deletes to empty, reset the flag so the
+                  // auto-fill effect resumes tracking databaseName — otherwise
+                  // the flag stays sticky and the next auto-fill (first char
+                  // of a re-typed databaseName) gets frozen by the guard.
+                  setTitleEdited(next !== "");
+                }}
+              />
+            </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t("create-db.new-database-name")}{" "}
-              <span className="text-error">*</span>
-            </label>
-            <Input
-              value={databaseName}
-              onChange={(e) => setDatabaseName(e.target.value)}
-              placeholder={t("create-db.new-database-name")}
-              className={cn(isReservedName && "border-error")}
-            />
-            {isReservedName && (
-              <p className="mt-1 text-xs text-error">
-                {t("create-db.reserved-db-error", { databaseName })}
-              </p>
+            {selectedInstance?.engine === Engine.MONGODB && (
+              <FormField>
+                <FormTitle id="create-database-collection-name-title">
+                  {t("create-db.new-collection-name")}{" "}
+                  <span className="text-error">*</span>
+                </FormTitle>
+                <Input
+                  id="create-database-collection-name"
+                  aria-labelledby="create-database-collection-name-title"
+                  value={tableName}
+                  onChange={(e) => setTableName(e.target.value)}
+                />
+              </FormField>
             )}
-          </div>
 
-          <div className="flex flex-col gap-y-2">
-            <label className="block text-sm font-medium">
-              {t("common.title")}
-              {enforceIssueTitle && <span className="text-error"> *</span>}
-            </label>
-            <Input
-              value={title}
-              placeholder={t("common.title")}
-              onChange={(e) => {
-                const next = e.target.value;
-                setTitle(next);
-                // Invariant: titleEdited ⇒ title is non-empty user intent.
-                // When the user deletes to empty, reset the flag so the
-                // auto-fill effect resumes tracking databaseName — otherwise
-                // the flag stays sticky and the next auto-fill (first char
-                // of a re-typed databaseName) gets frozen by the guard.
-                setTitleEdited(next !== "");
-              }}
-            />
-          </div>
+            {selectedInstance?.engine === Engine.CLICKHOUSE && (
+              <FormField>
+                <FormTitle id="create-database-cluster-title">
+                  {t("create-db.cluster")}
+                </FormTitle>
+                <Input
+                  id="create-database-cluster"
+                  aria-labelledby="create-database-cluster-title"
+                  value={cluster}
+                  onChange={(e) => setCluster(e.target.value)}
+                />
+              </FormField>
+            )}
 
-          {selectedInstance?.engine === Engine.MONGODB && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t("create-db.new-collection-name")}{" "}
-                <span className="text-error">*</span>
-              </label>
-              <Input
-                value={tableName}
-                onChange={(e) => setTableName(e.target.value)}
-              />
-            </div>
-          )}
+            {requireOwner && instanceName && (
+              <FormField
+                title={
+                  <>
+                    {t("create-db.database-owner-name")}{" "}
+                    <span className="text-error">*</span>
+                  </>
+                }
+              >
+                <Combobox
+                  value={ownerName}
+                  onChange={setOwnerName}
+                  placeholder={t("create-db.database-owner-name")}
+                  noResultsText={t("common.no-data")}
+                  options={instanceRoles.map((role) => ({
+                    value: role.roleName,
+                    label: role.roleName,
+                  }))}
+                />
+              </FormField>
+            )}
 
-          {selectedInstance?.engine === Engine.CLICKHOUSE && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t("create-db.cluster")}
-              </label>
-              <Input
-                value={cluster}
-                onChange={(e) => setCluster(e.target.value)}
-              />
-            </div>
-          )}
-
-          {requireOwner && instanceName && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {t("create-db.database-owner-name")}{" "}
-                <span className="text-error">*</span>
-              </label>
+            <FormField title={<>{t("common.environment")}</>}>
               <Combobox
-                value={ownerName}
-                onChange={setOwnerName}
-                placeholder={t("create-db.database-owner-name")}
+                value={environmentName}
+                onChange={setEnvironmentName}
+                placeholder={t("common.environment")}
                 noResultsText={t("common.no-data")}
-                options={instanceRoles.map((role) => ({
-                  value: role.roleName,
-                  label: role.roleName,
+                renderValue={(opt) => (
+                  <EnvironmentLabel environmentName={opt.value} />
+                )}
+                options={environments.map((env) => ({
+                  value: env.name,
+                  label: env.title,
+                  render: () => <EnvironmentLabel environmentName={env.name} />,
                 }))}
               />
-            </div>
-          )}
+            </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t("common.environment")}
-            </label>
-            <Combobox
-              value={environmentName}
-              onChange={setEnvironmentName}
-              placeholder={t("common.environment")}
-              noResultsText={t("common.no-data")}
-              renderValue={(opt) => (
-                <EnvironmentLabel environmentName={opt.value} />
-              )}
-              options={environments.map((env) => ({
-                value: env.name,
-                label: env.title,
-                render: () => <EnvironmentLabel environmentName={env.name} />,
-              }))}
-            />
-          </div>
-
-          {showCharsetCollation && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {selectedInstance.engine === Engine.POSTGRES
-                    ? t("db.encoding")
-                    : t("db.character-set")}
-                </label>
-                <Input
-                  value={characterSet}
-                  onChange={(e) => setCharacterSet(e.target.value)}
-                  placeholder={defaultCharsetOfEngineV1(
-                    selectedInstance.engine
-                  )}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t("db.collation")}
-                </label>
-                <Input
-                  value={collation}
-                  onChange={(e) => setCollation(e.target.value)}
-                  placeholder={
-                    defaultCollationOfEngineV1(selectedInstance.engine) ||
-                    t("common.default")
-                  }
-                />
-              </div>
-            </>
-          )}
+            {showCharsetCollation && (
+              <>
+                <FormField>
+                  <FormTitle id="create-database-character-set-title">
+                    {selectedInstance.engine === Engine.POSTGRES
+                      ? t("db.encoding")
+                      : t("db.character-set")}
+                  </FormTitle>
+                  <Input
+                    id="create-database-character-set"
+                    aria-labelledby="create-database-character-set-title"
+                    value={characterSet}
+                    onChange={(e) => setCharacterSet(e.target.value)}
+                    placeholder={defaultCharsetOfEngineV1(
+                      selectedInstance.engine
+                    )}
+                  />
+                </FormField>
+                <FormField>
+                  <FormTitle id="create-database-collation-title">
+                    {t("db.collation")}
+                  </FormTitle>
+                  <Input
+                    id="create-database-collation"
+                    aria-labelledby="create-database-collation-title"
+                    value={collation}
+                    onChange={(e) => setCollation(e.target.value)}
+                    placeholder={
+                      defaultCollationOfEngineV1(selectedInstance.engine) ||
+                      t("common.default")
+                    }
+                  />
+                </FormField>
+              </>
+            )}
+          </FormFieldGroup>
         </SheetBody>
 
         <SheetFooter>

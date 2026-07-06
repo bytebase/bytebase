@@ -17,7 +17,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import { FormFieldGroup, FormSection } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -210,15 +210,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
     };
 
     return (
-      <div id="security" className="py-6 lg:flex gap-y-4 lg:gap-y-0">
-        <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
+      <FormSection id="security" title={title}>
         <PermissionGuard
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <FormFieldGroup>
             {/* Watermark */}
             <div>
               <div className="flex items-center gap-x-2">
@@ -390,7 +387,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             </div>
           </FormFieldGroup>
         </PermissionGuard>
-      </div>
+      </FormSection>
     );
   }
 );

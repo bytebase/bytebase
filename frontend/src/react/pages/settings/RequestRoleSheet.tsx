@@ -26,12 +26,7 @@ import type { SQLEditorTheme } from "@/react/components/sql-editor/theme/types";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
-import {
-  FormDescription,
-  FormError,
-  FormField,
-  FormLabel,
-} from "@/react/components/ui/form";
+import { FormError, FormField } from "@/react/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
   Sheet,
@@ -504,11 +499,14 @@ function RequestRoleForm({
               }
             />
           )}
-          <FormField>
-            <FormLabel>
-              {t("common.role.self")}
-              <span className="text-error ml-0.5">*</span>
-            </FormLabel>
+          <FormField
+            title={
+              <>
+                {t("common.role.self")}
+                <span className="text-error ml-0.5">*</span>
+              </>
+            }
+          >
             <RoleSelect
               scope="project"
               multiple={false}
@@ -532,11 +530,14 @@ function RequestRoleForm({
               </FormError>
             )}
           </FormField>
-          <FormField>
-            <FormLabel>
-              {t("common.reason")}
-              {reasonRequired && <span className="text-error ml-0.5">*</span>}
-            </FormLabel>
+          <FormField
+            title={
+              <>
+                {t("common.reason")}
+                {reasonRequired && <span className="text-error ml-0.5">*</span>}
+              </>
+            }
+          >
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -545,11 +546,14 @@ function RequestRoleForm({
             />
           </FormField>
           {showDatabases && (
-            <FormField>
-              <FormLabel>
-                {t("common.databases")}
-                <span className="text-error ml-0.5">*</span>
-              </FormLabel>
+            <FormField
+              title={
+                <>
+                  {t("common.databases")}
+                  <span className="text-error ml-0.5">*</span>
+                </>
+              }
+            >
               <RadioGroup
                 className="gap-x-4"
                 value={databaseMode}
@@ -586,8 +590,7 @@ function RequestRoleForm({
             </FormField>
           )}
           {envKind && (
-            <FormField>
-              <FormLabel>{t("common.environments")}</FormLabel>
+            <FormField title={<>{t("common.environments")}</>}>
               <DDLWarningCallout type="drawer" kind={envKind} />
               <EnvironmentSelect
                 multiple
@@ -597,26 +600,22 @@ function RequestRoleForm({
               />
             </FormField>
           )}
-          <FormField>
-            <FormLabel>
-              {t("common.expiration")}
-              {expirationRequired && (
-                <span className="text-error ml-0.5">*</span>
-              )}
-            </FormLabel>
+          <FormField
+            title={
+              <>
+                {t("common.expiration")}
+                {expirationRequired && (
+                  <span className="text-error ml-0.5">*</span>
+                )}
+              </>
+            }
+          >
             <ExpirationPicker
               value={expirationTimestamp}
               onChange={setExpirationTimestamp}
               minDate={minDatetime}
               maxDate={maxDatetime}
             />
-            {maximumRequestExpirationDays !== undefined && (
-              <FormDescription>
-                {t("project.members.request-role.max-expiration-hint", {
-                  days: maximumRequestExpirationDays,
-                })}
-              </FormDescription>
-            )}
             {expirationIsInPast && (
               <FormError>
                 {t("project.members.request-role.expiration-must-be-future")}

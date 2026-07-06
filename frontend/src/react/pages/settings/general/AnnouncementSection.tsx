@@ -26,10 +26,10 @@ import { ColorInput } from "@/react/components/ui/color-input";
 import {
   FormControlGroup,
   FormControlRow,
-  FormDescription,
   FormField,
   FormFieldGroup,
   FormLabel,
+  FormSection,
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SegmentedControl } from "@/react/components/ui/segmented-control";
@@ -168,32 +168,31 @@ export const AnnouncementSection = forwardRef<
     state.text || t("settings.general.workspace.announcement-text.placeholder");
 
   return (
-    <div id="announcement" className="py-6 lg:flex">
-      <div className="text-left lg:w-1/4">
-        <div className="flex items-center gap-x-2">
-          <h1 className="text-2xl font-bold">{title}</h1>
+    <FormSection
+      id="announcement"
+      title={
+        <span className="inline-flex items-center gap-x-2">
+          {title}
           <FeatureBadge
             feature={PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT}
             clickable
           />
-        </div>
-      </div>
+        </span>
+      }
+    >
       <PermissionGuard
         permissions={["bb.settings.setWorkspaceProfile"]}
         display="block"
       >
-        <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+        <FormFieldGroup>
           {/* Theme selector */}
-          <FormField className="gap-y-3">
-            <div>
-              <FormLabel className="text-base font-semibold">
-                {t("settings.general.workspace.announcement-theme.self")}
-              </FormLabel>
-              <FormDescription className="mt-1 text-sm">
-                {t("settings.general.workspace.announcement-theme.description")}
-              </FormDescription>
-            </div>
-
+          <FormField
+            className="gap-y-3"
+            title={t("settings.general.workspace.announcement-theme.self")}
+            description={t(
+              "settings.general.workspace.announcement-theme.description"
+            )}
+          >
             <SegmentedControl
               ariaLabel={t(
                 "settings.general.workspace.announcement-theme.self"
@@ -274,13 +273,12 @@ export const AnnouncementSection = forwardRef<
           </FormField>
 
           {/* Announcement text */}
-          <FormField>
-            <FormLabel className="text-base font-semibold">
-              {t("settings.general.workspace.announcement-text.self")}
-            </FormLabel>
-            <FormDescription className="text-sm">
-              {t("settings.general.workspace.announcement-text.description")}
-            </FormDescription>
+          <FormField
+            title={t("settings.general.workspace.announcement-text.self")}
+            description={t(
+              "settings.general.workspace.announcement-text.description"
+            )}
+          >
             <Input
               value={state.text}
               className="w-full"
@@ -295,10 +293,7 @@ export const AnnouncementSection = forwardRef<
           </FormField>
 
           {/* Extra link */}
-          <FormField>
-            <FormLabel className="text-base font-semibold">
-              {t("settings.general.workspace.extra-link.self")}
-            </FormLabel>
+          <FormField title={t("settings.general.workspace.extra-link.self")}>
             <Input
               value={state.link}
               className="w-full"
@@ -313,6 +308,6 @@ export const AnnouncementSection = forwardRef<
           </FormField>
         </FormFieldGroup>
       </PermissionGuard>
-    </div>
+    </FormSection>
   );
 });
