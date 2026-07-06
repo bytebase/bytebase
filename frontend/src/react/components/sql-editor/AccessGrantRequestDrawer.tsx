@@ -383,6 +383,13 @@ function AccessGrantRequestDrawerInner({
                 <span className="text-error ml-0.5">*</span>
               </>
             }
+            description={
+              maximumExpirationDays !== undefined
+                ? t("project.members.request-role.max-expiration-hint", {
+                    days: maximumExpirationDays,
+                  })
+                : undefined
+            }
           >
             <Combobox
               value={String(duration)}

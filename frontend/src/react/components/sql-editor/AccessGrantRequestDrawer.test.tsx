@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   routerResolve: vi.fn(() => ({ fullPath: "/projects/proj1/issues/123" })),
   // Captures the multi picker's server-search callback (undefined pre-fix).
   dbOnSearch: undefined as ((q: string) => void) | undefined,
+  maximumRequestExpirationSeconds: undefined as number | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -44,10 +45,14 @@ vi.mock("@/react/stores/app", () => {
   const state = () => ({
     fetchDatabases: mocks.fetchDatabases,
     notify: mocks.pushNotification,
-    // Consumed by useWorkspaceSQLEditorTheme (via useActiveSQLEditorTheme,
-    // which drives the drawer's Monaco theme). Empty profile resolves to the
-    // default theme.
-    getWorkspaceProfile: () => ({}),
+    // Consumed by useWorkspaceSQLEditorTheme and expiration policy handling.
+    // Empty profile resolves to the default SQL Editor theme and no cap.
+    getWorkspaceProfile: () => ({
+      maximumRequestExpiration:
+        mocks.maximumRequestExpirationSeconds === undefined
+          ? undefined
+          : { seconds: BigInt(mocks.maximumRequestExpirationSeconds) },
+    }),
     // Consumed by the shared DatabaseSelect (rendered by the drawer's picker).
     workspaceResourceName: () => "workspaces/-",
     getDatabaseByName: () => ({ name: "" }),
@@ -371,6 +376,7 @@ const setupMocks = () => {
   mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
   // vi.clearAllMocks() does not reset a plain hoisted property.
   mocks.dbOnSearch = undefined;
+  mocks.maximumRequestExpirationSeconds = undefined;
 };
 
 beforeEach(async () => {
@@ -391,6 +397,25 @@ afterEach(() => {
 });
 
 describe("AccessGrantRequestDrawer", () => {
+  test("shows the workspace maximum expiration hint when SQL access grants are capped", () => {
+    mocks.maximumRequestExpirationSeconds = 30 * 24 * 60 * 60;
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        targets={["instances/inst1/databases/mydb"]}
+        query="SELECT id FROM orders"
+        onClose={onClose}
+      />
+    );
+    render();
+
+    expect(container.textContent).toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+
+    unmount();
+  });
+
   test("renders with pre-filled targets, query, unmask when passed as props", () => {
     const onClose = vi.fn();
     const { container, render, unmount } = renderIntoContainer(

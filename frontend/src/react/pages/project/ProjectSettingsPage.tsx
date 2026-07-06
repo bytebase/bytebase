@@ -1,7 +1,14 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { ShieldCheck, TriangleAlert, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
@@ -14,6 +21,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  FormControlRow,
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
@@ -658,23 +671,22 @@ export function ProjectSettingsPage() {
         {/* ============================================================= */}
         {/* Section 1: General */}
         {/* ============================================================= */}
-        <div className="pb-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">{t("common.general")}</h1>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <PermissionGuard
-              permissions={["bb.projects.update"]}
-              project={project}
-              display="block"
-            >
-              <form className="w-full flex flex-col gap-y-4">
-                <div>
-                  <div className="font-medium">
-                    {t("common.name")} <span className="text-error">*</span>
-                  </div>
+        <FormSection title={t("common.general")}>
+          <PermissionGuard
+            permissions={["bb.projects.update"]}
+            project={project}
+            display="block"
+          >
+            <form className="w-full">
+              <FormFieldGroup>
+                <FormField
+                  title={
+                    <>
+                      {t("common.name")} <span className="text-error">*</span>
+                    </>
+                  }
+                >
                   <Input
-                    className="mt-1"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     disabled={
@@ -684,114 +696,101 @@ export function ProjectSettingsPage() {
                     }
                     required
                   />
-                  <div className="mt-1">
-                    <ResourceIdField
-                      readonly
-                      value={extractProjectResourceName(project.name)}
-                      resourceName={t("common.project")}
-                    />
-                  </div>
-                </div>
+                  <ResourceIdField
+                    readonly
+                    value={extractProjectResourceName(project.name)}
+                    resourceName={t("common.project")}
+                  />
+                </FormField>
 
                 {/* Project Labels */}
-                <div>
-                  <div className="font-medium">
-                    {t("project.settings.project-labels.self")}
-                  </div>
-                  <div className="text-sm text-control-light mb-3">
-                    {t("project.settings.project-labels.description")}
-                  </div>
+                <FormField
+                  title={t("project.settings.project-labels.self")}
+                  description={t("project.settings.project-labels.description")}
+                >
                   <LabelListEditor
                     kvList={labelKVList}
                     onChange={setLabelKVList}
                     readonly={!canUpdateProject}
                     onErrorsChange={setLabelErrors}
                   />
-                </div>
-              </form>
-            </PermissionGuard>
-          </div>
-        </div>
+                </FormField>
+              </FormFieldGroup>
+            </form>
+          </PermissionGuard>
+        </FormSection>
 
         {/* ============================================================= */}
         {/* Section 2: Security & Policy */}
         {/* ============================================================= */}
-        <div className="py-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("settings.sidebar.security-and-policy")}
-            </h1>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <div className="w-full flex flex-col justify-start items-start gap-y-6">
-              {/* SQL Review + Max Rows: gated on bb.policies.get */}
-              {canGetPolicies && (
-                <>
-                  {/* SQL Review */}
-                  {hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
-                    <div className="flex flex-col gap-y-2">
-                      <label className="font-medium">
-                        {t("sql-review.title")}
-                      </label>
-                      <div>
-                        {pendingReviewPolicy ? (
-                          <div className="inline-flex items-center gap-x-2">
-                            <Switch
-                              checked={enforceReview}
-                              onCheckedChange={setEnforceReview}
-                              disabled={
-                                !hasWorkspacePermissionV2(
-                                  "bb.reviewConfigs.update"
-                                )
-                              }
-                            />
-                            <span
-                              className="text-sm font-medium text-accent cursor-pointer hover:underline"
-                              onClick={() =>
-                                router.push({
-                                  name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-                                  params: {
-                                    sqlReviewPolicySlug:
-                                      sqlReviewPolicySlug(pendingReviewPolicy),
-                                  },
-                                })
-                              }
-                            >
-                              {pendingReviewPolicy.name}
-                            </span>
-                            {canUpdatePolicies && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setPendingReviewPolicy(undefined);
-                                  setEnforceReview(false);
-                                }}
-                              >
-                                <X className="size-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
+        <FormSection title={t("settings.sidebar.security-and-policy")}>
+          <FormFieldGroup>
+            {/* SQL Review + Max Rows: gated on bb.policies.get */}
+            {canGetPolicies && (
+              <>
+                {/* SQL Review */}
+                {hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
+                  <FormField title={t("sql-review.title")}>
+                    <div>
+                      {pendingReviewPolicy ? (
+                        <FormControlRow>
+                          <Switch
+                            checked={enforceReview}
+                            onCheckedChange={setEnforceReview}
                             disabled={
-                              !canUpdatePolicies ||
-                              !hasWorkspacePermissionV2("bb.reviewConfigs.list")
+                              !hasWorkspacePermissionV2(
+                                "bb.reviewConfigs.update"
+                              )
                             }
-                            onClick={() => setShowReviewDialog(true)}
+                          />
+                          <span
+                            className="text-sm font-medium text-accent cursor-pointer hover:underline"
+                            onClick={() =>
+                              router.push({
+                                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                                params: {
+                                  sqlReviewPolicySlug:
+                                    sqlReviewPolicySlug(pendingReviewPolicy),
+                                },
+                              })
+                            }
                           >
-                            {t("sql-review.configure-policy")}
-                          </Button>
-                        )}
-                      </div>
+                            {pendingReviewPolicy.name}
+                          </span>
+                          {canUpdatePolicies && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setPendingReviewPolicy(undefined);
+                                setEnforceReview(false);
+                              }}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          )}
+                        </FormControlRow>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          disabled={
+                            !canUpdatePolicies ||
+                            !hasWorkspacePermissionV2("bb.reviewConfigs.list")
+                          }
+                          onClick={() => setShowReviewDialog(true)}
+                        >
+                          {t("sql-review.configure-policy")}
+                        </Button>
+                      )}
                     </div>
-                  )}
+                  </FormField>
+                )}
 
-                  {/* Maximum SQL Result Rows */}
-                  <div>
-                    <p className="font-medium flex flex-row justify-start items-center">
-                      <span className="mr-2">
+                {/* Maximum SQL Result Rows */}
+                <FormField
+                  title={
+                    <FormControlRow className="w-auto">
+                      <span>
                         {t(
                           "settings.general.workspace.maximum-sql-result.rows.self"
                         )}
@@ -799,359 +798,333 @@ export function ProjectSettingsPage() {
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_QUERY_POLICY}
                       />
-                    </p>
-                    <p className="text-sm text-control-placeholder mt-1">
+                    </FormControlRow>
+                  }
+                  description={
+                    <>
                       {t(
                         "settings.general.workspace.maximum-sql-result.rows.description"
                       )}{" "}
                       <span className="font-semibold">
                         {t("settings.general.workspace.no-limit")}
                       </span>
-                    </p>
-                    <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-                      <NumberInput
-                        className="w-60"
-                        min={0}
-                        value={maxRows}
-                        onValueChange={setMaxRows}
-                        disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
-                      />
-                      <span className="text-sm text-control-light">
-                        {t(
-                          "settings.general.workspace.maximum-sql-result.rows.rows"
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </>
+                    </>
+                  }
+                >
+                  <FormControlRow>
+                    <NumberInput
+                      className="w-60"
+                      min={0}
+                      value={maxRows}
+                      onValueChange={setMaxRows}
+                      disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
+                    />
+                    <span className="text-sm text-control-light">
+                      {t(
+                        "settings.general.workspace.maximum-sql-result.rows.rows"
+                      )}
+                    </span>
+                  </FormControlRow>
+                </FormField>
+              </>
+            )}
+
+            {/* Allow Request Role */}
+            <ToggleRow
+              checked={allowRequestRole}
+              onCheckedChange={setAllowRequestRole}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.allow-request-role.self"
               )}
+              description={t(
+                "project.settings.issue-related.allow-request-role.description"
+              )}
+              trailing={
+                <ApprovalFlowIndicator
+                  source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE}
+                />
+              }
+            />
 
-              {/* Allow Request Role */}
-              <div>
-                <div className="flex items-center gap-x-2">
-                  <Switch
-                    checked={allowRequestRole}
-                    onCheckedChange={setAllowRequestRole}
-                    disabled={!canUpdateProject}
-                  />
-                  <span className="text-sm font-medium">
-                    {t(
-                      "project.settings.issue-related.allow-request-role.self"
-                    )}
-                  </span>
-                  <ApprovalFlowIndicator
-                    source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE}
-                  />
-                </div>
-                <div className="mt-1 text-sm text-control-placeholder">
-                  {t(
-                    "project.settings.issue-related.allow-request-role.description"
-                  )}
-                </div>
-              </div>
-
-              {/* Allow JIT Access */}
-              <div>
-                <div className="flex items-center gap-x-2">
-                  <Switch
-                    checked={allowJustInTimeAccess}
-                    onCheckedChange={setAllowJustInTimeAccess}
-                    disabled={!canUpdateProject}
-                  />
-                  <span className="text-sm font-medium">
-                    {t("project.settings.issue-related.allow-jit.self")}
-                  </span>
-                  <ApprovalFlowIndicator
-                    source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS}
-                  />
-                </div>
-                <div className="mt-1 text-sm text-control-placeholder">
-                  {t("project.settings.issue-related.allow-jit.description")}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+            {/* Allow JIT Access */}
+            <ToggleRow
+              checked={allowJustInTimeAccess}
+              onCheckedChange={setAllowJustInTimeAccess}
+              disabled={!canUpdateProject}
+              label={t("project.settings.issue-related.allow-jit.self")}
+              description={t(
+                "project.settings.issue-related.allow-jit.description"
+              )}
+              trailing={
+                <ApprovalFlowIndicator
+                  source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS}
+                />
+              }
+            />
+          </FormFieldGroup>
+        </FormSection>
 
         {/* ============================================================= */}
         {/* Section 3: Issue-Related */}
         {/* ============================================================= */}
-        <div id="issue-related" className="py-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("project.settings.issue-related.self")}
-            </h1>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <div className="w-full flex flex-col justify-start items-start gap-y-6">
-              {/* Issue Labels */}
-              <div className="flex flex-col gap-y-2">
-                <div className="font-medium">
-                  {t("project.settings.issue-related.labels.self")}
-                  <div className="text-sm text-control-light font-normal">
-                    {t("project.settings.issue-related.labels.description")}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {issueLabels.map((label, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex h-9 items-center gap-x-2 border border-control-border rounded-sm px-1 py-1"
-                    >
-                      <input
-                        type="color"
-                        value={
-                          label.color ? colorToHex(label.color) : "#4f46e5"
-                        }
-                        onChange={(e) =>
-                          updateIssueLabelColor(index, e.target.value)
-                        }
-                        disabled={!canUpdateProject}
-                        className="w-5 h-6 rounded-sm cursor-pointer border-0 p-0"
-                      />
-                      <span className="text-sm">{label.value}</span>
-                      {canUpdateProject && (
-                        <button
-                          type="button"
-                          className="text-control-light hover:text-main"
-                          onClick={() => removeIssueLabel(index)}
-                        >
-                          <X className="size-3" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {canUpdateProject && (
-                    <div className="inline-flex items-center gap-x-1">
-                      <Input
-                        className="w-48"
-                        placeholder={t(
-                          "project.settings.issue-related.labels.placeholder"
-                        )}
-                        value={newLabelValue}
-                        onChange={(e) => setNewLabelValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addIssueLabel();
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="outline"
-                        size="md"
-                        onClick={addIssueLabel}
-                        disabled={!newLabelValue.trim()}
+        <FormSection
+          id="issue-related"
+          title={t("project.settings.issue-related.self")}
+        >
+          <FormFieldGroup>
+            {/* Issue Labels */}
+            <FormField
+              title={t("project.settings.issue-related.labels.self")}
+              description={t(
+                "project.settings.issue-related.labels.description"
+              )}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {issueLabels.map((label, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex h-9 items-center gap-x-2 border border-control-border rounded-sm px-1 py-1"
+                  >
+                    <input
+                      type="color"
+                      value={label.color ? colorToHex(label.color) : "#4f46e5"}
+                      onChange={(e) =>
+                        updateIssueLabelColor(index, e.target.value)
+                      }
+                      disabled={!canUpdateProject}
+                      className="w-5 h-6 rounded-sm cursor-pointer border-0 p-0"
+                    />
+                    <span className="text-sm">{label.value}</span>
+                    {canUpdateProject && (
+                      <button
+                        type="button"
+                        className="text-control-light hover:text-main"
+                        onClick={() => removeIssueLabel(index)}
                       >
-                        {t("common.add")}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {canUpdateProject && (
+                  <div className="inline-flex items-center gap-x-1">
+                    <Input
+                      className="w-48"
+                      placeholder={t(
+                        "project.settings.issue-related.labels.placeholder"
+                      )}
+                      value={newLabelValue}
+                      onChange={(e) => setNewLabelValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addIssueLabel();
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={addIssueLabel}
+                      disabled={!newLabelValue.trim()}
+                    >
+                      {t("common.add")}
+                    </Button>
+                  </div>
+                )}
               </div>
+            </FormField>
 
-              {/* Boolean toggles */}
-              <ToggleRow
-                checked={forceIssueLabels}
-                onCheckedChange={setForceIssueLabels}
-                disabled={!canUpdateProject || issueLabels.length === 0}
-                label={t(
-                  "project.settings.issue-related.labels.force-issue-labels.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.labels.force-issue-labels.description"
-                )}
-                warning={
-                  canUpdateProject && issueLabels.length === 0
-                    ? t(
-                        "project.settings.issue-related.labels.force-issue-labels.warning"
-                      )
-                    : undefined
-                }
-              />
-              <ToggleRow
-                checked={enforceIssueTitle}
-                onCheckedChange={setEnforceIssueTitle}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.enforce-issue-title.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.enforce-issue-title.description"
-                )}
-              />
-              <ToggleRow
-                checked={enforceSqlReview}
-                onCheckedChange={setEnforceSqlReview}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.enforce-sql-review.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.enforce-sql-review.description"
-                )}
-              />
-              <ToggleRow
-                checked={allowSelfApproval}
-                onCheckedChange={setAllowSelfApproval}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.allow-self-approval.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.allow-self-approval.description"
-                )}
-              />
-              <ToggleRow
-                checked={requireIssueApproval}
-                onCheckedChange={setRequireIssueApproval}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.require-issue-approval.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.require-issue-approval.description"
-                )}
-              />
-              <ToggleRow
-                checked={requirePlanCheckNoError}
-                onCheckedChange={setRequirePlanCheckNoError}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.require-plan-check-no-error.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.require-plan-check-no-error.description"
-                )}
-              />
-              <ToggleRow
-                checked={postgresDatabaseTenantMode}
-                onCheckedChange={setPostgresDatabaseTenantMode}
-                disabled={!canUpdateProject}
-                label={t(
-                  "project.settings.issue-related.postgres-database-tenant-mode.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.postgres-database-tenant-mode.description"
-                )}
-              />
+            {/* Boolean toggles */}
+            <ToggleRow
+              checked={forceIssueLabels}
+              onCheckedChange={setForceIssueLabels}
+              disabled={!canUpdateProject || issueLabels.length === 0}
+              label={t(
+                "project.settings.issue-related.labels.force-issue-labels.self"
+              )}
+              description={t(
+                "project.settings.issue-related.labels.force-issue-labels.description"
+              )}
+              warning={
+                canUpdateProject && issueLabels.length === 0
+                  ? t(
+                      "project.settings.issue-related.labels.force-issue-labels.warning"
+                    )
+                  : undefined
+              }
+            />
+            <ToggleRow
+              checked={enforceIssueTitle}
+              onCheckedChange={setEnforceIssueTitle}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.enforce-issue-title.self"
+              )}
+              description={t(
+                "project.settings.issue-related.enforce-issue-title.description"
+              )}
+            />
+            <ToggleRow
+              checked={enforceSqlReview}
+              onCheckedChange={setEnforceSqlReview}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.enforce-sql-review.self"
+              )}
+              description={t(
+                "project.settings.issue-related.enforce-sql-review.description"
+              )}
+            />
+            <ToggleRow
+              checked={allowSelfApproval}
+              onCheckedChange={setAllowSelfApproval}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.allow-self-approval.self"
+              )}
+              description={t(
+                "project.settings.issue-related.allow-self-approval.description"
+              )}
+            />
+            <ToggleRow
+              checked={requireIssueApproval}
+              onCheckedChange={setRequireIssueApproval}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.require-issue-approval.self"
+              )}
+              description={t(
+                "project.settings.issue-related.require-issue-approval.description"
+              )}
+            />
+            <ToggleRow
+              checked={requirePlanCheckNoError}
+              onCheckedChange={setRequirePlanCheckNoError}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.require-plan-check-no-error.self"
+              )}
+              description={t(
+                "project.settings.issue-related.require-plan-check-no-error.description"
+              )}
+            />
+            <ToggleRow
+              checked={postgresDatabaseTenantMode}
+              onCheckedChange={setPostgresDatabaseTenantMode}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.postgres-database-tenant-mode.self"
+              )}
+              description={t(
+                "project.settings.issue-related.postgres-database-tenant-mode.description"
+              )}
+            />
 
-              {/* Numeric inputs */}
-              <NumericRow
-                label={t("project.settings.issue-related.max-retries.self")}
-                description={t(
-                  "project.settings.issue-related.max-retries.description"
-                )}
-                value={maxRetries}
-                onChange={setMaxRetries}
-                disabled={!canUpdateProject}
-                suffix="Times"
-              />
-              <NumericRow
-                label={t(
-                  "project.settings.issue-related.ci-sampling-size.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.ci-sampling-size.description"
-                )}
-                value={ciSamplingSize}
-                onChange={setCiSamplingSize}
-                disabled={!canUpdateProject}
-              />
-              <NumericRow
-                label={t(
-                  "project.settings.issue-related.parallel_tasks_per_rollout.self"
-                )}
-                description={t(
-                  "project.settings.issue-related.parallel_tasks_per_rollout.description"
-                )}
-                value={parallelTasksPerRollout}
-                onChange={setParallelTasksPerRollout}
-                disabled={!canUpdateProject}
-              />
-            </div>
-          </div>
-        </div>
+            {/* Numeric inputs */}
+            <NumericRow
+              label={t("project.settings.issue-related.max-retries.self")}
+              description={t(
+                "project.settings.issue-related.max-retries.description"
+              )}
+              value={maxRetries}
+              onChange={setMaxRetries}
+              disabled={!canUpdateProject}
+              suffix="Times"
+            />
+            <NumericRow
+              label={t("project.settings.issue-related.ci-sampling-size.self")}
+              description={t(
+                "project.settings.issue-related.ci-sampling-size.description"
+              )}
+              value={ciSamplingSize}
+              onChange={setCiSamplingSize}
+              disabled={!canUpdateProject}
+            />
+            <NumericRow
+              label={t(
+                "project.settings.issue-related.parallel_tasks_per_rollout.self"
+              )}
+              description={t(
+                "project.settings.issue-related.parallel_tasks_per_rollout.description"
+              )}
+              value={parallelTasksPerRollout}
+              onChange={setParallelTasksPerRollout}
+              disabled={!canUpdateProject}
+            />
+          </FormFieldGroup>
+        </FormSection>
 
         {/* ============================================================= */}
         {/* Section 4: Danger Zone */}
         {/* ============================================================= */}
-        <div className="py-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">{t("common.danger-zone")}</h1>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <div className="border border-error-alpha bg-error-alpha rounded-sm divide-y divide-error-alpha">
-              {/* Archive / Restore */}
-              <div className="p-6 flex items-start justify-between gap-x-6">
-                {project.state === State.ACTIVE ? (
-                  <>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-main">
-                        {t("common.archive-resource", {
-                          type: t("common.project"),
-                        })}
-                      </h4>
-                      <p className="text-sm text-control-light mt-1">
-                        {t("common.archive-description", {
-                          name: project.title || project.name,
-                        })}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      disabled={!canDelete || executing}
-                      onClick={() => setDangerAction("archive")}
-                    >
-                      {t("common.archive")}
-                    </Button>
-                  </>
-                ) : project.state === State.DELETED ? (
-                  <>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-main">
-                        {t("project.settings.restore.title")}
-                      </h4>
-                      <p className="text-sm text-control-light mt-1">
-                        {t("project.settings.restore.btn-text")}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      disabled={!canUndelete || executing}
-                      onClick={() => setDangerAction("restore")}
-                    >
-                      {t("common.restore")}
-                    </Button>
-                  </>
-                ) : null}
-              </div>
+        <FormSection title={t("common.danger-zone")}>
+          <div className="border border-error-alpha bg-error-alpha rounded-sm divide-y divide-error-alpha">
+            {/* Archive / Restore */}
+            <div className="p-6 flex items-start justify-between gap-x-6">
+              {project.state === State.ACTIVE ? (
+                <>
+                  <FormField
+                    className="flex-1"
+                    title={t("common.archive-resource", {
+                      type: t("common.project"),
+                    })}
+                    description={t("common.archive-description", {
+                      name: project.title || project.name,
+                    })}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={!canDelete || executing}
+                    onClick={() => setDangerAction("archive")}
+                  >
+                    {t("common.archive")}
+                  </Button>
+                </>
+              ) : project.state === State.DELETED ? (
+                <>
+                  <FormField
+                    className="flex-1"
+                    title={t("project.settings.restore.title")}
+                    description={t("project.settings.restore.btn-text")}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={!canUndelete || executing}
+                    onClick={() => setDangerAction("restore")}
+                  >
+                    {t("common.restore")}
+                  </Button>
+                </>
+              ) : null}
+            </div>
 
-              {/* Delete */}
-              <div className="p-6 flex items-start justify-between gap-x-6">
-                <div className="flex-1">
-                  <h4 className="font-medium text-error">
+            {/* Delete */}
+            <div className="p-6 flex items-start justify-between gap-x-6">
+              <FormField
+                className="flex-1"
+                title={
+                  <span className="text-error">
                     {t("common.delete-resource", {
                       type: t("common.project"),
                     })}
-                  </h4>
-                  <p className="text-sm text-control-light mt-1">
-                    {t("common.delete-resource-description", {
-                      name: project.title || project.name,
-                    })}
-                  </p>
-                </div>
-                <Button
-                  variant="destructive"
-                  disabled={!canDelete || executing}
-                  onClick={() => setDangerAction("delete")}
-                >
-                  {t("common.delete")}
-                </Button>
-              </div>
+                  </span>
+                }
+                description={t("common.delete-resource-description", {
+                  name: project.title || project.name,
+                })}
+              />
+              <Button
+                variant="destructive"
+                disabled={!canDelete || executing}
+                onClick={() => setDangerAction("delete")}
+              >
+                {t("common.delete")}
+              </Button>
             </div>
           </div>
-        </div>
+        </FormSection>
 
         {/* ============================================================= */}
         {/* Save / Cancel Bar */}
@@ -1297,6 +1270,7 @@ function ToggleRow({
   disabled,
   label,
   description,
+  trailing,
   warning,
 }: {
   checked: boolean;
@@ -1304,25 +1278,29 @@ function ToggleRow({
   disabled: boolean;
   label: string;
   description: string;
+  trailing?: ReactNode;
   warning?: string;
 }) {
   return (
-    <div>
-      <div className="flex items-center gap-x-2">
-        <Switch
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          disabled={disabled}
-        />
-        <span className="text-sm font-medium">{label}</span>
-        {warning && (
-          <Tooltip content={warning}>
-            <TriangleAlert className="size-4 text-warning" />
-          </Tooltip>
-        )}
-      </div>
-      <div className="mt-1 text-sm text-control-placeholder">{description}</div>
-    </div>
+    <FormField
+      title={
+        <FormControlRow>
+          <Switch
+            checked={checked}
+            onCheckedChange={onCheckedChange}
+            disabled={disabled}
+          />
+          <span className="text-sm font-medium">{label}</span>
+          {trailing}
+          {warning && (
+            <Tooltip content={warning}>
+              <TriangleAlert className="size-4 text-warning" />
+            </Tooltip>
+          )}
+        </FormControlRow>
+      }
+      description={description}
+    />
   );
 }
 
@@ -1342,10 +1320,8 @@ function NumericRow({
   suffix?: string;
 }) {
   return (
-    <div>
-      <p className="text-sm font-medium">{label}</p>
-      <p className="mb-3 text-sm text-control-placeholder">{description}</p>
-      <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+    <FormField title={label} description={description}>
+      <FormControlRow>
         <NumberInput
           className="w-60"
           min={0}
@@ -1354,7 +1330,7 @@ function NumericRow({
           disabled={disabled}
         />
         {suffix && <span className="text-sm text-control-light">{suffix}</span>}
-      </div>
-    </div>
+      </FormControlRow>
+    </FormField>
   );
 }

@@ -609,6 +609,13 @@ function RequestRoleForm({
                 )}
               </>
             }
+            description={
+              maximumRequestExpirationDays !== undefined
+                ? t("project.members.request-role.max-expiration-hint", {
+                    days: maximumRequestExpirationDays,
+                  })
+                : undefined
+            }
           >
             <ExpirationPicker
               value={expirationTimestamp}

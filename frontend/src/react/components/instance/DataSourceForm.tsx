@@ -454,6 +454,17 @@ export function DataSourceForm({
     }
   }, [passwordType, t]);
 
+  const secretNameDescription = useMemo(() => {
+    switch (passwordType) {
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        return t("instance.external-secret-gcp.secret-name-tips");
+      case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+        return t("instance.external-secret-azure.secret-name-tips");
+      default:
+        return undefined;
+    }
+  }, [passwordType, t]);
+
   const secretKeyLabel = useMemo(() => {
     if (passwordType === DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
       return t("instance.external-secret-vault.vault-secret-key");
@@ -1467,19 +1478,7 @@ export function DataSourceForm({
                                 <span className="text-error">*</span>
                               </>
                             }
-                            description={
-                              passwordType ===
-                              DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
-                                ? t(
-                                    "instance.external-secret-gcp.secret-name-tips"
-                                  )
-                                : passwordType ===
-                                    DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT
-                                  ? t(
-                                      "instance.external-secret-azure.secret-name-tips"
-                                    )
-                                  : undefined
-                            }
+                            description={secretNameDescription}
                           >
                             <Input
                               value={dataSource.externalSecret.secretName ?? ""}
