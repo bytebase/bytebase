@@ -12,8 +12,6 @@ import {
   PLAN_DETAIL_PHASE_CHANGES,
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/react/router/handles";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
@@ -81,17 +79,18 @@ const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
 };
 
 type PhaseSelection = {
-  routeName?: string;
   routePhase?: PlanDetailPhase;
   routeStageId?: string;
   routeTaskId?: string;
 };
 
+// The phase to focus by default: an explicit URL selection (phase / stage /
+// task) wins, otherwise the furthest-progressed phase the plan has reached.
 const getCurrentPhase = (
   snapshot: PlanDetailPageSnapshot,
   selection: PhaseSelection
 ): PlanDetailPhase => {
-  const { routeName, routePhase, routeStageId, routeTaskId } = selection;
+  const { routePhase, routeStageId, routeTaskId } = selection;
   if (
     routePhase === PLAN_DETAIL_PHASE_CHANGES ||
     routePhase === PLAN_DETAIL_PHASE_REVIEW ||
@@ -101,17 +100,6 @@ const getCurrentPhase = (
   }
   if (routeStageId || routeTaskId) {
     return PLAN_DETAIL_PHASE_DEPLOY;
-  }
-  // An explicit specs / spec-detail route always defaults to the spec section,
-  // even once the plan has a rollout, so shared/bookmarked spec links stay
-  // usable. A plan under review additionally expands the review section.
-  if (
-    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
-    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
-  ) {
-    return snapshot.issue
-      ? PLAN_DETAIL_PHASE_REVIEW
-      : PLAN_DETAIL_PHASE_CHANGES;
   }
   if (snapshot.rollout) {
     return PLAN_DETAIL_PHASE_DEPLOY;
@@ -165,7 +153,6 @@ export const usePlanDetailPage = ({
   const pageIdentityKey = `${projectId}/${planId}`;
   const phaseSelectionRef = useRef<PhaseSelection>({});
   phaseSelectionRef.current = {
-    routeName,
     routePhase,
     routeStageId,
     routeTaskId,
@@ -270,7 +257,6 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases(latestSnapshotRef.current);
   }, [
     pageIdentityKey,
-    routeName,
     routePhase,
     routeStageId,
     routeTaskId,
