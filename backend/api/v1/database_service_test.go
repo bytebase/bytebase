@@ -53,8 +53,37 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 			want: true,
 		},
 		{
-			name:   "mysql raw schema text uses metadata parser",
+			name:   "mysql raw schema text uses SDL",
 			engine: storepb.Engine_MYSQL,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: true,
+		},
+		{
+			name:   "mysql changelog target uses metadata diff",
+			engine: storepb.Engine_MYSQL,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Changelog{Changelog: "instances/prod/databases/app/changelogs/123"},
+			},
+			want: false,
+		},
+		{
+			// The gate keys off the REAL engine: MariaDB is excluded from the SDL path even
+			// though it aliases to MySQL for parsing (canonicalizing it as MySQL 8.0 would emit
+			// utf8mb4_0900_ai_ci, which MariaDB lacks).
+			name:   "mariadb raw schema text does NOT use SDL",
+			engine: storepb.Engine_MARIADB,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: false,
+		},
+		{
+			// OceanBase is excluded from every SDL path pending a live oracle, despite aliasing
+			// to MySQL for parsing.
+			name:   "oceanbase raw schema text does NOT use SDL",
+			engine: storepb.Engine_OCEANBASE,
 			req: &v1pb.DiffSchemaRequest{
 				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
 			},
@@ -195,4 +224,34 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 
 func ptrValue[T any](v T) *T {
 	return &v
+}
+
+// TestResolveDiffSchemaTargetSDL pins the X11 fix: the SDL target is selected by ONEOF
+// PRESENCE, not string emptiness — an intentionally empty schema text is a legal target
+// meaning "empty schema" (the diff previews dropping everything), while a request with
+// no target at all still errors.
+func TestResolveDiffSchemaTargetSDL(t *testing.T) {
+	s := &DatabaseService{}
+	ctx := t.Context()
+
+	t.Run("empty_schema_text_is_a_valid_target", func(t *testing.T) {
+		got, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{
+			Target: &v1pb.DiffSchemaRequest_Schema{Schema: ""},
+		}, storepb.Engine_MYSQL)
+		require.NoError(t, err)
+		require.Empty(t, got)
+	})
+
+	t.Run("non_empty_schema_text_passed_through", func(t *testing.T) {
+		got, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{
+			Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+		}, storepb.Engine_POSTGRES)
+		require.NoError(t, err)
+		require.Equal(t, "CREATE TABLE t(id int);", got)
+	})
+
+	t.Run("no_target_at_all_errors", func(t *testing.T) {
+		_, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{}, storepb.Engine_MYSQL)
+		require.ErrorContains(t, err, "target must be either schema text or changelog")
+	})
 }

@@ -1693,7 +1693,7 @@ func TestGetMultiFileDatabaseDefinition_SchemaFileMakesCombinedSDLLoadable(t *te
 	assert.True(t, ok, "schema.sql file should exist for non-public schema")
 	assert.Contains(t, schemaFile, `CREATE SCHEMA IF NOT EXISTS "metric_helpers";`)
 
-	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", combined.String())
+	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", combined.String(), "")
 	require.NoError(t, err)
 }
 

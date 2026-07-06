@@ -37,7 +37,7 @@ func TestOmniFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, sourceMeta)
 	require.NoError(t, err)
 
-	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sourceSDL, targetSDL)
+	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sourceSDL, targetSDL, "")
 	require.NoError(t, err)
 
 	// bbdataarchive objects must not appear in migration.
@@ -138,7 +138,7 @@ func TestOmniFilter_NoChangesForIdenticalSchemas(t *testing.T) {
 	// Use MetadataToSDL to get the exact SDL that would be generated, then diff against itself.
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, meta)
 	require.NoError(t, err)
-	sql, err := schema.SDLMigration(storepb.Engine_POSTGRES, sourceSDL, meta)
+	sql, err := schema.SDLMigration(storepb.Engine_POSTGRES, sourceSDL, meta, "")
 	require.NoError(t, err)
 	require.Empty(t, sql, "identical public schemas with backup objects should produce no migration")
 }

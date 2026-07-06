@@ -22,6 +22,7 @@ import (
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parsermysql "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -443,6 +444,16 @@ loop:
 func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	var results []*v1pb.CheckReleaseResponse_CheckResult
 	var errorAdviceCount, warningAdviceCount int
+
+	// The declarative target text is loop-invariant: every database is checked against
+	// the same combined release files, so build it once.
+	var combinedSDLBuilder strings.Builder
+	for _, file := range files {
+		combinedSDLBuilder.Write(file.Statement)
+		combinedSDLBuilder.WriteString("\n\n")
+	}
+	combinedTargetSDL := combinedSDLBuilder.String()
+
 	for _, database := range databases {
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),
@@ -495,41 +506,47 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
-		// Perform SDL style and integrity checks for PostgreSQL
+		// Perform SDL gating checks for engines with declarative support.
+		// PostgreSQL additionally runs style + integrity checks (no MySQL analog exists,
+		// so those stay PG-only rather than inventing MySQL rules); the DROP-operation
+		// data-loss check runs for every supported engine via the schema registry.
 		var sdlStyleAdvices map[string][]*storepb.Advice
 		var sdlIntegrityAdvices map[string][]*storepb.Advice
 		var sdlDropAdvices []*storepb.Advice
-		if engine == storepb.Engine_POSTGRES {
-			fileContents := make(map[string]string)
-			for _, file := range files {
-				fileContents[file.Path] = string(file.Statement)
-			}
+		if engineSupportsDeclarativeRelease(engine) {
+			// Style + integrity checks are PostgreSQL-specific.
+			if engine == storepb.Engine_POSTGRES {
+				fileContents := make(map[string]string)
+				for _, file := range files {
+					fileContents[file.Path] = string(file.Statement)
+				}
 
-			// Run SDL style checks (schema name requirements, index naming, etc.)
-			sdlStyleAdvices = make(map[string][]*storepb.Advice)
-			for filePath, content := range fileContents {
-				advices, err := advisorpg.CheckSDLStyle(content)
+				// Run SDL style checks (schema name requirements, index naming, etc.)
+				sdlStyleAdvices = make(map[string][]*storepb.Advice)
+				for filePath, content := range fileContents {
+					advices, err := advisorpg.CheckSDLStyle(content)
+					if err != nil {
+						// Continue with other checks even if style check fails
+						sdlStyleAdvices[filePath] = []*storepb.Advice{{
+							Status:  storepb.Advice_ERROR,
+							Code:    code.Internal.Int32(),
+							Title:   "Failed to check SDL style",
+							Content: err.Error(),
+						}}
+					} else {
+						sdlStyleAdvices[filePath] = advices
+					}
+				}
+
+				// Run SDL integrity checks (handles cross-file validation)
+				var err error
+				sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
 				if err != nil {
-					// Continue with other checks even if style check fails
-					sdlStyleAdvices[filePath] = []*storepb.Advice{{
-						Status:  storepb.Advice_ERROR,
-						Code:    code.Internal.Int32(),
-						Title:   "Failed to check SDL style",
-						Content: err.Error(),
-					}}
-				} else {
-					sdlStyleAdvices[filePath] = advices
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
 				}
 			}
 
-			// Run SDL integrity checks (handles cross-file validation)
-			var err error
-			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
-			}
-
-			// Run SDL DROP operation checks
+			// Run SDL DROP operation checks (all supported engines).
 			// This checks for data loss risks from DROP operations by analyzing the schema diff
 			dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -537,14 +554,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				DatabaseName: database.DatabaseName,
 			})
 			if err == nil && dbMetadata != nil {
-				// Combine all SDL files into single text
-				var combinedCurrentSDL strings.Builder
-				for _, file := range files {
-					combinedCurrentSDL.Write(file.Statement)
-					combinedCurrentSDL.WriteString("\n\n")
-				}
-
-				advices, err := schema.SDLDropAdvices(engine, combinedCurrentSDL.String(), dbMetadata)
+				// Thread the synced server version so MySQL builds the version-correct plan.
+				advices, err := schema.SDLDropAdvices(engine, combinedTargetSDL, dbMetadata, instance.Metadata.GetVersion())
 				if err == nil {
 					sdlDropAdvices = advices
 				}
@@ -605,7 +616,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					} else {
 						// Check all statement types against whitelist and collect disallowed ones with positions
 						for _, stmt := range statementsWithPos {
-							if !isAllowedInSDL(stmt.Type) {
+							if !isAllowedInSDL(engine, stmt.Type) {
 								// Create a separate advice for each disallowed statement with position
 								advice := &v1pb.Advice{
 									Status: v1pb.Advice_ERROR,
@@ -635,21 +646,25 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						}
 					}
 
-					// Add SDL style and integrity check results for this file (PostgreSQL only)
-					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
-						// Add SDL style check results
-						if advices, exists := sdlStyleAdvices[file.Path]; exists {
-							for _, advice := range advices {
-								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+					// Add SDL style/integrity/DROP check results for this file.
+					if engineSupportsDeclarativeRelease(engine) && len(checkResult.Advices) == 0 {
+						// Style + integrity are PostgreSQL-only (no MySQL analog).
+						if engine == storepb.Engine_POSTGRES {
+							// Add SDL style check results
+							if advices, exists := sdlStyleAdvices[file.Path]; exists {
+								for _, advice := range advices {
+									checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+								}
+							}
+							// Add SDL integrity check results
+							if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
+								for _, advice := range advices {
+									checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+								}
 							}
 						}
-						// Add SDL integrity check results
-						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
-							for _, advice := range advices {
-								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
-							}
-						}
-						// Add SDL DROP operation warnings (only to first file since they apply to entire migration)
+						// Add SDL DROP operation warnings (all supported engines; only to the
+						// first file since they apply to the entire migration)
 						if file.Path == files[0].Path && len(sdlDropAdvices) > 0 {
 							for _, advice := range sdlDropAdvices {
 								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
@@ -797,10 +812,16 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	return adviceLevel, advices, nil
 }
 
-// allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
-// SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
-// ALTER SEQUENCE is allowed for setting ownership (OWNED BY).
-var allowedSDLStatementTypes = map[storepb.StatementType]bool{
+// commonAllowedSDLStatementTypes is the whitelist of statement types allowed in SDL
+// files for every declarative-capable engine. SDL files should only contain CREATE and
+// COMMENT statements to declare the desired schema. ALTER SEQUENCE is allowed for
+// setting ownership (OWNED BY). CREATE TRIGGER is deliberately shared: both SDL
+// pipelines fully manage triggers — the PostgreSQL dump emits CREATE TRIGGER and the pg
+// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration_omni.go), the
+// same as MySQL — so a declared trigger is legal SDL on both engines.
+// STATEMENT_TYPE_UNSPECIFIED is (and must stay) absent from every allowlist so that a
+// parsed-but-unclassified statement fails CLOSED as disallowed.
+var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 	// CREATE statements - declare new objects
 	storepb.StatementType_CREATE_TABLE:     true,
 	storepb.StatementType_CREATE_INDEX:     true,
@@ -809,6 +830,7 @@ var allowedSDLStatementTypes = map[storepb.StatementType]bool{
 	storepb.StatementType_CREATE_FUNCTION:  true,
 	storepb.StatementType_CREATE_PROCEDURE: true,
 	storepb.StatementType_CREATE_SCHEMA:    true,
+	storepb.StatementType_CREATE_TRIGGER:   true,
 
 	// ALTER statements - limited to specific cases
 	storepb.StatementType_ALTER_SEQUENCE: true, // Allowed for OWNED BY and sequence options
@@ -817,9 +839,19 @@ var allowedSDLStatementTypes = map[storepb.StatementType]bool{
 	storepb.StatementType_COMMENT: true,
 }
 
-// isAllowedInSDL checks if a statement type is allowed in SDL files.
-func isAllowedInSDL(stmtType storepb.StatementType) bool {
-	return allowedSDLStatementTypes[stmtType]
+// extraAllowedSDLStatementTypesByEngine holds engine-specific additions to the common
+// SDL allowlist. MySQL declarative dumps also emit scheduled events as CREATE EVENT —
+// a MySQL-only object with no PostgreSQL analog (the pg parser can never classify one,
+// but keying it per engine documents the intent and keeps other engines' gates exact).
+var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
+	storepb.Engine_MYSQL: {
+		storepb.StatementType_CREATE_EVENT: true,
+	},
+}
+
+// isAllowedInSDL checks if a statement type is allowed in SDL files for the engine.
+func isAllowedInSDL(engine storepb.Engine, stmtType storepb.StatementType) bool {
+	return commonAllowedSDLStatementTypes[stmtType] || extraAllowedSDLStatementTypesByEngine[engine][stmtType]
 }
 
 // statementTypeWithPosition contains statement type and its position information.
@@ -831,8 +863,7 @@ type statementTypeWithPosition struct {
 }
 
 // getStatementTypesWithPositionsForEngine returns statement types with position info for the given engine and ASTs.
-// The line numbers are one-based.
-// Currently only PostgreSQL is supported.
+// The line numbers are one-based. PostgreSQL and MySQL are supported.
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.AST) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES:
@@ -850,8 +881,33 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.
 			}
 		}
 		return result, nil
+	case storepb.Engine_MYSQL:
+		mysqlStmts, err := parsermysql.GetStatementTypesWithPositions(asts)
+		if err != nil {
+			return nil, err
+		}
+		result := make([]statementTypeWithPosition, len(mysqlStmts))
+		for i, stmt := range mysqlStmts {
+			result[i] = statementTypeWithPosition{
+				Type: stmt.Type,
+				Line: stmt.Line,
+				Text: stmt.Text,
+			}
+		}
+		return result, nil
 	default:
 		// For unsupported engines, return empty list (skip check)
 		return []statementTypeWithPosition{}, nil
+	}
+}
+
+// engineSupportsDeclarativeRelease reports whether the engine participates in the
+// declarative-release SDL gating (drop-advice / statement-type / style checks).
+func engineSupportsDeclarativeRelease(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL:
+		return true
+	default:
+		return false
 	}
 }
