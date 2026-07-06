@@ -31,7 +31,7 @@ import {
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
-import { execSql, getInstancePgPort } from "../framework/psql";
+import { execSql, getInstancePgPort, querySql } from "../framework/psql";
 import { SqlEditorPage } from "./sql-editor.page";
 
 test.setTimeout(180_000);
@@ -331,9 +331,28 @@ test.describe("Request Data Access picker finds a database beyond the first page
     // env.api is already logged in as admin from the file-level beforeAll.
     pgPort = await getInstancePgPort(env);
 
-    // 1. Create > one picker page of databases via psql.
+    // 1. Create > one picker page of databases via psql — idempotently.
+    //    The disposable e2e server (and its Postgres) is per-run, not
+    //    per-attempt: globalSetup boots it once and Playwright retries reuse
+    //    it. Teardown swallows DROP failures from lingering Bytebase
+    //    connections, so a prior failed attempt can leave jitsrch_* databases
+    //    behind. `CREATE DATABASE` (ON_ERROR_STOP=1) would then hard-fail the
+    //    retry's setup before the BYT-9801 regression is ever exercised. Create
+    //    only the missing ones (mirrors the 409-swallow on createUser above).
+    const existing = new Set(
+      querySql(
+        env.databaseId,
+        pgPort,
+        "SELECT datname FROM pg_database WHERE datname LIKE 'jitsrch%'",
+      )
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
     for (const name of dbShortNames) {
-      execSql(env.databaseId, pgPort, `CREATE DATABASE ${name}`);
+      if (!existing.has(name)) {
+        execSql(env.databaseId, pgPort, `CREATE DATABASE ${name}`);
+      }
     }
 
     // 2. Sync the instance and poll until Bytebase has discovered them all.
