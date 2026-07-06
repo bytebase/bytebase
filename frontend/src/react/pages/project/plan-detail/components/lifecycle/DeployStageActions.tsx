@@ -28,6 +28,17 @@ import { stageHasFailedOrCanceledTasks } from "./frontierStage";
 import { LifecycleStamp } from "./LifecycleStamp";
 import { useStageTitle } from "./useStageTitle";
 
+// A middot separator between the action/status word and the stage name. Purely
+// presentational (aria-hidden) and inherits the surrounding text color, so it
+// matches the label — the stage is a sibling span, not baked into the i18n string.
+function StageSeparator() {
+  return (
+    <span aria-hidden className="shrink-0">
+      ·
+    </span>
+  );
+}
+
 export function RunStageAction({ stage }: { stage: Stage }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -90,9 +101,7 @@ export function RunStageAction({ stage }: { stage: Stage }) {
     return <FrontierStatusStamp stage={stage} />;
   }
 
-  const runLabel = isRerun
-    ? t("plan.lifecycle.rerun-stage", { stage: title })
-    : t("plan.lifecycle.run-stage", { stage: title });
+  const runVerb = isRerun ? t("plan.lifecycle.rerun") : t("plan.lifecycle.run");
 
   return (
     <>
@@ -101,8 +110,10 @@ export function RunStageAction({ stage }: { stage: Stage }) {
         onClick={() => setOpen(true)}
       >
         <Play className="size-4 shrink-0" />
-        <span className="truncate" title={runLabel}>
-          {runLabel}
+        <span className="shrink-0">{runVerb}</span>
+        <StageSeparator />
+        <span className="truncate" title={title}>
+          {title}
         </span>
       </Button>
       <PlanDetailTaskRolloutActionPanel
@@ -134,10 +145,7 @@ export function FrontierStatusStamp({ stage }: { stage: Stage }) {
   const { t } = useTranslation();
   const title = useStageTitle(stage);
   const status = getStageStatus(stage);
-  const label = t("plan.lifecycle.stage-status", {
-    stage: title,
-    status: stringifyTaskStatus(status, t),
-  });
+  const statusText = stringifyTaskStatus(status, t);
 
   return (
     <LifecycleStamp
@@ -146,8 +154,10 @@ export function FrontierStatusStamp({ stage }: { stage: Stage }) {
       tone={status === Task_Status.FAILED ? "error" : "neutral"}
     >
       <TaskStatusIcon size="tiny" status={status} />
-      <span className="truncate" title={label}>
-        {label}
+      <span className="shrink-0">{statusText}</span>
+      <StageSeparator />
+      <span className="truncate" title={title}>
+        {title}
       </span>
     </LifecycleStamp>
   );

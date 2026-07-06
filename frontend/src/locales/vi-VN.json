@@ -1476,8 +1476,7 @@
     "labels-required-for-review": "Cần có nhãn trước khi review",
     "lifecycle": {
       "checking": "Đang kiểm tra…",
-      "checks-failing_one": "{{count}} kiểm tra thất bại",
-      "checks-failing_other": "{{count}} kiểm tra thất bại",
+      "checks-failing": "Kiểm tra thất bại",
       "deployed": "Đã triển khai",
       "gate-checks-failed": "Một số kiểm tra không thành công",
       "gate-checks-failed-sub": "{{failing}} thất bại, {{passed}} thành công",
@@ -1490,10 +1489,9 @@
       "gate-review-rejected": "Yêu cầu thay đổi",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
-      "rerun-stage": "Chạy lại · {{stage}}",
+      "rerun": "Chạy lại",
       "review-waiting": "Đang chờ {{role}}",
-      "run-stage": "Chạy · {{stage}}",
-      "stage-status": "{{status}} · {{stage}}"
+      "run": "Chạy"
     },
     "meta": {
       "created-by": "Tạo bởi {{user}}"

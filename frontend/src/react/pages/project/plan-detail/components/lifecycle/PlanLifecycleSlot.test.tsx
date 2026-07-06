@@ -68,7 +68,6 @@ const renderEl = (element: React.ReactElement) =>
 const slot = (state: PlanLifecycleHeaderState) =>
   renderEl(<PlanLifecycleSlot state={state} />);
 
-const checks = { error: 1, running: 0, success: 0, total: 1, warning: 0 };
 const stage = create(StageSchema, { name: "stages/1" });
 
 describe("PlanLifecycleSlot (right action area)", () => {
@@ -79,7 +78,7 @@ describe("PlanLifecycleSlot (right action area)", () => {
     slot({ kind: "review-your-turn" });
     expect(container.textContent).toContain("marker-review-your-turn");
 
-    slot({ kind: "plan-status", reason: "rejected", checks });
+    slot({ kind: "plan-status", reason: "rejected" });
     expect(container.textContent).toContain("marker-plan-status");
 
     slot({ kind: "preparing-rollout" });
