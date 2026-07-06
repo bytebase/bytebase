@@ -51,11 +51,9 @@ const TONE_TRIGGER: Record<PlanStatusTone, string> = {
 export function PlanStatusAction({
   issue,
   reason,
-  checks,
 }: {
   issue: Issue;
   reason: PlanStatusReason;
-  checks: PlanCheckSummary;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -81,7 +79,7 @@ export function PlanStatusAction({
       case "rejected":
         return t("plan.lifecycle.rejected");
       case "checks-failing":
-        return t("plan.lifecycle.checks-failing", { count: checks.error });
+        return t("plan.lifecycle.checks-failing");
     }
   })();
 

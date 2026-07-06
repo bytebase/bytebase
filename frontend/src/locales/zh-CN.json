@@ -1476,8 +1476,7 @@
     "labels-required-for-review": "提交审批前必须设置标签",
     "lifecycle": {
       "checking": "检查中…",
-      "checks-failing_one": "{{count}} 项检查失败",
-      "checks-failing_other": "{{count}} 项检查失败",
+      "checks-failing": "检查失败",
       "deployed": "已部署",
       "gate-checks-failed": "部分检查未通过",
       "gate-checks-failed-sub": "{{failing}} 项失败，{{passed}} 项通过",
@@ -1486,14 +1485,13 @@
       "gate-checks-running": "检查运行中",
       "gate-checks-running-sub": "{{running}} 项运行中，{{passed}} 项通过",
       "gate-review-approved": "变更已批准",
-      "gate-review-pending": "审核中",
+      "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
-      "rerun-stage": "重新执行 · {{stage}}",
+      "rerun": "重新执行",
       "review-waiting": "等待 {{role}}",
-      "run-stage": "执行 · {{stage}}",
-      "stage-status": "{{status}} · {{stage}}"
+      "run": "执行"
     },
     "meta": {
       "created-by": "由 {{user}} 创建"
@@ -2163,10 +2161,10 @@
             "self": "模型名称"
           },
           "provider": {
-            "azure_open_ai": "Azure Open AI",
+            "azure_open_ai": "Azure OpenAI",
             "claude": "Claude",
             "gemini": "Gemini",
-            "open_ai": "Open AI",
+            "open_ai": "OpenAI",
             "self": "AI 提供方"
           },
           "self": "AI 助手"
@@ -2878,6 +2876,11 @@
     "request-export": "申请导出",
     "request-jit": "申请即时访问",
     "request-query": "请求查询",
+    "result-detail": {
+      "next-match": "下一个匹配项",
+      "previous-match": "上一个匹配项",
+      "search": "搜索详情"
+    },
     "result-limit": {
       "self": "结果限制"
     },

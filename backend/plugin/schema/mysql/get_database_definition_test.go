@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -84,4 +85,275 @@ func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
 		"END;;\n" +
 		"DELIMITER ;\n\n"
 	require.Equal(t, want, got)
+}
+
+func TestRenderColumnDefaultBitLiteral(t *testing.T) {
+	testCases := []struct {
+		name       string
+		columnType string
+		// def is the value stored in ColumnMetadata.Default. For a BIT column the MySQL
+		// sync stores the bit literal QUOTE()-escaped, e.g. b'0' becomes 'b\'0\''.
+		def  string
+		want string
+	}{
+		{name: "bit1 quoted-escaped", columnType: "bit(1)", def: `'b\'0\''`, want: "b'0'"},
+		{name: "bit8 quoted-escaped", columnType: "bit(8)", def: `'b\'101\''`, want: "b'101'"},
+		{name: "bit no width", columnType: "bit", def: `'b\'1\''`, want: "b'1'"},
+		{name: "bit already bare literal", columnType: "bit(4)", def: "b'1010'", want: "b'1010'"},
+		{name: "bit hex 0x form", columnType: "bit(8)", def: "0xFF", want: "0xFF"},
+		{name: "bit hex x'' quoted-escaped", columnType: "bit(8)", def: `'x\'1f\''`, want: "x'1f'"},
+		// Non-bit columns and non-literal defaults are emitted verbatim.
+		{name: "varchar string default untouched", columnType: "varchar(10)", def: "'hello'", want: "'hello'"},
+		{name: "varchar string that looks bit-ish but not bit column", columnType: "varchar(10)", def: `'b\'0\''`, want: `'b\'0\''`},
+		{name: "int numeric default untouched", columnType: "int", def: "42", want: "42"},
+		// A BIT column whose default is not a bit/hex literal (defensive) is left verbatim.
+		{name: "bit with non-literal default", columnType: "bit(8)", def: "'abc'", want: "'abc'"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := renderColumnDefault(&storepb.ColumnMetadata{Type: tc.columnType, Default: tc.def})
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestPrintColumnClauseBitDefaultUnquoted(t *testing.T) {
+	table := &storepb.TableMetadata{Name: "t", Charset: "utf8mb4"}
+	var buf strings.Builder
+	col := &storepb.ColumnMetadata{Name: "b1", Type: "bit(1)", Nullable: false, Default: `'b\'0\''`}
+	require.NoError(t, printColumnClause(&buf, col, table))
+	require.Equal(t, "  `b1` bit(1) NOT NULL DEFAULT b'0'", buf.String())
+
+	// A BIT column with no default (b64 BIT(64)) must stay fine: NULL default emitted as
+	// DEFAULT NULL, never as a bit literal.
+	var buf2 strings.Builder
+	col2 := &storepb.ColumnMetadata{Name: "b64", Type: "bit(64)", Nullable: true, Default: "NULL"}
+	require.NoError(t, printColumnClause(&buf2, col2, table))
+	require.Equal(t, "  `b64` bit(64) DEFAULT NULL", buf2.String())
+}
+
+func TestNormalizeFunctionalIndexExpr(t *testing.T) {
+	testCases := []struct {
+		name string
+		expr string
+		want string
+	}{
+		{
+			name: "multi-valued json index with utf8mb4 introducer and escaped quotes",
+			// The form synced from information_schema.STATISTICS.EXPRESSION.
+			expr: "(cast(json_extract(`tags`,_utf8mb4\\'$.ids\\') as unsigned array))",
+			want: "(cast(json_extract(`tags`,'$.ids') as unsigned array))",
+		},
+		{
+			name: "latin1 introducer",
+			expr: "(json_extract(`c`,_latin1\\'$.a\\'))",
+			want: "(json_extract(`c`,'$.a'))",
+		},
+		{
+			name: "no introducer no escaping is unchanged",
+			expr: "(json_extract(`tags`,'$.ids'))",
+			want: "(json_extract(`tags`,'$.ids'))",
+		},
+		{
+			name: "introducer-like underscore inside string literal is preserved",
+			// _utf8mb4 appears INSIDE the literal here; only a real introducer (before the
+			// opening quote) must be stripped.
+			expr: "(concat(`c`,_utf8mb4\\'_utf8mb4 is text\\'))",
+			want: "(concat(`c`,'_utf8mb4 is text'))",
+		},
+		{
+			name: "leading-underscore identifier not before a quote is kept",
+			expr: "(`_weird`)",
+			want: "(`_weird`)",
+		},
+		{
+			name: "backticked identifier with underscore is untouched",
+			expr: "(json_extract(`my_col`,_utf8mb4\\'$.k\\'))",
+			want: "(json_extract(`my_col`,'$.k'))",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, normalizeFunctionalIndexExpr(tc.expr))
+		})
+	}
+}
+
+func TestPrintIndexClauseFunctionalExprNormalized(t *testing.T) {
+	var buf strings.Builder
+	index := &storepb.IndexMetadata{
+		Name:        "idx_tags",
+		Visible:     true,
+		Expressions: []string{"(cast(json_extract(`tags`,_utf8mb4\\'$.ids\\') as unsigned array))"},
+	}
+	require.NoError(t, printIndexClause(&buf, index))
+	require.Equal(t, ",\n  KEY `idx_tags` ((cast(json_extract(`tags`,'$.ids') as unsigned array)))", buf.String())
+	require.NotContains(t, buf.String(), "_utf8mb4")
+	require.NotContains(t, buf.String(), `\'`)
+}
+
+// TestStripViewBodyDatabaseQualifier pins the token-scanner rewrite (X6). The failure
+// shapes were live-verified: (a) `db`.`db`.`col` (a table named like the database, the
+// 5.7 three-part form) was double-stripped down to `col`; (b) a backtick alias
+// containing a quote (`it's`) flipped the old scanner's literal state so NO subsequent
+// qualifier was stripped; (c) a genuine string literal containing the qualifier bytes
+// was corrupted.
+func TestStripViewBodyDatabaseQualifier(t *testing.T) {
+	cases := []struct {
+		name   string
+		body   string
+		dbName string
+		want   string
+	}{
+		{
+			name:   "table_named_like_database_keeps_table_qualifier",
+			body:   "select `db`.`db`.`col` AS `col` from `db`.`db`",
+			dbName: "db",
+			want:   "select `db`.`col` AS `col` from `db`",
+		},
+		{
+			name: "alias_with_quote_does_not_flip_literal_state",
+			// 5.7 derived-table shape: all three qualifiers must strip even though the
+			// alias `it's` contains a single quote.
+			body:   "select `x`.`a` AS `it's` from (select `mydb`.`t`.`a` AS `a` from `mydb`.`t` where (`mydb`.`t`.`a` > 0)) `x`",
+			dbName: "mydb",
+			want:   "select `x`.`a` AS `it's` from (select `t`.`a` AS `a` from `t` where (`t`.`a` > 0)) `x`",
+		},
+		{
+			name:   "control_alias_without_quote",
+			body:   "select `x`.`a` AS `plain` from (select `mydb`.`t`.`a` AS `a` from `mydb`.`t`) `x`",
+			dbName: "mydb",
+			want:   "select `x`.`a` AS `plain` from (select `t`.`a` AS `a` from `t`) `x`",
+		},
+		{
+			name:   "cross_database_reference_preserved",
+			body:   "select `otherdb`.`t`.`c` from `otherdb`.`t` join `mydb`.`u` on (`otherdb`.`t`.`id` = `mydb`.`u`.`id`)",
+			dbName: "mydb",
+			want:   "select `otherdb`.`t`.`c` from `otherdb`.`t` join `u` on (`otherdb`.`t`.`id` = `u`.`id`)",
+		},
+		{
+			name: "db_named_segment_inside_foreign_reference_preserved",
+			// `mydb` here is the TABLE part of a cross-database reference — a
+			// continuation after ".", never a qualifier.
+			body:   "select `otherdb`.`mydb`.`c` from `otherdb`.`mydb`",
+			dbName: "mydb",
+			want:   "select `otherdb`.`mydb`.`c` from `otherdb`.`mydb`",
+		},
+		{
+			name: "quote_flip_then_literal_corruption",
+			// The live-verified composed corruption: with the old scanner, the quote
+			// inside alias `it's` flipped the literal state, so the REAL literal's
+			// interior was treated as top-level (its `mydb`. stripped — data change)
+			// while the genuine trailing qualifier survived.
+			body:   "select `it's` AS a, '`mydb`.`t` and  spaces' AS lit from `mydb`.`t`",
+			dbName: "mydb",
+			want:   "select `it's` AS a, '`mydb`.`t` and  spaces' AS lit from `t`",
+		},
+		{
+			name:   "string_literal_containing_qualifier_untouched",
+			body:   "select '`mydb`.`t`' AS lit, `mydb`.`t`.`c` from `mydb`.`t`",
+			dbName: "mydb",
+			want:   "select '`mydb`.`t`' AS lit, `t`.`c` from `t`",
+		},
+		{
+			name:   "double_quoted_literal_untouched",
+			body:   `select "` + "`mydb`.`t`" + `" AS lit from ` + "`mydb`.`t`",
+			dbName: "mydb",
+			want:   `select "` + "`mydb`.`t`" + `" AS lit from ` + "`t`",
+		},
+		{
+			name:   "qualifier_not_followed_by_identifier_preserved",
+			body:   "select `mydb`.* from `mydb`.`t`",
+			dbName: "mydb",
+			want:   "select `mydb`.* from `t`",
+		},
+		{
+			name:   "empty_db_name_no_op",
+			body:   "select `t`.`c` from `t`",
+			dbName: "",
+			want:   "select `t`.`c` from `t`",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, stripViewBodyDatabaseQualifier(tc.body, tc.dbName))
+		})
+	}
+}
+
+// TestStripLeadingDefiner pins the definer-clause parser (X7): quoted accounts may
+// legally contain spaces (`my user`@`%`), '@', and doubled/escaped quotes — the old
+// cut-at-first-space produced corrupt "CREATE user`@`%` …" output.
+func TestStripLeadingDefiner(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "plain_account",
+			in:   "CREATE DEFINER=`root`@`localhost` EVENT `e` ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT `e` ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "quoted_user_with_space",
+			in:   "CREATE DEFINER=`my user`@`%` EVENT `e` ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT `e` ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "quoted_host_with_space_function",
+			in:   "CREATE DEFINER=`a``b`@`local host` FUNCTION `f`() RETURNS int DETERMINISTIC RETURN 1",
+			want: "CREATE FUNCTION `f`() RETURNS int DETERMINISTIC RETURN 1",
+		},
+		{
+			name: "single_quoted_account_procedure",
+			in:   "CREATE DEFINER='my user'@'%' PROCEDURE `p`() BEGIN END",
+			want: "CREATE PROCEDURE `p`() BEGIN END",
+		},
+		{
+			name: "double_quoted_account",
+			in:   `CREATE DEFINER="my user"@"%" EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t`,
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "unquoted_account",
+			in:   "CREATE DEFINER=root@localhost EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "current_user",
+			in:   "CREATE DEFINER=CURRENT_USER EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "current_user_parens",
+			in:   "CREATE DEFINER=CURRENT_USER() EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "spaces_around_equals",
+			in:   "CREATE DEFINER = `my user`@`%` EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "no_definer_unchanged",
+			in:   "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+			want: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t",
+		},
+		{
+			name: "unterminated_quote_left_unchanged",
+			in:   "CREATE DEFINER=`broken EVENT e DO SELECT 1",
+			want: "CREATE DEFINER=`broken EVENT e DO SELECT 1",
+		},
+		{
+			name: "not_a_create_statement_unchanged",
+			in:   "ALTER DEFINER=`root`@`%` EVENT e COMMENT 'x'",
+			want: "ALTER DEFINER=`root`@`%` EVENT e COMMENT 'x'",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, stripLeadingDefiner(tc.in))
+		})
+	}
 }

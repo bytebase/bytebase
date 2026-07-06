@@ -665,6 +665,10 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("database metadata not found for database %q", databaseName))
 	}
 
+	if !common.EngineSupportSDLExport(database.Engine) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("SDL schema export is not supported for engine %s", database.Engine))
+	}
+
 	format := req.Msg.Format
 	if format == v1pb.GetDatabaseSDLSchemaRequest_SDL_FORMAT_UNSPECIFIED {
 		format = v1pb.GetDatabaseSDLSchemaRequest_SINGLE_FILE
@@ -687,9 +691,19 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
-	// PG/CockroachDB raw schema text still needs the omni SDL diff path. Metadata
+	// The SDL gate must key off the instance's REAL engine, not the parser engine:
+	// getParserEngine aliases MARIADB and OCEANBASE to MYSQL, which would otherwise route
+	// their raw-schema DiffSchema through the omni MySQL SDL path (canonicalizing MariaDB as
+	// MySQL 8.0 and emitting utf8mb4_0900_ai_ci, which MariaDB lacks). The downstream diff
+	// paths still take the parser engine, keeping the MySQL-registered differ/generator.
+	rawEngine, err := s.getRawEngine(ctx, req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get engine"))
+	}
+
+	// PG/CockroachDB/MySQL raw schema text still needs the omni SDL diff path. Metadata
 	// targets such as changelogs use schema.DiffMigration's metadata path.
-	if shouldDiffSchemaViaSDL(engine, req.Msg) {
+	if shouldDiffSchemaViaSDL(rawEngine, req.Msg) {
 		migrationSQL, err := s.diffSchemaViaSDL(ctx, req.Msg, engine)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
@@ -715,15 +729,21 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{Diff: migrationSQL}), nil
 }
 
+// shouldDiffSchemaViaSDL reports whether a raw-schema-text DiffSchema target should take the
+// omni SDL diff path. engine MUST be the instance's real engine (not the parser-aliased one):
+// the SDL path is gated on common.EngineSupportSDLExport — the same gate GetDatabaseSDLSchema
+// uses — so MARIADB and OCEANBASE (which alias to MYSQL for parsing) are excluded from every
+// SDL path, as this PR intends. Only a raw schema-text target (detected by oneof presence)
+// uses SDL; changelog targets fall through to the metadata diff.
 func shouldDiffSchemaViaSDL(engine storepb.Engine, req *v1pb.DiffSchemaRequest) bool {
-	if engine != storepb.Engine_POSTGRES && engine != storepb.Engine_COCKROACHDB {
+	if !common.EngineSupportSDLExport(engine) {
 		return false
 	}
 	_, ok := req.GetTarget().(*v1pb.DiffSchemaRequest_Schema)
 	return ok
 }
 
-// diffSchemaViaSDL handles PG/CockroachDB DiffSchema using omni SDL diff.
+// diffSchemaViaSDL handles PG/CockroachDB/MySQL DiffSchema using omni SDL diff.
 func (s *DatabaseService) diffSchemaViaSDL(ctx context.Context, req *v1pb.DiffSchemaRequest, engine storepb.Engine) (string, error) {
 	sourceMetadata, err := s.getSourceDBMetadata(ctx, req)
 	if err != nil {
@@ -734,27 +754,70 @@ func (s *DatabaseService) diffSchemaViaSDL(ctx context.Context, req *v1pb.DiffSc
 		return "", errors.Wrap(err, "failed to generate source SDL")
 	}
 
-	// Resolve target schema text.
-	var targetSDL string
-	switch {
-	case req.GetSchema() != "":
+	// Resolve the target server version so MySQL canonicalizes against the right stored
+	// form. Best-effort: an empty version falls back to the engine default and other
+	// engines ignore it.
+	engineVersion := s.diffSchemaEngineVersion(ctx, req)
+
+	targetSDL, err := s.resolveDiffSchemaTargetSDL(ctx, req, engine)
+	if err != nil {
+		return "", err
+	}
+
+	return schema.DiffSDLMigration(engine, sourceSDL, targetSDL, engineVersion)
+}
+
+// resolveDiffSchemaTargetSDL resolves the target schema text for the SDL diff path.
+// The schema-text target is detected by ONEOF PRESENCE, not string emptiness: an
+// intentionally empty schema text is a legal target meaning "empty schema", so the
+// diff previews dropping every object. Changelog targets convert their metadata to SDL.
+func (s *DatabaseService) resolveDiffSchemaTargetSDL(ctx context.Context, req *v1pb.DiffSchemaRequest, engine storepb.Engine) (string, error) {
+	switch target := req.GetTarget().(type) {
+	case *v1pb.DiffSchemaRequest_Schema:
 		// Schema text from GetDatabaseSchema (raw dump) — passed directly.
 		// pgDiffSDLMigration handles LoadSDL/LoadSQL fallback internally.
-		targetSDL = req.GetSchema()
-	case req.GetChangelog() != "":
-		targetMetadata, err := s.getSourceDBMetadata(ctx, &v1pb.DiffSchemaRequest{Name: req.GetChangelog()})
+		return target.Schema, nil
+	case *v1pb.DiffSchemaRequest_Changelog:
+		targetMetadata, err := s.getSourceDBMetadata(ctx, &v1pb.DiffSchemaRequest{Name: target.Changelog})
 		if err != nil {
 			return "", errors.Wrap(err, "failed to resolve target changelog")
 		}
-		targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
+		targetSDL, err := schema.MetadataToSDL(engine, targetMetadata)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to generate target SDL")
 		}
+		return targetSDL, nil
 	default:
 		return "", errors.Errorf("target must be either schema text or changelog")
 	}
+}
 
-	return schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
+// diffSchemaEngineVersion resolves the synced server version for the DiffSchema request's
+// instance. It is best-effort: any lookup failure returns "" so the diff falls back to the
+// engine's default stored form (and non-MySQL engines ignore the version regardless).
+func (s *DatabaseService) diffSchemaEngineVersion(ctx context.Context, req *v1pb.DiffSchemaRequest) string {
+	var instanceID string
+	if strings.Contains(req.Name, common.ChangelogPrefix) {
+		insID, _, _, err := common.GetInstanceDatabaseChangelogID(req.Name)
+		if err != nil {
+			return ""
+		}
+		instanceID = insID
+	} else {
+		insID, _, err := common.GetInstanceDatabaseID(req.Name)
+		if err != nil {
+			return ""
+		}
+		instanceID = insID
+	}
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &instanceID,
+	})
+	if err != nil || instance == nil {
+		return ""
+	}
+	return instance.Metadata.GetVersion()
 }
 
 func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
@@ -951,9 +1014,12 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 	return nil, errors.Errorf("must set the schema or change history id as the target")
 }
 
-func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
+// getRawEngine returns the instance's REAL engine (e.g. MARIADB, OCEANBASE) for the
+// database or changelog named in the DiffSchema request, without the parser aliasing that
+// getParserEngine applies. Gates that must distinguish MariaDB/OceanBase from MySQL — such
+// as the SDL diff gate — use this.
+func (s *DatabaseService) getRawEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
 	var instanceID string
-
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
 		insID, _, _, err := common.GetInstanceDatabaseChangelogID(request.Name)
 		if err != nil {
@@ -979,7 +1045,15 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 
-	return common.ConvertToParserEngine(instance.Metadata.GetEngine())
+	return instance.Metadata.GetEngine(), nil
+}
+
+func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
+	rawEngine, err := s.getRawEngine(ctx, request)
+	if err != nil {
+		return storepb.Engine_ENGINE_UNSPECIFIED, err
+	}
+	return common.ConvertToParserEngine(rawEngine)
 }
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {

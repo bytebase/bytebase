@@ -31,6 +31,7 @@ import {
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
+import { execSql, getInstancePgPort, querySql } from "../framework/psql";
 import { SqlEditorPage } from "./sql-editor.page";
 
 test.setTimeout(180_000);
@@ -294,6 +295,178 @@ test.describe("ACCESS pane Request-access button opens the grant drawer", () => 
     // Close the drawer so any follow-up test doesn't inherit it.
     // The drawer is dismissed by clicking outside (Base UI Sheet) or
     // by an explicit Cancel — we use Escape which the Sheet honors.
+    await viewerPage.keyboard.press("Escape");
+    await viewerPage.waitForTimeout(300);
+  });
+});
+
+// BYT-9801 — the Request Data Access picker used to fetch a single flat page of
+// 100 databases with no server-side search, so any database past that page was
+// invisible AND unsearchable in the JIT drawer (even though the SQL Editor tree
+// found it via per-environment pagination + server search). The fix routes the
+// picker through the shared DatabaseSelect, which re-queries the server on every
+// keystroke (onSearch). This test seeds > one picker page of databases (the
+// picker fetches getDefaultPagination() = 50 for the @example.com viewer), then
+// proves a database past that first page is absent from the initial list but
+// resolvable by typing its name.
+//
+// Why this locks the fix: the pre-fix picker fetched a flat 100-row page, so all
+// ~60 seeded databases loaded at once and the target was present initially — this
+// test would fail at the "absent initially" assertion. Against a regression that
+// drops onSearch while keeping the 50-row page, the target stays absent AND never
+// appears on search — failing the "found via search" assertion. Either way the
+// server-side-search fix is required for this test to pass.
+test.describe("Request Data Access picker finds a database beyond the first page (BYT-9801)", () => {
+  const DB_COUNT = 60; // > the picker's first page (50) with comfortable margin
+  const dbShortNames = Array.from(
+    { length: DB_COUNT },
+    (_, i) => `jitsrch_${String(i).padStart(2, "0")}`,
+  );
+  let pgPort = "";
+  let targetShort = "";
+  let controlShort = "";
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000);
+    // env.api is already logged in as admin from the file-level beforeAll.
+    pgPort = await getInstancePgPort(env);
+
+    // 1. Create > one picker page of databases via psql — idempotently.
+    //    The disposable e2e server (and its Postgres) is per-run, not
+    //    per-attempt: globalSetup boots it once and Playwright retries reuse
+    //    it. Teardown swallows DROP failures from lingering Bytebase
+    //    connections, so a prior failed attempt can leave jitsrch_* databases
+    //    behind. `CREATE DATABASE` (ON_ERROR_STOP=1) would then hard-fail the
+    //    retry's setup before the BYT-9801 regression is ever exercised. Create
+    //    only the missing ones (mirrors the 409-swallow on createUser above).
+    const existing = new Set(
+      querySql(
+        env.databaseId,
+        pgPort,
+        "SELECT datname FROM pg_database WHERE datname LIKE 'jitsrch%'",
+      )
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
+    for (const name of dbShortNames) {
+      if (!existing.has(name)) {
+        execSql(env.databaseId, pgPort, `CREATE DATABASE ${name}`);
+      }
+    }
+
+    // 2. Sync the instance and poll until Bytebase has discovered them all.
+    await env.api.syncInstance(env.instance);
+    await expect
+      .poll(
+        async () => {
+          const { databases } = await env.api.listDatabases(env.instance);
+          const names = new Set((databases ?? []).map((d) => d.name));
+          return dbShortNames.every((s) =>
+            names.has(`${env.instance}/databases/${s}`),
+          );
+        },
+        { timeout: 120_000, message: "created databases should sync" },
+      )
+      .toBe(true);
+
+    // 3. Transfer each into the project the viewer will open.
+    const createdFull = dbShortNames.map(
+      (s) => `${env.instance}/databases/${s}`,
+    );
+    for (const full of createdFull) {
+      await env.api.transferDatabaseToProject(full, env.project);
+    }
+
+    // 4. Deterministically pick a target the picker's first page omits. The
+    //    picker and this API call hit the same ListDatabases default order, so
+    //    the first 50 of the API list == the picker's first (only) fetch.
+    const { databases } = await env.api.listDatabases(env.project);
+    const order = (databases ?? []).map((d) => d.name);
+    const firstPage = new Set(order.slice(0, 50));
+    const targetFull = createdFull.find((f) => !firstPage.has(f));
+    if (!targetFull) {
+      throw new Error("no created database sorts past the picker's first page");
+    }
+    targetShort = targetFull.split("/").pop()!;
+    // A database KNOWN to be in the first page — used to prove the initial
+    // fetch loaded before asserting the target's absence.
+    controlShort = (createdFull.find((f) => firstPage.has(f)) ?? order[0])
+      .split("/")
+      .pop()!;
+
+    // 5. Enable JIT and remount the viewer's editor on the project.
+    await setJIT(true);
+  });
+
+  test.afterAll(async () => {
+    // Best-effort: drop the seeded databases and re-sync so Bytebase forgets
+    // them (keeps env.project clean for any later spec).
+    for (const name of dbShortNames) {
+      try {
+        execSql(env.databaseId, pgPort, `DROP DATABASE IF EXISTS ${name}`);
+      } catch {
+        /* a lingering connection can block DROP on a disposable server */
+      }
+    }
+    await env.api.syncInstance(env.instance).catch(() => {});
+  });
+
+  test("a database past the first page is absent initially but found via search", async () => {
+    test.setTimeout(120_000);
+
+    // Open the ACCESS pane → Request Access → drawer.
+    await viewerEditor.gutterAccessTab.click();
+    await viewerPage.waitForTimeout(500);
+    await viewerPage
+      .getByRole("button", { name: /Request Access/i })
+      .first()
+      .click({ force: true });
+    await expect(
+      viewerPage.getByText("Request Data Access", { exact: true }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Locate the "Databases" section (label headline + picker) and open the
+    // picker's dropdown.
+    const dbSection = viewerPage
+      .locator("div.flex.flex-col.gap-y-2")
+      .filter({ has: viewerPage.getByText(/^Databases\s*\*?$/) })
+      .first();
+    await dbSection.locator("div.cursor-pointer").first().click();
+
+    // Prove the first page actually loaded (a known first-page database is
+    // present) before asserting the target's absence — otherwise "absent"
+    // could just mean "nothing has loaded yet".
+    await expect(
+      dbSection.getByText(controlShort, { exact: true }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // The target sorts past the picker's first (only) fetch → not in the DOM.
+    await expect(
+      dbSection.getByText(targetShort, { exact: true }),
+    ).toHaveCount(0);
+
+    // Type the target's name — the fix re-queries the server (onSearch).
+    await dbSection.locator("input").first().fill(targetShort);
+
+    // Server-side search surfaces the database that the first page omitted.
+    await expect(
+      dbSection.getByText(targetShort, { exact: true }).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Select it, then close the dropdown by clicking the drawer title (outside
+    // the combobox) so the option row disappears. The target text remaining
+    // proves a selected CHIP was rendered — not merely the still-open row.
+    await dbSection.getByText(targetShort, { exact: true }).first().click();
+    await viewerPage
+      .getByText("Request Data Access", { exact: true })
+      .first()
+      .click();
+    await viewerPage.waitForTimeout(300);
+    await expect(
+      dbSection.getByText(targetShort, { exact: true }).first(),
+    ).toBeVisible();
+
     await viewerPage.keyboard.press("Escape");
     await viewerPage.waitForTimeout(300);
   });

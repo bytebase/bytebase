@@ -36,11 +36,7 @@ export function PlanLifecycleSlot({
       return page.issue ? <ReviewYourTurnAction issue={page.issue} /> : null;
     case "plan-status":
       return page.issue ? (
-        <PlanStatusAction
-          checks={state.checks}
-          issue={page.issue}
-          reason={state.reason}
-        />
+        <PlanStatusAction issue={page.issue} reason={state.reason} />
       ) : null;
     case "preparing-rollout":
       return (

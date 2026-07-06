@@ -1476,8 +1476,7 @@
     "labels-required-for-review": "レビュー前にラベルが必要です",
     "lifecycle": {
       "checking": "チェック中…",
-      "checks-failing_one": "{{count}} 件のチェック失敗",
-      "checks-failing_other": "{{count}} 件のチェック失敗",
+      "checks-failing": "チェック失敗",
       "deployed": "デプロイ済み",
       "gate-checks-failed": "一部のチェックが失敗しました",
       "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
@@ -1490,10 +1489,9 @@
       "gate-review-rejected": "変更がリクエストされました",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
-      "rerun-stage": "再実行 · {{stage}}",
+      "rerun": "再実行",
       "review-waiting": "{{role}} の承認待ち",
-      "run-stage": "実行 · {{stage}}",
-      "stage-status": "{{status}} · {{stage}}"
+      "run": "実行"
     },
     "meta": {
       "created-by": "{{user}} が作成"
@@ -2163,10 +2161,10 @@
             "self": "モデル名"
           },
           "provider": {
-            "azure_open_ai": "Azure Open AI",
+            "azure_open_ai": "Azure OpenAI",
             "claude": "Claude",
             "gemini": "Gemini",
-            "open_ai": "Open AI",
+            "open_ai": "OpenAI",
             "self": "AIプロバイダー"
           },
           "self": "AI アシスタント"
@@ -2878,6 +2876,11 @@
     "request-export": "エクスポートをリクエスト",
     "request-jit": "ジャストインタイムアクセスをリクエスト",
     "request-query": "リクエストクエリ",
+    "result-detail": {
+      "next-match": "次の一致",
+      "previous-match": "前の一致",
+      "search": "詳細を検索"
+    },
     "result-limit": {
       "self": "結果の制限"
     },

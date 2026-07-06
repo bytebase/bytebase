@@ -61,8 +61,9 @@ func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, 
 	return plan, nil
 }
 
-// pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL out.
-func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
+// pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL
+// out. The engine version is unused: PostgreSQL canonicalizes identically across versions.
+func pgDiffSDLMigration(sourceSDL, targetSDL string, _ string) (string, error) {
 	plan, err := buildMigrationPlan(sourceSDL, targetSDL)
 	if err != nil {
 		return "", err
@@ -74,7 +75,8 @@ func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
 }
 
 // pgSDLDropAdvices analyzes the SDL migration plan for destructive operations.
-func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error) {
+// engineVersion is unused: PostgreSQL canonicalizes identically across versions.
+func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata, _ string) ([]*storepb.Advice, error) {
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, currentSchema)
 	if err != nil {
 		return nil, err

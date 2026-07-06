@@ -86,18 +86,22 @@ function SelectCellOnMount() {
 
 function TestDetailPanel({
   disallowCopyingData = false,
+  panelRows = rows,
+  panelColumns = columns,
 }: {
   disallowCopyingData?: boolean;
+  panelRows?: ResultTableRow[];
+  panelColumns?: ResultTableColumn[];
 }) {
   return (
     <SQLResultViewProvider
       engine={Engine.POSTGRES}
-      rows={rows}
-      columns={columns}
+      rows={panelRows}
+      columns={panelColumns}
       disallowCopyingData={disallowCopyingData}
     >
       <OpenDetailOnMount />
-      <DetailPanel rows={rows} columns={columns} />
+      <DetailPanel rows={panelRows} columns={panelColumns} />
     </SQLResultViewProvider>
   );
 }
@@ -133,11 +137,40 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
-const getDetailContentRegion = () => {
+const setInputValue = (input: HTMLInputElement, value: string) => {
+  const valueSetter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  )?.set;
+  valueSetter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
+const flushAsyncRender = async () => {
+  await act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+  });
+};
+
+const waitForAssertion = async (assertion: () => void) => {
+  let lastError: unknown;
+  for (let i = 0; i < 20; i++) {
+    await flushAsyncRender();
+    try {
+      assertion();
+      return;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+};
+
+const getDetailContentRegion = (expectedText = "longbridge") => {
   const candidates = Array.from(document.body.querySelectorAll("div"));
   const contentRegion = candidates.find(
     (element) =>
-      element.textContent?.includes("longbridge") &&
+      element.textContent?.includes(expectedText) &&
       element.className.includes("overflow-auto") &&
       element.className.includes("font-mono")
   );
@@ -226,6 +259,188 @@ describe("DetailPanel", () => {
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
 
     getSelectionSpy.mockRestore();
+    unmount();
+  });
+
+  test("highlights plain text search matches and jumps between them", () => {
+    const textRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [textValue("CREATE TABLE users;\nCREATE INDEX users_name;")],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel panelRows={textRows} />
+    );
+    render();
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement | null;
+    expect(input).toBeInstanceOf(HTMLInputElement);
+
+    act(() => {
+      setInputValue(input!, "create");
+    });
+
+    const marks = Array.from(
+      getDetailContentRegion("CREATE TABLE").querySelectorAll("mark")
+    );
+    expect(marks.map((mark) => mark.textContent)).toEqual(["CREATE", "CREATE"]);
+    expect(document.body.textContent).toContain("1 / 2");
+    expect(marks[0]?.className).toContain("bg-accent");
+    const searchControl = input!.closest(
+      "[data-testid='detail-search-control']"
+    );
+    expect(searchControl).toBeInstanceOf(HTMLDivElement);
+    expect(searchControl?.textContent).toContain("1 / 2");
+    expect(searchControl?.querySelectorAll("button")).toHaveLength(3);
+    expect(searchControl?.className).toContain("rounded-xs");
+    expect(searchControl?.className).toContain("bg-transparent");
+    expect(searchControl?.className).not.toContain("rounded-md");
+    expect(searchControl?.className).not.toContain("shadow");
+    expect(searchControl?.parentElement?.className).not.toContain("flex-1");
+
+    act(() => {
+      input!.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    const nextMarks = Array.from(
+      getDetailContentRegion("CREATE TABLE").querySelectorAll("mark")
+    );
+    expect(nextMarks[1]?.className).toContain("bg-accent");
+
+    unmount();
+  });
+
+  test("scrolls the active match when the search target changes but match count is unchanged", () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const textRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [textValue("CREATE TABLE users;\nCREATE INDEX users_name;")],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel panelRows={textRows} />
+    );
+    render();
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement | null;
+    expect(input).toBeInstanceOf(HTMLInputElement);
+
+    act(() => {
+      setInputValue(input!, "create");
+    });
+    expect(scrollIntoView).toHaveBeenCalled();
+    scrollIntoView.mockClear();
+
+    act(() => {
+      setInputValue(input!, "users");
+    });
+
+    expect(document.body.textContent).toContain("1 / 2");
+    expect(scrollIntoView).toHaveBeenCalled();
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    unmount();
+  });
+
+  test("scrolls formatted JSON matches after the async highlighted render", async () => {
+    localStorage.setItem("bb.sql-editor.detail-panel.format", "true");
+    const scrolledContent: string[] = [];
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = function () {
+      scrolledContent.push(
+        this.closest(".overflow-auto")?.textContent?.trim() ?? ""
+      );
+    };
+    const jsonRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [
+            textValue('{"name":"alpha","first":"needle","second":"needle"}'),
+          ],
+        }),
+      },
+      {
+        key: 1,
+        item: create(QueryRowSchema, {
+          values: [
+            textValue('{"name":"beta","first":"needle","second":"needle"}'),
+          ],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel panelRows={jsonRows} />
+    );
+    render();
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement | null;
+    expect(input).toBeInstanceOf(HTMLInputElement);
+
+    act(() => {
+      setInputValue(input!, "needle");
+    });
+    await waitForAssertion(() => {
+      expect(document.body.textContent).toContain("1 / 2");
+    });
+    scrolledContent.length = 0;
+
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    await waitForAssertion(() => {
+      expect(scrolledContent.some((text) => text.includes("beta"))).toBe(true);
+    });
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    unmount();
+  });
+
+  test("focuses detail search from the native find shortcut", () => {
+    const { render, unmount } = renderIntoContainer(<TestDetailPanel />);
+    render();
+
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    act(() => {
+      document.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement?.getAttribute("aria-label")).toBe(
+      "sql-editor.result-detail.search"
+    );
+
     unmount();
   });
 });

@@ -1,8 +1,13 @@
 import { escape } from "lodash-es";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { highlightHtmlText } from "./detail-panel-search";
 
 interface PrettyJSONProps {
   content: string;
+  searchQuery?: string;
+  activeMatchIndex?: number;
+  onMatchCountChange?: (count: number) => void;
+  onHighlightedContentChange?: () => void;
 }
 
 /**
@@ -11,7 +16,13 @@ interface PrettyJSONProps {
  * for them eagerly. An AbortController per `content` prevents the
  * older pretty-print result from racing in after a quick switch.
  */
-export function PrettyJSON({ content }: PrettyJSONProps) {
+export function PrettyJSON({
+  content,
+  searchQuery = "",
+  activeMatchIndex = 0,
+  onMatchCountChange,
+  onHighlightedContentChange,
+}: Readonly<PrettyJSONProps>) {
   const [html, setHtml] = useState<string>("");
 
   useEffect(() => {
@@ -40,5 +51,15 @@ export function PrettyJSON({ content }: PrettyJSONProps) {
     return () => controller.abort();
   }, [content]);
 
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  const highlighted = highlightHtmlText(html, searchQuery, activeMatchIndex);
+
+  useEffect(() => {
+    onMatchCountChange?.(highlighted.count);
+  }, [highlighted.count, onMatchCountChange]);
+
+  useLayoutEffect(() => {
+    onHighlightedContentChange?.();
+  }, [highlighted.html, onHighlightedContentChange]);
+
+  return <div dangerouslySetInnerHTML={{ __html: highlighted.html }} />;
 }

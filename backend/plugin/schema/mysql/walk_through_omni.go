@@ -626,9 +626,34 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 	}
 	slices.Sort(tableNames)
 
+	// tableProtoByLowerName lets the trigger pass below attach each trigger to its
+	// owning table's metadata. The omni catalog keys tables case-insensitively, and a
+	// trigger records its table via Trigger.Table, so the lookup is lower-cased.
+	tableProtoByLowerName := make(map[string]*storepb.TableMetadata, len(tableNames))
 	for _, tName := range tableNames {
 		t := db.Tables[tName]
-		schemaMeta.Tables = append(schemaMeta.Tables, tableToProto(t))
+		tableProto := tableToProto(t)
+		schemaMeta.Tables = append(schemaMeta.Tables, tableProto)
+		tableProtoByLowerName[strings.ToLower(t.Name)] = tableProto
+	}
+
+	// Triggers are database-level in MySQL (db.Triggers), each bound to a table via
+	// Trigger.Table; the proto nests them under their owning TableMetadata.Triggers,
+	// matching the live MySQL sync. Emit in deterministic name order.
+	triggerNames := make([]string, 0, len(db.Triggers))
+	for name := range db.Triggers {
+		triggerNames = append(triggerNames, name)
+	}
+	slices.Sort(triggerNames)
+	for _, trName := range triggerNames {
+		tr := db.Triggers[trName]
+		tableProto := tableProtoByLowerName[strings.ToLower(tr.Table)]
+		if tableProto == nil {
+			// A trigger on a table the catalog does not know about cannot be hung
+			// off any TableMetadata; skip it rather than fabricate an orphan.
+			continue
+		}
+		tableProto.Triggers = append(tableProto.Triggers, triggerToProto(tr))
 	}
 
 	// Views.
@@ -668,6 +693,18 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 	for _, pName := range procNames {
 		p := db.Procedures[pName]
 		schemaMeta.Procedures = append(schemaMeta.Procedures, routineToProcedureProto(p))
+	}
+
+	// Events (database-level scheduled events).
+	eventNames := make([]string, 0, len(db.Events))
+	for name := range db.Events {
+		eventNames = append(eventNames, name)
+	}
+	slices.Sort(eventNames)
+
+	for _, eName := range eventNames {
+		e := db.Events[eName]
+		schemaMeta.Events = append(schemaMeta.Events, eventToProto(c, dbName, e))
 	}
 
 	dbMeta.Schemas = append(dbMeta.Schemas, schemaMeta)
@@ -871,5 +908,30 @@ func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 	return &storepb.ProcedureMetadata{
 		Name:       r.Name,
 		Definition: r.Body,
+	}
+}
+
+// triggerToProto maps an omni catalog Trigger to TriggerMetadata. The live MySQL sync
+// stores only the action statement (ACTION_STATEMENT) in Body plus the timing/event,
+// not a full CREATE TRIGGER; this mirrors that shape so a parsed-DDL catalog and a
+// synced catalog produce the same TriggerMetadata. DEFINER and session charset state
+// are intentionally dropped: omni's trigger differ ignores them.
+func triggerToProto(tr *catalog.Trigger) *storepb.TriggerMetadata {
+	return &storepb.TriggerMetadata{
+		Name:   tr.Name,
+		Event:  tr.Event,
+		Timing: tr.Timing,
+		Body:   tr.Body,
+	}
+}
+
+// eventToProto maps an omni catalog Event to EventMetadata. The live MySQL sync stores
+// the full SHOW CREATE EVENT text in Definition, so the catalog's ShowCreateEvent is
+// used to reproduce that canonical form (DEFINER included to match the sync; the SDL
+// dump and omni's event differ both ignore it).
+func eventToProto(c *catalog.Catalog, dbName string, e *catalog.Event) *storepb.EventMetadata {
+	return &storepb.EventMetadata{
+		Name:       e.Name,
+		Definition: c.ShowCreateEvent(dbName, e.Name),
 	}
 }

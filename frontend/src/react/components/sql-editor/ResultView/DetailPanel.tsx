@@ -8,11 +8,14 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CopyIcon,
+  SearchIcon,
   WrapTextIcon,
+  XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -29,6 +32,11 @@ import {
 import { BinaryFormatButton } from "./BinaryFormatButton";
 import { getPlainValue } from "./cell-value";
 import { useBinaryFormatContext, useSQLResultViewContext } from "./context";
+import {
+  DETAIL_SEARCH_ACTIVE_MATCH_SELECTOR,
+  renderTextWithSearchMatches,
+  searchMatchCountLabel,
+} from "./detail-panel-search";
 import { PrettyJSON } from "./PrettyJSON";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
@@ -65,11 +73,30 @@ function useLocalStorageBoolean(
   return [value, update];
 }
 
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tagName = target.tagName.toLowerCase();
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    target.isContentEditable ||
+    target.closest("[contenteditable='true']") !== null
+  );
+};
+
 export function DetailPanel({ rows, columns }: DetailPanelProps) {
   const { t } = useTranslation();
   const { detail, disallowCopyingData, setDetail } = useSQLResultViewContext();
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [matchCount, setMatchCount] = useState(0);
+  const [highlightedContentVersion, setHighlightedContentVersion] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [format, setFormat] = useLocalStorageBoolean(
     STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
@@ -119,11 +146,26 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     [detail, totalCount, setDetail]
   );
 
+  const moveSearchMatch = useCallback(
+    (offset: number) => {
+      if (matchCount === 0) {
+        return;
+      }
+      setActiveMatchIndex((current) => {
+        return (current + offset + matchCount) % matchCount;
+      });
+    },
+    [matchCount]
+  );
+
   // Replicates Vue's onKeyStroke("ArrowUp"/"ArrowDown") row navigation while
   // the panel is open.
   useEffect(() => {
     if (!detail) return;
     const handler = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) {
+        return;
+      }
       if (e.key === "ArrowUp") {
         e.preventDefault();
         e.stopPropagation();
@@ -137,6 +179,50 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [detail, move]);
+
+  useEffect(() => {
+    if (!detail) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        e.stopPropagation();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [detail]);
+
+  useEffect(() => {
+    setActiveMatchIndex(0);
+  }, [content, format, searchQuery]);
+
+  useEffect(() => {
+    if (matchCount === 0) {
+      setActiveMatchIndex(0);
+      return;
+    }
+    if (activeMatchIndex >= matchCount) {
+      setActiveMatchIndex(matchCount - 1);
+    }
+  }, [activeMatchIndex, content, format, matchCount, searchQuery]);
+
+  useEffect(() => {
+    const activeMatch = contentRef.current?.querySelector(
+      DETAIL_SEARCH_ACTIVE_MATCH_SELECTOR
+    );
+    if (activeMatch instanceof HTMLElement) {
+      activeMatch.scrollIntoView?.({ block: "center", inline: "nearest" });
+    }
+  }, [
+    activeMatchIndex,
+    content,
+    format,
+    highlightedContentVersion,
+    matchCount,
+    searchQuery,
+  ]);
 
   const copyContent = useMemo(() => {
     const raw = content ?? "";
@@ -170,6 +256,37 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     if (window.getSelection()?.toString()) {
       event.stopPropagation();
     }
+  };
+
+  const plainSearchResult = useMemo(
+    () =>
+      renderTextWithSearchMatches(content ?? "", searchQuery, activeMatchIndex),
+    [activeMatchIndex, content, searchQuery]
+  );
+
+  const handleHighlightedContentChange = useCallback(() => {
+    setHighlightedContentVersion((version) => version + 1);
+  }, []);
+
+  useEffect(() => {
+    if (!(guessedIsJSON && format)) {
+      setMatchCount(plainSearchResult.count);
+    }
+  }, [format, guessedIsJSON, plainSearchResult.count]);
+
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    moveSearchMatch(event.shiftKey ? -1 : 1);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    searchInputRef.current?.focus();
   };
 
   return (
@@ -227,53 +344,121 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
-                {guessedIsJSON && (
-                  <Tooltip content={t("sql-editor.format")}>
-                    <Button
-                      size="sm"
-                      variant={format ? "default" : "outline"}
-                      className="h-7 px-1.5"
-                      onClick={() => setFormat(!format)}
-                    >
-                      <BracesIcon className="size-4" />
-                    </Button>
-                  </Tooltip>
-                )}
-
-                {isBinaryData && (
-                  <BinaryFormatButton
-                    format={binaryFormat}
-                    onFormatChange={(next) =>
-                      setBinaryFormat({
-                        rowIndex: detail.row,
-                        colIndex: detail.col,
-                        format: next,
-                      })
-                    }
+              <div className="flex min-w-0 items-center gap-x-2">
+                <div
+                  data-testid="detail-search-control"
+                  className={cn(
+                    "h-8 w-80 min-w-0 flex items-center overflow-hidden rounded-xs",
+                    "border border-control-border bg-transparent text-main transition-colors"
+                  )}
+                >
+                  <SearchIcon className="ml-2.5 size-4 shrink-0 text-control-placeholder" />
+                  <Input
+                    ref={searchInputRef}
+                    size="sm"
+                    aria-label={t("sql-editor.result-detail.search")}
+                    className="h-7 min-w-0 flex-1 border-0 px-2 text-sm focus:ring-0"
+                    placeholder={t("sql-editor.result-detail.search")}
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                   />
-                )}
+                  {searchQuery.trim() && (
+                    <span className="min-w-10 text-center text-xs text-control-light">
+                      {searchMatchCountLabel(activeMatchIndex, matchCount)}
+                    </span>
+                  )}
+                  {searchQuery.trim() && (
+                    <div className="ml-1 flex shrink-0 items-center">
+                      <Tooltip
+                        content={t("sql-editor.result-detail.previous-match")}
+                      >
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-7 p-0"
+                          disabled={matchCount === 0}
+                          onClick={() => moveSearchMatch(-1)}
+                        >
+                          <ChevronUpIcon className="size-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content={t("sql-editor.result-detail.next-match")}
+                      >
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-7 p-0"
+                          disabled={matchCount === 0}
+                          onClick={() => moveSearchMatch(1)}
+                        >
+                          <ChevronDownIcon className="size-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={t("common.close")}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-7 border-l border-control-border p-0"
+                          onClick={clearSearch}
+                        >
+                          <XIcon className="size-4" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  )}
+                </div>
 
-                {!disallowCopyingData && (
-                  <Tooltip content={t("common.copy")}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="size-7 p-0"
-                      onClick={handleCopy}
-                    >
-                      {copied ? (
-                        <CheckIcon className="size-4" />
-                      ) : (
-                        <CopyIcon className="size-4" />
-                      )}
-                    </Button>
-                  </Tooltip>
-                )}
+                <div className="flex shrink-0 items-center gap-1">
+                  {guessedIsJSON && (
+                    <Tooltip content={t("sql-editor.format")}>
+                      <Button
+                        size="sm"
+                        variant={format ? "default" : "outline"}
+                        className="h-7 px-1.5"
+                        onClick={() => setFormat(!format)}
+                      >
+                        <BracesIcon className="size-4" />
+                      </Button>
+                    </Tooltip>
+                  )}
+
+                  {isBinaryData && (
+                    <BinaryFormatButton
+                      format={binaryFormat}
+                      onFormatChange={(next) =>
+                        setBinaryFormat({
+                          rowIndex: detail.row,
+                          colIndex: detail.col,
+                          format: next,
+                        })
+                      }
+                    />
+                  )}
+
+                  {!disallowCopyingData && (
+                    <Tooltip content={t("common.copy")}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="size-7 p-0"
+                        onClick={handleCopy}
+                      >
+                        {copied ? (
+                          <CheckIcon className="size-4" />
+                        ) : (
+                          <CopyIcon className="size-4" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </div>
 
             <div
+              ref={contentRef}
               className={cn(
                 "flex-1 overflow-auto text-sm font-mono border p-2 relative",
                 disallowCopyingData ? "select-none" : "select-text",
@@ -297,10 +482,16 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                       </Button>
                     </Tooltip>
                   </div>
-                  <PrettyJSON content={content ?? ""} />
+                  <PrettyJSON
+                    content={content ?? ""}
+                    searchQuery={searchQuery}
+                    activeMatchIndex={activeMatchIndex}
+                    onMatchCountChange={setMatchCount}
+                    onHighlightedContentChange={handleHighlightedContentChange}
+                  />
                 </>
               ) : content && content.length > 0 ? (
-                <>{content}</>
+                <>{plainSearchResult.nodes}</>
               ) : (
                 <br style={{ minWidth: "1rem", display: "inline-flex" }} />
               )}

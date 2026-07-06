@@ -44,8 +44,15 @@ type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, erro
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
-type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
-type diffSDLMigration func(sourceSDL, targetSDL string) (string, error)
+type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
+
+// diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
+// target server's version string (e.g. "5.7.25"); engines that canonicalize
+// differently per version (MySQL: utf8mb4 default collation, integer display widths)
+// use it to select the correct normalizer, and engines that do not (PostgreSQL) take
+// `_ string`. An empty/unparseable version must fall back to the engine's default
+// stored form.
+type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string) (string, error)
 type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
@@ -267,13 +274,16 @@ func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText strin
 
 // SDLMigration computes the migration SQL from a user-provided SDL text and the
 // current database schema. It converts the current metadata to SDL, then diffs
-// against the user SDL using DiffSDLMigration.
-func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) (string, error) {
+// against the user SDL. engineVersion is the target server's version string (e.g.
+// "5.7.25"); for engines that canonicalize per version (MySQL) it selects the
+// version-correct normalizer. An empty/unparseable version falls back to the
+// engine default, and engines without a version-aware path ignore it entirely.
+func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) (string, error) {
 	sourceSDL, err := MetadataToSDL(engine, currentSchema)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to convert current schema to SDL")
 	}
-	return DiffSDLMigration(engine, sourceSDL, userSDLText)
+	return DiffSDLMigration(engine, sourceSDL, userSDLText, engineVersion)
 }
 
 func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
@@ -286,18 +296,22 @@ func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
 }
 
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
-func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error) {
+// engineVersion is the target server's version string; engines that canonicalize per
+// version (MySQL) use it so the destructive-op detection runs against the version-correct
+// plan, while engines like PostgreSQL ignore it.
+func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
 	f, ok := sdlDropAdvicesFns[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported for SDL drop advices", engine)
 	}
-	return f(userSDLText, currentSchema)
+	return f(userSDLText, currentSchema, engineVersion)
 }
 
 // DiffMigration computes the migration SQL between two database metadata states.
 // Engines may register a metadata migration to avoid round-tripping synced
 // metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
-// convert both sides to SDL and diff. The legacy MetadataDiff + GenerateMigration
+// convert both sides to SDL and diff (no server version is available here, so the
+// engine's default stored form applies). The legacy MetadataDiff + GenerateMigration
 // path remains the fallback for engines that haven't migrated yet.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	if f, ok := diffMetadataMigrations[engine]; ok {
@@ -312,7 +326,7 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		if err != nil {
 			return "", errors.Wrap(err, "failed to convert target schema to SDL")
 		}
-		return DiffSDLMigration(engine, sourceSDL, targetSDL)
+		return DiffSDLMigration(engine, sourceSDL, targetSDL, "")
 	}
 	// Fallback to legacy path for engines that haven't migrated yet.
 	diff, err := GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
@@ -355,13 +369,16 @@ func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
 	diffSDLMigrations[engine] = f
 }
 
-// DiffSDLMigration computes migration SQL between two SDL texts.
-func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL string) (string, error) {
+// DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
+// target server's version string, threaded to engines that canonicalize per version
+// (MySQL) and ignored by the rest (PostgreSQL); pass "" when no version is known to get
+// the engine's default stored form.
+func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string) (string, error) {
 	f, ok := diffSDLMigrations[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported for SDL diff migration", engine)
 	}
-	return f(sourceSDL, targetSDL)
+	return f(sourceSDL, targetSDL, engineVersion)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
