@@ -777,6 +777,13 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 			for _, context := range completionContexts {
 				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			}
+		case "pseudocolumn_action":
+			// OUTPUT clause position: suggest the $action pseudo-column
+			// (MERGE OUTPUT returns 'INSERT'/'UPDATE'/'DELETE' per row).
+			columnEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeColumn,
+				Text: "$action",
+			})
 		case "columnref":
 			completionContexts := c.determineColumnNameContext()
 			for _, context := range completionContexts {

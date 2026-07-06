@@ -192,6 +192,13 @@ func (q *omniQuerySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
 	}
 	switch v := expr.(type) {
 	case *ast.ColumnRef:
+		if r, handled, err := q.resolvePseudoColumnRef(v); handled {
+			if err != nil {
+				return errors.Wrapf(err, "failed to resolve predicate column %q", v.Column)
+			}
+			q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, r.SourceColumns)
+			return nil
+		}
 		r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
 		if err != nil {
 			return errors.Wrapf(err, "failed to resolve predicate column %q", v.Column)
@@ -1001,6 +1008,12 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 	}
 	switch v := n.(type) {
 	case *ast.ColumnRef:
+		if r, handled, err := q.resolvePseudoColumnRef(v); handled {
+			if err != nil {
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to resolve column %q", v.Column)
+			}
+			return r, nil
+		}
 		r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to resolve column %q", v.Column)
