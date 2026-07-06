@@ -2878,6 +2878,11 @@
     "request-export": "エクスポートをリクエスト",
     "request-jit": "ジャストインタイムアクセスをリクエスト",
     "request-query": "リクエストクエリ",
+    "result-detail": {
+      "next-match": "次の一致",
+      "previous-match": "前の一致",
+      "search": "詳細を検索"
+    },
     "result-limit": {
       "self": "結果の制限"
     },

@@ -166,8 +166,13 @@ vi.mock("@/react/components/ui/sheet", () => ({
       {children}
     </div>
   ),
-  SheetContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="sheet-content">{children}</div>
+  SheetContent: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) => (
+    <div data-testid="sheet-content" {...props}>
+      {children}
+    </div>
   ),
   SheetHeader: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="sheet-header">{children}</div>
@@ -435,6 +440,33 @@ describe("AccessGrantRequestDrawer", () => {
     expect(monacoEditor).not.toBeNull();
     expect(monacoEditor.getAttribute("data-auto-height")).toBe("false");
 
+    unmount();
+  });
+
+  test("clicking the drawer content does not bubble to the component that opened it", () => {
+    const onOwnerClick = vi.fn();
+    const onClose = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <div onClick={onOwnerClick}>
+        <AccessGrantRequestDrawer
+          targets={["instances/inst1/databases/mydb"]}
+          query="SELECT id FROM orders"
+          onClose={onClose}
+        />
+      </div>
+    );
+    render();
+
+    const textarea = container.querySelector(
+      "[data-testid='textarea']"
+    ) as HTMLTextAreaElement;
+    expect(textarea).not.toBeNull();
+
+    act(() => {
+      textarea.click();
+    });
+
+    expect(onOwnerClick).not.toHaveBeenCalled();
     unmount();
   });
 

@@ -2,7 +2,13 @@ import { create } from "@bufbuild/protobuf";
 import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { accessGrantServiceClientConnect } from "@/connect";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
@@ -476,13 +482,22 @@ export function AccessGrantRequestDrawer({
     }),
     [active]
   );
+  const stopDrawerEvent = (event: SyntheticEvent) => {
+    event.stopPropagation();
+  };
 
   return (
     <Sheet open={true} onOpenChange={(next) => !next && onClose()}>
       {/* text-main gives the drawer a themed default text color (it portals
           outside the SQL Editor wrapper that sets one), so un-classed text like
           checkbox labels and selected values follow the theme. */}
-      <SheetContent width="standard" style={sheetStyle} className="text-main">
+      <SheetContent
+        width="standard"
+        style={sheetStyle}
+        className="text-main"
+        onClick={stopDrawerEvent}
+        onPointerDown={stopDrawerEvent}
+      >
         <AccessGrantRequestDrawerInner
           key={`${targets?.join(",")}-${query}-${unmask}-${exportResult}`}
           stableProps={stableProps}
