@@ -1476,8 +1476,7 @@
     "labels-required-for-review": "Se requieren etiquetas antes de la revisión",
     "lifecycle": {
       "checking": "Comprobando…",
-      "checks-failing_one": "{{count}} comprobación fallida",
-      "checks-failing_other": "{{count}} comprobaciones fallidas",
+      "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
@@ -1490,10 +1489,9 @@
       "gate-review-rejected": "Cambios solicitados",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
-      "rerun-stage": "Reejecutar · {{stage}}",
+      "rerun": "Reejecutar",
       "review-waiting": "Esperando a {{role}}",
-      "run-stage": "Ejecutar · {{stage}}",
-      "stage-status": "{{status}} · {{stage}}"
+      "run": "Ejecutar"
     },
     "meta": {
       "created-by": "Creado por {{user}}"

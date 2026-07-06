@@ -37,7 +37,7 @@ export type PlanLifecycleHeaderState =
   // Review.
   | { kind: "review-generating" } // disabled + loading
   | { kind: "review-your-turn" }
-  | { kind: "plan-status"; reason: PlanStatusReason; checks: PlanCheckSummary }
+  | { kind: "plan-status"; reason: PlanStatusReason }
   // Pre-deploy → rollout creation.
   | { kind: "preparing-rollout" }
   // Deploy (frontier stage). Run permission is enforced by the run confirmation
@@ -141,7 +141,7 @@ export function resolvePlanLifecycleHeaderState(
 
   // Rejected review.
   if (input.approvalStatus === ApprovalStatus.REJECTED) {
-    return { kind: "plan-status", reason: "rejected", checks: input.checks };
+    return { kind: "plan-status", reason: "rejected" };
   }
 
   // Approved / skipped: pre-deploy gate evaluation, then rollout creation.
@@ -150,14 +150,10 @@ export function resolvePlanLifecycleHeaderState(
     input.approvalStatus === ApprovalStatus.SKIPPED
   ) {
     if (input.checks.error > 0) {
-      return {
-        kind: "plan-status",
-        reason: "checks-failing",
-        checks: input.checks,
-      };
+      return { kind: "plan-status", reason: "checks-failing" };
     }
     if (input.checks.running > 0) {
-      return { kind: "plan-status", reason: "checking", checks: input.checks };
+      return { kind: "plan-status", reason: "checking" };
     }
     // All required gates passed; the backend auto-creates the rollout. Show a
     // transient progress state until it arrives, then resolveDeploy takes over.
@@ -169,7 +165,7 @@ export function resolvePlanLifecycleHeaderState(
     return { kind: "review-your-turn" };
   }
   // Review is the active gate — surface it plainly regardless of check state.
-  return { kind: "plan-status", reason: "in-review", checks: input.checks };
+  return { kind: "plan-status", reason: "in-review" };
 }
 
 // Whether the right-hand lifecycle slot renders a primary action/status control.
