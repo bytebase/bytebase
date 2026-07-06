@@ -176,6 +176,14 @@ func (*omniQuerySpanExtractor) resolveGraphPseudoColumn(v *ast.ColumnRef, source
 	for _, column := range sources[0].GetQuerySpanResult() {
 		sourceColumns, _ = base.MergeSourceColumnSet(sourceColumns, column.SourceColumns)
 	}
+	// Attribute-less graph tables (CREATE TABLE ... AS EDGE with no
+	// user-defined columns) contribute no catalog columns, so the union is
+	// empty — and empty SourceColumns downstream means NoneMasker, the exact
+	// fail-open this table-level lineage is meant to prevent. Fail closed: a
+	// table-only resource would not match column-level masking rules either.
+	if len(sourceColumns) == 0 {
+		return base.QuerySpanResult{}, errors.Errorf("cannot derive lineage for graph pseudo-column %q: table has no columns in the catalog", v.Column)
+	}
 	return base.QuerySpanResult{
 		Name:          v.Column,
 		SourceColumns: sourceColumns,

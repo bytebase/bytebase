@@ -108,6 +108,14 @@ func TestOmniQuerySpanPseudoColumns(t *testing.T) {
 		require.ErrorContains(t, err, "ambiguous")
 	})
 
+	t.Run("graph_empty_table_fails_closed", func(t *testing.T) {
+		// Attribute-less edge tables have no catalog columns; empty lineage
+		// would mean NoneMasker downstream, so this must error.
+		q := newOmniTestExtractor(t, "db")
+		_, err := q.getOmniQuerySpan(context.Background(), "SELECT $edge_id FROM bare_edge")
+		require.ErrorContains(t, err, "no columns in the catalog")
+	})
+
 	t.Run("rowguid_stays_fail_closed", func(t *testing.T) {
 		q := newOmniTestExtractor(t, "db")
 		_, err := q.getOmniQuerySpan(context.Background(), "SELECT $ROWGUID FROM t")
