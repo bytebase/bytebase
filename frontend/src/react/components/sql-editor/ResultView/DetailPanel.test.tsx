@@ -301,6 +301,45 @@ describe("DetailPanel", () => {
     unmount();
   });
 
+  test("scrolls the active match when the search target changes but match count is unchanged", () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const textRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [textValue("CREATE TABLE users;\nCREATE INDEX users_name;")],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel panelRows={textRows} />
+    );
+    render();
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement | null;
+    expect(input).toBeInstanceOf(HTMLInputElement);
+
+    act(() => {
+      setInputValue(input!, "create");
+    });
+    expect(scrollIntoView).toHaveBeenCalled();
+    scrollIntoView.mockClear();
+
+    act(() => {
+      setInputValue(input!, "users");
+    });
+
+    expect(document.body.textContent).toContain("1 / 2");
+    expect(scrollIntoView).toHaveBeenCalled();
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    unmount();
+  });
+
   test("focuses detail search from the native find shortcut", () => {
     const { render, unmount } = renderIntoContainer(<TestDetailPanel />);
     render();

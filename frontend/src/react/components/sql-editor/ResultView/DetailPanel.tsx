@@ -214,7 +214,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     if (activeMatch instanceof HTMLElement) {
       activeMatch.scrollIntoView?.({ block: "center", inline: "nearest" });
     }
-  }, [activeMatchIndex, matchCount]);
+  }, [activeMatchIndex, content, format, matchCount, searchQuery]);
 
   const copyContent = useMemo(() => {
     const raw = content ?? "";
