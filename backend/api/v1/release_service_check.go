@@ -851,11 +851,14 @@ var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 // backend/plugin/schema/mysql/get_database_definition.go). That framing is legitimate,
 // Bytebase-generated SDL, so its SET statements must pass the gate; without this a MySQL
 // export containing any routine/event/trigger would be rejected as "Disallowed statement
-// in SDL file". SET stays a CLASSIFIED type (StatementType_SET, not UNSPECIFIED), so the
-// fail-closed posture for genuinely-unknown statements (GRANT, CALL, …) is preserved —
-// only SET is allow-listed, and only for MySQL. PostgreSQL's own SET dump (a
-// default_tablespace reset) is already handled by pg dropping UNSPECIFIED entries, so PG
-// needs no SET allowance here.
+// in SDL file". This allow-list entry admits StatementType_SET by type, but that type only
+// ever reaches here for the narrow framing forms: the MySQL statement extractor
+// (GetStatementTypesWithPositions / isSDLSessionContextSet) downgrades any OTHER SET —
+// SET GLOBAL/PERSIST/…, SET FOREIGN_KEY_CHECKS=0, other session vars, SET NAMES — back to
+// UNSPECIFIED so a user-authored non-declarative SET still fails closed. Genuinely-unknown
+// statements (GRANT, CALL, …) likewise stay UNSPECIFIED and rejected. Only SET is
+// allow-listed, and only for MySQL. PostgreSQL's own SET dump (a default_tablespace reset)
+// is already handled by pg dropping UNSPECIFIED entries, so PG needs no SET allowance here.
 var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
 	storepb.Engine_MYSQL: {
 		storepb.StatementType_CREATE_EVENT: true,

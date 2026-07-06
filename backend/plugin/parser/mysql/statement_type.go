@@ -59,11 +59,22 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
 		// does not know — GRANT, CALL, …) are INCLUDED, with their positions and text, so
 		// the SDL statement-type gate fails closed: dropping them here would let an
-		// unclassified statement bypass the release-check allowlist entirely. SET is
-		// deliberately NOT in that unknown set — it is classified as StatementType_SET so
-		// the gate can allow the session-context preamble the MySQL SDL dump emits, while
-		// genuinely-unknown statements stay UNSPECIFIED and rejected.
+		// unclassified statement bypass the release-check allowlist entirely.
 		stmtType := classifyStatementType(omniAST.Node)
+
+		// SDL-gate narrowing (this function feeds ONLY the declarative-release gate; the
+		// general GetStatementTypes/classifyStatementType path — ContainsDDL, plancheck —
+		// is untouched and still maps every SET to StatementType_SET). Allowing SET by type
+		// would admit ANY user-authored SET (SET GLOBAL …, SET PERSIST …, SET
+		// FOREIGN_KEY_CHECKS=0, SET NAMES …), which is not declarative SDL. Only the
+		// session-context framing the MySQL SDL dumper emits around routines/events/triggers
+		// is legitimate here, so downgrade every other SET back to UNSPECIFIED and let the
+		// gate reject it fail-closed.
+		if stmtType == storepb.StatementType_SET {
+			if set, ok := omniAST.Node.(*ast.SetStmt); !ok || !isSDLSessionContextSet(set) {
+				stmtType = storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+			}
+		}
 
 		line := 0
 		if omniAST.StartPosition != nil {
@@ -83,6 +94,61 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 	}
 
 	return results, nil
+}
+
+// isSDLSessionContextSet reports whether a SET statement is one of the session-context
+// framing forms the MySQL SDL dumper emits around a routine/event/trigger
+// (writeSDLSessionContextPrefix in backend/plugin/schema/mysql/get_database_definition.go):
+//
+//	SET @saved_sql_mode = @@sql_mode;      SET @saved_time_zone = @@time_zone;
+//	SET sql_mode = 'ANSI_QUOTES';          SET time_zone = '+05:30';
+//	SET sql_mode = @saved_sql_mode;        SET time_zone = @saved_time_zone;
+//
+// It exists solely to keep the declarative-release SDL gate fail-closed: a SET is allowed
+// only when EVERY assignment is either a user variable (`@name`, the save/restore temp) or
+// a plain SESSION-scoped `sql_mode`/`time_zone`. Anything else — GLOBAL/PERSIST/PERSIST_ONLY/
+// LOCAL scope, any other system variable (foreign_key_checks, unique_checks, autocommit, …),
+// an explicit `@@`-qualified LHS, SET NAMES / SET CHARACTER SET — is rejected. The omni parser
+// encodes the LHS kind in Assignment.Column.Column via prefix: `@name` (user var), `@@name` /
+// `@@SCOPE.name` (system var), a bare name (session/`Scope`-scoped var), or the literals
+// "NAMES" / "CHARACTER SET".
+func isSDLSessionContextSet(set *ast.SetStmt) bool {
+	// Statement-level scope: only the default (session) form is emitted. GLOBAL / PERSIST /
+	// PERSIST_ONLY / LOCAL are never part of the framing and must fail closed.
+	if scope := strings.ToUpper(set.Scope); scope != "" && scope != "SESSION" {
+		return false
+	}
+	if len(set.Assignments) == 0 {
+		return false
+	}
+	for _, a := range set.Assignments {
+		if a == nil || a.Column == nil {
+			return false
+		}
+		// A qualified LHS (SET NEW.col / OLD.col) is never a top-level framing SET.
+		if a.Column.Table != "" {
+			return false
+		}
+		name := a.Column.Column
+		switch {
+		case strings.HasPrefix(name, "@@"):
+			// Explicit system-variable LHS (@@x, @@GLOBAL.x) — the dumper never writes one.
+			return false
+		case strings.HasPrefix(name, "@"):
+			// User variable (@saved_sql_mode, @saved_time_zone): the save/restore temp. OK.
+			continue
+		default:
+			// Bare (session-scoped) variable: only sql_mode / time_zone qualify. This also
+			// rejects the SET NAMES / SET CHARACTER SET forms (Column "NAMES" / "CHARACTER SET").
+			switch strings.ToLower(name) {
+			case "sql_mode", "time_zone":
+				continue
+			default:
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {
@@ -150,12 +216,13 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_DELETE
 
 	// SESSION / UTILITY
-	// SET is classified explicitly (rather than left UNSPECIFIED) because the MySQL SDL
-	// dump brackets each routine/event/trigger with a `SET @saved_… ; SET sql_mode=… ; …;
-	// SET … = @saved_…` session-context preamble, and the declarative-release gate must be
-	// able to allow those SET statements by type (see extraAllowedSDLStatementTypesByEngine
-	// in release_service_check.go). Every SET form omni parses — user vars, system vars,
-	// SET NAMES, SET CHARACTER SET — is a single *ast.SetStmt.
+	// A SET is a SET: classified uniformly here (every SET form omni parses — user vars,
+	// system vars, SET NAMES, SET CHARACTER SET — is a single *ast.SetStmt), which keeps
+	// ContainsDDL and the plancheck report correct. The declarative-release SDL gate needs
+	// only the narrow session-context framing the MySQL SDL dump emits, so it narrows this
+	// type further on its own path (isSDLSessionContextSet in GetStatementTypesWithPositions
+	// downgrades every other SET back to UNSPECIFIED). classifyStatementType itself stays
+	// content-agnostic so non-gate consumers are unaffected.
 	case *ast.SetStmt:
 		return storepb.StatementType_SET
 

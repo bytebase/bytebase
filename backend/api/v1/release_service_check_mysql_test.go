@@ -131,22 +131,48 @@ func TestMySQLSDLGateFailsClosedOnUnclassifiedStatement(t *testing.T) {
 // genuinely-unknown statement — stays UNSPECIFIED and rejected (the fail-closed posture is
 // preserved for everything except the deliberately-allowed SET).
 func TestMySQLSetClassifiedAndAllowedInSDL(t *testing.T) {
-	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, "SET sql_mode='ANSI_QUOTES';\n")
-	require.NoError(t, err)
-	got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
-	require.NoError(t, err)
-	require.Len(t, got, 1)
-	require.Equal(t, storepb.StatementType_SET, got[0].Type, "SET must classify as StatementType_SET, not UNSPECIFIED")
-	require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, got[0].Type), "SET must be allowed in MySQL SDL")
+	// The SDL gate narrows SET to the dumper's session-context framing only (BYT-9832 P2):
+	// session-scope sql_mode/time_zone and user-variable saves pass; every other SET (GLOBAL,
+	// PERSIST, FOREIGN_KEY_CHECKS, SET NAMES, other session vars, …) is downgraded to
+	// UNSPECIFIED and rejected — the same fail-closed treatment as a truly-unknown statement.
+	allowed := []string{
+		"SET @saved_sql_mode = @@sql_mode;\n",
+		"SET sql_mode='ANSI_QUOTES';\n",
+		"SET sql_mode = @saved_sql_mode;\n",
+		"SET @saved_time_zone = @@time_zone;\n",
+		"SET time_zone='+05:30';\n",
+		"SET time_zone = @saved_time_zone;\n",
+	}
+	for _, sql := range allowed {
+		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sql)
+		require.NoError(t, err, sql)
+		got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
+		require.NoError(t, err)
+		require.Len(t, got, 1, sql)
+		require.Equal(t, storepb.StatementType_SET, got[0].Type, "framing SET must classify as SET: %q", sql)
+		require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, got[0].Type), "framing SET must be allowed in MySQL SDL: %q", sql)
+	}
 
-	// CALL remains genuinely unclassified — the fail-closed posture is intact.
-	callStmts, err := base.ParseStatements(storepb.Engine_MYSQL, "CALL p();\n")
-	require.NoError(t, err)
-	callGot, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(callStmts))
-	require.NoError(t, err)
-	require.Len(t, callGot, 1)
-	require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, callGot[0].Type, "CALL must stay UNSPECIFIED")
-	require.False(t, isAllowedInSDL(storepb.Engine_MYSQL, callGot[0].Type), "CALL must fail closed")
+	// Non-declarative SET and a genuinely-unknown statement (CALL) must both fail closed at
+	// the gate: downgraded/left as UNSPECIFIED and rejected by isAllowedInSDL.
+	rejected := []string{
+		"SET GLOBAL max_connections = 1;\n",
+		"SET PERSIST sql_mode = 'ANSI_QUOTES';\n",
+		"SET FOREIGN_KEY_CHECKS = 0;\n",
+		"SET SESSION unique_checks = 0;\n",
+		"SET NAMES utf8mb4;\n",
+		"SET sql_mode = 'ANSI_QUOTES', FOREIGN_KEY_CHECKS = 0;\n",
+		"CALL p();\n",
+	}
+	for _, sql := range rejected {
+		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sql)
+		require.NoError(t, err, sql)
+		got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
+		require.NoError(t, err)
+		require.Len(t, got, 1, sql)
+		require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, got[0].Type, "non-framing statement must fail closed: %q", sql)
+		require.False(t, isAllowedInSDL(storepb.Engine_MYSQL, got[0].Type), "non-framing statement must be rejected by the gate: %q", sql)
+	}
 }
 
 // TestMySQLSDLDumpWithRoutinesPassesGate is the direct BYT-9832 P1 regression guard: it
