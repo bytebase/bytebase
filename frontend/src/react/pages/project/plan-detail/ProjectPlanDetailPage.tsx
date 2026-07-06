@@ -20,6 +20,7 @@ import {
 import { cn } from "@/react/lib/utils";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { getRolloutStatus } from "@/utils";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel";
@@ -193,21 +194,30 @@ function ProjectPlanDetailPageInner({
       : undefined;
     const deployBadge = (() => {
       if (deployStatus !== "active" || !page.rollout) return undefined;
-      const hasCompletedTasks = allTasks.some(
-        (task) =>
-          task.status === Task_Status.DONE ||
-          task.status === Task_Status.SKIPPED
-      );
-      if (allTasks.some((task) => task.status === Task_Status.FAILED)) {
+      const rolloutStatus = getRolloutStatus(page.rollout);
+      if (rolloutStatus === Task_Status.FAILED) {
         return { label: t("common.failed"), variant: "destructive" as const };
       }
       if (
+        rolloutStatus === Task_Status.RUNNING ||
+        rolloutStatus === Task_Status.PENDING
+      ) {
+        return {
+          label: t("common.in-progress"),
+          variant: "secondary" as const,
+        };
+      }
+      if (rolloutStatus === Task_Status.CANCELED) {
+        return { label: t("common.canceled"), variant: "default" as const };
+      }
+      // A NOT_STARTED aggregate can still mean earlier stages already finished
+      // (partially deployed) — at the phase level that's progress, not idle.
+      if (
         allTasks.some(
           (task) =>
-            task.status === Task_Status.RUNNING ||
-            task.status === Task_Status.PENDING
-        ) ||
-        hasCompletedTasks
+            task.status === Task_Status.DONE ||
+            task.status === Task_Status.SKIPPED
+        )
       ) {
         return {
           label: t("common.in-progress"),
