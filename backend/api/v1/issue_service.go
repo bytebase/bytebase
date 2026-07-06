@@ -928,22 +928,16 @@ func (s *IssueService) updateIssueApprovalPayload(ctx context.Context, issue *st
 		return updatedIssue, nil
 	}
 
-	updated, err := s.store.UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue")
-	}
-	if !updated {
-		return nil, errStaleApprovalFinding
-	}
-
-	uid := issue.UID
-	updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ProjectIDs: []string{issue.ProjectID},
-		UID:        &uid,
+	updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert:                    payloadPatch,
+		RequirePlanApprovalInputVersion:  &approvalInputVersion,
+		RequireIssueApprovalInputVersion: &approvalInputVersion,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to refresh issue")
+		if errors.Is(err, store.ErrIssueUpdateSkipped) {
+			return nil, errStaleApprovalFinding
+		}
+		return nil, errors.Wrapf(err, "failed to update issue")
 	}
 	if updatedIssue == nil {
 		return nil, errors.New("issue not found after update")
@@ -1112,6 +1106,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
+	hasDirectIssueUpdate := false
 	var issueCommentCreates []*store.IssueCommentMessage
 	var labelsChangedWithApprovalReset bool
 	var labelsForApprovalReset []string
@@ -1130,6 +1125,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			}
 
 			patch.Title = &trimmed
+			hasDirectIssueUpdate = true
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -1148,6 +1144,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				continue
 			}
 			patch.Description = &req.Msg.Issue.Description
+			hasDirectIssueUpdate = true
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -1178,6 +1175,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 					}
 					patch.PayloadUpsert.Labels = labels
 				}
+				hasDirectIssueUpdate = true
 			}
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
@@ -1195,7 +1193,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	if hasIssueUpdatePatch(patch) {
+	if hasDirectIssueUpdate {
 		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
@@ -1203,20 +1201,15 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	if labelsChangedWithApprovalReset {
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
-		}
-		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("plan not found"))
-		}
-		approvalInputVersion := plan.Config.GetApprovalInputVersion()
-		updatedIssue, approvalReset, err := s.store.UpdateIssueLabelsAndMaybeResetApprovalIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, labelsForApprovalReset, approvalInputVersion)
+		updatedIssue, approvalResetApplied, err := s.store.UpdateIssueLabelsAndMaybeResetApproval(ctx, issue.ProjectID, issue.UID, labelsForApprovalReset)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue labels"))
 		}
+		if updatedIssue == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after issue label update"))
+		}
 		issue = updatedIssue
-		if approvalReset {
+		if approvalResetApplied {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 		}
 	}
@@ -1233,14 +1226,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
-}
-
-func hasIssueUpdatePatch(patch *store.UpdateIssueMessage) bool {
-	return patch.Title != nil ||
-		patch.Status != nil ||
-		patch.Description != nil ||
-		patch.PayloadUpsert != nil ||
-		patch.RemoveLabels
 }
 
 // BatchUpdateIssuesStatus batch updates issues status.

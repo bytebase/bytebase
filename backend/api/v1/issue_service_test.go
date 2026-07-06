@@ -73,12 +73,16 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
-	_, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, &storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  false,
-			ApprovalInputVersion: 2,
+	approvalInputVersion := int64(2)
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  false,
+				ApprovalInputVersion: 2,
+			},
 		},
-	}, 2)
+		RequirePlanApprovalInputVersion: &approvalInputVersion,
+	})
 	require.NoError(t, err)
 
 	stalePlan := *plan

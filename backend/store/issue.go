@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -18,6 +19,9 @@ import (
 )
 
 var getSegmenter func() *gse.Segmenter
+
+// ErrIssueUpdateSkipped indicates that a guarded issue update did not match the current row state.
+var ErrIssueUpdateSkipped = errors.New("issue update skipped")
 
 func init() {
 	var segmenterDic gse.Segmenter
@@ -77,7 +81,23 @@ type UpdateIssueMessage struct {
 	Description *string
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.Issue
-	RemoveLabels  bool
+	// ConditionalPayloadUpsert upserts the presented top-level keys only if
+	// ConditionalPlanApprovalInputVersion matches. The main update still applies
+	// if it does not.
+	ConditionalPayloadUpsert *storepb.Issue
+	RemoveLabels             bool
+
+	RequirePlanApprovalInputVersion  *int64
+	RequireIssueApprovalInputVersion *int64
+	RequireApprovalFindingDone       *bool
+	RequireLabels                    *[]string
+	RequireNoRollout                 bool
+	// SkipIfCurrentApprovalFindingDone skips when approval finding is already done
+	// for the same approval input version.
+	SkipIfCurrentApprovalFindingDone *int64
+
+	ConditionalPlanApprovalInputVersion *int64
+	ConditionalRequireNoRollout         bool
 }
 
 // FindIssueMessage is the message to find issues.
@@ -236,15 +256,32 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if v := patch.Description; v != nil {
 		set.Comma("description = ?", *v)
 	}
+	payloadSet := qb.Q().Space("payload")
 	if v := patch.PayloadUpsert; v != nil {
 		v.Labels = CanonicalizeIssueLabels(v.Labels)
 		p, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
 		}
-		set.Comma("payload = payload || ?", p)
-	} else if patch.RemoveLabels {
-		set.Comma("payload = payload || jsonb_build_object('labels', ?::JSONB)", nil)
+		payloadSet.Space("|| ?::jsonb", string(p))
+	}
+	if patch.RemoveLabels {
+		payloadSet.Space("|| jsonb_build_object('labels', ?::JSONB)", nil)
+	}
+	if v := patch.ConditionalPayloadUpsert; v != nil {
+		if patch.ConditionalPlanApprovalInputVersion == nil {
+			return nil, errors.New("ConditionalPayloadUpsert requires ConditionalPlanApprovalInputVersion")
+		}
+		v.Labels = CanonicalizeIssueLabels(v.Labels)
+		p, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal patch.ConditionalPayloadUpsert")
+		}
+		condition := issuePlanApprovalInputVersionCondition(*patch.ConditionalPlanApprovalInputVersion, patch.ConditionalRequireNoRollout)
+		payloadSet.Space("|| CASE WHEN ? THEN ?::jsonb ELSE '{}'::jsonb END", condition, string(p))
+	}
+	if payloadSet.Len() > 1 {
+		set.Comma("payload = ?", payloadSet)
 	}
 
 	if patch.Title != nil || patch.Description != nil {
@@ -261,137 +298,136 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 		set.Comma("ts_vector = ?", tsVector)
 	}
 
-	q := qb.Q().Space("UPDATE issue SET ? WHERE project = ? AND id = ?", set, projectID, uid)
+	where, hasGuard, err := buildUpdateIssueGuard(patch, projectID, uid)
+	if err != nil {
+		return nil, err
+	}
+	q := qb.Q().Space("UPDATE issue SET ? WHERE ?", set, where)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
 		return nil, err
+	}
+	if hasGuard {
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to inspect issue update")
+		}
+		if rowsAffected == 0 {
+			return nil, ErrIssueUpdateSkipped
+		}
 	}
 
 	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 }
 
-func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64) (bool, error) {
-	p, err := protojson.Marshal(payload)
+// UpdateIssueLabelsAndMaybeResetApproval updates issue labels and, while the linked plan
+// has no rollout, resets approval in the same transaction. This remains separate from
+// generic UpdateIssue because labels and approval reset are one domain invariant here:
+// composing a label write with a conditional approval reset can persist labels while
+// silently skipping the reset during plan-version or rollout races.
+func (s *Store) UpdateIssueLabelsAndMaybeResetApproval(ctx context.Context, projectID string, uid int64, labels []string) (*IssueMessage, bool, error) {
+	labels = CanonicalizeIssueLabels(labels)
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal payload")
+		return nil, false, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	var planUID sql.NullInt64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT plan_id
+		FROM issue
+		WHERE project = $1
+		  AND id = $2
+		FOR UPDATE`,
+		projectID, uid).Scan(&planUID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, false, nil
+		}
+		return nil, false, errors.Wrapf(err, "failed to lock issue")
+	}
+
+	approvalResetApplied := false
+	var approvalInputVersion int64
+	if planUID.Valid {
+		planConfig := &storepb.PlanConfig{}
+		var config []byte
+		if err := tx.QueryRowContext(ctx, `
+			SELECT config
+			FROM plan
+			WHERE project = $1
+			  AND id = $2
+			FOR UPDATE`,
+			projectID, planUID.Int64).Scan(&config); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, false, errors.Errorf("plan %d not found", planUID.Int64)
+			}
+			return nil, false, errors.Wrapf(err, "failed to lock plan")
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(config, planConfig); err != nil {
+			return nil, false, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		if !planConfig.GetHasRollout() {
+			approvalResetApplied = true
+			approvalInputVersion = planConfig.GetApprovalInputVersion()
+		}
+	}
+
+	payloadSet := qb.Q().Space("payload")
+	if len(labels) == 0 {
+		payloadSet.Space("|| jsonb_build_object('labels', ?::JSONB)", nil)
+	} else {
+		p, err := protojson.Marshal(&storepb.Issue{Labels: labels})
+		if err != nil {
+			return nil, false, errors.Wrapf(err, "failed to marshal issue labels")
+		}
+		payloadSet.Space("|| ?::jsonb", string(p))
+	}
+	if approvalResetApplied {
+		p, err := protojson.Marshal(&storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  false,
+				ApprovalInputVersion: approvalInputVersion,
+			},
+		})
+		if err != nil {
+			return nil, false, errors.Wrapf(err, "failed to marshal issue approval reset")
+		}
+		payloadSet.Space("|| ?::jsonb", string(p))
 	}
 
 	q := qb.Q().Space(`
 		UPDATE issue
 		SET
 			updated_at = ?,
-			payload = payload || ?
+			payload = ?
 		WHERE project = ?
-		  AND id = ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`, time.Now(), p, projectID, uid, approvalInputVersion)
-
+		  AND id = ?`,
+		time.Now(), payloadSet, projectID, uid)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
+		return nil, false, errors.Wrapf(err, "failed to build sql")
 	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect issue update")
-	}
-	return rowsAffected > 0, nil
-}
-
-func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64, labels []string) (bool, error) {
-	p, err := protojson.Marshal(payload)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal payload")
-	}
-	labelBytes, err := marshalCanonicalIssueLabels(labels)
-	if err != nil {
-		return false, err
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, false, err
 	}
 
-	q := qb.Q().Space(`
-		UPDATE issue
-		SET
-			updated_at = ?,
-			payload = payload || ?
-		WHERE project = ?
-		  AND id = ?
-		  AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`, time.Now(), p, projectID, uid, string(labelBytes), approvalInputVersion)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
-	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect issue update")
-	}
-	return rowsAffected > 0, nil
-}
-
-func (s *Store) UpdateIssuePayloadIfPlanApprovalInputVersionAndLabelsAndNoRollout(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64, labels []string) (bool, error) {
-	p, err := protojson.Marshal(payload)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal payload")
-	}
-	labelBytes, err := marshalCanonicalIssueLabels(labels)
-	if err != nil {
-		return false, err
+	if err := tx.Commit(); err != nil {
+		return nil, false, errors.Wrapf(err, "failed to commit tx")
 	}
 
-	q := qb.Q().Space(`
-		UPDATE issue
-		SET
-			updated_at = ?,
-			payload = payload || ?
-		WHERE project = ?
-		  AND id = ?
-		  AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-			  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
-		  )`, time.Now(), p, projectID, uid, string(labelBytes), approvalInputVersion)
-
-	query, args, err := q.ToSQL()
+	issue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
+		return nil, false, err
 	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect issue update")
-	}
-	return rowsAffected > 0, nil
+	return issue, approvalResetApplied, nil
 }
 
 func marshalCanonicalIssueLabels(labels []string) ([]byte, error) {
@@ -406,157 +442,56 @@ func marshalCanonicalIssueLabels(labels []string) ([]byte, error) {
 	return labelBytes, nil
 }
 
-func marshalIssueLabelsPatch(labels []string) ([]byte, error) {
-	canonicalLabels := CanonicalizeIssueLabels(labels)
-	if canonicalLabels == nil {
-		return []byte(`{"labels":null}`), nil
+func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int64) (*qb.Query, bool, error) {
+	where := qb.Q().Space("project = ? AND id = ?", projectID, uid)
+	hasGuard := false
+	if version := patch.RequirePlanApprovalInputVersion; version != nil {
+		where.Space("AND ?", issuePlanApprovalInputVersionCondition(*version, patch.RequireNoRollout))
+		hasGuard = true
+	} else if patch.RequireNoRollout {
+		return nil, false, errors.New("RequireNoRollout requires RequirePlanApprovalInputVersion")
 	}
-	labelBytes, err := protojson.Marshal(&storepb.Issue{Labels: canonicalLabels})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal issue labels")
+	if version := patch.RequireIssueApprovalInputVersion; version != nil {
+		where.Space("AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?", *version)
+		hasGuard = true
 	}
-	return labelBytes, nil
+	if done := patch.RequireApprovalFindingDone; done != nil {
+		where.Space("AND COALESCE((payload->'approval'->>'approvalFindingDone')::boolean, false) = ?", *done)
+		hasGuard = true
+	}
+	if labels := patch.RequireLabels; labels != nil {
+		labelBytes, err := marshalCanonicalIssueLabels(*labels)
+		if err != nil {
+			return nil, false, err
+		}
+		where.Space("AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb", string(labelBytes))
+		hasGuard = true
+	}
+	if version := patch.SkipIfCurrentApprovalFindingDone; version != nil {
+		where.Space(`
+			AND NOT (
+				COALESCE((payload->'approval'->>'approvalFindingDone')::boolean, false)
+				AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?
+			)`, *version)
+		hasGuard = true
+	}
+	return where, hasGuard, nil
 }
 
-func (s *Store) UpdateIssueLabelsAndMaybeResetApprovalIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, labels []string, approvalInputVersion int64) (*IssueMessage, bool, error) {
-	labelPatch, err := marshalIssueLabelsPatch(labels)
-	if err != nil {
-		return nil, false, err
+func issuePlanApprovalInputVersionCondition(approvalInputVersion int64, requireNoRollout bool) *qb.Query {
+	planWhere := qb.Q().Space(`
+		plan.project = issue.project
+		  AND plan.id = issue.plan_id
+		  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?`, approvalInputVersion)
+	if requireNoRollout {
+		planWhere.Space("AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false")
 	}
-	approvalReset, err := protojson.Marshal(&storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  false,
-			ApprovalInputVersion: approvalInputVersion,
-		},
-	})
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to marshal approval reset")
-	}
-
-	var approvalResetApplied bool
-	if err := s.GetDB().QueryRowContext(ctx, `
-		UPDATE issue
-		SET
-			updated_at = $1,
-			payload = payload || $2::jsonb || CASE
-				WHEN EXISTS (
-					SELECT 1
-					FROM plan
-					WHERE plan.project = issue.project
-					  AND plan.id = issue.plan_id
-					  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $3
-					  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
-				)
-				THEN $4::jsonb
-				ELSE '{}'::jsonb
-			END
-		WHERE project = $5
-		  AND id = $6
-		RETURNING EXISTS (
+	return qb.Q().Space(`
+		EXISTS (
 			SELECT 1
 			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $3
-			  AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false
-		)`,
-		time.Now(), string(labelPatch), approvalInputVersion, string(approvalReset), projectID, uid).Scan(&approvalResetApplied); err != nil {
-		return nil, false, err
-	}
-
-	issue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
-	if err != nil {
-		return nil, false, err
-	}
-	return issue, approvalResetApplied, nil
-}
-
-// ResetIssueApprovalFindingIfPlanApprovalInputVersion avoids clobbering approval work that raced
-// ahead after a new plan check row became visible for the same plan version.
-func (s *Store) ResetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, projectID string, uid int64, approvalInputVersion int64) (bool, error) {
-	payload := &storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  false,
-			ApprovalInputVersion: approvalInputVersion,
-		},
-	}
-	p, err := protojson.Marshal(payload)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal payload")
-	}
-
-	q := qb.Q().Space(`
-		UPDATE issue
-		SET
-			updated_at = ?,
-			payload = payload || ?
-		WHERE project = ?
-		  AND id = ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )
-		  AND NOT (
-			COALESCE((payload->'approval'->>'approvalFindingDone')::boolean, false)
-			AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?
-		  )`,
-		time.Now(), p, projectID, uid, approvalInputVersion, approvalInputVersion)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
-	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect issue approval reset")
-	}
-	return rowsAffected > 0, nil
-}
-
-// UpdateIssuePayloadIfCurrentApprovalInputVersion updates the issue payload only when both the issue approval payload
-// and its plan still match the observed approval input version.
-func (s *Store) UpdateIssuePayloadIfCurrentApprovalInputVersion(ctx context.Context, projectID string, uid int64, payload *storepb.Issue, approvalInputVersion int64) (bool, error) {
-	p, err := protojson.Marshal(payload)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to marshal payload")
-	}
-
-	q := qb.Q().Space(`
-		UPDATE issue
-		SET
-			updated_at = ?,
-			payload = payload || ?
-		WHERE project = ?
-		  AND id = ?
-		  AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?
-		  AND EXISTS (
-			SELECT 1
-			FROM plan
-			WHERE plan.project = issue.project
-			  AND plan.id = issue.plan_id
-			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?
-		  )`, time.Now(), p, projectID, uid, approvalInputVersion, approvalInputVersion)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
-	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect issue update")
-	}
-	return rowsAffected > 0, nil
+			WHERE ?
+		)`, planWhere)
 }
 
 // ListIssues returns the list of issues by find query.

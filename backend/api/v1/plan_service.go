@@ -471,19 +471,18 @@ func resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, st
 	if issue.Type == storepb.Issue_DATABASE_CHANGE {
 		// Plan check rows are visible before the reset finishes. If another worker already
 		// recomputed approval for this version, the reset must not move the issue back to CHECKING.
-		updated, err := stores.ResetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, approvalInputVersion)
+		updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+			PayloadUpsert:                    payloadPatch,
+			RequirePlanApprovalInputVersion:  &approvalInputVersion,
+			SkipIfCurrentApprovalFindingDone: &approvalInputVersion,
+		})
 		if err != nil {
+			if errors.Is(err, store.ErrIssueUpdateSkipped) {
+				return nil, false, nil
+			}
 			return nil, false, err
 		}
-		if !updated {
-			return nil, false, nil
-		}
-		uid := issue.UID
-		updatedIssue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
-			ProjectIDs: []string{issue.ProjectID},
-			UID:        &uid,
-		})
-		return updatedIssue, true, err
+		return updatedIssue, true, nil
 	}
 
 	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{

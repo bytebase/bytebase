@@ -257,12 +257,16 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		RiskLevel: riskLevel,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE {
-		updated, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersionAndLabels(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion, approvalLabels)
+		_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+			PayloadUpsert:                   payloadPatch,
+			RequirePlanApprovalInputVersion: &approvalInputVersion,
+			RequireLabels:                   &approvalLabels,
+		})
 		if err != nil {
+			if errors.Is(err, store.ErrIssueUpdateSkipped) {
+				return nil
+			}
 			return errors.Wrap(err, "failed to update issue payload")
-		}
-		if !updated {
-			return nil
 		}
 	} else if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: payloadPatch,

@@ -103,7 +103,7 @@ func TestPlanSpecsEqualSet(t *testing.T) {
 	}
 }
 
-func TestResetIssueApprovalFindingSkipsStalePlanApprovalInputVersion(t *testing.T) {
+func TestUpdateIssueApprovalResetSkipsStalePlanApprovalInputVersion(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanServiceTestStore(ctx, t)
 

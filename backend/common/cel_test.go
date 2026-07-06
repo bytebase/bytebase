@@ -8,6 +8,8 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestPartialEval(t *testing.T) {
@@ -143,7 +145,7 @@ func TestFallbackApprovalFactorsOnlyAllowsProjectId(t *testing.T) {
 	a.Error(issues.Err())
 }
 
-func TestValidateFallbackApprovalExpr(t *testing.T) {
+func TestValidateApprovalExprForSourceFallbackOnlyAllowsProjectID(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
@@ -179,7 +181,7 @@ func TestValidateFallbackApprovalExpr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := require.New(t)
-			err := ValidateFallbackApprovalExpr(tt.expression)
+			err := ValidateApprovalExprForSource(tt.expression, storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED)
 			if tt.wantErr {
 				a.Error(err)
 			} else {
@@ -220,6 +222,63 @@ func TestApprovalFactorsIncludesIssueLabels(t *testing.T) {
 
 	_, issues = e.Compile(`!("security" in issue.labels) && risk.level == "HIGH"`)
 	a.Nil(issues)
+}
+
+func TestValidateApprovalExprForSourceAllowsIssueLabelsOnlyForDatabaseChange(t *testing.T) {
+	tests := []struct {
+		name       string
+		expression string
+		source     storepb.WorkspaceApprovalSetting_Rule_Source
+		wantErr    bool
+	}{
+		{
+			name:       "allows issue labels for database change",
+			expression: `"prod" in issue.labels`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+			wantErr:    false,
+		},
+		{
+			name:       "rejects issue labels for request role",
+			expression: `"prod" in issue.labels`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    true,
+		},
+		{
+			name:       "allows existing approval factors without issue labels",
+			expression: `request.role == "roles/projectViewer" && resource.project_id == "project-a"`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows issue labels text in string literal",
+			expression: `"issue.labels" == "issue.labels"`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows true",
+			expression: `true`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows empty",
+			expression: ``,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateApprovalExprForSource(tt.expression, tt.source)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestFallbackApprovalFactorsExcludesIssueLabels(t *testing.T) {
