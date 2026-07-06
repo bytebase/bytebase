@@ -46,6 +46,49 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 	}
 }
 
+// EngineSupportSDLExport reports whether GetDatabaseSDLSchema can produce an SDL dump
+// for the engine. Only engines with an SDL-format definition writer AND the multi-file
+// exporter registered qualify. OceanBase shares MySQL's GetDatabaseDefinition (and thus
+// its single-file SDL branch) but is deliberately excluded from the SDL paths until it is
+// validated, so it must be rejected here too rather than emitting an untested SDL dump.
+func EngineSupportSDLExport(engine storepb.Engine) bool {
+	//exhaustive:enforce
+	switch engine {
+	case
+		storepb.Engine_POSTGRES,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_MYSQL:
+		return true
+	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_SQLITE,
+		storepb.Engine_MONGODB,
+		storepb.Engine_REDIS,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_HIVE,
+		storepb.Engine_ORACLE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_DORIS,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_ELASTICSEARCH,
+		storepb.Engine_DATABRICKS,
+		storepb.Engine_COSMOSDB,
+		storepb.Engine_TRINO:
+		return false
+	default:
+		return false
+	}
+}
+
 func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 	//exhaustive:enforce
 	switch engine {

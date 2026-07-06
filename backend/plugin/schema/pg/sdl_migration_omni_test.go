@@ -38,7 +38,7 @@ const eventTriggerFunctionOnlySDL = eventTriggerFunctionSDL
 
 func diffPostgresSDL(t *testing.T, fromSDL, toSDL string) string {
 	t.Helper()
-	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, strings.TrimSpace(fromSDL), strings.TrimSpace(toSDL))
+	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, strings.TrimSpace(fromSDL), strings.TrimSpace(toSDL), "")
 	require.NoError(t, err)
 	return sql
 }

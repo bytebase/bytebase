@@ -1,8 +1,10 @@
 package mysql
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -54,8 +56,25 @@ var (
 		return strings.Join(l, ", ")
 	}()
 
-	viewDefMatcher = regexp.MustCompile("CREATE ALGORITHM=(UNDEFINED|MERGE|TEMPTABLE) DEFINER=`([^`]+)`@`([^`]+)` SQL SECURITY (DEFINER|INVOKER) VIEW `([^`]+)`( \\((`([^`]+)`)+\\))? AS (?P<def>.+)")
+	// Matches SHOW CREATE VIEW output: optional `db`. qualifier on the view name and an
+	// optional explicit column list, which MySQL prints comma-separated: (`a`,`b`,`c`).
+	// Column-list identifiers are rendered with embedded backticks doubled (`a``b`), so
+	// each list segment matches doubling-aware atoms rather than [^`]+ — an identifier
+	// containing a backtick (or ", ") must not mis-split the list.
+	viewDefMatcher = regexp.MustCompile("CREATE ALGORITHM=(UNDEFINED|MERGE|TEMPTABLE) DEFINER=`([^`]+)`@`([^`]+)` SQL SECURITY (DEFINER|INVOKER) VIEW `([^`]+)`(?:\\.`([^`]+)`)?( \\(`(?:[^`]|``)+`(?:, ?`(?:[^`]|``)+`)*\\))? AS (?P<def>.+)")
 )
+
+// isStockMySQL reports whether the version suffix returned by getVersion (the text
+// after the numeric version, e.g. "-MariaDB", "-OceanBase-v4.2", "-TiDB-v7.5") denotes
+// a stock MySQL server. MySQL-compatible engines registered as MYSQL report MySQL-like
+// version numbers but do not implement every stock information_schema feature, so any
+// stock-only query or decode (binary default encodings) must be gated on this single
+// predicate.
+func isStockMySQL(versionSuffix string) bool {
+	return !strings.Contains(versionSuffix, "MariaDB") &&
+		!strings.Contains(versionSuffix, "OceanBase") &&
+		!strings.Contains(versionSuffix, "TiDB")
+}
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
@@ -182,10 +201,27 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
 	}
+	atLeast800 := semVersion.GE(semver.MustParse("8.0.0"))
 	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
 	atLeast5_7_0 := semVersion.GE(semver.MustParse("5.7.0"))
 	isMariaDB := strings.Contains(rest, "MariaDB")
+	// Some information_schema features exist only on stock MySQL: compatible engines
+	// (MariaDB, OceanBase, TiDB) registered as MYSQL report MySQL-like versions but
+	// lack them, so every stock-only query/decode must share this one predicate.
+	stockMySQL := isStockMySQL(rest)
+	// Binary-family (binary charset) literal defaults are reported by
+	// information_schema.COLUMNS in version-specific encodings that must be decoded to
+	// the canonical dump form (see canonicalBinaryDefault). The conventions are verified
+	// for stock MySQL only; MariaDB, OceanBase, and TiDB keep the legacy verbatim path.
+	binaryDefaultFmt := binaryDefaultVerbatim
+	if stockMySQL {
+		if atLeast800 {
+			binaryDefaultFmt = binaryDefaultHexNotation
+		} else {
+			binaryDefaultFmt = binaryDefaultRawBytes
+		}
+	}
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -360,7 +396,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		column.Type = GetColumnTypeCanonicalSynonym(tp)
 		column.Nullable = nullableBool
-		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
+		setColumnMetadataDefault(column, defaultStr, nullableBool, extra, binaryDefaultFmt)
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 		invisible := containsInvisibleChars(generationExpr)
@@ -1023,17 +1059,41 @@ func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, funct
 	return "", nil
 }
 
-func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
+// binaryDefaultFormat says how the connected server reports binary-family (binary
+// charset) literal column defaults in information_schema.COLUMNS.COLUMN_DEFAULT.
+// Verified live against MySQL 5.7.25 and 8.0.32; SHOW CREATE TABLE on both versions
+// prints the full raw value as a quoted string, but information_schema does not.
+type binaryDefaultFormat int
+
+const (
+	// binaryDefaultVerbatim keeps the legacy verbatim static-default path. Used for
+	// MariaDB and OceanBase, whose information_schema conventions are not verified.
+	binaryDefaultVerbatim binaryDefaultFormat = iota
+	// binaryDefaultRawBytes: MySQL < 8.0 reports the raw value bytes — padded with
+	// trailing NULs to the declared length for binary(N), and truncated at the first
+	// byte that does not convert to the information_schema character set (e.g. 0xFF).
+	binaryDefaultRawBytes
+	// binaryDefaultHexNotation: MySQL >= 8.0 reports hexadecimal notation text
+	// ("0xABCD"), built from the value truncated at its first NUL byte (which also
+	// strips binary(N) padding).
+	binaryDefaultHexNotation
+)
+
+func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string, binaryFormat binaryDefaultFormat) {
 	if defaultStr.Valid {
-		// MySQL handles three types of defaults differently:
+		// MySQL handles these defaults differently:
 		// 1. CURRENT_TIMESTAMP functions - stored as function names, need QUOTE() unescaping only
 		// 2. Expression defaults - stored as escaped expression strings, need double unescaping
-		// 3. Static defaults - stored as literal values, keep quoted for mysqldump compatibility
+		// 3. Binary-family literal defaults - version-specific information_schema encodings,
+		//    decoded to one canonical form (never CURRENT_TIMESTAMP: binary types do not
+		//    support it, so raw bytes that merely spell it stay a literal)
+		// 4. Static defaults - stored as literal values, keep quoted for mysqldump compatibility
 
 		// First, remove QUOTE() escaping that was added by our SQL query
 		unquotedDefault := UnquoteMySQLString(defaultStr.String)
+		isBinaryDefault := binaryFormat != binaryDefaultVerbatim && isBinaryFamilyColumnType(column.Type)
 		switch {
-		case IsCurrentTimestampLike(unquotedDefault):
+		case IsCurrentTimestampLike(unquotedDefault) && !isBinaryDefault:
 			// CURRENT_TIMESTAMP, CURRENT_DATE, etc. - these are function names, not expressions
 			// MySQL stores them without quotes in the catalog, so we just need QUOTE() unescaping
 			column.Default = unquotedDefault
@@ -1043,6 +1103,13 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			// We need both QUOTE() unescaping and catalog storage unescaping
 			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
 			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
+		case isBinaryDefault:
+			if canonical, ok := canonicalBinaryDefault(unquotedDefault, column.Type, binaryFormat); ok {
+				column.Default = canonical
+			} else {
+				// Unexpected shape for this server version — keep the legacy verbatim form.
+				column.Default = defaultStr.String
+			}
 		default:
 			// Static defaults like DEFAULT 'hello' or DEFAULT 42
 			// MySQL evaluates these at DDL time and stores them as literal values
@@ -1070,6 +1137,98 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 			column.OnUpdate = "CURRENT_TIMESTAMP"
 		}
 	}
+}
+
+// isBinaryFamilyColumnType reports whether an information_schema COLUMN_TYPE spelling
+// denotes a binary-charset string type (binary / varbinary / blob family), whose
+// literal defaults information_schema reports in version-specific encodings.
+func isBinaryFamilyColumnType(columnType string) bool {
+	lower := strings.ToLower(strings.TrimSpace(columnType))
+	switch {
+	case lower == "binary" || strings.HasPrefix(lower, "binary("):
+		return true
+	case lower == "varbinary" || strings.HasPrefix(lower, "varbinary("):
+		return true
+	case lower == "tinyblob" || lower == "mediumblob" || lower == "longblob":
+		return true
+	case lower == "blob" || strings.HasPrefix(lower, "blob("):
+		return true
+	default:
+		return false
+	}
+}
+
+// isFixedBinaryColumnType reports whether COLUMN_TYPE is the fixed-length binary(N)
+// type, whose values (including the stored default on 5.7) are right-padded with NUL
+// bytes to the declared length. The padding is not part of the declared default.
+func isFixedBinaryColumnType(columnType string) bool {
+	lower := strings.ToLower(strings.TrimSpace(columnType))
+	return lower == "binary" || strings.HasPrefix(lower, "binary(")
+}
+
+// canonicalBinaryDefault decodes a binary-family literal column default from the
+// version-specific information_schema encoding (see binaryDefaultFormat) and renders
+// it in the one canonical dump form shared by every version:
+//
+//   - an empty string literal (two single quotes) for the empty value (SHOW CREATE
+//     prints binary(N) defaults NUL-padded; the padding is dropped because it is
+//     reapplied on write and NUL bytes cannot live in the UTF-8 metadata/SDL text),
+//   - the SHOW CREATE-style quoted string ('ab', with QUOTE()-style backslash escaping
+//     of \ and ') when the bytes are clean printable text,
+//   - an unquoted hex literal (0x610062) otherwise — value-equivalent input syntax that
+//     both versions accept and that stays representable in UTF-8.
+//
+// Without this, 8.0's hex NOTATION text was re-quoted as a string (DEFAULT '0x6162'),
+// which never converges: cross-version diffs phantom-MODIFY every binary default and
+// re-applying a dump double-encodes it ('0x6162' -> '0x307836313632').
+//
+// The ok result is false when the text does not match the declared encoding (not hex
+// notation on a >= 8.0 server); the caller falls back to the legacy verbatim form.
+func canonicalBinaryDefault(unquoted, columnType string, format binaryDefaultFormat) (string, bool) {
+	var value []byte
+	switch {
+	case format == binaryDefaultHexNotation && unquoted == "":
+		// varbinary DEFAULT '' is reported as an empty string, not as "0x".
+		value = nil
+	case format == binaryDefaultHexNotation:
+		if len(unquoted) < 2 || unquoted[0] != '0' || (unquoted[1] != 'x' && unquoted[1] != 'X') {
+			return "", false
+		}
+		decoded, err := hex.DecodeString(unquoted[2:])
+		if err != nil {
+			return "", false
+		}
+		value = decoded
+	default:
+		value = []byte(unquoted)
+	}
+	if isFixedBinaryColumnType(columnType) {
+		value = bytes.TrimRight(value, "\x00")
+	}
+	if len(value) == 0 {
+		return "''", true
+	}
+	if isCleanDefaultText(value) {
+		escaped := strings.ReplaceAll(string(value), `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `'`, `\'`)
+		return "'" + escaped + "'", true
+	}
+	return "0x" + hex.EncodeToString(value), true
+}
+
+// isCleanDefaultText reports whether value can be embedded as a plain quoted string in
+// UTF-8 SDL text: valid UTF-8 with no control bytes (NUL bytes in particular — the
+// information_schema encodings differ on them and SDL must stay NUL-free).
+func isCleanDefaultText(value []byte) bool {
+	if !utf8.Valid(value) {
+		return false
+	}
+	for _, b := range value {
+		if b < 0x20 || b == 0x7F {
+			return false
+		}
+	}
+	return true
 }
 
 // UnescapeExpressionDefault unescapes the default expression for MySQL.

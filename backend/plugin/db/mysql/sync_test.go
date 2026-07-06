@@ -84,6 +84,12 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 		defaultStr   sql.NullString
 		nullableBool bool
 		extra        string
+		// columnType is information_schema.COLUMNS.COLUMN_TYPE; only binary-family
+		// types change the decoding, so most rows leave it empty.
+		columnType string
+		// binaryFormat is how the server encodes binary-family defaults; zero value
+		// (binaryDefaultVerbatim) matches the legacy MariaDB/OceanBase path.
+		binaryFormat binaryDefaultFormat
 		want         *storepb.ColumnMetadata
 	}{
 		// MySQL 8.0.
@@ -414,12 +420,273 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 				Default: "CURRENT_TIMESTAMP",
 			},
 		},
+
+		// Binary-family literal defaults. information_schema encodes them per version
+		// (verified live on 8.0.32 and 5.7.25): 8.0 reports hex NOTATION text built from
+		// the value truncated at its first NUL ("0x", "0x6162"); 5.7 reports the raw
+		// bytes, NUL-padded to the declared length for binary(N) and truncated at the
+		// first non-convertible byte. Both decode to one canonical form: '' when empty,
+		// a plain quoted string for clean text, a hex literal otherwise. defaultStr is
+		// what the sync query delivers: QUOTE(COLUMN_DEFAULT).
+
+		// MySQL 8.0 hex notation.
+		{
+			// binary(16) DEFAULT '' — the openemr uuid shape; I_S reports "0x".
+			name:         "bin16_empty_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x'`},
+			nullableBool: false,
+			columnType:   "binary(16)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "binary(16)",
+				Default: "''",
+			},
+		},
+		{
+			// binary(16) DEFAULT 'ab' — padding NULs are already truncated by 8.0.
+			name:         "bin16_ab_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: false,
+			columnType:   "binary(16)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "binary(16)",
+				Default: "'ab'",
+			},
+		},
+		{
+			// varbinary(24) DEFAULT 'ab'.
+			name:         "vb_ab_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'ab'",
+			},
+		},
+		{
+			// varbinary(24) DEFAULT '' — 8.0 reports an empty string, not "0x".
+			name:         "vb_empty_80",
+			defaultStr:   sql.NullString{Valid: true, String: `''`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "''",
+			},
+		},
+		{
+			// varbinary DEFAULT 0xAB — not valid UTF-8, stays a hex literal (lowercase).
+			name:         "vb_nonutf8_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0xAB'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "0xab",
+			},
+		},
+		{
+			// varbinary DEFAULT 'a''b' — quote byte round-trips with QUOTE()-style escaping.
+			name:         "vb_quote_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x612762'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: `'a\'b'`,
+			},
+		},
+		{
+			// varbinary DEFAULT '0x6162' — the literal STRING; 8.0 reports the notation
+			// of the text ("0x307836313632") and decoding restores the text.
+			name:         "vb_hexstring_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x307836313632'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'0x6162'",
+			},
+		},
+		{
+			// varchar DEFAULT '0x6162' — NOT binary-family: the value is the plain
+			// string and must stay verbatim (the contrast case for the type gate).
+			name:         "varchar_hexstring_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: false,
+			columnType:   "varchar(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varchar(24)",
+				Default: "'0x6162'",
+			},
+		},
+		{
+			// varbinary DEFAULT (0x6162) — expression default (DEFAULT_GENERATED) keeps
+			// the expression path even on a binary column.
+			name:         "vb_expression_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: true,
+			extra:        "DEFAULT_GENERATED",
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "(0x6162)",
+			},
+		},
+		{
+			// binary(16) DEFAULT (uuid_to_bin(uuid())) — expression default.
+			name:         "bin16_expression_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'uuid_to_bin(uuid())'`},
+			nullableBool: true,
+			extra:        "DEFAULT_GENERATED",
+			columnType:   "binary(16)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "binary(16)",
+				Default: "(uuid_to_bin(uuid()))",
+			},
+		},
+		{
+			// Not hex notation on a >= 8.0 server — unexpected shape falls back verbatim.
+			name:         "vb_unexpected_80",
+			defaultStr:   sql.NullString{Valid: true, String: `'zz'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultHexNotation,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'zz'",
+			},
+		},
+
+		// MySQL 5.7 raw bytes.
+		{
+			// binary(16) DEFAULT '' — I_S reports sixteen NUL padding bytes.
+			name:         "bin16_empty_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'`},
+			nullableBool: false,
+			columnType:   "binary(16)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "binary(16)",
+				Default: "''",
+			},
+		},
+		{
+			// binary(16) DEFAULT 'ab' — value plus fourteen NUL padding bytes.
+			name:         "bin16_ab_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'ab\0\0\0\0\0\0\0\0\0\0\0\0\0\0'`},
+			nullableBool: false,
+			columnType:   "binary(16)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "binary(16)",
+				Default: "'ab'",
+			},
+		},
+		{
+			// varbinary(24) DEFAULT 'ab'.
+			name:         "vb_ab_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'ab'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'ab'",
+			},
+		},
+		{
+			// varbinary(24) DEFAULT ''.
+			name:         "vb_empty_57",
+			defaultStr:   sql.NullString{Valid: true, String: `''`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "''",
+			},
+		},
+		{
+			// varbinary DEFAULT 0x6100 — trailing NUL is significant on varbinary
+			// (no padding strip) and forces the hex-literal form.
+			name:         "vb_trailnul_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'a\0'`},
+			nullableBool: false,
+			columnType:   "varbinary(8)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(8)",
+				Default: "0x6100",
+			},
+		},
+		{
+			// varbinary DEFAULT 'a''b' — QUOTE() escapes the quote byte.
+			name:         "vb_quote_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'a\'b'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: `'a\'b'`,
+			},
+		},
+		{
+			// varbinary DEFAULT '0x6162' — the literal STRING; 5.7 reports the raw text,
+			// which is clean and matches the 8.0 decoding of "0x307836313632".
+			name:         "vb_hexstring_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'0x6162'",
+			},
+		},
+		{
+			// varbinary DEFAULT 'CURRENT_TIMESTAMP' — raw bytes that merely spell the
+			// function stay a literal (binary types cannot default to CURRENT_TIMESTAMP).
+			name:         "vb_current_timestamp_text_57",
+			defaultStr:   sql.NullString{Valid: true, String: `'CURRENT_TIMESTAMP'`},
+			nullableBool: false,
+			columnType:   "varbinary(20)",
+			binaryFormat: binaryDefaultRawBytes,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(20)",
+				Default: "'CURRENT_TIMESTAMP'",
+			},
+		},
+
+		// MariaDB/OceanBase (verbatim) — binary-family decoding is gated off entirely.
+		{
+			name:         "vb_verbatim_mariadb",
+			defaultStr:   sql.NullString{Valid: true, String: `'0x6162'`},
+			nullableBool: false,
+			columnType:   "varbinary(24)",
+			binaryFormat: binaryDefaultVerbatim,
+			want: &storepb.ColumnMetadata{
+				Type:    "varbinary(24)",
+				Default: "'0x6162'",
+			},
+		},
 	}
 
 	a := require.New(t)
 	for _, tc := range tests {
-		column := &storepb.ColumnMetadata{}
-		setColumnMetadataDefault(column, tc.defaultStr, tc.nullableBool, tc.extra)
+		column := &storepb.ColumnMetadata{Type: tc.columnType}
+		setColumnMetadataDefault(column, tc.defaultStr, tc.nullableBool, tc.extra, tc.binaryFormat)
 		a.Equal(tc.want, column, tc.name)
 	}
 }
@@ -437,12 +704,56 @@ func TestGetViewDefFromCreateView(t *testing.T) {
 			stmt: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `actor_info` (`id`) AS select idid from t",
 			def:  "select idid from t",
 		},
+		{
+			// Comma-separated multi-column list — the stock sys schema form
+			// (e.g. x$user_summary_by_file_io) that previously failed to match.
+			stmt: "CREATE ALGORITHM=TEMPTABLE DEFINER=`mysql.sys`@`localhost` SQL SECURITY INVOKER VIEW `x$user_summary_by_file_io` (`user`,`ios`,`io_latency`) AS select 1 AS `user`,2 AS `ios`,3 AS `io_latency`",
+			def:  "select 1 AS `user`,2 AS `ios`,3 AS `io_latency`",
+		},
+		{
+			// Schema-qualified view name, printed when the session database differs.
+			stmt: "CREATE ALGORITHM=TEMPTABLE DEFINER=`mysql.sys`@`localhost` SQL SECURITY INVOKER VIEW `sys`.`x$user_summary_by_file_io` (`user`,`ios`,`io_latency`) AS select 1 AS `user`",
+			def:  "select 1 AS `user`",
+		},
+		{
+			// Column identifier with an embedded backtick: SHOW CREATE doubles it
+			// (`a``b`). The doubling-aware list segments must match it (8.0-only
+			// surface: 5.7 rewrites explicit column lists into per-column aliases).
+			stmt: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `v` (`a``b`,`c`) AS select 1 AS `x`, 2 AS `y`",
+			def:  "select 1 AS `x`, 2 AS `y`",
+		},
+		{
+			// Column identifier containing ", " must not mis-split the list.
+			stmt: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `v` (`a, b`,`c`) AS select 1 AS `x`, 2 AS `y`",
+			def:  "select 1 AS `x`, 2 AS `y`",
+		},
 	}
 
 	for _, tc := range testCases {
 		got, err := getViewDefFromCreateView(tc.stmt)
 		require.NoError(t, err)
 		require.Equal(t, tc.def, got)
+	}
+}
+
+// TestIsStockMySQL pins the single stock-MySQL predicate gating stock-only
+// information_schema surfaces (the binary-default decode): MariaDB, OceanBase, and TiDB
+// report MySQL-like versions but lack them, so a compatible engine registered as MYSQL
+// must not trip the stock-only queries.
+func TestIsStockMySQL(t *testing.T) {
+	testCases := []struct {
+		rest string
+		want bool
+	}{
+		{rest: "", want: true},
+		{rest: "-log", want: true},
+		{rest: "-0ubuntu0.20.04.1", want: true},
+		{rest: "-MariaDB-1:10.6.12+maria~ubu2004", want: false},
+		{rest: "-OceanBase-v4.2.1", want: false},
+		{rest: "-TiDB-v7.5.0", want: false},
+	}
+	for _, tc := range testCases {
+		require.Equal(t, tc.want, isStockMySQL(tc.rest), "rest=%q", tc.rest)
 	}
 }
 
