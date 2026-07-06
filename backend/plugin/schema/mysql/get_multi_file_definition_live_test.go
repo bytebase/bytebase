@@ -109,7 +109,10 @@ func TestMultiFileSDLExportRoundTrip(t *testing.T) {
 						require.True(t, ok, "[%s/%s] file %q must be under a directory", srv.name, rw.name, f.Name)
 						byDir[dir] = append(byDir[dir], f)
 
-						// Spot-check the leading CREATE keyword matches the directory.
+						// Spot-check the CREATE keyword matches the directory. A routine/trigger/event
+						// file may be preceded by the BYT-9832 concat-safe session-context SET framing
+						// (SET @saved_sql_mode = …; SET sql_mode = '…'; …), so the file need only CONTAIN
+						// the CREATE, not lead with it. Tables never carry session context.
 						upper := strings.ToUpper(strings.TrimSpace(f.Content))
 						switch dir {
 						case "tables":
@@ -121,7 +124,7 @@ func TestMultiFileSDLExportRoundTrip(t *testing.T) {
 						case "procedures":
 							require.Contains(t, upper, "PROCEDURE", "[%s/%s] %q must be a CREATE PROCEDURE", srv.name, rw.name, f.Name)
 						case "triggers":
-							require.True(t, strings.HasPrefix(upper, "CREATE TRIGGER "), "[%s/%s] %q", srv.name, rw.name, f.Name)
+							require.Contains(t, upper, "CREATE TRIGGER ", "[%s/%s] %q must be a CREATE TRIGGER", srv.name, rw.name, f.Name)
 						case "events":
 							require.Contains(t, upper, "EVENT", "[%s/%s] %q must be a CREATE EVENT", srv.name, rw.name, f.Name)
 						default:

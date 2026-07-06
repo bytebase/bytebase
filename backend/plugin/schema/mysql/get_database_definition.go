@@ -1586,7 +1586,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	}
 	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, function := range functions {
-		if err := writeRoutineSDL(&buf, function.Definition); err != nil {
+		if err := writeRoutineSDL(&buf, function.Definition, function.SqlMode); err != nil {
 			return "", err
 		}
 	}
@@ -1600,7 +1600,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	}
 	slices.SortFunc(procedures, func(a, b *storepb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, procedure := range procedures {
-		if err := writeRoutineSDL(&buf, procedure.Definition); err != nil {
+		if err := writeRoutineSDL(&buf, procedure.Definition, procedure.SqlMode); err != nil {
 			return "", err
 		}
 	}
@@ -1868,6 +1868,67 @@ func stripViewBodyDatabaseQualifier(body, dbName string) string {
 	return out.String()
 }
 
+// SDL session-context save/restore variable names. Each routine/trigger/event that carries a
+// captured non-empty sql_mode (or, for events, a captured non-empty time_zone) is bracketed
+// with a SET/restore pair so the object is (re)created under its captured context. The SET is
+// emitted for EVERY object whose synced mode is non-empty — including one that equals the
+// origin server's default — so each object fully specifies its own context and the dump does
+// not depend on a fragile comparison against some "default" the SDL has no reliable notion of.
+// Using a session USER VARIABLE to save and restore the previous value keeps the block
+// concat-safe: the multi-file export writes each object to its own file and the action
+// concatenates them into a single session (action/command/file.go), and the live apply runs
+// all statements on one connection (backend/plugin/db/mysql), so a bare `SET sql_mode=X` would
+// LEAK X into the next object. Restoring @@sql_mode/@@time_zone after every CREATE makes each
+// object fully self-describing and order-independent.
+const (
+	sdlSaveSQLMode     = "SET @saved_sql_mode = @@sql_mode;\n"
+	sdlRestoreSQLMode  = "SET sql_mode = @saved_sql_mode;\n"
+	sdlSaveTimeZone    = "SET @saved_time_zone = @@time_zone;\n"
+	sdlRestoreTimeZone = "SET time_zone = @saved_time_zone;\n"
+)
+
+// writeSDLSessionContextPrefix emits the concat-safe `SET @saved…; SET …` preamble that
+// establishes the authored session context before an SDL CREATE. sqlMode is always
+// bracketed when non-empty; timeZone is bracketed only when useTimeZone is true (events).
+// It returns the paired suffix that the caller must append AFTER the CREATE to restore the
+// prior session state. When neither is set, both strings are empty and the CREATE is
+// emitted bare. The SET forms mirror the mysqldump-style writer (setSQLMode/setTimezone)
+// and are accepted by omni's SDL loader (LoadSDL allows SET; the value is cosmetic to the
+// routine/trigger/event diff, which compares bodies opaquely).
+//
+// The prefix saves+sets time_zone (when used) then sql_mode; the returned suffix restores
+// them in strict LIFO order — sql_mode first, then time_zone — so the brackets nest properly
+// (@@time_zone is the outermost, restored last). Restoring saved user variables is order-
+// independent in practice, but the LIFO discipline keeps the framing unambiguous.
+func writeSDLSessionContextPrefix(buf *strings.Builder, sqlMode, timeZone string, useTimeZone bool) (suffix string, err error) {
+	bracketTimeZone := useTimeZone && timeZone != ""
+	if bracketTimeZone {
+		if _, err := buf.WriteString(sdlSaveTimeZone); err != nil {
+			return "", err
+		}
+		if _, err := fmt.Fprintf(buf, "%s'%s';\n", setTimezone, timeZone); err != nil {
+			return "", err
+		}
+	}
+	if sqlMode != "" {
+		if _, err := buf.WriteString(sdlSaveSQLMode); err != nil {
+			return "", err
+		}
+		if _, err := fmt.Fprintf(buf, "%s'%s';\n", setSQLMode, sqlMode); err != nil {
+			return "", err
+		}
+	}
+	// Suffix restores in reverse of the save order: sql_mode (inner) before time_zone (outer).
+	var restore strings.Builder
+	if sqlMode != "" {
+		restore.WriteString(sdlRestoreSQLMode)
+	}
+	if bracketTimeZone {
+		restore.WriteString(sdlRestoreTimeZone)
+	}
+	return restore.String(), nil
+}
+
 // writeRoutineSDL emits a stored function or procedure. The synced Definition is
 // already a complete, canonical CREATE FUNCTION/PROCEDURE statement (the MySQL sync
 // rewrites SHOW CREATE to drop the DEFINER and the RETURNS charset attribute), so the
@@ -1876,12 +1937,28 @@ func stripViewBodyDatabaseQualifier(body, dbName string) string {
 // do not need DELIMITER wrapping, and omni's routine differ compares the body byte for
 // byte after trimming — reformatting would phantom-diff. A leading DEFINER, if one
 // somehow survives, is stripped to match omni's DEFINER-agnostic routine identity.
-func writeRoutineSDL(buf *strings.Builder, definition string) error {
+//
+// sqlMode is the session sql_mode the routine was authored under (RoutineMetadata.sql_mode
+// from sync). When non-empty it brackets the CREATE with a concat-safe save/restore SET
+// (see writeSDLSessionContextPrefix) so re-applying the dumped SDL recreates the routine
+// under its authored mode rather than the applier's default — a routine written under
+// ANSI_QUOTES or NO_BACKSLASH_ESCAPES otherwise silently changes behavior.
+func writeRoutineSDL(buf *strings.Builder, definition, sqlMode string) error {
 	def := strings.TrimSpace(stripLeadingDefiner(definition))
 	if def == "" {
 		return nil
 	}
-	if _, err := fmt.Fprintf(buf, "%s;\n\n", def); err != nil {
+	restore, err := writeSDLSessionContextPrefix(buf, sqlMode, "", false)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(buf, "%s;\n", def); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(restore); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1893,9 +1970,22 @@ func writeRoutineSDL(buf *strings.Builder, definition string) error {
 // loader expects: `CREATE TRIGGER <name> <timing> <event> ON <table> FOR EACH ROW
 // <body>`. DEFINER is omitted (omni's trigger differ ignores it) and the body is
 // emitted verbatim (compared byte for byte after trimming).
+//
+// A trigger carrying a captured non-empty sql_mode (TriggerMetadata.sql_mode) is bracketed
+// with the concat-safe save/restore SET so the body is re-parsed under that mode on apply.
 func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
-	if _, err := fmt.Fprintf(buf, "CREATE TRIGGER `%s` %s %s ON `%s` FOR EACH ROW\n%s;\n\n",
+	restore, err := writeSDLSessionContextPrefix(buf, trigger.SqlMode, "", false)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(buf, "CREATE TRIGGER `%s` %s %s ON `%s` FOR EACH ROW\n%s;\n",
 		trigger.Name, trigger.Timing, trigger.Event, tableName, strings.TrimSpace(trigger.Body)); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(restore); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1907,12 +1997,27 @@ func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.Tr
 // identity. The schedule's auto-injected STARTS '<create-time>' is left intact: omni's
 // event differ normalizes STARTS out of the canonical schedule key, so it does not
 // perturb the no-op.
+//
+// An event carries BOTH a sql_mode and a time_zone (EventMetadata.sql_mode/time_zone). The
+// time_zone matters because the schedule (AT / STARTS / EVERY … ENDS) is interpreted in the
+// session time zone, so recreating under a different zone shifts the fire times; both are
+// bracketed with the concat-safe save/restore SET.
 func writeEventSDL(buf *strings.Builder, event *storepb.EventMetadata) error {
 	def := strings.TrimSpace(stripLeadingDefiner(event.Definition))
 	if def == "" {
 		return nil
 	}
-	if _, err := fmt.Fprintf(buf, "%s;\n\n", def); err != nil {
+	restore, err := writeSDLSessionContextPrefix(buf, event.SqlMode, event.TimeZone, true)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(buf, "%s;\n", def); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(restore); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\n"); err != nil {
 		return err
 	}
 	return nil

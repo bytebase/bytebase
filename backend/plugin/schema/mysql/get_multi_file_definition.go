@@ -77,7 +77,7 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, function := range functions {
 		var buf strings.Builder
-		if err := writeRoutineSDL(&buf, function.Definition); err != nil {
+		if err := writeRoutineSDL(&buf, function.Definition, function.SqlMode); err != nil {
 			return nil, err
 		}
 		// A routine whose definition is empty produces no content; skip its file so the
@@ -102,7 +102,7 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 	slices.SortFunc(procedures, func(a, b *storepb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, procedure := range procedures {
 		var buf strings.Builder
-		if err := writeRoutineSDL(&buf, procedure.Definition); err != nil {
+		if err := writeRoutineSDL(&buf, procedure.Definition, procedure.SqlMode); err != nil {
 			return nil, err
 		}
 		if buf.Len() == 0 {

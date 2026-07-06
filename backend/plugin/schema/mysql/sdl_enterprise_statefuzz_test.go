@@ -1305,6 +1305,28 @@ func entSfDescs(muts []entSfMutation) []string {
 	return out
 }
 
+// entSfIsSessionContextSet reports whether a split statement is one of the concat-safe
+// session-context framing statements the SDL writers bracket a routine/trigger/event with
+// (`SET @saved_sql_mode = @@sql_mode`, `SET sql_mode = '…'`, `SET sql_mode = @saved_sql_mode`,
+// and the time_zone analogues). These are deterministic framing, not object identity, so
+// the stability guard filters them out before positional keying — otherwise adding/removing
+// an object shifts their `other:N` index and reports false collateral churn even though the
+// framing around each untouched object is byte-identical (BYT-9832).
+func entSfIsSessionContextSet(text string) bool {
+	up := strings.ToUpper(strings.TrimSpace(text))
+	up = strings.TrimSuffix(up, ";")
+	up = strings.TrimSpace(up)
+	switch {
+	case strings.HasPrefix(up, "SET @SAVED_SQL_MODE"),
+		strings.HasPrefix(up, "SET @SAVED_TIME_ZONE"),
+		strings.HasPrefix(up, "SET SQL_MODE"),
+		strings.HasPrefix(up, "SET TIME_ZONE"):
+		return true
+	default:
+		return false
+	}
+}
+
 // entSfStmtKeys splits a canonical dump and keys every statement by kind:name so the
 // stability guard can pair statements across rounds.
 func entSfStmtKeys(t *testing.T, dump string) map[string]string {
@@ -1315,6 +1337,11 @@ func entSfStmtKeys(t *testing.T, dump string) map[string]string {
 	for i, s := range stmts {
 		text := strings.TrimSpace(s.Text)
 		if text == "" || text == ";" {
+			continue
+		}
+		// Concat-safe session-context SET framing is deterministic and object-scoped; skip
+		// it so its positional index does not create phantom collateral-churn failures.
+		if entSfIsSessionContextSet(text) {
 			continue
 		}
 		key := ""
