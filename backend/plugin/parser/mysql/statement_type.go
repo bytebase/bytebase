@@ -57,9 +57,12 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 		}
 
 		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
-		// does not know — GRANT, SET, CALL, …) are INCLUDED, with their positions and
-		// text, so the SDL statement-type gate fails closed: dropping them here would
-		// let an unclassified statement bypass the release-check allowlist entirely.
+		// does not know — GRANT, CALL, …) are INCLUDED, with their positions and text, so
+		// the SDL statement-type gate fails closed: dropping them here would let an
+		// unclassified statement bypass the release-check allowlist entirely. SET is
+		// deliberately NOT in that unknown set — it is classified as StatementType_SET so
+		// the gate can allow the session-context preamble the MySQL SDL dump emits, while
+		// genuinely-unknown statements stay UNSPECIFIED and rejected.
 		stmtType := classifyStatementType(omniAST.Node)
 
 		line := 0
@@ -145,6 +148,16 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *ast.DeleteStmt:
 		return storepb.StatementType_DELETE
+
+	// SESSION / UTILITY
+	// SET is classified explicitly (rather than left UNSPECIFIED) because the MySQL SDL
+	// dump brackets each routine/event/trigger with a `SET @saved_… ; SET sql_mode=… ; …;
+	// SET … = @saved_…` session-context preamble, and the declarative-release gate must be
+	// able to allow those SET statements by type (see extraAllowedSDLStatementTypesByEngine
+	// in release_service_check.go). Every SET form omni parses — user vars, system vars,
+	// SET NAMES, SET CHARACTER SET — is a single *ast.SetStmt.
+	case *ast.SetStmt:
+		return storepb.StatementType_SET
 
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

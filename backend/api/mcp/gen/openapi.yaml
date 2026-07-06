@@ -18076,6 +18076,7 @@ components:
         - INSERT
         - UPDATE
         - DELETE
+        - SET
       description: StatementType represents the type of SQL statement.
     bytebase.v1.StorageConfig:
       type: object

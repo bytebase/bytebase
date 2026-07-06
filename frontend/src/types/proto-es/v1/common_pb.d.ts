@@ -833,6 +833,13 @@ export enum StatementType {
    * @generated from enum value: DELETE = 62;
    */
   DELETE = 62,
+
+  /**
+   * Session / utility statements
+   *
+   * @generated from enum value: SET = 63;
+   */
+  SET = 63,
 }
 
 /**

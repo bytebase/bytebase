@@ -591,6 +591,8 @@ const (
 	StatementType_INSERT StatementType = 60
 	StatementType_UPDATE StatementType = 61
 	StatementType_DELETE StatementType = 62
+	// Session / utility statements
+	StatementType_SET StatementType = 63
 )
 
 // Enum value maps for StatementType.
@@ -637,6 +639,7 @@ var (
 		60: "INSERT",
 		61: "UPDATE",
 		62: "DELETE",
+		63: "SET",
 	}
 	StatementType_value = map[string]int32{
 		"STATEMENT_TYPE_UNSPECIFIED": 0,
@@ -680,6 +683,7 @@ var (
 		"INSERT":                     60,
 		"UPDATE":                     61,
 		"DELETE":                     62,
+		"SET":                        63,
 	}
 )
 
@@ -997,7 +1001,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\a\x12\x0f\n" +
-	"\vGOOGLE_CHAT\x10\b*\xeb\x05\n" +
+	"\vGOOGLE_CHAT\x10\b*\xf4\x05\n" +
 	"\rStatementType\x12\x1e\n" +
 	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +
@@ -1049,7 +1053,8 @@ const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
-	"\x06DELETE\x10>B\xa1\x01\n" +
+	"\x06DELETE\x10>\x12\a\n" +
+	"\x03SET\x10?B\xa1\x01\n" +
 	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

@@ -60,9 +60,20 @@ func TestContainsDDL(t *testing.T) {
 			wantDDL: true,
 		},
 		{
+			// SET classifies as StatementType_SET (not UNSPECIFIED) since BYT-9832, but is
+			// still a session-setting utility, not DDL — so a SET+DML script must NOT be
+			// treated as containing DDL (otherwise the DML dry run would be skipped).
 			name:    "MySQL: SET should not be treated as DDL",
 			engine:  storepb.Engine_MYSQL,
 			sql:     "SET @a = 1; INSERT INTO t VALUES (1);",
+			wantDDL: false,
+		},
+		{
+			// A session-mode SET (the exact form the SDL routine/event preamble emits) is
+			// likewise not DDL.
+			name:    "MySQL: SET sql_mode should not be treated as DDL",
+			engine:  storepb.Engine_MYSQL,
+			sql:     "SET sql_mode='ANSI_QUOTES'; INSERT INTO t VALUES (1);",
 			wantDDL: false,
 		},
 		{

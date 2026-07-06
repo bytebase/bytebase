@@ -843,9 +843,23 @@ var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 // SDL allowlist. MySQL declarative dumps also emit scheduled events as CREATE EVENT —
 // a MySQL-only object with no PostgreSQL analog (the pg parser can never classify one,
 // but keying it per engine documents the intent and keeps other engines' gates exact).
+//
+// SET is MySQL-only here because the MySQL SDL dump brackets every routine/event/trigger
+// whose synced sql_mode (or, for events, time_zone) is non-empty with a session-context
+// preamble — `SET @saved_sql_mode = @@sql_mode; SET sql_mode='…'; <CREATE …>; SET
+// sql_mode = @saved_sql_mode;` (see writeSDLSessionContextPrefix in
+// backend/plugin/schema/mysql/get_database_definition.go). That framing is legitimate,
+// Bytebase-generated SDL, so its SET statements must pass the gate; without this a MySQL
+// export containing any routine/event/trigger would be rejected as "Disallowed statement
+// in SDL file". SET stays a CLASSIFIED type (StatementType_SET, not UNSPECIFIED), so the
+// fail-closed posture for genuinely-unknown statements (GRANT, CALL, …) is preserved —
+// only SET is allow-listed, and only for MySQL. PostgreSQL's own SET dump (SET
+// default_tablespace=”) is already handled by pg dropping UNSPECIFIED entries, so PG
+// needs no SET allowance here.
 var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
 	storepb.Engine_MYSQL: {
 		storepb.StatementType_CREATE_EVENT: true,
+		storepb.StatementType_SET:          true,
 	},
 }
 

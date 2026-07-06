@@ -7,9 +7,12 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 
 	// Blank import registers the MySQL ParseStatements func used by base.ParseStatements.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	// Blank import registers the MySQL SDL dumper used by schema.GetDatabaseDefinition.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
 )
 
 // TestEngineSupportsDeclarativeRelease asserts MySQL is admitted into the declarative
@@ -65,6 +68,14 @@ func TestIsAllowedInSDL(t *testing.T) {
 	require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, storepb.StatementType_CREATE_EVENT), "CREATE EVENT should be allowed in MySQL SDL")
 	require.False(t, isAllowedInSDL(storepb.Engine_POSTGRES, storepb.StatementType_CREATE_EVENT), "CREATE EVENT should be disallowed in PostgreSQL SDL")
 
+	// SET: MySQL-only overlay (BYT-9832). The MySQL SDL dump brackets every
+	// routine/event/trigger carrying a non-empty sql_mode/time_zone with a session-context
+	// preamble of SET statements, so SET must pass the MySQL gate. It stays MySQL-scoped:
+	// PostgreSQL's own SET dump is dropped as UNSPECIFIED by pg's extractor and never
+	// reaches the allow-list, so PG must NOT admit SET here.
+	require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, storepb.StatementType_SET), "SET should be allowed in MySQL SDL")
+	require.False(t, isAllowedInSDL(storepb.Engine_POSTGRES, storepb.StatementType_SET), "SET should be disallowed in PostgreSQL SDL")
+
 	// PostgreSQL keeps its sequence/schema statement types; they are common (harmless
 	// for MySQL, whose parser never emits them).
 	require.True(t, isAllowedInSDL(storepb.Engine_POSTGRES, storepb.StatementType_CREATE_SEQUENCE))
@@ -90,10 +101,11 @@ func TestIsAllowedInSDL(t *testing.T) {
 }
 
 // TestMySQLSDLGateFailsClosedOnUnclassifiedStatement pins the X12 fix: a statement omni
-// parses but the MySQL classifier does not know (GRANT, SET, ...) surfaces as
+// parses but the MySQL classifier does not know (GRANT, CALL, ...) surfaces as
 // STATEMENT_TYPE_UNSPECIFIED and MUST reach the release gate (with its line) and be
 // rejected — dropping it would let arbitrary unclassified statements bypass the SDL
-// allowlist entirely.
+// allowlist entirely. SET is deliberately NOT used here: it is now a classified type
+// (StatementType_SET, allowed for MySQL SDL), so it would not exercise fail-closed.
 func TestMySQLSDLGateFailsClosedOnUnclassifiedStatement(t *testing.T) {
 	sql := "CREATE TABLE t (id INT PRIMARY KEY);\nGRANT SELECT ON *.* TO 'x'@'%';\n"
 	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sql)
@@ -111,4 +123,93 @@ func TestMySQLSDLGateFailsClosedOnUnclassifiedStatement(t *testing.T) {
 	require.False(t, isAllowedInSDL(storepb.Engine_MYSQL, got[1].Type), "UNSPECIFIED must fail closed")
 	require.Equal(t, 2, got[1].Line, "the disallowed advice must carry the GRANT's line")
 	require.Contains(t, got[1].Text, "GRANT")
+}
+
+// TestMySQLSetClassifiedAndAllowedInSDL proves the session-context preamble the BYT-9832
+// SDL dump emits is now accepted by the gate: a `SET sql_mode=…` classifies as
+// StatementType_SET (not UNSPECIFIED) and is allowed in MySQL SDL, while CALL — a
+// genuinely-unknown statement — stays UNSPECIFIED and rejected (the fail-closed posture is
+// preserved for everything except the deliberately-allowed SET).
+func TestMySQLSetClassifiedAndAllowedInSDL(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, "SET sql_mode='ANSI_QUOTES';\n")
+	require.NoError(t, err)
+	got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, storepb.StatementType_SET, got[0].Type, "SET must classify as StatementType_SET, not UNSPECIFIED")
+	require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, got[0].Type), "SET must be allowed in MySQL SDL")
+
+	// CALL remains genuinely unclassified — the fail-closed posture is intact.
+	callStmts, err := base.ParseStatements(storepb.Engine_MYSQL, "CALL p();\n")
+	require.NoError(t, err)
+	callGot, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(callStmts))
+	require.NoError(t, err)
+	require.Len(t, callGot, 1)
+	require.Equal(t, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED, callGot[0].Type, "CALL must stay UNSPECIFIED")
+	require.False(t, isAllowedInSDL(storepb.Engine_MYSQL, callGot[0].Type), "CALL must fail closed")
+}
+
+// TestMySQLSDLDumpWithRoutinesPassesGate is the direct BYT-9832 P1 regression guard: it
+// runs the REAL production SDL dumper (schema.GetDatabaseDefinition with SDLFormat) over a
+// schema containing a function, procedure, trigger (each with a non-empty sql_mode) and an
+// event (non-UTC time_zone), then feeds the dump through the REAL release-check gate
+// (base.ParseStatements -> getStatementTypesWithPositionsForEngine -> isAllowedInSDL) and
+// asserts EVERY statement is allowed. Before this fix the session-context SET preamble was
+// rejected as "Disallowed statement in SDL file", breaking the export->commit->check
+// round-trip for any MySQL DB with a routine/event/trigger.
+func TestMySQLSDLDumpWithRoutinesPassesGate(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "probe",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "t",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "int", Nullable: false},
+							{Name: "val", Type: "int", Nullable: false, Default: "0"},
+						},
+						Indexes: []*storepb.IndexMetadata{{Name: "PRIMARY", Primary: true, Expressions: []string{"id"}}},
+						Engine:  "InnoDB",
+						Charset: "utf8mb4",
+						Triggers: []*storepb.TriggerMetadata{
+							{Name: "trg", Timing: "BEFORE", Event: "INSERT", Body: "SET NEW.val = NEW.val + 1", SqlMode: "NO_BACKSLASH_ESCAPES"},
+						},
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{Name: "fa", Definition: `CREATE FUNCTION fa() RETURNS INT DETERMINISTIC RETURN 1`, SqlMode: "NO_BACKSLASH_ESCAPES"},
+				},
+				Procedures: []*storepb.ProcedureMetadata{
+					{Name: "pb", Definition: `CREATE PROCEDURE pb() BEGIN SELECT 1; END`, SqlMode: "PAD_CHAR_TO_FULL_LENGTH"},
+				},
+				Events: []*storepb.EventMetadata{
+					{Name: "ev", Definition: `CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DO INSERT INTO t (id, val) VALUES (1, 1)`, SqlMode: "NO_BACKSLASH_ESCAPES", TimeZone: "+05:30"},
+				},
+			},
+		},
+	}
+
+	sdl, err := schema.GetDatabaseDefinition(storepb.Engine_MYSQL, schema.GetDefinitionContext{SDLFormat: true}, meta)
+	require.NoError(t, err)
+	// Guard the fixture actually exercised the preamble; otherwise the gate assertion is vacuous.
+	require.Contains(t, sdl, "SET sql_mode =", "dump must contain the sql_mode session preamble")
+	require.Contains(t, sdl, "SET time_zone =", "dump must contain the event time_zone preamble")
+
+	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sdl)
+	require.NoError(t, err, "the emitted SDL must parse for the gate to run")
+	got, err := getStatementTypesWithPositionsForEngine(storepb.Engine_MYSQL, base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.NotEmpty(t, got)
+
+	sawSet := false
+	for _, stmt := range got {
+		require.True(t, isAllowedInSDL(storepb.Engine_MYSQL, stmt.Type),
+			"statement type %s at line %d must be allowed in MySQL SDL (BYT-9832 regression):\n%s",
+			stmt.Type, stmt.Line, stmt.Text)
+		if stmt.Type == storepb.StatementType_SET {
+			sawSet = true
+		}
+	}
+	require.True(t, sawSet, "the dump must have produced at least one SET the gate had to allow")
 }

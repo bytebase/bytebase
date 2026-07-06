@@ -152,7 +152,12 @@ func ContainsDDL(engine storepb.Engine, parsedStatements []base.ParsedStatement)
 		case storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
 			storepb.StatementType_INSERT,
 			storepb.StatementType_UPDATE,
-			storepb.StatementType_DELETE:
+			storepb.StatementType_DELETE,
+			// SET is a session-setting utility, not DDL. It used to reach here as
+			// UNSPECIFIED; now that the MySQL classifier returns StatementType_SET
+			// (so the SDL gate can allow the routine/event session-context preamble),
+			// keep it in the non-DDL set so a SET+DML script still runs the DML dry run.
+			storepb.StatementType_SET:
 		default:
 			return true
 		}

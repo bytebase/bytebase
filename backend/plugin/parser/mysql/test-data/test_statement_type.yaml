@@ -68,3 +68,12 @@
 - statement: DROP PROCEDURE citycount;
   want:
     - DROP_PROCEDURE
+- statement: SET sql_mode = 'ANSI_QUOTES';
+  want:
+    - SET
+- statement: SET @saved_sql_mode = @@sql_mode;
+  want:
+    - SET
+- statement: SET time_zone = '+05:30';
+  want:
+    - SET
