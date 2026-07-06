@@ -219,6 +219,49 @@ func TestOmniQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
 	}, span.Results)
 }
 
+// TestOmniQuerySpanKeywordArgAndWeightString covers the omni AST nodes
+// introduced with the $-token bump: KeywordArg (the unit selector in
+// TIMESTAMPDIFF/TIMESTAMPADD/GET_FORMAT — a keyword, not a column, so no
+// lineage) and WeightStringExpr (lineage follows the real operand).
+// TIMESTAMPDIFF regressed to "unsupported omni MySQL expression" without
+// these cases.
+func TestOmniQuerySpanKeywordArgAndWeightString(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+		context.Background(),
+		"SELECT TIMESTAMPDIFF(SECOND, a, b) AS d1, TIMESTAMPADD(MINUTE, 5, a) AS d2, GET_FORMAT(DATE, 'ISO') AS d3, WEIGHT_STRING(c AS CHAR(10)) AS w FROM t",
+	)
+	require.NoError(t, err)
+	require.Equal(t, []base.QuerySpanResult{
+		{
+			Name: "d1",
+			SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{
+				{Database: "db", Table: "t", Column: "a"},
+				{Database: "db", Table: "t", Column: "b"},
+			}),
+			IsPlainField: false,
+		},
+		{
+			Name: "d2",
+			SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{
+				{Database: "db", Table: "t", Column: "a"},
+			}),
+			IsPlainField: false,
+		},
+		{
+			Name:          "d3",
+			SourceColumns: base.SourceColumnSet{},
+			IsPlainField:  false,
+		},
+		{
+			Name: "w",
+			SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{
+				{Database: "db", Table: "t", Column: "c"},
+			}),
+			IsPlainField: false,
+		},
+	}, span.Results)
+}
+
 func TestOmniQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
 	tests := []struct {
 		name      string
