@@ -129,7 +129,10 @@ export function RequestQueryButton({
     return resources;
   }, [permissionDeniedDetail.resources]);
 
-  const available = useMemo(() => !!project?.allowRequestRole, [project]);
+  const available = useMemo(
+    () => !!project?.allowRequestRole || !!project?.allowJustInTimeAccess,
+    [project]
+  );
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
