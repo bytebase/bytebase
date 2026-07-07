@@ -196,7 +196,7 @@ func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[strin
 	var adviceList []*storepb.Advice
 	for _, list := range groupByTable {
 		table := list[0].table
-		columns := oracleFindLongColumns(r.checkCtx.DBSchema, table.Schema, table.Table)
+		columns := oracleFindLongColumns(r.checkCtx.DBSchema, table, r.checkCtx.IsObjectCaseSensitive)
 		if len(columns) == 0 {
 			continue
 		}
@@ -211,6 +211,21 @@ func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[strin
 	return adviceList
 }
 
+// oracleNameEqual compares an AST object name with a synced-metadata name.
+// The omni Oracle parser already delivers names in catalog form (unquoted
+// identifiers uppercased, "quoted" ones exact-case with quotes stripped) and
+// sync stores data-dictionary names verbatim, so in case-sensitive mode this
+// is plain equality — an EqualFold here would conflate T_LONG with a distinct
+// quoted "t_long" table and warn about the wrong table's columns. In
+// case-insensitive mode both sides fold, matching the rest of the Oracle
+// rules' normalizeNameByCaseSensitivity behavior.
+func oracleNameEqual(astName, metadataName string, isObjectCaseSensitive bool) bool {
+	if isObjectCaseSensitive {
+		return astName == metadataName
+	}
+	return strings.EqualFold(astName, metadataName)
+}
+
 // oracleFindLongColumns returns the names of LONG / LONG RAW columns of the
 // given table, or nil when the table is not found in the synced metadata
 // (missing metadata must not produce false alarms).
@@ -221,18 +236,21 @@ func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[strin
 // the current owner only — a DML explicitly qualified with a different owner
 // must stay silent (its metadata is simply not synced), not borrow the
 // current schema's table of the same name.
-func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, schemaName, tableName string) []string {
+func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, table *TableReference, isObjectCaseSensitive bool) []string {
 	var result []string
 	for _, schemaMeta := range dbSchema.GetSchemas() {
 		if schemaMeta.GetName() == "" {
-			if !strings.EqualFold(schemaName, dbSchema.GetName()) {
+			// The anonymous schema holds the connection owner's tables. An
+			// unqualified DML always targets the current owner; a qualified
+			// one matches only when it names the current owner.
+			if table.HasSchema && !oracleNameEqual(table.Schema, dbSchema.GetName(), isObjectCaseSensitive) {
 				continue
 			}
-		} else if !strings.EqualFold(schemaMeta.GetName(), schemaName) {
+		} else if !oracleNameEqual(table.Schema, schemaMeta.GetName(), isObjectCaseSensitive) {
 			continue
 		}
 		for _, tableMeta := range schemaMeta.GetTables() {
-			if !strings.EqualFold(tableMeta.GetName(), tableName) {
+			if !oracleNameEqual(table.Table, tableMeta.GetName(), isObjectCaseSensitive) {
 				continue
 			}
 			for _, column := range tableMeta.GetColumns() {

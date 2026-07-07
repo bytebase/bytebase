@@ -116,4 +116,69 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 		// Missing metadata must not produce false alarms.
 		require.Empty(t, longAdvices(check(t, "UPDATE NO_SUCH_TABLE SET ID = 1 WHERE ID = 2;")))
 	})
+
+	// Quoted identifiers are case-sensitive in Oracle while unquoted ones are
+	// catalogued upper-case: T_LONG and a quoted "t_long" are DIFFERENT
+	// tables. The lookup must honor that instead of EqualFold-ing across it.
+	t.Run("quoted_identifier_case_semantics", func(t *testing.T) {
+		csSchema := &storepb.DatabaseSchemaMetadata{
+			Name: "DB",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "",
+					Tables: []*storepb.TableMetadata{
+						// Unquoted DDL: catalogued upper, has a LONG column.
+						{Name: "T_LONG", Columns: []*storepb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "PAYLOAD", Type: "LONG"},
+						}},
+						// Quoted DDL twin: exact-case lower, NO LONG column.
+						{Name: "t_long", Columns: []*storepb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "NOTE", Type: "VARCHAR2"},
+						}},
+						// Quoted DDL with a LONG column.
+						{Name: "t_raw", Columns: []*storepb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "RAWCOL", Type: "LONG RAW"},
+						}},
+					},
+				},
+			},
+		}
+		checkCS := func(t *testing.T, statement string) []*storepb.Advice {
+			t.Helper()
+			parsed, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+			require.NoError(t, err)
+			checkCtx := advisor.Context{
+				DBType:                storepb.Engine_ORACLE,
+				DBSchema:              csSchema,
+				EnablePriorBackup:     true,
+				IsObjectCaseSensitive: true,
+				Rule:                  &storepb.SQLReviewRule{Type: storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, Level: storepb.SQLReviewRule_WARNING},
+				ParsedStatements:      parsed,
+				ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+					return []string{"BBDATAARCHIVE"}, nil
+				},
+			}
+			a := &StatementPriorBackupCheckAdvisor{}
+			advices, err := a.Check(context.Background(), checkCtx)
+			require.NoError(t, err)
+			return advices
+		}
+
+		// Quoted ref targets the exact-case table without LONG: must stay
+		// silent (a fold-blind compare would borrow T_LONG and false-warn).
+		require.Empty(t, longAdvices(checkCS(t, `UPDATE "t_long" SET ID = 1 WHERE ID = 2;`)))
+
+		// Quoted ref targeting a quoted table WITH a LONG RAW column warns.
+		quoted := longAdvices(checkCS(t, `UPDATE "t_raw" SET ID = 1 WHERE ID = 2;`))
+		require.Len(t, quoted, 1)
+		require.Contains(t, quoted[0].Content, `"RAWCOL"`)
+
+		// Unquoted ref folds upper and finds T_LONG.
+		upper := longAdvices(checkCS(t, "UPDATE t_long SET ID = 1 WHERE ID = 2;"))
+		require.Len(t, upper, 1)
+		require.Contains(t, upper[0].Content, `"PAYLOAD"`)
+	})
 }
