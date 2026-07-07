@@ -41,6 +41,7 @@ type TableReference struct {
 	Schema        string
 	Table         string
 	Alias         string
+	DBLink        string
 	StatementType StatementType
 }
 
@@ -68,7 +69,7 @@ func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, stateme
 func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
-		key := fmt.Sprintf("%s.%s", item.table.Schema, item.table.Table)
+		key := fmt.Sprintf("%s.%s@%s", item.table.Schema, item.table.Table, item.table.DBLink)
 		groupByTable[key] = append(groupByTable[key], item)
 	}
 
@@ -121,6 +122,17 @@ func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, t
 
 func generateSQLForTable(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) (*base.BackupStatement, error) {
 	table := statementInfoList[0].table
+
+	// Prior backup cannot round-trip a table referenced through a database
+	// link: the backup CTAS could read the remote rows, but the restore path
+	// only records schema+table and would write the rows back into a LOCAL
+	// table of the same name — silent cross-database corruption on rollback.
+	// That was already true before the ROWID rework (the link was dropped
+	// from the reconstructed source), so fail loudly instead of producing a
+	// backup that cannot be restored correctly.
+	if table.DBLink != "" {
+		return nil, errors.Errorf("prior backup does not support tables referenced through a database link: %s.%s@%s; disable prior backup for this issue", table.Schema, table.Table, table.DBLink)
+	}
 
 	version, ok := ctx.Version.(*Version)
 	if !ok {
@@ -271,6 +283,7 @@ func omniDMLTableReference(databaseName string, name *oracleast.ObjectName, alia
 		HasSchema:     hasSchema,
 		Schema:        schema,
 		Table:         name.Name,
+		DBLink:        name.DBLink,
 		StatementType: statementType,
 	}
 	if alias != nil {
