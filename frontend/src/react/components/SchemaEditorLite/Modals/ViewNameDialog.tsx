@@ -102,7 +102,7 @@ export function ViewNameDialog({
             </p>
           )}
           <div className="flex items-center justify-end gap-x-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button appearance="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
             <Button disabled={!isValid} onClick={handleConfirm}>

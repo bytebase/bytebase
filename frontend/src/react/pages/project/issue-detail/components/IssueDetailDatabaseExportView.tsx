@@ -282,7 +282,7 @@ function IssueDetailDatabaseExportOptions() {
         {(shouldShowEditButton || isEditing) && (
           <div className="flex items-center justify-end gap-x-2">
             {!isEditing ? (
-              <Button onClick={handleEdit} size="xs" variant="outline">
+              <Button onClick={handleEdit} size="xs" appearance="outline">
                 {t("common.edit")}
               </Button>
             ) : (
@@ -291,11 +291,11 @@ function IssueDetailDatabaseExportOptions() {
                   disabled={!hasChanges || isSaving}
                   onClick={handleSave}
                   size="xs"
-                  variant="outline"
+                  appearance="outline"
                 >
                   {t("common.save")}
                 </Button>
-                <Button onClick={handleCancel} size="xs" variant="ghost">
+                <Button onClick={handleCancel} size="xs" appearance="secondary">
                   {t("common.cancel")}
                 </Button>
               </>
@@ -459,7 +459,7 @@ function IssueDetailDatabaseExportTaskActions({ task }: { task: Task }) {
           <Button
             onClick={() => setPendingAction("RUN")}
             size="xs"
-            variant="outline"
+            appearance="outline"
           >
             {primaryAction === "RETRY" ? t("common.retry") : t("common.run")}
           </Button>

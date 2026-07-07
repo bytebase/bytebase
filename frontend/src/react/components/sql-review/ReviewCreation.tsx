@@ -462,13 +462,13 @@ export function ReviewCreation({
         left={
           <>
             {currentStep === STEP_BASIC_INFO && (
-              <Button variant="outline" onClick={() => handleCancel()}>
+              <Button appearance="outline" onClick={() => handleCancel()}>
                 {t("common.cancel")}
               </Button>
             )}
             {currentStep > STEP_BASIC_INFO && (
               <Button
-                variant="outline"
+                appearance="outline"
                 onClick={() => changeStep(currentStep - 1)}
               >
                 {t("common.previous")}
@@ -480,7 +480,7 @@ export function ReviewCreation({
           <>
             {currentStep === STEP_CONFIGURE_RULES && (
               <Button
-                variant="outline"
+                appearance="outline"
                 onClick={() => setShowRuleSelectPanel(true)}
               >
                 {t("sql-review.add-or-remove-rules")}

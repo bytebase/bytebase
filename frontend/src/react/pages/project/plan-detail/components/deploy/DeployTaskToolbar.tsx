@@ -151,7 +151,7 @@ export function DeployTaskToolbar({
                       setShowActionPanel(true);
                     }}
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     className="text-accent hover:bg-transparent"
                   >
                     <Play className="h-3.5 w-3.5" />
@@ -174,7 +174,7 @@ export function DeployTaskToolbar({
                       setShowActionPanel(true);
                     }}
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     className="text-accent hover:bg-transparent"
                   >
                     <SkipForward className="h-3.5 w-3.5" />
@@ -197,7 +197,7 @@ export function DeployTaskToolbar({
                       setShowActionPanel(true);
                     }}
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     className="text-accent hover:bg-transparent"
                   >
                     <X className="h-3.5 w-3.5" />

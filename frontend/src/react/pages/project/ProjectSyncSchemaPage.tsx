@@ -486,7 +486,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
             <div className="flex items-center justify-between gap-x-2">
               {currentStep !== 0 && (
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   onClick={() => handleStepChange(currentStep - 1)}
                 >
                   <ChevronLeft className="-ml-1 mr-1 size-5 text-control-light" />
@@ -516,7 +516,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
           <DialogTitle>{t("common.confirm-to-revert")}</DialogTitle>
           <div className="flex justify-end gap-x-2 mt-4">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowConfirmDialog(false)}
             >
               {t("common.cancel")}
@@ -1046,7 +1046,7 @@ function RawSQLEditor({
           </div>
         </div>
         <div className="flex flex-row justify-end items-center gap-x-3">
-          <Button variant="outline" size="sm" onClick={handleFileUpload}>
+          <Button appearance="outline" size="sm" onClick={handleFileUpload}>
             {t("issue.upload-sql")}
           </Button>
         </div>
@@ -1781,14 +1781,14 @@ function SchemaDiffViewer({
         <span>{title}</span>
         <div className="flex gap-x-2 shrink-0">
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             onClick={() => handleNavigate("previous")}
           >
             <ArrowUp className="w-5 h-auto" />
           </Button>
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             onClick={() => handleNavigate("next")}
           >
@@ -1796,7 +1796,7 @@ function SchemaDiffViewer({
           </Button>
           {showFullscreen && (
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={() => setShowModal(true)}
             >
@@ -1841,7 +1841,7 @@ function SchemaDiffViewerModal({
       <DialogContent className="flex h-screen max-h-screen w-full max-w-none flex-col rounded-none p-4 2xl:max-w-none">
         <div className="flex items-center justify-between mb-2">
           <DialogTitle>{title}</DialogTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button appearance="secondary" size="sm" onClick={onClose}>
             &times;
           </Button>
         </div>
@@ -2140,7 +2140,7 @@ function TargetDatabasesSelectPanel({
               {dbNextPageToken && (
                 <div className="flex justify-center py-3">
                   <Button
-                    variant="ghost"
+                    appearance="secondary"
                     size="sm"
                     disabled={loadingMoreDbs}
                     onClick={loadMoreDatabases}
@@ -2161,7 +2161,7 @@ function TargetDatabasesSelectPanel({
             {t("common.n-selected", { n: selected.size })}
           </div>
           <div className="flex items-center justify-end gap-x-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button appearance="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
             <Button disabled={selected.size === 0} onClick={handleConfirm}>

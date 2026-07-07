@@ -409,7 +409,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                       {editing ? (
                         <>
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             disabled={saving}
                             onClick={cancelEdit}
                           >
@@ -423,7 +423,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                           </Button>
                         </>
                       ) : (
-                        <Button variant="outline" onClick={editUser}>
+                        <Button appearance="outline" onClick={editUser}>
                           {t("common.edit")}
                         </Button>
                       )}
@@ -554,7 +554,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                   </Button>
                 )}
                 {user.email === currentUser.email && (
-                  <Button variant="outline" onClick={enable2FA}>
+                  <Button appearance="outline" onClick={enable2FA}>
                     {isMFAEnabled ? t("common.edit") : t("common.enable")}
                   </Button>
                 )}
@@ -629,7 +629,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
           </DialogDescription>
           <div className="mt-4 flex justify-end gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowDisable2FAConfirm(false)}
             >
               {t("common.cancel")}

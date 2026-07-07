@@ -64,7 +64,7 @@ export function RegenerateRecoveryCodesView({
         onDownload={() => setRecoveryCodesDownloaded(true)}
       />
       <div className="flex flex-row justify-between items-center mb-8">
-        <Button variant="outline" onClick={onClose}>
+        <Button appearance="outline" onClick={onClose}>
           {t("common.cancel")}
         </Button>
         <Button

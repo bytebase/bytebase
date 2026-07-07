@@ -140,7 +140,7 @@ export function ReleaseFileTable({
                 {showDetailButton && (
                   <TableCell className="text-right">
                     <Button
-                      variant="ghost"
+                      appearance="secondary"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();

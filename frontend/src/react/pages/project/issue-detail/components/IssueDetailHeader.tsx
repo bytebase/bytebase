@@ -54,7 +54,7 @@ export function IssueDetailHeader() {
               aria-label={t("common.open")}
               onClick={() => page.setMobileSidebarOpen(true)}
               size="sm"
-              variant="ghost"
+              appearance="secondary"
             >
               <Menu className="h-5 w-5" />
             </Button>

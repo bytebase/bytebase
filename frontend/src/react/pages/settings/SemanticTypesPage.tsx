@@ -343,7 +343,7 @@ export function SemanticTypesPage() {
       <div className="flex justify-end">
         <div className="flex items-center gap-x-2">
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={isReadonly}
             onClick={() => setShowTemplateDrawer(true)}
           >
@@ -791,7 +791,7 @@ function MaskingAlgorithmDrawer({
                   <p className="text-error text-sm">{rangeMaskErrorMessage}</p>
                 )}
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   className="ml-auto"
                   onClick={() =>
                     setRangeMaskSlices((prev) => {
@@ -927,7 +927,7 @@ function MaskingAlgorithmDrawer({
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="outline" onClick={onDismiss}>
+          <Button appearance="outline" onClick={onDismiss}>
             {t("common.cancel")}
           </Button>
           <Button
@@ -1029,7 +1029,7 @@ function SemanticTemplateDrawer({
           </div>
         </SheetBody>
         <SheetFooter>
-          <Button variant="outline" onClick={onDismiss}>
+          <Button appearance="outline" onClick={onDismiss}>
             {t("common.cancel")}
           </Button>
         </SheetFooter>
@@ -1319,10 +1319,14 @@ function IconPicker({ value, onChange }: IconPickerProps) {
           />
         </div>
         <div className="flex justify-end gap-x-2 mt-2">
-          <Button variant="outline" size="sm" onClick={() => setTempValue("")}>
+          <Button
+            appearance="outline"
+            size="sm"
+            onClick={() => setTempValue("")}
+          >
             {t("common.clear")}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+          <Button appearance="outline" size="sm" onClick={() => setOpen(false)}>
             {t("common.cancel")}
           </Button>
           <Button
@@ -1366,7 +1370,7 @@ function DeleteConfirmButton({
         <p className="text-sm mb-2">{message}</p>
         <div className="flex justify-end gap-x-2">
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             onClick={() => onShowChange(false)}
           >

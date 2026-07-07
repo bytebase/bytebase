@@ -426,7 +426,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
   };
 
   return (
-    <Button size="sm" variant="link" disabled={syncing} onClick={handleSync}>
+    <Button size="sm" appearance="link" disabled={syncing} onClick={handleSync}>
       {syncing && <LoaderCircle className="size-3 animate-spin" />}
       {t("database.sync-database")}
     </Button>

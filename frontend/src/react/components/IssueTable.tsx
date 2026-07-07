@@ -145,7 +145,7 @@ function IssueSortDropdown({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             className={cn(
               orderBy
@@ -1058,7 +1058,7 @@ export function BatchIssueStatusActionDrawer({
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={loading} onClick={handleConfirm}>

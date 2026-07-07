@@ -763,7 +763,7 @@ function AddSpecDrawer({
 
         {/* Footer */}
         <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
           <Button disabled={!canSubmit || creating} onClick={handleConfirm}>
@@ -1040,7 +1040,7 @@ function DatabaseSelector({
           {hasMore && (
             <div className="flex justify-center">
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 disabled={isFetchingMore}
                 onClick={() => doFetch(false)}

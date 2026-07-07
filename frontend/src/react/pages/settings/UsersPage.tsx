@@ -359,7 +359,7 @@ function UserTable({
                           )}
                         >
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             className="text-error hover:text-error"
                             onClick={(e) => {
@@ -381,7 +381,7 @@ function UserTable({
                           )}
                         >
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -903,7 +903,7 @@ function UserForm({
       </SheetBody>
 
       <SheetFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button appearance="outline" onClick={onClose}>
           {t("common.cancel")}
         </Button>
         <Button
@@ -1016,7 +1016,7 @@ export function UsersPage() {
         />
         <div className="flex items-center gap-x-2">
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={!hasDirectorySyncFeature || !canAccessSettings}
             onClick={() => setShowAadSyncDrawer(true)}
           >

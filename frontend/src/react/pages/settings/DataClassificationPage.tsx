@@ -305,14 +305,14 @@ export function DataClassificationPage() {
             {editing ? (
               <>
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   disabled={!editorDirty}
                   onClick={onRevert}
                 >
                   <Undo2 className="w-4 h-4 mr-1" />
                   {t("common.revert")}
                 </Button>
-                <Button variant="outline" onClick={onCancelEdit}>
+                <Button appearance="outline" onClick={onCancelEdit}>
                   <X className="w-4 h-4 mr-1" />
                   {t("common.cancel")}
                 </Button>
@@ -342,7 +342,7 @@ export function DataClassificationPage() {
                           {t("common.clear")}
                         </Button>
                         <Button
-                          variant="outline"
+                          appearance="outline"
                           size="sm"
                           onClick={() => setShowClearConfirm(false)}
                         >
@@ -351,7 +351,7 @@ export function DataClassificationPage() {
                       </div>
                     ) : (
                       <Button
-                        variant="outline"
+                        appearance="outline"
                         disabled={!hasClassificationFeature}
                         onClick={() => setShowClearConfirm(true)}
                       >

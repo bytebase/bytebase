@@ -440,7 +440,7 @@ export function PlanDetailTaskRolloutActionPanel({
           )}
         </SheetBody>
         <SheetFooter>
-          <Button onClick={() => onOpenChange(false)} variant="ghost">
+          <Button onClick={() => onOpenChange(false)} appearance="secondary">
             {t("common.close")}
           </Button>
           <Tooltip

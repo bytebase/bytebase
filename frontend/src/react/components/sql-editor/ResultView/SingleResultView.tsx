@@ -596,7 +596,7 @@ function SingleResultViewInner({
                 <div className="flex items-center">
                   <Button
                     size="sm"
-                    variant="outline"
+                    appearance="outline"
                     className="h-7 px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
                     onClick={() => copy("all", formatAsText)}
                   >
@@ -610,7 +610,7 @@ function SingleResultViewInner({
                       render={
                         <Button
                           size="sm"
-                          variant="outline"
+                          appearance="outline"
                           aria-label={t("common.copy")}
                           className="h-7 w-6 px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover"
                         >
@@ -701,7 +701,7 @@ function SingleResultViewInner({
                 <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
                   <Button
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     disabled={searchCandidateActiveIndex <= 0}
                     onClick={scrollToPreviousCandidate}
                   >
@@ -710,7 +710,7 @@ function SingleResultViewInner({
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     disabled={
                       searchCandidateActiveIndex >=
                       searchCandidateRowIndexs.length - 1
@@ -722,7 +722,7 @@ function SingleResultViewInner({
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    appearance="secondary"
                     className="size-7 p-0"
                     onClick={clearSearchCandidate}
                   >
@@ -736,7 +736,7 @@ function SingleResultViewInner({
                   <div className="rounded-full shadow bg-background">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      appearance="secondary"
                       className="size-9 p-0 rounded-full"
                       onClick={() => scrollToRow(0)}
                     >
@@ -748,7 +748,7 @@ function SingleResultViewInner({
                   <div className="rounded-full shadow bg-background">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      appearance="secondary"
                       className="size-9 p-0 rounded-full"
                       onClick={() => scrollToRow(rows.length - 1)}
                     >
@@ -776,7 +776,7 @@ function SingleResultViewInner({
               {showVisualizeButton && (
                 <Button
                   size="sm"
-                  variant="link"
+                  appearance="link"
                   className="h-auto px-0 text-xs"
                   onClick={visualizeExplain}
                 >

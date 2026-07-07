@@ -51,7 +51,7 @@ export function SyncSchemaButton({ className }: { className?: string }) {
 
   const button = (
     <Button
-      variant="outline"
+      appearance="outline"
       size="sm"
       type="button"
       disabled={disabled || isSyncing}

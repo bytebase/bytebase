@@ -263,11 +263,11 @@ export function PlanDetailRollbackSheet({
         </SheetBody>
         <SheetFooter>
           {step === 1 ? (
-            <Button onClick={() => onOpenChange(false)} variant="ghost">
+            <Button onClick={() => onOpenChange(false)} appearance="secondary">
               {t("common.cancel")}
             </Button>
           ) : (
-            <Button onClick={() => setStep(1)} variant="ghost">
+            <Button onClick={() => setStep(1)} appearance="secondary">
               {t("common.back")}
             </Button>
           )}

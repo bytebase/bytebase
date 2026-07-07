@@ -211,7 +211,7 @@ export function GeneralPage() {
         <StickyActionFooter
           className="-mb-4"
           left={
-            <Button variant="outline" onClick={handleRevert}>
+            <Button appearance="outline" onClick={handleRevert}>
               {t("common.cancel")}
             </Button>
           }

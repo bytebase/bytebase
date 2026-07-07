@@ -281,7 +281,7 @@ export function SQLReviewDetailPage({
           <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
             {reviewPolicy.enforce ? (
               <Button
-                variant="outline"
+                appearance="outline"
                 disabled={!hasUpdatePermission}
                 onClick={() => setShowDisableModal(true)}
               >
@@ -289,7 +289,7 @@ export function SQLReviewDetailPage({
               </Button>
             ) : (
               <Button
-                variant="outline"
+                appearance="outline"
                 disabled={!hasUpdatePermission}
                 onClick={() => setShowEnableModal(true)}
               >
@@ -299,7 +299,7 @@ export function SQLReviewDetailPage({
           </PermissionGuard>
           <PermissionGuard permissions={["bb.policies.update"]}>
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!hasWorkspacePermissionV2("bb.policies.update")}
               onClick={() => setShowResourcePanel(true)}
             >
@@ -333,7 +333,7 @@ export function SQLReviewDetailPage({
                   </p>
                 </div>
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   onClick={() => setShowResourcePanel(true)}
                 >
@@ -371,7 +371,8 @@ export function SQLReviewDetailPage({
       <hr className="my-6" />
       <PermissionGuard permissions={["bb.reviewConfigs.delete"]}>
         <Button
-          variant="ghost-destructive"
+          variant="destructive"
+          appearance="outline"
           disabled={!hasDeletePermission}
           onClick={() => setShowDeleteConfirm(true)}
         >
@@ -385,7 +386,7 @@ export function SQLReviewDetailPage({
         <StickyActionFooter
           className="mt-4 py-2 border-control-border"
           left={
-            <Button variant="outline" onClick={onCancelChanges}>
+            <Button appearance="outline" onClick={onCancelChanges}>
               {t("common.cancel")}
             </Button>
           }
@@ -404,7 +405,7 @@ export function SQLReviewDetailPage({
           </DialogDescription>
           <div className="flex justify-end gap-x-2 mt-6">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowDisableModal(false)}
             >
               {t("common.cancel")}
@@ -426,7 +427,10 @@ export function SQLReviewDetailPage({
             {t("sql-review.enable-description")}
           </DialogDescription>
           <div className="flex justify-end gap-x-2 mt-6">
-            <Button variant="outline" onClick={() => setShowEnableModal(false)}>
+            <Button
+              appearance="outline"
+              onClick={() => setShowEnableModal(false)}
+            >
               {t("common.cancel")}
             </Button>
             <Button onClick={onRestore}>{t("common.enable")}</Button>
@@ -445,7 +449,7 @@ export function SQLReviewDetailPage({
           </DialogDescription>
           <div className="flex justify-end gap-x-2 mt-6">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowDeleteConfirm(false)}
             >
               {t("common.cancel")}

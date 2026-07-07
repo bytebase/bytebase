@@ -352,12 +352,12 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
 
       {/* Navigation buttons */}
       <div className="flex items-center justify-between mt-4">
-        <Button variant="outline" onClick={cancelSetup}>
+        <Button appearance="outline" onClick={cancelSetup}>
           {t("common.cancel")}
         </Button>
         <div className="flex items-center gap-x-2">
           {currentStep === DOWNLOAD_RECOVERY_CODES_STEP && (
-            <Button variant="outline" onClick={handleBack}>
+            <Button appearance="outline" onClick={handleBack}>
               {t("common.back")}
             </Button>
           )}

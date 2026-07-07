@@ -97,7 +97,7 @@ export function PlanCheckSection({
             disabled={isRunning || runDisabled}
             onClick={() => void onRun()}
             size="xs"
-            variant="outline"
+            appearance="outline"
           >
             <Play className="h-3.5 w-3.5" />
             {t("plan.run")}

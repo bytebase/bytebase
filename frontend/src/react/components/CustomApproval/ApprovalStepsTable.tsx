@@ -83,7 +83,7 @@ export function ApprovalStepsTable({
                 <td className="border border-control-border px-3 py-2">
                   <div className="flex gap-x-1">
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       disabled={index === 0 || !allowAdmin}
                       onClick={() => reorder(index, -1)}
@@ -91,7 +91,7 @@ export function ApprovalStepsTable({
                       <ArrowUp className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       disabled={index === roles.length - 1 || !allowAdmin}
                       onClick={() => reorder(index, 1)}
@@ -100,7 +100,7 @@ export function ApprovalStepsTable({
                     </Button>
                     {allowAdmin && (
                       <Button
-                        variant="outline"
+                        appearance="outline"
                         size="sm"
                         title={t("custom-approval.approval-flow.node.delete")}
                         onClick={() => removeStep(index)}
@@ -117,7 +117,7 @@ export function ApprovalStepsTable({
       </table>
       {editable && allowAdmin && (
         <div className="mt-4">
-          <Button variant="outline" onClick={addStep}>
+          <Button appearance="outline" onClick={addStep}>
             <Plus className="h-4 w-4" />
             {t("custom-approval.approval-flow.node.add")}
           </Button>

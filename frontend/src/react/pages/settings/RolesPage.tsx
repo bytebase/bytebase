@@ -261,7 +261,7 @@ function ImportPermissionModal({
           )}
 
           <div className="flex justify-end gap-x-2 mt-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button appearance="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -334,7 +334,7 @@ function DeleteConfirmModal({
         )}
 
         <div className="mt-6 flex justify-end gap-x-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button appearance="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
           {canDelete && (
@@ -599,7 +599,7 @@ function RoleSheet({
                   </span>
                   {!isBuiltin && (
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       onClick={() => setShowImportModal(true)}
                     >
@@ -642,7 +642,7 @@ function RoleSheet({
 
         {!isBuiltin && (
           <SheetFooter>
-            <Button variant="outline" onClick={onClose}>
+            <Button appearance="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -852,7 +852,7 @@ export function RolesPage() {
                       <div className="flex justify-end gap-x-2">
                         {canDelete && (
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             className="text-error hover:text-error"
                             onClick={() => handleDeleteRole(role)}
@@ -861,7 +861,7 @@ export function RolesPage() {
                           </Button>
                         )}
                         <Button
-                          variant="ghost"
+                          appearance="secondary"
                           size="sm"
                           onClick={() => editRole(role)}
                         >

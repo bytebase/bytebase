@@ -476,7 +476,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             </AlertDialogDescription>
             <div className="mt-6 flex items-center justify-end gap-x-2">
               <Button
-                variant="ghost"
+                appearance="secondary"
                 onClick={() => setShowUnassignConfirm(false)}
               >
                 {t("common.cancel")}

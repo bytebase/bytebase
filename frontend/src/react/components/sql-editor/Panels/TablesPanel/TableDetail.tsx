@@ -140,7 +140,7 @@ export function TableDetail({ db, database, schema, table }: TableDetailProps) {
         onBack={deselectTrigger}
         titlePrefix={
           <Button
-            variant="ghost"
+            appearance="secondary"
             className="h-8 px-1 text-sm"
             onClick={deselectTrigger}
           >
@@ -162,7 +162,7 @@ export function TableDetail({ db, database, schema, table }: TableDetailProps) {
       <div className="flex items-center justify-between gap-x-3 px-2 py-1 border-b border-block-border shrink-0">
         <div className="flex items-center gap-x-3 min-w-0">
           <Button
-            variant="ghost"
+            appearance="secondary"
             className="h-8 px-1 text-sm shrink-0"
             onClick={() => clearDetail()}
           >

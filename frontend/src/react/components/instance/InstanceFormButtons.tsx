@@ -488,7 +488,7 @@ export function InstanceFormButtons({
         </AlertDialogDescription>
         <AlertDialogFooter>
           <Button
-            variant="outline"
+            appearance="outline"
             onClick={() => closeConnectionFailureDialog(false)}
           >
             {t("common.cancel")}
@@ -510,7 +510,7 @@ export function InstanceFormButtons({
           left={
             allowCancel ? (
               <Button
-                variant="outline"
+                appearance="outline"
                 disabled={state.isRequesting || state.isTestingConnection}
                 onClick={cancel}
               >
@@ -543,7 +543,7 @@ export function InstanceFormButtons({
         className={cn("mt-4", className)}
         left={
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={state.isTestingConnection}
             onClick={resetChanges}
           >
@@ -553,7 +553,7 @@ export function InstanceFormButtons({
         right={
           <>
             <Button
-              variant="ghost"
+              appearance="secondary"
               disabled={!allowUpdate || state.isRequesting || !allowEdit}
               onClick={testConnectionForCurrentEditingDS}
             >

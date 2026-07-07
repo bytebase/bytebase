@@ -63,7 +63,7 @@ export function DatabaseSyncButton({
 
   return (
     <Button
-      variant="outline"
+      appearance="outline"
       disabled={disabled || syncing}
       onClick={() => void handleClick()}
     >

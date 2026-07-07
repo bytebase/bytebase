@@ -175,7 +175,7 @@ export function DangerZoneSection() {
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setExitOpen(false)}
               disabled={exiting}
             >
@@ -214,7 +214,7 @@ export function DangerZoneSection() {
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => {
                 setDeleteOpen(false);
                 setConfirmText("");

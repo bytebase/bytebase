@@ -253,7 +253,7 @@ export function EditColumnForeignKeySheet({
               )}
             </div>
             <div className="flex items-center gap-x-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button appearance="outline" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
               <Button disabled={!allowConfirm} onClick={handleConfirm}>

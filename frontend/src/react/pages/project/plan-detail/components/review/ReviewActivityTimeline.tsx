@@ -302,7 +302,11 @@ function ReviewCommentRow({
           onSubmit={() => void save()}
         />
         <div className="mt-2 flex items-center justify-end gap-x-2">
-          <Button onClick={() => setIsEditing(false)} size="xs" variant="ghost">
+          <Button
+            onClick={() => setIsEditing(false)}
+            size="xs"
+            appearance="secondary"
+          >
             {t("common.cancel")}
           </Button>
           <Button
@@ -332,7 +336,7 @@ function ReviewCommentRow({
           setIsEditing(true);
         }}
         size="xs"
-        variant="ghost"
+        appearance="secondary"
       >
         <Pencil className="h-3.5 w-3.5" />
       </Button>

@@ -230,7 +230,7 @@ export function AgentChat({ className }: AgentChatProps) {
                 {t("agent.ai-not-configured.configure")}
               </RouterLink>
             )}
-            <Button variant="outline" size="sm" onClick={dismiss}>
+            <Button appearance="outline" size="sm" onClick={dismiss}>
               {t("common.dismiss")}
             </Button>
           </div>

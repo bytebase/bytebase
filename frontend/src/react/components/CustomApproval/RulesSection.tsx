@@ -139,7 +139,7 @@ function SortableRow({
               {t("common.delete")}
             </Button>
             <Button
-              variant="outline"
+              appearance="outline"
               size="xs"
               onClick={() => setConfirmingDelete(false)}
             >
@@ -339,7 +339,11 @@ export function RulesSection({
           {approvalSourceText(source)}
         </div>
         <PermissionGuard permissions={["bb.settings.set"]}>
-          <Button variant="outline" disabled={!canEdit} onClick={handleAddRule}>
+          <Button
+            appearance="outline"
+            disabled={!canEdit}
+            onClick={handleAddRule}
+          >
             <Plus className="h-4 w-4" />
             {t("common.create")}
           </Button>

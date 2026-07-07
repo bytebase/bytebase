@@ -220,7 +220,7 @@ export function HistoryPane() {
         </div>
         <div className="flex items-center gap-x-1">
           <Button
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             className="h-6 w-6 p-0 hover:bg-control-bg-hover"
             data-copy-link-btn
@@ -233,7 +233,7 @@ export function HistoryPane() {
             <Link2 className="size-3.5" />
           </Button>
           <Button
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             className="h-6 w-6 p-0 hover:bg-control-bg-hover"
             data-copy-btn
@@ -276,7 +276,7 @@ export function HistoryPane() {
                 </span>
               </div>
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 className="h-5 w-5 p-0 text-accent hover:bg-accent/10 hover:text-accent"
                 data-dismiss-linked-history
@@ -303,7 +303,7 @@ export function HistoryPane() {
         {historyData.nextPageToken && (
           <div className="w-full flex flex-col items-center my-2">
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               disabled={loading}
               onClick={() => void fetchHistory()}

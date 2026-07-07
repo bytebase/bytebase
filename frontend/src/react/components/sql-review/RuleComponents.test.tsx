@@ -44,16 +44,9 @@ vi.mock("@/react/components/ui/badge", () => ({
 vi.mock("@/react/components/ui/button", () => ({
   Button: ({
     children,
-    disabled,
-    onClick,
-  }: {
-    children: React.ReactNode;
-    disabled?: boolean;
-    onClick?: () => void;
-  }) => (
-    <button disabled={disabled} onClick={onClick}>
-      {children}
-    </button>
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>{children}</button>
   ),
 }));
 

@@ -49,7 +49,7 @@ export function AdminModeButton({
   return (
     <Tooltip content={label} side="bottom">
       <Button
-        variant="outline"
+        appearance="outline"
         size={size}
         disabled={isDisconnected}
         onClick={handleClick}

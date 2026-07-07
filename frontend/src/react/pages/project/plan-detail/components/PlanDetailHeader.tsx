@@ -631,7 +631,7 @@ export function PlanDetailHeader() {
               slot has no primary, where the first one (e.g. Reopen) surfaces
               directly. */}
           {promotedAction && (
-            <Button onClick={promotedAction.onSelect} variant="outline">
+            <Button onClick={promotedAction.onSelect} appearance="outline">
               {promotedAction.label}
             </Button>
           )}
@@ -642,7 +642,7 @@ export function PlanDetailHeader() {
                   <Button
                     aria-label={t("common.more")}
                     className="px-2"
-                    variant="ghost"
+                    appearance="secondary"
                   />
                 }
               >
@@ -736,7 +736,7 @@ function ReadyForReviewPopoverContent({
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("common.confirm")}
         </Button>
-        <Button onClick={onCancel} size="sm" variant="ghost">
+        <Button onClick={onCancel} size="sm" appearance="secondary">
           {t("common.cancel")}
         </Button>
       </div>

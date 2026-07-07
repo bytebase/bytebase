@@ -186,7 +186,7 @@ export function LabelListEditor({
       </div>
       <div>
         <Button
-          variant="outline"
+          appearance="outline"
           size="sm"
           disabled={readonly || !allowAddLabel}
           onClick={handleAdd}

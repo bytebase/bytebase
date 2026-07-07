@@ -179,7 +179,7 @@ export function TableEditor({
         )}
         {addAction && (
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             className="gap-1.5"
             onClick={addAction.onClick}

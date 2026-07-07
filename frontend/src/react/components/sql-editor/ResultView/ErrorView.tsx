@@ -112,7 +112,7 @@ export function ErrorView({
         <div className="flex items-center gap-2 w-full">
           <span className="flex-1">{error}</span>
           {canShowInEditor && (
-            <Button size="sm" variant="ghost" onClick={showInEditor}>
+            <Button size="sm" appearance="secondary" onClick={showInEditor}>
               {positionLabel}
             </Button>
           )}

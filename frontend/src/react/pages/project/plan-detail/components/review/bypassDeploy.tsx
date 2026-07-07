@@ -291,7 +291,10 @@ export function BypassAndDeploySheet({
             <div />
           )}
           <div className="flex items-center gap-x-2">
-            <Button onClick={() => setConfirmOpen(false)} variant="ghost">
+            <Button
+              onClick={() => setConfirmOpen(false)}
+              appearance="secondary"
+            >
               {t("common.cancel")}
             </Button>
             <Button

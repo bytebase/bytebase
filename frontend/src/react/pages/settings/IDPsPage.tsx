@@ -188,7 +188,7 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
                 readOnly
                 className="flex-1 font-mono"
               />
-              <Button variant="outline" size="sm" onClick={handleCopy}>
+              <Button appearance="outline" size="sm" onClick={handleCopy}>
                 {t("common.copy")}
               </Button>
             </div>
@@ -444,7 +444,7 @@ function TestConnectionButton({
   return (
     <>
       <Button
-        variant="outline"
+        appearance="outline"
         disabled={disabled || testing}
         onClick={testConnection}
       >
@@ -1975,11 +1975,11 @@ function CreateWizardDrawer({
         {/* Footer */}
         <SheetFooter>
           {currentStep === 1 ? (
-            <Button variant="outline" onClick={onClose}>
+            <Button appearance="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
           ) : (
-            <Button variant="outline" onClick={handlePrev}>
+            <Button appearance="outline" onClick={handlePrev}>
               {t("common.back")}
             </Button>
           )}

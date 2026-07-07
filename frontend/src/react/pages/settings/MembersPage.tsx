@@ -503,7 +503,7 @@ function MemberTable({
                     <div className="flex items-center gap-x-1">
                       {allowEdit && canEdit(mb) && (
                         <Button
-                          variant="ghost"
+                          appearance="secondary"
                           size="sm"
                           onClick={() => onUpdateBinding(mb)}
                         >
@@ -512,7 +512,7 @@ function MemberTable({
                       )}
                       {allowEdit && (
                         <Button
-                          variant="ghost"
+                          appearance="secondary"
                           size="sm"
                           onClick={() => {
                             if (
@@ -806,7 +806,7 @@ function MemberTableByRole({
                         <div className="flex items-center gap-x-1">
                           {allowEdit && canEdit(mb) && (
                             <Button
-                              variant="ghost"
+                              appearance="secondary"
                               size="sm"
                               onClick={() => onUpdateBinding(mb)}
                             >
@@ -815,7 +815,7 @@ function MemberTableByRole({
                           )}
                           {allowEdit && (
                             <Button
-                              variant="ghost"
+                              appearance="secondary"
                               size="sm"
                               onClick={() => {
                                 if (
@@ -1784,7 +1784,7 @@ function EditMemberRoleDrawer({
                   })}
                 </SheetTitle>
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   onClick={() => setShowNestedGrant(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
@@ -1836,7 +1836,7 @@ function EditMemberRoleDrawer({
                         </div>
                         <div className="flex items-center gap-x-1">
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             title={t("common.edit")}
                             onClick={() => setShowNestedGrant(true)}
@@ -1844,7 +1844,7 @@ function EditMemberRoleDrawer({
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             title={t("common.delete")}
                             disabled={isRequesting}
@@ -1920,7 +1920,7 @@ function EditMemberRoleDrawer({
                 </Button>
               </div>
               <div className="flex items-center gap-x-2">
-                <Button variant="outline" onClick={onClose}>
+                <Button appearance="outline" onClick={onClose}>
                   {t("common.cancel")}
                 </Button>
                 <Button onClick={onClose}>{t("common.ok")}</Button>
@@ -2011,7 +2011,7 @@ function EditMemberRoleDrawer({
             )}
           </div>
           <div className="flex items-center gap-x-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button appearance="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -2281,7 +2281,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
               <div className="flex items-center gap-x-2">
                 {memberViewTab === "MEMBERS" && (
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     disabled={
                       disabled ||
                       !canSetIamPolicy ||

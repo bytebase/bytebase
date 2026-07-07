@@ -120,7 +120,7 @@ export function ProjectReleaseDashboardPage({
           />
           {selectedCategory && (
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               onClick={() => setSelectedCategory(undefined)}
             >

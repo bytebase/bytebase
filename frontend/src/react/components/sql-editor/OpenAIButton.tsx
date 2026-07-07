@@ -220,7 +220,7 @@ function AINotConfiguredButton({
       <PopoverTrigger
         render={
           <Button
-            variant="outline"
+            appearance="outline"
             size={size}
             aria-disabled
             className={cn(className, "opacity-50 cursor-default")}
@@ -253,7 +253,7 @@ function AINotConfiguredButton({
                   }}
                   tabIndex={-1}
                   className={buttonVariants({
-                    variant: "link",
+                    appearance: "link",
                     size: "sm",
                     className: "h-auto p-0 text-accent",
                   })}

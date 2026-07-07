@@ -102,7 +102,7 @@ export function InactiveRemindModal() {
           })}
         </DialogDescription>
         <div className="w-full flex items-center justify-end gap-x-2 mt-4">
-          <Button variant="ghost" onClick={logout}>
+          <Button appearance="secondary" onClick={logout}>
             {t("common.logout")}
           </Button>
           <Button onClick={staySignedIn}>

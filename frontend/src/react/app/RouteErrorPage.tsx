@@ -48,7 +48,7 @@ export function RouteErrorPage({
           {t("common.refresh")}
         </Button>
         <Button
-          variant="outline"
+          appearance="outline"
           onClick={() => globalThis.location.assign("/")}
         >
           {t("error-page.go-back-home")}

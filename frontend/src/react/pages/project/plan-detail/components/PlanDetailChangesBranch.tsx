@@ -702,7 +702,7 @@ export function PlanDetailChangesBranch({
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setSpecPendingDelete(null)}
             >
               {t("common.cancel")}
@@ -1377,7 +1377,7 @@ function TargetsSection({
                 className="text-control-light hover:text-control"
                 onClick={onEdit}
                 size="xs"
-                variant="ghost"
+                appearance="secondary"
               >
                 <Pencil className="size-3.5" />
               </Button>
@@ -1440,7 +1440,7 @@ function TargetsSection({
                 onClick={() => setShowAllTargetsDialog(true)}
                 size="sm"
                 type="button"
-                variant="ghost"
+                appearance="secondary"
               >
                 {t("plan.targets.view-all", { count: targets.length })}
               </Button>
@@ -1569,7 +1569,7 @@ function TargetSelectorSheet({
           />
         </SheetBody>
         <SheetFooter>
-          <Button onClick={() => onOpenChange(false)} variant="ghost">
+          <Button onClick={() => onOpenChange(false)} appearance="secondary">
             {t("common.cancel")}
           </Button>
           <Button
@@ -1823,7 +1823,7 @@ function DatabaseSelector({
           {hasMore && (
             <div className="flex justify-center">
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 disabled={isFetchingMore}
                 onClick={() => void doFetch(false)}
@@ -2030,7 +2030,7 @@ export function DatabaseGroupTarget({
                     className="h-6 px-1.5 text-xs text-accent hover:bg-accent/10 hover:text-accent"
                     size="xs"
                     type="button"
-                    variant="ghost"
+                    appearance="secondary"
                   />
                 }
               >

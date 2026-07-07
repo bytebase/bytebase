@@ -162,7 +162,7 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
         </div>
         {dirty && (
           <div className="flex items-center justify-end gap-x-2">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button appearance="outline" onClick={handleCancel}>
               {t("common.revert")}
             </Button>
             <PermissionGuard

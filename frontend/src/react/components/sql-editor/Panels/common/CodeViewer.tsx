@@ -171,7 +171,7 @@ export function CodeViewer({
         <div className="flex justify-start items-center gap-2 min-w-0">
           {titlePrefix ?? (
             <Button
-              variant="ghost"
+              appearance="secondary"
               className="h-8 px-1 text-sm"
               onClick={onBack}
             >

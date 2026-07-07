@@ -265,7 +265,7 @@ export function SensitiveColumnTable({
                     <TableCell className="w-16">
                       <Button
                         type="button"
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         onClick={() => onDelete(item)}
                         title={t(

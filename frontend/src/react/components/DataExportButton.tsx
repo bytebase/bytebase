@@ -447,7 +447,7 @@ export function DataExportButton({
                     <div className="flex items-center gap-x-2 mt-1">
                       <Button
                         type="button"
-                        variant="outline"
+                        appearance="outline"
                         size="sm"
                         onClick={handleGeneratePassword}
                       >
@@ -456,7 +456,7 @@ export function DataExportButton({
                       </Button>
                       <Button
                         type="button"
-                        variant="outline"
+                        appearance="outline"
                         size="sm"
                         disabled={!password}
                         onClick={() => void copyPasswordToClipboard(password)}
@@ -470,7 +470,7 @@ export function DataExportButton({
               </div>
             </SheetBody>
             <SheetFooter>
-              <Button variant="outline" onClick={() => setShowDrawer(false)}>
+              <Button appearance="outline" onClick={() => setShowDrawer(false)}>
                 {t("common.cancel")}
               </Button>
               <Button
@@ -502,7 +502,7 @@ export function DataExportButton({
               />
               <div className="flex items-center justify-end gap-x-2 pt-2">
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   onClick={() => setShowPasswordDialog(false)}
                 >

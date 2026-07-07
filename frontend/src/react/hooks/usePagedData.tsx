@@ -267,7 +267,7 @@ export function PagedTableFooter({
       </div>
       {hasMore && (
         <Button
-          variant="ghost"
+          appearance="secondary"
           size="sm"
           disabled={isFetchingMore}
           onClick={onLoadMore}

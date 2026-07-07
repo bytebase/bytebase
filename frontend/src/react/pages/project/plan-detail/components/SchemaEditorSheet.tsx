@@ -279,7 +279,7 @@ function SchemaEditorSheetBody({
       </div>
       <SheetFooter>
         <div className="flex w-full items-center justify-end gap-x-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button appearance="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
           <Button

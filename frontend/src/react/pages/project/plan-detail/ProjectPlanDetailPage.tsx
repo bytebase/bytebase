@@ -368,7 +368,7 @@ function ProjectPlanDetailPageInner({
                     <span className="textinfolabel">{t("common.detail")}</span>
                     <Button
                       size="xs"
-                      variant="ghost"
+                      appearance="secondary"
                       onClick={page.closeTaskPanel}
                     >
                       <X className="h-4 w-4" />
@@ -429,7 +429,7 @@ function ProjectPlanDetailPageInner({
             </AlertDialogTitle>
             <AlertDialogFooter>
               <Button
-                variant="outline"
+                appearance="outline"
                 onClick={() => page.resolveLeaveConfirm(false)}
               >
                 {t("common.cancel")}

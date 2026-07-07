@@ -135,7 +135,7 @@ export function ReviewActionPopover({
             </Button>
           </span>
         </Tooltip>
-        <Button onClick={onClose} size="sm" variant="ghost">
+        <Button onClick={onClose} size="sm" appearance="secondary">
           {t("common.cancel")}
         </Button>
       </div>

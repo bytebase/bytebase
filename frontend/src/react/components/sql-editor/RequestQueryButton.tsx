@@ -167,7 +167,7 @@ export function RequestQueryButton({
         {({ disabled }) => (
           <Button
             size={size}
-            variant={text ? "ghost" : "default"}
+            appearance={text ? "secondary" : "solid"}
             disabled={disabled || !hasRequestFeature}
             onClick={handleClick}
             className={cn(

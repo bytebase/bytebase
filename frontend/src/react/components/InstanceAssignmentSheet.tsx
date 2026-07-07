@@ -336,7 +336,7 @@ export function InstanceAssignmentSheet({
           />
         </SheetBody>
         <SheetFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button appearance="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button disabled={confirmDisabled} onClick={handleConfirm}>

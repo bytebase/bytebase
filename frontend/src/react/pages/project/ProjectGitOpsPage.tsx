@@ -399,7 +399,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 project={project}
               >
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   disabled={!canCreateWorkloadIdentity}
                   onClick={() => setShowCreateDrawer(true)}
                 >
@@ -429,7 +429,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
             </span>
             <div className="flex gap-x-0">
               <Button
-                variant={targetTab === "GROUP" ? "default" : "outline"}
+                appearance={targetTab === "GROUP" ? "solid" : "outline"}
                 size="sm"
                 className="rounded-r-none"
                 onClick={() => handleTargetTabChange("GROUP")}
@@ -437,7 +437,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 {t("common.database-group")}
               </Button>
               <Button
-                variant={targetTab === "DATABASE" ? "default" : "outline"}
+                appearance={targetTab === "DATABASE" ? "solid" : "outline"}
                 size="sm"
                 className="rounded-l-none"
                 onClick={() => handleTargetTabChange("DATABASE")}
@@ -722,7 +722,7 @@ function CollapsibleCode({
   return (
     <div className={cn("flex flex-col gap-y-2", className)}>
       <div>
-        <Button variant="ghost" size="sm" onClick={onToggle}>
+        <Button appearance="secondary" size="sm" onClick={onToggle}>
           {open ? (
             <ChevronDown className="w-4 h-4" />
           ) : (

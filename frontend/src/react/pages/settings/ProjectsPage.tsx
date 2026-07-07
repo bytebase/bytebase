@@ -81,10 +81,10 @@ function ConfirmDialog({
   if (!open) return null;
 
   const borderColor = variant === "error" ? "border-error" : "border-warning";
-  const okBg =
-    variant === "error"
-      ? "bg-error hover:bg-error-hover text-accent-text"
-      : "bg-warning hover:bg-warning-hover text-accent-text";
+  const okClassName =
+    variant === "warning"
+      ? "bg-warning text-accent-text hover:bg-warning-hover"
+      : undefined;
 
   return (
     <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
@@ -95,18 +95,16 @@ function ConfirmDialog({
         </AlertDialogDescription>
         {children && <div className="mt-4">{children}</div>}
         <div className="mt-6 flex justify-end gap-x-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button appearance="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
-          <button
-            className={cn(
-              "inline-flex items-center justify-center rounded-xs px-4 py-2 text-sm font-medium",
-              okBg
-            )}
+          <Button
+            variant={variant === "error" ? "destructive" : "default"}
+            className={okClassName}
             onClick={onOk}
           >
             {okText}
-          </button>
+          </Button>
         </div>
       </AlertDialogContent>
     </AlertDialog>

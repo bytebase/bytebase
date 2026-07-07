@@ -73,7 +73,7 @@ export function Canvas({
         {screenshotFilename && (
           <Tooltip content="Screenshot" side="top">
             <Button
-              variant="outline"
+              appearance="outline"
               size="xs"
               onClick={() => void capture()}
               disabled={capturing}
@@ -87,7 +87,7 @@ export function Canvas({
 
         <Tooltip content={t("schema-diagram.fit-content-with-view")} side="top">
           <Button
-            variant="outline"
+            appearance="outline"
             size="xs"
             onClick={handleFitView}
             aria-label={t("schema-diagram.fit-content-with-view")}

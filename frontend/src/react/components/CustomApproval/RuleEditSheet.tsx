@@ -200,7 +200,7 @@ export function RuleEditSheet({
                   {templates.map((template, index) => (
                     <Button
                       key={index}
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       disabled={!allowAdmin}
                       title={template.description()}
@@ -306,7 +306,7 @@ export function RuleEditSheet({
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button appearance="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowSave || !allowAdmin} onClick={handleSave}>

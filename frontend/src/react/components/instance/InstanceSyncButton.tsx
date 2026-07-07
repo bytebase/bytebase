@@ -130,7 +130,7 @@ export function InstanceSyncButton({
       <DropdownMenuTrigger
         render={
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={!hasPermission || disabled || syncing}
           />
         }

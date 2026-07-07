@@ -81,7 +81,7 @@ export function TableSchemaViewer({
         <Tooltip content={t("common.copy")}>
           <Button
             type="button"
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             disabled={!schemaString}
             onClick={handleCopy}

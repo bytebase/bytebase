@@ -148,7 +148,7 @@ function PolicyTable({
                             {t("common.delete")}
                           </Button>
                           <Button
-                            variant="outline"
+                            appearance="outline"
                             size="sm"
                             onClick={() => setConfirmingDelete(null)}
                           >
@@ -158,7 +158,7 @@ function PolicyTable({
                       ) : (
                         <Tooltip content={t("common.delete")}>
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             className="text-error hover:text-error"
                             onClick={() => setConfirmingDelete(policy.id)}
@@ -175,7 +175,7 @@ function PolicyTable({
                       }
                     >
                       <Button
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         onClick={() => navigateToDetail(policy)}
                       >
@@ -207,7 +207,7 @@ function PolicyTable({
             </div>
             <div className="flex items-center gap-x-2 mt-4">
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 onClick={() => navigateToDetail(policy)}
               >

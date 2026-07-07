@@ -476,7 +476,11 @@ export function PlanDetailStatementSection({
           <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
             {!isEditingExistingStatement && (
               <>
-                <Button onClick={handleUploadClick} size="xs" variant="outline">
+                <Button
+                  onClick={handleUploadClick}
+                  size="xs"
+                  appearance="outline"
+                >
                   <Upload className="h-3.5 w-3.5" />
                   {t("issue.upload-sql")}
                 </Button>
@@ -484,7 +488,7 @@ export function PlanDetailStatementSection({
                   <Button
                     onClick={() => setIsSchemaEditorOpen(true)}
                     size="xs"
-                    variant="outline"
+                    appearance="outline"
                   >
                     <Table className="h-3.5 w-3.5" />
                     {t("schema-editor.self")}
@@ -496,7 +500,7 @@ export function PlanDetailStatementSection({
               <Button
                 onClick={() => setIsEditing(true)}
                 size="xs"
-                variant="outline"
+                appearance="outline"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 {t("common.edit")}
@@ -508,7 +512,7 @@ export function PlanDetailStatementSection({
                   disabled={!canSave}
                   onClick={() => void handleSave()}
                   size="xs"
-                  variant="outline"
+                  appearance="outline"
                 >
                   {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {t("common.save")}
@@ -519,7 +523,7 @@ export function PlanDetailStatementSection({
                     setIsEditing(false);
                   }}
                   size="xs"
-                  variant="ghost"
+                  appearance="secondary"
                 >
                   {t("common.cancel")}
                 </Button>
@@ -539,7 +543,7 @@ export function PlanDetailStatementSection({
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
                   size="xs"
-                  variant="outline"
+                  appearance="outline"
                 >
                   {isDownloading && (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

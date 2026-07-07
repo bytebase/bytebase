@@ -230,7 +230,7 @@ export function PermissionDeniedFallback({
           {showRequestRole && (
             <div>
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 disabled={!canRequestRole || !hasRequestRoleFeature}
                 onClick={() => setShowRequestRoleSheet(true)}

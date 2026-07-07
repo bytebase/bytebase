@@ -116,7 +116,7 @@ export function PlanDetailTaskRunTable({
                     {shouldShowDetailButton(taskRun) ? (
                       <Button
                         size="xs"
-                        variant="outline"
+                        appearance="outline"
                         onClick={() => setDetailTaskRun(taskRun)}
                       >
                         {t("common.detail")}

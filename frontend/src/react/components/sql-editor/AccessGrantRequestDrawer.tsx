@@ -438,7 +438,7 @@ function AccessGrantRequestDrawerInner({
         </div>
       </SheetBody>
       <SheetFooter>
-        <Button variant="outline" onClick={onClose} disabled={isRequesting}>
+        <Button appearance="outline" onClick={onClose} disabled={isRequesting}>
           {t("common.cancel")}
         </Button>
         <Button

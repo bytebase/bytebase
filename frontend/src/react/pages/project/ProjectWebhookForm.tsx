@@ -529,7 +529,7 @@ export function ProjectWebhookForm({
           {/* Test webhook */}
           <div className="mt-4">
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!state.url || loading}
               onClick={testWebhook}
             >
@@ -544,11 +544,11 @@ export function ProjectWebhookForm({
         className="w-full"
         left={
           create ? (
-            <Button variant="outline" onClick={cancel}>
+            <Button appearance="outline" onClick={cancel}>
               {t("common.cancel")}
             </Button>
           ) : valueChanged ? (
-            <Button variant="outline" onClick={discardChanges}>
+            <Button appearance="outline" onClick={discardChanges}>
               {t("common.discard-changes")}
             </Button>
           ) : undefined
@@ -584,7 +584,7 @@ export function ProjectWebhookForm({
             {t("common.cannot-undo-this-action")}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+            <Button appearance="outline" onClick={() => setDeleteOpen(false)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={deleteWebhook}>

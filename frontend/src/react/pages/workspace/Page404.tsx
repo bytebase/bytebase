@@ -17,7 +17,7 @@ export function Page404() {
       <div className="mt-12">
         <RouterLink
           to={{ name: WORKSPACE_ROUTE_LANDING }}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={buttonVariants({ appearance: "outline", size: "sm" })}
         >
           <ChevronLeft className="h-4 w-4" />
           {t("error-page.go-back-home")}

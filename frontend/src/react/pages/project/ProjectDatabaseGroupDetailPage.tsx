@@ -127,7 +127,7 @@ export function ProjectDatabaseGroupDetailPage({
             project={project}
           >
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!canChangeDatabase || !hasMatchedDatabases}
               onClick={() => preCreateIssue(project.name, [resourceName])}
               title={
@@ -190,7 +190,7 @@ export function ProjectDatabaseGroupDetailPage({
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowDeleteDialog(false)}
             >
               {t("common.cancel")}

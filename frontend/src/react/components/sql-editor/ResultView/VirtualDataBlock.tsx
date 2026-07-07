@@ -230,7 +230,7 @@ function CopyJSONButton({
       <Tooltip content={label}>
         <Button
           size="sm"
-          variant="ghost"
+          appearance="secondary"
           className="size-7 p-0"
           onClick={handleCopy}
         >

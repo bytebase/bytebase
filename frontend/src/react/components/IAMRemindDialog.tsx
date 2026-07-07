@@ -125,7 +125,7 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
         </label>
 
         <div className="mt-7 flex justify-end gap-x-2">
-          <Button variant="outline" onClick={close}>
+          <Button appearance="outline" onClick={close}>
             {t("common.dismiss")}
           </Button>
           {!isInProjectPage && (

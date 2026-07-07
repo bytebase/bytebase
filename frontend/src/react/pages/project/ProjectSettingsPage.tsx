@@ -759,7 +759,7 @@ export function ProjectSettingsPage() {
                           </span>
                           {canUpdatePolicies && (
                             <Button
-                              variant="ghost"
+                              appearance="secondary"
                               size="sm"
                               onClick={() => {
                                 setPendingReviewPolicy(undefined);
@@ -772,7 +772,7 @@ export function ProjectSettingsPage() {
                         </FormControlRow>
                       ) : (
                         <Button
-                          variant="outline"
+                          appearance="outline"
                           disabled={
                             !canUpdatePolicies ||
                             !hasWorkspacePermissionV2("bb.reviewConfigs.list")
@@ -924,7 +924,7 @@ export function ProjectSettingsPage() {
                       }}
                     />
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="md"
                       onClick={addIssueLabel}
                       disabled={!newLabelValue.trim()}
@@ -1075,7 +1075,7 @@ export function ProjectSettingsPage() {
                     })}
                   />
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     disabled={!canDelete || executing}
                     onClick={() => setDangerAction("archive")}
                   >
@@ -1090,7 +1090,7 @@ export function ProjectSettingsPage() {
                     description={t("project.settings.restore.btn-text")}
                   />
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     disabled={!canUndelete || executing}
                     onClick={() => setDangerAction("restore")}
                   >
@@ -1132,7 +1132,7 @@ export function ProjectSettingsPage() {
         {allowEdit && isDirty && (
           <StickyActionFooter
             left={
-              <Button variant="outline" onClick={revert}>
+              <Button appearance="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>
             }
@@ -1164,7 +1164,7 @@ export function ProjectSettingsPage() {
                 </p>
                 {hasWorkspacePermissionV2("bb.reviewConfigs.create") && (
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     onClick={() => {
                       setShowReviewDialog(false);
                       router.push({
@@ -1204,7 +1204,7 @@ export function ProjectSettingsPage() {
           </div>
           <div className="mt-4 flex justify-end">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowReviewDialog(false)}
             >
               {t("common.cancel")}
@@ -1240,7 +1240,7 @@ export function ProjectSettingsPage() {
           </p>
           <div className="mt-6 flex justify-end items-center gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setDangerAction(null)}
               disabled={executing}
             >

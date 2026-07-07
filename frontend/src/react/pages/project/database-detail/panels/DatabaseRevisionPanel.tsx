@@ -138,7 +138,7 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowDeleteConfirm(false)}
             >
               {t("common.cancel")}

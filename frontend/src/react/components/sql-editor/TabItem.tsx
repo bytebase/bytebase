@@ -40,7 +40,7 @@ export function TabItem({ tab, onClick }: TabItemProps) {
   return (
     <Tooltip content={label} side="right" delayDuration={300}>
       <Button
-        variant="ghost"
+        appearance="secondary"
         className={cn(
           "size-10 p-0",
           // Active is a solid accent fill with the on-accent text color; hover

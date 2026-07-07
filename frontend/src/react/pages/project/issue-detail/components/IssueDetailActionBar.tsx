@@ -450,7 +450,7 @@ export function IssueDetailActionBar() {
           <RouterLink
             to={planRoute}
             className={buttonVariants({
-              variant: "outline",
+              appearance: "outline",
               className: "gap-x-1",
             })}
           >
@@ -506,7 +506,7 @@ export function IssueDetailActionBar() {
                     disabled={Boolean(
                       primaryAction && isActionDisabled(primaryAction)
                     )}
-                    variant="ghost"
+                    appearance="secondary"
                   >
                     <EllipsisVertical className="h-4 w-4" />
                   </Button>
@@ -594,7 +594,7 @@ function IssueDetailReviewTrigger({
       onClick={() => {
         void onExecute(action.id);
       }}
-      variant={action.buttonType === "default" ? "outline" : "default"}
+      appearance={action.buttonType === "default" ? "outline" : "solid"}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       <span>{action.label(context)}</span>
@@ -653,7 +653,7 @@ function IssueDetailActionButton({
       onClick={() => {
         void onExecute(action.id);
       }}
-      variant={action.buttonType === "default" ? "outline" : "default"}
+      appearance={action.buttonType === "default" ? "outline" : "solid"}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       <span>{action.label(context)}</span>
@@ -692,7 +692,10 @@ function IssueDetailConfirmDialog({
             <DialogTitle>{label}</DialogTitle>
             <div className="mt-3 text-sm text-control-light">{content}</div>
             <div className="mt-6 flex items-center justify-end gap-x-2">
-              <Button onClick={() => onOpenChange(false)} variant="ghost">
+              <Button
+                onClick={() => onOpenChange(false)}
+                appearance="secondary"
+              >
                 {t("common.cancel")}
               </Button>
               <Button disabled={busy} onClick={onConfirm}>
@@ -878,7 +881,11 @@ function IssueDetailReviewPopover({
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("common.submit")}
         </Button>
-        <Button onClick={() => onOpenChange(false)} size="sm" variant="ghost">
+        <Button
+          onClick={() => onOpenChange(false)}
+          size="sm"
+          appearance="secondary"
+        >
           {t("common.cancel")}
         </Button>
       </div>

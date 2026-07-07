@@ -27,11 +27,11 @@ function Calendar({
         caption_label: "text-sm font-medium text-control",
         nav: "flex items-center justify-between absolute inset-x-0 top-0",
         button_previous: cn(
-          buttonVariants({ variant: "ghost" }),
+          buttonVariants({ appearance: "secondary" }),
           "size-7 p-0 text-control-light"
         ),
         button_next: cn(
-          buttonVariants({ variant: "ghost" }),
+          buttonVariants({ appearance: "secondary" }),
           "size-7 p-0 text-control-light"
         ),
         month_grid: "w-full border-collapse",
@@ -40,7 +40,7 @@ function Calendar({
         week: "flex w-full mt-1",
         day: "relative size-8 p-0 text-center text-sm",
         day_button: cn(
-          buttonVariants({ variant: "ghost" }),
+          buttonVariants({ appearance: "secondary" }),
           "size-8 p-0 font-normal text-control"
         ),
         today:

@@ -48,7 +48,7 @@ export function ProceduresPanel() {
         onBack={() => clearDetail()}
         titlePrefix={
           <Button
-            variant="ghost"
+            appearance="secondary"
             className="h-8 px-1 text-sm"
             onClick={() => clearDetail()}
           >

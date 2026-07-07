@@ -320,7 +320,7 @@ export function BatchQuerySelect({
           side="bottom"
         >
           <Button
-            variant={showEmpty ? "default" : "ghost"}
+            appearance={showEmpty ? "solid" : "secondary"}
             size="sm"
             className="h-7 px-1.5 mb-2"
             onClick={() => setShowEmpty(!showEmpty)}

@@ -130,7 +130,7 @@ export function DashboardHeader({
       <div className="flex flex-1 items-center justify-end gap-x-2">
         <Button
           size="sm"
-          variant="outline"
+          appearance="outline"
           aria-label={t("agent.self")}
           title={t("agent.self")}
           onClick={() => {
@@ -148,7 +148,7 @@ export function DashboardHeader({
         {currentPlan === PlanType.FREE ? (
           <Button
             size="sm"
-            variant="outline"
+            appearance="outline"
             aria-label={t("common.want-help")}
             title={t("common.want-help")}
             className="border-success text-success hover:bg-success/10"
@@ -166,7 +166,7 @@ export function DashboardHeader({
 
         <Button
           size="sm"
-          variant="outline"
+          appearance="outline"
           aria-label={t("sql-editor.self")}
           title={t("sql-editor.self")}
           onClick={() => {
@@ -181,7 +181,7 @@ export function DashboardHeader({
 
         <Button
           size="sm"
-          variant="outline"
+          appearance="outline"
           aria-label={t("issue.my-issues")}
           title={t("issue.my-issues")}
           onClick={() => {

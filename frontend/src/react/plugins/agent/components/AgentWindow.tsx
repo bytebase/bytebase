@@ -897,7 +897,7 @@ export function AgentWindow() {
           <div className="mt-6 flex justify-end gap-x-2">
             <AgentDialogClose
               render={
-                <Button variant="outline" type="button">
+                <Button appearance="outline" type="button">
                   {t("common.cancel")}
                 </Button>
               }
@@ -973,7 +973,7 @@ export function AgentWindow() {
                 >
                   <AgentTooltip content={t("agent.new-chat")}>
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       className="text-control-light"
                       aria-label={t("agent.new-chat")}
@@ -1227,7 +1227,7 @@ function ConfirmDialog({
         render={
           triggerVariant === "icon" ? (
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="xs"
               className="text-control-light hover:bg-background"
               aria-label={triggerLabel}
@@ -1301,7 +1301,7 @@ function SidebarIconButton({
   return (
     <AgentTooltip content={tooltip}>
       <Button
-        variant="ghost"
+        appearance="secondary"
         size="xs"
         className="text-control-light hover:bg-background"
         aria-label={ariaLabel}

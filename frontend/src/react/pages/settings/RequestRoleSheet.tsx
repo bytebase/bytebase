@@ -647,7 +647,7 @@ function RequestRoleForm({
         </div>
       </SheetBody>
       <SheetFooter>
-        <Button variant="outline" onClick={onClose} disabled={submitting}>
+        <Button appearance="outline" onClick={onClose} disabled={submitting}>
           {t("common.cancel")}
         </Button>
         <Button disabled={!canSubmit} onClick={handleSubmit}>

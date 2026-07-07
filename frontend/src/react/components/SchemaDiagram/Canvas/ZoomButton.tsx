@@ -22,7 +22,7 @@ export function ZoomButton({ min, max, onZoomIn, onZoomOut }: ZoomButtonProps) {
   return (
     <div className="bg-background rounded-sm flex items-center gap-x-px">
       <Button
-        variant="outline"
+        appearance="outline"
         size="xs"
         onClick={onZoomOut}
         disabled={zoom <= min}
@@ -35,7 +35,7 @@ export function ZoomButton({ min, max, onZoomIn, onZoomOut }: ZoomButtonProps) {
         <span className="w-8 text-center">{display}</span>
       </div>
       <Button
-        variant="outline"
+        appearance="outline"
         size="xs"
         onClick={onZoomIn}
         disabled={zoom >= max}

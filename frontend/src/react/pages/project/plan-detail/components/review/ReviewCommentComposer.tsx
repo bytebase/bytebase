@@ -91,7 +91,11 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
           placeholder={t("plan.review.activity.add-a-comment")}
         />
         <div className="mt-2 flex items-center justify-end gap-x-2">
-          <Button onClick={() => setExpanded(false)} size="sm" variant="ghost">
+          <Button
+            onClick={() => setExpanded(false)}
+            size="sm"
+            appearance="secondary"
+          >
             {t("common.cancel")}
           </Button>
           <Button

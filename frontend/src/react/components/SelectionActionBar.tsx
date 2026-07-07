@@ -144,7 +144,7 @@ export function SelectionActionBar({
           const Icon = action.icon;
           const button = (
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               disabled={action.disabled}
               onClick={action.onClick}
@@ -171,7 +171,7 @@ export function SelectionActionBar({
             <DropdownMenuTrigger
               render={
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   className="rounded-full"
                   aria-label={t("common.more")}

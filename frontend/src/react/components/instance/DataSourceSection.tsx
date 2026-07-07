@@ -119,7 +119,7 @@ export function DataSourceSection({
             <div className="flex items-center justify-between gap-x-2">
               <span>{t("data-source.no-read-only-data-source")}</span>
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 onClick={handleCreateRODataSource}
               >

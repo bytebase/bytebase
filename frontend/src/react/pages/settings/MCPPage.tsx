@@ -101,7 +101,7 @@ export function MCPPage() {
                 <RouterLink
                   to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
                   className={buttonVariants({
-                    variant: "outline",
+                    appearance: "outline",
                     size: "sm",
                     className: "ml-3",
                   })}
