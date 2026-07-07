@@ -180,3 +180,56 @@ func TestMigration3_7_20_ScalarTaskUpdateTasks(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, nullPayload, "null", "null row should be unchanged")
 }
+
+// TestMigration3_20_2_NullSQLReviewRules verifies that migration 3.20.2
+// tolerates review_config payloads whose sqlReviewRules is not an array —
+// `{"sqlReviewRules": null}` exists in the wild and previously aborted the
+// migration with SQLSTATE 22023 ("cannot extract elements from a scalar"),
+// blocking server startup (BYT-9835). Same bug class as 3.7.20's scalar
+// taskUpdate.tasks regression.
+func TestMigration3_20_2_NullSQLReviewRules(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+
+	setup := `
+		CREATE TABLE review_config (
+			id TEXT PRIMARY KEY,
+			payload JSONB NOT NULL DEFAULT '{}'
+		);
+
+		INSERT INTO review_config (id, payload) VALUES
+			('null-rules', '{"sqlReviewRules": null}'),
+			('with-removed-rules', '{"sqlReviewRules": [{"type": "STATEMENT_SELECT_FULL_TABLE_SCAN", "level": "WARNING"}, {"type": "COLUMN_NO_NULL", "level": "WARNING"}]}'),
+			('only-removed-rules', '{"sqlReviewRules": [{"type": "STATEMENT_MAXIMUM_LIMIT_VALUE", "level": "ERROR"}]}'),
+			('without-removed-rules', '{"sqlReviewRules": [{"type": "COLUMN_NO_NULL", "level": "WARNING"}]}'),
+			('no-rules-key', '{"name": "x"}'),
+			('object-shaped-rules', '{"sqlReviewRules": {"type": "STATEMENT_MAXIMUM_LIMIT_VALUE"}}');
+	`
+	_, err := db.ExecContext(ctx, setup)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.20/0002##remove_select_only_sql_review_rules.sql")
+	require.NoError(t, err)
+
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	getPayload := func(id string) string {
+		t.Helper()
+		var payload string
+		err := db.QueryRowContext(ctx, `SELECT payload::text FROM review_config WHERE id = $1`, id).Scan(&payload)
+		require.NoError(t, err)
+		return payload
+	}
+
+	// Non-array shapes are skipped untouched; array shapes are cleaned.
+	require.JSONEq(t, `{"sqlReviewRules": null}`, getPayload("null-rules"))
+	require.JSONEq(t, `{"sqlReviewRules": [{"type": "COLUMN_NO_NULL", "level": "WARNING"}]}`, getPayload("with-removed-rules"))
+	require.JSONEq(t, `{"sqlReviewRules": []}`, getPayload("only-removed-rules"))
+	require.JSONEq(t, `{"sqlReviewRules": [{"type": "COLUMN_NO_NULL", "level": "WARNING"}]}`, getPayload("without-removed-rules"))
+	require.JSONEq(t, `{"name": "x"}`, getPayload("no-rules-key"))
+	require.JSONEq(t, `{"sqlReviewRules": {"type": "STATEMENT_MAXIMUM_LIMIT_VALUE"}}`, getPayload("object-shaped-rules"))
+}
