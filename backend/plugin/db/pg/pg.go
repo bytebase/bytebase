@@ -809,11 +809,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		// Sanitize the schema name by escaping any quotes.
-		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
+		safeSchemaName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
 
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
+		// Keep public in the path because PostgreSQL extensions commonly install functions there, and their
+		// function bodies may call helper functions without schema qualification.
 		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized via strings.ReplaceAll above
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s", public;`, safeSchemaName)); err != nil { // NOSONAR(go:S2077) safeSchemaName is sanitized via strings.ReplaceAll above
 				return nil, err
 			}
 		}
