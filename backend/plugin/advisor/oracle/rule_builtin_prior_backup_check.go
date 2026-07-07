@@ -217,12 +217,18 @@ func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[strin
 //
 // The real Oracle sync stores the connection schema's tables under
 // SchemaMetadata{Name: ""} while the rule normalizes unqualified table
-// references to the database name, so an empty synced schema name matches any
-// requested schema (it IS the current schema).
+// references to the database name, so the empty synced schema name matches
+// the current owner only — a DML explicitly qualified with a different owner
+// must stay silent (its metadata is simply not synced), not borrow the
+// current schema's table of the same name.
 func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, schemaName, tableName string) []string {
 	var result []string
 	for _, schemaMeta := range dbSchema.GetSchemas() {
-		if schemaMeta.GetName() != "" && !strings.EqualFold(schemaMeta.GetName(), schemaName) {
+		if schemaMeta.GetName() == "" {
+			if !strings.EqualFold(schemaName, dbSchema.GetName()) {
+				continue
+			}
+		} else if !strings.EqualFold(schemaMeta.GetName(), schemaName) {
 			continue
 		}
 		for _, tableMeta := range schemaMeta.GetTables() {

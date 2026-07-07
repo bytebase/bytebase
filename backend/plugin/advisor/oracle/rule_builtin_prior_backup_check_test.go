@@ -105,6 +105,13 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 		require.Contains(t, advices[0].Content, `"PAYLOAD"`)
 	})
 
+	t.Run("cross_owner_dml_stays_silent", func(t *testing.T) {
+		// The empty synced schema holds only the CONNECTED schema's tables;
+		// a different explicit owner must not borrow its metadata even when
+		// a same-named table exists.
+		require.Empty(t, longAdvices(check(t, "UPDATE OTHER_OWNER.T_LONG SET ID = 1 WHERE ID = 2;")))
+	})
+
 	t.Run("unknown_table_stays_silent", func(t *testing.T) {
 		// Missing metadata must not produce false alarms.
 		require.Empty(t, longAdvices(check(t, "UPDATE NO_SUCH_TABLE SET ID = 1 WHERE ID = 2;")))
