@@ -63,7 +63,9 @@ func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, 
 
 // pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL
 // out. The engine version is unused: PostgreSQL canonicalizes identically across versions.
-func pgDiffSDLMigration(sourceSDL, targetSDL string, _ string) (string, error) {
+// The session-context map is unused: PostgreSQL routines carry no per-object session
+// context (it is a MySQL-only concern), so the recreate is always bare.
+func pgDiffSDLMigration(sourceSDL, targetSDL string, _ string, _ *schema.SDLSessionContextMap) (string, error) {
 	plan, err := buildMigrationPlan(sourceSDL, targetSDL)
 	if err != nil {
 		return "", err
