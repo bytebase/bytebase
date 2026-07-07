@@ -123,6 +123,21 @@ func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
 	require.Len(t, service.bus.ApprovalCheckChan, 0)
 }
 
+func TestUpdateIssueLabelsDoesNotResetCreateDatabaseApproval(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceCreateDatabaseApprovalIssue(ctx, t, stores)
+
+	updateIssueLabels(ctx, t, service, issue, []string{"environment:staging"})
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, []string{"environment:staging"}, got.Payload.GetLabels())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Len(t, service.bus.ApprovalCheckChan, 0)
+}
+
 func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
@@ -175,6 +190,57 @@ func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *
 		Name:        "plan-a",
 		Description: "",
 		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels: []string{"environment:prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalTemplate: &storepb.ApprovalTemplate{
+					Flow:  &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}},
+					Title: "manual approval",
+				},
+				Approvers: []*storepb.IssuePayloadApproval_Approver{
+					{
+						Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+						Principal: common.FormatUserEmail("creator@example.com"),
+					},
+				},
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+	return plan, issue
+}
+
+func createIssueServiceCreateDatabaseApprovalIssue(ctx context.Context, t *testing.T, stores *store.Store) (*store.PlanMessage, *store.IssueMessage) {
+	t.Helper()
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+							Target: "instances/prod/databases/app",
+						},
+					},
+				},
+			},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 

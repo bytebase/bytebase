@@ -1163,7 +1163,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			if slices.Equal(issue.Payload.Labels, labels) {
 				continue
 			}
-			if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+			resetApprovalForLabels, err := s.shouldResetApprovalForIssueLabels(ctx, issue)
+			if err != nil {
+				return nil, err
+			}
+			if resetApprovalForLabels {
 				labelsChangedWithApprovalReset = true
 				labelsForApprovalReset = labels
 			} else {
@@ -1226,6 +1230,25 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
+}
+
+func (s *IssueService) shouldResetApprovalForIssueLabels(ctx context.Context, issue *store.IssueMessage) (bool, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
+		return false, nil
+	}
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return false, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan for issue label update"))
+	}
+	if plan == nil {
+		return false, connect.NewError(connect.CodeNotFound, errors.New("plan not found for issue label update"))
+	}
+	for _, spec := range plan.Config.GetSpecs() {
+		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // BatchUpdateIssuesStatus batch updates issues status.
