@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
 
@@ -177,7 +178,90 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		}
 	}
 
+	// Prior backup copies rows with CREATE TABLE ... AS SELECT, which Oracle
+	// does not support for LONG / LONG RAW columns at all (ORA-00997) — the
+	// task would fail at run time with no earlier signal. Warn up front with
+	// the table and column names.
+	adviceList = append(adviceList, r.longColumnAdvices(groupByTable)...)
+
 	r.adviceList = append(r.adviceList, adviceList...)
+}
+
+// longColumnAdvices warns for backup-targeted tables that contain LONG or
+// LONG RAW columns, which CREATE TABLE AS SELECT cannot copy.
+func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[string][]statementInfo) []*storepb.Advice {
+	if r.checkCtx.DBSchema == nil {
+		return nil
+	}
+	var adviceList []*storepb.Advice
+	for _, list := range groupByTable {
+		table := list[0].table
+		columns := oracleFindLongColumns(r.checkCtx.DBSchema, table, r.checkCtx.IsObjectCaseSensitive)
+		if len(columns) == 0 {
+			continue
+		}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        r.level,
+			Title:         r.title,
+			Content:       fmt.Sprintf("Prior backup cannot copy table %q.%q: column(s) %s use the LONG/LONG RAW type, which CREATE TABLE AS SELECT does not support (ORA-00997). Disable prior backup for this issue or migrate the column type", table.Schema, table.Table, strings.Join(columns, ", ")),
+			Code:          code.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: nil,
+		})
+	}
+	return adviceList
+}
+
+// oracleNameEqual compares an AST object name with a synced-metadata name.
+// The omni Oracle parser already delivers names in catalog form (unquoted
+// identifiers uppercased, "quoted" ones exact-case with quotes stripped) and
+// sync stores data-dictionary names verbatim, so in case-sensitive mode this
+// is plain equality — an EqualFold here would conflate T_LONG with a distinct
+// quoted "t_long" table and warn about the wrong table's columns. In
+// case-insensitive mode both sides fold, matching the rest of the Oracle
+// rules' normalizeNameByCaseSensitivity behavior.
+func oracleNameEqual(astName, metadataName string, isObjectCaseSensitive bool) bool {
+	if isObjectCaseSensitive {
+		return astName == metadataName
+	}
+	return strings.EqualFold(astName, metadataName)
+}
+
+// oracleFindLongColumns returns the names of LONG / LONG RAW columns of the
+// given table, or nil when the table is not found in the synced metadata
+// (missing metadata must not produce false alarms).
+//
+// The real Oracle sync stores the connection schema's tables under
+// SchemaMetadata{Name: ""} while the rule normalizes unqualified table
+// references to the database name, so the empty synced schema name matches
+// the current owner only — a DML explicitly qualified with a different owner
+// must stay silent (its metadata is simply not synced), not borrow the
+// current schema's table of the same name.
+func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, table *TableReference, isObjectCaseSensitive bool) []string {
+	var result []string
+	for _, schemaMeta := range dbSchema.GetSchemas() {
+		if schemaMeta.GetName() == "" {
+			// The anonymous schema holds the connection owner's tables. An
+			// unqualified DML always targets the current owner; a qualified
+			// one matches only when it names the current owner.
+			if table.HasSchema && !oracleNameEqual(table.Schema, dbSchema.GetName(), isObjectCaseSensitive) {
+				continue
+			}
+		} else if !oracleNameEqual(table.Schema, schemaMeta.GetName(), isObjectCaseSensitive) {
+			continue
+		}
+		for _, tableMeta := range schemaMeta.GetTables() {
+			if !oracleNameEqual(table.Table, tableMeta.GetName(), isObjectCaseSensitive) {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				typ := strings.ToUpper(strings.TrimSpace(column.GetType()))
+				if typ == "LONG" || typ == "LONG RAW" {
+					result = append(result, fmt.Sprintf("%q", column.GetName()))
+				}
+			}
+		}
+	}
+	return result
 }
 
 func oracleTableReferenceFromObjectName(databaseName string, name *ast.ObjectName, typ StatementType) *TableReference {

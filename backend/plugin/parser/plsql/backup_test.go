@@ -148,3 +148,23 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 		})
 	}
 }
+
+// TestTransformDMLToSelectRejectsDatabaseLinks pins the fail-loud contract for
+// DML targeting a table through a database link: the restore path records only
+// schema+table, so a "successful" backup of remote rows would restore into a
+// LOCAL table of the same name — reject up front instead.
+func TestTransformDMLToSelectRejectsDatabaseLinks(t *testing.T) {
+	for _, statement := range []string{
+		"UPDATE lt1@remote SET c1 = 1 WHERE b1 = 1;",
+		"UPDATE lt1@remote SET c1 = 1 WHERE b1 = 1;\nUPDATE lt1@remote SET c1 = 2 WHERE b1 = 2;",
+	} {
+		_, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, statement, "DB", "backupDB", "rollback")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "database link")
+	}
+
+	// A local table with the same name as a remote one must keep working.
+	stmts, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, "UPDATE lt1 SET c1 = 1 WHERE b1 = 1;", "DB", "backupDB", "rollback")
+	require.NoError(t, err)
+	require.Len(t, stmts, 1)
+}
