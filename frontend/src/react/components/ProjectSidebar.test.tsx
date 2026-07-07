@@ -44,6 +44,7 @@ const t = vi.hoisted(
       "common.manage": "Manage",
       "common.members": options?.count === 2 ? "Members" : "Member",
       "common.setting": "Setting",
+      "common.settings": "Settings",
       "common.webhooks": "Webhooks",
       "database.sync-schema.title": "Sync Schema",
       "gitops.self": "GitOps",
@@ -141,6 +142,21 @@ beforeEach(async () => {
 });
 
 describe("ProjectSidebar", () => {
+  test("renders the settings route with a plural label", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    const settingsLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.includes("Settings")
+    );
+
+    expect(settingsLink).toBeTruthy();
+
+    unmount();
+  });
+
   test("keeps child route labels on one line", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />

@@ -13,6 +13,11 @@ import {
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  FormField,
+  FormFieldGroup,
+  FormTitle,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -172,7 +177,7 @@ export function RuleEditSheet({
           <SheetTitle>{t("custom-approval.rule.self")}</SheetTitle>
         </SheetHeader>
 
-        <SheetBody className="gap-y-4">
+        <SheetBody>
           {/* Fallback hint */}
           {isFallback && (
             <Alert
@@ -183,106 +188,121 @@ export function RuleEditSheet({
             />
           )}
 
-          {/* Template presets (create mode only) */}
-          {mode === "create" && (
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-sm font-medium text-control">
-                {t("custom-approval.approval-flow.template.presets-title")}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {templates.map((template, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    disabled={!allowAdmin}
-                    title={template.description()}
-                    onClick={() => applyTemplate(template)}
-                  >
-                    {template.title()}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Title field */}
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-sm font-medium text-control">
-              {t("common.title")} <span className="text-error">*</span>
-            </h3>
-            <Input
-              value={title}
-              placeholder={t("common.title")}
-              disabled={!allowAdmin}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Description field */}
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-sm font-medium text-control">
-              {t("common.description")}
-            </h3>
-            <Textarea
-              value={description}
-              placeholder={t("common.description")}
-              disabled={!allowAdmin}
-              rows={2}
-              className="min-h-0 resize-none"
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          {/* Condition editor */}
-          <div className="flex flex-1 flex-col gap-y-2">
-            <h3 className="text-sm font-medium text-control">
-              {t("cel.condition.self")} <span className="text-error">*</span>
-            </h3>
-            <div className="text-sm text-control-light">
-              {t("cel.condition.description-tips")}
-            </div>
-            <ExprEditor
-              expr={conditionExpr}
-              readonly={!allowAdmin}
-              factorList={factorList}
-              optionConfigMap={optionConfigMap}
-              onUpdate={setConditionExpr}
-            />
-          </div>
-
-          {/* Approval flow section */}
-          <div className="flex flex-col gap-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-control">
-                {t("custom-approval.approval-flow.node.nodes")}
-                {!noApprovalRequired && <span className="text-error"> *</span>}
-              </h3>
-              <div className="flex items-center gap-x-2">
-                <Switch
-                  checked={noApprovalRequired}
-                  onCheckedChange={handleNoApprovalRequiredChange}
-                  disabled={!allowAdmin}
-                />
-                <span className="text-sm text-control-light">
-                  {t("custom-approval.approval-flow.skip")}
-                </span>
-              </div>
-            </div>
-            {!noApprovalRequired && (
-              <>
-                <div className="text-sm text-control-light">
-                  {t("custom-approval.approval-flow.node.description")}
+          <FormFieldGroup>
+            {/* Template presets (create mode only) */}
+            {mode === "create" && (
+              <FormField
+                title={t(
+                  "custom-approval.approval-flow.template.presets-title"
+                )}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {templates.map((template, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      disabled={!allowAdmin}
+                      title={template.description()}
+                      onClick={() => applyTemplate(template)}
+                    >
+                      {template.title()}
+                    </Button>
+                  ))}
                 </div>
+              </FormField>
+            )}
+
+            {/* Title field */}
+            <FormField>
+              <FormTitle id="approval-rule-title-title">
+                {t("common.title")} <span className="text-error">*</span>
+              </FormTitle>
+              <Input
+                id="approval-rule-title"
+                aria-labelledby="approval-rule-title-title"
+                value={title}
+                placeholder={t("common.title")}
+                disabled={!allowAdmin}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </FormField>
+
+            {/* Description field */}
+            <FormField>
+              <FormTitle id="approval-rule-description-title">
+                {t("common.description")}
+              </FormTitle>
+              <Textarea
+                id="approval-rule-description"
+                aria-labelledby="approval-rule-description-title"
+                value={description}
+                placeholder={t("common.description")}
+                disabled={!allowAdmin}
+                rows={2}
+                className="min-h-0 resize-none"
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </FormField>
+
+            {/* Condition editor */}
+            <FormField
+              title={
+                <>
+                  {t("cel.condition.self")}{" "}
+                  <span className="text-error">*</span>
+                </>
+              }
+              description={t("cel.condition.description-tips")}
+              className="flex-1"
+            >
+              <ExprEditor
+                expr={conditionExpr}
+                readonly={!allowAdmin}
+                factorList={factorList}
+                optionConfigMap={optionConfigMap}
+                onUpdate={setConditionExpr}
+              />
+            </FormField>
+
+            {/* Approval flow section */}
+            <FormField
+              title={
+                <div className="flex items-center justify-between gap-x-4">
+                  <span>
+                    {t("custom-approval.approval-flow.node.nodes")}
+                    {!noApprovalRequired && (
+                      <span className="text-error"> *</span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-x-2">
+                    <Switch
+                      checked={noApprovalRequired}
+                      onCheckedChange={handleNoApprovalRequiredChange}
+                      disabled={!allowAdmin}
+                    />
+                    <span className="text-sm font-normal text-control-placeholder">
+                      {t("custom-approval.approval-flow.skip")}
+                    </span>
+                  </div>
+                </div>
+              }
+              description={
+                !noApprovalRequired
+                  ? t("custom-approval.approval-flow.node.description")
+                  : undefined
+              }
+            >
+              {!noApprovalRequired && (
                 <ApprovalStepsTable
                   roles={flow.roles}
                   editable={allowAdmin}
                   allowAdmin={allowAdmin}
                   onRolesChange={(newRoles) => setFlow({ roles: newRoles })}
                 />
-              </>
-            )}
-          </div>
+              )}
+            </FormField>
+          </FormFieldGroup>
         </SheetBody>
 
         <SheetFooter>

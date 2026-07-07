@@ -34,7 +34,11 @@ import type {
 } from "@/react/components/sql-editor/theme/types";
 import { resolveWorkspaceTheme } from "@/react/components/sql-editor/theme/useWorkspaceSQLEditorTheme";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { SegmentedControl } from "@/react/components/ui/segmented-control";
 import {
@@ -417,67 +421,68 @@ export const SQLEditorSection = forwardRef<
   };
 
   return (
-    <div id="security" className="py-6 lg:flex gap-y-4 lg:gap-y-0">
-      <div className="text-left lg:w-1/4">
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-      <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+    <FormSection id="security" title={title}>
+      <FormFieldGroup>
         {/* Data Export toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
-          <div className="w-full inline-flex items-center gap-x-2">
-            <Checkbox
-              checked={!state.disableExport}
-              disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-              onCheckedChange={(checked) =>
-                handleToggle("disableExport", !checked)
-              }
-            />
-            <span className="text-base font-semibold">
-              {t("settings.general.workspace.data-export")}
-            </span>
-            <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-          </div>
+          <FormField
+            title={
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Checkbox
+                  checked={!state.disableExport}
+                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+                  onCheckedChange={(checked) =>
+                    handleToggle("disableExport", !checked)
+                  }
+                />
+                {t("settings.general.workspace.data-export")}
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+              </span>
+            }
+          />
         </PermissionGuard>
 
         {/* Data Copy toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
-          <div className="w-full inline-flex items-center gap-x-2">
-            <Checkbox
-              checked={!state.disableCopyData}
-              disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
-              onCheckedChange={(checked) =>
-                handleToggle("disableCopyData", !checked)
-              }
-            />
-            <span className="text-base font-semibold">
-              {t("settings.general.workspace.data-copy")}
-            </span>
-            <FeatureBadge feature={PlanFeature.FEATURE_RESTRICT_COPYING_DATA} />
-          </div>
+          <FormField
+            title={
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Checkbox
+                  checked={!state.disableCopyData}
+                  disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
+                  onCheckedChange={(checked) =>
+                    handleToggle("disableCopyData", !checked)
+                  }
+                />
+                {t("settings.general.workspace.data-copy")}
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_RESTRICT_COPYING_DATA}
+                />
+              </span>
+            }
+          />
         </PermissionGuard>
 
         {/* Allow Admin Data Source toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
-          <div>
-            <div className="w-full inline-flex items-center gap-x-2">
-              <Checkbox
-                checked={state.allowAdminDataSource}
-                disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-                onCheckedChange={(checked) =>
-                  handleToggle("allowAdminDataSource", checked)
-                }
-              />
-              <span className="text-base font-semibold">
+          <FormField
+            title={
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Checkbox
+                  checked={state.allowAdminDataSource}
+                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+                  onCheckedChange={(checked) =>
+                    handleToggle("allowAdminDataSource", checked)
+                  }
+                />
                 {t("settings.general.workspace.allow-admin-data-source.self")}
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
-              <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-            </div>
-            <span className="mt-1 text-sm text-gray-400">
-              {t(
-                "settings.general.workspace.allow-admin-data-source.description"
-              )}
-            </span>
-          </div>
+            }
+            description={t(
+              "settings.general.workspace.allow-admin-data-source.description"
+            )}
+          />
         </PermissionGuard>
 
         {/* Maximum SQL Result Size (MB) */}
@@ -486,25 +491,28 @@ export const SQLEditorSection = forwardRef<
             permissions={["bb.settings.setWorkspaceProfile"]}
             display="block"
           >
-            <div>
-              <p className="text-base font-semibold flex flex-row justify-start items-center">
-                <span className="mr-2">
+            <FormField
+              title={
+                <span className="flex flex-row justify-start items-center gap-x-2">
                   {t("settings.general.workspace.maximum-sql-result.size.self")}
+                  <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
                 </span>
-                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.maximum-sql-result.size.description"
-                )}{" "}
-                <span className="font-semibold! textinfolabel">
+              }
+              description={
+                <>
                   {t(
-                    "settings.general.workspace.maximum-sql-result.size.default",
-                    { limit: DEFAULT_MAX_RESULT_SIZE_IN_MB }
-                  )}
-                </span>
-              </p>
-              <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+                    "settings.general.workspace.maximum-sql-result.size.description"
+                  )}{" "}
+                  <span className="font-semibold! textinfolabel">
+                    {t(
+                      "settings.general.workspace.maximum-sql-result.size.default",
+                      { limit: DEFAULT_MAX_RESULT_SIZE_IN_MB }
+                    )}
+                  </span>
+                </>
+              }
+            >
+              <div className="w-full flex flex-row justify-start items-center gap-4">
                 <NumberInput
                   className="w-60"
                   value={state.maximumResultSize}
@@ -516,28 +524,31 @@ export const SQLEditorSection = forwardRef<
                   suffix="MB"
                 />
               </div>
-            </div>
+            </FormField>
           </PermissionGuard>
         )}
 
         {/* Maximum SQL Result Rows */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
-          <div>
-            <p className="text-base font-semibold flex flex-row justify-start items-center">
-              <span className="mr-2">
+          <FormField
+            title={
+              <span className="flex flex-row justify-start items-center gap-x-2">
                 {t("settings.general.workspace.maximum-sql-result.rows.self")}
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
-              <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.maximum-sql-result.rows.description"
-              )}{" "}
-              <span className="font-semibold! textinfolabel">
-                {t("settings.general.workspace.no-limit")}
-              </span>
-            </p>
-            <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+            }
+            description={
+              <>
+                {t(
+                  "settings.general.workspace.maximum-sql-result.rows.description"
+                )}{" "}
+                <span className="font-semibold! textinfolabel">
+                  {t("settings.general.workspace.no-limit")}
+                </span>
+              </>
+            }
+          >
+            <div className="w-full flex flex-row justify-start items-center gap-4">
               <NumberInput
                 className="w-60"
                 value={state.maximumResultRows}
@@ -550,7 +561,7 @@ export const SQLEditorSection = forwardRef<
                 )}
               />
             </div>
-          </div>
+          </FormField>
         </PermissionGuard>
 
         {/* Query Timeout (seconds) */}
@@ -558,22 +569,25 @@ export const SQLEditorSection = forwardRef<
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <div>
-            <p className="text-base font-semibold flex flex-row justify-start items-center">
-              <span className="mr-2">
+          <FormField
+            title={
+              <span className="flex flex-row justify-start items-center gap-x-2">
                 {t("settings.general.workspace.query-data-policy.timeout.self")}
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
-              <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.query-data-policy.timeout.description"
-              )}{" "}
-              <span className="font-semibold! textinfolabel">
-                {t("settings.general.workspace.no-limit")}
-              </span>
-            </p>
-            <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+            }
+            description={
+              <>
+                {t(
+                  "settings.general.workspace.query-data-policy.timeout.description"
+                )}{" "}
+                <span className="font-semibold! textinfolabel">
+                  {t("settings.general.workspace.no-limit")}
+                </span>
+              </>
+            }
+          >
+            <div className="w-full flex flex-row justify-start items-center gap-4">
               <NumberInput
                 className="w-60"
                 value={state.maxQueryTimeInSeconds}
@@ -588,7 +602,7 @@ export const SQLEditorSection = forwardRef<
                 )}
               />
             </div>
-          </div>
+          </FormField>
         </PermissionGuard>
 
         {/* SQL Editor theme — dev-only until the feature ships. */}
@@ -596,16 +610,12 @@ export const SQLEditorSection = forwardRef<
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <div className="flex flex-col gap-y-3">
-            <div>
-              <p className="text-base font-semibold">
-                {t("settings.general.workspace.sql-editor-theme.self")}
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t("settings.general.workspace.sql-editor-theme.description")}
-              </p>
-            </div>
-
+          <FormField
+            title={t("settings.general.workspace.sql-editor-theme.self")}
+            description={t(
+              "settings.general.workspace.sql-editor-theme.description"
+            )}
+          >
             <SegmentedControl
               ariaLabel={t("settings.general.workspace.sql-editor-theme.self")}
               disabled={!canSetWorkspaceProfile}
@@ -636,15 +646,12 @@ export const SQLEditorSection = forwardRef<
               />
             )}
 
-            <div className="flex flex-col gap-y-2">
-              <p className="text-sm font-medium text-control">
-                {t("common.preview")}
-              </p>
+            <FormField title={t("common.preview")}>
               <ThemePreview theme={previewTheme} />
-            </div>
-          </div>
+            </FormField>
+          </FormField>
         </PermissionGuard>
       </FormFieldGroup>
-    </div>
+    </FormSection>
   );
 });

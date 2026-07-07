@@ -432,7 +432,6 @@
     "select-all": "全选",
     "selected": "已选择",
     "sensitive-placeholder": "敏感数据 - 仅写入",
-    "setting": "设置",
     "settings": "设置",
     "share": "分享",
     "show-less": "收起",
@@ -495,6 +494,7 @@
   "create-db": {
     "cluster": "集群",
     "database-owner-name": "数据库所有者",
+    "issue-title": "工单标题",
     "new-collection-name": "新集合名称",
     "new-database-name": "新数据库名称",
     "reserved-db-error": "{{databaseName}} 是一个预留名称"

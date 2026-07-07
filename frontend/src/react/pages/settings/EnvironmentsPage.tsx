@@ -30,6 +30,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { RouterLink } from "@/react/components/RouterLink";
@@ -48,11 +49,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
-import {
-  FormDescription,
-  FormField,
-  FormLabel,
-} from "@/react/components/ui/form";
+import { FormField } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -790,24 +787,27 @@ function EnvironmentDetail({
       <div className="flex-1 px-4">
         <div className="flex flex-col gap-y-6">
           {/* Name section */}
-          <FormField>
-            <div className="flex items-center gap-x-2">
-              <input
-                type="color"
-                value={editColor}
-                disabled={!canEdit}
-                onChange={(e) => onColorChange(e.target.value)}
-                className={cn(
-                  "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
-                  "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
-                  "cursor-pointer"
-                )}
-              />
-              <FormLabel>
-                {t("common.environment-name")}
-                <span className="ml-0.5 text-error">*</span>
-              </FormLabel>
-            </div>
+          <FormField
+            title={
+              <span className="flex items-center gap-x-2">
+                <input
+                  type="color"
+                  value={editColor}
+                  disabled={!canEdit}
+                  onChange={(e) => onColorChange(e.target.value)}
+                  className={cn(
+                    "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
+                    "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
+                    "cursor-pointer"
+                  )}
+                />
+                <span>
+                  {t("common.environment-name")}
+                  <span className="ml-0.5 text-error">*</span>
+                </span>
+              </span>
+            }
+          >
             <Input
               value={editTitle}
               disabled={!canEdit}
@@ -821,24 +821,23 @@ function EnvironmentDetail({
           </FormField>
 
           {/* Tier section */}
-          <FormField>
-            <div className="gap-y-1">
-              <FormLabel>
+          <FormField
+            title={
+              <>
                 {t("policy.environment-tier.name")}
                 <FeatureBadge feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS} />
-              </FormLabel>
-              <FormDescription>
+              </>
+            }
+            description={
+              <>
                 {t("policy.environment-tier.description", { newline: "\n" })}
-                <a
+                <LearnMoreLink
                   href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-1 text-accent hover:underline"
-                >
-                  {t("common.learn-more")}
-                </a>
-              </FormDescription>
-            </div>
+                  className="ml-1 text-accent"
+                />
+              </>
+            }
+          >
             <label className="inline-flex items-center gap-x-2 cursor-pointer">
               <Checkbox
                 checked={editProtected}
@@ -858,30 +857,29 @@ function EnvironmentDetail({
 
           {/* Rollout policy section */}
           {canGetPolicy && rolloutPolicy && (
-            <FormField>
-              <div className="gap-y-1">
-                <div className="flex items-baseline gap-x-2">
-                  <FormLabel>{t("policy.rollout.name")}</FormLabel>
+            <FormField
+              title={
+                <span className="flex items-baseline gap-x-2">
+                  {t("policy.rollout.name")}
                   {policyChanged && (
                     <span className="textlabeltip">
                       {t("policy.rollout.tip")}
                     </span>
                   )}
-                </div>
-                <FormDescription>
+                </span>
+              }
+              description={
+                <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
                   })}
-                  <a
+                  <LearnMoreLink
                     href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-1 text-accent hover:underline"
-                  >
-                    {t("common.learn-more")}
-                  </a>
-                </FormDescription>
-              </div>
+                    className="ml-1 text-accent"
+                  />
+                </>
+              }
+            >
               <RolloutPolicyConfig
                 policy={rolloutPolicy}
                 onChange={setRolloutPolicy}
@@ -1095,23 +1093,26 @@ function CreateSheet({
         <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
-            <FormField>
-              <div className="flex items-center gap-x-2">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => onColorChange(e.target.value)}
-                  className={cn(
-                    "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
-                    "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
-                    "cursor-pointer"
-                  )}
-                />
-                <FormLabel>
-                  {t("common.environment-name")}
-                  <span className="ml-0.5 text-error">*</span>
-                </FormLabel>
-              </div>
+            <FormField
+              title={
+                <span className="flex items-center gap-x-2">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => onColorChange(e.target.value)}
+                    className={cn(
+                      "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
+                      "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
+                      "cursor-pointer"
+                    )}
+                  />
+                  <span>
+                    {t("common.environment-name")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </span>
+                </span>
+              }
+            >
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -1128,11 +1129,18 @@ function CreateSheet({
             </FormField>
 
             {/* Tier */}
-            <FormField>
-              <FormLabel>{t("policy.environment-tier.name")}</FormLabel>
-              <FormDescription>
-                {t("policy.environment-tier.description", { newline: "\n" })}
-              </FormDescription>
+            <FormField
+              title={<>{t("policy.environment-tier.name")}</>}
+              description={
+                <>
+                  {t("policy.environment-tier.description", { newline: "\n" })}
+                  <LearnMoreLink
+                    href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
+                    className="ml-1 text-accent"
+                  />
+                </>
+              }
+            >
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
                 <Checkbox
                   checked={isProtected}
@@ -1150,15 +1158,20 @@ function CreateSheet({
             </FormField>
 
             {/* Rollout Policy */}
-            <FormField>
-              <div className="gap-y-1">
-                <FormLabel>{t("policy.rollout.name")}</FormLabel>
-                <FormDescription>
+            <FormField
+              title={<>{t("policy.rollout.name")}</>}
+              description={
+                <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
                   })}
-                </FormDescription>
-              </div>
+                  <LearnMoreLink
+                    href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
+                    className="ml-1 text-accent"
+                  />
+                </>
+              }
+            >
               <RolloutPolicyConfig
                 policy={rolloutPolicy}
                 onChange={setRolloutPolicy}

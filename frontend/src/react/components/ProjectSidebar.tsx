@@ -191,7 +191,7 @@ function useSidebarItems(): SidebarItem[] {
         ],
       },
       {
-        title: t("common.setting"),
+        title: t("common.settings"),
         icon: Settings,
         path: PROJECT_V1_ROUTE_SETTINGS,
         type: "div",

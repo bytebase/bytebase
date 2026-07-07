@@ -18,7 +18,11 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
@@ -415,55 +419,55 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const disabled = !allowEdit;
 
     return (
-      <div id="account" className="py-6 lg:flex">
-        <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
+      <FormSection id="account" title={title}>
         <PermissionGuard
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <FormFieldGroup>
             {/* Sub-section 1: Disallow signup (non-SaaS only) */}
             {!isSaaSMode && (
               <>
-                <div className="mt-4 lg:mt-0">
-                  <div className="flex items-center gap-x-2">
-                    <Checkbox
-                      checked={toggleState.disallowSignup}
-                      disabled={disabled || !hasDisallowSignupFeature}
-                      onCheckedChange={(checked) =>
-                        setToggleState((s) => ({
-                          ...s,
-                          disallowSignup: checked,
-                        }))
-                      }
-                    />
-                    <span className="text-base font-semibold">
+                <FormField
+                  title={
+                    <span className="flex items-center gap-x-2">
+                      <Checkbox
+                        checked={toggleState.disallowSignup}
+                        disabled={disabled || !hasDisallowSignupFeature}
+                        onCheckedChange={(checked) =>
+                          setToggleState((s) => ({
+                            ...s,
+                            disallowSignup: checked,
+                          }))
+                        }
+                      />
                       {t("settings.general.workspace.disallow-signup.enable")}
+                      <FeatureBadge
+                        feature={
+                          PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP
+                        }
+                      />
                     </span>
-                    <FeatureBadge
-                      feature={PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP}
-                    />
-                  </div>
-                  <div className="mt-1 mb-3 text-sm text-gray-400">
-                    {t(
-                      "settings.general.workspace.disallow-signup.description"
-                    )}
-                  </div>
-                </div>
-                <hr className="my-6" />
+                  }
+                  description={t(
+                    "settings.general.workspace.disallow-signup.description"
+                  )}
+                />
+                <hr className="my-1" />
               </>
             )}
 
             {/* Sub-section 2: Password Restriction */}
-            <div className="mt-4 lg:mt-0">
-              <p className="text-base font-semibold flex flex-row justify-start items-center mb-2 gap-x-2">
-                {t("settings.general.workspace.password-restriction.self")}
-                <FeatureBadge
-                  feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
-                />
-              </p>
+            <FormField
+              title={
+                <span className="flex flex-row justify-start items-center gap-x-2">
+                  {t("settings.general.workspace.password-restriction.self")}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
+                  />
+                </span>
+              }
+            >
               <div className="flex flex-col gap-y-3">
                 <div className="flex items-center">
                   <Input
@@ -621,54 +625,54 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   </span>
                 </label>
               </div>
-            </div>
+            </FormField>
 
-            <hr className="my-6" />
+            <hr className="my-1" />
 
             {/* Sub-section 3: Require 2FA */}
             <div className="flex flex-col gap-y-7">
-              <div className="mt-4 lg:mt-0">
-                <div className="flex items-center gap-x-2">
-                  <Checkbox
-                    checked={toggleState.requireMfa}
-                    disabled={disabled || !has2FAFeature}
-                    onCheckedChange={(checked) =>
-                      setToggleState((s) => ({
-                        ...s,
-                        requireMfa: checked,
-                      }))
-                    }
-                  />
-                  <span className="text-base font-semibold">
-                    {t("settings.general.workspace.require-2fa.enable")}
-                  </span>
-                  <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
-                </div>
-                <div className="mt-1 text-sm text-gray-400">
-                  {t("settings.general.workspace.require-2fa.description")}
-                </div>
-              </div>
-
-              {/* Sub-section 4: Disallow password signin (non-SaaS only) */}
-              {!isSaaSMode && (
-                <div className="lg:mt-0">
-                  <div className="flex items-center gap-x-2">
+              <FormField
+                title={
+                  <span className="flex items-center gap-x-2">
                     <Checkbox
-                      checked={toggleState.disallowPasswordSignin}
-                      disabled={
-                        disabled ||
-                        !hasDisallowPasswordSigninFeature ||
-                        (!toggleState.disallowPasswordSignin &&
-                          !existActiveIdentityProvider)
-                      }
+                      checked={toggleState.requireMfa}
+                      disabled={disabled || !has2FAFeature}
                       onCheckedChange={(checked) =>
                         setToggleState((s) => ({
                           ...s,
-                          disallowPasswordSignin: checked,
+                          requireMfa: checked,
                         }))
                       }
                     />
-                    <span className="text-base font-semibold flex items-center gap-x-2">
+                    {t("settings.general.workspace.require-2fa.enable")}
+                    <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
+                  </span>
+                }
+                description={t(
+                  "settings.general.workspace.require-2fa.description"
+                )}
+              />
+
+              {/* Sub-section 4: Disallow password signin (non-SaaS only) */}
+              {!isSaaSMode && (
+                <FormField
+                  title={
+                    <span className="flex items-center gap-x-2">
+                      <Checkbox
+                        checked={toggleState.disallowPasswordSignin}
+                        disabled={
+                          disabled ||
+                          !hasDisallowPasswordSigninFeature ||
+                          (!toggleState.disallowPasswordSignin &&
+                            !existActiveIdentityProvider)
+                        }
+                        onCheckedChange={(checked) =>
+                          setToggleState((s) => ({
+                            ...s,
+                            disallowPasswordSignin: checked,
+                          }))
+                        }
+                      />
                       {t(
                         "settings.general.workspace.disallow-password-signin.enable"
                       )}
@@ -687,34 +691,33 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                           </span>
                         )}
                     </span>
-                  </div>
-                  <div className="mt-1 text-sm text-gray-400">
-                    {t(
-                      "settings.general.workspace.disallow-password-signin.description"
-                    )}
-                  </div>
-                </div>
+                  }
+                  description={t(
+                    "settings.general.workspace.disallow-password-signin.description"
+                  )}
+                />
               )}
 
               {/* Sub-section 5: Allow email-code signin (non-SaaS only; requires EMAIL setting).
                   Hidden in production until the email configuration UI is built. */}
               {!isSaaSMode && isDev() && (
-                <div className="lg:mt-0">
-                  <div className="flex items-center gap-x-2">
-                    <Checkbox
-                      checked={toggleState.allowEmailCodeSignin}
-                      disabled={
-                        disabled ||
-                        (!toggleState.allowEmailCodeSignin && !hasEmailSetting)
-                      }
-                      onCheckedChange={(checked) =>
-                        setToggleState((s) => ({
-                          ...s,
-                          allowEmailCodeSignin: checked,
-                        }))
-                      }
-                    />
-                    <span className="text-base font-semibold flex items-center gap-x-2">
+                <FormField
+                  title={
+                    <span className="flex items-center gap-x-2">
+                      <Checkbox
+                        checked={toggleState.allowEmailCodeSignin}
+                        disabled={
+                          disabled ||
+                          (!toggleState.allowEmailCodeSignin &&
+                            !hasEmailSetting)
+                        }
+                        onCheckedChange={(checked) =>
+                          setToggleState((s) => ({
+                            ...s,
+                            allowEmailCodeSignin: checked,
+                          }))
+                        }
+                      />
                       {t(
                         "settings.general.workspace.allow-email-code-signin.enable"
                       )}
@@ -729,35 +732,32 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                           </span>
                         )}
                     </span>
-                  </div>
-                  <div className="mt-1 text-sm text-gray-400">
-                    {t(
-                      "settings.general.workspace.allow-email-code-signin.description"
-                    )}
-                  </div>
-                </div>
+                  }
+                  description={t(
+                    "settings.general.workspace.allow-email-code-signin.description"
+                  )}
+                />
               )}
             </div>
 
-            <hr className="my-6" />
+            <hr className="my-1" />
 
             {/* Sub-section 5: Token Duration */}
             {/* Access Token Duration */}
-            <div className="mb-7 mt-4 lg:mt-0">
-              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
-                <span>
+            <FormField
+              title={
+                <span className="flex flex-row justify-start items-center gap-x-2">
                   {t("settings.general.workspace.access-token-duration.self")}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
+                  />
                 </span>
-                <FeatureBadge
-                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
-                />
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.access-token-duration.description"
-                )}
-              </p>
-              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
+              }
+              description={t(
+                "settings.general.workspace.access-token-duration.description"
+              )}
+            >
+              <div className="flex flex-row justify-start items-center gap-x-4">
                 <NumberInput
                   className="w-24"
                   value={tokenState.accessTokenDuration}
@@ -798,24 +798,23 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   </RadioGroupItem>
                 </RadioGroup>
               </div>
-            </div>
+            </FormField>
 
             {/* Refresh Token Duration */}
-            <div className="mb-7 mt-4 lg:mt-0">
-              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
-                <span>
+            <FormField
+              title={
+                <span className="flex flex-row justify-start items-center gap-x-2">
                   {t("settings.general.workspace.refresh-token-duration.self")}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
+                  />
                 </span>
-                <FeatureBadge
-                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
-                />
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.refresh-token-duration.description"
-                )}
-              </p>
-              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
+              }
+              description={t(
+                "settings.general.workspace.refresh-token-duration.description"
+              )}
+            >
+              <div className="flex flex-row justify-start items-center gap-x-4">
                 <NumberInput
                   className="w-24"
                   value={tokenState.refreshTokenDuration}
@@ -860,29 +859,32 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   </RadioGroupItem>
                 </RadioGroup>
               </div>
-            </div>
+            </FormField>
 
             {/* Inactive Session Timeout */}
-            <div className="mt-4 lg:mt-0">
-              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
-                <span>
+            <FormField
+              title={
+                <span className="flex flex-row justify-start items-center gap-x-2">
                   {t(
                     "settings.general.workspace.inactive-session-timeout.self"
                   )}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
+                  />
                 </span>
-                <FeatureBadge
-                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
-                />
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.inactive-session-timeout.description"
-                )}{" "}
-                <span className="font-semibold">
-                  {t("settings.general.workspace.no-limit")}
-                </span>
-              </p>
-              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
+              }
+              description={
+                <>
+                  {t(
+                    "settings.general.workspace.inactive-session-timeout.description"
+                  )}{" "}
+                  <span className="font-semibold">
+                    {t("settings.general.workspace.no-limit")}
+                  </span>
+                </>
+              }
+            >
+              <div className="flex flex-row justify-start items-center gap-x-4">
                 <NumberInput
                   className="w-24"
                   value={tokenState.inactiveTimeout}
@@ -899,10 +901,10 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </span>
               </div>
-            </div>
+            </FormField>
           </FormFieldGroup>
         </PermissionGuard>
-      </div>
+      </FormSection>
     );
   }
 );

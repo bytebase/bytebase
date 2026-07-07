@@ -18,12 +18,21 @@ const configurableSections = [
 ] as const;
 
 describe("GeneralPage section layout", () => {
-  test("uses the shared field group wrapper for configurable section content", () => {
+  test("uses merged form section layout for configurable sections", () => {
     for (const file of configurableSections) {
       const source = readFileSync(join(sectionDir, file), "utf8");
 
+      expect(source, file).toContain("@/react/components/ui/form");
+      expect(source, file).not.toContain("@/react/components/ui/form.v2");
+      expect(source, file).toContain("FormSection");
       expect(source, file).toContain("FormFieldGroup");
-      expect(source, file).toContain('className="flex-1 mt-4 lg:px-4 lg:mt-0"');
+      expect(source, file).not.toContain("FormSectionHeader");
+      expect(source, file).not.toContain("FormSectionTitle");
+      expect(source, file).not.toContain("FormSectionContent");
+      expect(source, file).not.toContain(
+        'className="flex-1 mt-4 lg:px-4 lg:mt-0"'
+      );
+      expect(source, file).not.toContain('className="py-6 lg:flex"');
     }
   });
 
@@ -33,5 +42,51 @@ describe("GeneralPage section layout", () => {
     expect(source).toContain("RadioGroup");
     expect(source).toContain("RadioGroupItem");
     expect(source).not.toContain(`type=${JSON.stringify("radio")}`);
+  });
+
+  test("uses merged form field props for migrated field headings", () => {
+    for (const file of configurableSections) {
+      const source = readFileSync(join(sectionDir, file), "utf8");
+
+      expect(source, file).toContain("<FormField");
+      expect(source, file).not.toContain("FormFieldHeader");
+      expect(source, file).not.toContain("FormFieldTitle");
+      expect(source, file).not.toContain("FormFieldSubtitle");
+      expect(source, file).not.toContain(
+        '<FormLabel className="text-base font-semibold">'
+      );
+      expect(source, file).not.toContain("text-base font-semibold");
+      expect(source, file).not.toContain("text-sm font-medium text-control");
+    }
+  });
+
+  test("keeps domain restriction checkbox text wired to the checkbox", () => {
+    const source = readFileSync(
+      join(sectionDir, "SecuritySection.tsx"),
+      "utf8"
+    );
+    const membersRestrictionIndex = source.indexOf(
+      "settings.general.workspace.domain-restriction.members-restriction.self"
+    );
+    const membersRestrictionBlock = source.slice(
+      Math.max(0, membersRestrictionIndex - 1400),
+      membersRestrictionIndex + 800
+    );
+
+    expect(membersRestrictionIndex).toBeGreaterThan(0);
+    expect(membersRestrictionBlock).toContain(
+      '<div className="flex items-start gap-x-2">'
+    );
+    expect(membersRestrictionBlock).toContain("<Checkbox");
+    expect(membersRestrictionBlock).toContain("aria-labelledby");
+    expect(membersRestrictionBlock).toContain("aria-describedby");
+    expect(membersRestrictionBlock).toContain("toggleDomainRestriction");
+    expect(membersRestrictionBlock).toContain(
+      "settings.general.workspace.domain-restriction.members-restriction.description"
+    );
+    expect(membersRestrictionBlock).not.toContain("<label");
+    expect(membersRestrictionBlock).not.toContain(
+      '<span className="flex items-start gap-x-2">'
+    );
   });
 });

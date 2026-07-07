@@ -20,12 +20,7 @@ import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import {
-  FormDescription,
-  FormError,
-  FormField,
-  FormLabel,
-} from "@/react/components/ui/form";
+import { FormError, FormField, FormTitle } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -753,8 +748,10 @@ function UserForm({
         <div className="flex flex-col gap-y-6">
           {/* Name */}
           <FormField>
-            <FormLabel>{t("common.name")}</FormLabel>
+            <FormTitle id="user-form-name-title">{t("common.name")}</FormTitle>
             <Input
+              id="user-form-name"
+              aria-labelledby="user-form-name-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("common.name")}
@@ -765,11 +762,13 @@ function UserForm({
 
           {/* Email */}
           <FormField>
-            <FormLabel>
+            <FormTitle id="user-form-email-title">
               {t("common.email")}
               <span className="ml-0.5 text-error">*</span>
-            </FormLabel>
+            </FormTitle>
             <Input
+              id="user-form-email"
+              aria-labelledby="user-form-email-title"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -780,18 +779,22 @@ function UserForm({
           {/* Roles */}
           {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
             <FormField>
-              <FormLabel>{t("settings.members.table.roles")}</FormLabel>
+              <FormTitle>{t("settings.members.table.roles")}</FormTitle>
               <RoleSelect value={roles} onChange={setRoles} disabled={false} />
             </FormField>
           )}
 
           {/* Phone */}
           <FormField>
-            <FormLabel>{t("settings.profile.phone")}</FormLabel>
-            <FormDescription>
+            <FormTitle id="user-form-phone-title">
+              {t("settings.profile.phone")}
+            </FormTitle>
+            <span className="text-sm text-control-placeholder">
               {t("settings.profile.phone-tips")}
-            </FormDescription>
+            </span>
             <Input
+              id="user-form-phone"
+              aria-labelledby="user-form-phone-title"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -803,12 +806,14 @@ function UserForm({
           {/* Password */}
           <div className="flex flex-col gap-y-6">
             <FormField>
-              <FormLabel>
+              <FormTitle id="user-form-password-title">
                 {t("settings.profile.password")}
                 <span className="ml-0.5 text-error">*</span>
-              </FormLabel>
+              </FormTitle>
               <span
-                className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+                className={`flex items-center gap-x-1 text-sm text-control-placeholder ${
+                  passwordHint ? "text-error" : ""
+                }`}
               >
                 {t("settings.profile.password-hint")}
                 <Tooltip
@@ -830,8 +835,10 @@ function UserForm({
                   <CircleAlert className="w-4 cursor-help" />
                 </Tooltip>
               </span>
-              <div className="mt-1 relative flex items-center">
+              <div className="relative mt-1 flex w-full items-center">
                 <Input
+                  id="user-form-password"
+                  aria-labelledby="user-form-password-title"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -855,12 +862,14 @@ function UserForm({
             </FormField>
 
             <FormField>
-              <FormLabel>
+              <FormTitle id="user-form-password-confirm-title">
                 {t("settings.profile.password-confirm")}
                 <span className="ml-0.5 text-error">*</span>
-              </FormLabel>
-              <div className="mt-1 relative flex items-center">
+              </FormTitle>
+              <div className="relative mt-1 flex w-full items-center">
                 <Input
+                  id="user-form-password-confirm"
+                  aria-labelledby="user-form-password-confirm-title"
                   type={showPassword ? "text" : "password"}
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}

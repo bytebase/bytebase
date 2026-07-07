@@ -179,19 +179,22 @@ export function MCPPage() {
       {/* Section 3: Your First Prompt */}
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col gap-y-1">
-          <div className="flex items-center gap-x-2">
-            <h3 className="text-base font-medium">
-              {t("settings.mcp.first-prompt.title")}
-            </h3>
-            <CopyButton content={firstPromptExample} size="sm" />
-          </div>
+          <h3 className="text-base font-medium">
+            {t("settings.mcp.first-prompt.title")}
+          </h3>
           <p className="text-sm text-control-light">
             {t("settings.mcp.first-prompt.description")}
           </p>
         </div>
-        <code className="text-sm bg-gray-100 px-3 py-2 rounded-xs">
-          {firstPromptExample}
-        </code>
+        <div className="flex items-center gap-x-2">
+          <Input
+            readOnly
+            value={firstPromptExample}
+            className="flex-1 font-mono"
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <CopyButton content={firstPromptExample} size="sm" />
+        </div>
       </div>
     </div>
   );

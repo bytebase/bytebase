@@ -26,13 +26,9 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
-  FormControlAffix,
-  FormDescription,
+  FormError,
   FormField,
   FormFieldGroup,
-  FormInlineAffix,
-  FormLabel,
-  FormMessage,
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -916,15 +912,16 @@ function GroupForm({
           )}
 
           {/* Email */}
-          <FormField>
-            <FormLabel>
-              {t("settings.members.groups.form.email")}
-              <span className="ml-0.5 text-error">*</span>
-            </FormLabel>
-            <FormDescription>
-              {t("settings.members.groups.form.email-tips")}
-            </FormDescription>
-            <FormInlineAffix>
+          <FormField
+            title={
+              <>
+                {t("settings.members.groups.form.email")}
+                <span className="ml-0.5 text-error">*</span>
+              </>
+            }
+            description={<>{t("settings.members.groups.form.email-tips")}</>}
+          >
+            <div className="flex min-w-0 w-full items-center gap-x-1">
               <Input
                 value={isEditMode ? email : email.split("@")[0]}
                 className="min-w-0 flex-1"
@@ -933,9 +930,13 @@ function GroupForm({
               />
               {!isEditMode && domainOptions.length > 0 && (
                 <>
-                  <FormControlAffix>@</FormControlAffix>
+                  <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                    @
+                  </span>
                   {domainOptions.length === 1 ? (
-                    <FormControlAffix>{domainOptions[0]}</FormControlAffix>
+                    <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                      {domainOptions[0]}
+                    </span>
                   ) : (
                     <select
                       value={selectedDomain}
@@ -952,18 +953,21 @@ function GroupForm({
                   )}
                 </>
               )}
-            </FormInlineAffix>
+            </div>
             {emailErrorMessage && errorMessage === emailErrorMessage && (
-              <FormMessage>{emailErrorMessage}</FormMessage>
+              <FormError>{emailErrorMessage}</FormError>
             )}
           </FormField>
 
           {/* Title */}
-          <FormField>
-            <FormLabel>
-              {t("settings.members.groups.form.title")}
-              <span className="ml-0.5 text-error">*</span>
-            </FormLabel>
+          <FormField
+            title={
+              <>
+                {t("settings.members.groups.form.title")}
+                <span className="ml-0.5 text-error">*</span>
+              </>
+            }
+          >
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -971,15 +975,14 @@ function GroupForm({
               disabled={!allowEdit}
             />
             {titleErrorMessage && errorMessage === titleErrorMessage && (
-              <FormMessage>{titleErrorMessage}</FormMessage>
+              <FormError>{titleErrorMessage}</FormError>
             )}
           </FormField>
 
           {/* Description */}
-          <FormField>
-            <FormLabel>
-              {t("settings.members.groups.form.description")}
-            </FormLabel>
+          <FormField
+            title={<>{t("settings.members.groups.form.description")}</>}
+          >
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -989,8 +992,7 @@ function GroupForm({
           </FormField>
 
           {/* Members */}
-          <FormField>
-            <FormLabel>{t("common.members", { count: 2 })}</FormLabel>
+          <FormField title={<>{t("common.members", { count: 2 })}</>}>
             <div className="flex flex-col gap-y-2">
               {members.map((member, index) => (
                 <div key={index} className="flex items-center gap-x-2">
@@ -1051,7 +1053,7 @@ function GroupForm({
               )}
             </div>
             {memberErrorMessage && errorMessage === memberErrorMessage && (
-              <FormMessage>{memberErrorMessage}</FormMessage>
+              <FormError>{memberErrorMessage}</FormError>
             )}
           </FormField>
         </FormFieldGroup>

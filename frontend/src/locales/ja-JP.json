@@ -432,7 +432,6 @@
     "select-all": "すべて選択",
     "selected": "選択済み",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
-    "setting": "設定",
     "settings": "設定",
     "share": "共有",
     "show-less": "折りたたむ",
@@ -495,6 +494,7 @@
   "create-db": {
     "cluster": "集まる",
     "database-owner-name": "データベース所有者",
+    "issue-title": "課題タイトル",
     "new-collection-name": "新しいコレクション名",
     "new-database-name": "新しいデータベース名",
     "reserved-db-error": "{{databaseName}} は予約された名前です"

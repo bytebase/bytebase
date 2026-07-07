@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useState,
 } from "react";
@@ -17,7 +18,11 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
@@ -87,6 +92,10 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
     const [domainInput, setDomainInput] = useState("");
 
     const validDomains = state.domains.filter((d) => !!d);
+    const canToggleDomainRestriction =
+      canEdit && validDomains.length > 0 && hasDomainRestrictionFeature;
+    const membersRestrictionLabelId = useId();
+    const membersRestrictionDescriptionId = useId();
 
     const isDirty = useCallback(() => {
       if (domainInput.trim()) return true;
@@ -196,6 +205,22 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       }
     };
 
+    const toggleDomainRestriction = () => {
+      if (!canToggleDomainRestriction) return;
+      setState((prev) => ({
+        ...prev,
+        enableRestriction: !prev.enableRestriction,
+      }));
+    };
+
+    const handleDomainRestrictionTextKeyDown = (
+      e: KeyboardEvent<HTMLDivElement>
+    ) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      toggleDomainRestriction();
+    };
+
     const removeDomain = (index: number) => {
       setState((prev) => {
         const newDomains = prev.domains.filter((_, i) => i !== index);
@@ -210,53 +235,45 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
     };
 
     return (
-      <div id="security" className="py-6 lg:flex gap-y-4 lg:gap-y-0">
-        <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
+      <FormSection id="security" title={title}>
         <PermissionGuard
           permissions={["bb.settings.setWorkspaceProfile"]}
           display="block"
         >
-          <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <FormFieldGroup>
             {/* Watermark */}
-            <div>
-              <div className="flex items-center gap-x-2">
-                <Checkbox
-                  checked={state.enableWatermark}
-                  disabled={!canEdit || !hasWatermarkFeature}
-                  onCheckedChange={(checked) =>
-                    setState((prev) => ({
-                      ...prev,
-                      enableWatermark: checked,
-                    }))
-                  }
-                />
-                <span className="text-base font-semibold">
+            <FormField
+              title={
+                <span className="flex items-center gap-x-2">
+                  <Checkbox
+                    checked={state.enableWatermark}
+                    disabled={!canEdit || !hasWatermarkFeature}
+                    onCheckedChange={(checked) =>
+                      setState((prev) => ({
+                        ...prev,
+                        enableWatermark: checked,
+                      }))
+                    }
+                  />
                   {t("settings.general.workspace.watermark.enable")}
+                  <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
                 </span>
-                <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
-              </div>
-              <div className="mt-1 text-sm text-gray-400">
-                {t("settings.general.workspace.watermark.description")}
-              </div>
-            </div>
+              }
+              description={t(
+                "settings.general.workspace.watermark.description"
+              )}
+            />
 
             {/* Maximum Role Expiration */}
-            <div>
-              <p className="text-base font-semibold flex flex-row justify-start items-center">
-                <span className="mr-2">
-                  {t(
-                    "settings.general.workspace.maximum-request-expiration.self"
-                  )}
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.maximum-request-expiration.description"
-                )}
-              </p>
-              <div className="mt-3 w-full flex flex-row">
+            <FormField
+              title={t(
+                "settings.general.workspace.maximum-request-expiration.self"
+              )}
+              description={t(
+                "settings.general.workspace.maximum-request-expiration.description"
+              )}
+            >
+              <div className="w-full flex flex-row">
                 <div className="flex items-center gap-4">
                   <div className="relative w-60">
                     <Input
@@ -301,22 +318,17 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                   </label>
                 </div>
               </div>
-            </div>
+            </FormField>
 
             {/* Domain Restriction */}
-            <div>
-              <h3
-                id="domain-restriction"
-                className="text-base font-semibold flex flex-row justify-start items-center"
-              >
-                <span className="mr-2">
-                  {t("settings.general.workspace.domain-restriction.self")}
-                </span>
-              </h3>
-              <p className="text-sm text-gray-400 mt-1">
-                {t("settings.general.workspace.domain-restriction.description")}
-              </p>
-              <div className="w-full flex flex-col gap-2 mt-2">
+            <FormField
+              id="domain-restriction"
+              title={t("settings.general.workspace.domain-restriction.self")}
+              description={t(
+                "settings.general.workspace.domain-restriction.description"
+              )}
+            >
+              <div className="w-full flex flex-col gap-2">
                 {/* Domain tags + input */}
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
@@ -351,46 +363,60 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
 
                 {/* Enforce restriction checkbox */}
                 <div className="w-full flex flex-row justify-between items-center">
-                  <label className="flex items-start gap-x-2">
-                    <Checkbox
-                      checked={state.enableRestriction}
-                      className="mt-1"
-                      disabled={
-                        !canEdit ||
-                        validDomains.length === 0 ||
-                        !hasDomainRestrictionFeature
-                      }
-                      onCheckedChange={(checked) =>
-                        setState((prev) => ({
-                          ...prev,
-                          enableRestriction: checked,
-                        }))
-                      }
-                    />
-                    <div>
-                      <div className="text-base font-semibold flex items-center gap-x-2">
-                        {t(
-                          "settings.general.workspace.domain-restriction.members-restriction.self"
-                        )}
-                        <FeatureBadge
-                          feature={
-                            PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                  <FormField
+                    title={
+                      <div className="flex items-start gap-x-2">
+                        <Checkbox
+                          aria-describedby={membersRestrictionDescriptionId}
+                          aria-labelledby={membersRestrictionLabelId}
+                          checked={state.enableRestriction}
+                          className="mt-1"
+                          disabled={!canToggleDomainRestriction}
+                          onCheckedChange={(checked) =>
+                            setState((prev) => ({
+                              ...prev,
+                              enableRestriction: checked,
+                            }))
                           }
                         />
+                        <div
+                          className="flex flex-col gap-y-0"
+                          role="button"
+                          tabIndex={canToggleDomainRestriction ? 0 : -1}
+                          onClick={toggleDomainRestriction}
+                          onKeyDown={handleDomainRestrictionTextKeyDown}
+                        >
+                          <span
+                            id={membersRestrictionLabelId}
+                            className="flex items-center gap-x-2"
+                          >
+                            {t(
+                              "settings.general.workspace.domain-restriction.members-restriction.self"
+                            )}
+                            <FeatureBadge
+                              feature={
+                                PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                              }
+                            />
+                          </span>
+                          <span
+                            id={membersRestrictionDescriptionId}
+                            className="block text-sm font-normal text-control-placeholder"
+                          >
+                            {t(
+                              "settings.general.workspace.domain-restriction.members-restriction.description"
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-400 leading-tight">
-                        {t(
-                          "settings.general.workspace.domain-restriction.members-restriction.description"
-                        )}
-                      </p>
-                    </div>
-                  </label>
+                    }
+                  />
                 </div>
               </div>
-            </div>
+            </FormField>
           </FormFieldGroup>
         </PermissionGuard>
-      </div>
+      </FormSection>
     );
   }
 );

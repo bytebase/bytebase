@@ -30,6 +30,11 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  FormField,
+  FormFieldGroup,
+  FormTitle,
+} from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
@@ -484,13 +489,15 @@ function ProviderConfigForm({
 
   if (providerType === IdentityProviderType.OAUTH2) {
     return (
-      <div className="flex flex-col gap-y-6">
+      <FormFieldGroup>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          <FormField>
+            <FormTitle id="sso-oauth2-client-id-title">
               Client ID <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-oauth2-client-id"
+              aria-labelledby="sso-oauth2-client-id-title"
               value={configForOAuth2.clientId}
               onChange={(e) =>
                 onUpdateOAuth2({
@@ -500,12 +507,14 @@ function ProviderConfigForm({
               }
               placeholder="e.g. 6655asd77895265aa110ac0d3"
             />
-          </div>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-oauth2-client-secret-title">
               Client Secret <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-oauth2-client-secret"
+              aria-labelledby="sso-oauth2-client-secret-title"
               type="password"
               value={configForOAuth2.clientSecret}
               onChange={(e) =>
@@ -516,49 +525,55 @@ function ProviderConfigForm({
               }
               placeholder="e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8"
             />
-          </div>
+          </FormField>
         </div>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-oauth2-auth-url-title">
             {t("settings.sso.form.auth-url")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oauth2-auth-url"
+            aria-labelledby="sso-oauth2-auth-url-title"
             value={configForOAuth2.authUrl}
             onChange={(e) =>
               onUpdateOAuth2({ ...configForOAuth2, authUrl: e.target.value })
             }
             placeholder={t("settings.sso.form.auth-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.auth-url-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-oauth2-token-url-title">
             {t("settings.sso.form.token-url")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oauth2-token-url"
+            aria-labelledby="sso-oauth2-token-url-title"
             value={configForOAuth2.tokenUrl}
             onChange={(e) =>
               onUpdateOAuth2({ ...configForOAuth2, tokenUrl: e.target.value })
             }
             placeholder={t("settings.sso.form.token-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.token-url-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-oauth2-user-info-url-title">
             {t("settings.sso.form.user-info-url")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oauth2-user-info-url"
+            aria-labelledby="sso-oauth2-user-info-url-title"
             value={configForOAuth2.userInfoUrl}
             onChange={(e) =>
               onUpdateOAuth2({
@@ -568,31 +583,36 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.user-info-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.user-info-url-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-oauth2-scopes-title">
             {t("settings.sso.form.scopes")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oauth2-scopes"
+            aria-labelledby="sso-oauth2-scopes-title"
             value={scopesString}
             onChange={(e) => onUpdateScopes(e.target.value)}
             placeholder={t("settings.sso.form.scopes-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.scopes-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.authentication-style")}{" "}
-            <span className="text-error">*</span>
-          </label>
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.authentication-style")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
           <RadioGroup
             className="flex-col items-stretch gap-y-3"
             value={String(configForOAuth2.authStyle)}
@@ -632,12 +652,9 @@ function ProviderConfigForm({
               </div>
             </RadioGroupItem>
           </RadioGroup>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.security-options")}
-          </label>
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
             <Checkbox
               checked={configForOAuth2.skipTlsVerify}
@@ -650,51 +667,57 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <span className="text-sm text-control-placeholder ml-6">
             {t("settings.sso.form.skip-tls-warning")}
-          </p>
-        </div>
-      </div>
+          </span>
+        </FormField>
+      </FormFieldGroup>
     );
   }
 
   if (providerType === IdentityProviderType.OIDC) {
     return (
-      <div className="flex flex-col gap-y-6">
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+      <FormFieldGroup>
+        <FormField>
+          <FormTitle id="sso-oidc-issuer-title">
             Issuer URL <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oidc-issuer"
+            aria-labelledby="sso-oidc-issuer-title"
             value={configForOIDC.issuer}
             onChange={(e) =>
               onUpdateOIDC({ ...configForOIDC, issuer: e.target.value })
             }
             placeholder={t("settings.sso.form.issuer-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.issuer-url-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          <FormField>
+            <FormTitle id="sso-oidc-client-id-title">
               Client ID <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-oidc-client-id"
+              aria-labelledby="sso-oidc-client-id-title"
               value={configForOIDC.clientId}
               onChange={(e) =>
                 onUpdateOIDC({ ...configForOIDC, clientId: e.target.value })
               }
               placeholder="e.g. 6655asd77895265aa110ac0d3"
             />
-          </div>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-oidc-client-secret-title">
               Client Secret <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-oidc-client-secret"
+              aria-labelledby="sso-oidc-client-secret-title"
               type="password"
               value={configForOIDC.clientSecret}
               onChange={(e) =>
@@ -705,29 +728,34 @@ function ProviderConfigForm({
               }
               placeholder="e.g. 5bbezxc3972ca304de70c5d70a6aa932asd8"
             />
-          </div>
+          </FormField>
         </div>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-oidc-scopes-title">
             {t("settings.sso.form.scopes")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-oidc-scopes"
+            aria-labelledby="sso-oidc-scopes-title"
             value={scopesString}
             onChange={(e) => onUpdateScopes(e.target.value)}
             placeholder={t("settings.sso.form.scopes-placeholder-oidc")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.openid-scopes-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.authentication-style")}{" "}
-            <span className="text-error">*</span>
-          </label>
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.authentication-style")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
           <RadioGroup
             className="flex-col items-stretch gap-y-3"
             value={String(configForOIDC.authStyle)}
@@ -767,12 +795,9 @@ function ProviderConfigForm({
               </div>
             </RadioGroupItem>
           </RadioGroup>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.security-options")}
-          </label>
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
             <Checkbox
               checked={configForOIDC.skipTlsVerify}
@@ -785,35 +810,39 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <span className="text-sm text-control-placeholder ml-6">
             {t("settings.sso.form.skip-tls-warning")}
-          </p>
-        </div>
-      </div>
+          </span>
+        </FormField>
+      </FormFieldGroup>
     );
   }
 
   if (providerType === IdentityProviderType.LDAP) {
     return (
-      <div className="flex flex-col gap-y-6">
+      <FormFieldGroup>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          <FormField className="md:col-span-2">
+            <FormTitle id="sso-ldap-host-title">
               Host <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-ldap-host"
+              aria-labelledby="sso-ldap-host-title"
               value={configForLDAP.host}
               onChange={(e) =>
                 onUpdateLDAP({ ...configForLDAP, host: e.target.value })
               }
               placeholder={t("settings.sso.form.host-placeholder")}
             />
-          </div>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+          </FormField>
+          <FormField>
+            <FormTitle id="sso-ldap-port-title">
               Port <span className="text-error">*</span>
-            </label>
+            </FormTitle>
             <Input
+              id="sso-ldap-port"
+              aria-labelledby="sso-ldap-port-title"
               type="number"
               value={configForLDAP.port}
               onChange={(e) =>
@@ -826,32 +855,36 @@ function ProviderConfigForm({
               max={65535}
               placeholder="389"
             />
-          </div>
+          </FormField>
         </div>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-ldap-bind-dn-title">
             {t("settings.sso.form.bind-dn")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-ldap-bind-dn"
+            aria-labelledby="sso-ldap-bind-dn-title"
             value={configForLDAP.bindDn}
             onChange={(e) =>
               onUpdateLDAP({ ...configForLDAP, bindDn: e.target.value })
             }
             placeholder={t("settings.sso.form.bind-dn-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.bind-dn-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-ldap-bind-password-title">
             {t("settings.sso.form.bind-password")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-ldap-bind-password"
+            aria-labelledby="sso-ldap-bind-password-title"
             type="password"
             value={configForLDAP.bindPassword}
             onChange={(e) =>
@@ -862,47 +895,54 @@ function ProviderConfigForm({
             }
             placeholder="••••••••"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-ldap-base-dn-title">
             {t("settings.sso.form.base-dn")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-ldap-base-dn"
+            aria-labelledby="sso-ldap-base-dn-title"
             value={configForLDAP.baseDn}
             onChange={(e) =>
               onUpdateLDAP({ ...configForLDAP, baseDn: e.target.value })
             }
             placeholder={t("settings.sso.form.base-dn-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.base-dn-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+        <FormField>
+          <FormTitle id="sso-ldap-user-filter-title">
             {t("settings.sso.form.user-filter")}{" "}
             <span className="text-error">*</span>
-          </label>
+          </FormTitle>
           <Input
+            id="sso-ldap-user-filter"
+            aria-labelledby="sso-ldap-user-filter-title"
             value={configForLDAP.userFilter}
             onChange={(e) =>
               onUpdateLDAP({ ...configForLDAP, userFilter: e.target.value })
             }
             placeholder={t("settings.sso.form.user-filter-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.user-filter-description")}
-          </p>
-        </div>
+          </span>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.security-protocol")}{" "}
-            <span className="text-error">*</span>
-          </label>
+        <FormField
+          title={
+            <>
+              {t("settings.sso.form.security-protocol")}{" "}
+              <span className="text-error">*</span>
+            </>
+          }
+        >
           <RadioGroup
             className="flex-col items-stretch gap-y-3"
             value={String(configForLDAP.securityProtocol)}
@@ -960,12 +1000,9 @@ function ProviderConfigForm({
               </div>
             </RadioGroupItem>
           </RadioGroup>
-        </div>
+        </FormField>
 
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
-            {t("settings.sso.form.security-options")}
-          </label>
+        <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
             <Checkbox
               checked={configForLDAP.skipTlsVerify}
@@ -978,11 +1015,11 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <span className="text-sm text-control-placeholder ml-6">
             {t("settings.sso.form.skip-tls-warning")}
-          </p>
-        </div>
-      </div>
+          </span>
+        </FormField>
+      </FormFieldGroup>
     );
   }
 
@@ -1005,62 +1042,70 @@ function FieldMappingForm({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-y-6">
-      <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
-        <Input
-          value={fieldMapping.identifier}
-          onChange={(e) =>
-            onChange({ ...fieldMapping, identifier: e.target.value })
-          }
-          placeholder={t("settings.sso.form.identifier-placeholder")}
-        />
-        <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="flex items-center font-semibold text-gray-800">
-            {t("settings.sso.form.identifier")}
-            <span className="ml-0.5 text-error">*</span>
-            <span
-              className="ml-1"
-              title={t("settings.sso.form.identifier-tips")}
-            >
-              <Info className="w-4 h-4 text-blue-500" />
-            </span>
-          </p>
+    <FormFieldGroup>
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.identifier}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, identifier: e.target.value })
+            }
+            placeholder={t("settings.sso.form.identifier-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="flex items-center font-semibold text-gray-800">
+              {t("settings.sso.form.identifier")}
+              <span className="ml-0.5 text-error">*</span>
+              <span
+                className="ml-1"
+                title={t("settings.sso.form.identifier-tips")}
+              >
+                <Info className="w-4 h-4 text-blue-500" />
+              </span>
+            </p>
+          </div>
         </div>
-      </div>
+      </FormField>
 
-      <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
-        <Input
-          value={fieldMapping.displayName}
-          onChange={(e) =>
-            onChange({ ...fieldMapping, displayName: e.target.value })
-          }
-          placeholder={t("settings.sso.form.display-name-placeholder")}
-        />
-        <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="font-semibold text-gray-800">
-            {t("settings.sso.form.display-name")}
-          </p>
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.displayName}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, displayName: e.target.value })
+            }
+            placeholder={t("settings.sso.form.display-name-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="font-semibold text-gray-800">
+              {t("settings.sso.form.display-name")}
+            </p>
+          </div>
         </div>
-      </div>
+      </FormField>
 
-      <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
-        <Input
-          value={fieldMapping.phone}
-          onChange={(e) => onChange({ ...fieldMapping, phone: e.target.value })}
-          placeholder={t("settings.sso.form.phone-placeholder")}
-        />
-        <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="font-semibold text-gray-800">
-            {t("settings.sso.form.phone")}
-          </p>
+      <FormField>
+        <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
+          <Input
+            value={fieldMapping.phone}
+            onChange={(e) =>
+              onChange({ ...fieldMapping, phone: e.target.value })
+            }
+            placeholder={t("settings.sso.form.phone-placeholder")}
+          />
+          <div className="flex items-center text-base">
+            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
+            <p className="font-semibold text-gray-800">
+              {t("settings.sso.form.phone")}
+            </p>
+          </div>
         </div>
-      </div>
+      </FormField>
 
       {providerType === IdentityProviderType.OIDC && (
-        <>
+        <FormField>
           <div className="grid grid-cols-[256px_1fr] gap-4 items-center">
             <Input
               value={fieldMapping.groups}
@@ -1076,12 +1121,12 @@ function FieldMappingForm({
               </p>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
+          <span className="text-sm text-control-placeholder">
             {t("settings.sso.form.groups-description")}
-          </p>
-        </>
+          </span>
+        </FormField>
       )}
-    </div>
+    </FormFieldGroup>
   );
 }
 
@@ -1812,13 +1857,15 @@ function CreateWizardDrawer({
                       {t("settings.sso.form.general-setting-description")}
                     </p>
                   </div>
-                  <div className="max-w-2xl mx-auto flex flex-col gap-y-6 w-full">
-                    <div>
-                      <label className="block text-base font-semibold text-gray-800 mb-2">
+                  <FormFieldGroup className="max-w-2xl mx-auto w-full">
+                    <FormField>
+                      <FormTitle id="sso-create-name-title">
                         {t("settings.sso.form.name")}{" "}
                         <span className="text-error">*</span>
-                      </label>
+                      </FormTitle>
                       <Input
+                        id="sso-create-name"
+                        aria-labelledby="sso-create-name-title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder={t("settings.sso.form.name-description")}
@@ -1834,22 +1881,24 @@ function CreateWizardDrawer({
                         onChange={setResourceId}
                         onValidationChange={setResourceIdValid}
                       />
-                    </div>
-                    <div>
-                      <label className="block text-base font-semibold text-gray-800 mb-2">
+                    </FormField>
+                    <FormField>
+                      <FormTitle id="sso-create-domain-title">
                         {t("settings.sso.form.domain")}
-                      </label>
+                      </FormTitle>
                       <Input
+                        id="sso-create-domain"
+                        aria-labelledby="sso-create-domain-title"
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
                         disabled={selectedTemplate?.domainDisabled}
                         placeholder={t("settings.sso.form.domain-description")}
                       />
-                      <p className="text-sm text-gray-600 mt-1">
+                      <span className="text-sm text-control-placeholder">
                         {t("settings.sso.form.domain-optional-hint")}
-                      </p>
-                    </div>
-                  </div>
+                      </span>
+                    </FormField>
+                  </FormFieldGroup>
                 </div>
               )}
 

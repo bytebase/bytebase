@@ -6,12 +6,9 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
-  FormControlAffix,
   FormControlGroup,
   FormControlRow,
-  FormDescription,
   FormField,
-  FormLabel,
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
@@ -457,6 +454,17 @@ export function DataSourceForm({
     }
   }, [passwordType, t]);
 
+  const secretNameDescription = useMemo(() => {
+    switch (passwordType) {
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        return t("instance.external-secret-gcp.secret-name-tips");
+      case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+        return t("instance.external-secret-azure.secret-name-tips");
+      default:
+        return undefined;
+    }
+  }, [passwordType, t]);
+
   const secretKeyLabel = useMemo(() => {
     if (passwordType === DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
       return t("instance.external-secret-vault.vault-secret-key");
@@ -621,10 +629,14 @@ export function DataSourceForm({
               {/* Kerberos config */}
               {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                 <>
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <FormLabel>
-                      Principal <span className="text-error">*</span>
-                    </FormLabel>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={
+                      <>
+                        Principal <span className="text-error">*</span>
+                      </>
+                    }
+                  >
                     <FormControlRow>
                       <Input
                         className="min-w-0 flex-1"
@@ -644,7 +656,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <FormControlAffix>/</FormControlAffix>
+                      <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                        /
+                      </span>
                       <Input
                         className="min-w-0 flex-1"
                         value={
@@ -663,7 +677,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <FormControlAffix>@</FormControlAffix>
+                      <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                        @
+                      </span>
                       <Input
                         className="min-w-0 flex-1"
                         value={
@@ -684,10 +700,14 @@ export function DataSourceForm({
                       />
                     </FormControlRow>
                   </FormField>
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <FormLabel>
-                      KDC <span className="text-error">*</span>
-                    </FormLabel>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={
+                      <>
+                        KDC <span className="text-error">*</span>
+                      </>
+                    }
+                  >
                     <FormControlRow>
                       <RadioGroup
                         className="w-fit textlabel gap-x-3"
@@ -734,7 +754,9 @@ export function DataSourceForm({
                           onDataSourceChange(updated);
                         }}
                       />
-                      <FormControlAffix>:</FormControlAffix>
+                      <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                        :
+                      </span>
                       <Input
                         className="min-w-0 flex-1"
                         value={
@@ -760,10 +782,14 @@ export function DataSourceForm({
                       />
                     </FormControlRow>
                   </FormField>
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <FormLabel>
-                      Keytab File <span className="text-error">*</span>
-                    </FormLabel>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={
+                      <>
+                        Keytab File <span className="text-error">*</span>
+                      </>
+                    }
+                  >
                     <div className="mt-3 border-2 border-dashed rounded-lg p-6 text-center">
                       <input
                         type="file"
@@ -786,19 +812,23 @@ export function DataSourceForm({
               {/* Username field (non-Kerberos, non-Azure IAM) */}
               {dataSource.saslConfig?.mechanism?.case !== "krbConfig" &&
                 !isAzureIAM && (
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <div className="flex items-center gap-x-1">
-                      <FormLabel>{t("common.username")}</FormLabel>
-                      {onOpenInfoPanel && hasAuthenticationInfo && (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-x-0.5 text-accent text-xs"
-                          onClick={() => onOpenInfoPanel("authentication")}
-                        >
-                          <Info className="size-3.5" />
-                        </button>
-                      )}
-                    </div>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={
+                      <span className="flex items-center gap-x-1">
+                        {t("common.username")}
+                        {onOpenInfoPanel && hasAuthenticationInfo && (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                            onClick={() => onOpenInfoPanel("authentication")}
+                          >
+                            <Info className="size-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    }
+                  >
                     <Input
                       value={dataSource.username}
                       className="w-full max-w-[48rem]"
@@ -825,11 +855,15 @@ export function DataSourceForm({
 
               {/* AWS Region */}
               {isAwsIAM && (
-                <FormField className="sm:col-span-3 sm:col-start-1">
-                  <FormLabel>
-                    {t("instance.database-region")}{" "}
-                    <span className="text-error">*</span>
-                  </FormLabel>
+                <FormField
+                  className="sm:col-span-3 sm:col-start-1"
+                  title={
+                    <>
+                      {t("instance.database-region")}{" "}
+                      <span className="text-error">*</span>
+                    </>
+                  }
+                >
                   <Input
                     value={dataSource.region ?? ""}
                     className="w-full"
@@ -919,8 +953,7 @@ export function DataSourceForm({
                     {/* Plain password */}
                     {passwordType ===
                       DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
-                      <FormField>
-                        <FormLabel>{t("common.password")}</FormLabel>
+                      <FormField title={<>{t("common.password")}</>}>
                         <div>
                           {!isCreating && allowUsingEmptyPassword && (
                             <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
@@ -970,13 +1003,16 @@ export function DataSourceForm({
                           {passwordType ===
                             DataSourceExternalSecret_SecretType.VAULT_KV_V2 && (
                             <div className="flex flex-col gap-y-4">
-                              <FormField>
-                                <FormLabel>
-                                  {t(
-                                    "instance.external-secret-vault.vault-url"
-                                  )}{" "}
-                                  <span className="text-error">*</span>
-                                </FormLabel>
+                              <FormField
+                                title={
+                                  <>
+                                    {t(
+                                      "instance.external-secret-vault.vault-url"
+                                    )}{" "}
+                                    <span className="text-error">*</span>
+                                  </>
+                                }
+                              >
                                 <Input
                                   value={dataSource.externalSecret.url ?? ""}
                                   required
@@ -995,12 +1031,15 @@ export function DataSourceForm({
                                   }}
                                 />
                               </FormField>
-                              <FormField>
-                                <FormLabel>
-                                  {t(
-                                    "instance.external-secret-vault.vault-auth-type.self"
-                                  )}
-                                </FormLabel>
+                              <FormField
+                                title={
+                                  <>
+                                    {t(
+                                      "instance.external-secret-vault.vault-auth-type.self"
+                                    )}
+                                  </>
+                                }
+                              >
                                 <RadioGroup
                                   className="textlabel gap-x-4"
                                   value={String(
@@ -1075,11 +1114,14 @@ export function DataSourceForm({
                                     );
                                   }
                                   return (
-                                    <FormField>
-                                      <FormLabel>
-                                        {tokenLabel}{" "}
-                                        <span className="text-error">*</span>
-                                      </FormLabel>
+                                    <FormField
+                                      title={
+                                        <>
+                                          {tokenLabel}{" "}
+                                          <span className="text-error">*</span>
+                                        </>
+                                      }
+                                    >
                                       {/* Token source is host-backed for env/file,
                                           which is disallowed in SaaS mode; only
                                           plain is offered there. */}
@@ -1157,13 +1199,16 @@ export function DataSourceForm({
                               {dataSource.externalSecret.authOption?.case ===
                                 "appRole" && (
                                 <div className="flex flex-col gap-y-4">
-                                  <FormField>
-                                    <FormLabel>
-                                      {t(
-                                        "instance.external-secret-vault.vault-auth-type.approle.role-id"
-                                      )}{" "}
-                                      <span className="text-error">*</span>
-                                    </FormLabel>
+                                  <FormField
+                                    title={
+                                      <>
+                                        {t(
+                                          "instance.external-secret-vault.vault-auth-type.approle.role-id"
+                                        )}{" "}
+                                        <span className="text-error">*</span>
+                                      </>
+                                    }
+                                  >
                                     <Input
                                       value={
                                         dataSource.externalSecret.authOption
@@ -1194,13 +1239,16 @@ export function DataSourceForm({
                                       }}
                                     />
                                   </FormField>
-                                  <FormField>
-                                    <FormLabel>
-                                      {t(
-                                        "instance.external-secret-vault.vault-auth-type.approle.secret-id"
-                                      )}{" "}
-                                      <span className="text-error">*</span>
-                                    </FormLabel>
+                                  <FormField
+                                    title={
+                                      <>
+                                        {t(
+                                          "instance.external-secret-vault.vault-auth-type.approle.secret-id"
+                                        )}{" "}
+                                        <span className="text-error">*</span>
+                                      </>
+                                    }
+                                  >
                                     {/* Environment secret id reads from the host,
                                         which is disallowed in SaaS mode; only plain
                                         is offered there. */}
@@ -1288,12 +1336,15 @@ export function DataSourceForm({
                                 </div>
                               )}
                               {/* Vault TLS config */}
-                              <FormField>
-                                <FormLabel>
-                                  {t(
-                                    "instance.external-secret-vault.vault-tls-config"
-                                  )}
-                                </FormLabel>
+                              <FormField
+                                title={
+                                  <>
+                                    {t(
+                                      "instance.external-secret-vault.vault-tls-config"
+                                    )}
+                                  </>
+                                }
+                              >
                                 <SslCertificateForm
                                   verify={
                                     !dataSource.externalSecret
@@ -1339,18 +1390,23 @@ export function DataSourceForm({
                                 />
                               </FormField>
                               {/* Engine name */}
-                              <FormField>
-                                <FormLabel>
-                                  {t(
-                                    "instance.external-secret-vault.vault-secret-engine-name"
-                                  )}{" "}
-                                  <span className="text-error">*</span>
-                                </FormLabel>
-                                <FormDescription>
-                                  {t(
-                                    "instance.external-secret-vault.vault-secret-engine-tips"
-                                  )}
-                                </FormDescription>
+                              <FormField
+                                title={
+                                  <>
+                                    {t(
+                                      "instance.external-secret-vault.vault-secret-engine-name"
+                                    )}{" "}
+                                    <span className="text-error">*</span>
+                                  </>
+                                }
+                                description={
+                                  <>
+                                    {t(
+                                      "instance.external-secret-vault.vault-secret-engine-tips"
+                                    )}
+                                  </>
+                                }
+                              >
                                 <Input
                                   value={
                                     dataSource.externalSecret.engineName ?? ""
@@ -1377,16 +1433,23 @@ export function DataSourceForm({
                           {/* Azure Key Vault URL */}
                           {passwordType ===
                             DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                            <FormField>
-                              <FormLabel>
-                                {t("instance.external-secret-azure.vault-url")}{" "}
-                                <span className="text-error">*</span>
-                              </FormLabel>
-                              <FormDescription>
-                                {t(
-                                  "instance.external-secret-azure.vault-url-tips"
-                                )}
-                              </FormDescription>
+                            <FormField
+                              title={
+                                <>
+                                  {t(
+                                    "instance.external-secret-azure.vault-url"
+                                  )}{" "}
+                                  <span className="text-error">*</span>
+                                </>
+                              }
+                              description={
+                                <>
+                                  {t(
+                                    "instance.external-secret-azure.vault-url-tips"
+                                  )}
+                                </>
+                              }
+                            >
                               <Input
                                 value={dataSource.externalSecret.url ?? ""}
                                 required
@@ -1408,27 +1471,15 @@ export function DataSourceForm({
                           )}
 
                           {/* Secret name (common) */}
-                          <FormField>
-                            <FormLabel>
-                              {secretNameLabel}{" "}
-                              <span className="text-error">*</span>
-                            </FormLabel>
-                            {passwordType ===
-                              DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER && (
-                              <FormDescription>
-                                {t(
-                                  "instance.external-secret-gcp.secret-name-tips"
-                                )}
-                              </FormDescription>
-                            )}
-                            {passwordType ===
-                              DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                              <FormDescription>
-                                {t(
-                                  "instance.external-secret-azure.secret-name-tips"
-                                )}
-                              </FormDescription>
-                            )}
+                          <FormField
+                            title={
+                              <>
+                                {secretNameLabel}{" "}
+                                <span className="text-error">*</span>
+                              </>
+                            }
+                            description={secretNameDescription}
+                          >
                             <Input
                               value={dataSource.externalSecret.secretName ?? ""}
                               required
@@ -1451,11 +1502,14 @@ export function DataSourceForm({
                             DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER &&
                             passwordType !==
                               DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
-                              <FormField>
-                                <FormLabel>
-                                  {secretKeyLabel}{" "}
-                                  <span className="text-error">*</span>
-                                </FormLabel>
+                              <FormField
+                                title={
+                                  <>
+                                    {secretKeyLabel}{" "}
+                                    <span className="text-error">*</span>
+                                  </>
+                                }
+                              >
                                 <Input
                                   value={
                                     dataSource.externalSecret.passwordKeyName ??
@@ -1484,10 +1538,14 @@ export function DataSourceForm({
                       dataSource.redisType ===
                         DataSource_RedisType.SENTINEL && (
                         <>
-                          <FormField>
-                            <FormLabel>
-                              Master Name <span className="text-error">*</span>
-                            </FormLabel>
+                          <FormField
+                            title={
+                              <>
+                                Master Name{" "}
+                                <span className="text-error">*</span>
+                              </>
+                            }
+                          >
                             <Input
                               value={dataSource.masterName ?? ""}
                               className="w-full"
@@ -1497,8 +1555,7 @@ export function DataSourceForm({
                               }
                             />
                           </FormField>
-                          <FormField>
-                            <FormLabel>Master Username</FormLabel>
+                          <FormField title={<>Master Username</>}>
                             <Input
                               value={dataSource.masterUsername ?? ""}
                               className="w-full"
@@ -1508,8 +1565,7 @@ export function DataSourceForm({
                               }
                             />
                           </FormField>
-                          <FormField>
-                            <FormLabel>Master Password</FormLabel>
+                          <FormField title={<>Master Password</>}>
                             <div>
                               {!isCreating && allowUsingEmptyPassword && (
                                 <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
@@ -1612,8 +1668,10 @@ export function DataSourceForm({
           {/* Snowflake keypair */}
           {basicInfo.engine === Engine.SNOWFLAKE && (
             <>
-              <FormField className="sm:col-span-3 sm:col-start-1">
-                <FormLabel>{t("data-source.ssh.private-key")}</FormLabel>
+              <FormField
+                className="sm:col-span-3 sm:col-start-1"
+                title={<>{t("data-source.ssh.private-key")}</>}
+              >
                 <div className="flex gap-x-2 text-sm">
                   <span className="textinfolabel">
                     {t("data-source.snowflake-keypair-tip")}
@@ -1633,11 +1691,11 @@ export function DataSourceForm({
                   }
                 />
               </FormField>
-              <FormField className="sm:col-span-3 sm:col-start-1">
-                <FormLabel>{t("data-source.private-key-passphrase")}</FormLabel>
-                <FormDescription>
-                  {t("data-source.private-key-passphrase-tip")}
-                </FormDescription>
+              <FormField
+                className="sm:col-span-3 sm:col-start-1"
+                title={<>{t("data-source.private-key-passphrase")}</>}
+                description={<>{t("data-source.private-key-passphrase-tip")}</>}
+              >
                 <Input
                   value={dataSource.authenticationPrivateKeyPassphrase ?? ""}
                   type="password"
@@ -1659,20 +1717,26 @@ export function DataSourceForm({
           {/* Databricks */}
           {basicInfo.engine === Engine.DATABRICKS && (
             <>
-              <FormField>
-                <FormLabel>
-                  Warehouse ID <span className="text-error">*</span>
-                </FormLabel>
+              <FormField
+                title={
+                  <>
+                    Warehouse ID <span className="text-error">*</span>
+                  </>
+                }
+              >
                 <Input
                   value={dataSource.warehouseId ?? ""}
                   disabled={!allowEdit}
                   onChange={(e) => update({ warehouseId: e.target.value })}
                 />
               </FormField>
-              <FormField>
-                <FormLabel>
-                  Token <span className="text-error">*</span>
-                </FormLabel>
+              <FormField
+                title={
+                  <>
+                    Token <span className="text-error">*</span>
+                  </>
+                }
+              >
                 <Input
                   type="password"
                   value={dataSource.updatedToken}
@@ -1694,8 +1758,10 @@ export function DataSourceForm({
 
           {/* MongoDB authentication database */}
           {showAuthenticationDatabase && (
-            <FormField className="sm:col-span-3 sm:col-start-1">
-              <FormLabel>{t("instance.authentication-database")}</FormLabel>
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={<>{t("instance.authentication-database")}</>}
+            >
               <Input
                 className="w-full"
                 autoComplete="off"
@@ -1714,8 +1780,10 @@ export function DataSourceForm({
             (hasReadonlyReplicaHost || hasReadonlyReplicaPort) && (
               <>
                 {hasReadonlyReplicaHost && (
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <FormLabel>{t("data-source.read-replica-host")}</FormLabel>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={<>{t("data-source.read-replica-host")}</>}
+                  >
                     <Input
                       className="w-full"
                       autoComplete="off"
@@ -1726,8 +1794,10 @@ export function DataSourceForm({
                   </FormField>
                 )}
                 {hasReadonlyReplicaPort && (
-                  <FormField className="sm:col-span-3 sm:col-start-1">
-                    <FormLabel>{t("data-source.read-replica-port")}</FormLabel>
+                  <FormField
+                    className="sm:col-span-3 sm:col-start-1"
+                    title={<>{t("data-source.read-replica-port")}</>}
+                  >
                     <Input
                       className="w-full"
                       autoComplete="off"
@@ -1746,8 +1816,10 @@ export function DataSourceForm({
 
           {/* Database field */}
           {showDatabase && (
-            <FormField className="sm:col-span-3 sm:col-start-1">
-              <FormLabel>{t("common.database")}</FormLabel>
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={<>{t("common.database")}</>}
+            >
               <Input
                 value={dataSource.database ?? ""}
                 className="w-full"
@@ -1765,21 +1837,23 @@ export function DataSourceForm({
         <>
           {/* SSL */}
           {showSSL && isPasswordAuth && (
-            <FormField className="sm:col-span-3 sm:col-start-1">
-              <div className="flex items-center justify-start gap-x-2">
-                <FormLabel>
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={
+                <span className="flex items-center justify-start gap-x-2">
                   {t("data-source.ssl.connection-security")}
-                </FormLabel>
-                {onOpenInfoPanel && hasSslInfo && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-x-0.5 text-accent text-xs"
-                    onClick={() => onOpenInfoPanel("ssl")}
-                  >
-                    <Info className="size-3.5" />
-                  </button>
-                )}
-              </div>
+                  {onOpenInfoPanel && hasSslInfo && (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                      onClick={() => onOpenInfoPanel("ssl")}
+                    >
+                      <Info className="size-3.5" />
+                    </button>
+                  )}
+                </span>
+              }
+            >
               <SslCertificateForm
                 useSsl={dataSource.useSsl}
                 onUseSslChange={(useSsl) => {
@@ -1889,19 +1963,23 @@ export function DataSourceForm({
 
           {/* SSH */}
           {!hideAdvancedFeatures && showSSH && isPasswordAuth && (
-            <FormField className="sm:col-span-3 sm:col-start-1">
-              <div className="flex flex-row items-center gap-x-1">
-                <FormLabel>{t("data-source.ssh-connection")}</FormLabel>
-                {onOpenInfoPanel && hasSshInfo && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-x-0.5 text-accent text-xs"
-                    onClick={() => onOpenInfoPanel("ssh")}
-                  >
-                    <Info className="size-3.5" />
-                  </button>
-                )}
-              </div>
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={
+                <span className="flex flex-row items-center gap-x-1">
+                  {t("data-source.ssh-connection")}
+                  {onOpenInfoPanel && hasSshInfo && (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                      onClick={() => onOpenInfoPanel("ssh")}
+                    >
+                      <Info className="size-3.5" />
+                    </button>
+                  )}
+                </span>
+              }
+            >
               <SshConnectionForm
                 value={dataSource}
                 instance={instance}
@@ -1913,14 +1991,11 @@ export function DataSourceForm({
 
           {/* Extra connection parameters */}
           {hasExtraParameters && (
-            <FormField className="sm:col-span-3 sm:col-start-1">
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>{t("data-source.extra-params.self")}</FormLabel>
-              </div>
-              <FormDescription>
-                {t("data-source.extra-params.description")}
-              </FormDescription>
-
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={t("data-source.extra-params.self")}
+              description={t("data-source.extra-params.description")}
+            >
               <FormControlGroup className="mt-2">
                 {allowEdit && (
                   <FormControlRow>

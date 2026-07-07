@@ -1,26 +1,103 @@
 import * as stylex from "@stylexjs/stylex";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
 import {
-  formControlAffixStyle,
   formControlGroupStyle,
   formControlRowStyle,
-  formDescriptionStyle,
   formErrorStyle,
+  formFieldDescriptionStyle,
   formFieldGroupStyle,
-  formFieldRowStyle,
+  formFieldHeaderStyle,
   formFieldStyle,
-  formInlineAffixStyle,
+  formFieldTitleStyle,
   formLabelStyle,
-  formMessageStyle,
+  formSectionContentStyle,
+  formSectionHeaderStyle,
+  formSectionStyle,
+  formSectionTitleStyle,
 } from "./styles.stylex";
 
-function FormField({ className, ref, style, ...props }: ComponentProps<"div">) {
-  const stylexProps = stylex.props(formFieldStyle());
+interface FormFieldProps extends Omit<ComponentProps<"div">, "title"> {
+  title?: ReactNode;
+  description?: ReactNode;
+}
+
+/**
+ * Groups one logical form field with its optional title, description, control,
+ * and validation feedback.
+ *
+ * @example
+ * ```tsx
+ * <FormField title={fieldTitle} description={fieldDescription}>
+ *   <Input value={name} onChange={(event) => setName(event.target.value)} />
+ *   {error && <FormError>{error}</FormError>}
+ * </FormField>
+ * ```
+ */
+function FormField({
+  children,
+  className,
+  description,
+  ref,
+  style,
+  title,
+  ...props
+}: FormFieldProps) {
+  const fieldStylexProps = stylex.props(formFieldStyle());
+  const headerStylexProps = stylex.props(formFieldHeaderStyle());
+  const descriptionStylexProps = stylex.props(formFieldDescriptionStyle());
+  const hasHeader = title !== undefined || description !== undefined;
+
   return (
     <div
       ref={ref}
       data-slot="form-field"
+      className={cn(fieldStylexProps.className, className)}
+      style={{ ...fieldStylexProps.style, ...style }}
+      {...props}
+    >
+      {hasHeader && (
+        <div
+          data-slot="form-field-header"
+          className={headerStylexProps.className}
+          style={headerStylexProps.style}
+        >
+          {title !== undefined && <FormTitle>{title}</FormTitle>}
+          {description !== undefined && (
+            <div
+              data-slot="form-field-description"
+              className={descriptionStylexProps.className}
+              style={descriptionStylexProps.style}
+            >
+              {description}
+            </div>
+          )}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Renders the visual title for a form field. Prefer `FormField title` for
+ * ordinary fields, and use `FormTitle` directly when the title row contains
+ * custom layout or actions.
+ *
+ * @example
+ * ```tsx
+ * <FormField>
+ *   <FormTitle>{fieldTitle}</FormTitle>
+ *   <Input value={name} onChange={handleNameChange} />
+ * </FormField>
+ * ```
+ */
+function FormTitle({ className, ref, style, ...props }: ComponentProps<"div">) {
+  const stylexProps = stylex.props(formFieldTitleStyle());
+  return (
+    <div
+      ref={ref}
+      data-slot="form-field-title"
       className={cn(stylexProps.className, className)}
       style={{ ...stylexProps.style, ...style }}
       {...props}
@@ -28,6 +105,21 @@ function FormField({ className, ref, style, ...props }: ComponentProps<"div">) {
   );
 }
 
+/**
+ * Stacks related form fields inside a section or dialog.
+ *
+ * @example
+ * ```tsx
+ * <FormFieldGroup>
+ *   <FormField title={nameTitle}>
+ *     <Input value={name} onChange={handleNameChange} />
+ *   </FormField>
+ *   <FormField title={descriptionTitle}>
+ *     <Input value={description} onChange={handleDescriptionChange} />
+ *   </FormField>
+ * </FormFieldGroup>
+ * ```
+ */
 function FormFieldGroup({
   className,
   ref,
@@ -46,24 +138,85 @@ function FormFieldGroup({
   );
 }
 
-function FormFieldRow({
+interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
+  title: ReactNode;
+}
+
+/**
+ * Wraps a settings page section with a consistent section heading and content
+ * column.
+ *
+ * @example
+ * ```tsx
+ * <FormSection id="general" title={sectionTitle}>
+ *   <FormFieldGroup>
+ *     <FormField title={fieldTitle}>
+ *       <Input value={name} onChange={handleNameChange} />
+ *     </FormField>
+ *   </FormFieldGroup>
+ * </FormSection>
+ * ```
+ */
+function FormSection({
+  children,
   className,
   ref,
   style,
+  title,
   ...props
-}: ComponentProps<"div">) {
-  const stylexProps = stylex.props(formFieldRowStyle());
+}: FormSectionProps) {
+  const sectionStylexProps = stylex.props(formSectionStyle());
+  const headerStylexProps = stylex.props(formSectionHeaderStyle());
+  const titleStylexProps = stylex.props(formSectionTitleStyle());
+  const contentStylexProps = stylex.props(formSectionContentStyle());
+
   return (
-    <div
+    <section
       ref={ref}
-      data-slot="form-field-row"
-      className={cn(stylexProps.className, className)}
-      style={{ ...stylexProps.style, ...style }}
+      data-slot="form-section"
+      className={cn(sectionStylexProps.className, className)}
+      style={{ ...sectionStylexProps.style, ...style }}
       {...props}
-    />
+    >
+      <div
+        data-slot="form-section-header"
+        className={headerStylexProps.className}
+        style={headerStylexProps.style}
+      >
+        <div
+          role="heading"
+          aria-level={2}
+          data-slot="form-section-title"
+          className={titleStylexProps.className}
+          style={titleStylexProps.style}
+        >
+          {title}
+        </div>
+      </div>
+      <div
+        data-slot="form-section-content"
+        className={contentStylexProps.className}
+        style={contentStylexProps.style}
+      >
+        {children}
+      </div>
+    </section>
   );
 }
 
+/**
+ * Stacks multiple control rows that belong to the same field.
+ *
+ * @example
+ * ```tsx
+ * <FormControlGroup>
+ *   <FormControlRow>
+ *     <Input value={key} onChange={handleKeyChange} />
+ *     <Input value={value} onChange={handleValueChange} />
+ *   </FormControlRow>
+ * </FormControlGroup>
+ * ```
+ */
 function FormControlGroup({
   className,
   ref,
@@ -82,6 +235,18 @@ function FormControlGroup({
   );
 }
 
+/**
+ * Aligns controls horizontally inside a field.
+ *
+ * @example
+ * ```tsx
+ * <FormControlRow>
+ *   <Input value={parameter.name} onChange={handleNameChange} />
+ *   <Input value={parameter.value} onChange={handleValueChange} />
+ *   <Button type="button" onClick={handleRemove}>{removeLabel}</Button>
+ * </FormControlRow>
+ * ```
+ */
 function FormControlRow({
   className,
   ref,
@@ -100,42 +265,17 @@ function FormControlRow({
   );
 }
 
-function FormInlineAffix({
-  className,
-  ref,
-  style,
-  ...props
-}: ComponentProps<"div">) {
-  const stylexProps = stylex.props(formInlineAffixStyle());
-  return (
-    <div
-      ref={ref}
-      data-slot="form-inline-affix"
-      className={cn(stylexProps.className, className)}
-      style={{ ...stylexProps.style, ...style }}
-      {...props}
-    />
-  );
-}
-
-function FormControlAffix({
-  className,
-  ref,
-  style,
-  ...props
-}: ComponentProps<"span">) {
-  const stylexProps = stylex.props(formControlAffixStyle());
-  return (
-    <span
-      ref={ref}
-      data-slot="form-control-affix"
-      className={cn(stylexProps.className, className)}
-      style={{ ...stylexProps.style, ...style }}
-      {...props}
-    />
-  );
-}
-
+/**
+ * Renders a semantic label for a native or shared control.
+ *
+ * @example
+ * ```tsx
+ * <FormField>
+ *   <FormLabel htmlFor="database-name">{databaseLabel}</FormLabel>
+ *   <Input id="database-name" value={database} onChange={handleDatabaseChange} />
+ * </FormField>
+ * ```
+ */
 function FormLabel({
   className,
   htmlFor,
@@ -156,24 +296,17 @@ function FormLabel({
   );
 }
 
-function FormDescription({
-  className,
-  ref,
-  style,
-  ...props
-}: ComponentProps<"p">) {
-  const stylexProps = stylex.props(formDescriptionStyle());
-  return (
-    <p
-      ref={ref}
-      data-slot="form-description"
-      className={cn(stylexProps.className, className)}
-      style={{ ...stylexProps.style, ...style }}
-      {...props}
-    />
-  );
-}
-
+/**
+ * Renders validation text for a field. Use it for blocking errors only.
+ *
+ * @example
+ * ```tsx
+ * <FormField title={fieldTitle}>
+ *   <Input value={name} onChange={handleNameChange} />
+ *   {nameError && <FormError>{nameError}</FormError>}
+ * </FormField>
+ * ```
+ */
 function FormError({
   className,
   ref,
@@ -194,36 +327,13 @@ function FormError({
   );
 }
 
-function FormMessage({
-  className,
-  ref,
-  role = "alert",
-  style,
-  ...props
-}: ComponentProps<"p">) {
-  const stylexProps = stylex.props(formMessageStyle());
-  return (
-    <p
-      ref={ref}
-      role={role}
-      data-slot="form-message"
-      className={cn(stylexProps.className, className)}
-      style={{ ...stylexProps.style, ...style }}
-      {...props}
-    />
-  );
-}
-
 export {
-  FormControlAffix,
   FormControlGroup,
   FormControlRow,
-  FormDescription,
   FormError,
   FormField,
   FormFieldGroup,
-  FormFieldRow,
-  FormInlineAffix,
   FormLabel,
-  FormMessage,
+  FormSection,
+  FormTitle,
 };

@@ -9,7 +9,7 @@ import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormField, FormLabel } from "@/react/components/ui/form";
+import { FormField } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -566,8 +566,7 @@ function ServiceAccountForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Name */}
-          <FormField>
-            <FormLabel>{t("common.name")}</FormLabel>
+          <FormField title={<>{t("common.name")}</>}>
             <Input
               autoComplete="off"
               value={title}
@@ -578,11 +577,14 @@ function ServiceAccountForm({
           </FormField>
 
           {/* Email */}
-          <FormField>
-            <FormLabel>
-              {t("common.email")}
-              <span className="ml-0.5 text-error">*</span>
-            </FormLabel>
+          <FormField
+            title={
+              <>
+                {t("common.email")}
+                <span className="ml-0.5 text-error">*</span>
+              </>
+            }
+          >
             {isEditMode ? (
               <Input value={serviceAccount?.email ?? ""} disabled />
             ) : (
@@ -609,8 +611,7 @@ function ServiceAccountForm({
                   "bb.projects.setIamPolicy"
                 )
               : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
-              <FormField>
-                <FormLabel>{t("settings.members.table.roles")}</FormLabel>
+              <FormField title={<>{t("settings.members.table.roles")}</>}>
                 <RoleSelect
                   value={roles}
                   onChange={setRoles}

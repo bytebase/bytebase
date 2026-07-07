@@ -432,7 +432,6 @@
     "select-all": "Select all",
     "selected": "selected",
     "sensitive-placeholder": "Sensitive - write only",
-    "setting": "Setting",
     "settings": "Settings",
     "share": "Share",
     "show-less": "Show less",
@@ -495,6 +494,7 @@
   "create-db": {
     "cluster": "Cluster",
     "database-owner-name": "Database owner name",
+    "issue-title": "Issue title",
     "new-collection-name": "New Collection Name",
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"

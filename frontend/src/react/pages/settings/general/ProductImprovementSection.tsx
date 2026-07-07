@@ -9,7 +9,11 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/react/components/ui/checkbox";
-import { FormFieldGroup } from "@/react/components/ui/form";
+import {
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/react/components/ui/form";
 import { useAppStore } from "@/react/stores/app";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -68,33 +72,30 @@ export const ProductImprovementSection = forwardRef<
   }, [state, onDirtyChange]);
 
   return (
-    <div id="product-improvement" className="py-6 lg:flex">
-      <div className="text-left lg:w-1/4">
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-      <FormFieldGroup className="flex-1 mt-4 lg:px-4 lg:mt-0">
-        <label className="flex items-start gap-x-3 cursor-pointer">
-          <Checkbox
-            checked={state.enableMetricCollection}
-            className="mt-1"
-            disabled={!allowEdit}
-            onCheckedChange={(checked) =>
-              setState((s) => ({
-                ...s,
-                enableMetricCollection: checked,
-              }))
-            }
-          />
-          <div className="flex flex-col gap-1">
-            <div className="text-base font-semibold">
+    <FormSection id="product-improvement" title={title}>
+      <FormFieldGroup>
+        <FormField
+          title={
+            <span className="flex items-start gap-x-3">
+              <Checkbox
+                checked={state.enableMetricCollection}
+                className="mt-1"
+                disabled={!allowEdit}
+                onCheckedChange={(checked) =>
+                  setState((s) => ({
+                    ...s,
+                    enableMetricCollection: checked,
+                  }))
+                }
+              />
               {t("settings.general.workspace.product-improvement.participate")}
-            </div>
-            <div className="textinfolabel">
-              {t("settings.general.workspace.product-improvement.description")}
-            </div>
-          </div>
-        </label>
+            </span>
+          }
+          description={t(
+            "settings.general.workspace.product-improvement.description"
+          )}
+        />
       </FormFieldGroup>
-    </div>
+    </FormSection>
   );
 });

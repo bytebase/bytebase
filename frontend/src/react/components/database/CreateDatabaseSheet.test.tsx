@@ -270,7 +270,7 @@ async function fillDatabaseName(name: string): Promise<void> {
 
 function getTitleInput(): HTMLInputElement {
   return container.querySelector(
-    "input[placeholder='common.title']"
+    "input[placeholder='create-db.issue-title']"
   ) as HTMLInputElement;
 }
 

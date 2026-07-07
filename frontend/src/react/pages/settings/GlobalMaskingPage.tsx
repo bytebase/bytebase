@@ -20,6 +20,7 @@ import {
 } from "@/plugins/cel";
 import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -626,14 +627,10 @@ export function GlobalMaskingPage() {
       {/* Description */}
       <div className="textinfolabel">
         {t("settings.sensitive-data.global-rules.description")}{" "}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/security/data-masking/overview/?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-accent hover:underline"
-        >
-          {t("common.learn-more")}
-        </a>
+        />
       </div>
 
       {/* Empty state */}

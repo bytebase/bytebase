@@ -432,7 +432,6 @@
     "select-all": "Chọn tất cả",
     "selected": "đã chọn",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
-    "setting": "Cài đặt",
     "settings": "Cài đặt",
     "share": "Chia sẻ",
     "show-less": "Thu gọn",
@@ -495,6 +494,7 @@
   "create-db": {
     "cluster": "Cụm",
     "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",
+    "issue-title": "Tiêu đề vấn đề",
     "new-collection-name": "Tên bộ sưu tập mới",
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"

@@ -2,7 +2,7 @@ import { Info } from "lucide-react";
 import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
-import { FormField, FormLabel } from "@/react/components/ui/form";
+import { FormField } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   SegmentedControl,
@@ -357,8 +357,11 @@ export function SslCertificateForm({
     hasStoredValue: boolean,
     visibleValue: string
   ) => (
-    <div className="flex items-center gap-x-2">
-      <FormLabel>{label}</FormLabel>
+    <div
+      data-slot="form-field-title"
+      className="flex items-center gap-x-2 text-base font-semibold leading-6 text-main"
+    >
+      {label}
       {showConfiguredBadge(hasStoredValue, visibleValue) && (
         <Badge data-testid="tls-configured-badge" variant="success">
           {resolvedConfiguredLabel}
@@ -615,7 +618,9 @@ export function SslCertificateForm({
           onCheckedChange={(val) => onVerifyChange?.(val)}
           disabled={disabled}
         />
-        <FormLabel>{resolvedVerifyLabel}</FormLabel>
+        <span className="text-base font-semibold leading-6 text-main">
+          {resolvedVerifyLabel}
+        </span>
         {showTooltip && (
           <Tooltip
             content={t("data-source.ssl.verify-certificate-tooltip")}
@@ -652,8 +657,7 @@ export function SslCertificateForm({
           )}
           <div className="flex flex-col gap-y-2">
             {showCaSourceUi && (
-              <FormField>
-                <FormLabel>{t("data-source.ssl.ca-source.self")}</FormLabel>
+              <FormField title={<>{t("data-source.ssl.ca-source.self")}</>}>
                 <CaSourceSelector
                   value={resolvedCaSource}
                   onChange={onCaSourceChange!}
@@ -673,10 +677,9 @@ export function SslCertificateForm({
             </legend>
             <div className="flex flex-col gap-y-2">
               {showClientCertSourceUi && (
-                <FormField>
-                  <FormLabel>
-                    {t("data-source.ssl.client-cert-source.self")}
-                  </FormLabel>
+                <FormField
+                  title={<>{t("data-source.ssl.client-cert-source.self")}</>}
+                >
                   <ClientCertSourceSelector
                     value={clientIdentitySource}
                     onChange={onClientCertSourceChange!}
@@ -709,7 +712,9 @@ export function SslCertificateForm({
             onCheckedChange={(val) => onUseSslChange?.(val)}
             disabled={disabled}
           />
-          <FormLabel>{t("data-source.ssl-connection")}</FormLabel>
+          <span className="text-base font-semibold leading-6 text-main">
+            {t("data-source.ssl-connection")}
+          </span>
         </div>
       )}
 
@@ -723,8 +728,7 @@ export function SslCertificateForm({
             <>
               <div className="flex flex-col gap-y-2">
                 {showCaSourceUi && (
-                  <FormField>
-                    <FormLabel>{t("data-source.ssl.ca-source.self")}</FormLabel>
+                  <FormField title={<>{t("data-source.ssl.ca-source.self")}</>}>
                     <CaSourceSelector
                       value={resolvedCaSource}
                       onChange={onCaSourceChange!}
@@ -739,10 +743,11 @@ export function SslCertificateForm({
               {showKeyAndCertFields && (
                 <div className="flex flex-col gap-y-2">
                   {showClientCertSourceUi && (
-                    <FormField>
-                      <FormLabel>
-                        {t("data-source.ssl.client-cert-source.self")}
-                      </FormLabel>
+                    <FormField
+                      title={
+                        <>{t("data-source.ssl.client-cert-source.self")}</>
+                      }
+                    >
                       <ClientCertSourceSelector
                         value={resolvedClientCertSource}
                         onChange={onClientCertSourceChange!}

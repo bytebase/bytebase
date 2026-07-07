@@ -15,13 +15,10 @@ import feishuIcon from "@/assets/im/feishu.webp";
 import slackIcon from "@/assets/im/slack.png";
 import teamsIcon from "@/assets/im/teams.svg";
 import wecomIcon from "@/assets/im/wecom.png";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import {
-  FormField,
-  FormFieldGroup,
-  FormLabel,
-} from "@/react/components/ui/form";
+import { FormField, FormFieldGroup } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
   Select,
@@ -457,8 +454,7 @@ export function IMPage() {
 
           <FormFieldGroup className="mt-4 gap-y-4">
             {item.fields.map((field) => (
-              <FormField key={field.key}>
-                <FormLabel>{field.label}</FormLabel>
+              <FormField key={field.key} title={<>{field.label}</>}>
                 <Input
                   disabled={!allowEdit}
                   placeholder={t("common.sensitive-placeholder")}
@@ -528,14 +524,10 @@ function Description() {
   return (
     <div className="textinfolabel">
       {t("settings.im-integration.description")}{" "}
-      <a
+      <LearnMoreLink
         href="https://docs.bytebase.com/change-database/webhook?source=console"
-        target="_blank"
-        rel="noopener noreferrer"
         className="text-accent hover:underline"
-      >
-        {t("common.learn-more")} &gt;
-      </a>
+      />
     </div>
   );
 }
