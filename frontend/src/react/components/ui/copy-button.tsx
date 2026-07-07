@@ -12,6 +12,7 @@ interface CopyButtonProps {
   readonly content: string | (() => string);
   readonly size?: ButtonProps["size"];
   readonly variant?: ButtonProps["variant"];
+  readonly appearance?: ButtonProps["appearance"];
   readonly disabled?: boolean;
   readonly className?: string;
 }
@@ -19,7 +20,8 @@ interface CopyButtonProps {
 export function CopyButton({
   content,
   size = "xs",
-  variant = "ghost",
+  variant = "default",
+  appearance = "secondary",
   disabled,
   className,
 }: CopyButtonProps) {
@@ -49,6 +51,7 @@ export function CopyButton({
       <Button
         type="button"
         variant={variant}
+        appearance={appearance}
         size={size}
         disabled={disabled}
         onClick={handleCopy}

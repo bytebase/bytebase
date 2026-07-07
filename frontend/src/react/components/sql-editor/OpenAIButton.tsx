@@ -76,7 +76,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
     return null;
   }
 
-  const buttonVariant = showAIPanel ? "default" : "outline";
+  const buttonAppearance = showAIPanel ? "solid" : "outline";
 
   const icon = (
     <svg
@@ -139,7 +139,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
 
   const renderButton = (onClick?: () => void) => (
     <Button
-      variant={buttonVariant}
+      appearance={buttonAppearance}
       size={size}
       className={buttonClass}
       aria-label={t("plugin.ai.ai-assistant")}

@@ -138,7 +138,7 @@ export function ConversationList() {
             })}
 
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               className="sticky bottom-0 flex items-center justify-center gap-x-1"
               onClick={() => events.emit("new-conversation", { input: "" })}
@@ -175,7 +175,9 @@ export function ConversationList() {
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogClose
-              render={<Button variant="outline">{t("common.cancel")}</Button>}
+              render={
+                <Button appearance="outline">{t("common.cancel")}</Button>
+              }
             />
             <Button
               variant="destructive"

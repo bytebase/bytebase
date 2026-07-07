@@ -81,7 +81,7 @@ export function ConversationRenameDialog({
             />
           </div>
           <div className="w-full flex items-center justify-end gap-x-2 mt-4 pt-2 border-t">
-            <Button variant="outline" onClick={onCancel}>
+            <Button appearance="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
             <Button onClick={() => void handleRename()} disabled={loading}>

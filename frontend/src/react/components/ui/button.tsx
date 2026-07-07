@@ -81,52 +81,24 @@ type ButtonIntent = NonNullable<VariantProps<typeof buttonStyles>["variant"]>;
 type ButtonAppearance = NonNullable<
   VariantProps<typeof buttonStyles>["appearance"]
 >;
-type ButtonVariant =
-  | ButtonIntent
-  | "outline"
-  | "ghost"
-  | "ghost-destructive"
-  | "link";
 type ButtonSize = VariantProps<typeof buttonStyles>["size"];
 
 type ButtonVariantProps = {
-  variant?: ButtonVariant;
+  variant?: ButtonIntent;
   appearance?: ButtonAppearance;
   size?: ButtonSize;
   class?: ClassValue;
   className?: ClassValue;
 };
 
-const normalizeButtonVariants = ({
-  variant = "default",
-  appearance,
-}: Pick<ButtonVariantProps, "variant" | "appearance">): {
-  variant: ButtonIntent;
-  appearance: ButtonAppearance;
-} => {
-  switch (variant) {
-    case "outline":
-      return { variant: "default", appearance: appearance ?? "outline" };
-    case "ghost":
-      return { variant: "default", appearance: appearance ?? "secondary" };
-    case "ghost-destructive":
-      return { variant: "destructive", appearance: appearance ?? "outline" };
-    case "link":
-      return { variant: "default", appearance: appearance ?? "link" };
-    default:
-      return { variant, appearance: appearance ?? "solid" };
-  }
-};
-
 function buttonVariants({
   class: classValue,
   className,
-  variant,
-  appearance,
+  variant = "default",
+  appearance = "solid",
   size = "default",
 }: ButtonVariantProps = {}) {
-  const normalized = normalizeButtonVariants({ variant, appearance });
-  return cn(buttonStyles({ ...normalized, size }), classValue, className);
+  return cn(buttonStyles({ variant, appearance, size }), classValue, className);
 }
 
 type ButtonProps = Omit<ComponentProps<"button">, "className"> &

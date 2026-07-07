@@ -24,7 +24,7 @@ export function ActionBar() {
           side="bottom"
         >
           <Button
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             className="h-7 px-1.5"
             onClick={() => setShowHistoryDialog(true)}
@@ -38,7 +38,7 @@ export function ActionBar() {
           side="bottom"
         >
           <Button
-            variant="ghost"
+            appearance="secondary"
             size="sm"
             className="h-7 px-1.5"
             onClick={() => events.emit("new-conversation", { input: "" })}

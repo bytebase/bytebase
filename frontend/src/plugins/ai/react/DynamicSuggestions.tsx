@@ -124,7 +124,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
         <div className="relative flex items-center gap-1 overflow-hidden text-xs leading-4">
           {current && (
             <Button
-              variant="outline"
+              appearance="outline"
               size="xs"
               className="flex-1 overflow-hidden h-[22px]"
               onClick={handleConsume}
@@ -139,7 +139,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
           {state === "IDLE" && (
             <div className="flex items-center">
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="xs"
                 className="shrink-0 h-[22px] px-1.5"
                 onClick={handleRefresh}
@@ -148,7 +148,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
                 <RefreshCwIcon className="size-3.5" />
               </Button>
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="xs"
                 className="shrink-0 h-[22px] px-1.5"
                 onClick={() => setShowSuggestion(false)}
