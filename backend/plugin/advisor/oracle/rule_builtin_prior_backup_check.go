@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
 
@@ -177,7 +178,61 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		}
 	}
 
+	// Prior backup copies rows with CREATE TABLE ... AS SELECT, which Oracle
+	// does not support for LONG / LONG RAW columns at all (ORA-00997) — the
+	// task would fail at run time with no earlier signal. Warn up front with
+	// the table and column names.
+	adviceList = append(adviceList, r.longColumnAdvices(groupByTable)...)
+
 	r.adviceList = append(r.adviceList, adviceList...)
+}
+
+// longColumnAdvices warns for backup-targeted tables that contain LONG or
+// LONG RAW columns, which CREATE TABLE AS SELECT cannot copy.
+func (r *StatementPriorBackupCheckRule) longColumnAdvices(groupByTable map[string][]statementInfo) []*storepb.Advice {
+	if r.checkCtx.DBSchema == nil {
+		return nil
+	}
+	var adviceList []*storepb.Advice
+	for _, list := range groupByTable {
+		table := list[0].table
+		columns := oracleFindLongColumns(r.checkCtx.DBSchema, table.Schema, table.Table)
+		if len(columns) == 0 {
+			continue
+		}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        r.level,
+			Title:         r.title,
+			Content:       fmt.Sprintf("Prior backup cannot copy table %q.%q: column(s) %s use the LONG/LONG RAW type, which CREATE TABLE AS SELECT does not support (ORA-00997). Disable prior backup for this issue or migrate the column type", table.Schema, table.Table, strings.Join(columns, ", ")),
+			Code:          code.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: nil,
+		})
+	}
+	return adviceList
+}
+
+// oracleFindLongColumns returns the names of LONG / LONG RAW columns of the
+// given table, or nil when the table is not found in the synced metadata
+// (missing metadata must not produce false alarms).
+func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, schemaName, tableName string) []string {
+	var result []string
+	for _, schemaMeta := range dbSchema.GetSchemas() {
+		if !strings.EqualFold(schemaMeta.GetName(), schemaName) {
+			continue
+		}
+		for _, tableMeta := range schemaMeta.GetTables() {
+			if !strings.EqualFold(tableMeta.GetName(), tableName) {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				typ := strings.ToUpper(strings.TrimSpace(column.GetType()))
+				if typ == "LONG" || typ == "LONG RAW" {
+					result = append(result, fmt.Sprintf("%q", column.GetName()))
+				}
+			}
+		}
+	}
+	return result
 }
 
 func oracleTableReferenceFromObjectName(databaseName string, name *ast.ObjectName, typ StatementType) *TableReference {

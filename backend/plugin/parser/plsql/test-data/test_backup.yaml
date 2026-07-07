@@ -12,11 +12,13 @@
   result:
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST11_DB" AS
-          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 2
-          UNION
-          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 4
-          UNION
-          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 6;
+          SELECT "DB"."TEST11".* FROM "DB"."TEST11" WHERE ROWID IN (
+            SELECT "TEST11".ROWID FROM test11 WHERE test11.b1 = 2
+            UNION
+            SELECT "TEST11".ROWID FROM test11 WHERE test11.b1 = 4
+            UNION
+            SELECT "TEST11".ROWID FROM test11 WHERE test11.b1 = 6
+          );
       sourceschema: DB
       sourcetablename: TEST11
       targettablename: rollback_TEST11_DB
@@ -28,19 +30,21 @@
         column: 50
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-          SELECT "TEST".* FROM test WHERE test.b1 = 1
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 2
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 3
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 4
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 5
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 6
-          UNION
-          SELECT "TEST".* FROM test WHERE test.b1 = 7;
+          SELECT "DB"."TEST".* FROM "DB"."TEST" WHERE ROWID IN (
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 1
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 2
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 3
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 4
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 5
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 6
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.b1 = 7
+          );
       sourceschema: DB
       sourcetablename: TEST
       targettablename: rollback_TEST_DB
@@ -112,9 +116,11 @@
   result:
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-          SELECT "T".* FROM test  t WHERE t.c1 = 1
-          UNION
-          SELECT "T".* FROM test  t WHERE t.c1 = 5;
+          SELECT "DB"."TEST".* FROM "DB"."TEST" WHERE ROWID IN (
+            SELECT "T".ROWID FROM test  t WHERE t.c1 = 1
+            UNION
+            SELECT "T".ROWID FROM test  t WHERE t.c1 = 5
+          );
       sourceschema: DB
       sourcetablename: TEST
       targettablename: rollback_TEST_DB
@@ -214,9 +220,11 @@
   result:
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
-          SELECT "TEST".* FROM test WHERE test.c1 = 1
-          UNION
-          SELECT "TEST".* FROM test WHERE test.c1 = 5;
+          SELECT "DB"."TEST".* FROM "DB"."TEST" WHERE ROWID IN (
+            SELECT "TEST".ROWID FROM test WHERE test.c1 = 1
+            UNION
+            SELECT "TEST".ROWID FROM test WHERE test.c1 = 5
+          );
       sourceschema: DB
       sourcetablename: TEST
       targettablename: rollback_TEST_DB

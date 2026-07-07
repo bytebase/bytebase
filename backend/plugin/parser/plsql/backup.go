@@ -141,30 +141,34 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 	if _, err := fmt.Fprintf(&buf, `CREATE TABLE "%s"."%s" AS`+"\n", targetDatabase, targetTable); err != nil {
 		return nil, errors.Wrap(err, "failed to write to buffer")
 	}
-	for i, info := range statementInfoList {
-		if i != 0 {
-			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
-				return nil, errors.Wrap(err, "failed to write to buffer")
-			}
+	if len(statementInfoList) == 1 {
+		// Single DML: a plain CTAS needs no deduplication.
+		if err := writeBranchSelect(&buf, statementInfoList[0], "*", "  "); err != nil {
+			return nil, err
 		}
-		t := info.table
-		if t.Alias != "" {
-			if _, err := fmt.Fprintf(&buf, `  SELECT "%s".* FROM `, t.Alias); err != nil {
-				return nil, errors.Wrap(err, "failed to write to buffer")
-			}
-		} else {
-			if t.HasSchema {
-				if _, err := fmt.Fprintf(&buf, `  SELECT "%s"."%s".* FROM `, t.Schema, t.Table); err != nil {
+	} else {
+		// Multiple DMLs on the same table: deduplicate by ROWID instead of a
+		// value-based UNION. UNION's implicit DISTINCT compares every column,
+		// which fails on LOB columns (ORA-22848) and silently collapses
+		// value-identical physical rows into one backup row. ROWID is always
+		// comparable, keeps LOB columns out of the comparison key, and
+		// deduplicates by physical row — the semantics a backup wants.
+		if _, err := fmt.Fprintf(&buf, `  SELECT "%s"."%s".* FROM "%s"."%s" WHERE ROWID IN (`+"\n",
+			table.Schema, table.Table, table.Schema, table.Table); err != nil {
+			return nil, errors.Wrap(err, "failed to write to buffer")
+		}
+		for i, info := range statementInfoList {
+			if i != 0 {
+				if _, err := buf.WriteString("\n    UNION\n"); err != nil {
 					return nil, errors.Wrap(err, "failed to write to buffer")
 				}
-			} else {
-				if _, err := fmt.Fprintf(&buf, `  SELECT "%s".* FROM `, t.Table); err != nil {
-					return nil, errors.Wrap(err, "failed to write to buffer")
-				}
+			}
+			if err := writeBranchSelect(&buf, info, "ROWID", "    "); err != nil {
+				return nil, err
 			}
 		}
-		if err := writeSuffixSelectClause(&buf, info.node, info.fullSQL); err != nil {
-			return nil, errors.Wrap(err, "failed to write suffix select clause")
+		if _, err := buf.WriteString("\n  )"); err != nil {
+			return nil, errors.Wrap(err, "failed to write to buffer")
 		}
 	}
 
@@ -273,6 +277,28 @@ func omniDMLTableReference(databaseName string, name *oracleast.ObjectName, alia
 		table.Alias = alias.Name
 	}
 	return table
+}
+
+// writeBranchSelect writes one `SELECT <qualifier>.<projection> FROM <dml
+// target and predicate>` branch. projection is "*" for a plain CTAS body and
+// "ROWID" for the deduplication subquery branches.
+func writeBranchSelect(buf *strings.Builder, info statementInfo, projection string, indent string) error {
+	t := info.table
+	switch {
+	case t.Alias != "":
+		if _, err := fmt.Fprintf(buf, `%sSELECT "%s".%s FROM `, indent, t.Alias, projection); err != nil {
+			return errors.Wrap(err, "failed to write to buffer")
+		}
+	case t.HasSchema:
+		if _, err := fmt.Fprintf(buf, `%sSELECT "%s"."%s".%s FROM `, indent, t.Schema, t.Table, projection); err != nil {
+			return errors.Wrap(err, "failed to write to buffer")
+		}
+	default:
+		if _, err := fmt.Fprintf(buf, `%sSELECT "%s".%s FROM `, indent, t.Table, projection); err != nil {
+			return errors.Wrap(err, "failed to write to buffer")
+		}
+	}
+	return errors.Wrap(writeSuffixSelectClause(buf, info.node, info.fullSQL), "failed to write suffix select clause")
 }
 
 func writeSuffixSelectClause(buf *strings.Builder, node oracleast.StmtNode, fullSQL string) error {
