@@ -17,11 +17,14 @@ import (
 // CREATE TABLE AS SELECT cannot copy those columns (ORA-00997), so prior
 // backup fails at run time with no earlier signal unless the check warns.
 func TestPriorBackupLongColumnWarning(t *testing.T) {
+	// The real Oracle sync stores the connection schema's tables under an
+	// EMPTY schema name (db/oracle/sync.go) — the fixture must match that
+	// shape or the schema comparison is never exercised realistically.
 	dbSchema := &storepb.DatabaseSchemaMetadata{
 		Name: "DB",
 		Schemas: []*storepb.SchemaMetadata{
 			{
-				Name: "DB",
+				Name: "",
 				Tables: []*storepb.TableMetadata{
 					{Name: "T_LONG", Columns: []*storepb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER"},
@@ -92,6 +95,14 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 		advices := longAdvices(check(t,
 			"UPDATE T_LONG SET ID = 1 WHERE ID = 1;\nUPDATE T_LONG SET ID = 2 WHERE ID = 2;"))
 		require.Len(t, advices, 1)
+	})
+
+	t.Run("schema_qualified_dml_warns_too", func(t *testing.T) {
+		// Schema-qualified DML normalizes to an explicit schema name; the
+		// empty synced schema (= current schema) must still match.
+		advices := longAdvices(check(t, "UPDATE DB.T_LONG SET ID = 1 WHERE ID = 2;"))
+		require.Len(t, advices, 1)
+		require.Contains(t, advices[0].Content, `"PAYLOAD"`)
 	})
 
 	t.Run("unknown_table_stays_silent", func(t *testing.T) {
