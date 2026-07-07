@@ -35,7 +35,12 @@ SET payload = jsonb_set(
         '[]'::jsonb
     )
 )
-WHERE payload ? 'sqlReviewRules'
+-- jsonb_typeof guards against non-array values: `{"sqlReviewRules": null}`
+-- exists in the wild and `payload ? 'sqlReviewRules'` alone lets the scalar
+-- reach jsonb_array_elements, aborting the migration with SQLSTATE 22023
+-- ("cannot extract elements from a scalar") and blocking server startup.
+-- Non-array shapes carry no rule references, so skipping them is safe.
+WHERE jsonb_typeof(payload->'sqlReviewRules') = 'array'
   AND EXISTS (
       SELECT 1
       FROM jsonb_array_elements(payload->'sqlReviewRules') AS rule
