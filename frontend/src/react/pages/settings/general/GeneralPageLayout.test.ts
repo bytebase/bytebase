@@ -59,4 +59,34 @@ describe("GeneralPage section layout", () => {
       expect(source, file).not.toContain("text-sm font-medium text-control");
     }
   });
+
+  test("keeps domain restriction checkbox text wired to the checkbox", () => {
+    const source = readFileSync(
+      join(sectionDir, "SecuritySection.tsx"),
+      "utf8"
+    );
+    const membersRestrictionIndex = source.indexOf(
+      "settings.general.workspace.domain-restriction.members-restriction.self"
+    );
+    const membersRestrictionBlock = source.slice(
+      Math.max(0, membersRestrictionIndex - 1400),
+      membersRestrictionIndex + 800
+    );
+
+    expect(membersRestrictionIndex).toBeGreaterThan(0);
+    expect(membersRestrictionBlock).toContain(
+      '<div className="flex items-start gap-x-2">'
+    );
+    expect(membersRestrictionBlock).toContain("<Checkbox");
+    expect(membersRestrictionBlock).toContain("aria-labelledby");
+    expect(membersRestrictionBlock).toContain("aria-describedby");
+    expect(membersRestrictionBlock).toContain("toggleDomainRestriction");
+    expect(membersRestrictionBlock).toContain(
+      "settings.general.workspace.domain-restriction.members-restriction.description"
+    );
+    expect(membersRestrictionBlock).not.toContain("<label");
+    expect(membersRestrictionBlock).not.toContain(
+      '<span className="flex items-start gap-x-2">'
+    );
+  });
 });

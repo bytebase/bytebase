@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useState,
 } from "react";
@@ -91,6 +92,10 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
     const [domainInput, setDomainInput] = useState("");
 
     const validDomains = state.domains.filter((d) => !!d);
+    const canToggleDomainRestriction =
+      canEdit && validDomains.length > 0 && hasDomainRestrictionFeature;
+    const membersRestrictionLabelId = useId();
+    const membersRestrictionDescriptionId = useId();
 
     const isDirty = useCallback(() => {
       if (domainInput.trim()) return true;
@@ -198,6 +203,22 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         e.preventDefault();
         addDomain();
       }
+    };
+
+    const toggleDomainRestriction = () => {
+      if (!canToggleDomainRestriction) return;
+      setState((prev) => ({
+        ...prev,
+        enableRestriction: !prev.enableRestriction,
+      }));
+    };
+
+    const handleDomainRestrictionTextKeyDown = (
+      e: KeyboardEvent<HTMLDivElement>
+    ) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      toggleDomainRestriction();
     };
 
     const removeDomain = (index: number) => {
@@ -344,15 +365,13 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 <div className="w-full flex flex-row justify-between items-center">
                   <FormField
                     title={
-                      <span className="flex items-start gap-x-2">
+                      <div className="flex items-start gap-x-2">
                         <Checkbox
+                          aria-describedby={membersRestrictionDescriptionId}
+                          aria-labelledby={membersRestrictionLabelId}
                           checked={state.enableRestriction}
                           className="mt-1"
-                          disabled={
-                            !canEdit ||
-                            validDomains.length === 0 ||
-                            !hasDomainRestrictionFeature
-                          }
+                          disabled={!canToggleDomainRestriction}
                           onCheckedChange={(checked) =>
                             setState((prev) => ({
                               ...prev,
@@ -360,21 +379,37 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                             }))
                           }
                         />
-                        <span className="flex items-center gap-x-2">
-                          {t(
-                            "settings.general.workspace.domain-restriction.members-restriction.self"
-                          )}
-                          <FeatureBadge
-                            feature={
-                              PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
-                            }
-                          />
-                        </span>
-                      </span>
+                        <div
+                          className="flex flex-col gap-y-0"
+                          role="button"
+                          tabIndex={canToggleDomainRestriction ? 0 : -1}
+                          onClick={toggleDomainRestriction}
+                          onKeyDown={handleDomainRestrictionTextKeyDown}
+                        >
+                          <span
+                            id={membersRestrictionLabelId}
+                            className="flex items-center gap-x-2"
+                          >
+                            {t(
+                              "settings.general.workspace.domain-restriction.members-restriction.self"
+                            )}
+                            <FeatureBadge
+                              feature={
+                                PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                              }
+                            />
+                          </span>
+                          <span
+                            id={membersRestrictionDescriptionId}
+                            className="block text-sm font-normal text-control-placeholder"
+                          >
+                            {t(
+                              "settings.general.workspace.domain-restriction.members-restriction.description"
+                            )}
+                          </span>
+                        </div>
+                      </div>
                     }
-                    description={t(
-                      "settings.general.workspace.domain-restriction.members-restriction.description"
-                    )}
                   />
                 </div>
               </div>

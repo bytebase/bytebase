@@ -453,7 +453,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     "settings.general.workspace.disallow-signup.description"
                   )}
                 />
-                <hr className="my-6" />
+                <hr className="my-1" />
               </>
             )}
 
@@ -627,7 +627,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               </div>
             </FormField>
 
-            <hr className="my-6" />
+            <hr className="my-1" />
 
             {/* Sub-section 3: Require 2FA */}
             <div className="flex flex-col gap-y-7">
@@ -740,7 +740,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               )}
             </div>
 
-            <hr className="my-6" />
+            <hr className="my-1" />
 
             {/* Sub-section 5: Token Duration */}
             {/* Access Token Duration */}
