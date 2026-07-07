@@ -44,7 +44,7 @@ export function ActionBarTabItem({ action, disabled }: Props) {
     <Tooltip side="right" content={action.title} delayDuration={300}>
       <Button
         type="button"
-        variant="ghost"
+        appearance="secondary"
         size="sm"
         disabled={disabled}
         onClick={handleClick}

@@ -291,7 +291,7 @@ function MaskingRuleConfig({
                     {t("common.delete")}
                   </Button>
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(false)}
                   >
@@ -300,7 +300,7 @@ function MaskingRuleConfig({
                 </div>
               ) : (
                 <Button
-                  variant="ghost"
+                  appearance="secondary"
                   size="sm"
                   className="text-error hover:text-error"
                   disabled={disabled}
@@ -316,7 +316,7 @@ function MaskingRuleConfig({
           )}
           <div className="flex justify-end gap-x-2 ml-auto">
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={disabled}
               onClick={handleCancel}
             >
@@ -574,7 +574,7 @@ export function GlobalMaskingPage() {
         {reorderRules ? (
           <div className="flex items-center gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={processing}
               onClick={() => {
                 setReorderRules(false);
@@ -604,7 +604,7 @@ export function GlobalMaskingPage() {
         ) : (
           <div className="flex items-center gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={
                 !hasPermission || !hasSensitiveDataFeature || items.length <= 1
               }

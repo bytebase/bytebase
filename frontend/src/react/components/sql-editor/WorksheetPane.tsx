@@ -161,7 +161,7 @@ export function WorksheetPane() {
         {showMultiSelectToolbar && (
           <div className="sticky top-0 z-10 flex flex-wrap items-center justify-start gap-y-1 gap-x-1 bg-control-bg py-2 px-1">
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="xs"
               className="text-error hover:text-error"
               disabled={checkedNodes.length === 0 || loading}
@@ -171,7 +171,7 @@ export function WorksheetPane() {
               {t("common.delete")}
             </Button>
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="xs"
               disabled={checkedWorksheets.length === 0 || loading}
               onClick={() => {
@@ -183,7 +183,7 @@ export function WorksheetPane() {
               {t("sheet.move-worksheets")}
             </Button>
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="xs"
               disabled={loading}
               onClick={() => setMultiSelectMode(false)}
@@ -231,7 +231,7 @@ export function WorksheetPane() {
               onFolderChange={setPendingMoveFolder}
             />
             <div className="flex justify-end gap-x-2 mt-4">
-              <Button variant="outline" onClick={closeReorgModal}>
+              <Button appearance="outline" onClick={closeReorgModal}>
                 {t("common.close")}
               </Button>
               <Button onClick={handleMoveWorksheets} disabled={loading}>

@@ -197,7 +197,7 @@ export function AccessGrantItem({
           <div className="flex items-center gap-x-1">
             {isRejectedOrCanceled && (
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 className="h-6 text-xs"
                 data-re-request-btn

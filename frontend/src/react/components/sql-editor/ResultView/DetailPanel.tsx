@@ -319,7 +319,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                 >
                   <Button
                     size="sm"
-                    variant="outline"
+                    appearance="outline"
                     disabled={detail.row === 0}
                     onClick={() => move(-1)}
                   >
@@ -329,7 +329,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                 <Tooltip content={t("sql-editor.next-row")} delayDuration={500}>
                   <Button
                     size="sm"
-                    variant="outline"
+                    appearance="outline"
                     disabled={detail.row === totalCount - 1}
                     onClick={() => move(1)}
                   >
@@ -375,7 +375,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                       >
                         <Button
                           size="sm"
-                          variant="ghost"
+                          appearance="secondary"
                           className="size-7 p-0"
                           disabled={matchCount === 0}
                           onClick={() => moveSearchMatch(-1)}
@@ -388,7 +388,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                       >
                         <Button
                           size="sm"
-                          variant="ghost"
+                          appearance="secondary"
                           className="size-7 p-0"
                           disabled={matchCount === 0}
                           onClick={() => moveSearchMatch(1)}
@@ -399,7 +399,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                       <Tooltip content={t("common.close")}>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          appearance="secondary"
                           className="size-7 border-l border-control-border p-0"
                           onClick={clearSearch}
                         >
@@ -415,7 +415,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     <Tooltip content={t("sql-editor.format")}>
                       <Button
                         size="sm"
-                        variant={format ? "default" : "outline"}
+                        appearance={format ? "solid" : "outline"}
                         className="h-7 px-1.5"
                         onClick={() => setFormat(!format)}
                       >
@@ -441,7 +441,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     <Tooltip content={t("common.copy")}>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        appearance="secondary"
                         className="size-7 p-0"
                         onClick={handleCopy}
                       >
@@ -474,7 +474,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     <Tooltip content={t("common.text-wrap")}>
                       <Button
                         size="sm"
-                        variant={wrap ? "default" : "outline"}
+                        appearance={wrap ? "solid" : "outline"}
                         className="h-6 px-1"
                         onClick={() => setWrap(!wrap)}
                       >

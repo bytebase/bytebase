@@ -73,7 +73,7 @@ export function ConnectionPanel() {
               {allowManageInstance && (
                 <Tooltip content={t("sql-editor.manage-connections")}>
                   <Button
-                    variant="ghost"
+                    appearance="secondary"
                     size="sm"
                     className={cn("size-7 p-1")}
                     aria-label={t("sql-editor.manage-connections")}

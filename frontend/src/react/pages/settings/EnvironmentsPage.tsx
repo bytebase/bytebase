@@ -332,7 +332,7 @@ function RolloutPolicyConfig({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
-                    <Button variant="outline" size="sm">
+                    <Button appearance="outline" size="sm">
                       <Plus className="w-3.5 h-3.5 mr-1" />
                       {t("common.add")}
                     </Button>
@@ -529,7 +529,7 @@ function SQLReviewSectionInner(
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button variant="outline" disabled={!canUpdatePolicy}>
+                <Button appearance="outline" disabled={!canUpdatePolicy}>
                   {t("sql-review.configure-policy")}
                 </Button>
               }
@@ -898,7 +898,8 @@ function EnvironmentDetail({
           {allowDelete && (
             <div className="mt-6 border-t border-block-border flex justify-between items-center pt-4 pb-2">
               <Button
-                variant="ghost-destructive"
+                variant="destructive"
+                appearance="outline"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 {t("common.delete")}
@@ -913,7 +914,7 @@ function EnvironmentDetail({
         <StickyActionFooter
           className="-bottom-2 bg-white"
           left={
-            <Button variant="outline" onClick={revert}>
+            <Button appearance="outline" onClick={revert}>
               {t("common.cancel")}
             </Button>
           }
@@ -957,7 +958,7 @@ function EnvironmentDetail({
             </div>
             <div className="flex justify-end gap-x-2 mt-4">
               <Button
-                variant="outline"
+                appearance="outline"
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setConfirmDelete(false);
@@ -1181,7 +1182,7 @@ function CreateSheet({
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!canCreate} onClick={handleCreate}>
@@ -1376,7 +1377,7 @@ function ReorderSheetInner({
       </SheetBody>
 
       <SheetFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button appearance="outline" onClick={onClose}>
           {t("common.cancel")}
         </Button>
         <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
@@ -1549,7 +1550,7 @@ export function EnvironmentsPage() {
           <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
             <div className="flex items-center gap-x-2 pb-2 mr-2 shrink-0">
               <Button
-                variant="outline"
+                appearance="outline"
                 disabled={!canEdit || environmentList.length <= 1}
                 onClick={() => setShowReorder(true)}
               >

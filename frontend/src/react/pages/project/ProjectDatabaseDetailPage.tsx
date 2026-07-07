@@ -195,7 +195,11 @@ export function ProjectDatabaseDetailPage({
           description={
             <div className="flex flex-row items-center justify-between gap-x-2">
               <div>{t("instance.no-environment")}</div>
-              <Button variant="link" size="sm" onClick={handleSetEnvironment}>
+              <Button
+                appearance="link"
+                size="sm"
+                onClick={handleSetEnvironment}
+              >
                 {t("database.edit-environment")}
               </Button>
             </div>
@@ -279,7 +283,7 @@ export function ProjectDatabaseDetailPage({
           </p>
           <div className="mt-6 flex justify-end gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowIncorrectProjectModal(false)}
             >
               {t("common.cancel")}

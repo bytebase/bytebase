@@ -62,7 +62,7 @@ export function SelectionCopyTooltips() {
               <Button
                 key={i}
                 size="sm"
-                variant="outline"
+                appearance="outline"
                 className="h-6 px-2 gap-x-1 bg-control-bg text-control border-control-border"
                 disabled
               >
@@ -132,7 +132,7 @@ export function SelectionCopyTooltips() {
         })}
       </p>
       <div className="ml-1">
-        <Button size="sm" variant="ghost" onClick={deselect}>
+        <Button size="sm" appearance="secondary" onClick={deselect}>
           {t("sql-editor.cancel-selection")}
         </Button>
       </div>

@@ -366,7 +366,7 @@ export function AccessPane() {
         {nextPageToken && (
           <div className="w-full flex flex-col items-center my-2">
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               disabled={loading}
               onClick={() => void fetchAccessGrants(false)}

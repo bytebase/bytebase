@@ -1116,7 +1116,7 @@ export function SheetTree({
           <AlertDialogDescription />
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={() => setDeleteDialogState({ type: "none" })}
             >
@@ -1152,7 +1152,7 @@ export function SheetTree({
           <AlertDialogDescription />
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={() => setDeleteDialogState({ type: "none" })}
             >
@@ -1203,7 +1203,7 @@ export function SheetTree({
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={() => {
                 setDeleteDialogState({ type: "none" });
@@ -1217,7 +1217,7 @@ export function SheetTree({
               {t("common.cancel")}
             </Button>
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={async () => {
                 if (deleteDialogState.type !== "delete-folders") return;
@@ -1291,7 +1291,7 @@ export function SheetTree({
             {t("sheet.hint-tips.confirm-multi-delete-content")}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="outline" size="sm" onClick={finish}>
+            <Button appearance="outline" size="sm" onClick={finish}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -1341,7 +1341,7 @@ export function SheetTree({
           </AlertDialogDescription>
           <AlertDialogFooter>
             <Button
-              variant="outline"
+              appearance="outline"
               size="sm"
               onClick={() => {
                 if (deleteDialogState.type !== "duplicate-folder-name") return;

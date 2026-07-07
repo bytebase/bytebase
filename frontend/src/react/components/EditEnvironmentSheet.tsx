@@ -64,7 +64,7 @@ export function EditEnvironmentSheet({
           </RadioGroup>
         </SheetBody>
         <SheetFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button appearance="secondary" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button

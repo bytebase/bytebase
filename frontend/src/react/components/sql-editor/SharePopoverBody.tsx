@@ -237,7 +237,7 @@ export function SharePopoverBody({ worksheet }: Props) {
             (no worksheet → no link) disables it. */}
         <Button
           type="button"
-          variant="ghost"
+          appearance="secondary"
           size="sm"
           data-copy-btn
           disabled={!sharedTabLink}

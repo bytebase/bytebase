@@ -135,7 +135,7 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
       />
       <Tooltip content={tooltipContent} side="top">
         <Button
-          variant="ghost"
+          appearance="secondary"
           size="xs"
           className="absolute right-1 bottom-1 h-6 px-1.5 text-accent"
           disabled={!value || disabled}

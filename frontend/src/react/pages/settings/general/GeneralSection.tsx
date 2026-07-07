@@ -250,7 +250,10 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-end gap-x-2">
-                <Button variant="outline" onClick={() => setShowModal(false)}>
+                <Button
+                  appearance="outline"
+                  onClick={() => setShowModal(false)}
+                >
                   {t("common.ok")}
                 </Button>
                 <Button onClick={goToSQLEditor}>

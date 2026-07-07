@@ -143,7 +143,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
             {t("common.cannot-undo-this-action")}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button appearance="outline" onClick={() => setDeleteTarget(null)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

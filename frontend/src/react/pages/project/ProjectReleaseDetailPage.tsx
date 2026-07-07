@@ -221,7 +221,7 @@ export function ProjectReleaseDetailPage({
             {t("common.archive-description", { name: releaseDisplayName })}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setArchiveOpen(false)}>
+            <Button appearance="outline" onClick={() => setArchiveOpen(false)}>
               {t("common.cancel")}
             </Button>
             <Button onClick={handleArchive}>{t("common.confirm")}</Button>

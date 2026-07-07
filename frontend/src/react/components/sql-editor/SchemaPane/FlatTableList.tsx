@@ -176,7 +176,7 @@ export function FlatTableList({
                 {item.metadata.columns.length > 0 ? (
                   <Button
                     type="button"
-                    variant="ghost"
+                    appearance="secondary"
                     size="xs"
                     className="size-5"
                     onClick={(e) => {
@@ -254,7 +254,7 @@ export function FlatTableList({
             (pageIndex + 1) * PAGE_SIZE < filteredTables.length ? (
               <Button
                 type="button"
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 className="w-full"
                 onClick={() => setPageIndex((p) => p + 1)}

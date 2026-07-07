@@ -228,7 +228,7 @@ function ServiceAccountTable({
                         <div className="ml-auto text-xs shrink-0">
                           {user.serviceKey && !copiedKeys.has(user.name) ? (
                             <Button
-                              variant="outline"
+                              appearance="outline"
                               size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -254,7 +254,7 @@ function ServiceAccountTable({
                                 {t("common.reset")}
                               </Button>
                               <Button
-                                variant="outline"
+                                appearance="outline"
                                 size="xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -266,7 +266,7 @@ function ServiceAccountTable({
                             </div>
                           ) : (
                             <Button
-                              variant="outline"
+                              appearance="outline"
                               size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -301,7 +301,7 @@ function ServiceAccountTable({
                             )}
                           >
                             <Button
-                              variant="ghost"
+                              appearance="secondary"
                               size="sm"
                               className="text-error hover:text-error"
                               onClick={(e) => {
@@ -328,7 +328,7 @@ function ServiceAccountTable({
                             )}
                           >
                             <Button
-                              variant="ghost"
+                              appearance="secondary"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -624,7 +624,7 @@ function ServiceAccountForm({
       </SheetBody>
 
       <SheetFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button appearance="outline" onClick={onClose}>
           {t("common.cancel")}
         </Button>
         <Button

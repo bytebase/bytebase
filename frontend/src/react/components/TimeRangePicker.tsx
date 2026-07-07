@@ -106,7 +106,7 @@ export function TimeRangePicker({
             {t("common.confirm")}
           </Button>
           {hasRange && (
-            <Button variant="ghost" size="sm" onClick={clearRange}>
+            <Button appearance="secondary" size="sm" onClick={clearRange}>
               {t("common.clear")}
             </Button>
           )}

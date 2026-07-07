@@ -417,7 +417,7 @@ export function TableColumnEditor({
                   <TableCell className={cn(cellClass, "text-right")}>
                     {status === "dropped" ? (
                       <Button
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         className="size-7 p-0"
                         onClick={() => handleRestoreColumn(column)}
@@ -426,7 +426,7 @@ export function TableColumnEditor({
                       </Button>
                     ) : (
                       <Button
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         className="size-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
                         disabled={disableChangeTable}

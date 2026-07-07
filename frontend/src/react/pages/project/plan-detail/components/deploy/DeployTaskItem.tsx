@@ -230,7 +230,7 @@ export function DeployTaskItem({
                           setActionOpen(true);
                         }}
                         size="xs"
-                        variant={item.key === "RUN" ? "default" : "outline"}
+                        appearance={item.key === "RUN" ? "solid" : "outline"}
                       >
                         {item.key === "RUN" && <Play className="h-3 w-3" />}
                         {item.key === "SKIP" && (
@@ -244,7 +244,7 @@ export function DeployTaskItem({
                       <Button
                         onClick={() => setRollbackOpen(true)}
                         size="xs"
-                        variant="outline"
+                        appearance="outline"
                       >
                         {t("common.rollback")}
                       </Button>
@@ -259,7 +259,7 @@ export function DeployTaskItem({
                       onToggleExpand();
                     }}
                     size="xs"
-                    variant="ghost"
+                    appearance="secondary"
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4 text-gray-500" />

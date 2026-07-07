@@ -170,7 +170,7 @@ export function OAuth2ConsentPage() {
         ) : error ? (
           <div className="text-center py-4">
             <p className="text-error mb-4">{error}</p>
-            <Button variant="outline" onClick={goBack}>
+            <Button appearance="outline" onClick={goBack}>
               {t("common.go-back")}
             </Button>
           </div>
@@ -251,7 +251,7 @@ export function OAuth2ConsentPage() {
               <div className="flex gap-x-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  appearance="outline"
                   size="lg"
                   className="flex-1"
                   disabled={submitting}

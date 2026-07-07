@@ -105,7 +105,7 @@ export function FileContentPreviewModal({
             ) : null}
           </div>
           <div className="w-full flex justify-end gap-x-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button appearance="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
             <Button

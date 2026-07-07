@@ -80,7 +80,7 @@ export function SectionContent({
       {hiddenItemCount > 0 ? (
         <Button
           type="button"
-          variant="ghost"
+          appearance="secondary"
           size="sm"
           className={cn(
             "flex w-full items-center justify-center gap-x-2 rounded-none border-t border-gray-100 px-3 py-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700",

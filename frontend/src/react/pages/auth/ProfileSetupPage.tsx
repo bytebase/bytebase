@@ -153,7 +153,11 @@ export function ProfileSetupPage() {
             >
               {t("common.save")}
             </Button>
-            <Button variant="ghost" onClick={handleSkip} className="w-full">
+            <Button
+              appearance="secondary"
+              onClick={handleSkip}
+              className="w-full"
+            >
               {t("settings.profile.setup-skip")}
             </Button>
           </div>

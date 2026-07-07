@@ -189,9 +189,9 @@ export function OAuthCallbackPage() {
           {oAuthState?.popup ? (
             <Button onClick={() => window.close()}>{t("common.close")}</Button>
           ) : (
-            <button type="button" className="btn-normal" onClick={backToSignin}>
+            <Button type="button" onClick={backToSignin}>
               {t("auth.back-to-signin")}
-            </button>
+            </Button>
           )}
         </div>
       ) : (

@@ -68,7 +68,7 @@ export function PlanDetailDeployFuture() {
             disabled={creatingRollout}
             onClick={() => void createRollout()}
             size="sm"
-            variant="outline"
+            appearance="outline"
           >
             {t("plan.phase.create-rollout-action")}
           </Button>

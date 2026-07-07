@@ -2012,7 +2012,7 @@ export function DataSourceForm({
                       onChange={(e) => setNewParamValue(e.target.value)}
                     />
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       className="shrink-0"
                       disabled={!newParamKey.trim()}
                       onClick={addNewParameter}

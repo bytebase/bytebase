@@ -87,7 +87,7 @@ export function SQLUploadButton({
     <>
       <Button
         type="button"
-        variant="ghost"
+        appearance="secondary"
         size="sm"
         className={cn("h-7 px-1", className)}
         onClick={handleClick}

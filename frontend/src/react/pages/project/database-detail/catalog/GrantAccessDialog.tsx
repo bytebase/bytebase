@@ -511,7 +511,7 @@ export function GrantAccessDialog({
           </div>
 
           <div className="mt-6 flex justify-end gap-x-2">
-            <Button variant="outline" onClick={onDismissInternal}>
+            <Button appearance="outline" onClick={onDismissInternal}>
               {t("common.cancel")}
             </Button>
             <Button disabled={submitDisabled || processing} onClick={onSubmit}>

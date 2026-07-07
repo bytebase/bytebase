@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
@@ -95,9 +96,11 @@ export function UserPasswordFields(props: Props) {
               onChange={(e) => props.onPasswordChange(e.target.value)}
               className={validation.hint ? "border-error" : ""}
             />
-            <button
+            <Button
               type="button"
-              className="hover:cursor-pointer absolute right-3"
+              appearance="secondary"
+              size="sm"
+              className="absolute right-1.5 size-7 p-0"
               onClick={() => setShowPassword((v) => !v)}
               aria-label="Toggle password visibility"
             >
@@ -106,7 +109,7 @@ export function UserPasswordFields(props: Props) {
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -127,9 +130,11 @@ export function UserPasswordFields(props: Props) {
               onChange={(e) => props.onPasswordConfirmChange(e.target.value)}
               className={validation.mismatch ? "border-error" : ""}
             />
-            <button
+            <Button
               type="button"
-              className="hover:cursor-pointer absolute right-3"
+              appearance="secondary"
+              size="sm"
+              className="absolute right-1.5 size-7 p-0"
               onClick={() => setShowPassword((v) => !v)}
               aria-label="Toggle password visibility"
             >
@@ -138,7 +143,7 @@ export function UserPasswordFields(props: Props) {
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
           {validation.mismatch && (
             <span className="text-error text-sm mt-1 pl-1">

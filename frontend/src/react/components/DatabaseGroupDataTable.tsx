@@ -229,7 +229,7 @@ export function DatabaseGroupDataTable({
       {pageSize > 0 && totalPages > 1 && (
         <div className="flex justify-end items-center gap-x-2">
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             disabled={page === 0}
             onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -240,7 +240,7 @@ export function DatabaseGroupDataTable({
             {page + 1} / {totalPages}
           </span>
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             disabled={page >= totalPages - 1}
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}

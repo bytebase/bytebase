@@ -258,7 +258,7 @@ export function SubscriptionPage({
             {t("subscription.vcs-users.active")}
             {allowManage && (
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 onClick={() => void handleDownloadVCSUsers()}
                 title={t("subscription.vcs-users.download")}
@@ -300,7 +300,7 @@ export function SubscriptionPage({
                 {t("settings.general.workspace.id")}
               </FormLabel>
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 onClick={handleCopy}
                 title={t("common.copy")}
@@ -337,7 +337,7 @@ export function SubscriptionPage({
                 />
                 {showTrial && allowManage && (
                   <Button
-                    variant="link"
+                    appearance="link"
                     size="sm"
                     className="ml-1"
                     onClick={onRequireEnterprise}
@@ -432,7 +432,11 @@ function InstanceLicenseStats({
             <span className="font-mono text-control-light"> / </span>
             {totalLicenseCount}
           </span>
-          <Button variant="ghost" size="sm" onClick={onManageInstanceLicenses}>
+          <Button
+            appearance="secondary"
+            size="sm"
+            onClick={onManageInstanceLicenses}
+          >
             <Pencil className="h-5 w-5" />
           </Button>
         </div>

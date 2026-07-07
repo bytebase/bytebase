@@ -471,7 +471,7 @@ export function IMPage() {
             <div>
               {item.isConfigured && allowEdit && (
                 <Button
-                  variant="ghost"
+                  appearance="secondary"
                   size="sm"
                   className="text-error hover:text-error hover:bg-error/10"
                   onClick={() => handleDelete(i, item.type)}
@@ -483,7 +483,7 @@ export function IMPage() {
             {isDirty(i) && (
               <div className="flex items-center gap-x-2">
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   disabled={!!pendingSaveType}
                   onClick={() => handleDiscard(i)}
                 >
@@ -505,7 +505,7 @@ export function IMPage() {
         <div className="flex justify-end">
           <PermissionGuard permissions={["bb.settings.set"]}>
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!allowEdit}
               onClick={() => handleAdd(availableTypes[0].type)}
             >

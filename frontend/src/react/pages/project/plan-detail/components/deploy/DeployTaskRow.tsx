@@ -53,7 +53,7 @@ export function DeployTaskRow({
         <Button
           aria-label={t("common.close")}
           size="sm"
-          variant="ghost"
+          appearance="secondary"
           onClick={(event) => {
             event.stopPropagation();
             onCloseTaskPanel();

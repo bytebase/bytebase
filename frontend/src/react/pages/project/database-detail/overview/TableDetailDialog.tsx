@@ -585,7 +585,7 @@ function ClassificationPickerDialog({
             )}
           </div>
           <div className="flex justify-end gap-x-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button appearance="outline" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
           </div>
@@ -678,7 +678,7 @@ function SemanticTypePickerDialog({
             )}
           </div>
           <div className="flex justify-end gap-x-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button appearance="outline" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
           </div>
@@ -853,7 +853,7 @@ function EditableSemanticTypeCell({
           />
           <div className="mt-4 flex justify-end gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowFeatureDialog(false)}
             >
               {t("common.cancel")}

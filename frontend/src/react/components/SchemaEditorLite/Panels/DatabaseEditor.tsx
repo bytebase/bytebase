@@ -121,7 +121,7 @@ export function DatabaseEditor({
         )}
         {!readonly && allowCreateTable && (
           <Button
-            variant="outline"
+            appearance="outline"
             size="sm"
             className="gap-1.5"
             onClick={(e) => {

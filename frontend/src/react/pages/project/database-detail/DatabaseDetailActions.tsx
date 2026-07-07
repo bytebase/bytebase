@@ -87,7 +87,7 @@ export function DatabaseDetailActions({
             project={project}
           >
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!canUpdate}
               onClick={onOpenTransferProject}
             >
@@ -102,7 +102,7 @@ export function DatabaseDetailActions({
             project={project}
           >
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!canChangeDatabase}
               onClick={() =>
                 void preCreateIssue(database.project, [database.name])

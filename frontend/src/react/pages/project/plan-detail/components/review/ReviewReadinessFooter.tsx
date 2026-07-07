@@ -126,7 +126,7 @@ export function ReviewReadinessFooter({
           className="ml-auto shrink-0"
           disabled={creating}
           onClick={triggerDeploy}
-          variant="outline"
+          appearance="outline"
         >
           {creating && <Loader2 className="size-4 animate-spin" />}
           {t("plan.review.footer.bypass-and-deploy")}

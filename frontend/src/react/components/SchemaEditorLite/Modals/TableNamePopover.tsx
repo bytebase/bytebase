@@ -176,7 +176,7 @@ export function TableNamePopover({
             </p>
           )}
           <div className="flex items-center justify-end gap-x-2">
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button appearance="outline" size="sm" onClick={onClose}>
               {t("common.cancel")}
             </Button>
             <Button size="sm" disabled={!isValid} onClick={handleConfirm}>

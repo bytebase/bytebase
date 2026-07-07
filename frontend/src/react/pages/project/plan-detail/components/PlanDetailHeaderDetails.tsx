@@ -110,7 +110,7 @@ export function PlanDetailHeaderDetails() {
                     disabled={updating}
                     onClick={() => void saveDescription()}
                     size="xs"
-                    variant="outline"
+                    appearance="outline"
                   >
                     {t("common.save")}
                   </Button>
@@ -122,7 +122,7 @@ export function PlanDetailHeaderDetails() {
                       setEditing("description", false);
                     }}
                     size="xs"
-                    variant="ghost"
+                    appearance="secondary"
                   >
                     <ChevronUp className="mr-1 h-4 w-4" />
                     {t("common.collapse")}
@@ -136,7 +136,7 @@ export function PlanDetailHeaderDetails() {
                       setEditing("description", false);
                     }}
                     size="xs"
-                    variant="ghost"
+                    appearance="secondary"
                   >
                     {t("common.cancel")}
                   </Button>
@@ -210,7 +210,7 @@ export function PlanDetailHeaderDetails() {
               setEditing("description", true);
             }}
             size="xs"
-            variant="ghost"
+            appearance="secondary"
           >
             <Plus className="mr-1 h-4 w-4" />
             {t("plan.description.placeholder")}

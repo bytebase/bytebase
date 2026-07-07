@@ -47,7 +47,7 @@ export function TwoFactorSecretModal({
           <code className="pr-4">{secret}</code>
         </div>
         <div className="flex items-center justify-end gap-x-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
           <Button onClick={copySecret}>

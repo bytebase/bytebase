@@ -156,7 +156,7 @@ export function TableCell({
         {clickable && (
           <Button
             size="sm"
-            variant="outline"
+            appearance="outline"
             className="size-6 p-0 rounded-full shadow opacity-90 hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();

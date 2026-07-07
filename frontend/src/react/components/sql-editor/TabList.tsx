@@ -356,7 +356,7 @@ export function TabList() {
           </AlertDialogDescription>
           <AlertDialogFooter className="mt-4 flex justify-end gap-x-2">
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => {
                 pendingClose?.resolve(false);
                 setPendingClose(null);

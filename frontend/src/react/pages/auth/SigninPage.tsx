@@ -250,7 +250,7 @@ export function SigninPage(props: SigninPageProps) {
             {separatedIdps.map((idp) => (
               <Button
                 key={idp.name}
-                variant="outline"
+                appearance="outline"
                 size="lg"
                 className="w-full"
                 onClick={() => trySigninWithIdp(idp)}

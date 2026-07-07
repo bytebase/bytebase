@@ -22,7 +22,7 @@ export function ConnectionHolder() {
   return (
     <div className="flex items-center justify-center w-full h-full">
       <Button
-        variant="outline"
+        appearance="outline"
         className="border-accent text-accent hover:bg-accent/5 hover:text-accent"
         onClick={handleClick}
       >

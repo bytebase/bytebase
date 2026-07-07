@@ -654,7 +654,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               : t("sql-editor.revoke-confirm")}
           </p>
           <div className="flex justify-end gap-x-2 mt-4">
-            <Button variant="outline" onClick={() => setConfirmAction(null)}>
+            <Button appearance="outline" onClick={() => setConfirmAction(null)}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -739,13 +739,13 @@ function AccessGrantRow({
       <TableCell>
         <div className="flex items-center justify-end gap-x-1">
           {status === "REVOKED" && canActivate && (
-            <Button variant="ghost" size="sm" onClick={onActivate}>
+            <Button appearance="secondary" size="sm" onClick={onActivate}>
               {t("sql-editor.activate-access")}
             </Button>
           )}
           {status === "ACTIVE" && canRevoke && (
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               className="text-error"
               onClick={onRevoke}
@@ -760,7 +760,7 @@ function AccessGrantRow({
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
             >
-              <Button variant="ghost" size="sm">
+              <Button appearance="secondary" size="sm">
                 {t("sql-editor.view-issue")}
               </Button>
             </RouterLink>

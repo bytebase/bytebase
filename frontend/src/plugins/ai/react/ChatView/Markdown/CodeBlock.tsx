@@ -1,9 +1,9 @@
-import { Check, Copy, PlayIcon } from "lucide-react";
+import { PlayIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
+import { CopyButton } from "@/react/components/ui/copy-button";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { findAncestor } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { useAIContext } from "../../context";
@@ -105,9 +105,7 @@ export function CodeBlock({ code, width }: Props) {
               <InsertAtCaretIconCompact />
             </button>
           </Tooltip>
-          <Tooltip content={t("common.copy")} side="bottom">
-            <CopyButton content={code} />
-          </Tooltip>
+          <CopyButton content={code} />
         </div>
       </div>
 
@@ -164,42 +162,5 @@ function InsertAtCaretIconCompact() {
         <line x1="17" y1="18" x2="3" y2="18" />
       </svg>
     </span>
-  );
-}
-
-/**
- * Inline 20-LOC copy primitive. No shared `CopyButton` exists in
- * `react/components/` yet; extracting one is out of scope for Stage 22.
- * Falls back silently when `navigator.clipboard` is missing (SSR / older
- * browsers) — same conservative behaviour as `TableSchemaViewer.tsx`.
- */
-function CopyButton({ content }: { content: string }) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const handle = window.setTimeout(() => setCopied(false), 1500);
-    return () => window.clearTimeout(handle);
-  }, [copied]);
-
-  const handleClick = async () => {
-    if (await writeTextToClipboard(content)) {
-      setCopied(true);
-    } else {
-      // ignore — same posture as TableSchemaViewer.tsx
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-      onClick={handleClick}
-    >
-      {copied ? (
-        <Check className="size-3.5 text-success" />
-      ) : (
-        <Copy className="size-3.5" />
-      )}
-    </button>
   );
 }

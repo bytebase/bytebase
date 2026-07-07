@@ -55,7 +55,7 @@ export function GhostFlagsButton({
   return (
     <>
       <Button
-        variant="outline"
+        appearance="outline"
         size="sm"
         disabled={disabled}
         onClick={openSheet}
@@ -78,7 +78,7 @@ export function GhostFlagsButton({
           </SheetBody>
           <SheetFooter className="justify-between">
             <Button
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               disabled={Object.keys(draft).length === 0}
               onClick={() => setDraft({})}
@@ -87,7 +87,7 @@ export function GhostFlagsButton({
             </Button>
             <div className="flex gap-x-2">
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 onClick={() => setOpen(false)}
               >

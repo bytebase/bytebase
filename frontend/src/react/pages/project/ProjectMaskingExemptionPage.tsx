@@ -498,7 +498,7 @@ export function ProjectMaskingExemptionPage({
               : ""}
           </p>
           <div className="flex justify-end gap-x-2 mt-4">
-            <Button variant="outline" onClick={() => setRevokeConfirm(null)}>
+            <Button appearance="outline" onClick={() => setRevokeConfirm(null)}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={confirmRevoke}>
@@ -1146,7 +1146,7 @@ function ExemptionGrantSection({
           )}
         </div>
         <Button
-          variant="ghost"
+          appearance="secondary"
           size="sm"
           className="text-error"
           disabled={disabled}

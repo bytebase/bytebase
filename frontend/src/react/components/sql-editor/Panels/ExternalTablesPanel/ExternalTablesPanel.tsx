@@ -61,7 +61,7 @@ export function ExternalTablesPanel() {
         <>
           <div className="w-full h-9 flex flex-row gap-x-2 justify-between items-center">
             <Button
-              variant="ghost"
+              appearance="secondary"
               className="h-8 px-1 text-sm"
               onClick={() => clearDetail()}
             >

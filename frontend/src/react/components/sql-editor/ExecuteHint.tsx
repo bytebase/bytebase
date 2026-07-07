@@ -119,7 +119,7 @@ export function ExecuteHint({ database, onClose }: Props) {
           </div>
         )}
         <div className="flex flex-1 justify-end items-center gap-x-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
           <Button onClick={() => void gotoCreateIssue()}>

@@ -190,7 +190,7 @@ function WorkloadIdentityTable({
                           )}
                         >
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             className="text-error hover:text-error"
                             onClick={(e) => {
@@ -209,7 +209,7 @@ function WorkloadIdentityTable({
                           )}
                         >
                           <Button
-                            variant="ghost"
+                            appearance="secondary"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();

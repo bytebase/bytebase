@@ -528,7 +528,7 @@ function RuleTableRow({
           <TableCell onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-end gap-x-2">
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 onClick={() => setEditing(true)}
               >
@@ -536,7 +536,8 @@ function RuleTableRow({
               </Button>
               {editable && !isBuiltinRule(rule) && (
                 <Button
-                  variant="ghost-destructive"
+                  variant="destructive"
+                  appearance="outline"
                   size="sm"
                   onClick={() => onRuleRemove?.(rule)}
                 >
@@ -666,7 +667,7 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
             {editable && (
               <Button
                 type="button"
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 className="size-7 p-0 text-control hover:text-accent"
                 aria-label={t("common.edit")}
@@ -677,7 +678,7 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
             )}
             {editable && !isBuiltinRule(rule) && (
               <Button
-                variant="ghost"
+                appearance="secondary"
                 size="sm"
                 className="size-7 p-0 text-error hover:bg-error/10 hover:text-error"
                 aria-label={t("common.delete")}

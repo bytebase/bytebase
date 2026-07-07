@@ -80,7 +80,7 @@ export function DatabaseQueryContext({
           <span className="font-mono">{elapsed}</span>
         </div>
         <div>
-          <Button size="sm" variant="outline" onClick={cancelQuery}>
+          <Button size="sm" appearance="outline" onClick={cancelQuery}>
             {t("common.cancel")}
           </Button>
         </div>
@@ -93,7 +93,7 @@ export function DatabaseQueryContext({
       <div className="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-background/80">
         <Button
           size="sm"
-          variant="outline"
+          appearance="outline"
           onClick={() => execQuery(context.params)}
         >
           {t("sql-editor.execute-query")}

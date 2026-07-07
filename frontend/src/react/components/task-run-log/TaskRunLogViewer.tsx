@@ -261,7 +261,7 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
             </div>
             <Button
               type="button"
-              variant="ghost"
+              appearance="secondary"
               size="sm"
               className="gap-x-1 text-control-light hover:text-control"
               onClick={toggleExpandAll}

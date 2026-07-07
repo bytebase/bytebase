@@ -326,13 +326,13 @@ function SetupWizard() {
       )}
 
       <div className="flex items-center justify-between pt-4 border-t border-control-border">
-        <Button variant="ghost" onClick={skip}>
+        <Button appearance="secondary" onClick={skip}>
           {t("setup.skip-setup")}
         </Button>
         <div className="flex items-center gap-x-2">
           {currentStep > 0 && (
             <Button
-              variant="outline"
+              appearance="outline"
               onClick={() => changeStepIndex(currentStep - 1)}
             >
               &larr;

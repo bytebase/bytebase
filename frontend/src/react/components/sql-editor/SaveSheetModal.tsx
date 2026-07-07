@@ -123,7 +123,7 @@ export function SaveSheetModal() {
           </div>
           <FolderForm folder={folder} onFolderChange={setFolder} />
           <div className="flex justify-end gap-x-2 mt-4">
-            <Button variant="outline" onClick={close}>
+            <Button appearance="outline" onClick={close}>
               {t("common.close")}
             </Button>
             <Button onClick={() => void doSaveSheet()}>

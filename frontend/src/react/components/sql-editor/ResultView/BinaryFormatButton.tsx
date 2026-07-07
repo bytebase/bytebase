@@ -36,7 +36,7 @@ export function BinaryFormatButton({
       <PopoverTrigger
         render={
           <Button
-            variant={hasOverride ? "default" : "outline"}
+            appearance={hasOverride ? "solid" : "outline"}
             size="sm"
             className={cn("ml-1 size-5 rounded-full p-0")}
             onClick={(e) => e.stopPropagation()}

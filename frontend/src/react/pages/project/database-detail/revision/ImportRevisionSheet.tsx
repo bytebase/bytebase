@@ -457,11 +457,11 @@ export function ImportRevisionSheet({
         </SheetBody>
         <SheetFooter>
           {currentStep === Step.SELECT_SOURCE ? (
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button appearance="secondary" onClick={() => onOpenChange(false)}>
               {t("common.close")}
             </Button>
           ) : (
-            <Button variant="ghost" onClick={handlePrevStep}>
+            <Button appearance="secondary" onClick={handlePrevStep}>
               {t("common.back")}
             </Button>
           )}
@@ -723,7 +723,7 @@ function LocalFileUpload({
               {t("database.revision.uploaded-files")}
               {files.length > 1 ? ` (${files.length})` : ""}
             </h4>
-            <Button size="sm" variant="outline" onClick={onAddFiles}>
+            <Button size="sm" appearance="outline" onClick={onAddFiles}>
               <Plus className="size-4" />
               {t("database.revision.add-more-files")}
             </Button>
@@ -807,7 +807,7 @@ function LocalFileUpload({
                   )}
                 </div>
                 <Button
-                  variant="ghost"
+                  appearance="secondary"
                   size="sm"
                   onClick={() =>
                     onFilesChange(files.filter((_, i) => i !== index))

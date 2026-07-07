@@ -168,7 +168,7 @@ function CheckingState({ issue }: { issue: Issue }) {
           void handleRetry();
         }}
         size="xs"
-        variant="outline"
+        appearance="outline"
       >
         <RotateCcw className="h-3 w-3" />
         {t("custom-approval.issue-review.retry-approval-finding")}
@@ -266,7 +266,7 @@ function ApprovalStepItem({
                       void handleReRequestReview();
                     }}
                     size="xs"
-                    variant="outline"
+                    appearance="outline"
                   >
                     <RotateCcw className="h-3 w-3" />
                     {t("custom-approval.issue-review.re-request-review")}

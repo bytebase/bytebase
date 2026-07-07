@@ -479,7 +479,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
           <div className="mt-6 flex justify-end gap-x-2">
             <Button
               type="button"
-              variant="outline"
+              appearance="outline"
               onClick={() => setShowFeatureDialog(false)}
             >
               {t("common.cancel")}
@@ -522,7 +522,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
           <AlertDialogFooter>
             <Button
               type="button"
-              variant="outline"
+              appearance="outline"
               onClick={() => setPendingDeleteItem(null)}
             >
               {t("common.cancel")}

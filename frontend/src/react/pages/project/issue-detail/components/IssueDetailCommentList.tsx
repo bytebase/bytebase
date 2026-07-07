@@ -239,7 +239,7 @@ export function IssueDetailCommentList() {
                     className="text-gray-500 hover:text-gray-700"
                     onClick={() => startEditComment(item)}
                     size="xs"
-                    variant="ghost"
+                    appearance="secondary"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
@@ -416,7 +416,7 @@ function IssueDescriptionCommentRow({
                     <Button
                       onClick={() => setIsEditing(true)}
                       size="xs"
-                      variant="ghost"
+                      appearance="secondary"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -496,7 +496,7 @@ function EditableMarkdownContent({
       />
       {isEditing && (
         <div className="mt-2 flex items-center justify-end gap-x-2">
-          <Button onClick={onCancel} size="xs" variant="ghost">
+          <Button onClick={onCancel} size="xs" appearance="secondary">
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowSave || isSaving} onClick={onSave} size="xs">

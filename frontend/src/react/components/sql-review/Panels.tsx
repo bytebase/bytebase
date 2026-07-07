@@ -135,7 +135,7 @@ export function RulesSelectPanel({
           </TabsByEngine>
         </SheetBody>
         <SheetFooter className="px-4 py-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
         </SheetFooter>
@@ -573,7 +573,7 @@ export function AttachResourcesPanel({
         )}
 
         <SheetFooter className="px-4 py-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           {showOverrideConfirm ? (

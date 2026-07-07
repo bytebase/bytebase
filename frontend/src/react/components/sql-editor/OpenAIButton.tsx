@@ -76,7 +76,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
     return null;
   }
 
-  const buttonVariant = showAIPanel ? "default" : "outline";
+  const buttonAppearance = showAIPanel ? "solid" : "outline";
 
   const icon = (
     <svg
@@ -139,7 +139,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
 
   const renderButton = (onClick?: () => void) => (
     <Button
-      variant={buttonVariant}
+      appearance={buttonAppearance}
       size={size}
       className={buttonClass}
       aria-label={t("plugin.ai.ai-assistant")}
@@ -220,7 +220,7 @@ function AINotConfiguredButton({
       <PopoverTrigger
         render={
           <Button
-            variant="outline"
+            appearance="outline"
             size={size}
             aria-disabled
             className={cn(className, "opacity-50 cursor-default")}
@@ -253,7 +253,7 @@ function AINotConfiguredButton({
                   }}
                   tabIndex={-1}
                   className={buttonVariants({
-                    variant: "link",
+                    appearance: "link",
                     size: "sm",
                     className: "h-auto p-0 text-accent",
                   })}

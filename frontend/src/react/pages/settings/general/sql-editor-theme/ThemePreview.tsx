@@ -128,7 +128,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
           </Button>
           <Button
             type="button"
-            variant="outline"
+            appearance="outline"
             size="sm"
             className="h-7 px-1.5"
             aria-label={t("common.save")}
@@ -137,7 +137,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
           </Button>
           <Button
             type="button"
-            variant="outline"
+            appearance="outline"
             size="sm"
             className="h-7 px-1.5"
             aria-label={t("common.share")}
@@ -204,7 +204,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             </div>
             <Button
               type="button"
-              variant="outline"
+              appearance="outline"
               size="sm"
               className="h-7 shrink-0 gap-1 px-2"
             >

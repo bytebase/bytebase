@@ -680,7 +680,7 @@ function WorkloadIdentityForm({
       </SheetBody>
 
       <SheetFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button appearance="outline" onClick={onClose}>
           {t("common.cancel")}
         </Button>
         <Button

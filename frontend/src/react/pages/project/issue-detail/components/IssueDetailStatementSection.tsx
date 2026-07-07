@@ -411,13 +411,21 @@ export function IssueDetailStatementSection({
         <div className="flex items-center gap-x-2">
           {(canModifyStatement || isEditing) && (
             <div className="flex items-center gap-x-2">
-              <Button onClick={handleUploadClick} size="xs" variant="outline">
+              <Button
+                onClick={handleUploadClick}
+                size="xs"
+                appearance="outline"
+              >
                 <Upload className="h-3.5 w-3.5" />
                 {t("issue.upload-sql")}
               </Button>
               {!isEditing ? (
                 canEdit ? (
-                  <Button onClick={handleBeginEdit} size="xs" variant="outline">
+                  <Button
+                    onClick={handleBeginEdit}
+                    size="xs"
+                    appearance="outline"
+                  >
                     {t("common.edit")}
                   </Button>
                 ) : null
@@ -427,14 +435,18 @@ export function IssueDetailStatementSection({
                     disabled={!canSave}
                     onClick={() => void handleSave()}
                     size="xs"
-                    variant="outline"
+                    appearance="outline"
                   >
                     {isSaving && (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     )}
                     {t("common.save")}
                   </Button>
-                  <Button onClick={handleCancel} size="xs" variant="ghost">
+                  <Button
+                    onClick={handleCancel}
+                    size="xs"
+                    appearance="secondary"
+                  >
                     {t("common.cancel")}
                   </Button>
                 </>
@@ -454,7 +466,7 @@ export function IssueDetailStatementSection({
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
                   size="xs"
-                  variant="outline"
+                  appearance="outline"
                 >
                   {isDownloading && (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

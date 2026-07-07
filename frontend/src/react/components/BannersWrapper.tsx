@@ -57,7 +57,7 @@ function BannerDismissButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      appearance="secondary"
       size="sm"
       className="text-white hover:bg-white/10 hover:text-white"
       onClick={onClick}

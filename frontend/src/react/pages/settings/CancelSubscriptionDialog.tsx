@@ -122,7 +122,7 @@ export function CancelSubscriptionDialog({
 
         <AlertDialogFooter>
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={submitting}
             onClick={() => onOpenChange(false)}
           >

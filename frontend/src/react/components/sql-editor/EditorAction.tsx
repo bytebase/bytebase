@@ -152,7 +152,7 @@ export function EditorAction({ onExecute }: Props) {
       <div className="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center">
         {isAdminMode && (
           <Button
-            variant="outline"
+            appearance="outline"
             className="h-8 px-1.5 gap-1 border-dashed text-sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -200,7 +200,7 @@ export function EditorAction({ onExecute }: Props) {
               side="bottom"
             >
               <Button
-                variant="outline"
+                appearance="outline"
                 size="sm"
                 className="h-7 px-1.5"
                 disabled={!allowSave}
@@ -222,7 +222,7 @@ export function EditorAction({ onExecute }: Props) {
                 <PopoverTrigger
                   render={
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       className="h-7 px-1.5"
                       disabled={!allowShare}

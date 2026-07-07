@@ -474,9 +474,11 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                         {t("subscription.purchase.seats")}
                       </span>
                       <div className="ml-auto flex items-center h-7 rounded-xs bg-control-bg-hover text-control-light">
-                        <button
+                        <Button
                           type="button"
-                          className="px-2 h-full rounded-l hover:bg-control-border disabled:opacity-50 cursor-pointer"
+                          appearance="secondary"
+                          size="sm"
+                          className="h-full rounded-l rounded-r-none px-2"
                           disabled={
                             seats <= (card.userAdditional.minimumCount || 1)
                           }
@@ -490,11 +492,13 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           }
                         >
                           <Minus className="h-3 w-3" />
-                        </button>
+                        </Button>
                         <span className="w-8 text-center text-sm">{seats}</span>
-                        <button
+                        <Button
                           type="button"
-                          className="px-2 h-full rounded-r hover:bg-control-border disabled:opacity-50 cursor-pointer"
+                          appearance="secondary"
+                          size="sm"
+                          className="h-full rounded-l-none rounded-r px-2"
                           disabled={
                             card.userAdditional.maximumCount > 0 &&
                             seats >= card.userAdditional.maximumCount
@@ -502,7 +506,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           onClick={() => setSeats(seats + 1)}
                         >
                           <Plus className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : undefined
@@ -512,7 +516,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                     card.type === PlanType.FREE ? (
                       isCurrentPlan(PlanType.FREE) ? (
                         <Button
-                          variant="outline"
+                          appearance="outline"
                           className="w-full"
                           disabled={isCurrentPlan(PlanType.FREE)}
                         >
@@ -563,7 +567,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                       </>
                     ) : (
                       <Button
-                        variant="outline"
+                        appearance="outline"
                         className="w-full"
                         onClick={onRequireEnterprise}
                       >

@@ -76,14 +76,11 @@ export function RuleLevelSwitch({
     },
   ];
 
-  const base =
-    "py-1 w-[4.5rem] whitespace-nowrap border border-control-border text-control font-medium text-xs";
-
   const activeClass = (opt: SQLReviewRule_Level) => {
     if (opt === SQLReviewRule_Level.ERROR) {
-      return "relative z-10 bg-red-100 text-red-800 border-red-800";
+      return "relative z-10 border-red-800 bg-red-100 text-red-800 hover:bg-red-100";
     }
-    return "relative z-10 bg-yellow-100 text-yellow-800 border-yellow-800";
+    return "relative z-10 border-yellow-800 bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
   };
 
   const filtered = editable
@@ -93,17 +90,23 @@ export function RuleLevelSwitch({
   return (
     <div className="inline-flex">
       {filtered.map((opt, i) => (
-        <button
+        <Button
           key={opt.level}
           type="button"
+          appearance="outline"
+          size="xs"
           disabled={disabled}
-          className={`${base} ${i === 0 ? "rounded-l" : "-ml-px"} ${i === filtered.length - 1 ? "rounded-r" : ""} ${
-            level === opt.level ? activeClass(opt.level) : ""
-          } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+          className={cn(
+            "w-[4.5rem] rounded-none px-0 text-control",
+            i === 0 && "rounded-l",
+            i > 0 && "-ml-px",
+            i === filtered.length - 1 && "rounded-r",
+            level === opt.level && activeClass(opt.level)
+          )}
           onClick={() => onLevelChange(opt.level)}
         >
           {opt.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -317,13 +320,15 @@ function StringArrayInput({
           >
             {tag}
             {!disabled && (
-              <button
+              <Button
                 type="button"
-                className="cursor-pointer hover:text-error"
+                appearance="secondary"
+                size="xs"
+                className="size-4 p-0 text-control-light hover:bg-transparent hover:text-error"
                 onClick={() => removeTag(i)}
               >
                 <XIcon className="w-3 h-3" />
-              </button>
+              </Button>
             )}
           </span>
         ))}
@@ -456,7 +461,7 @@ export function RuleEditDialog({
           )}
 
           <div className="flex justify-end gap-x-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button appearance="outline" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
             <Button

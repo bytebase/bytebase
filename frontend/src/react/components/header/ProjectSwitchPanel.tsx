@@ -88,7 +88,7 @@ function ProjectSwitchFooter({
       {hasMore ? (
         <Button
           size="sm"
-          variant="outline"
+          appearance="outline"
           disabled={isFetchingMore}
           onClick={onLoadMore}
         >
@@ -201,7 +201,7 @@ export function ProjectSwitchPanel({
     <div className="flex w-full max-h-[calc(100vh-10rem)] flex-col">
       {isValidProjectName(currentProject?.name) ? (
         <Button
-          variant="ghost"
+          appearance="secondary"
           size="sm"
           className="mb-2 mx-3 w-fit px-0 text-control-light hover:bg-transparent hover:text-control"
           onClick={handleGotoWorkspace}
@@ -236,7 +236,7 @@ export function ProjectSwitchPanel({
             {allowToCreateProject ? (
               <Button
                 size="sm"
-                variant="outline"
+                appearance="outline"
                 aria-label={t("quick-action.new-project")}
                 onClick={onRequestCreate}
               >

@@ -133,7 +133,7 @@ export function DeployTaskList({
                 )
               }
               size="xs"
-              variant="ghost"
+              appearance="secondary"
             >
               {t("common.show-more")} ({remainingTasksCount}{" "}
               {t("common.remaining")})

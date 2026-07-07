@@ -4,19 +4,19 @@ import type { ClassValue } from "clsx";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 
-const buttonVariantClasses = cva(
+const buttonStyles = cva(
   "inline-flex items-center justify-center rounded-xs font-medium whitespace-nowrap cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-accent text-accent-text hover:bg-accent-hover",
-        outline:
-          "border border-control-border bg-transparent hover:bg-control-bg text-control",
-        ghost: "hover:bg-control-bg text-control",
-        destructive: "bg-error text-white hover:bg-error-hover",
-        "ghost-destructive":
-          "border border-control-border border-error text-error hover:bg-error hover:text-white",
-        link: "text-accent underline-offset-4 hover:underline",
+        default: "",
+        destructive: "",
+      },
+      appearance: {
+        solid: "",
+        outline: "border border-control-border bg-transparent",
+        secondary: "",
+        link: "underline-offset-4 hover:underline",
       },
       size: {
         // `default` is an alias for `md` — both render identically.
@@ -27,14 +27,66 @@ const buttonVariantClasses = cva(
         lg: "h-10 px-4 text-sm leading-5 gap-1.5",
       },
     },
+    compoundVariants: [
+      {
+        variant: "default",
+        appearance: "solid",
+        className: "bg-accent text-accent-text hover:bg-accent-hover",
+      },
+      {
+        variant: "default",
+        appearance: "outline",
+        className: "text-control hover:bg-control-bg",
+      },
+      {
+        variant: "default",
+        appearance: "secondary",
+        className: "text-control hover:bg-control-bg",
+      },
+      {
+        variant: "default",
+        appearance: "link",
+        className: "text-accent",
+      },
+      {
+        variant: "destructive",
+        appearance: "solid",
+        className: "bg-error text-white hover:bg-error-hover",
+      },
+      {
+        variant: "destructive",
+        appearance: "outline",
+        className: "border-error text-error hover:bg-error hover:text-white",
+      },
+      {
+        variant: "destructive",
+        appearance: "secondary",
+        className: "text-error hover:bg-error/10",
+      },
+      {
+        variant: "destructive",
+        appearance: "link",
+        className: "text-error",
+      },
+    ],
     defaultVariants: {
       variant: "default",
+      appearance: "solid",
       size: "default",
     },
   }
 );
 
-type ButtonVariantProps = VariantProps<typeof buttonVariantClasses> & {
+type ButtonIntent = NonNullable<VariantProps<typeof buttonStyles>["variant"]>;
+type ButtonAppearance = NonNullable<
+  VariantProps<typeof buttonStyles>["appearance"]
+>;
+type ButtonSize = VariantProps<typeof buttonStyles>["size"];
+
+type ButtonVariantProps = {
+  variant?: ButtonIntent;
+  appearance?: ButtonAppearance;
+  size?: ButtonSize;
   class?: ClassValue;
   className?: ClassValue;
 };
@@ -42,18 +94,21 @@ type ButtonVariantProps = VariantProps<typeof buttonVariantClasses> & {
 function buttonVariants({
   class: classValue,
   className,
+  variant = "default",
+  appearance = "solid",
   size = "default",
-  variant,
 }: ButtonVariantProps = {}) {
-  return cn(buttonVariantClasses({ size, variant }), classValue, className);
+  return cn(buttonStyles({ variant, appearance, size }), classValue, className);
 }
 
-type ButtonProps = ComponentProps<"button"> & ButtonVariantProps;
+type ButtonProps = Omit<ComponentProps<"button">, "className"> &
+  ButtonVariantProps;
 
 function Button({
   class: classValue,
   className,
   variant,
+  appearance,
   size = "default",
   ref,
   style,
@@ -68,6 +123,7 @@ function Button({
         className,
         size,
         variant,
+        appearance,
       })}
       style={style}
     />

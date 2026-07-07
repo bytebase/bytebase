@@ -17,7 +17,7 @@ export function ConnectionChooserButton({
   return (
     <Button
       type="button"
-      variant="outline"
+      appearance="outline"
       className={cn(
         "h-8 justify-end gap-1 px-2",
         "border-accent text-accent hover:bg-accent/5 focus:bg-accent/5",

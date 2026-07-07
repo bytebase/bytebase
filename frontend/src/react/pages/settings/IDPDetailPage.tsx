@@ -297,7 +297,7 @@ function TestConnectionButton({
   return (
     <>
       <Button
-        variant="outline"
+        appearance="outline"
         disabled={disabled || testing}
         onClick={testConnection}
       >
@@ -334,7 +334,7 @@ function DeleteConfirmDialog({
           {t("identity-provider.delete-warning")}
         </AlertDialogDescription>
         <div className="mt-6 flex justify-end gap-x-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button appearance="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
@@ -1560,7 +1560,7 @@ export function IDPDetailPage() {
             </PermissionGuard>
             <div className="gap-x-2 flex flex-row justify-end items-center">
               {hasChanges && (
-                <Button variant="outline" onClick={handleDiscard}>
+                <Button appearance="outline" onClick={handleDiscard}>
                   {t("common.discard-changes")}
                 </Button>
               )}

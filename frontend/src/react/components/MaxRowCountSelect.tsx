@@ -59,7 +59,7 @@ export function MaxRowCountSelect({
       <PopoverTrigger
         render={
           <Button
-            variant={quaternary ? "ghost" : "outline"}
+            appearance={quaternary ? "secondary" : "outline"}
             size="sm"
             className={cn("justify-start", className)}
           />

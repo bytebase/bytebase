@@ -144,7 +144,7 @@ export function IndexesEditor({
                 <TableCell className="text-right">
                   {!index.primary && (
                     <Button
-                      variant="ghost"
+                      appearance="secondary"
                       size="sm"
                       className="size-7 p-0 text-error hover:text-error"
                       onClick={() => handleDropIndex(index)}

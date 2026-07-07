@@ -166,7 +166,7 @@ export function PartitionsEditor({
                   <TableCell className="text-right">
                     {status === "dropped" ? (
                       <Button
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         className="size-7 p-0"
                         onClick={() => handleRestorePartition(partition)}
@@ -175,7 +175,7 @@ export function PartitionsEditor({
                       </Button>
                     ) : (
                       <Button
-                        variant="ghost"
+                        appearance="secondary"
                         size="sm"
                         className="size-7 p-0 text-error hover:text-error"
                         onClick={() => handleDropPartition(partition)}

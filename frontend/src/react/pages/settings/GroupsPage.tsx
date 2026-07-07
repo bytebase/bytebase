@@ -384,7 +384,7 @@ function GroupRow({
             {canDelete && (
               <Tooltip content={t("common.delete")}>
                 <Button
-                  variant="ghost"
+                  appearance="secondary"
                   size="sm"
                   className="text-error hover:text-error"
                   onClick={(e) => {
@@ -600,7 +600,7 @@ function CreateGroupSheet(props: CreateGroupSheetProps) {
             {t("common.leave-without-saving")}
           </AlertDialogTitle>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={stayOnCurrentPage}>
+            <Button appearance="outline" onClick={stayOnCurrentPage}>
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={discardChanges}>
@@ -1030,7 +1030,7 @@ function GroupForm({
                     </SelectContent>
                   </Select>
                   <Button
-                    variant="ghost"
+                    appearance="secondary"
                     size="sm"
                     className="shrink-0 text-error hover:text-error"
                     onClick={() => handleRemoveMember(index)}
@@ -1042,7 +1042,7 @@ function GroupForm({
               ))}
               {allowEdit && (
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   className="self-start"
                   onClick={handleAddMember}
@@ -1077,7 +1077,7 @@ function GroupForm({
                     {t("common.deactivate")}
                   </Button>
                   <Button
-                    variant="outline"
+                    appearance="outline"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(false)}
                   >
@@ -1086,7 +1086,7 @@ function GroupForm({
                 </div>
               ) : (
                 <Button
-                  variant="ghost"
+                  appearance="secondary"
                   className="text-error hover:text-error"
                   onClick={() => setShowDeleteConfirm(true)}
                 >
@@ -1098,7 +1098,7 @@ function GroupForm({
           )}
         </div>
         <div className="flex items-center gap-x-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button
@@ -1210,7 +1210,7 @@ export function GroupsPage() {
         />
         <div className="flex items-center gap-x-2">
           <Button
-            variant="outline"
+            appearance="outline"
             disabled={!hasDirectorySyncFeature || !canAccessSettings}
             onClick={() => setShowAadSyncDrawer(true)}
           >

@@ -116,7 +116,7 @@ export function AADSyncSheet({
               <div className="flex items-center gap-x-2">
                 <Input readOnly value={scimUrl} className="flex-1 text-sm" />
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   disabled={!scimUrl}
                   onClick={() => copyToClipboard(scimUrl)}
@@ -142,7 +142,7 @@ export function AADSyncSheet({
                   className="flex-1 text-sm"
                 />
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   disabled={!directorySyncToken}
                   onClick={() => copyToClipboard(directorySyncToken)}
@@ -152,7 +152,7 @@ export function AADSyncSheet({
               </div>
               {hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile") && (
                 <Button
-                  variant="outline"
+                  appearance="outline"
                   size="sm"
                   className="self-start text-error border-error hover:bg-error/10"
                   onClick={handleResetToken}
@@ -165,7 +165,7 @@ export function AADSyncSheet({
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
         </SheetFooter>

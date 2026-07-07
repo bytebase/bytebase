@@ -1526,7 +1526,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   ))}
                   <div>
                     <Button
-                      variant="outline"
+                      appearance="outline"
                       size="sm"
                       className="w-12!"
                       onClick={(e) => {
@@ -1651,7 +1651,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         {isCreating && !!editingDataSource && (
           <div className="flex justify-start">
             <Button
-              variant="outline"
+              appearance="outline"
               disabled={!allowTestConnection || state.isTestingConnection}
               onClick={(e) => {
                 e.preventDefault();

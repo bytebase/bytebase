@@ -33,7 +33,7 @@ export function ActionConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         )}
         <AlertDialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button appearance="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>

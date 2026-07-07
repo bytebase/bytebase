@@ -250,7 +250,7 @@ export function DatabaseGroupForm({
         <StickyActionFooter
           className="pt-4 pb-2"
           left={
-            <Button variant="outline" onClick={onDismiss}>
+            <Button appearance="outline" onClick={onDismiss}>
               {t("common.cancel")}
             </Button>
           }

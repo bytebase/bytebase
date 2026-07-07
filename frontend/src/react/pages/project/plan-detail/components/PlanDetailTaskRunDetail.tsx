@@ -40,7 +40,7 @@ export function PlanDetailTaskRunDetail({
         <div className="mt-2 flex justify-end">
           <Button
             size="xs"
-            variant="ghost"
+            appearance="secondary"
             onClick={() => setDetailKey((value) => value + 1)}
           >
             <RefreshCcw className="h-3.5 w-3.5" />
