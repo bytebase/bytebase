@@ -1034,6 +1034,63 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalUsesCurrentPlanVersion(t *testing
 	require.EqualValues(t, 3, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
 }
 
+func TestUpdateIssueLabelsAndMaybeResetApprovalNoopsWhenLockedLabelsMatch(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels: []string{"prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, approvalResetApplied, err := s.UpdateIssueLabelsAndMaybeResetApproval(ctx, "project-a", issue.UID, []string{"stage"})
+	require.NoError(t, err)
+	require.True(t, approvalResetApplied)
+	require.Equal(t, []string{"stage"}, updatedIssue.Payload.GetLabels())
+	require.False(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
+
+	approvalInputVersion := int64(2)
+	labels := []string{"stage"}
+	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: approvalInputVersion,
+			},
+		},
+		RequirePlanApprovalInputVersion: &approvalInputVersion,
+		RequireLabels:                   &labels,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, approvalResetApplied, err = s.UpdateIssueLabelsAndMaybeResetApproval(ctx, "project-a", issue.UID, []string{"stage"})
+	require.NoError(t, err)
+	require.False(t, approvalResetApplied)
+	require.Equal(t, []string{"stage"}, updatedIssue.Payload.GetLabels())
+	require.True(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
+}
+
 func TestUpdateIssueWithCurrentDoneApprovalGuardSkipsCurrentDoneApproval(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)

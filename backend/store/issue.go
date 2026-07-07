@@ -341,17 +341,32 @@ func (s *Store) UpdateIssueLabelsAndMaybeResetApproval(ctx context.Context, proj
 	defer tx.Rollback()
 
 	var planUID sql.NullInt64
+	currentPayload := &storepb.Issue{}
+	var payload []byte
 	if err := tx.QueryRowContext(ctx, `
-		SELECT plan_id
+		SELECT plan_id, payload
 		FROM issue
 		WHERE project = $1
 		  AND id = $2
 		FOR UPDATE`,
-		projectID, uid).Scan(&planUID); err != nil {
+		projectID, uid).Scan(&planUID, &payload); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, false, nil
 		}
 		return nil, false, errors.Wrapf(err, "failed to lock issue")
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, currentPayload); err != nil {
+		return nil, false, errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+	if slices.Equal(CanonicalizeIssueLabels(currentPayload.GetLabels()), labels) {
+		if err := tx.Commit(); err != nil {
+			return nil, false, errors.Wrapf(err, "failed to commit tx")
+		}
+		issue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+		if err != nil {
+			return nil, false, err
+		}
+		return issue, false, nil
 	}
 
 	approvalResetApplied := false

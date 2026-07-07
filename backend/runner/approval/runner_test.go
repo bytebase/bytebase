@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -466,6 +467,45 @@ func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing
 	require.NotNil(t, planCheckRun)
 	require.Equal(t, store.PlanCheckRunStatusAvailable, planCheckRun.Status)
 	require.EqualValues(t, 2, planCheckRun.Result.GetApprovalInputVersion())
+}
+
+func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRollout(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{Labels: []string{"prod"}},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	approvalInputVersion := int64(2)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	require.NoError(t, err)
+	require.True(t, marked)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	require.NoError(t, err)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Nil(t, got.Payload.GetApproval())
+	require.Equal(t, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, got.Payload.GetRiskLevel())
 }
 
 func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {

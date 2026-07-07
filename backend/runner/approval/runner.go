@@ -261,6 +261,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 			PayloadUpsert:                   payloadPatch,
 			RequirePlanApprovalInputVersion: &approvalInputVersion,
 			RequireLabels:                   &approvalLabels,
+			RequireNoRollout:                true,
 		})
 		if err != nil {
 			if errors.Is(err, store.ErrIssueUpdateSkipped) {
