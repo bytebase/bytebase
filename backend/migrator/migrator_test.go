@@ -180,4 +180,3 @@ func TestMigration3_7_20_ScalarTaskUpdateTasks(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, nullPayload, "null", "null row should be unchanged")
 }
-
