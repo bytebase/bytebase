@@ -250,3 +250,51 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 	require.Contains(t, logText, "object_name=V_CUSTOMER")
 	require.Contains(t, logText, "field=definition")
 }
+
+func TestOracleTriggerBodySanitizedUTF8MarshalSuccess(t *testing.T) {
+	var logBuf bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	defer slog.SetDefault(originalLogger)
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "TESTDB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "TEST_SCHEMA",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "CUSTOMER",
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "TRG_CUSTOMER",
+								Body: sanitizeOracleMetadataString(
+									"TEST_SCHEMA",
+									"TRIGGER",
+									"TRG_CUSTOMER",
+									"body",
+									constructTriggerBody(
+										"TRG_CUSTOMER BEFORE INSERT ON CUSTOMER\n",
+										corruptedVietnamese+"\nBEGIN NULL; END;",
+									),
+								),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := protojson.Marshal(metadata)
+	require.NoError(t, err, "marshal must succeed after trigger body sanitization")
+	require.Contains(t, metadata.Schemas[0].Tables[0].Triggers[0].Body, "\\xe1")
+	require.Contains(t, metadata.Schemas[0].Tables[0].Triggers[0].Body, "\nBEGIN NULL; END;")
+
+	logText := logBuf.String()
+	require.Contains(t, logText, "sanitized invalid UTF-8 in Oracle metadata")
+	require.Contains(t, logText, "schema=TEST_SCHEMA")
+	require.Contains(t, logText, "object_type=TRIGGER")
+	require.Contains(t, logText, "object_name=TRG_CUSTOMER")
+	require.Contains(t, logText, "field=body")
+}

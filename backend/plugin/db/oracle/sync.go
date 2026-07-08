@@ -249,7 +249,13 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Tri
 		key := db.TableKey{Schema: schemaName, Table: tableName.String}
 		trigger := &storepb.TriggerMetadata{
 			Name: triggerName.String,
-			Body: constructTriggerBody(description.String, triggerBody.String),
+			Body: sanitizeOracleMetadataString(
+				schemaName,
+				"TRIGGER",
+				triggerName.String,
+				"body",
+				constructTriggerBody(description.String, triggerBody.String),
+			),
 		}
 		if triggerType.Valid {
 			trigger.Timing = triggerType.String
@@ -1321,28 +1327,32 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 }
 
 func sanitizeOracleDefinition(schemaName, objectType, objectName, definition string) string {
+	return sanitizeOracleMetadataString(schemaName, objectType, objectName, "definition", definition)
+}
+
+func sanitizeOracleMetadataString(schemaName, objectType, objectName, field, value string) string {
 	// Oracle may include a trailing C-string null terminator via the go-ora driver.
-	definition = strings.TrimRight(definition, "\x00")
-	if utf8.ValidString(definition) {
-		return definition
+	value = strings.TrimRight(value, "\x00")
+	if utf8.ValidString(value) {
+		return value
 	}
 	slog.Warn("sanitized invalid UTF-8 in Oracle metadata",
 		slog.String("schema", schemaName),
 		slog.String("object_type", objectType),
 		slog.String("object_name", objectName),
-		slog.String("field", "definition"),
+		slog.String("field", field),
 	)
 
 	var sanitized strings.Builder
-	sanitized.Grow(len(definition))
-	for i := 0; i < len(definition); {
-		r, width := utf8.DecodeRuneInString(definition[i:])
+	sanitized.Grow(len(value))
+	for i := 0; i < len(value); {
+		r, width := utf8.DecodeRuneInString(value[i:])
 		if r == utf8.RuneError && width == 1 {
-			_, _ = fmt.Fprintf(&sanitized, "\\x%02x", definition[i])
+			_, _ = fmt.Fprintf(&sanitized, "\\x%02x", value[i])
 			i++
 			continue
 		}
-		_, _ = sanitized.WriteString(definition[i : i+width])
+		_, _ = sanitized.WriteString(value[i : i+width])
 		i += width
 	}
 	return sanitized.String()
