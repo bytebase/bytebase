@@ -262,42 +262,42 @@ func TestValidateIAMPolicyExpression(t *testing.T) {
 	withinCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339))
 	overCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339))
 	tests := []struct {
-		name                     string
-		expr                     string
-		maximumRequestExpiration *durationpb.Duration
-		wantErr                  bool
+		name              string
+		expr              string
+		maximumExpiration *durationpb.Duration
+		wantErr           bool
 	}{
 		{
-			name:                     "within cap",
-			expr:                     withinCap,
-			maximumRequestExpiration: thirtyDays,
+			name:              "within cap",
+			expr:              withinCap,
+			maximumExpiration: thirtyDays,
 		},
 		{
-			name:                     "exceeds cap",
-			expr:                     overCap,
-			maximumRequestExpiration: thirtyDays,
-			wantErr:                  true,
+			name:              "exceeds cap",
+			expr:              overCap,
+			maximumExpiration: thirtyDays,
+			wantErr:           true,
 		},
 		{
-			name:                     "no cap configured",
-			expr:                     overCap,
-			maximumRequestExpiration: nil,
+			name:              "no cap configured",
+			expr:              overCap,
+			maximumExpiration: nil,
 		},
 		{
-			name:                     "bound with database scoping",
-			expr:                     fmt.Sprintf(`%s && (resource.database == "a" || resource.database == "b")`, withinCap),
-			maximumRequestExpiration: thirtyDays,
+			name:              "bound with database scoping",
+			expr:              fmt.Sprintf(`%s && (resource.database == "a" || resource.database == "b")`, withinCap),
+			maximumExpiration: thirtyDays,
 		},
 		{
-			name:                     "missing request.time",
-			expr:                     `resource.database == "a"`,
-			maximumRequestExpiration: thirtyDays,
-			wantErr:                  true,
+			name:              "missing request.time",
+			expr:              `resource.database == "a"`,
+			maximumExpiration: thirtyDays,
+			wantErr:           true,
 		},
 	}
 
 	for _, tt := range tests {
-		err := validateExpirationInExpression(tt.expr, tt.maximumRequestExpiration)
+		err := validateExpirationInExpression(tt.expr, tt.maximumExpiration)
 		if tt.wantErr {
 			require.Error(t, err, tt.name)
 		} else {

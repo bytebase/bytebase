@@ -80,7 +80,7 @@ message WorkspaceProfileSetting {
   // The setting of custom announcement
   Announcement announcement = 5;
 
-  // The max expiration duration for role grants and data access requests.
+  // The max expiration duration for data access requests.
   google.protobuf.Duration maximum_request_expiration = 6;
 
   // The workspace domain, e.g., bytebase.com.
@@ -157,6 +157,10 @@ message WorkspaceProfileSetting {
   // The enforced CUSTOM theme's full definition — present ONLY when
   // sql_editor_theme_id is a custom uuid. tokens is always complete.
   SQLEditorThemeSetting sql_editor_custom_theme = 24;
+
+  // The max expiration duration for request role.
+  // Deprecated: use just-in-time access request flows instead.
+  google.protobuf.Duration maximum_role_expiration = 25;
 }
 
 message SQLEditorThemeSetting {
