@@ -189,6 +189,10 @@
         "desc": "Conexiones seguras a bases de datos con cifrado SSL/TLS.",
         "title": "Conexión SSL"
       },
+      "FEATURE_JIT": {
+        "desc": "Permite a los usuarios solicitar acceso temporal a la base de datos con aprobación.",
+        "title": "Acceso Just-In-Time"
+      },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "Aplique el mismo cambio a múltiples bases de datos en diferentes inquilinos o particiones.",
         "title": "Cambios por lotes en múltiples bases de datos"

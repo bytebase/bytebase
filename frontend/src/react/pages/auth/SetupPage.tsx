@@ -15,9 +15,13 @@ import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { useAppFeature } from "@/react/hooks/useAppState";
 import { router } from "@/react/router";
-import { SQL_EDITOR_HOME_MODULE } from "@/react/router/handles";
+import {
+  SQL_EDITOR_HOME_MODULE,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { isValidProjectName } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
 
@@ -37,7 +41,7 @@ const homePath = (mode?: DatabaseChangeMode) => {
   if (mode === DatabaseChangeMode.EDITOR) {
     return { name: SQL_EDITOR_HOME_MODULE };
   }
-  return "/";
+  return { name: WORKSPACE_ROUTE_LANDING };
 };
 
 export function SetupPage() {
@@ -147,6 +151,7 @@ function SetupWizard() {
           paths: ["value.workspace_profile.database_change_mode"],
         }),
       });
+      useAppStore.getState().resetQuickstartProgress();
       router.push(homePath(mode));
     } finally {
       setLoading(false);
@@ -156,12 +161,15 @@ function SetupWizard() {
   const validateProjectResourceID = useCallback(
     async (id: string) => {
       try {
-        await useAppStore
+        const project = await useAppStore
           .getState()
           .getOrFetchProjectByName(
             `${projectNamePrefix}${id}`,
             true /* silent */
           );
+        if (!isValidProjectName(project.name)) {
+          return [];
+        }
         return [
           {
             type: "error" as const,
@@ -272,10 +280,16 @@ function SetupWizard() {
               )}
             </div>
             <div>
-              <RadioGroupItem value="builtin-sample">
+              <RadioGroupItem
+                value="builtin-sample"
+                className="items-start"
+                radioClassName="mt-0.5"
+              >
                 <div className="flex flex-col gap-1">
                   <div className="font-medium">{t("setup.data.built-in")}</div>
-                  <div>{t("setup.data.built-in-desc")}</div>
+                  <div className="text-control">
+                    {t("setup.data.built-in-desc")}
+                  </div>
                 </div>
               </RadioGroupItem>
             </div>
@@ -293,28 +307,36 @@ function SetupWizard() {
             onValueChange={(v) => setMode(Number(v) as DatabaseChangeMode)}
             className="flex-col items-start gap-y-6"
           >
-            <RadioGroupItem value={String(DatabaseChangeMode.PIPELINE)}>
+            <RadioGroupItem
+              value={String(DatabaseChangeMode.PIPELINE)}
+              className="items-start"
+              radioClassName="mt-0.5"
+            >
               <div className="flex flex-col gap-1">
-                <div className="textinfo">
+                <div className="font-medium">
                   {t(
                     "settings.general.workspace.default-landing-page.workspace.self"
                   )}
                 </div>
-                <div className="textinfolabel">
+                <div className="text-control">
                   {t(
                     "settings.general.workspace.default-landing-page.workspace.description"
                   )}
                 </div>
               </div>
             </RadioGroupItem>
-            <RadioGroupItem value={String(DatabaseChangeMode.EDITOR)}>
+            <RadioGroupItem
+              value={String(DatabaseChangeMode.EDITOR)}
+              className="items-start"
+              radioClassName="mt-0.5"
+            >
               <div className="flex flex-col gap-1">
-                <div className="textinfo">
+                <div className="font-medium">
                   {t(
                     "settings.general.workspace.default-landing-page.sql-editor.self"
                   )}
                 </div>
-                <div className="textinfolabel">
+                <div className="text-control">
                   {t(
                     "settings.general.workspace.default-landing-page.sql-editor.description"
                   )}

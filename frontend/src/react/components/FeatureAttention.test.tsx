@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import dynamicEn from "@/locales/dynamic/en-US.json";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types/common";
 import {
   PlanFeature,
@@ -25,6 +26,19 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let FeatureAttention: typeof import("./FeatureAttention").FeatureAttention;
+
+const translateFromDynamicEn = (key: string) => {
+  const segments = key.startsWith("dynamic.")
+    ? key.slice("dynamic.".length).split(".")
+    : key.split(".");
+  const value = segments.reduce<unknown>((node, segment) => {
+    if (!node || typeof node !== "object") {
+      return undefined;
+    }
+    return (node as Record<string, unknown>)[segment];
+  }, dynamicEn);
+  return typeof value === "string" ? value : key;
+};
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -115,6 +129,27 @@ beforeEach(async () => {
 });
 
 describe("FeatureAttention", () => {
+  test("renders the JIT feature title and description from dynamic i18n", () => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) => translateFromDynamicEn(key),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_JIT} />
+    );
+
+    render();
+
+    expect(container.textContent).toContain("Just-In-Time access");
+    expect(container.textContent).toContain(
+      "Allow users to request temporary database access with approval."
+    );
+    expect(container.textContent).not.toContain(
+      "dynamic.subscription.features.FEATURE_JIT"
+    );
+
+    unmount();
+  });
+
   test("renders warning state as an alert and opens the inquiry link", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     const { container, render, unmount } = renderIntoContainer(

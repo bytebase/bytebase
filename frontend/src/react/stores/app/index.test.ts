@@ -1964,7 +1964,7 @@ describe("useAppStore", () => {
       JSON.parse(localStorage.getItem(storageKeyRecentVisit("", user.email))!)
     ).toEqual(["/projects/a?tab=2"]);
     expect(
-      JSON.parse(localStorage.getItem(storageKeyIntroState(user.email))!)
+      JSON.parse(localStorage.getItem(storageKeyIntroState("", user.email))!)
     ).toMatchObject({
       hidden: false,
       "project.visit": false,
@@ -2020,6 +2020,82 @@ describe("useAppStore", () => {
         localStorage.getItem(storageKeyRecentVisit("workspaces/b", user.email))!
       )
     ).toEqual(["/projects/b"]);
+  });
+
+  test("scopes recent projects from server workspace before user workspace hydrates", () => {
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        saas: true,
+        workspace: "workspaces/from-server",
+      }),
+    });
+    store.setState({ currentUser: { ...user, workspace: "" } });
+
+    store.getState().setRecentProject(projectA.name);
+
+    expect(
+      JSON.parse(
+        localStorage.getItem(
+          storageKeyRecentProjects("workspaces/from-server", user.email)
+        )!
+      )
+    ).toEqual([projectA.name]);
+    expect(
+      localStorage.getItem(storageKeyRecentProjects("", user.email))
+    ).toBeNull();
+  });
+
+  test("scopes intro state by workspace in SaaS mode", () => {
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+    });
+    store.setState({ currentUser: { ...user, workspace: "workspaces/a" } });
+    store
+      .getState()
+      .saveIntroStateByKey({ key: "project.visit", newState: true });
+
+    store.setState({ currentUser: { ...user, workspace: "workspaces/b" } });
+    expect(store.getState().getIntroStateByKey("project.visit")).toBe(false);
+    store
+      .getState()
+      .saveIntroStateByKey({ key: "database.visit", newState: true });
+
+    expect(
+      JSON.parse(
+        localStorage.getItem(storageKeyIntroState("workspaces/a", user.email))!
+      )
+    ).toEqual({ "project.visit": true });
+    expect(
+      JSON.parse(
+        localStorage.getItem(storageKeyIntroState("workspaces/b", user.email))!
+      )
+    ).toEqual({ "database.visit": true });
+  });
+
+  test("keeps intro state workspace-agnostic in self-host mode", () => {
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        saas: false,
+        workspace: "workspaces/default",
+      }),
+    });
+    store.setState({ currentUser: user });
+    localStorage.setItem(
+      storageKeyIntroState("", user.email),
+      JSON.stringify({ "project.visit": true })
+    );
+
+    expect(store.getState().getIntroStateByKey("project.visit")).toBe(true);
+    store
+      .getState()
+      .saveIntroStateByKey({ key: "database.visit", newState: true });
+
+    expect(
+      JSON.parse(localStorage.getItem(storageKeyIntroState("", user.email))!)
+    ).toEqual({ "project.visit": true, "database.visit": true });
   });
 
   test("caches database metadata and reuses inflight request", async () => {

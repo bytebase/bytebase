@@ -11,14 +11,16 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   routerIsReady: vi.fn(async () => {}),
   routerPush: vi.fn(),
+  fetchServerInfo: vi.fn(async () => {}),
   listRoles: vi.fn(async () => {}),
   fetchIamPolicy: vi.fn(async () => {}),
-  getOrFetchProjectByName: vi.fn(async () => {
+  getOrFetchProjectByName: vi.fn(async (): Promise<{ name: string }> => {
     throw new ConnectError("not found", Code.NotFound);
   }),
   createProject: vi.fn(),
   setupSample: vi.fn(),
   updateWorkspaceProfile: vi.fn(),
+  resetQuickstartProgress: vi.fn(),
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({
@@ -33,6 +35,7 @@ vi.mock("@/react/stores/app", () => {
   const state = {
     enableOnboarding: () => true,
     appFeatures: { "bb.feature.database-change-mode": 0 },
+    fetchServerInfo: mocks.fetchServerInfo,
     loadWorkspaceProfile: vi.fn(async () => undefined),
     listRoles: mocks.listRoles,
     fetchWorkspaceIamPolicy: mocks.fetchIamPolicy,
@@ -40,6 +43,7 @@ vi.mock("@/react/stores/app", () => {
     createProject: mocks.createProject,
     setupSample: mocks.setupSample,
     updateWorkspaceProfile: mocks.updateWorkspaceProfile,
+    resetQuickstartProgress: mocks.resetQuickstartProgress,
   };
   return {
     useAppStore: Object.assign(
@@ -130,6 +134,114 @@ beforeEach(async () => {
 });
 
 describe("SetupPage", () => {
+  test("finishes setup by navigating to the workspace landing page", async () => {
+    const { container, render, unmount } = renderIntoContainer(<SetupPage />);
+    render();
+    await flushPromises();
+
+    const buttonByText = (text: string) =>
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+        (button) => button.textContent === text
+      );
+
+    act(() => {
+      buttonByText("→")?.click();
+    });
+    await flushPromises();
+
+    act(() => {
+      buttonByText("→")?.click();
+    });
+    await flushPromises();
+
+    act(() => {
+      buttonByText("common.confirm")?.click();
+    });
+    await flushPromises();
+
+    expect(mocks.routerPush).toHaveBeenLastCalledWith({
+      name: "workspace.landing",
+    });
+    expect(mocks.resetQuickstartProgress).toHaveBeenCalledTimes(1);
+
+    unmount();
+  });
+
+  test("aligns the built-in sample radio with its title and styles the description", async () => {
+    const { container, render, unmount } = renderIntoContainer(<SetupPage />);
+    render();
+    await flushPromises();
+
+    const nextButton = () =>
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+        (button) => button.textContent === "→"
+      );
+
+    act(() => {
+      nextButton()?.click();
+    });
+    await flushPromises();
+
+    const title = Array.from(container.querySelectorAll("div")).find(
+      (element) => element.textContent === "setup.data.built-in"
+    );
+    const description = Array.from(container.querySelectorAll("div")).find(
+      (element) => element.textContent === "setup.data.built-in-desc"
+    );
+    const option = title?.closest("label");
+    const radio = option?.querySelector("[role='radio']");
+
+    expect(option?.className).toContain("items-start");
+    expect(radio?.className).toContain("mt-0.5");
+    expect(title?.className).toContain("font-medium");
+    expect(description?.className).toContain("text-control");
+
+    unmount();
+  });
+
+  test("aligns default landing page radios with their titles and styles descriptions", async () => {
+    const { container, render, unmount } = renderIntoContainer(<SetupPage />);
+    render();
+    await flushPromises();
+
+    const nextButton = () =>
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+        (button) => button.textContent === "→"
+      );
+
+    act(() => {
+      nextButton()?.click();
+    });
+    await flushPromises();
+
+    act(() => {
+      nextButton()?.click();
+    });
+    await flushPromises();
+
+    const workspaceTitle = Array.from(container.querySelectorAll("div")).find(
+      (element) =>
+        element.textContent ===
+        "settings.general.workspace.default-landing-page.workspace.self"
+    );
+    const workspaceDescription = Array.from(
+      container.querySelectorAll("div")
+    ).find(
+      (element) =>
+        element.textContent ===
+        "settings.general.workspace.default-landing-page.workspace.description"
+    );
+    const option = workspaceTitle?.closest("label");
+    const radio = option?.querySelector("[role='radio']");
+
+    expect(option?.className).toContain("items-start");
+    expect(radio?.className).toContain("mt-0.5");
+    expect(workspaceTitle?.className).toContain("font-medium");
+    expect(workspaceDescription?.className).toContain("text-control");
+
+    unmount();
+  });
+
   test("allows advancing with a new project resource id", async () => {
     const { container, render, unmount } = renderIntoContainer(<SetupPage />);
     render();
@@ -141,6 +253,34 @@ describe("SetupPage", () => {
       );
 
     expect(nextButton()).toBeTruthy();
+    act(() => {
+      nextButton()?.click();
+    });
+    await flushPromises();
+
+    expect(mocks.getOrFetchProjectByName).toHaveBeenCalledWith(
+      "projects/new-project",
+      true
+    );
+    expect(nextButton()?.disabled).toBe(false);
+
+    unmount();
+  });
+
+  test("allows advancing when project lookup resolves to the unknown placeholder", async () => {
+    mocks.getOrFetchProjectByName.mockResolvedValueOnce({
+      name: "projects/-1",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<SetupPage />);
+    render();
+    await flushPromises();
+
+    const nextButton = () =>
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+        (button) => button.textContent === "→"
+      );
+
     act(() => {
       nextButton()?.click();
     });
