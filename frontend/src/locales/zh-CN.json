@@ -1896,7 +1896,7 @@
     "visit-database": "访问数据库",
     "visit-environment": "访问环境",
     "visit-instance": "访问实例",
-    "visit-member": "访问成员 | 成员",
+    "visit-member": "访问成员",
     "visit-project": "访问项目"
   },
   "refresh-remind": {},
@@ -2282,11 +2282,17 @@
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "logo-upload-tip": "支持 {{extension}} 类型文件，不能大于 {{size}} MiB",
-        "maximum-request-expiration": {
+        "maximum-expiration": {
           "days": "天数",
-          "description": "最大申请有效期是角色授予或数据访问申请可保持有效的最长时间。它适用于除项目所有者之外的所有项目角色，以及所有数据访问申请。",
-          "never-expires": "永不过期",
+          "never-expires": "永不过期"
+        },
+        "maximum-request-expiration": {
+          "description": "最大申请有效期是数据访问申请可保持有效的最长时间。",
           "self": "最大申请有效期"
+        },
+        "maximum-role-expiration": {
+          "description": "最大角色有效期仅适用于申请角色。<highlight>此旧设置未来会被废弃；建议使用即时访问流程授予临时访问。</highlight>",
+          "self": "最大角色有效期"
         },
         "maximum-sql-result": {
           "rows": {

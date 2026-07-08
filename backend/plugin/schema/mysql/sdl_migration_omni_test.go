@@ -215,6 +215,65 @@ func TestDiffMigrationUsesLegacyMetadataPath(t *testing.T) {
 	require.Error(t, err, "sentinel view body must be un-loadable by the omni SDL path")
 }
 
+// legacyColumnChangeSQL diffs two single-column tables through the registered legacy
+// metadata path and returns the migration SQL.
+func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *storepb.ColumnMetadata) string {
+	t.Helper()
+	mk := func(col *storepb.ColumnMetadata) *model.DatabaseMetadata {
+		return metadataFromProto(&storepb.DatabaseSchemaMetadata{
+			Name: "d",
+			Schemas: []*storepb.SchemaMetadata{{
+				Name:   "",
+				Tables: []*storepb.TableMetadata{{Name: "t", Columns: []*storepb.ColumnMetadata{col}}},
+			}},
+		})
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_MYSQL, mk(oldCol), mk(newCol))
+	require.NoError(t, err)
+	return sql
+}
+
+// TestLegacyDiffSRIDAndInvisible locks the X10 pairing with X1: with metadata diffs
+// routed back onto the legacy differ/generator, that path must know the new SRID and
+// INVISIBLE column fields — an SRID-only or INVISIBLE-only change must produce a MODIFY
+// COLUMN rendering the dumper-canonical attribute comments.
+func TestLegacyDiffSRIDAndInvisible(t *testing.T) {
+	srid := func(v uint32) *uint32 { return &v }
+
+	t.Run("srid_only_change_modifies", func(t *testing.T) {
+		sql := legacyColumnChangeSQL(t,
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+		)
+		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 4326 */")
+	})
+
+	t.Run("explicit_srid_zero_differs_from_unset", func(t *testing.T) {
+		sql := legacyColumnChangeSQL(t,
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)},
+		)
+		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 0 */")
+	})
+
+	t.Run("equal_srid_no_change", func(t *testing.T) {
+		sql := legacyColumnChangeSQL(t,
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+		)
+		require.Empty(t, sql)
+	})
+
+	t.Run("invisible_only_change_modifies", func(t *testing.T) {
+		sql := legacyColumnChangeSQL(t,
+			&storepb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL"},
+			&storepb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true},
+		)
+		require.Contains(t, sql, "MODIFY COLUMN `c` int")
+		require.Contains(t, sql, " /*!80023 INVISIBLE */")
+	})
+}
+
 // TestStripDatabaseContext pins the literal-aware synthetic-qualifier strip (X13): a
 // string literal that happens to contain the `bbcatalog`.`x` byte sequence must survive
 // verbatim while identifier-position qualifiers are removed.
@@ -259,8 +318,8 @@ func TestStripDatabaseContext(t *testing.T) {
 		},
 		{
 			name: "hash_comment_opaque_and_executable_comment_scanned",
-			in:   "CREATE TABLE `bbcatalog`.`t` (\n  `c` int,\n  KEY `i` (`c`) /*!80000 INVISIBLE */\n) # trailing 'note\n/* block 'c' */ ALTER TABLE `bbcatalog`.`t` COMMENT ''",
-			want: "CREATE TABLE `t` (\n  `c` int,\n  KEY `i` (`c`) /*!80000 INVISIBLE */\n) # trailing 'note\n/* block 'c' */ ALTER TABLE `t` COMMENT ''",
+			in:   "CREATE TABLE `bbcatalog`.`t` (\n  `pt` point NOT NULL /*!80003 SRID 0 */\n) # trailing 'note\n/* block 'c' */ ALTER TABLE `bbcatalog`.`t` COMMENT ''",
+			want: "CREATE TABLE `t` (\n  `pt` point NOT NULL /*!80003 SRID 0 */\n) # trailing 'note\n/* block 'c' */ ALTER TABLE `t` COMMENT ''",
 		},
 		{
 			name: "no_qualifier_untouched",

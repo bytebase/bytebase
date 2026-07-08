@@ -3046,8 +3046,15 @@ type ColumnMetadata struct {
 	// This field is populated when syncing from the database. When empty (e.g., when parsing
 	// from SQL files), the system cannot automatically drop the constraint.
 	DefaultConstraintName string `protobuf:"bytes,17,opt,name=default_constraint_name,json=defaultConstraintName,proto3" json:"default_constraint_name,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+	// Unset means the column declares no SRID; presence carries the explicit SRID,
+	// including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+	// int32).
+	Srid *uint32 `protobuf:"varint,18,opt,name=srid,proto3,oneof" json:"srid,omitempty"`
+	// Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+	IsInvisible   bool `protobuf:"varint,19,opt,name=is_invisible,json=isInvisible,proto3" json:"is_invisible,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ColumnMetadata) Reset() {
@@ -3197,6 +3204,20 @@ func (x *ColumnMetadata) GetDefaultConstraintName() string {
 		return x.DefaultConstraintName
 	}
 	return ""
+}
+
+func (x *ColumnMetadata) GetSrid() uint32 {
+	if x != nil && x.Srid != nil {
+		return *x.Srid
+	}
+	return 0
+}
+
+func (x *ColumnMetadata) GetIsInvisible() bool {
+	if x != nil {
+		return x.IsInvisible
+	}
+	return false
 }
 
 type GenerationMetadata struct {
@@ -5810,7 +5831,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xf3\x05\n" +
+	"LINEAR_KEY\x10\b\"\xb8\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
@@ -5833,13 +5854,16 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13identity_generation\x18\x0e \x01(\x0e2..bytebase.v1.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
 	"\ridentity_seed\x18\x0f \x01(\x03R\fidentitySeed\x12-\n" +
 	"\x12identity_increment\x18\x10 \x01(\x03R\x11identityIncrement\x126\n" +
-	"\x17default_constraint_name\x18\x11 \x01(\tR\x15defaultConstraintName\"U\n" +
+	"\x17default_constraint_name\x18\x11 \x01(\tR\x15defaultConstraintName\x12\x17\n" +
+	"\x04srid\x18\x12 \x01(\rH\x00R\x04srid\x88\x01\x01\x12!\n" +
+	"\fis_invisible\x18\x13 \x01(\bR\visInvisible\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
 	"\x1fIDENTITY_GENERATION_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06ALWAYS\x10\x01\x12\x0e\n" +
 	"\n" +
-	"BY_DEFAULT\x10\x02\"\xa5\x01\n" +
+	"BY_DEFAULT\x10\x02B\a\n" +
+	"\x05_srid\"\xa5\x01\n" +
 	"\x12GenerationMetadata\x128\n" +
 	"\x04type\x18\x01 \x01(\x0e2$.bytebase.v1.GenerationMetadata.TypeR\x04type\x12\x1e\n" +
 	"\n" +
@@ -6327,6 +6351,7 @@ func file_v1_database_service_proto_init() {
 		(*DiffSchemaRequest_Changelog)(nil),
 	}
 	file_v1_database_service_proto_msgTypes[17].OneofWrappers = []any{}
+	file_v1_database_service_proto_msgTypes[28].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

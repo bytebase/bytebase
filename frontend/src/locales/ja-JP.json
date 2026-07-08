@@ -1896,7 +1896,7 @@
     "visit-database": "データベースにアクセスする",
     "visit-environment": "環境にアクセスする",
     "visit-instance": "インスタンスにアクセスする",
-    "visit-member": "メンバー | メンバーにアクセスする",
+    "visit-member": "メンバーにアクセスする",
     "visit-project": "プロジェクトにアクセスする"
   },
   "refresh-remind": {},
@@ -2282,11 +2282,17 @@
         "logo": "ロゴ",
         "logo-aspect": "推奨されるロゴの幅:高さの比率 (例: 100 x 40 ピクセル)",
         "logo-upload-tip": "{{extension}} タイプのファイルをサポートします。{{size}} MiB より大きくすることはできません",
-        "maximum-request-expiration": {
+        "maximum-expiration": {
           "days": "日",
-          "description": "最大リクエスト有効期限は、ロールの付与またはデータアクセスリクエストが有効であり続けられる最大期間です。プロジェクト所有者を除くすべてのプロジェクトロール、およびすべてのデータアクセスリクエストに適用されます。",
-          "never-expires": "期限切れなし",
+          "never-expires": "期限切れなし"
+        },
+        "maximum-request-expiration": {
+          "description": "最大リクエスト有効期限は、データアクセスリクエストが有効であり続けられる最大期間です。",
           "self": "最大リクエスト有効期限"
+        },
+        "maximum-role-expiration": {
+          "description": "最大ロール有効期限はリクエストロールにのみ適用されます。<highlight>この従来の設定は将来廃止予定です。一時的なアクセスにはジャストインタイムアクセスフローを使用してください。</highlight>",
+          "self": "最大ロール有効期限"
         },
         "maximum-sql-result": {
           "rows": {

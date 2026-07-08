@@ -1896,7 +1896,7 @@
     "visit-database": "Truy cập Cơ sở dữ liệu",
     "visit-environment": "Truy cập Môi trường",
     "visit-instance": "Truy cập Phiên bản",
-    "visit-member": "Truy cập Thành viên | Thành viên",
+    "visit-member": "Truy cập Thành viên",
     "visit-project": "Truy cập Dự án"
   },
   "refresh-remind": {},
@@ -2282,11 +2282,17 @@
         "logo": "Logo",
         "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
         "logo-upload-tip": "{{extension}} tối đa {{size}} MiB",
-        "maximum-request-expiration": {
+        "maximum-expiration": {
           "days": "Ngày",
-          "description": "Thời hạn yêu cầu tối đa là khoảng thời gian tối đa mà việc cấp vai trò hoặc yêu cầu truy cập dữ liệu có thể còn hiệu lực. Nó áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án, và cho tất cả các yêu cầu truy cập dữ liệu.",
-          "never-expires": "Không bao giờ hết hạn",
+          "never-expires": "Không bao giờ hết hạn"
+        },
+        "maximum-request-expiration": {
+          "description": "Thời hạn yêu cầu tối đa là khoảng thời gian tối đa mà yêu cầu truy cập dữ liệu có thể còn hiệu lực.",
           "self": "Thời hạn yêu cầu tối đa"
+        },
+        "maximum-role-expiration": {
+          "description": "Thời hạn vai trò tối đa chỉ áp dụng cho yêu cầu vai trò. <highlight>Cấu hình cũ này sẽ bị ngừng sử dụng trong tương lai; hãy dùng luồng truy cập đúng lúc cho quyền truy cập tạm thời.</highlight>",
+          "self": "Thời hạn vai trò tối đa"
         },
         "maximum-sql-result": {
           "rows": {

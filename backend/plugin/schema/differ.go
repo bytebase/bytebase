@@ -680,6 +680,15 @@ func columnsEqual(engine storepb.Engine, col1, col2 *storepb.ColumnMetadata) boo
 	if col1.IdentitySeed != col2.IdentitySeed {
 		return false
 	}
+	// Compare spatial SRID (MySQL 8.0): presence + value — SRID 0 is a valid explicit
+	// SRID, distinct from "no SRID declared".
+	if (col1.Srid == nil) != (col2.Srid == nil) || col1.GetSrid() != col2.GetSrid() {
+		return false
+	}
+	// Compare column invisibility (MySQL 8.0.23+).
+	if col1.IsInvisible != col2.IsInvisible {
+		return false
+	}
 	return true
 }
 

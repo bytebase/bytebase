@@ -12,6 +12,7 @@ import {
   isConditionExpr,
   isConditionGroupExpr,
   isEqualityExpr,
+  isListMembershipExpr,
   isNumberFactor,
   isRawStringExpr,
   isStringExpr,
@@ -62,6 +63,10 @@ export const validateSimpleExpr = (expr: SimpleExpr): boolean => {
       if (isNumberFactor(factor)) return validateNumberArray(values);
     }
     if (isStringExpr(condition)) {
+      const value = condition.args[1];
+      return validateString(value);
+    }
+    if (isListMembershipExpr(condition)) {
       const value = condition.args[1];
       return validateString(value);
     }

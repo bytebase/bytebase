@@ -9583,6 +9583,20 @@ components:
 
              This field is populated when syncing from the database. When empty (e.g., when parsing
              from SQL files), the system cannot automatically drop the constraint.
+        srid:
+          type:
+            - integer
+            - "null"
+          title: srid
+          description: |-
+            The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+             Unset means the column declares no SRID; presence carries the explicit SRID,
+             including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+             int32).
+        isInvisible:
+          type: boolean
+          title: is_invisible
+          description: Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
       title: ColumnMetadata
       additionalProperties: false
       description: ColumnMetadata is the metadata for columns.
@@ -20675,7 +20689,7 @@ components:
           $ref: '#/components/schemas/bytebase.v1.Announcement'
         maximumRequestExpiration:
           title: maximum_request_expiration
-          description: The max expiration duration for role grants and data access requests.
+          description: The max expiration duration for data access requests.
           $ref: '#/components/schemas/google.protobuf.Duration'
         domains:
           type: array
@@ -20762,6 +20776,12 @@ components:
             The enforced CUSTOM theme's full definition — present ONLY when
              sql_editor_theme_id is a custom uuid. tokens is always complete.
           $ref: '#/components/schemas/bytebase.v1.SQLEditorThemeSetting'
+        maximumRoleExpiration:
+          title: maximum_role_expiration
+          description: |-
+            The max expiration duration for request role.
+             Deprecated: use just-in-time access request flows instead.
+          $ref: '#/components/schemas/google.protobuf.Duration'
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

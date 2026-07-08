@@ -21,7 +21,7 @@ func init() {
 	// MySQL-only for now: OceanBase is intentionally NOT registered pending validation
 	// against a live OceanBase oracle — an executable-but-unvalidated registration would
 	// route OB declarative releases through untested diff/drop-advice paths.
-	schema.RegisterDiffSDLMigration(storepb.Engine_MYSQL, mysqlDiffSDLMigration)
+	schema.RegisterDiffSDLMigration(storepb.Engine_MYSQL, mysqlDiffSDLMigrationWithContext)
 	schema.RegisterSDLDropAdvices(storepb.Engine_MYSQL, mysqlSDLDropAdvices)
 	// Metadata-to-metadata diffs (SQLService.DiffMetadata, changelog-target DiffSchema)
 	// keep the pre-SDL legacy differ/generator path (mirroring pg's
@@ -142,10 +142,20 @@ func explicitDefaultsForTimestampSet(version catalog.Version) string {
 // target MySQL version, so Diff (which reads the version off the `to` catalog) and
 // GenerateMigration reproduce that version's stored form — a 5.7 schema no longer
 // phantom-diffs on the utf8mb4 default collation and never emits utf8mb4_0900_ai_ci.
-func buildMigrationPlan(sourceText, targetText string, version catalog.Version) (*catalog.MigrationPlan, error) {
+//
+// sessionCtx, when non-nil, carries the per-object session context (sql_mode/charset/
+// collation, and event time_zone) of the SOURCE schema. It is stamped onto the source
+// (from) catalog via ApplySessionContext AFTER load and BEFORE Diff — the source is where
+// the OLD/From objects live, and their original context is what a recreate must restore.
+// The context is deliberately not part of any object's declarative identity, so it never
+// causes a phantom diff; it is consumed only by the generator's recreate framing.
+func buildMigrationPlan(sourceText, targetText string, version catalog.Version, sessionCtx *schema.SDLSessionContextMap) (*catalog.MigrationPlan, error) {
 	from, err := loadCatalog(sourceText, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load source schema")
+	}
+	if sessionCtx != nil {
+		from.ApplySessionContext(toCatalogSessionContextMap(sessionCtx))
 	}
 	to, err := loadCatalog(targetText, version)
 	if err != nil {
@@ -158,14 +168,48 @@ func buildMigrationPlan(sourceText, targetText string, version catalog.Version) 
 	return catalog.GenerateMigration(from, to, diff), nil
 }
 
-// mysqlDiffSDLMigration is the registered SDL diff entry point: two schema texts plus
-// the target server version in, migration SQL out. engineVersion is the synced
+// toCatalogSessionContextMap converts the engine-neutral schema.SDLSessionContextMap
+// (built by the generic SDL layer from synced metadata) into omni's
+// catalog.SessionContextMap. The two are field-for-field identical; this keeps the omni
+// dependency confined to the MySQL package.
+func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionContextMap {
+	conv := func(src map[string]schema.SDLSessionContext) map[string]catalog.SessionContext {
+		if len(src) == 0 {
+			return nil
+		}
+		dst := make(map[string]catalog.SessionContext, len(src))
+		for name, c := range src {
+			dst[name] = catalog.SessionContext{
+				SQLMode:             c.SQLMode,
+				CharacterSetClient:  c.CharacterSetClient,
+				CollationConnection: c.CollationConnection,
+				TimeZone:            c.TimeZone,
+			}
+		}
+		return dst
+	}
+	return catalog.SessionContextMap{
+		Functions:  conv(m.Functions),
+		Procedures: conv(m.Procedures),
+		Triggers:   conv(m.Triggers),
+		Events:     conv(m.Events),
+	}
+}
+
+// mysqlDiffSDLMigrationWithContext is the registered SDL diff entry point: two schema
+// texts plus the target server version in, migration SQL out. engineVersion is the synced
 // database's version string (e.g. "5.7.25"), threaded by the release/DiffSchema paths
 // so the omni catalog selects the version-correct normalizer (a 5.7 database is
 // canonicalized as 5.7 — utf8mb4_general_ci default, integer display widths — instead
 // of the 8.0 stored form); an empty or unparseable value falls back to 8.0.
-func mysqlDiffSDLMigration(sourceSDL, targetSDL, engineVersion string) (string, error) {
-	plan, err := buildMigrationPlan(sourceSDL, targetSDL, mysqlVersionFor(engineVersion))
+//
+// sessionCtx carries the source schema's per-object session context so a routine/trigger/
+// event recreate is re-emitted under its ORIGINAL sql_mode/charset/collation (event
+// time_zone too). It is nil for the SDL↔SDL and metadata↔metadata callers that have no
+// synced metadata to source it from; only the live rollout (schema.SDLMigration) supplies
+// it.
+func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string, sessionCtx *schema.SDLSessionContextMap) (string, error) {
+	plan, err := buildMigrationPlan(sourceSDL, targetSDL, mysqlVersionFor(engineVersion), sessionCtx)
 	if err != nil {
 		return "", err
 	}
@@ -173,6 +217,14 @@ func mysqlDiffSDLMigration(sourceSDL, targetSDL, engineVersion string) (string, 
 		return "", nil
 	}
 	return stripDatabaseContext(plan.SQL()), nil
+}
+
+// mysqlDiffSDLMigration is the bare (no session context) 3-arg form: two schema texts plus
+// the target version, migration SQL out. It is the in-package convenience used by the SDL
+// test suites — a recreate through it carries no session framing, matching the old
+// behavior. Production callers reach the context-aware form via schema.SDLMigration.
+func mysqlDiffSDLMigration(sourceSDL, targetSDL, engineVersion string) (string, error) {
+	return mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion, nil)
 }
 
 // mysqlDiffMetadataMigration computes migration SQL between two metadata states via the
@@ -285,7 +337,11 @@ func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetada
 	if err != nil {
 		return nil, err
 	}
-	plan, err := buildMigrationPlan(sourceSDL, userSDLText, mysqlVersionFor(engineVersion))
+	// Session context is intentionally not applied here: drop/replace classification
+	// depends only on the op TYPES (OpDrop*/OpCreate*), which are identical with or
+	// without the recreate framing. Applying context would only add SET wrappers to
+	// op.SQL, changing nothing the advice walker inspects.
+	plan, err := buildMigrationPlan(sourceSDL, userSDLText, mysqlVersionFor(engineVersion), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -526,7 +526,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   announcement?: Announcement | undefined;
 
   /**
-   * The max expiration duration for role grants and data access requests.
+   * The max expiration duration for data access requests.
    *
    * @generated from field: google.protobuf.Duration maximum_request_expiration = 6;
    */
@@ -656,6 +656,14 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bytebase.v1.SQLEditorThemeSetting sql_editor_custom_theme = 24;
    */
   sqlEditorCustomTheme?: SQLEditorThemeSetting | undefined;
+
+  /**
+   * The max expiration duration for request role.
+   * Deprecated: use just-in-time access request flows instead.
+   *
+   * @generated from field: google.protobuf.Duration maximum_role_expiration = 25;
+   */
+  maximumRoleExpiration?: Duration | undefined;
 };
 
 /**

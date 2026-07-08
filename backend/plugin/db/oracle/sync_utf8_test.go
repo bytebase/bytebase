@@ -1,6 +1,8 @@
 package oracle
 
 import (
+	"bytes"
+	"log/slog"
 	"testing"
 	"unicode/utf8"
 
@@ -138,4 +140,161 @@ func TestOracleCommentSanitizedUTF8MarshalSuccess(t *testing.T) {
 
 	_, err := protojson.Marshal(metadata)
 	require.NoError(t, err, "marshal must succeed after sanitization")
+}
+
+func TestOracleDefinitionInvalidUTF8MarshalFailure(t *testing.T) {
+	require.False(t, utf8.ValidString(corruptedVietnamese),
+		"test precondition: input must be invalid UTF-8")
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "TESTDB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "TEST_SCHEMA",
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "V_CUSTOMER",
+						Definition: corruptedVietnamese,
+					},
+				},
+			},
+		},
+	}
+
+	_, err := protojson.Marshal(metadata)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ViewMetadata.definition")
+	require.Contains(t, err.Error(), "invalid UTF-8")
+}
+
+func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
+	var logBuf bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	defer slog.SetDefault(originalLogger)
+	corruptedDefinition := corruptedVietnamese + "\nSELECT 1 FROM DUAL"
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "TESTDB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "TEST_SCHEMA",
+				Views: []*storepb.ViewMetadata{
+					{
+						Name: "V_CUSTOMER",
+						Definition: sanitizeOracleDefinition(
+							"TEST_SCHEMA",
+							"VIEW",
+							"V_CUSTOMER",
+							corruptedDefinition,
+						),
+					},
+				},
+				MaterializedViews: []*storepb.MaterializedViewMetadata{
+					{
+						Name: "MV_CUSTOMER",
+						Definition: sanitizeOracleDefinition(
+							"TEST_SCHEMA",
+							"MATERIALIZED VIEW",
+							"MV_CUSTOMER",
+							corruptedDefinition,
+						),
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name: "FN_VALIDATE",
+						Definition: sanitizeOracleDefinition(
+							"TEST_SCHEMA",
+							"FUNCTION",
+							"FN_VALIDATE",
+							corruptedDefinition,
+						),
+					},
+				},
+				Procedures: []*storepb.ProcedureMetadata{
+					{
+						Name: "PR_VALIDATE",
+						Definition: sanitizeOracleDefinition(
+							"TEST_SCHEMA",
+							"PROCEDURE",
+							"PR_VALIDATE",
+							corruptedDefinition,
+						),
+					},
+				},
+				Packages: []*storepb.PackageMetadata{
+					{
+						Name: "PKG_VALIDATE",
+						Definition: sanitizeOracleDefinition(
+							"TEST_SCHEMA",
+							"PACKAGE",
+							"PKG_VALIDATE",
+							corruptedDefinition,
+						),
+					},
+				},
+			},
+		},
+	}
+
+	_, err := protojson.Marshal(metadata)
+	require.NoError(t, err, "marshal must succeed after definition sanitization")
+	require.Contains(t, metadata.Schemas[0].Views[0].Definition, "\\xe1")
+	require.Contains(t, metadata.Schemas[0].Views[0].Definition, "\nSELECT 1 FROM DUAL")
+
+	logText := logBuf.String()
+	require.Contains(t, logText, "sanitized invalid UTF-8 in Oracle metadata")
+	require.Contains(t, logText, "schema=TEST_SCHEMA")
+	require.Contains(t, logText, "object_type=VIEW")
+	require.Contains(t, logText, "object_name=V_CUSTOMER")
+	require.Contains(t, logText, "field=definition")
+}
+
+func TestOracleTriggerBodySanitizedUTF8MarshalSuccess(t *testing.T) {
+	var logBuf bytes.Buffer
+	originalLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	defer slog.SetDefault(originalLogger)
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "TESTDB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "TEST_SCHEMA",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "CUSTOMER",
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "TRG_CUSTOMER",
+								Body: sanitizeOracleMetadataString(
+									"TEST_SCHEMA",
+									"TRIGGER",
+									"TRG_CUSTOMER",
+									"body",
+									constructTriggerBody(
+										"TRG_CUSTOMER BEFORE INSERT ON CUSTOMER\n",
+										corruptedVietnamese+"\nBEGIN NULL; END;",
+									),
+								),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := protojson.Marshal(metadata)
+	require.NoError(t, err, "marshal must succeed after trigger body sanitization")
+	require.Contains(t, metadata.Schemas[0].Tables[0].Triggers[0].Body, "\\xe1")
+	require.Contains(t, metadata.Schemas[0].Tables[0].Triggers[0].Body, "\nBEGIN NULL; END;")
+
+	logText := logBuf.String()
+	require.Contains(t, logText, "sanitized invalid UTF-8 in Oracle metadata")
+	require.Contains(t, logText, "schema=TEST_SCHEMA")
+	require.Contains(t, logText, "object_type=TRIGGER")
+	require.Contains(t, logText, "object_name=TRG_CUSTOMER")
+	require.Contains(t, logText, "field=body")
 }

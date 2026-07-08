@@ -403,6 +403,20 @@ func exoticCases() []exoticCase {
 	SPATIAL KEY idx_pt (pt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 		},
+		{
+			name:   "spatial_srid_80",
+			only80: true, // SRID column attribute is 8.0
+			// FIXED (bug 6 + bug 7): sync now captures the column SRID (information_schema.COLUMNS.SRS_ID
+			// into ColumnMetadata.srid) and the dumper emits `/*!80003 SRID 4326 */` after NOT NULL,
+			// while the spatial-key prefix is suppressed (bug 7). Both halves of the former no-op are
+			// gone, so the dump round-trips empty.
+			ddl: `CREATE TABLE t (
+	id INT NOT NULL AUTO_INCREMENT,
+	pt POINT NOT NULL SRID 4326,
+	PRIMARY KEY (id),
+	SPATIAL KEY idx_pt (pt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+		},
 
 		// ---- Fractional seconds ----
 		{
@@ -584,7 +598,19 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB AUTO_INCREMENT=500 DEFAULT CHARSET=utf8mb4;`,
 		},
 
-		// ---- Invisible indexes (8.0) ----
+		// ---- Invisible columns / indexes (8.0) ----
+		{
+			name:   "invisible_column_80",
+			only80: true,
+			// FIXED (bug 4): sync now captures column invisibility (information_schema.COLUMNS.EXTRA
+			// INVISIBLE token into ColumnMetadata.is_invisible) and the dumper emits
+			// `/*!80023 INVISIBLE */`, so the no-op is empty.
+			ddl: `CREATE TABLE t (
+	id INT PRIMARY KEY,
+	a INT NOT NULL DEFAULT 0,
+	secret INT INVISIBLE NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+		},
 		{
 			name:   "invisible_index_80",
 			only80: true,
@@ -667,8 +693,9 @@ func TestSDLDeepExoticIdempotence(t *testing.T) {
 //     to int64 max in the diff — would change the default on apply).
 //   - Default-literal canonicalization phantoms (re-emit every no-op): bit_type (BIT b'..'),
 //     year_and_set (YEAR numeric-vs-quoted).
-//   - Dumper drops a real attribute (re-emit every no-op): invisible_index_80,
-//     spatial_notnull_index (phantom spatial-key prefix length).
+//   - Dumper drops a real attribute (re-emit every no-op): invisible_column_80,
+//     invisible_index_80, spatial_srid_80 (SRID), spatial_notnull_index / spatial_srid_80
+//     (phantom spatial-key prefix length).
 //   - Dumper emits a spelling the omni parser can't reload (HARD error): spatial_types
 //     (`geomcollection`), json_multivalue_index_80 (charset introducer in the functional key).
 //

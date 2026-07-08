@@ -1631,6 +1631,23 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * @generated from field: string default_constraint_name = 17;
    */
   defaultConstraintName: string;
+
+  /**
+   * The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+   * Unset means the column declares no SRID; presence carries the explicit SRID,
+   * including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+   * int32).
+   *
+   * @generated from field: optional uint32 srid = 18;
+   */
+  srid?: number | undefined;
+
+  /**
+   * Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+   *
+   * @generated from field: bool is_invisible = 19;
+   */
+  isInvisible: boolean;
 };
 
 /**

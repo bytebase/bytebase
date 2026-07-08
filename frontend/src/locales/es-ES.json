@@ -1896,7 +1896,7 @@
     "visit-database": "Visitar Bases de datos",
     "visit-environment": "Visitar Entornos",
     "visit-instance": "Visitar Instancias",
-    "visit-member": "Visitar Miembro | Miembros",
+    "visit-member": "Visitar Miembros",
     "visit-project": "Visitar Proyectos"
   },
   "refresh-remind": {},
@@ -2282,11 +2282,17 @@
         "logo": "Logotipo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
-        "maximum-request-expiration": {
+        "maximum-expiration": {
           "days": "Días)",
-          "description": "La caducidad máxima de la solicitud es el período máximo durante el cual una concesión de rol o una solicitud de acceso a datos puede permanecer válida. Se aplica a todos los roles del proyecto excepto al propietario del proyecto, y a todas las solicitudes de acceso a datos.",
-          "never-expires": "Nunca expira",
+          "never-expires": "Nunca expira"
+        },
+        "maximum-request-expiration": {
+          "description": "La caducidad máxima de la solicitud es el período máximo durante el cual una solicitud de acceso a datos puede permanecer válida.",
           "self": "Caducidad máxima de la solicitud"
+        },
+        "maximum-role-expiration": {
+          "description": "La caducidad máxima del rol solo se aplica a la solicitud de rol. <highlight>Esta configuración heredada se dejará de usar en el futuro; usa el flujo de acceso justo a tiempo para acceso temporal.</highlight>",
+          "self": "Caducidad máxima del rol"
         },
         "maximum-sql-result": {
           "rows": {

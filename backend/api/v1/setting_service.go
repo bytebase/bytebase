@@ -277,6 +277,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
+			case "value.workspace_profile.maximum_role_expiration":
+				if payload.MaximumRoleExpiration != nil {
+					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+					if payload.MaximumRoleExpiration.Seconds <= 0 {
+						payload.MaximumRoleExpiration = nil
+					}
+				}
+				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
 			case "value.workspace_profile.domains":
 				if err := validateDomains(payload.Domains); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
@@ -396,16 +404,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
 				return nil, err
 			}
+			conditionExpr := ""
+			if rule.Condition != nil {
+				conditionExpr = rule.Condition.Expression
+			}
 
-			// For SOURCE_UNSPECIFIED (fallback) rules, validate that only project_id is used
-			if rule.Source == v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
-				conditionExpr := ""
-				if rule.Condition != nil {
-					conditionExpr = rule.Condition.Expression
-				}
-				if err := common.ValidateFallbackApprovalExpr(conditionExpr); err != nil {
-					return nil, err
-				}
+			if err := common.ValidateApprovalExprForSource(conditionExpr, storepb.WorkspaceApprovalSetting_Rule_Source(rule.Source)); err != nil {
+				return nil, err
 			}
 
 			if err := validateApprovalTemplate(rule.Template); err != nil {

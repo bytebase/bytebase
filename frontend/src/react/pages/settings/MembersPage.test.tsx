@@ -11,9 +11,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { mockPushNotification, mockUpdateProjectIamPolicy } = vi.hoisted(() => ({
+const {
+  mockGetIntroStateByKey,
+  mockPushNotification,
+  mockSaveIntroStateByKey,
+  mockUpdateProjectIamPolicy,
+  maximumRoleExpirationSeconds,
+  maximumRequestExpirationSeconds,
+} = vi.hoisted(() => ({
+  mockGetIntroStateByKey: vi.fn(),
   mockPushNotification: vi.fn(),
+  mockSaveIntroStateByKey: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
+  maximumRoleExpirationSeconds: { value: undefined as number | undefined },
+  maximumRequestExpirationSeconds: { value: undefined as number | undefined },
 }));
 
 vi.mock("@/react/components/AccountMultiSelect", () => ({
@@ -313,7 +324,18 @@ vi.mock("@/react/stores/app", () => {
     settingsByName: {},
     getOrFetchSettingByName: vi.fn(),
     getSettingByName: () => undefined,
-    getWorkspaceProfile: () => ({}),
+    getWorkspaceProfile: () => ({
+      maximumRoleExpiration:
+        maximumRoleExpirationSeconds.value === undefined
+          ? undefined
+          : { seconds: BigInt(maximumRoleExpirationSeconds.value) },
+      maximumRequestExpiration:
+        maximumRequestExpirationSeconds.value === undefined
+          ? undefined
+          : { seconds: BigInt(maximumRequestExpirationSeconds.value) },
+    }),
+    getIntroStateByKey: mockGetIntroStateByKey,
+    saveIntroStateByKey: mockSaveIntroStateByKey,
   });
   const useAppStore = (selector?: (state: unknown) => unknown) =>
     selector ? selector(buildState()) : buildState();
@@ -342,6 +364,9 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  maximumRoleExpirationSeconds.value = undefined;
+  maximumRequestExpirationSeconds.value = undefined;
+  mockGetIntroStateByKey.mockReturnValue(false);
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -370,6 +395,67 @@ async function flush(): Promise<void> {
 }
 
 describe("MembersPage project role grant drawer", () => {
+  it("marks the member quick-start item visited on mount", async () => {
+    await renderPage();
+
+    expect(mockGetIntroStateByKey).toHaveBeenCalledWith("member.visit");
+    expect(mockSaveIntroStateByKey).toHaveBeenCalledWith({
+      key: "member.visit",
+      newState: true,
+    });
+  });
+
+  it("uses maximum role expiration instead of request expiration for direct role grants", async () => {
+    maximumRequestExpirationSeconds.value = 30 * 24 * 60 * 60;
+
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    expect(container.textContent).not.toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+
+    maximumRoleExpirationSeconds.value = 7 * 24 * 60 * 60;
+    maximumRequestExpirationSeconds.value = undefined;
+
+    await renderPage();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "settings.members.grant-access"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+
+    const roleInputWithRoleCap = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInputWithRoleCap, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    expect(container.textContent).toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+  });
+
   it("uses the graphical expression editor for database CEL scope", async () => {
     await renderPage();
 

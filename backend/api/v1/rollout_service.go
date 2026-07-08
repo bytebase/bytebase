@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -407,12 +408,21 @@ func CreateRolloutAndPendingTasks(
 		}
 	}
 
-	var approvalInputVersion *int64
+	var issueApprovalGuard *store.IssueApprovalGuard
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
 		v := plan.Config.GetApprovalInputVersion()
-		approvalInputVersion = &v
+		issueApprovalGuard = &store.IssueApprovalGuard{ApprovalInputVersion: v}
+		if project.Setting.RequireIssueApproval {
+			var approval *storepb.IssuePayloadApproval
+			if sourceApproval := issue.Payload.GetApproval(); sourceApproval != nil {
+				approval = &storepb.IssuePayloadApproval{}
+				proto.Merge(approval, sourceApproval)
+			}
+			issueApprovalGuard.IssueUID = issue.UID
+			issueApprovalGuard.Approval = approval
+		}
 	}
-	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, approvalInputVersion, tasks)
+	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, issueApprovalGuard, tasks)
 	if err != nil {
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}

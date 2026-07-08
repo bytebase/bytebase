@@ -189,6 +189,10 @@
         "desc": "使用 SSL/TLS 加密的安全数据库连接。",
         "title": "SSL 连接"
       },
+      "FEATURE_JIT": {
+        "desc": "允许用户通过审批请求临时数据库访问权限。",
+        "title": "即时访问"
+      },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "将相同的更改应用于跨不同租户或分区的多个数据库。",
         "title": "多数据库批量变更"

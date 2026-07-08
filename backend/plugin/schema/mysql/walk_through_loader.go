@@ -553,6 +553,13 @@ func wtBuildColumnDef(col *storepb.ColumnMetadata) (*ast.ColumnDef, error) {
 	if typeName.Collate == "" && col.Collation != "" {
 		typeName.Collate = col.Collation
 	}
+	// Spatial SRID (MySQL 8.0): carry the explicit SRID by presence (including the valid
+	// SRID 0) so a pre-synced `POINT SRID n` column seeds the catalog with its SRID and
+	// tableToProto reads it back unchanged (no phantom SRID diff).
+	if col.Srid != nil {
+		typeName.SRID = int(col.GetSrid())
+		typeName.HasSRID = true
+	}
 
 	def := &ast.ColumnDef{
 		Name:     col.Name,
@@ -561,6 +568,12 @@ func wtBuildColumnDef(col *storepb.ColumnMetadata) (*ast.ColumnDef, error) {
 	}
 	if !col.Nullable {
 		def.Constraints = append(def.Constraints, &ast.ColumnConstraint{Type: ast.ColConstrNotNull})
+	}
+	// INVISIBLE column (MySQL 8.0.23+): seed the catalog as invisible so a pre-synced
+	// INVISIBLE column round-trips (tableToProto re-reads it) instead of surfacing as a
+	// phantom visibility change.
+	if col.IsInvisible {
+		def.Constraints = append(def.Constraints, &ast.ColumnConstraint{Type: ast.ColConstrInvisible})
 	}
 
 	// MySQL sync encodes AUTO_INCREMENT as the literal string "AUTO_INCREMENT"

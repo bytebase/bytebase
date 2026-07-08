@@ -142,18 +142,6 @@ export function HistoryPane() {
     }
   };
 
-  const handleCopy = async (statement: string) => {
-    if (await writeTextToClipboard(statement)) {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("sql-editor.url-copied-to-clipboard"),
-      });
-    } else {
-      // clipboard not available
-    }
-  };
-
   // Builds a shareable deep link to a query history. Opening it loads the
   // statement into a new draft tab — see `SQLEditorRouteShell`.
   const buildHistoryLink = (history: QueryHistory) => {
@@ -170,12 +158,12 @@ export function HistoryPane() {
     ).href;
   };
 
-  const handleCopyLink = async (history: QueryHistory) => {
-    if (await writeTextToClipboard(buildHistoryLink(history))) {
+  const handleCopy = async (content: string, notification: string) => {
+    if (await writeTextToClipboard(content)) {
       useAppStore.getState().notify({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("sql-editor.url-copied-to-clipboard"),
+        title: notification,
       });
     } else {
       // clipboard not available
@@ -226,7 +214,10 @@ export function HistoryPane() {
             data-copy-link-btn
             onClick={(e) => {
               e.stopPropagation();
-              void handleCopyLink(history);
+              void handleCopy(
+                buildHistoryLink(history),
+                t("sql-editor.url-copied-to-clipboard")
+              );
             }}
             aria-label={t("sql-editor.copy-history-link")}
           >
@@ -239,7 +230,7 @@ export function HistoryPane() {
             data-copy-btn
             onClick={(e) => {
               e.stopPropagation();
-              void handleCopy(history.statement);
+              void handleCopy(history.statement, t("common.copied"));
             }}
             aria-label={t("common.copy")}
           >

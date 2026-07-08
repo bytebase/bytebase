@@ -131,7 +131,7 @@ export function FeatureAttention({
         {actionText && (
           <div className="mt-3 flex justify-end">
             <Button
-              appearance="outline"
+              appearance="solid"
               size="sm"
               className="shrink-0 whitespace-nowrap"
               onClick={onAction}

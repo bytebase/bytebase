@@ -1058,6 +1058,8 @@ Will create a constraint with an auto-generated name like &#39;DF__employees__st
 To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
 
 This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
+| srid | [uint32](#uint32) | optional | The spatial reference system identifier of a spatial column, MySQL 8.0 only. Unset means the column declares no SRID; presence carries the explicit SRID, including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed int32). Captured from information_schema.COLUMNS.SRS_ID and rendered as the `/*!80003 SRID n */` column attribute. |
+| is_invisible | [bool](#bool) |  | Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. Captured from information_schema.COLUMNS.EXTRA containing INVISIBLE and rendered as the `/*!80023 INVISIBLE */` column attribute. |
 
 
 
@@ -4661,7 +4663,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
 | announcement | [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement) |  | The setting of custom announcement |
-| maximum_request_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for role grants and data access requests. |
+| maximum_request_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for data access requests. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode) |  | The workspace database change mode. |
@@ -4679,6 +4681,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
 | sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
+| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 
 
 
