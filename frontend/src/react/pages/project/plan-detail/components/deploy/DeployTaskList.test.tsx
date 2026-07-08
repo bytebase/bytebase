@@ -72,6 +72,9 @@ const makeStage = (
 const expandedOf = (taskName: string) =>
   screen.getByText(taskName).getAttribute("data-expanded");
 
+const deepLinkedOf = (taskName: string) =>
+  screen.getByText(taskName).getAttribute("data-deeplinked");
+
 const renderList = (stage: Stage, selectedTaskName?: string) => (
   <PlanDetailProvider value={makePage(selectedTaskName)}>
     <DeployTaskList readonly stage={stage} />
@@ -170,48 +173,11 @@ describe("DeployTaskList deep-linked task", () => {
   });
 });
 
-describe("DeployTaskList toggle writes the opened task to the URL", () => {
+describe("DeployTaskList mirrors the focused task into the URL", () => {
   const stageName = "rollouts/r/stages/s";
   const taskName = (id: number) => `${stageName}/tasks/t${id}`;
 
-  test("opening a card writes ?taskId=; closing leaves the URL alone", () => {
-    routerMocks.replace.mockClear();
-    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
-    render(
-      <PlanDetailProvider value={makePage()}>
-        <DeployTaskList stage={stage} />
-      </PlanDetailProvider>
-    );
-
-    // t1 is the auto pick (first task) and starts open; t2 collapsed. Opening
-    // t2 mirrors it into the URL.
-    expect(expandedOf(taskName(2))).toBe("false");
-    fireEvent.click(screen.getByText(taskName(2)));
-    expect(expandedOf(taskName(2))).toBe("true");
-    expect(routerMocks.replace).toHaveBeenLastCalledWith({
-      query: { phase: "deploy", stageId: "s", taskId: "t2" },
-    });
-
-    // Closing it shuts the body and leaves the URL untouched.
-    routerMocks.replace.mockClear();
-    fireEvent.click(screen.getByText(taskName(2)));
-    expect(expandedOf(taskName(2))).toBe("false");
-    expect(routerMocks.replace).not.toHaveBeenCalled();
-  });
-
-  test("preview (readonly) toggles open cards but never touch the URL", () => {
-    routerMocks.replace.mockClear();
-    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
-    render(renderList(stage));
-
-    // t2 starts collapsed (t1 is the auto pick). Toggling opens it, no URL.
-    expect(expandedOf(taskName(2))).toBe("false");
-    fireEvent.click(screen.getByText(taskName(2)));
-    expect(expandedOf(taskName(2))).toBe("true");
-    expect(routerMocks.replace).not.toHaveBeenCalled();
-  });
-
-  test("landing with no ?taskId= mirrors the auto-opened task into the URL", () => {
+  test("mounting an active stage writes its default task to the URL", () => {
     routerMocks.replace.mockClear();
     const stage = makeStage(stageName, [
       { name: taskName(1), status: Task_Status.DONE },
@@ -223,14 +189,42 @@ describe("DeployTaskList toggle writes the opened task to the URL", () => {
       </PlanDetailProvider>
     );
 
-    // The auto-opened task (first running) is written to the URL on load.
+    // The default focus (first running task) is expanded and mirrored so the
+    // URL is a shareable link to the stage + task from the start.
     expect(expandedOf(taskName(2))).toBe("true");
     expect(routerMocks.replace).toHaveBeenCalledWith({
       query: { phase: "deploy", stageId: "s", taskId: "t2" },
     });
   });
 
-  test("landing with a ?taskId= respects it and writes nothing", () => {
+  test("opening a card writes that task to the URL", () => {
+    routerMocks.replace.mockClear();
+    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
+    render(
+      <PlanDetailProvider value={makePage()}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+
+    // t1 is the default; opening t2 focuses it and mirrors it into the URL.
+    fireEvent.click(screen.getByText(taskName(2)));
+    expect(expandedOf(taskName(2))).toBe("true");
+    expect(routerMocks.replace).toHaveBeenLastCalledWith({
+      query: { phase: "deploy", stageId: "s", taskId: "t2" },
+    });
+  });
+
+  test("preview (readonly) never writes the URL", () => {
+    routerMocks.replace.mockClear();
+    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
+    render(renderList(stage));
+
+    fireEvent.click(screen.getByText(taskName(2)));
+    expect(expandedOf(taskName(2))).toBe("true");
+    expect(routerMocks.replace).not.toHaveBeenCalled();
+  });
+
+  test("landing with a ?taskId= honors it without re-writing", () => {
     routerMocks.replace.mockClear();
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     render(
@@ -239,24 +233,9 @@ describe("DeployTaskList toggle writes the opened task to the URL", () => {
       </PlanDetailProvider>
     );
 
-    // The deep link is the source of truth — no default-select overwrite.
+    // The incoming ?taskId= already matches the focus — no redundant write.
+    expect(expandedOf(taskName(2))).toBe("true");
     expect(routerMocks.replace).not.toHaveBeenCalled();
-  });
-
-  test("a stale ?taskId= from another stage doesn't suppress the default write", () => {
-    routerMocks.replace.mockClear();
-    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
-    // Right after an optimistic stage switch the URL can still point at the
-    // previous stage's task; this stage's default must still be written.
-    render(
-      <PlanDetailProvider value={makePage("rollouts/r/stages/other/tasks/x")}>
-        <DeployTaskList stage={stage} />
-      </PlanDetailProvider>
-    );
-
-    expect(routerMocks.replace).toHaveBeenCalledWith({
-      query: { phase: "deploy", stageId: "s", taskId: "t1" },
-    });
   });
 });
 
@@ -282,7 +261,7 @@ describe("DeployTaskList keep-alive activation", () => {
     expect(routerMocks.replace).not.toHaveBeenCalled();
   });
 
-  test("first activation expands the default task and mirrors it into the URL", () => {
+  test("first activation expands the default task and mirrors it", () => {
     routerMocks.replace.mockClear();
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     const { rerender } = render(renderActive(stage, false));
@@ -295,20 +274,55 @@ describe("DeployTaskList keep-alive activation", () => {
   });
 
   test("switching away and back preserves state without re-seeding", () => {
-    routerMocks.replace.mockClear();
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     const { rerender } = render(renderActive(stage, true));
     expect(expandedOf(taskName(1))).toBe("true");
 
-    // User closes the default card, then switches to another stage and back.
+    // User closes the default card, then switches to another stage and back;
+    // the list keeps what the user left — no default re-expansion.
     fireEvent.click(screen.getByText(taskName(1)));
     expect(expandedOf(taskName(1))).toBe("false");
     rerender(renderActive(stage, false));
     rerender(renderActive(stage, true));
-
-    // The list keeps what the user left — no default re-expansion, and the
-    // default ?taskId= mirror ran only once.
     expect(expandedOf(taskName(1))).toBe("false");
-    expect(routerMocks.replace).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("DeployTaskList arrival scroll (BYT-9765 offset jump)", () => {
+  const stageName = "rollouts/r/stages/s";
+  const taskName = (id: number) => `${stageName}/tasks/t${id}`;
+
+  test("a genuine ?taskId= arrival deep-links its card", () => {
+    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
+    // Arrived via a shared link to t2 (nothing self-written yet).
+    render(
+      <PlanDetailProvider value={makePage(taskName(2))}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+    expect(deepLinkedOf(taskName(2))).toBe("true");
+  });
+
+  test("a task we wrote ourselves is not a deep-link once the route catches up", () => {
+    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
+    const { rerender } = render(
+      <PlanDetailProvider value={makePage()}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+
+    // Open t2 — it is mirrored into the URL and marked self-written.
+    fireEvent.click(screen.getByText(taskName(2)));
+
+    // The route settles to t2 (as router.replace would deliver it). Because we
+    // wrote it, it must NOT deep-link/scroll — nor may any other card, which is
+    // the intermittent offset-jump the old per-render derivation caused.
+    rerender(
+      <PlanDetailProvider value={makePage(taskName(2))}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+    expect(deepLinkedOf(taskName(1))).toBe("false");
+    expect(deepLinkedOf(taskName(2))).toBe("false");
   });
 });

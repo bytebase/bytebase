@@ -1,11 +1,4 @@
-import {
-  type MutableRefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { useOnKeyChange } from "@/react/hooks/useOnKeyChange";
@@ -27,7 +20,7 @@ const EMPTY_TASK_RUNS: TaskRun[] = [];
 
 // The task worth opening by default: the first one that needs attention
 // (running or failed), falling back to the first task.
-export const autoExpandTaskName = (tasks: Task[]): string | undefined =>
+const autoExpandTaskName = (tasks: Task[]): string | undefined =>
   (
     tasks.find(
       (task) =>
@@ -36,8 +29,8 @@ export const autoExpandTaskName = (tasks: Task[]): string | undefined =>
     ) ?? tasks[0]
   )?.name;
 
-// The one place a stage's ?taskId= deep-link shape is built.
-export const deployTaskQuery = (stageName: string, taskName: string) => ({
+// The shareable ?stageId&taskId= shape for a task.
+const deployTaskQuery = (stageName: string, taskName: string) => ({
   phase: "deploy",
   stageId: extractStageUID(stageName),
   taskId: extractTaskUID(taskName),
@@ -75,31 +68,23 @@ export function DeployTaskList({
   stage,
   readonly = false,
   active = true,
-  onOpenedTaskChange,
-  selfWrittenTaskRef,
 }: {
   stage: Stage;
   readonly?: boolean;
   // Every stage's list stays mounted (visibility is the parent's concern);
-  // `active` marks the one the user is looking at. Heavy work — the default
-  // card expansion (Monaco + log fetch) and the ?taskId= URL mirror — is
-  // deferred to the first activation so loading the page doesn't mount every
-  // stage's editors at once, and hidden stages never write the URL.
+  // `active` marks the one the user is looking at. The default card expansion
+  // (Monaco + log fetch) is deferred to the first activation so loading the
+  // page doesn't mount every stage's editors at once.
   active?: boolean;
-  // Reports this stage's currently-mirrored task (default pick, honored deep
-  // link, or a card the user opened) so the parent can restore it in the URL
-  // when switching back to this stage.
-  onOpenedTaskChange?: (stageName: string, taskName: string) => void;
-  // Shared "we wrote this ?taskId= ourselves" marker. A self-written task is
-  // not an arrival: it must not scroll its card into view. Only a taskId the
-  // page arrived with from outside (shared link, back/forward) scrolls.
-  selfWrittenTaskRef?: MutableRefObject<string | undefined>;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   // Full task resource name resolved from the ?taskId= deep link.
   const selectedTaskName = page.selectedTaskName;
   const filteredTasks = stage.tasks;
+  const isTaskInStage = (name: string | undefined): name is string =>
+    !!name && filteredTasks.some((task) => task.name === name);
+
   const [activated, setActivated] = useState(active);
   const [displayedTaskCount, setDisplayedTaskCount] = useState(() =>
     initialDisplayedCount(filteredTasks, selectedTaskName)
@@ -110,8 +95,33 @@ export function DeployTaskList({
   const [selectedTaskNames, setSelectedTaskNames] = useState<Set<string>>(
     new Set()
   );
-  const selfWrittenLocalRef = useRef<string | undefined>(undefined);
-  const selfWritten = selfWrittenTaskRef ?? selfWrittenLocalRef;
+  // The focused task of this stage — the last card the user opened, defaulting
+  // to the auto-expand pick or an incoming deep link. It is mirrored into
+  // ?stageId&taskId= while this stage is active (the effect below), so the
+  // address bar is a shareable link to this stage + task, and switching back to
+  // a visited stage restores it.
+  const [focusedTaskName, setFocusedTaskName] = useState<string | undefined>(
+    () =>
+      (isTaskInStage(selectedTaskName) ? selectedTaskName : undefined) ??
+      autoExpandTaskName(filteredTasks)
+  );
+  // A card scrolls into view only for an EXTERNAL arrival (a shared link or
+  // back/forward), never for a ?taskId= this list wrote itself. This ref marks
+  // our own writes; comparing against it only when the route has settled (not
+  // every render) is what avoids the intermittent scroll-to-the-wrong-card
+  // jump (BYT-9765).
+  const selfWroteRef = useRef<string | undefined>(undefined);
+  const [arrivalTaskName, setArrivalTaskName] = useState<string | undefined>(
+    () =>
+      isTaskInStage(selectedTaskName) &&
+      selectedTaskName !== selfWroteRef.current
+        ? selectedTaskName
+        : undefined
+  );
+  // Latest expansion, read by the stable toggle callback without being a dep.
+  const expandedTaskNamesRef = useRef(expandedTaskNames);
+  expandedTaskNamesRef.current = expandedTaskNames;
+
   // filteredTasks identity is poll-stable (snapshot gate), so the join runs
   // only when the stage's task set actually changed.
   const taskNamesKey = useMemo(
@@ -131,8 +141,7 @@ export function DeployTaskList({
   }
 
   // When the visible task set changes (a plan edit, a filter change), re-derive
-  // the list state — pagination, the auto-expanded task, and the still-valid
-  // selection — during render (useOnKeyChange / BYT-9763), so the first paint
+  // the list state during render (useOnKeyChange / BYT-9763), so the first paint
   // after the change already shows the right task expanded. Keyed on task
   // names, not statuses, so polling-driven status changes never reset the
   // user's expansion mid-view.
@@ -153,28 +162,52 @@ export function DeployTaskList({
       );
       return remaining.length === prev.size ? prev : new Set(remaining);
     });
+    // Keep focus valid: fall back to the default if the focused task is gone.
+    setFocusedTaskName((prev) =>
+      isTaskInStage(prev) ? prev : autoExpandTaskName(filteredTasks)
+    );
   });
 
-  // When the deep-linked task changes on the same task set (e.g. following a
-  // second ?taskId= link), expand it and reveal its page — also during render
-  // so the card is in the DOM before its scroll-into-view effect fires. A
-  // self-written taskId (a stage-switch restore) is not a link being followed:
-  // it must not re-open a card the user deliberately closed.
+  // When ?taskId= settles to a task in this stage, focus + reveal it. Scroll
+  // only when it is an external arrival (not a ?taskId= we just wrote) — decided
+  // here, once the route has settled, so the transient render during our own
+  // write can't be mistaken for an arrival.
   useOnKeyChange(selectedTaskName ?? "", () => {
-    if (selectedTaskName && selectedTaskName !== selfWritten.current) {
+    if (isTaskInStage(selectedTaskName)) {
       const index = filteredTasks.findIndex(
         (task) => task.name === selectedTaskName
       );
-      if (index >= 0) {
-        setExpandedTaskNames((prev) =>
-          prev.has(selectedTaskName)
-            ? prev
-            : new Set(prev).add(selectedTaskName)
-        );
-        setDisplayedTaskCount((count) => Math.max(count, index + 1));
-      }
+      setExpandedTaskNames((prev) =>
+        prev.has(selectedTaskName) ? prev : new Set(prev).add(selectedTaskName)
+      );
+      setDisplayedTaskCount((count) => Math.max(count, index + 1));
+      setFocusedTaskName(selectedTaskName);
+      setArrivalTaskName(
+        selectedTaskName === selfWroteRef.current ? undefined : selectedTaskName
+      );
+    } else {
+      setArrivalTaskName(undefined);
     }
   });
+
+  // Mirror the focused task into ?stageId&taskId= while this stage is active,
+  // so the URL is a shareable link. Only the active stage writes (a hidden
+  // keep-alive list must not hijack the address bar); marking the write in
+  // selfWroteRef keeps it from being read back as an external arrival.
+  useEffect(() => {
+    if (
+      readonly ||
+      !active ||
+      !focusedTaskName ||
+      selectedTaskName === focusedTaskName
+    ) {
+      return;
+    }
+    selfWroteRef.current = focusedTaskName;
+    void router.replace({
+      query: deployTaskQuery(stage.name, focusedTaskName),
+    });
+  }, [active, readonly, focusedTaskName, selectedTaskName, stage.name]);
 
   const visibleTasks = filteredTasks.slice(0, displayedTaskCount);
   const hasMoreTasks = filteredTasks.length > displayedTaskCount;
@@ -184,33 +217,22 @@ export function DeployTaskList({
     [filteredTasks, selectedTaskNames]
   );
 
-  // Callbacks are identity-stable (state is read through refs) so the memoized
-  // cards don't re-render when the list does.
-  const expandedTaskNamesRef = useRef(expandedTaskNames);
-  expandedTaskNamesRef.current = expandedTaskNames;
-
-  // One control per card: toggle it open or closed. Opening mirrors the task
-  // into the URL (?taskId= expands + scrolls on arrival) so the address bar is
-  // the shareable link without a separate affordance; `replace`, not `push` —
-  // it's state reflection, not navigation. Closing leaves the URL alone.
-  // Preview stages (readonly) have no shareable task, so they just toggle.
-  const toggleTask = useCallback(
-    (task: Task) => {
-      const willExpand = !expandedTaskNamesRef.current.has(task.name);
-      setExpandedTaskNames((prev) => {
-        const next = new Set(prev);
-        if (next.has(task.name)) next.delete(task.name);
-        else next.add(task.name);
-        return next;
-      });
-      if (!readonly && willExpand) {
-        onOpenedTaskChange?.(stage.name, task.name);
-        selfWritten.current = task.name;
-        void router.replace({ query: deployTaskQuery(stage.name, task.name) });
-      }
-    },
-    [readonly, stage.name, onOpenedTaskChange, selfWritten]
-  );
+  // One control per card: toggle it open or closed (local state; keep-alive
+  // preserves it across stage switches). Opening focuses the task, which the
+  // effect above mirrors into the URL. Stable identities so the memoized cards
+  // don't re-render when the list does.
+  const toggleTask = useCallback((task: Task) => {
+    const willExpand = !expandedTaskNamesRef.current.has(task.name);
+    setExpandedTaskNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(task.name)) next.delete(task.name);
+      else next.add(task.name);
+      return next;
+    });
+    if (willExpand) {
+      setFocusedTaskName(task.name);
+    }
+  }, []);
   const toggleSelect = useCallback((task: Task) => {
     setSelectedTaskNames((prev) => {
       const next = new Set(prev);
@@ -219,59 +241,6 @@ export function DeployTaskList({
       return next;
     });
   }, []);
-
-  // Default-select: on first landing on a stage with no ?taskId=, mirror the
-  // auto-opened task into the URL so the address bar reflects what's open from
-  // the start (and is shareable). Runs once per instance (each instance is
-  // permanently bound to one stage); the written name is marked self-written
-  // so it isn't treated as an arrival — a normal load must not auto-scroll,
-  // only an explicit shared link does.
-  const hasDefaultSelectedRef = useRef(false);
-  useEffect(() => {
-    // Only the stage the user is looking at may mirror its default task into
-    // the URL — a hidden keep-alive list writing ?taskId= would hijack the
-    // address bar (and the active stage derivation) from offscreen.
-    if (readonly || !active || hasDefaultSelectedRef.current) {
-      return;
-    }
-    // Only a deep link into THIS stage counts — right after an (optimistic)
-    // stage switch the URL can still carry the previous stage's taskId, which
-    // must not suppress this stage's default write.
-    if (
-      selectedTaskName &&
-      filteredTasks.some((task) => task.name === selectedTaskName)
-    ) {
-      hasDefaultSelectedRef.current = true;
-      // Remember the honored link as this stage's mirrored task so switching
-      // away and back restores it.
-      onOpenedTaskChange?.(stage.name, selectedTaskName);
-      return;
-    }
-    const autoName = autoExpandTaskName(filteredTasks);
-    if (!autoName) {
-      return;
-    }
-    hasDefaultSelectedRef.current = true;
-    onOpenedTaskChange?.(stage.name, autoName);
-    selfWritten.current = autoName;
-    void router.replace({ query: deployTaskQuery(stage.name, autoName) });
-  }, [
-    stage.name,
-    readonly,
-    active,
-    selectedTaskName,
-    filteredTasks,
-    onOpenedTaskChange,
-    selfWritten,
-  ]);
-
-  // A card scrolls into view only for a genuine arrival (shared link,
-  // back/forward) — never for a taskId this page wrote into the URL itself
-  // (default pick, stage-switch restore, or a card the user opened).
-  const deepLinkedTaskName =
-    selectedTaskName && selectedTaskName !== selfWritten.current
-      ? selectedTaskName
-      : undefined;
 
   return (
     <div className="w-full">
@@ -300,7 +269,7 @@ export function DeployTaskList({
         {visibleTasks.map((task) => (
           <DeployTaskItem
             currentUser={page.currentUser}
-            deepLinked={deepLinkedTaskName === task.name}
+            deepLinked={arrivalTaskName === task.name}
             key={task.name}
             isExpanded={expandedTaskNames.has(task.name)}
             isSelected={selectedTaskNames.has(task.name)}

@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Plus } from "lucide-react";
-import { type ComponentProps, memo, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
@@ -28,17 +28,9 @@ import { DeployTaskList } from "./DeployTaskList";
 export const DeployStageContentView = memo(function DeployStageContentView({
   stage,
   active = true,
-  onOpenedTaskChange,
-  selfWrittenTaskRef,
 }: {
   stage: Stage;
   active?: boolean;
-  onOpenedTaskChange?: ComponentProps<
-    typeof DeployTaskList
-  >["onOpenedTaskChange"];
-  selfWrittenTaskRef?: ComponentProps<
-    typeof DeployTaskList
-  >["selfWrittenTaskRef"];
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -124,9 +116,7 @@ export const DeployStageContentView = memo(function DeployStageContentView({
       <div className="flex flex-col">
         <DeployTaskList
           active={active}
-          onOpenedTaskChange={onOpenedTaskChange}
           readonly={!isStageCreated}
-          selfWrittenTaskRef={selfWrittenTaskRef}
           stage={filteredStage}
         />
 

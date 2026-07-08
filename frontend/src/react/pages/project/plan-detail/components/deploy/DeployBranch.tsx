@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { useSeededState } from "@/react/hooks/useSeededState";
@@ -12,7 +12,6 @@ import { getFrontierStage } from "../lifecycle/frontierStage";
 import { DeployPendingTasksSection } from "./DeployPendingTasksSection";
 import { DeployStageList } from "./DeployStageCard";
 import { DeployStageContentView } from "./DeployStageContentView";
-import { autoExpandTaskName, deployTaskQuery } from "./DeployTaskList";
 import type { PendingTaskGroup } from "./types";
 
 async function loadPendingGroups(
@@ -78,20 +77,6 @@ export function DeployBranch() {
   const [optimisticStageName, setOptimisticStageName] = useSeededState<
     string | undefined
   >(page.routeStageId ?? "", () => undefined);
-
-  // Per-stage memory of the task mirrored in the URL (default pick, honored
-  // deep link, or the last card the user opened) — restored into the URL when
-  // switching back to a visited stage.
-  const lastOpenedTaskByStage = useRef(new Map<string, string>());
-  // Shared with the lists: ?taskId= values this page wrote itself are not
-  // arrivals and must never scroll a card into view.
-  const selfWrittenTaskRef = useRef<string | undefined>(undefined);
-  const handleOpenedTaskChange = useCallback(
-    (stageName: string, taskName: string) => {
-      lastOpenedTaskByStage.current.set(stageName, taskName);
-    },
-    []
-  );
 
   const selectedStage = useMemo(() => {
     if (!page.rollout?.stages.length) return undefined;
@@ -189,26 +174,12 @@ export function DeployBranch() {
         onOpenPreview={() => setPendingOpen(true)}
         onSelectStage={(stage) => {
           setOptimisticStageName(stage.name);
-          // One URL write carrying the stage AND its task — the stage's
-          // remembered task if visited, else its default pick. A stage-only
-          // write would be followed ~a frame later by the list's default
-          // ?taskId= mirror, costing a second page-wide render pass.
-          const targetTask =
-            lastOpenedTaskByStage.current.get(stage.name) ??
-            autoExpandTaskName(stage.tasks);
-          if (targetTask) {
-            selfWrittenTaskRef.current = targetTask;
-            void router.push({
-              query: deployTaskQuery(stage.name, targetTask),
-            });
-          } else {
-            void router.push({
-              query: {
-                phase: "deploy",
-                stageId: extractStageUID(stage.name),
-              },
-            });
-          }
+          // The URL carries only the stage; each stage's card expansion is its
+          // own local state (kept alive across switches), so there's nothing
+          // per-task to restore through the URL.
+          void router.push({
+            query: { phase: "deploy", stageId: extractStageUID(stage.name) },
+          });
         }}
         rollout={page.rollout}
         selectedStageId={selectedStage.name}
@@ -226,8 +197,6 @@ export function DeployBranch() {
         >
           <DeployStageContentView
             active={stage.name === selectedStage.name}
-            onOpenedTaskChange={handleOpenedTaskChange}
-            selfWrittenTaskRef={selfWrittenTaskRef}
             stage={stage}
           />
         </div>
