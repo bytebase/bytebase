@@ -233,6 +233,49 @@ describe("useTaskRunLogData caching", () => {
     again.unmount();
   });
 
+  test("a late log response from an unmounted instance cannot rewind the cache", async () => {
+    mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
+    mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
+    const taskRunName = `${TASK_NAME}/taskRuns/late-clobber`;
+
+    // The RUNNING instance's log request stays in flight.
+    let resolveRunning: (value: { entries: { deployId: string }[] }) => void =
+      () => {};
+    mocks.getTaskRunLog.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRunning = resolve;
+      })
+    );
+    const running = renderHook(taskRunName, TaskRun_Status.RUNNING);
+    await running.flush();
+
+    // Status flips RUNNING→DONE: the viewer remounts under a new key. The DONE
+    // instance fetches and caches the terminal log.
+    running.unmount();
+    mocks.getTaskRunLog.mockResolvedValueOnce({
+      entries: [{ deployId: "done-1" }, { deployId: "done-2" }],
+    });
+    const done = renderHook(taskRunName, TaskRun_Status.DONE);
+    await done.flush();
+    expect(done.result().entries).toHaveLength(2);
+
+    // The old RUNNING request resolves late, after the terminal cache write. Its
+    // partial entries must not overwrite the cached DONE log.
+    await act(async () => {
+      resolveRunning({ entries: [{ deployId: "running-partial" }] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    done.unmount();
+
+    // A fresh DONE mount seeds synchronously from the cache; it must still be the
+    // 2-entry terminal log, not the stale 1-entry running snapshot.
+    mocks.getTaskRunLog.mockReturnValue(new Promise(() => {}));
+    const reopened = renderHook(taskRunName, TaskRun_Status.DONE);
+    expect(reopened.result().entries).toHaveLength(2);
+    reopened.unmount();
+  });
+
   test("seeds a complete cached sheet on the first render", () => {
     mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
     mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));

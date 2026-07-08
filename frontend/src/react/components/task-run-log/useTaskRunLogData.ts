@@ -434,6 +434,19 @@ export const useTaskRunLogData = (
     fetchLog
   );
 
+  // Invalidate any in-flight log request on unmount. A status flip (RUNNING→DONE)
+  // remounts the viewer under a new key, so a newer instance may already have
+  // cached the terminal log; without this, a late RUNNING-era response from this
+  // now-unmounted instance would still pass its own per-instance seq guard and
+  // rewind that shared cache to an incomplete, stale snapshot. The seq guard is
+  // per-instance, so only bumping it here closes the cross-instance window.
+  useEffect(
+    () => () => {
+      logFetchSeq.current++;
+    },
+    []
+  );
+
   // ---- Sheet(s) referenced by the log ----
 
   const sheetSeedKey = `${sheetFetchTaskKey}:${unresolvedTaskMetadataStateKey}:${taskRunName ?? ""}`;
