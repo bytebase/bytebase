@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { type ComponentProps, memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
@@ -15,33 +15,52 @@ import { DeployStageRollbackSection } from "./DeployStageRollbackSection";
 import { DeployTaskFilter } from "./DeployTaskFilter";
 import { DeployTaskList } from "./DeployTaskList";
 
-export function DeployStageContentView({
-  selectedTaskName,
+// One instance per stage, all kept mounted; the parent hides the inactive
+// ones. Because an instance is permanently bound to its stage, per-stage view
+// state (the status filter here, selection/expansion in the list) is scoped by
+// construction — a filter can never leak onto another stage's tasks
+// (BYT-9762), and it survives switching away and back.
+//
+// memo: with stage identity stable across renders (identity-preserving
+// snapshot), parent-local re-renders in DeployBranch (e.g. the optimistic tab
+// highlight) skip this whole subtree. Context changes still propagate to the
+// consumers below regardless of memo.
+export const DeployStageContentView = memo(function DeployStageContentView({
   stage,
+  active = true,
+  onOpenedTaskChange,
+  selfWrittenTaskRef,
 }: {
-  selectedTaskName?: string;
   stage: Stage;
+  active?: boolean;
+  onOpenedTaskChange?: ComponentProps<
+    typeof DeployTaskList
+  >["onOpenedTaskChange"];
+  selfWrittenTaskRef?: ComponentProps<
+    typeof DeployTaskList
+  >["selfWrittenTaskRef"];
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const [filterStatuses, setFilterStatuses] = useState<Task_Status[]>([]);
-  // Scope the task filter to the stage: when switching to a different stage,
-  // drop the previous stage's filter so it can't silently hide the new stage's
-  // tasks (BYT-9762). Resetting during render — rather than in a post-paint
-  // effect — keeps the new stage's first paint correct instead of briefly
-  // showing the wrong filtered set.
-  const [filteredStageName, setFilteredStageName] = useState(stage.name);
-  if (stage.name !== filteredStageName) {
-    setFilteredStageName(stage.name);
-    setFilterStatuses([]);
-  }
 
   const isStageCreated = stage.tasks.length > 0;
 
-  const filteredTasks =
-    filterStatuses.length > 0
-      ? stage.tasks.filter((task) => filterStatuses.includes(task.status))
-      : stage.tasks;
+  // Pass `stage` through untouched when no filter is active (the common case)
+  // and memoize the filtered variant — a fresh stage object every render would
+  // re-render the whole task list for nothing.
+  const filteredStage = useMemo(
+    () =>
+      filterStatuses.length > 0
+        ? {
+            ...stage,
+            tasks: stage.tasks.filter((task) =>
+              filterStatuses.includes(task.status)
+            ),
+          }
+        : stage,
+    [filterStatuses, stage]
+  );
 
   return (
     <div className="w-full">
@@ -104,16 +123,15 @@ export function DeployStageContentView({
 
       <div className="flex flex-col">
         <DeployTaskList
+          active={active}
+          onOpenedTaskChange={onOpenedTaskChange}
           readonly={!isStageCreated}
-          selectedTaskName={selectedTaskName}
-          stage={{
-            ...stage,
-            tasks: filteredTasks,
-          }}
+          selfWrittenTaskRef={selfWrittenTaskRef}
+          stage={filteredStage}
         />
 
         {isStageCreated && <DeployStageRollbackSection stage={stage} />}
       </div>
     </div>
   );
-}
+});

@@ -6,6 +6,7 @@ import {
   rolloutServiceClientConnect,
   userServiceClientConnect,
 } from "@/connect";
+import { useAppStore } from "@/react/stores/app";
 import {
   GetIssueRequestSchema,
   type Issue,
@@ -21,7 +22,6 @@ import {
   type Project,
 } from "@/types/proto-es/v1/project_service_pb";
 import {
-  GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
   type Rollout,
   type TaskRun,
@@ -60,6 +60,21 @@ export const fetchPlanSnapshot = async (
   planId: string,
   routeQuery: Record<string, unknown> = {}
 ): Promise<PlanDetailFetchPatch> => {
+  // The plan fetch depends only on route ids, so it runs alongside the
+  // project/user wave instead of being serialized behind it. The detached
+  // no-op catch keeps a plan failure from surfacing as an unhandled rejection
+  // when the first wave throws before the plan is awaited; the await below
+  // still propagates the error.
+  const planPromise =
+    planId.toLowerCase() === "create"
+      ? undefined
+      : planServiceClientConnect.getPlan(
+          create(GetPlanRequestSchema, {
+            name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
+          })
+        );
+  planPromise?.catch(() => undefined);
+
   const [project, currentUser] = await Promise.all([
     projectServiceClientConnect.getProject(
       create(GetProjectRequestSchema, {
@@ -69,7 +84,7 @@ export const fetchPlanSnapshot = async (
     userServiceClientConnect.getCurrentUser({}),
   ]);
 
-  if (planId.toLowerCase() === "create") {
+  if (!planPromise) {
     const plan = await createPlanSkeleton(
       project,
       convertRouteQuery(routeQuery)
@@ -92,13 +107,12 @@ export const fetchPlanSnapshot = async (
     };
   }
 
-  const plan = await planServiceClientConnect.getPlan(
-    create(GetPlanRequestSchema, {
-      name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
-    })
-  );
+  const plan = await planPromise;
 
-  const [issue, planCheckRuns, rollout] = await Promise.all([
+  // The rollout name is derived from the plan name, so task runs can load in
+  // parallel with the rollout instead of being serialized behind it.
+  const rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
+  const [issue, planCheckRuns, rollout, taskRuns] = await Promise.all([
     plan.issue
       ? issueServiceClientConnect
           .getIssue(create(GetIssueRequestSchema, { name: plan.issue }))
@@ -112,28 +126,26 @@ export const fetchPlanSnapshot = async (
       )
       .then((run) => [run] as PlanCheckRun[])
       .catch(() => []),
-    plan.hasRollout
-      ? rolloutServiceClientConnect
-          .getRollout(
-            create(GetRolloutRequestSchema, {
-              name: getRolloutFromPlan(plan.name),
-            })
-          )
+    // Fetch through the store so the shared rollout cache stays seeded —
+    // cache-first consumers (e.g. the task-run log viewer) then resolve tasks
+    // without their own GetRollout round trip, and polling keeps it fresh.
+    rolloutName
+      ? useAppStore
+          .getState()
+          .fetchRolloutByName(rolloutName)
           .catch(() => undefined)
       : Promise.resolve(undefined),
-  ]);
-
-  const taskRuns =
-    rollout !== undefined
-      ? await rolloutServiceClientConnect
+    rolloutName
+      ? rolloutServiceClientConnect
           .listTaskRuns(
             create(ListTaskRunsRequestSchema, {
-              parent: `${rollout.name}/stages/-/tasks/-`,
+              parent: `${rolloutName}/stages/-/tasks/-`,
             })
           )
           .then((response) => response.taskRuns)
           .catch(() => [])
-      : [];
+      : Promise.resolve([] as TaskRun[]),
+  ]);
 
   return {
     currentUser,

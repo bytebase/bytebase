@@ -7,15 +7,26 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/react/router";
+import {
+  preserveRolloutIdentities,
+  preserveTaskRunIdentities,
+  sameMessage,
+  sameMessageList,
+} from "@/react/lib/protoIdentity";
 import {
   PLAN_DETAIL_PHASE_CHANGES,
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/react/router/handles";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  PlanCheckRunSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
@@ -27,7 +38,6 @@ import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
-import { useLayoutMode } from "./useLayoutMode";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { usePhaseState } from "./usePhaseState";
 import { usePolling } from "./usePolling";
@@ -69,6 +79,42 @@ const applyDerivedState = (
     readonly,
     ready: !snapshot.isInitializing && !!snapshot.plan.name,
   };
+};
+
+// Structural sharing across snapshot updates: every poll tick rebuilds all
+// objects from the wire, but a slice whose content is unchanged keeps its
+// previous reference here, and a fully-unchanged snapshot returns `prev`
+// itself so the caller can skip the state update entirely. This is what makes
+// a quiet poll tick render nothing — object identity is the contract every
+// downstream memo, effect dep, and prop comparison keys off.
+const preserveSnapshotIdentities = (
+  prev: PlanDetailPageSnapshot,
+  next: PlanDetailPageSnapshot
+): PlanDetailPageSnapshot => {
+  const out = { ...next };
+  if (sameMessage(UserSchema, prev.currentUser, next.currentUser)) {
+    out.currentUser = prev.currentUser;
+  }
+  if (sameMessage(ProjectSchema, prev.project, next.project)) {
+    out.project = prev.project;
+  }
+  if (sameMessage(PlanSchema, prev.plan, next.plan)) {
+    out.plan = prev.plan;
+  }
+  if (sameMessage(IssueSchema, prev.issue, next.issue)) {
+    out.issue = prev.issue;
+  }
+  out.rollout = preserveRolloutIdentities(prev.rollout, next.rollout);
+  if (
+    sameMessageList(PlanCheckRunSchema, prev.planCheckRuns, next.planCheckRuns)
+  ) {
+    out.planCheckRuns = prev.planCheckRuns;
+  }
+  out.taskRuns = preserveTaskRunIdentities(prev.taskRuns, next.taskRuns);
+  const changed = (Object.keys(out) as (keyof PlanDetailPageSnapshot)[]).some(
+    (key) => out[key] !== prev[key]
+  );
+  return changed ? out : prev;
 };
 
 const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
@@ -116,14 +162,12 @@ export const usePlanDetailPage = ({
   routeName,
   routeQuery = {},
   specId,
-  pageHost,
 }: {
   projectId: string;
   planId: string;
   routeName?: string;
   routeQuery?: Record<string, unknown>;
   specId?: string;
-  pageHost: HTMLDivElement | null;
 }): PlanDetailPageState => {
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PlanDetailPageSnapshot>(() =>
@@ -132,8 +176,6 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
-  const layout = useLayoutMode(pageHost);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
@@ -188,40 +230,45 @@ export const usePlanDetailPage = ({
 
   const patchState = useCallback(
     (patch: Partial<PlanDetailPageSnapshot>) => {
-      const nextSnapshot = applyDerivedState({
-        ...latestSnapshotRef.current,
-        ...patch,
-      });
+      const prevSnapshot = latestSnapshotRef.current;
+      const nextSnapshot = preserveSnapshotIdentities(
+        prevSnapshot,
+        applyDerivedState({
+          ...prevSnapshot,
+          ...patch,
+        })
+      );
       syncDefaultActivePhases(nextSnapshot);
+      if (nextSnapshot === prevSnapshot) {
+        // Content-identical (the common quiet poll tick) — no state update,
+        // so nothing under the provider re-renders.
+        return;
+      }
       latestSnapshotRef.current = nextSnapshot;
       setSnapshot(nextSnapshot);
     },
     [syncDefaultActivePhases]
   );
 
+  // Monotonic fetch sequence: a fetch that was already in flight when a newer
+  // one started (e.g. a poll tick overlapping a user-action refresh) carries
+  // older data and must not overwrite the fresher snapshot when it resolves
+  // late — after a task rerun that would flip the status back to the old one.
+  const fetchSeqRef = useRef(0);
   const fetchState = useCallback(async () => {
-    try {
-      setIsRefreshing(true);
-      const current = latestSnapshotRef.current;
-      const patch = await fetchPlanSnapshot(
-        current.projectId,
-        current.planId,
-        routeQueryRef.current
-      );
-      patchState(patch);
-    } finally {
-      setIsRefreshing(false);
+    const current = latestSnapshotRef.current;
+    fetchSeqRef.current += 1;
+    const seq = fetchSeqRef.current;
+    const patch = await fetchPlanSnapshot(
+      current.projectId,
+      current.planId,
+      routeQueryRef.current
+    );
+    if (seq !== fetchSeqRef.current) {
+      return;
     }
+    patchState(patch);
   }, [patchState]);
-
-  const closeTaskPanel = useCallback(() => {
-    void router.replace({
-      query: {
-        ...(routePhase ? { phase: routePhase } : {}),
-        ...(routeStageId ? { stageId: routeStageId } : {}),
-      },
-    });
-  }, [routePhase, routeStageId]);
 
   useInitialFetch({
     projectId,
@@ -284,30 +331,29 @@ export const usePlanDetailPage = ({
   });
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
-  // It fetches immediately and then resets the poll backoff so the follow-up
-  // status transition (e.g. a task moving PENDING -> RUNNING) is observed on
-  // the next ~1s tick instead of waiting out the current backoff interval.
+  // Resets the poll backoff first — not after the fetch — so the follow-up
+  // status transition (e.g. a task moving PENDING -> RUNNING) is watched on
+  // ~1s ticks from the moment of the action, then fetches immediately. If the
+  // immediate fetch is still in flight when the restarted tick fires, the
+  // fetch sequence guard keeps the newest result authoritative.
   const refreshState = useCallback(async () => {
-    await fetchState();
     restartPolling();
+    await fetchState();
   }, [fetchState, restartPolling]);
 
   return useDerivedPlanState({
     snapshot,
     isEditing,
-    isRefreshing,
     isRunningChecks,
     setIsRunningChecks,
     phase,
     editing,
-    layout,
     routeName,
     routePhase,
     routeStageId,
     routeTaskId,
     patchState,
     refreshState,
-    closeTaskPanel,
     resolveLeaveConfirm,
   });
 };

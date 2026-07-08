@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import source from "./DeployTaskItem.tsx?raw";
+import source from "./DeployTaskBody.tsx?raw";
 
 const statementReadonlyMonacoProps = (src: string): string => {
   const match = src.match(
@@ -10,7 +10,7 @@ const statementReadonlyMonacoProps = (src: string): string => {
   return match?.[0] ?? "";
 };
 
-describe("DeployTaskItem statement editor", () => {
+describe("DeployTaskBody statement editor", () => {
   test("lets Monaco own the compact statement viewport", () => {
     const props = statementReadonlyMonacoProps(source);
 

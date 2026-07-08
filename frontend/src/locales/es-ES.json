@@ -3125,7 +3125,6 @@
       "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda.",
       "self": "Programar para más tarde"
     },
-    "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
     "select-task": "Seleccionar tarea",
     "skip-prior-backup": "Omitir respaldo previo",
@@ -3150,8 +3149,8 @@
     "blocking-sessions": "Sesiones bloqueantes",
     "blocking-sessions-description": "Las sesiones que están bloqueando la sesión actual.",
     "history": "Historial",
+    "history-with-count": "Historial ({{count}})",
     "latest": "Último",
-    "latest-logs": "Últimos registros",
     "log-detail": {
       "backing-up": "haciendo copia de seguridad...",
       "backup-completed": "completadas ({{count}} tablas)",
@@ -3179,6 +3178,7 @@
       "replica-n": "Réplica #{{n}}",
       "summary": "{{sections}} secciones · {{entries}} entradas"
     },
+    "no-blocking-sessions": "Sin sesiones bloqueantes",
     "no-session-found": "No se encontró sesión",
     "rollback": {
       "available": "{{count}} rollback disponible",
@@ -3187,6 +3187,7 @@
         "description": "Revisa las sentencias de rollback generadas antes de crear el plan de rollback."
       }
     },
+    "run-number": "Ejecución n.º {{number}}",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",

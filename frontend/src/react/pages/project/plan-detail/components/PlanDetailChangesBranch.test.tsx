@@ -368,6 +368,14 @@ vi.mock("../utils/localSheet", () => ({
     return a.every((byte, index) => byte === b[index]);
   },
   removeLocalSheet: vi.fn(),
+  setLocalSheetStatement: (
+    sheet: { content: Uint8Array; contentSize: bigint },
+    statement: string
+  ) => {
+    const content = new TextEncoder().encode(statement);
+    sheet.content = content;
+    sheet.contentSize = BigInt(content.byteLength);
+  },
 }));
 
 vi.mock("../utils/options", () => ({
@@ -543,8 +551,6 @@ function buildPageState(): PlanDetailPageState {
   return {
     activePhases: new Set(["changes"]),
     bypassLeaveGuardOnce: vi.fn(),
-    closeTaskPanel: vi.fn(),
-    containerWidth: 1200,
     currentUser: {
       name: "users/me@example.com",
     } as PlanDetailPageState["currentUser"],
@@ -552,7 +558,6 @@ function buildPageState(): PlanDetailPageState {
     isCreating: true,
     isEditing: false,
     isInitializing: false,
-    isRefreshing: false,
     isRunningChecks: false,
     pageKey: "foo/create/spec-1",
     patchState: mocks.patchState,
@@ -594,8 +599,8 @@ function buildPageState(): PlanDetailPageState {
     selectedTaskName: undefined,
     setEditing: vi.fn(),
     setIsRunningChecks: vi.fn(),
-    layoutMode: "DESKTOP",
     taskRuns: [],
+    taskRunsByTaskName: new Map(),
     togglePhase: vi.fn(),
   };
 }

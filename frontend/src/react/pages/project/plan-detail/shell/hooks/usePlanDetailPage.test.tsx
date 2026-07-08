@@ -1,7 +1,16 @@
+import { create } from "@bufbuild/protobuf";
 import { renderHook, waitFor } from "@testing-library/react";
 import { act, type ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
+import {
+  RolloutSchema,
+  Task_Status,
+  TaskRunSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { PlanDetailPageSnapshot } from "./types";
 
 const mocks = vi.hoisted(() => ({
@@ -26,6 +35,8 @@ vi.mock("@/react/router", async (importOriginal) => ({
 }));
 
 vi.mock("@/utils", () => ({
+  extractTaskNameFromTaskRunName: (taskRunName: string) =>
+    taskRunName.split("/taskRuns/")[0],
   getIssueRoute: mocks.getIssueRoute,
   isDev: () => true,
   minmax: (value: number, min: number, max: number) =>
@@ -95,7 +106,6 @@ describe("usePlanDetailPage", () => {
           projectId: "foo",
           planId: "create",
           routeName: "workspace.project.plan.detail.specs",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -118,7 +128,6 @@ describe("usePlanDetailPage", () => {
           projectId: "foo",
           planId: "plan-1",
           routeQuery: { phase: "deploy" },
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -141,7 +150,6 @@ describe("usePlanDetailPage", () => {
           projectId: "foo",
           planId,
           routeQuery: { phase: "deploy" },
-          pageHost: null,
         }),
       {
         initialProps: { planId: "plan-1" },
@@ -179,7 +187,6 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -206,7 +213,6 @@ describe("usePlanDetailPage", () => {
           projectId: "foo",
           planId: "plan-1",
           routeName: "workspace.project.plan.detail.specs",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -234,7 +240,6 @@ describe("usePlanDetailPage", () => {
           projectId: "foo",
           planId: "plan-1",
           routeName: "workspace.project.plan.detail.specs",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -266,7 +271,6 @@ describe("usePlanDetailPage", () => {
           planId: "plan-1",
           routeName: "workspace.project.plan.detail.spec.detail",
           specId: "spec-1",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -293,7 +297,6 @@ describe("usePlanDetailPage", () => {
         const page = usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          pageHost: null,
         });
         if (page.ready) {
           readyRenders.push(new Set(page.activePhases));
@@ -326,7 +329,6 @@ describe("usePlanDetailPage", () => {
         const page = usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          pageHost: null,
         });
         if (page.ready) {
           readyRenders.push(new Set(page.activePhases));
@@ -350,7 +352,6 @@ describe("usePlanDetailPage", () => {
           planId: "plan-1",
           routeName: "workspace.project.plan.detail.spec.detail",
           specId,
-          pageHost: null,
         }),
       {
         initialProps: { specId: "spec-1" },
@@ -380,7 +381,6 @@ describe("usePlanDetailPage", () => {
           planId,
           routeName: "workspace.project.plan.detail.spec.detail",
           specId: "spec-1",
-          pageHost: null,
         }),
       {
         initialProps: { planId: "plan-1" },
@@ -414,7 +414,6 @@ describe("usePlanDetailPage", () => {
         usePlanDetailPage({
           projectId: "foo",
           planId: "plan-1",
-          pageHost: null,
         }),
       { wrapper }
     );
@@ -436,5 +435,208 @@ describe("usePlanDetailPage", () => {
 
     expect(result.current.activePhases.has("review")).toBe(false);
     expect(result.current.activePhases.has("changes")).toBe(true);
+  });
+
+  test("a poll returning identical content keeps the page state identity", async () => {
+    // Real proto messages (not cast plain objects): the identity gate only
+    // structurally compares actual messages.
+    const buildProtoPatch = (): Partial<PlanDetailPageSnapshot> => ({
+      projectId: "foo",
+      planId: "plan-1",
+      pageKey: "foo/plan-1",
+      projectTitle: "Foo",
+      projectRequireIssueApproval: false,
+      projectRequirePlanCheckNoError: false,
+      projectCanCreateRollout: true,
+      currentUser: create(UserSchema, { name: "users/me@example.com" }),
+      project: create(ProjectSchema, { name: "projects/foo", title: "Foo" }),
+      isCreating: false,
+      readonly: false,
+      plan: create(PlanSchema, {
+        name: "projects/foo/plans/plan-1",
+        state: State.ACTIVE,
+        specs: [{ id: "spec-1" }],
+      }),
+      issue: undefined,
+      rollout: undefined,
+      planCheckRuns: [],
+      taskRuns: [],
+    });
+    mocks.fetchPlanSnapshot.mockImplementation(async () => buildProtoPatch());
+
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+        }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+
+    // A quiet poll: fresh objects from the wire, identical content. The
+    // snapshot (and thus the whole page object) must keep its identity so
+    // nothing under the provider re-renders.
+    const before = result.current;
+    await act(async () => {
+      await result.current.refreshState();
+    });
+    expect(mocks.fetchPlanSnapshot.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(result.current).toBe(before);
+
+    // A real change (plan title) produces a new snapshot, but slices that
+    // didn't change keep their references.
+    mocks.fetchPlanSnapshot.mockImplementation(async () => ({
+      ...buildProtoPatch(),
+      plan: create(PlanSchema, {
+        name: "projects/foo/plans/plan-1",
+        title: "renamed",
+        state: State.ACTIVE,
+        specs: [{ id: "spec-1" }],
+      }),
+    }));
+    await act(async () => {
+      await result.current.refreshState();
+    });
+    expect(result.current).not.toBe(before);
+    expect(result.current.plan.title).toBe("renamed");
+    expect(result.current.currentUser).toBe(before.currentUser);
+    expect(result.current.project).toBe(before.project);
+  });
+
+  test("a poll changing one task preserves sibling stage/task/run identities", async () => {
+    const stage1 = "projects/foo/rollouts/1/stages/s1";
+    const stage2 = "projects/foo/rollouts/1/stages/s2";
+    const buildPatch = (
+      t2Status: Task_Status,
+      runDetail: string
+    ): Partial<PlanDetailPageSnapshot> => ({
+      ...buildSnapshotPatch({ planId: "plan-1" }),
+      rollout: create(RolloutSchema, {
+        name: "projects/foo/rollouts/1",
+        stages: [
+          {
+            name: stage1,
+            tasks: [
+              { name: `${stage1}/tasks/t1`, status: Task_Status.DONE },
+              { name: `${stage1}/tasks/t2`, status: t2Status },
+            ],
+          },
+          {
+            name: stage2,
+            tasks: [
+              { name: `${stage2}/tasks/t3`, status: Task_Status.NOT_STARTED },
+            ],
+          },
+        ],
+      }),
+      taskRuns: [
+        create(TaskRunSchema, {
+          name: `${stage1}/tasks/t2/taskRuns/r2`,
+          detail: runDetail,
+        }),
+        create(TaskRunSchema, {
+          name: `${stage1}/tasks/t1/taskRuns/r1`,
+          detail: "finished",
+        }),
+      ],
+    });
+    mocks.fetchPlanSnapshot.mockImplementation(async () =>
+      buildPatch(Task_Status.RUNNING, "executing step 1")
+    );
+
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+        }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const before = result.current;
+
+    // A poll tick where only task t2 (and its run) changed.
+    mocks.fetchPlanSnapshot.mockImplementation(async () =>
+      buildPatch(Task_Status.DONE, "executing step 2")
+    );
+    await act(async () => {
+      await result.current.refreshState();
+    });
+    const after = result.current;
+
+    // The rollout shell and the changed stage/task get new references…
+    expect(after.rollout).not.toBe(before.rollout);
+    expect(after.rollout?.stages[0]).not.toBe(before.rollout?.stages[0]);
+    expect(after.rollout?.stages[0].tasks[1]).not.toBe(
+      before.rollout?.stages[0].tasks[1]
+    );
+    // …while every untouched sibling keeps its previous reference, so
+    // memoized cards skip re-rendering.
+    expect(after.rollout?.stages[1]).toBe(before.rollout?.stages[1]);
+    expect(after.rollout?.stages[0].tasks[0]).toBe(
+      before.rollout?.stages[0].tasks[0]
+    );
+    expect(after.taskRuns).not.toBe(before.taskRuns);
+    expect(after.taskRuns[0]).not.toBe(before.taskRuns[0]);
+    expect(after.taskRuns[1]).toBe(before.taskRuns[1]);
+  });
+
+  test("a stale in-flight fetch cannot overwrite a newer refresh", async () => {
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+        }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+
+    // A poll tick's fetch is in flight when a user action (e.g. task rerun)
+    // triggers an immediate refresh. The older fetch carries pre-action data
+    // and resolves late — it must be dropped, not applied over the newer one.
+    let resolveStale: (patch: Partial<PlanDetailPageSnapshot>) => void = () =>
+      undefined;
+    let resolveFresh: (patch: Partial<PlanDetailPageSnapshot>) => void = () =>
+      undefined;
+    mocks.fetchPlanSnapshot
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStale = resolve;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFresh = resolve;
+          })
+      );
+
+    let stalePending: Promise<void> = Promise.resolve();
+    let freshPending: Promise<void> = Promise.resolve();
+    act(() => {
+      stalePending = result.current.refreshState();
+      freshPending = result.current.refreshState();
+    });
+
+    await act(async () => {
+      resolveFresh({
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        projectTitle: "fresh",
+      });
+      await freshPending;
+    });
+    expect(result.current.projectTitle).toBe("fresh");
+
+    await act(async () => {
+      resolveStale({
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        projectTitle: "stale",
+      });
+      await stalePending;
+    });
+    expect(result.current.projectTitle).toBe("fresh");
   });
 });

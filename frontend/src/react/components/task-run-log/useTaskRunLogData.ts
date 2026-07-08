@@ -1,15 +1,17 @@
 import { create } from "@bufbuild/protobuf";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  rolloutServiceClientConnect,
-  sheetServiceClientConnect,
-} from "@/connect";
+import { useEffect, useMemo, useRef } from "react";
+import { rolloutServiceClientConnect } from "@/connect";
+import { useLatestRef } from "@/react/hooks/useLatestRef";
+import { useSeededState } from "@/react/hooks/useSeededState";
+import { sameMessageList } from "@/react/lib/protoIdentity";
 import { useAppStore } from "@/react/stores/app";
 import { unknownRollout } from "@/types";
 import {
   GetTaskRunLogRequestSchema,
   type Task,
+  TaskRun_Status,
   type TaskRunLogEntry,
+  TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
@@ -19,6 +21,7 @@ import {
   releaseNameOfTaskV1,
   sheetNameOfTaskV1,
 } from "@/utils";
+import { isSheetContentComplete } from "@/utils/v1/sheet";
 
 export type FetchStatus = "idle" | "loading" | "success" | "partial" | "error";
 export type SheetSource = "none" | "sheet" | "release";
@@ -48,6 +51,72 @@ interface ReleaseSheetFetchResult {
 }
 
 const TASK_RESOLUTION_ERROR = "Task cannot be resolved from rollout metadata";
+
+// The viewer remounts on every stage switch (and on the card's refresh key
+// bump), so all three data slices below seed synchronously from caches during
+// render — a remount paints fully formed instead of flashing empty states
+// while effects and requests settle (same pattern as useSheetStatement /
+// BYT-9763).
+
+type LogCacheEntry = {
+  entries: TaskRunLogEntry[];
+  // The run's status when the entries were fetched. Once a run is terminal
+  // its log is immutable, so a matching cached copy needs no revalidation.
+  status?: TaskRun_Status;
+};
+const taskRunLogEntriesCache = new Map<string, LogCacheEntry>();
+// Keep the session-lifetime cache bounded; Map iteration order gives FIFO.
+const LOG_CACHE_MAX_ENTRIES = 100;
+const cacheLogEntries = (taskRunName: string, entry: LogCacheEntry) => {
+  taskRunLogEntriesCache.delete(taskRunName);
+  taskRunLogEntriesCache.set(taskRunName, entry);
+  if (taskRunLogEntriesCache.size > LOG_CACHE_MAX_ENTRIES) {
+    const oldest = taskRunLogEntriesCache.keys().next().value;
+    if (oldest !== undefined) {
+      taskRunLogEntriesCache.delete(oldest);
+    }
+  }
+};
+
+const TERMINAL_TASK_RUN_STATUSES: ReadonlySet<TaskRun_Status> = new Set([
+  TaskRun_Status.DONE,
+  TaskRun_Status.FAILED,
+  TaskRun_Status.CANCELED,
+]);
+
+const isLogCacheFresh = (
+  cached: LogCacheEntry | undefined,
+  taskRunStatus?: TaskRun_Status
+): boolean =>
+  !!cached &&
+  taskRunStatus !== undefined &&
+  TERMINAL_TASK_RUN_STATUSES.has(taskRunStatus) &&
+  cached.status === taskRunStatus;
+
+// A running task appends log entries as it executes; poll on this cadence so
+// the log grows live instead of freezing until the run's status flips.
+const LIVE_LOG_POLL_INTERVAL_MS = 5000;
+
+type LogSlice = { entries: TaskRunLogEntry[]; state: FetchState };
+
+const seedLogSlice = (taskRunName?: string): LogSlice => {
+  if (!taskRunName) {
+    return { entries: [], state: { status: "idle" } };
+  }
+  const cached = taskRunLogEntriesCache.get(taskRunName);
+  if (cached) {
+    return { entries: cached.entries, state: { status: "success" } };
+  }
+  return { entries: [], state: { status: "loading" } };
+};
+
+// A cached sheet satisfies a raw consumer only when it holds the full content;
+// the store's `fetchSheet(name, raw=true)` applies the same rule, so the async
+// path just delegates to it and this sync probe backs the render-time seed.
+const getCachedCompleteSheet = (name: string): Sheet | undefined => {
+  const cached = useAppStore.getState().getSheetByName(name);
+  return cached && isSheetContentComplete(cached) ? cached : undefined;
+};
 
 const getTaskFromRollout = (
   taskRunName: string | undefined,
@@ -152,24 +221,76 @@ export const buildReleaseSheetFetchResult = (
   };
 };
 
-export const useTaskRunLogData = (
+const seedMetadataState = (
+  rolloutName: string,
   taskRunName?: string
+): FetchState => {
+  if (!rolloutName || !taskRunName) {
+    return { status: "idle" };
+  }
+  // The cached rollout usually already carries the task (the surrounding page
+  // loaded it); the effect only hits the network when it can't be resolved.
+  const cachedRollout = useAppStore.getState().rolloutsByName[rolloutName];
+  if (getTaskFromRollout(taskRunName, cachedRollout)) {
+    return { status: "success" };
+  }
+  return { status: "loading" };
+};
+
+const EMPTY_SHEETS_MAP = new Map<string, Sheet>();
+
+type SheetSlice = {
+  sheet: Sheet | undefined;
+  sheetsMap: Map<string, Sheet>;
+  state: SheetFetchState;
+};
+
+const sheetlessSlice = (state: SheetFetchState): SheetSlice => ({
+  sheet: undefined,
+  sheetsMap: EMPTY_SHEETS_MAP,
+  state,
+});
+
+const seedSheetSlice = (
+  task: Task | undefined,
+  taskRunName: string | undefined,
+  metadataFetchState: FetchState
+): SheetSlice => {
+  if (!task) {
+    return sheetlessSlice(
+      buildSheetFetchStateForMissingTask(taskRunName, metadataFetchState)
+    );
+  }
+  if (isReleaseBasedTask(task)) {
+    return sheetlessSlice(
+      releaseNameOfTaskV1(task)
+        ? { status: "loading", source: "release" }
+        : { status: "success", source: "release" }
+    );
+  }
+  const sheetName = sheetNameOfTaskV1(task);
+  if (!sheetName) {
+    return sheetlessSlice({ status: "success", source: "sheet" });
+  }
+  const cached = getCachedCompleteSheet(sheetName);
+  if (cached) {
+    return {
+      sheet: cached,
+      sheetsMap: EMPTY_SHEETS_MAP,
+      state: { status: "success", source: "sheet" },
+    };
+  }
+  return sheetlessSlice({ status: "loading", source: "sheet" });
+};
+
+export const useTaskRunLogData = (
+  taskRunName?: string,
+  // When provided, a terminal status lets a cached log skip revalidation
+  // entirely — a finished run's log never changes.
+  taskRunStatus?: TaskRun_Status
 ): UseTaskRunLogDataResult => {
   const fetchRelease = useAppStore((state) => state.fetchRelease);
 
-  const [entries, setEntries] = useState<TaskRunLogEntry[]>([]);
-  const [sheet, setSheet] = useState<Sheet | undefined>(undefined);
-  const [sheetsMap, setSheetsMap] = useState<Map<string, Sheet>>(new Map());
-  const [metadataFetchState, setMetadataFetchState] = useState<FetchState>({
-    status: "idle",
-  });
-  const [logFetchState, setLogFetchState] = useState<FetchState>({
-    status: "idle",
-  });
-  const [sheetFetchState, setSheetFetchState] = useState<SheetFetchState>({
-    status: "idle",
-    source: "none",
-  });
   const metadataFetchVersion = useRef(0);
   const logFetchVersion = useRef(0);
   const sheetFetchVersion = useRef(0);
@@ -179,14 +300,24 @@ export const useTaskRunLogData = (
     return extractRolloutNameFromTaskRunName(taskRunName);
   }, [taskRunName]);
 
+  // ---- Task metadata (rollout) ----
+
+  // rolloutName is derived from taskRunName, so the run name alone keys both.
+  const [metadataFetchState, setMetadataFetchState] =
+    useSeededState<FetchState>(taskRunName ?? "", () =>
+      seedMetadataState(rolloutName, taskRunName)
+    );
+
   useEffect(() => {
     const version = ++metadataFetchVersion.current;
     if (!rolloutName || !taskRunName) {
-      setMetadataFetchState({ status: "idle" });
+      return;
+    }
+    if (seedMetadataState(rolloutName, taskRunName).status === "success") {
+      // The cached rollout resolves the task; seeded as success during render.
       return;
     }
 
-    setMetadataFetchState({ status: "loading" });
     void useAppStore
       .getState()
       .fetchRolloutByName(rolloutName, true)
@@ -238,56 +369,95 @@ export const useTaskRunLogData = (
     [metadataFetchState, task]
   );
 
+  // ---- Log entries ----
+
+  const [logSlice, setLogSlice] = useSeededState<LogSlice>(
+    taskRunName ?? "",
+    () => seedLogSlice(taskRunName)
+  );
+
   useEffect(() => {
     const version = ++logFetchVersion.current;
-    setEntries([]);
-
     if (!taskRunName) {
-      setLogFetchState({ status: "idle" });
       return;
     }
 
-    setLogFetchState({ status: "loading" });
-    const request = create(GetTaskRunLogRequestSchema, {
-      parent: taskRunName,
-    });
-    void rolloutServiceClientConnect
-      .getTaskRunLog(request)
-      .then((response) => {
-        if (version !== logFetchVersion.current) return;
-        setEntries(response.entries);
-        setLogFetchState({ status: "success" });
-      })
-      .catch((error: unknown) => {
-        if (version !== logFetchVersion.current) return;
-        setEntries([]);
-        setLogFetchState({
-          status: "error",
-          error: getErrorMessage(error),
-        });
+    const fetchLog = () => {
+      const request = create(GetTaskRunLogRequestSchema, {
+        parent: taskRunName,
       });
-  }, [taskRunName]);
+      void rolloutServiceClientConnect
+        .getTaskRunLog(request)
+        .then((response) => {
+          cacheLogEntries(taskRunName, {
+            entries: response.entries,
+            status: taskRunStatus,
+          });
+          if (version !== logFetchVersion.current) return;
+          // Identity-stable across live-poll ticks: unchanged entries keep the
+          // previous slice so the viewer doesn't re-render for nothing.
+          setLogSlice((prev) =>
+            prev.state.status === "success" &&
+            sameMessageList(
+              TaskRunLogEntrySchema,
+              prev.entries,
+              response.entries
+            )
+              ? prev
+              : { entries: response.entries, state: { status: "success" } }
+          );
+        })
+        .catch((error: unknown) => {
+          if (version !== logFetchVersion.current) return;
+          // Keep showing stale cached entries over an empty error state.
+          setLogSlice((prev) => ({
+            entries: prev.entries,
+            state: { status: "error", error: getErrorMessage(error) },
+          }));
+        });
+    };
+
+    // Cached entries were painted during render; only revalidate when the
+    // cached copy could still change (run not known to be finished).
+    if (
+      !isLogCacheFresh(taskRunLogEntriesCache.get(taskRunName), taskRunStatus)
+    ) {
+      fetchLog();
+    }
+
+    if (taskRunStatus !== TaskRun_Status.RUNNING) {
+      return;
+    }
+    const timer = window.setInterval(fetchLog, LIVE_LOG_POLL_INTERVAL_MS);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [taskRunName, taskRunStatus]);
+
+  // ---- Sheet(s) referenced by the log ----
+
+  const sheetSeedKey = `${sheetFetchTaskKey}:${unresolvedTaskMetadataStateKey}:${taskRunName ?? ""}`;
+  const [sheetSlice, setSheetSlice] = useSeededState<SheetSlice>(
+    sheetSeedKey,
+    () => seedSheetSlice(task, taskRunName, metadataFetchState)
+  );
+
+  // The effect below is keyed on derived stable strings and reads the latest
+  // task through this ref, so a task identity change alone doesn't re-run it
+  // (and refetch).
+  const taskRef = useLatestRef(task);
 
   useEffect(() => {
     const version = ++sheetFetchVersion.current;
-
-    // Always clear both sources when task changes, so previous-task data
-    // cannot be displayed while the new task's requests are in flight.
-    setSheet(undefined);
-    setSheetsMap(new Map());
-
-    if (!task) {
-      setSheetFetchState(
-        buildSheetFetchStateForMissingTask(taskRunName, metadataFetchState)
-      );
+    const currentTask = taskRef.current;
+    if (!currentTask) {
+      // The missing-task state was seeded during render.
       return;
     }
 
-    if (isReleaseBasedTask(task)) {
-      setSheetFetchState({ status: "loading", source: "release" });
-      const releaseName = releaseNameOfTaskV1(task);
+    if (isReleaseBasedTask(currentTask)) {
+      const releaseName = releaseNameOfTaskV1(currentTask);
       if (!releaseName) {
-        setSheetFetchState({ status: "success", source: "release" });
         return;
       }
 
@@ -296,89 +466,78 @@ export const useTaskRunLogData = (
           const fileSheets = await Promise.all(
             (release?.files ?? [])
               .filter((file) => file.sheet && file.version)
-              .map(async (file) => {
-                try {
-                  const fetchedSheet = await sheetServiceClientConnect.getSheet(
-                    {
-                      name: file.sheet,
-                      raw: true,
-                    }
-                  );
-                  return { version: file.version, sheet: fetchedSheet };
-                } catch (error: unknown) {
-                  return {
-                    version: file.version,
-                    error: getErrorMessage(error),
-                  };
-                }
-              })
+              .map(async (file) => ({
+                version: file.version,
+                // Resolves undefined on failure; the result builder counts
+                // sheetless versions as failed.
+                sheet: await useAppStore
+                  .getState()
+                  .fetchSheet(file.sheet, true),
+              }))
           );
           if (version !== sheetFetchVersion.current) return;
 
-          const releaseResult = buildReleaseSheetFetchResult(
-            fileSheets
-              .filter((item) => item?.version)
-              .map((item) => ({
-                version: item.version,
-                sheet: item.sheet,
-              }))
-          );
-          setSheetsMap(releaseResult.sheetsMap);
-          setSheetFetchState(releaseResult.state);
+          const releaseResult = buildReleaseSheetFetchResult(fileSheets);
+          setSheetSlice({
+            sheet: undefined,
+            sheetsMap: releaseResult.sheetsMap,
+            state: releaseResult.state,
+          });
         })
         .catch((error: unknown) => {
           if (version !== sheetFetchVersion.current) return;
-          setSheetsMap(new Map());
-          setSheetFetchState({
-            status: "error",
-            source: "release",
-            error: getErrorMessage(error),
-          });
+          setSheetSlice(
+            sheetlessSlice({
+              status: "error",
+              source: "release",
+              error: getErrorMessage(error),
+            })
+          );
         });
 
       return;
     }
 
-    setSheetFetchState({ status: "loading", source: "sheet" });
-    const sheetName = sheetNameOfTaskV1(task);
-    if (!sheetName) {
-      setSheetFetchState({ status: "success", source: "sheet" });
+    const sheetName = sheetNameOfTaskV1(currentTask);
+    if (!sheetName || getCachedCompleteSheet(sheetName)) {
+      // Seeded as success (empty or from cache) during render.
       return;
     }
 
-    void sheetServiceClientConnect
-      .getSheet({
-        name: sheetName,
-        raw: true,
-      })
+    void useAppStore
+      .getState()
+      .fetchSheet(sheetName, true)
       .then((fetchedSheet) => {
         if (version !== sheetFetchVersion.current) return;
-        setSheet(fetchedSheet);
-        setSheetFetchState({ status: "success", source: "sheet" });
-      })
-      .catch((error: unknown) => {
-        if (version !== sheetFetchVersion.current) return;
-        setSheet(undefined);
-        setSheetFetchState({
-          status: "error",
-          source: "sheet",
-          error: getErrorMessage(error),
+        if (!fetchedSheet) {
+          setSheetSlice(
+            sheetlessSlice({
+              status: "error",
+              source: "sheet",
+              error: `Failed to fetch sheet ${sheetName}`,
+            })
+          );
+          return;
+        }
+        setSheetSlice({
+          sheet: fetchedSheet,
+          sheetsMap: EMPTY_SHEETS_MAP,
+          state: { status: "success", source: "sheet" },
         });
       });
   }, [
     fetchRelease,
-    task,
     taskRunName,
     sheetFetchTaskKey,
     unresolvedTaskMetadataStateKey,
   ]);
 
   return {
-    entries,
-    sheet,
-    sheetsMap,
+    entries: logSlice.entries,
+    sheet: sheetSlice.sheet,
+    sheetsMap: sheetSlice.sheetsMap,
     metadataFetch: metadataFetchState,
-    logFetch: logFetchState,
-    sheetFetch: sheetFetchState,
+    logFetch: logSlice.state,
+    sheetFetch: sheetSlice.state,
   };
 };

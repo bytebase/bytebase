@@ -5,7 +5,7 @@ import {
   GetSheetRequestSchema,
   type Sheet,
 } from "@/types/proto-es/v1/sheet_service_pb";
-import { extractSheetUID } from "@/utils/v1/sheet";
+import { extractSheetUID, isSheetContentComplete } from "@/utils/v1/sheet";
 import type { AppSliceCreator, SheetSlice } from "./types";
 import { toError } from "./utils";
 
@@ -22,22 +22,35 @@ export const createSheetSlice: AppSliceCreator<SheetSlice> = (set, get) => ({
 
   fetchSheet: async (name, raw = false) => {
     if (!isValidSheetName(name)) return undefined;
-    if (!raw) {
-      const existing = get().sheetsByName[name];
-      if (existing) return existing;
+    const existing = get().sheetsByName[name];
+    // Sheets are immutable, so a complete cached copy satisfies raw consumers
+    // too; a truncated preview only satisfies non-raw ones.
+    if (existing && (!raw || isSheetContentComplete(existing))) {
+      return existing;
     }
     const pending = get().sheetRequests[name];
-    if (pending) return pending;
+    // A pending raw request satisfies everyone; a pending preview request may
+    // resolve to truncated content, so a raw consumer can't join it.
+    if (pending && (pending.raw || !raw)) return pending.request;
 
     const request = sheetServiceClientConnect
       .getSheet(createProto(GetSheetRequestSchema, { name, raw }))
       .then((sheet: Sheet) => {
         set((state) => {
           const { [name]: _, ...sheetRequests } = state.sheetRequests;
+          const cached = state.sheetsByName[sheet.name];
+          // Never replace a complete cached sheet with a truncated preview
+          // (a slower non-raw request may resolve after a raw one).
+          const next =
+            cached &&
+            isSheetContentComplete(cached) &&
+            !isSheetContentComplete(sheet)
+              ? cached
+              : sheet;
           return {
             sheetsByName: {
               ...state.sheetsByName,
-              [sheet.name]: sheet,
+              [sheet.name]: next,
             },
             sheetErrorsByName: {
               ...state.sheetErrorsByName,
@@ -64,7 +77,7 @@ export const createSheetSlice: AppSliceCreator<SheetSlice> = (set, get) => ({
     set((state) => ({
       sheetRequests: {
         ...state.sheetRequests,
-        [name]: request,
+        [name]: { raw, request },
       },
     }));
     return request;

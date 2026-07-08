@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { sameMessage } from "@/react/lib/protoIdentity";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   GetTaskRunSessionRequestSchema,
@@ -20,7 +21,13 @@ import {
   TaskRun_Status,
   type TaskRunSession_Postgres,
   type TaskRunSession_Postgres_Session,
+  TaskRunSession_PostgresSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
+
+// A running task holds its session for the duration of the execution; refresh
+// on this cadence so blocking/blocked sessions reflect the live database state
+// rather than the moment the panel opened.
+const SESSION_POLL_INTERVAL_MS = 5000;
 
 export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   const { t } = useTranslation();
@@ -30,14 +37,13 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   useEffect(() => {
     let canceled = false;
 
-    const load = async () => {
-      if (taskRun.status !== TaskRun_Status.RUNNING) {
-        setSession(undefined);
-        return;
-      }
-
+    // Only the first load shows the spinner; poll refreshes swap the data in
+    // place.
+    const load = async (initial: boolean) => {
       try {
-        setLoading(true);
+        if (initial) {
+          setLoading(true);
+        }
         const response = await rolloutServiceClientConnect.getTaskRunSession(
           create(GetTaskRunSessionRequestSchema, {
             parent: taskRun.name,
@@ -49,21 +55,35 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
         if (canceled) {
           return;
         }
-        if (response.session.case === "postgres") {
-          setSession(response.session.value);
-        } else {
-          setSession(undefined);
-        }
+        const next =
+          response.session.case === "postgres"
+            ? response.session.value
+            : undefined;
+        // Keep the previous reference when a poll returns identical content so
+        // the tables don't re-render for nothing.
+        setSession((prev) =>
+          prev && next && sameMessage(TaskRunSession_PostgresSchema, prev, next)
+            ? prev
+            : next
+        );
       } finally {
-        if (!canceled) {
+        if (!canceled && initial) {
           setLoading(false);
         }
       }
     };
 
-    void load();
+    if (taskRun.status !== TaskRun_Status.RUNNING) {
+      setSession(undefined);
+      return;
+    }
+    void load(true);
+    const timer = window.setInterval(() => {
+      void load(false);
+    }, SESSION_POLL_INTERVAL_MS);
     return () => {
       canceled = true;
+      window.clearInterval(timer);
     };
   }, [taskRun.name, taskRun.status]);
 
@@ -86,22 +106,34 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   return (
     <div className="flex w-full flex-col gap-y-2">
       <SessionTable rows={[session.session]} />
-      <div>
-        <div className="flex items-center justify-start gap-x-1 pt-2">
-          <span className="textlabel">{t("task-run.blocking-sessions")}</span>
-          <span className="textinfolabel">
-            ({t("task-run.blocking-sessions-description")})
-          </span>
+      {/* When nothing blocks (the common case), a one-line note replaces the
+          header + description + empty table box. */}
+      {session.blockingSessions.length > 0 ? (
+        <div>
+          <div className="flex items-center justify-start gap-x-1 pt-2">
+            <span className="text-sm font-medium text-gray-700">
+              {t("task-run.blocking-sessions")}
+            </span>
+            <span className="textinfolabel">
+              ({t("task-run.blocking-sessions-description")})
+            </span>
+          </div>
+          <div className="mt-2">
+            <SessionTable rows={session.blockingSessions} />
+          </div>
         </div>
-        <div className="mt-2">
-          <SessionTable rows={session.blockingSessions} />
+      ) : (
+        <div className="text-sm text-control-light">
+          {t("task-run.no-blocking-sessions")}
         </div>
-      </div>
+      )}
       {session.blockedSessions.length > 0 && (
         <div>
           <div className="flex items-center justify-start gap-x-2 pt-2">
             <AlignHorizontalJustifyStart className="h-4 w-4 opacity-80" />
-            <span className="textlabel">{t("task-run.blocked-sessions")}</span>
+            <span className="text-sm font-medium text-gray-700">
+              {t("task-run.blocked-sessions")}
+            </span>
             <span className="textinfolabel">
               {t("task-run.blocked-sessions-description")}
             </span>

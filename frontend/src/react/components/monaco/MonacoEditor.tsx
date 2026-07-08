@@ -78,6 +78,13 @@ const normalizeContent = (value: unknown): string =>
 const normalizeLanguage = (value: unknown): Language =>
   supportedLanguages.has(value as Language) ? (value as Language) : "sql";
 
+// Text overlays (the loading stand-in and the empty placeholder) that must
+// align with the editor's own text layout. Mirrors defaultEditorOptions in
+// core.ts — fontSize 14 (text-sm), lineHeight 24 (leading-6), padding.top 8
+// (pt-2) — plus Monaco's computed ~52px line-number gutter, which is not an
+// option, just measured.
+const MONACO_TEXT_OVERLAY_CLASS = "pl-[52px] pt-2 font-mono text-sm leading-6";
+
 export interface MonacoEditorProps {
   advices?: AdviceOption[];
   autoCompleteContext?: AutoCompleteContext;
@@ -701,13 +708,36 @@ export function MonacoEditor({
         )}
         style={autoHeight ? { height } : undefined}
       />
-      {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
-          <Loader2 className="h-5 w-5 animate-spin text-control-light" />
-        </div>
-      )}
+      {!ready &&
+        (safeContent ? (
+          // The text is already in hand — paint it as a static stand-in
+          // instead of flashing a spinner, so editor initialization reads as
+          // highlighting fading in rather than loading → content. Only the
+          // first chunk is laid out: the stand-in just covers the init window
+          // and anything past it is below the fold.
+          <div className="pointer-events-none absolute inset-0 overflow-hidden bg-background">
+            <pre
+              className={cn(
+                "m-0 h-full overflow-hidden whitespace-pre-wrap break-words text-main",
+                MONACO_TEXT_OVERLAY_CLASS
+              )}
+            >
+              {safeContent.slice(0, 10_000)}
+            </pre>
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
+            <Loader2 className="h-5 w-5 animate-spin text-control-light" />
+          </div>
+        ))}
       {ready && !content && placeholder && (
-        <div className="pointer-events-none absolute left-[52px] top-2 font-mono text-sm text-control-placeholder">
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0",
+            MONACO_TEXT_OVERLAY_CLASS,
+            "text-control-placeholder"
+          )}
+        >
           {placeholder}
         </div>
       )}

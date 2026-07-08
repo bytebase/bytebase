@@ -105,11 +105,7 @@ import {
 import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
-import {
-  extractSheetUID,
-  getSheetStatement,
-  setSheetStatement as setLocalSheetStatement,
-} from "@/utils/v1/sheet";
+import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getDefaultGhostConfig,
@@ -124,6 +120,7 @@ import {
   getNextLocalSheetUID,
   getSpecStatementContent,
   isSameStatementContent,
+  setLocalSheetStatement,
 } from "../utils/localSheet";
 import {
   allowGhostForDatabase,

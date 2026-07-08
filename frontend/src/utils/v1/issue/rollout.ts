@@ -136,8 +136,12 @@ export const releaseNameOfTaskV1 = (task: Task): string => {
   return "";
 };
 
+// Task_Status ONLY. Task_Status and TaskRun_Status share names but their
+// numeric values are offset by one (Task_Status.PENDING === 2 ===
+// TaskRun_Status.RUNNING), so one switch cannot serve both enums — a task
+// run's status must go through stringifyTaskRunStatus below.
 export const stringifyTaskStatus = (
-  status: Task_Status | TaskRun_Status,
+  status: Task_Status,
   translate: (
     key: string,
     named?: Record<string, unknown>
@@ -158,10 +162,33 @@ export const stringifyTaskStatus = (
       return translate("task.status.canceled");
     case Task_Status.SKIPPED:
       return translate("task.status.skipped");
+    default:
+      return Task_Status[status] || String(status);
+  }
+};
+
+export const stringifyTaskRunStatus = (
+  status: TaskRun_Status,
+  translate: (
+    key: string,
+    named?: Record<string, unknown>
+  ) => string = i18n.t.bind(i18n)
+): string => {
+  switch (status) {
+    case TaskRun_Status.PENDING:
+      return translate("task.status.pending");
+    case TaskRun_Status.RUNNING:
+      return translate("task.status.running");
+    case TaskRun_Status.DONE:
+      return translate("task.status.done");
+    case TaskRun_Status.FAILED:
+      return translate("task.status.failed");
+    case TaskRun_Status.CANCELED:
+      return translate("task.status.canceled");
     case TaskRun_Status.AVAILABLE:
       return translate("task.status.available");
     default:
-      return Task_Status[status] || String(status);
+      return TaskRun_Status[status] || String(status);
   }
 };
 

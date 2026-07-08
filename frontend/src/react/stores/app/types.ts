@@ -586,7 +586,10 @@ export type DBGroupSlice = {
 
 export type SheetSlice = {
   sheetsByName: Record<string, Sheet>;
-  sheetRequests: Record<string, Promise<Sheet | undefined>>;
+  sheetRequests: Record<
+    string,
+    { raw: boolean; request: Promise<Sheet | undefined> }
+  >;
   sheetErrorsByName: Record<string, Error | undefined>;
   fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
   createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
@@ -1060,6 +1063,10 @@ export type RolloutSlice = {
   fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
   // Synchronous cache read; returns a stable unknownRollout on miss.
   getRolloutByName: (name: string) => Rollout;
+  // Seed/refresh the cache with a rollout fetched elsewhere. Returns the
+  // stored, identity-preserved instance — use it instead of the wire object so
+  // consumers share references.
+  upsertRollout: (rollout: Rollout) => Rollout;
 };
 
 export type AppStoreState = AuthSlice &

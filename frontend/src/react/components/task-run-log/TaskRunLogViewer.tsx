@@ -6,23 +6,40 @@ import {
   List,
   Server,
 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  type TaskRun_Status,
+  TaskRunLogEntry_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskRunLogDetailText } from "./model";
 import { SectionContent } from "./SectionContent";
-import { SectionHeader } from "./SectionHeader";
+import { SectionHeader, SectionStatusIcon } from "./SectionHeader";
 import { useTaskRunLogData } from "./useTaskRunLogData";
 import { useTaskRunLogSections } from "./useTaskRunLogSections";
 
 export interface TaskRunLogViewerProps {
   taskRunName: string;
+  // Pass when known: a terminal status lets a cached log render without a
+  // refetch, since a finished run's log is immutable. Callers without a
+  // TaskRun in hand (changelog/revision pages) omit it and always revalidate,
+  // even though those runs are terminal by construction.
+  taskRunStatus?: TaskRun_Status;
 }
 
-export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
+// memo: both props are scalars and data flows in via zustand subscriptions
+// (not React context), so re-renders of the surrounding card don't cascade
+// into the log tree unless the run itself changed.
+export const TaskRunLogViewer = memo(function TaskRunLogViewer({
+  taskRunName,
+  taskRunStatus,
+}: TaskRunLogViewerProps) {
   const { t } = useTranslation();
-  const { entries, sheet, sheetsMap } = useTaskRunLogData(taskRunName);
+  const { entries, logFetch, sheet, sheetsMap } = useTaskRunLogData(
+    taskRunName,
+    taskRunStatus
+  );
 
   const getSectionLabel = useCallback(
     (type: TaskRunLogEntry_Type) => {
@@ -90,7 +107,6 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     areAllExpanded,
     totalSections,
     totalEntries,
-    totalDuration,
   } = useTaskRunLogSections({
     entries,
     sheet,
@@ -110,7 +126,43 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
   }
 
   if (!hasContent) {
+    // Reserve the approximate height of a small loaded log (label row plus a
+    // couple of entries) while the first fetch is in flight, so entries fill
+    // the box in place instead of popping the card taller.
+    if (logFetch.status === "loading") {
+      return (
+        <div className="flex min-h-20 items-center justify-center rounded-md border bg-gray-50 px-3 py-2 text-sm text-control-light">
+          {t("common.loading")}
+        </div>
+      );
+    }
     return null;
+  }
+
+  // A single section with no replicas or release files carries no structure
+  // worth disclosing — skip the summary bar and the collapsible section header
+  // and show the entries directly under a lightweight, non-collapsible label.
+  const soleSection =
+    !hasMultipleReplicas && !hasRenderableReleaseFiles && sections.length === 1
+      ? sections[0]
+      : undefined;
+  if (soleSection) {
+    return (
+      <div className="w-full font-mono text-xs">
+        <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-x-2 px-3 py-1.5 text-control">
+            <SectionStatusIcon section={soleSection} />
+            <span>{soleSection.label}</span>
+            {soleSection.duration ? (
+              <span className="ml-auto tabular-nums text-control-light">
+                {soleSection.duration}
+              </span>
+            ) : null}
+          </div>
+          <SectionContent section={soleSection} datasetKey={taskRunName} />
+        </div>
+      </div>
+    );
   }
 
   const toggleExpandAll = () => {
@@ -242,47 +294,40 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
 
   return (
     <div className="w-full font-mono text-xs">
-      {hasContent ? (
-        <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-2 py-1">
-            <div className="flex items-center gap-x-2 text-gray-500">
-              <List className="h-3.5 w-3.5" />
-              <span>
-                {t("task-run.log-viewer.summary", {
-                  sections: totalSections,
-                  entries: totalEntries,
-                })}
-              </span>
-              {totalDuration ? (
-                <span className="tabular-nums text-blue-500">
-                  {totalDuration}
-                </span>
-              ) : null}
-            </div>
-            <Button
-              type="button"
-              appearance="secondary"
-              size="sm"
-              className="gap-x-1 text-control-light hover:text-control"
-              onClick={toggleExpandAll}
-            >
-              {areAllExpanded ? (
-                <ChevronsDownUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronsUpDown className="h-3.5 w-3.5" />
-              )}
-              <span>
-                {areAllExpanded
-                  ? t("task-run.log-viewer.collapse-all")
-                  : t("task-run.log-viewer.expand-all")}
-              </span>
-            </Button>
+      <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-2 py-1">
+          <div className="flex items-center gap-x-2 text-gray-500">
+            <List className="h-3.5 w-3.5" />
+            <span>
+              {t("task-run.log-viewer.summary", {
+                sections: totalSections,
+                entries: totalEntries,
+              })}
+            </span>
           </div>
-          {content}
+          <Button
+            type="button"
+            appearance="secondary"
+            size="sm"
+            className="gap-x-1 text-control-light hover:text-control"
+            onClick={toggleExpandAll}
+          >
+            {areAllExpanded ? (
+              <ChevronsDownUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+            )}
+            <span>
+              {areAllExpanded
+                ? t("task-run.log-viewer.collapse-all")
+                : t("task-run.log-viewer.expand-all")}
+            </span>
+          </Button>
         </div>
-      ) : null}
+        {content}
+      </div>
     </div>
   );
-}
+});
 
 export default TaskRunLogViewer;

@@ -9,8 +9,12 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractSheetUID, setSheetStatement } from "@/utils";
-import { getLocalSheetByName, getNextLocalSheetUID } from "./localSheet";
+import { extractSheetUID } from "@/utils";
+import {
+  getLocalSheetByName,
+  getNextLocalSheetUID,
+  setLocalSheetStatement,
+} from "./localSheet";
 
 type PlanTemplate = "bb.plan.change-database";
 
@@ -62,7 +66,7 @@ const maybeSetInitialSQLForSpec = (spec: Plan_Spec, initialSQL: InitialSQL) => {
   if (!sql) {
     return;
   }
-  setSheetStatement(getLocalSheetByName(sheet), sql);
+  setLocalSheetStatement(getLocalSheetByName(sheet), sql);
 };
 
 const extractInitialSQLFromQuery = async (

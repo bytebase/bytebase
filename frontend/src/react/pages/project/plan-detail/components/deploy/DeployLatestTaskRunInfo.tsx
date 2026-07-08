@@ -1,74 +1,45 @@
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import {
-  CheckCircle2,
-  Circle,
-  Clock3,
-  LoaderCircle,
-  User,
-  XCircle,
-} from "lucide-react";
+import { Clock3, History, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { TaskRunStatusIcon } from "@/react/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
+import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { executorEmailOfTaskRun } from "@/react/lib/taskRun";
+import { cn } from "@/react/lib/utils";
 import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine as EngineEnum } from "@/types/proto-es/v1/common_pb";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { stringifyTaskRunStatus } from "@/utils/v1/issue/rollout";
+import { PlanDetailTaskRunSession } from "../PlanDetailTaskRunSession";
+
+const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
+  [TaskRun_Status.RUNNING]: "text-blue-600",
+  [TaskRun_Status.DONE]: "text-green-600",
+  [TaskRun_Status.FAILED]: "text-red-600",
+};
 
 export function DeployLatestTaskRunInfo({
+  databaseEngine,
   duration,
-  executorEmail,
-  status,
-  taskRunName,
-  updateTime,
+  historyCount,
+  onShowHistory,
+  taskRun,
 }: {
+  databaseEngine?: Engine;
   duration?: string;
-  executorEmail?: string;
-  status: TaskRun_Status;
-  taskRunName?: string;
-  updateTime?: Timestamp;
+  historyCount: number;
+  onShowHistory: () => void;
+  taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
-  const updateDate = getDateForPbTimestampProtoEs(updateTime);
-  const statusConfig = (() => {
-    switch (status) {
-      case TaskRun_Status.RUNNING:
-        return {
-          className: "text-blue-600",
-          icon: LoaderCircle,
-          label: t("task.status.running"),
-          spinning: true,
-        };
-      case TaskRun_Status.DONE:
-        return {
-          className: "text-green-600",
-          icon: CheckCircle2,
-          label: t("task.status.done"),
-          spinning: false,
-        };
-      case TaskRun_Status.FAILED:
-        return {
-          className: "text-red-600",
-          icon: XCircle,
-          label: t("task.status.failed"),
-          spinning: false,
-        };
-      case TaskRun_Status.CANCELED:
-        return {
-          className: "text-gray-500",
-          icon: Circle,
-          label: t("task.status.canceled"),
-          spinning: false,
-        };
-      default:
-        return {
-          className: "text-gray-500",
-          icon: Circle,
-          label: t("task.status.pending"),
-          spinning: false,
-        };
-    }
-  })();
-  const StatusIcon = statusConfig.icon;
+  const updateDate = getDateForPbTimestampProtoEs(taskRun.updateTime);
+  const executorEmail = executorEmailOfTaskRun(taskRun);
+  const showSession =
+    taskRun.status === TaskRun_Status.RUNNING &&
+    databaseEngine === EngineEnum.POSTGRES;
 
   return (
     <div className="space-y-2">
@@ -78,12 +49,13 @@ export function DeployLatestTaskRunInfo({
         </span>
         <span className="text-gray-300">·</span>
         <span
-          className={`flex shrink-0 items-center gap-x-1 ${statusConfig.className}`}
+          className={cn(
+            "flex shrink-0 items-center gap-x-1",
+            STATUS_LABEL_CLASS[taskRun.status] ?? "text-gray-500"
+          )}
         >
-          <StatusIcon
-            className={`h-4 w-4 ${statusConfig.spinning ? "animate-spin" : ""}`}
-          />
-          <span>{statusConfig.label}</span>
+          <TaskRunStatusIcon size="tiny" status={taskRun.status} />
+          <span>{stringifyTaskRunStatus(taskRun.status, t)}</span>
         </span>
         {updateDate && (
           <>
@@ -109,20 +81,41 @@ export function DeployLatestTaskRunInfo({
           <>
             <span className="text-gray-300">·</span>
             <Tooltip content={t("common.duration")}>
-              <span className="flex shrink-0 items-center gap-x-1 text-gray-500">
+              <span className="flex shrink-0 items-center gap-x-1 tabular-nums text-gray-500">
                 <Clock3 className="h-3.5 w-3.5" />
                 {duration}
               </span>
             </Tooltip>
           </>
         )}
+        {historyCount > 1 && (
+          <span className="ml-auto flex shrink-0 items-center">
+            <Button onClick={onShowHistory} size="xs" appearance="secondary">
+              <History className="h-3.5 w-3.5" />
+              {t("task-run.history-with-count", { count: historyCount })}
+            </Button>
+          </span>
+        )}
       </div>
 
-      {taskRunName && (
-        <TaskRunLogViewer
-          key={`${taskRunName}-${status}`}
-          taskRunName={taskRunName}
-        />
+      {/* Status is part of the key on purpose: a status flip (RUNNING→DONE)
+          remounts the viewer for a fresh disclosure state on the new phase.
+          The remount paints fully formed — useTaskRunLogData seeds from its
+          caches during render — and the status prop still drives terminal
+          cache freshness and the live poll while running. */}
+      <TaskRunLogViewer
+        key={`logs-${taskRun.name}-${taskRun.status}`}
+        taskRunName={taskRun.name}
+        taskRunStatus={taskRun.status}
+      />
+
+      {showSession && (
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-gray-700">
+            {t("issue.task-run.session")}
+          </div>
+          <PlanDetailTaskRunSession key={taskRun.name} taskRun={taskRun} />
+        </div>
       )}
     </div>
   );

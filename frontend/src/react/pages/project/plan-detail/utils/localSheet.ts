@@ -2,12 +2,43 @@ import { create } from "@bufbuild/protobuf";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { setSheetStatement } from "@/utils/v1/sheet";
 
 const state = {
   uid: -101,
 };
 
 const localSheetsByName = new Map<string, Sheet>();
+
+// Local sheets live outside React state, so edits need an explicit external-
+// store signal (consumed via useSyncExternalStore). Nothing re-runs "for free"
+// anymore: snapshot updates preserve identity when content is unchanged, so a
+// hidden dependency on this map must subscribe here instead of riding on
+// unrelated re-renders.
+let localSheetsVersion = 0;
+const localSheetListeners = new Set<() => void>();
+
+export const subscribeLocalSheets = (listener: () => void): (() => void) => {
+  localSheetListeners.add(listener);
+  return () => {
+    localSheetListeners.delete(listener);
+  };
+};
+
+export const getLocalSheetsVersion = (): number => localSheetsVersion;
+
+// Write a local sheet's statement and notify subscribers (e.g. the
+// empty-statement validation behind the create button).
+export const setLocalSheetStatement = (
+  sheet: Sheet,
+  statement: string
+): void => {
+  setSheetStatement(sheet, statement);
+  localSheetsVersion += 1;
+  for (const listener of localSheetListeners) {
+    listener();
+  }
+};
 
 export const createEmptyLocalSheet = () => {
   return create(SheetSchema, {});

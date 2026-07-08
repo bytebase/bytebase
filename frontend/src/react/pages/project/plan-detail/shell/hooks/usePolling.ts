@@ -23,6 +23,10 @@ export function usePolling({
   // `active` mirrors the effect's mounted+enabled lifetime so a late-resolving
   // refreshState (or a `restart` racing an unmount) cannot schedule a new poll.
   const activeRef = useRef(false);
+  // Bumped by every scheduleNext. A tick whose refresh was in flight when a
+  // restart() happened sees a newer epoch afterwards and must not reschedule —
+  // otherwise its grown backoff would clobber the restart's minimum interval.
+  const epochRef = useRef(0);
   const refreshStateRef = useRef(refreshState);
   refreshStateRef.current = refreshState;
 
@@ -37,6 +41,8 @@ export function usePolling({
   const scheduleNext = useCallback(
     (interval: number) => {
       stopPolling();
+      epochRef.current += 1;
+      const epoch = epochRef.current;
       const nextInterval = minmax(
         interval +
           Math.floor(Math.random() * (POLLER_INTERVAL.jitter * 2 + 1)) -
@@ -51,6 +57,11 @@ export function usePolling({
         }
         await refreshStateRef.current().catch(() => undefined);
         if (!activeRef.current) {
+          return;
+        }
+        if (epoch !== epochRef.current) {
+          // A restart() landed while this tick's refresh was in flight and has
+          // already scheduled the next poll at the minimum interval.
           return;
         }
         scheduleNext(

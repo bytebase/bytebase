@@ -1,84 +1,102 @@
-import {
-  ArrowUpRight,
-  ChevronDown,
-  ChevronRight,
-  LoaderCircle,
-  Play,
-  SkipForward,
-  X,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { HumanizeTs } from "@/react/components/HumanizeTs";
-import { ReadonlyMonaco } from "@/react/components/monaco";
-import { RouterLink } from "@/react/components/RouterLink";
-import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
-import { Button } from "@/react/components/ui/button";
-import { Checkbox } from "@/react/components/ui/checkbox";
+import { executionDurationOfTaskRun } from "@/react/lib/taskRun";
 import { cn } from "@/react/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Stage,
   type Task,
   Task_Status,
+  type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  isReleaseBasedTask,
-  releaseNameOfTaskV1,
-} from "@/utils/v1/issue/rollout";
-import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { databaseForTask, humanizeDurationV1 } from "@/utils";
+import { isReleaseBasedTask } from "@/utils/v1/issue/rollout";
+import { isRerunnableTaskStatus } from "../lifecycle/frontierStage";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {
   type PlanDetailTaskRolloutAction,
   PlanDetailTaskRolloutActionPanel,
 } from "../PlanDetailTaskRolloutActionPanel";
-import { PlanTargetDisplay } from "../PlanTargetDisplay";
-import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
-import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
-import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
+import { DeployTaskBody } from "./DeployTaskBody";
+import { DeployTaskHeader } from "./DeployTaskHeader";
+import { DeployTaskRunHistorySheet } from "./DeployTaskRunHistorySheet";
 import { useDeployTaskActions } from "./taskActions";
-import { getTaskRunDuration } from "./taskRunUtils";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
 
-export function DeployTaskItem({
-  active,
+// Orchestrates a single deploy task card: derives the display state, owns the
+// action/rollback/history overlays, and composes the presentational
+// DeployTaskHeader + DeployTaskBody. The card is one disclosure toggle.
+//
+// memo + props only (no page context): every input is identity-stable across
+// poll ticks thanks to the snapshot gate's structural sharing, so a tick that
+// changes one task re-renders that one card — the other mounted cards (across
+// every kept-alive stage) skip entirely.
+export const DeployTaskItem = memo(function DeployTaskItem({
+  currentUser,
+  deepLinked,
   isExpanded,
   isSelected,
   isSelectable,
+  issue,
+  onRefresh,
   onToggleExpand,
   onToggleSelect,
-  readonly,
-  stageId,
+  plan,
+  project,
+  rolloutName,
   stage,
   task,
+  taskRuns,
 }: {
-  active: boolean;
+  currentUser: User;
+  deepLinked: boolean;
   isExpanded: boolean;
   isSelected: boolean;
   isSelectable: boolean;
-  onToggleExpand: () => void;
-  onToggleSelect: () => void;
-  readonly: boolean;
-  stageId: string;
+  issue?: Issue;
+  onRefresh: () => Promise<void>;
+  onToggleExpand: (task: Task) => void;
+  onToggleSelect: (task: Task) => void;
+  plan: Plan;
+  project: Project;
+  rolloutName: string;
   stage: Stage;
   task: Task;
+  // This task's runs, newest first (grouped upstream with stable identities).
+  taskRuns: TaskRun[];
 }) {
   const { t } = useTranslation();
-  const page = usePlanDetailContext();
-  const taskRunsForTask = useMemo(
-    () =>
-      page.taskRuns.filter((run) =>
-        run.name.startsWith(`${task.name}/taskRuns/`)
-      ),
-    [page.taskRuns, task.name]
-  );
-  const latestTaskRun = taskRunsForTask[taskRunsForTask.length - 1];
+  const latestTaskRun = taskRuns[0];
   const [action, setAction] = useState<
     PlanDetailTaskRolloutAction | undefined
   >();
   const [actionOpen, setActionOpen] = useState(false);
   const [rollbackOpen, setRollbackOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // A deep link (?taskId=) brings its card into view once. `deepLinked` only
+  // changes with the route, so polling re-renders don't re-trigger the scroll.
+  // Skip when the card top is already on screen — opening a card writes its own
+  // ?taskId=, and the card the user just clicked must not yank the viewport.
+  const hostRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!deepLinked) {
+      return;
+    }
+    const host = hostRef.current;
+    if (!host) {
+      return;
+    }
+    const { top } = host.getBoundingClientRect();
+    const alreadyVisible = top >= 0 && top <= window.innerHeight * 0.8;
+    if (!alreadyVisible) {
+      host.scrollIntoView({ block: "center" });
+    }
+  }, [deepLinked]);
   const isReleaseTask = isReleaseBasedTask(task);
   const {
     isLoading: isStatementLoading,
@@ -88,8 +106,10 @@ export function DeployTaskItem({
     enabled: isExpanded && !isReleaseTask,
     task,
   });
-  const releaseName = releaseNameOfTaskV1(task);
   const { canCancel, canRun, canSkip } = useDeployTaskActions({
+    currentUser,
+    issue,
+    project,
     stage,
     task,
   });
@@ -103,9 +123,14 @@ export function DeployTaskItem({
     task.runTime && task.status === Task_Status.PENDING
       ? getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
       : 0;
-  const timingDisplay = latestTaskRun ? getTaskRunDuration(latestTaskRun) : "";
-  const executorEmail =
-    latestTaskRun?.creator.match(/users\/([^/]+)/)?.[1] ?? "";
+  // Same duration source as the history sheet, so the card and the sheet
+  // render identical strings for the same run.
+  const latestRunDuration = latestTaskRun
+    ? executionDurationOfTaskRun(latestTaskRun)
+    : undefined;
+  const timingDisplay = latestRunDuration
+    ? humanizeDurationV1(latestRunDuration)
+    : "";
   const collapsedContextInfo =
     task.status === Task_Status.DONE ? timingDisplay : "";
   const collapsedStatusText =
@@ -119,10 +144,11 @@ export function DeployTaskItem({
   const actionItems = [
     {
       key: "RUN" as const,
-      label:
-        task.status === Task_Status.FAILED
-          ? t("common.retry")
-          : t("common.run"),
+      // Match the stage/plan-header verb: re-executing a failed or canceled
+      // task is "Rerun"; a fresh execution is "Run".
+      label: isRerunnableTaskStatus(task.status)
+        ? t("plan.lifecycle.rerun")
+        : t("plan.lifecycle.run"),
       visible: canRun,
     },
     {
@@ -136,223 +162,51 @@ export function DeployTaskItem({
       visible: canCancel,
     },
   ].filter((item) => item.visible);
-  const showHeaderActions =
-    isExpanded && (actionItems.length > 0 || Boolean(rollbackableTaskRun));
-  const isClickableCollapsed = !readonly && !isExpanded;
+  // Read only in the expanded branch; databaseForTask does store lookups, so
+  // don't pay for it on collapsed cards.
+  const databaseEngine =
+    isExpanded && latestTaskRun
+      ? databaseForTask(project, task, plan).instanceResource?.engine
+      : undefined;
 
   return (
     <>
-      <div
-        className={cn(
-          "group relative rounded-lg border bg-white transition-all",
-          active && "border-accent bg-accent/5",
-          isClickableCollapsed && "cursor-pointer hover:bg-control-bg"
-        )}
-        onClick={isClickableCollapsed ? onToggleExpand : undefined}
-      >
-        <div
-          className={
-            isExpanded ? "space-y-3 py-4 pl-3 pr-4" : "py-2.5 pl-3 pr-4"
-          }
-        >
-          <div
-            className={cn(
-              "flex justify-between gap-x-3",
-              isExpanded
-                ? "flex-col gap-y-2 sm:flex-row sm:items-center"
-                : "items-center"
-            )}
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-x-2">
-              <Checkbox
-                checked={isSelected}
-                className="shrink-0"
-                disabled={!isSelectable}
-                onCheckedChange={() => onToggleSelect()}
-                onClick={(event) => event.stopPropagation()}
-              />
-              <TaskStatusIcon
-                size={isExpanded ? "large" : "small"}
-                status={task.status}
-              />
-              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                <PlanTargetDisplay size="md" target={task.target} />
-                {isExpanded && !readonly && (
-                  <RouterLink
-                    to={{
-                      query: {
-                        phase: "deploy",
-                        stageId,
-                        taskId: task.name.split("/").pop(),
-                      },
-                    }}
-                    className="flex shrink-0 items-center gap-x-1 text-xs text-accent transition-opacity hover:opacity-80"
-                  >
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>{t("common.view-details")}</span>
-                  </RouterLink>
-                )}
-                {isExpanded && scheduledTimeTs > 0 && (
-                  <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
-                    <LoaderCircle className="h-3 w-3 animate-spin" />
-                    <HumanizeTs ts={scheduledTimeTs} />
-                  </span>
-                )}
-              </div>
-              {!isExpanded && (
-                <div className="ml-auto shrink-0 text-xs text-gray-500">
-                  {scheduledTimeTs > 0 ? (
-                    <span className="flex items-center gap-x-1 text-blue-600">
-                      <LoaderCircle className="h-3 w-3 animate-spin" />
-                      <HumanizeTs ts={scheduledTimeTs} />
-                    </span>
-                  ) : task.status === Task_Status.RUNNING && timingDisplay ? (
-                    <span className="flex items-center gap-x-1 text-blue-600">
-                      <LoaderCircle className="h-3 w-3 animate-spin" />
-                      {timingDisplay}
-                    </span>
-                  ) : collapsedContextInfo ? (
-                    <span>{collapsedContextInfo}</span>
-                  ) : null}
-                </div>
-              )}
-            </div>
-
-            {(showHeaderActions || !readonly) && (
-              <div className="flex shrink-0 items-center gap-x-2 max-sm:justify-end">
-                {showHeaderActions && (
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {actionItems.map((item) => (
-                      <Button
-                        key={item.key}
-                        onClick={() => {
-                          setAction(item.key);
-                          setActionOpen(true);
-                        }}
-                        size="xs"
-                        appearance={item.key === "RUN" ? "solid" : "outline"}
-                      >
-                        {item.key === "RUN" && <Play className="h-3 w-3" />}
-                        {item.key === "SKIP" && (
-                          <SkipForward className="h-3 w-3" />
-                        )}
-                        {item.key === "CANCEL" && <X className="h-3 w-3" />}
-                        {item.label}
-                      </Button>
-                    ))}
-                    {rollbackableTaskRun && (
-                      <Button
-                        onClick={() => setRollbackOpen(true)}
-                        size="xs"
-                        appearance="outline"
-                      >
-                        {t("common.rollback")}
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {!readonly && (
-                  <Button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleExpand();
-                    }}
-                    size="xs"
-                    appearance="secondary"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-500" />
-                    )}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {!isExpanded && collapsedStatusText && (
-            <div className="mt-1 flex items-center gap-x-2 text-xs">
-              {latestTaskRun?.createTime && (
-                <span className="rounded-full border bg-gray-50 px-2 py-0.5 text-gray-500">
-                  <HumanizeTs
-                    ts={
-                      getTimeForPbTimestampProtoEs(
-                        latestTaskRun.createTime,
-                        0
-                      ) / 1000
-                    }
-                  />
-                </span>
-              )}
-              <span
-                className={cn(
-                  "truncate",
-                  task.status === Task_Status.FAILED
-                    ? "text-error"
-                    : "italic text-gray-500"
-                )}
-              >
-                {collapsedStatusText}
-              </span>
-            </div>
-          )}
-
+      <div className="group rounded-lg border bg-white" ref={hostRef}>
+        {/* Same padding in both modes: the header row is button-height (h-6)
+            either way, so expanding only reveals content below — nothing
+            above the fold moves. */}
+        <div className={cn("py-2.5 pl-3 pr-4", isExpanded && "space-y-3")}>
+          <DeployTaskHeader
+            actionItems={actionItems}
+            collapsedContextInfo={collapsedContextInfo}
+            collapsedStatusText={collapsedStatusText}
+            isExpanded={isExpanded}
+            isSelectable={isSelectable}
+            isSelected={isSelected}
+            latestTaskRun={latestTaskRun}
+            onAction={(nextAction) => {
+              setAction(nextAction);
+              setActionOpen(true);
+            }}
+            onRollback={() => setRollbackOpen(true)}
+            onToggleExpand={() => onToggleExpand(task)}
+            onToggleSelect={() => onToggleSelect(task)}
+            scheduledTimeTs={scheduledTimeTs}
+            showRollback={Boolean(rollbackableTaskRun)}
+            task={task}
+            timingDisplay={timingDisplay}
+          />
           {isExpanded && (
-            <div className="space-y-3">
-              <DeployTaskSkippedReason task={task} />
-              {!isReleaseTask ? (
-                <div>
-                  <div className="mb-1 text-sm font-medium text-gray-700">
-                    {t("common.statement")}
-                  </div>
-                  {isStatementLoading ? (
-                    <div className="rounded-sm border p-3 text-sm text-control-light">
-                      {t("common.loading")}
-                    </div>
-                  ) : statement ? (
-                    <>
-                      <ReadonlyMonaco
-                        className={cn(
-                          "relative rounded border text-sm",
-                          isTruncated && "rounded-b-none"
-                        )}
-                        content={statement}
-                        language="sql"
-                        min={128}
-                        max={256}
-                      />
-                      {isTruncated && (
-                        <div className="rounded-b border border-t-0 bg-gray-50 px-3 py-1.5 text-xs text-gray-500">
-                          {t("rollout.task.statement-truncated-hint")}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="rounded-sm border p-3 text-sm text-control-light">
-                      {t("common.no-data")}
-                    </div>
-                  )}
-                </div>
-              ) : releaseName ? (
-                <DeployReleaseInfoCard releaseName={releaseName} />
-              ) : null}
-
-              {latestTaskRun && (
-                <DeployLatestTaskRunInfo
-                  duration={
-                    task.status !== Task_Status.PENDING
-                      ? timingDisplay
-                      : undefined
-                  }
-                  executorEmail={executorEmail}
-                  status={latestTaskRun.status}
-                  taskRunName={latestTaskRun.name}
-                  updateTime={latestTaskRun.updateTime}
-                />
-              )}
-            </div>
+            <DeployTaskBody
+              databaseEngine={databaseEngine}
+              historyCount={taskRuns.length}
+              isStatementLoading={isStatementLoading}
+              isTruncated={isTruncated}
+              latestTaskRun={latestTaskRun}
+              onShowHistory={() => setHistoryOpen(true)}
+              statement={statement}
+              task={task}
+            />
           )}
         </div>
       </div>
@@ -361,7 +215,7 @@ export function DeployTaskItem({
         <PlanDetailTaskRolloutActionPanel
           action={action}
           onConfirm={async () => {
-            await page.refreshState();
+            await onRefresh();
           }}
           onOpenChange={(open) => {
             setActionOpen(open);
@@ -379,10 +233,20 @@ export function DeployTaskItem({
           items={[{ task, taskRun: rollbackableTaskRun }]}
           onOpenChange={setRollbackOpen}
           open={rollbackOpen}
-          projectName={`projects/${page.projectId}`}
-          rolloutName={page.rollout?.name ?? ""}
+          projectName={project.name}
+          rolloutName={rolloutName}
+        />
+      )}
+
+      {/* Only openable when the History (n) control renders (>1 run); run
+          lists only grow, so this never unmounts while open. */}
+      {taskRuns.length > 1 && (
+        <DeployTaskRunHistorySheet
+          onOpenChange={setHistoryOpen}
+          open={historyOpen}
+          taskRuns={taskRuns}
         />
       )}
     </>
   );
-}
+});

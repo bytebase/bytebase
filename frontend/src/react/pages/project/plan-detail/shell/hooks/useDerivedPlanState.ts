@@ -1,51 +1,46 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { sortTaskRunsNewestFirst } from "@/react/lib/taskRun";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { extractTaskNameFromTaskRunName } from "@/utils";
 import type {
   PlanDetailPageSnapshot,
   PlanDetailPageState,
   PlanDetailPhase,
 } from "./types";
 import type { useEditingScopes } from "./useEditingScopes";
-import type { useLayoutMode } from "./useLayoutMode";
 import type { usePhaseState } from "./usePhaseState";
 
 type EditingScopes = ReturnType<typeof useEditingScopes>;
-type Layout = ReturnType<typeof useLayoutMode>;
 type PhaseState = ReturnType<typeof usePhaseState>;
 
 export function useDerivedPlanState(params: {
   snapshot: PlanDetailPageSnapshot;
   isEditing: boolean;
-  isRefreshing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;
   phase: PhaseState;
   editing: EditingScopes;
-  layout: Layout;
   routeName?: string;
   routePhase?: PlanDetailPhase;
   routeStageId?: string;
   routeTaskId?: string;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
   refreshState: () => Promise<void>;
-  closeTaskPanel: () => void;
   resolveLeaveConfirm: (confirmed: boolean) => void;
 }): PlanDetailPageState {
   const {
     snapshot,
     isEditing,
-    isRefreshing,
     isRunningChecks,
     setIsRunningChecks,
     phase,
     editing,
-    layout,
     routeName,
     routePhase,
     routeStageId,
     routeTaskId,
     patchState,
     refreshState,
-    closeTaskPanel,
     resolveLeaveConfirm,
   } = params;
 
@@ -64,36 +59,65 @@ export function useDerivedPlanState(params: {
     return undefined;
   }, [routeTaskId, snapshot.rollout]);
 
+  // Group the plan's task runs by task once for all consumers (every
+  // kept-alive stage list reads from this map), reusing a task's previous
+  // group array when all its runs kept their references — the snapshot gate's
+  // per-run sharing makes that the common case — so memoized cards see stable
+  // taskRuns/latestTaskRun props across poll ticks that only touched other
+  // tasks.
+  const taskRunsByTaskNameRef = useRef<Map<string, TaskRun[]>>(new Map());
+  const taskRunsByTaskName = useMemo(() => {
+    const prevGroups = taskRunsByTaskNameRef.current;
+    const grouped = new Map<string, TaskRun[]>();
+    for (const run of snapshot.taskRuns) {
+      const taskName = extractTaskNameFromTaskRunName(run.name);
+      const group = grouped.get(taskName);
+      if (group) {
+        group.push(run);
+      } else {
+        grouped.set(taskName, [run]);
+      }
+    }
+    for (const [taskName, runs] of grouped) {
+      const sorted = sortTaskRunsNewestFirst(runs);
+      const prevRuns = prevGroups.get(taskName);
+      grouped.set(
+        taskName,
+        prevRuns &&
+          prevRuns.length === sorted.length &&
+          sorted.every((run, index) => run === prevRuns[index])
+          ? prevRuns
+          : sorted
+      );
+    }
+    taskRunsByTaskNameRef.current = grouped;
+    return grouped;
+  }, [snapshot.taskRuns]);
+
   return useMemo(
     () => ({
       ...snapshot,
       isEditing,
-      isRefreshing,
       isRunningChecks,
       setIsRunningChecks,
       activePhases: phase.activePhases,
       routeName,
       routePhase,
       routeStageId,
-      routeTaskId,
       selectedTaskName,
+      taskRunsByTaskName,
       pendingLeaveConfirm: editing.pendingLeaveConfirm,
-      layoutMode: layout.layoutMode,
-      containerWidth: layout.containerWidth,
       bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
       patchState,
       refreshState,
       setEditing: editing.setEditing,
       togglePhase: phase.togglePhase,
       expandPhase: phase.expandPhase,
-      closeTaskPanel,
       resolveLeaveConfirm,
     }),
     [
-      closeTaskPanel,
       editing,
       isEditing,
-      isRefreshing,
       isRunningChecks,
       patchState,
       phase,
@@ -102,10 +126,9 @@ export function useDerivedPlanState(params: {
       routeName,
       routePhase,
       routeStageId,
-      routeTaskId,
-      layout,
       selectedTaskName,
       snapshot,
+      taskRunsByTaskName,
     ]
   );
 }

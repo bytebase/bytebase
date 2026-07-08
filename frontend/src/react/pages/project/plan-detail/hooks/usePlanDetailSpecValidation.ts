@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useAppStore } from "@/react/stores/app";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
-import { getLocalSheetByName } from "../utils/localSheet";
+import {
+  getLocalSheetByName,
+  getLocalSheetsVersion,
+  subscribeLocalSheets,
+} from "../utils/localSheet";
 
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
   if (
@@ -43,6 +47,13 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
   const [emptySpecIdSet, setEmptySpecIdSet] = useState<Set<string>>(
     () => new Set()
   );
+  // Draft statements live in mutable local sheets outside React state; this
+  // version bumps on every local-sheet write so edits re-run the validation
+  // (the `specs` identity alone doesn't change while typing on a draft plan).
+  const localSheetsVersion = useSyncExternalStore(
+    subscribeLocalSheets,
+    getLocalSheetsVersion
+  );
 
   useEffect(() => {
     let canceled = false;
@@ -66,7 +77,7 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
     return () => {
       canceled = true;
     };
-  }, [specs]);
+  }, [specs, localSheetsVersion]);
 
   return {
     emptySpecIdSet,

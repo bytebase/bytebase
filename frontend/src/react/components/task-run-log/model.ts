@@ -74,7 +74,7 @@ export const formatTime = (timestamp?: Timestamp): string => {
   );
 };
 
-export const formatDuration = (ms: number): string => {
+const formatDuration = (ms: number): string => {
   if (ms < 1) return "<1ms";
   if (ms < 1000) return `${ms.toFixed(0)}ms`;
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
@@ -243,7 +243,7 @@ export const groupEntriesByReplica = (
   return grouped;
 };
 
-export const getEntryTimeRange = (
+const getEntryTimeRange = (
   entry: TaskRunLogEntry
 ): { start: number; end: number } => {
   switch (entry.type) {
