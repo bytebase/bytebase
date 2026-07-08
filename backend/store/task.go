@@ -78,6 +78,17 @@ type TaskStatusCount struct {
 	Count       int32
 }
 
+// IssueApprovalGuard carries the approval-input version used for rollout
+// creation. When issue approval is required, it also carries the issue approval
+// snapshot that the API layer has already accepted. The store uses it only as a
+// race guard: the plan must still be on this version and, when Approval is set,
+// the locked issue row must still have the same approval payload.
+type IssueApprovalGuard struct {
+	IssueUID             int64
+	ApprovalInputVersion int64
+	Approval             *storepb.IssuePayloadApproval
+}
+
 // GetTaskByID gets a task by ID.
 func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int64) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ProjectID: projectID, ID: &id})
@@ -496,31 +507,43 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 }
 
 // CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
-// If approvalInputVersion is set, the transaction creates no tasks unless the plan
-// still has that approval input version. If approvalIssueUID is also set, the
-// transaction additionally requires the issue approval to still be done for that
-// approval input version.
-func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, approvalInputVersion *int64, approvalIssueUID *int64, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+// If issueApprovalGuard is set, the transaction creates no tasks unless the plan
+// still has that approval input version. The API layer owns the "is this issue
+// approved" policy check before calling this method; the store only verifies
+// that the locked issue approval payload still matches the approved snapshot.
+func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, issueApprovalGuard *IssueApprovalGuard, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
-	if approvalIssueUID != nil {
-		var lockedIssueUID int64
+	var approvalInputVersion *int64
+	if issueApprovalGuard != nil {
+		approvalInputVersion = &issueApprovalGuard.ApprovalInputVersion
+	}
+
+	if issueApprovalGuard != nil && issueApprovalGuard.Approval != nil {
+		var payload []byte
 		if err := tx.QueryRowContext(ctx, `
-			SELECT id
+			SELECT payload
 			FROM issue
 			WHERE project = $1
 			  AND id = $2
 			  AND plan_id = $3
 			FOR UPDATE`,
-			projectID, approvalIssueUID, planUID).Scan(&lockedIssueUID); err != nil {
+			projectID, issueApprovalGuard.IssueUID, planUID).Scan(&payload); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return false, nil, nil
 			}
 			return false, nil, errors.Wrapf(err, "failed to lock issue approval")
+		}
+		current, err := isIssueApprovalPayloadSameAsGuard(payload, issueApprovalGuard)
+		if err != nil {
+			return false, nil, err
+		}
+		if !current {
+			return false, nil, nil
 		}
 	}
 
@@ -542,20 +565,8 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 			$4::bigint IS NULL
 			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
 		  )
-		  AND (
-			$5::bigint IS NULL
-			OR EXISTS (
-				SELECT 1
-				FROM issue
-				WHERE issue.project = plan.project
-				  AND issue.id = $5
-				  AND issue.plan_id = plan.id
-				  AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false)
-				  AND COALESCE((issue.payload->'approval'->>'approvalInputVersion')::bigint, 0) = $4
-			)
-		  )
 		RETURNING id`,
-		time.Now(), projectID, planUID, approvalInputVersion, approvalIssueUID).Scan(&updatedPlanUID); err != nil {
+		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil, nil
 		}
@@ -571,6 +582,24 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	}
 
 	return true, tasks, nil
+}
+
+func isIssueApprovalPayloadSameAsGuard(payload []byte, guard *IssueApprovalGuard) (bool, error) {
+	if guard == nil || guard.Approval == nil {
+		return false, nil
+	}
+	if guard.Approval.GetApprovalInputVersion() != guard.ApprovalInputVersion {
+		return false, nil
+	}
+	issuePayload := &storepb.Issue{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issuePayload); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal issue payload")
+	}
+	approval := issuePayload.GetApproval()
+	if approval == nil || !approval.GetApprovalFindingDone() {
+		return false, nil
+	}
+	return approval.Equal(guard.Approval), nil
 }
 
 func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {

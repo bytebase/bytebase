@@ -493,7 +493,7 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRollout(t *testing.
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 

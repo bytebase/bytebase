@@ -56,7 +56,7 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -189,7 +189,18 @@ func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Targets: []string{"instances/prod/databases/app"},
+						},
+					},
+				},
+			},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 

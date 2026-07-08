@@ -114,7 +114,7 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	staleVersion := int64(1)
-	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &staleVersion, nil, nil)
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: staleVersion}, nil)
 	require.NoError(t, err)
 	require.False(t, updated)
 	require.Empty(t, createdTasks)
@@ -126,7 +126,7 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	requirePlanSpecID(t, got.Config, "spec-a")
 
 	currentVersion := int64(2)
-	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &currentVersion, nil, nil)
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: currentVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
 	require.Empty(t, createdTasks)
@@ -164,6 +164,15 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone:  true,
 				ApprovalInputVersion: 2,
+				ApprovalTemplate: &storepb.ApprovalTemplate{
+					Flow: &storepb.ApprovalFlow{Roles: []string{"roles/sql-reviewer"}},
+				},
+				Approvers: []*storepb.IssuePayloadApproval_Approver{
+					{
+						Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+						Principal: "users/reviewer@example.com",
+					},
+				},
 			},
 		},
 		PlanUID: &plan.UID,
@@ -171,6 +180,8 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
+	approvedIssueApproval := &storepb.IssuePayloadApproval{}
+	proto.Merge(approvedIssueApproval, issue.Payload.GetApproval())
 	updatedIssue, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{Labels: []string{"security"}},
 		ConditionalPayloadUpsert: &storepb.Issue{
@@ -187,7 +198,11 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
 	require.Equal(t, []string{"security"}, updatedIssue.Payload.Labels)
 
-	updatedRollout, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, &issue.UID, nil)
+	updatedRollout, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{
+		IssueUID:             issue.UID,
+		ApprovalInputVersion: approvalInputVersion,
+		Approval:             approvedIssueApproval,
+	}, nil)
 	require.NoError(t, err)
 	require.False(t, updatedRollout)
 	require.Empty(t, createdTasks)
@@ -198,19 +213,49 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
 
 	labels := []string{"security"}
-	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+	recomputedIssue, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone:  true,
 				ApprovalInputVersion: 2,
+				ApprovalTemplate: &storepb.ApprovalTemplate{
+					Flow: &storepb.ApprovalFlow{Roles: []string{"roles/sql-reviewer"}},
+				},
+				Approvers: []*storepb.IssuePayloadApproval_Approver{
+					{
+						Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+						Principal: "users/other-reviewer@example.com",
+					},
+				},
 			},
 		},
 		RequirePlanApprovalInputVersion: &approvalInputVersion,
 		RequireLabels:                   &labels,
 	})
 	require.NoError(t, err)
+	require.False(t, approvedIssueApproval.Equal(recomputedIssue.Payload.GetApproval()))
 
-	updatedRollout, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, &issue.UID, nil)
+	updatedRollout, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{
+		IssueUID:             issue.UID,
+		ApprovalInputVersion: approvalInputVersion,
+		Approval:             approvedIssueApproval,
+	}, nil)
+	require.NoError(t, err)
+	require.False(t, updatedRollout)
+	require.Empty(t, createdTasks)
+
+	got, err = s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.False(t, got.Config.GetHasRollout())
+	require.EqualValues(t, 2, got.Config.GetApprovalInputVersion())
+
+	currentIssueApproval := &storepb.IssuePayloadApproval{}
+	proto.Merge(currentIssueApproval, recomputedIssue.Payload.GetApproval())
+	updatedRollout, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{
+		IssueUID:             issue.UID,
+		ApprovalInputVersion: approvalInputVersion,
+		Approval:             currentIssueApproval,
+	}, nil)
 	require.NoError(t, err)
 	require.True(t, updatedRollout)
 	require.Empty(t, createdTasks)
@@ -233,7 +278,7 @@ func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
 	}, "creator@example.com")
 	require.NoError(t, err)
 
-	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, nil, []*store.TaskMessage{
+	updated, createdTasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
 		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
 	})
 	require.NoError(t, err)
@@ -244,7 +289,7 @@ func TestCreateRolloutTasksAddsMissingTasksAfterRolloutExists(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, got.Config.GetHasRollout())
 
-	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, nil, []*store.TaskMessage{
+	updated, createdTasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, []*store.TaskMessage{
 		newTestRolloutTask("instance-a", "database-a", "sheet-a"),
 		newTestRolloutTask("instance-a", "database-b", "sheet-b"),
 	})
@@ -275,7 +320,7 @@ func TestUpdatePlanRequireNoRolloutDoesNotOverwriteRollout(t *testing.T) {
 	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
 
 	approvalInputVersion := int64(1)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -314,7 +359,7 @@ func TestUpdatePlanRequireNoRolloutRejectsConfigUpdateAfterRollout(t *testing.T)
 	staleConfig.Specs = []*storepb.PlanConfig_Spec{{Id: "spec-b"}}
 
 	approvalInputVersion := int64(1)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -834,7 +879,7 @@ func TestUpdateIssueWithPlanApprovalInputVersionLabelsAndNoRolloutGuardsSkipsAft
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -888,7 +933,7 @@ func TestUpdateIssueConditionalPayloadSkipsAfterRolloutButMainUpdateApplies(t *t
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -976,7 +1021,7 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalDoesNotResetAfterRollout(t *testi
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil, nil)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
