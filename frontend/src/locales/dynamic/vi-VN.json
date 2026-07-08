@@ -189,6 +189,10 @@
         "desc": "Kết nối cơ sở dữ liệu an toàn với mã hóa SSL/TLS.",
         "title": "Kết nối SSL"
       },
+      "FEATURE_JIT": {
+        "desc": "Cho phép người dùng yêu cầu quyền truy cập cơ sở dữ liệu tạm thời kèm phê duyệt.",
+        "title": "Truy cập Just-In-Time"
+      },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "Áp dụng cùng một thay đổi cho nhiều cơ sở dữ liệu trên các tenant hoặc phân vùng khác nhau.",
         "title": "Thay đổi hàng loạt nhiều cơ sở dữ liệu"

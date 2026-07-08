@@ -55,8 +55,8 @@ export const storageKeyLastActivity = (email: string) =>
   `bb.last-activity.${email}`;
 export const storageKeyCollapseState = (email: string) =>
   `bb.collapse-state.${email}`;
-export const storageKeyIntroState = (email: string) =>
-  `bb.intro-state.${email}`;
+export const storageKeyIntroState = (scope: string, email: string) =>
+  withScope("bb.intro-state", scope, email);
 // Workspace-scoped: value keys embed project resource names.
 export const storageKeyIamRemind = (scope: string, email: string) =>
   withScope("bb.iam-remind", scope, email);

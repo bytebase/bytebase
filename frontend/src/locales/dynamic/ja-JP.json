@@ -189,6 +189,10 @@
         "desc": "SSL/TLS暗号化による安全なデータベース接続。",
         "title": "SSL接続"
       },
+      "FEATURE_JIT": {
+        "desc": "ユーザーが承認付きで一時的なデータベースアクセスをリクエストできます。",
+        "title": "Just-In-Timeアクセス"
+      },
       "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
         "desc": "異なるテナントやパーティション間で複数のデータベースに同じ変更を適用します。",
         "title": "複数データベースバッチ変更"
