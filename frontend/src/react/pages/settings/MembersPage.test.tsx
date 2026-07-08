@@ -11,8 +11,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { mockPushNotification, mockUpdateProjectIamPolicy } = vi.hoisted(() => ({
+const {
+  mockGetIntroStateByKey,
+  mockPushNotification,
+  mockSaveIntroStateByKey,
+  mockUpdateProjectIamPolicy,
+} = vi.hoisted(() => ({
+  mockGetIntroStateByKey: vi.fn(),
   mockPushNotification: vi.fn(),
+  mockSaveIntroStateByKey: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
 }));
 
@@ -314,6 +321,8 @@ vi.mock("@/react/stores/app", () => {
     getOrFetchSettingByName: vi.fn(),
     getSettingByName: () => undefined,
     getWorkspaceProfile: () => ({}),
+    getIntroStateByKey: mockGetIntroStateByKey,
+    saveIntroStateByKey: mockSaveIntroStateByKey,
   });
   const useAppStore = (selector?: (state: unknown) => unknown) =>
     selector ? selector(buildState()) : buildState();
@@ -342,6 +351,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetIntroStateByKey.mockReturnValue(false);
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -370,6 +380,16 @@ async function flush(): Promise<void> {
 }
 
 describe("MembersPage project role grant drawer", () => {
+  it("marks the member quick-start item visited on mount", async () => {
+    await renderPage();
+
+    expect(mockGetIntroStateByKey).toHaveBeenCalledWith("member.visit");
+    expect(mockSaveIntroStateByKey).toHaveBeenCalledWith({
+      key: "member.visit",
+      newState: true,
+    });
+  });
+
   it("uses the graphical expression editor for database CEL scope", async () => {
     await renderPage();
 

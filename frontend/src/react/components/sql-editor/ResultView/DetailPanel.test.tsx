@@ -154,16 +154,24 @@ const flushAsyncRender = async () => {
 
 const waitForAssertion = async (assertion: () => void) => {
   let lastError: unknown;
-  for (let i = 0; i < 20; i++) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
     await flushAsyncRender();
     try {
       assertion();
       return;
     } catch (err) {
       lastError = err;
+      await new Promise((resolve) => window.setTimeout(resolve, 10));
     }
   }
   throw lastError;
+};
+
+const getDetailSearchControl = (input: HTMLInputElement) => {
+  const searchControl = input.closest("[data-testid='detail-search-control']");
+  expect(searchControl).toBeInstanceOf(HTMLDivElement);
+  return searchControl as HTMLDivElement;
 };
 
 const getDetailContentRegion = (expectedText = "longbridge") => {
@@ -396,12 +404,13 @@ describe("DetailPanel", () => {
       "input[aria-label='sql-editor.result-detail.search']"
     ) as HTMLInputElement | null;
     expect(input).toBeInstanceOf(HTMLInputElement);
+    const searchControl = getDetailSearchControl(input!);
 
     act(() => {
       setInputValue(input!, "needle");
     });
     await waitForAssertion(() => {
-      expect(document.body.textContent).toContain("1 / 2");
+      expect(searchControl.textContent).toContain("1 / 2");
     });
     scrolledContent.length = 0;
 

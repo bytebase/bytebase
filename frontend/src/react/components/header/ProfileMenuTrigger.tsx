@@ -137,7 +137,7 @@ export function ProfileMenuTrigger({
           />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-56 p-0">
+        <DropdownMenuContent className="w-56 max-h-none overflow-visible p-0">
           <DropdownMenuItem
             className="block w-full px-4 py-3"
             onClick={handleProfileNavigate}

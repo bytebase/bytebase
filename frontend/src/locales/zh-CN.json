@@ -1896,7 +1896,7 @@
     "visit-database": "访问数据库",
     "visit-environment": "访问环境",
     "visit-instance": "访问实例",
-    "visit-member": "访问成员 | 成员",
+    "visit-member": "访问成员",
     "visit-project": "访问项目"
   },
   "refresh-remind": {},
