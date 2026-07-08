@@ -130,7 +130,7 @@ export function RequestQueryButton({
   }, [permissionDeniedDetail.resources]);
 
   const available = useMemo(
-    () => !!project?.allowRequestRole || !!project?.allowJustInTimeAccess,
+    () => !!project?.allowRequestRole || useJIT,
     [project]
   );
 
