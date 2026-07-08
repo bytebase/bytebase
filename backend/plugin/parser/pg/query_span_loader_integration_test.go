@@ -73,6 +73,86 @@ func TestLoaderIntegration_BYT9215_BadQuotedIdentifier(t *testing.T) {
 	}
 }
 
+func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "app",
+			},
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{{
+					Name: "customer",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "ssn", Type: "text"},
+					},
+				}},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{meta})
+	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, base.Statement{Text: `SELECT ssn FROM customer`}, "db", "app", false)
+	if err != nil {
+		t.Fatalf("GetQuerySpan: %v", err)
+	}
+	if len(span.Results) != 1 {
+		t.Fatalf("got %d results, want 1", len(span.Results))
+	}
+	want := base.ColumnResource{Database: "db", Schema: "public", Table: "customer", Column: "ssn"}
+	if _, ok := span.Results[0].SourceColumns[want]; !ok {
+		t.Fatalf("result %q missing public fallback source %+v; have %+v", span.Results[0].Name, want, span.Results[0].SourceColumns)
+	}
+	wantAccess := base.ColumnResource{Database: "db", Schema: "public", Table: "customer"}
+	if _, ok := span.SourceColumns[wantAccess]; !ok {
+		t.Fatalf("span missing public fallback access source %+v; have %+v", wantAccess, span.SourceColumns)
+	}
+}
+
+func TestGetQuerySpanSelectedSchemaTakesPrecedenceOverPublic(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "app",
+				Tables: []*storepb.TableMetadata{{
+					Name: "customer",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "email", Type: "text"},
+					},
+				}},
+			},
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{{
+					Name: "customer",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "ssn", Type: "text"},
+					},
+				}},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{meta})
+	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, base.Statement{Text: `SELECT email FROM customer`}, "db", "app", false)
+	if err != nil {
+		t.Fatalf("GetQuerySpan: %v", err)
+	}
+	if len(span.Results) != 1 {
+		t.Fatalf("got %d results, want 1", len(span.Results))
+	}
+	want := base.ColumnResource{Database: "db", Schema: "app", Table: "customer", Column: "email"}
+	if _, ok := span.Results[0].SourceColumns[want]; !ok {
+		t.Fatalf("result %q missing selected-schema source %+v; have %+v", span.Results[0].Name, want, span.Results[0].SourceColumns)
+	}
+}
+
 func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {
 	// Real failure chain: table references a user-defined type that does
 	// not exist in metadata. Real install of the table fails (omni cannot
