@@ -66,7 +66,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.CreateStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -153,7 +153,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.CreateTableAsStmt:
 			if n.Into != nil && n.Into.Rel != nil {
-				db, schema, table := extractRangeVarNames(n.Into.Rel, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(n.Into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -161,7 +161,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause,
 			// which may sit on the first arm of a set operation).
 			if into := omniIntoClause(n); into != nil && into.Rel != nil {
-				db, schema, table := extractRangeVarNames(into.Rel, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -209,6 +209,27 @@ func extractExistingRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath
 	return db, schema, table
 }
 
+func extractNewRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []string, dbMetadata *model.DatabaseMetadata) (string, string, string) {
+	db, schema, table := extractRangeVarNames(rv, defaultDB, searchPath)
+	if rv.Schemaname == "" && len(searchPath) > 1 && dbMetadata.GetSchemaMetadata(schema) == nil {
+		schema = ""
+	}
+	return db, schema, table
+}
+
+func searchRelationObject(dbMetadata *model.DatabaseMetadata, searchPath []string, name string) string {
+	for _, schemaName := range searchPath {
+		schema := dbMetadata.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			continue
+		}
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil {
+			return schema.GetProto().GetName()
+		}
+	}
+	return ""
+}
+
 // handleDropTableOmni handles DROP TABLE/MATERIALIZED VIEW.
 func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
 	if n.Objects == nil {
@@ -232,19 +253,6 @@ func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, 
 		}
 		changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: name}, true)
 	}
-}
-
-func searchRelationObject(dbMetadata *model.DatabaseMetadata, searchPath []string, name string) string {
-	for _, schemaName := range searchPath {
-		schema := dbMetadata.GetSchemaMetadata(schemaName)
-		if schema == nil {
-			continue
-		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil {
-			return schema.GetProto().GetName()
-		}
-	}
-	return ""
 }
 
 // handleDropIndexOmni handles DROP INDEX.

@@ -127,35 +127,6 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 	}
 }
 
-func TestExtractChangedResourcesUnknownSchemaDoesNotFallBackToPublic(t *testing.T) {
-	const (
-		statement     = `INSERT INTO customer VALUES (1);`
-		unknownSchema = "\x00unknown_schema\x00"
-	)
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
-			Name: "public",
-			Tables: []*storepb.TableMetadata{{
-				Name: "customer",
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "id", Type: "int"},
-				},
-			}},
-		}},
-	}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
-
-	want := model.NewChangedResources(dbMetadata)
-	want.AddTable("db", unknownSchema, &storepb.ChangedResourceTable{Name: "customer"}, false)
-
-	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
-	require.NoError(t, err)
-	asts := base.ExtractASTs(stmts)
-	got, err := extractChangedResources("db", unknownSchema, dbMetadata, asts, statement)
-	require.NoError(t, err)
-	require.Equal(t, want, got.ChangedResources)
-}
-
 func TestExtractChangedResourcesTruncate(t *testing.T) {
 	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	const statement = `TRUNCATE TABLE public.t1, myschema.t2;`

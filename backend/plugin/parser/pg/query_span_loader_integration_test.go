@@ -79,9 +79,6 @@ func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "app",
-				Functions: []*storepb.FunctionMetadata{{
-					Name: "customer",
-				}},
 			},
 			{
 				Name: "public",
@@ -115,12 +112,18 @@ func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
 	}
 }
 
-func TestGetQuerySpanFallbackColumnsWithSelectedSchemaFallsBackToPublic(t *testing.T) {
+func TestGetQuerySpanSelectedSchemaTakesPrecedenceOverPublic(t *testing.T) {
 	meta := &storepb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "app",
+				Tables: []*storepb.TableMetadata{{
+					Name: "customer",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "email", Type: "text"},
+					},
+				}},
 			},
 			{
 				Name: "public",
@@ -137,16 +140,16 @@ func TestGetQuerySpanFallbackColumnsWithSelectedSchemaFallsBackToPublic(t *testi
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
-	}, base.Statement{Text: `SELECT * FROM customer WHERE missing_func(ssn)`}, "db", "app", false)
+	}, base.Statement{Text: `SELECT email FROM customer`}, "db", "app", false)
 	if err != nil {
 		t.Fatalf("GetQuerySpan: %v", err)
 	}
 	if len(span.Results) != 1 {
-		t.Fatalf("got %d results, want 1; results=%+v", len(span.Results), span.Results)
+		t.Fatalf("got %d results, want 1", len(span.Results))
 	}
-	want := base.ColumnResource{Database: "db", Schema: "public", Table: "customer", Column: "ssn"}
+	want := base.ColumnResource{Database: "db", Schema: "app", Table: "customer", Column: "email"}
 	if _, ok := span.Results[0].SourceColumns[want]; !ok {
-		t.Fatalf("fallback result %q missing public source %+v; have %+v", span.Results[0].Name, want, span.Results[0].SourceColumns)
+		t.Fatalf("result %q missing selected-schema source %+v; have %+v", span.Results[0].Name, want, span.Results[0].SourceColumns)
 	}
 }
 

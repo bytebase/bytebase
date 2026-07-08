@@ -1943,8 +1943,12 @@ func (s *SQLService) resolveWriteTargets(
 		return nil, nil
 	}
 
+	targetSchema := schemaForWriteTargetResolution(engine, database.DatabaseName, requestSchema)
+	if engine == storepb.Engine_POSTGRES {
+		targetSchema = postgresWriteTargetSchemaForRequest(requestSchema, dbMeta)
+	}
 	changeSummary, err := parserbase.ExtractChangedResources(
-		engine, database.DatabaseName, schemaForWriteTargetResolution(engine, database.DatabaseName, requestSchema), dbMeta, asts, statement,
+		engine, database.DatabaseName, targetSchema, dbMeta, asts, statement,
 	)
 	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
 		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
@@ -2002,8 +2006,7 @@ const unresolvedSchemaSentinel = "\x00bb_unresolved_schema\x00"
 func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, requestSchema string) string {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		// Execution uses QueryRequest.schema first when set, with public as a fallback
-		// in the PostgreSQL driver/parser. Without a request schema, the connection
+		// Execution uses QueryRequest.schema first when set; otherwise the connection
 		// user's default ($user, public) is not knowable here.
 		if requestSchema != "" {
 			return requestSchema
@@ -2032,6 +2035,16 @@ func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, request
 		// schema-scoped grants fail closed while table-only grants still match. SUP-222 / BYT-9698.
 		return unresolvedSchemaSentinel
 	}
+}
+
+func postgresWriteTargetSchemaForRequest(requestSchema string, dbMeta *model.DatabaseMetadata) string {
+	if requestSchema == "" {
+		return unresolvedSchemaSentinel
+	}
+	if dbMeta.GetSchemaMetadata(requestSchema) != nil {
+		return requestSchema
+	}
+	return unresolvedSchemaSentinel
 }
 
 // sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.
