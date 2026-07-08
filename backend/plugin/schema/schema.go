@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -52,7 +53,15 @@ type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetada
 // use it to select the correct normalizer, and engines that do not (PostgreSQL) take
 // `_ string`. An empty/unparseable version must fall back to the engine's default
 // stored form.
-type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string) (string, error)
+//
+// sessionCtx is the per-object session context (sql_mode / charset / collation, and
+// time_zone for events) captured on the SOURCE (current) schema. The declarative SDL
+// text is bare (a clean export carries no `SET sql_mode` framing), so the context that a
+// routine/trigger/event must be re-created under enters out-of-band here. Only MySQL
+// consumes it (to wrap recreates in a save/restore of the OLD object's context); other
+// engines have no session context and take a nil-safe `_`. A nil map means "no context"
+// (bare recreates) — the metadata↔metadata and SDL↔SDL callers pass nil.
+type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error)
 type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
@@ -272,18 +281,112 @@ func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText strin
 	return f(currentSDLText, previousUserSDLText, currentSchema)
 }
 
+// SDLSessionContext is the session state a routine/trigger/event was created under, as
+// stored in the synced metadata: sql_mode, character_set_client, collation_connection,
+// and — events only — the session time_zone. It is the engine-neutral mirror of omni's
+// catalog.SessionContext (the MySQL SDL implementation converts to it); other engines
+// never populate it. Empty strings are legal and preserved verbatim.
+type SDLSessionContext struct {
+	SQLMode             string
+	CharacterSetClient  string
+	CollationConnection string
+	TimeZone            string // events only
+}
+
+// SDLSessionContextMap carries per-object session context for a whole schema, keyed by
+// lower-cased object name within each object kind. It is the out-of-band structured input
+// bytebase hands to the MySQL SDL diff so a declarative recreate re-emits an object under
+// its ORIGINAL session context (the bare SDL text carries none). A nil map or a missing
+// entry simply leaves that object without context (a bare recreate). This lives in the
+// engine-neutral schema layer so SDLMigration can build it from synced metadata without
+// importing any engine's omni catalog; only the MySQL implementation consumes it.
+type SDLSessionContextMap struct {
+	Functions  map[string]SDLSessionContext
+	Procedures map[string]SDLSessionContext
+	Triggers   map[string]SDLSessionContext
+	Events     map[string]SDLSessionContext
+}
+
+// buildSDLSessionContextMap extracts per-object session context from the synced current
+// schema. MySQL stores functions/procedures/events on the schema and triggers on their
+// owning table; a routine/trigger carries sql_mode/charset/collation and an event also
+// carries time_zone. Keys are lower-cased object names (matching omni's identity folding).
+// Returns nil only when there is no metadata to read; otherwise it returns an allocated
+// map (with empty submaps when the schema has no such objects), which the consumer applies
+// as "no context for any object". Engines without session context (their metadata leaves
+// these fields empty) still produce a map, but only MySQL's diff consumes it.
+func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessionContextMap {
+	if currentSchema == nil {
+		return nil
+	}
+	proto := currentSchema.GetProto()
+	if proto == nil {
+		return nil
+	}
+	m := &SDLSessionContextMap{
+		Functions:  map[string]SDLSessionContext{},
+		Procedures: map[string]SDLSessionContext{},
+		Triggers:   map[string]SDLSessionContext{},
+		Events:     map[string]SDLSessionContext{},
+	}
+	for _, sm := range proto.GetSchemas() {
+		for _, fn := range sm.GetFunctions() {
+			m.Functions[strings.ToLower(fn.GetName())] = SDLSessionContext{
+				SQLMode:             fn.GetSqlMode(),
+				CharacterSetClient:  fn.GetCharacterSetClient(),
+				CollationConnection: fn.GetCollationConnection(),
+			}
+		}
+		for _, proc := range sm.GetProcedures() {
+			m.Procedures[strings.ToLower(proc.GetName())] = SDLSessionContext{
+				SQLMode:             proc.GetSqlMode(),
+				CharacterSetClient:  proc.GetCharacterSetClient(),
+				CollationConnection: proc.GetCollationConnection(),
+			}
+		}
+		for _, event := range sm.GetEvents() {
+			m.Events[strings.ToLower(event.GetName())] = SDLSessionContext{
+				SQLMode:             event.GetSqlMode(),
+				CharacterSetClient:  event.GetCharacterSetClient(),
+				CollationConnection: event.GetCollationConnection(),
+				TimeZone:            event.GetTimeZone(),
+			}
+		}
+		for _, table := range sm.GetTables() {
+			for _, trigger := range table.GetTriggers() {
+				// Keyed by lower-cased name to match omni's trigger identity, which is
+				// itself lower-folded (catalog stores triggers as map[string]*Trigger by
+				// toLower(name)). Triggers whose names differ only by case therefore
+				// collapse to one entry — an inherited omni limitation, not introduced
+				// here; MySQL trigger names can be case-sensitive on lower_case_table_names=0.
+				m.Triggers[strings.ToLower(trigger.GetName())] = SDLSessionContext{
+					SQLMode:             trigger.GetSqlMode(),
+					CharacterSetClient:  trigger.GetCharacterSetClient(),
+					CollationConnection: trigger.GetCollationConnection(),
+				}
+			}
+		}
+	}
+	return m
+}
+
 // SDLMigration computes the migration SQL from a user-provided SDL text and the
 // current database schema. It converts the current metadata to SDL, then diffs
 // against the user SDL. engineVersion is the target server's version string (e.g.
 // "5.7.25"); for engines that canonicalize per version (MySQL) it selects the
 // version-correct normalizer. An empty/unparseable version falls back to the
 // engine default, and engines without a version-aware path ignore it entirely.
+//
+// The per-object session context (sql_mode/charset/collation, and event time_zone) is
+// extracted from currentSchema and threaded to the diff so MySQL re-creates a routine/
+// trigger/event under its ORIGINAL session context — the bare SDL source carries none.
+// Other engines ignore it.
 func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) (string, error) {
 	sourceSDL, err := MetadataToSDL(engine, currentSchema)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to convert current schema to SDL")
 	}
-	return DiffSDLMigration(engine, sourceSDL, userSDLText, engineVersion)
+	return diffSDLMigrationWithContext(engine, sourceSDL, userSDLText, engineVersion, buildSDLSessionContextMap(currentSchema))
 }
 
 func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
@@ -373,12 +476,24 @@ func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
 // target server's version string, threaded to engines that canonicalize per version
 // (MySQL) and ignored by the rest (PostgreSQL); pass "" when no version is known to get
 // the engine's default stored form.
+//
+// This SDL↔SDL entry point carries no per-object session context (there is no synced
+// metadata to source it from), so a MySQL recreate through this path is bare. The
+// live rollout uses SDLMigration, which builds the context from the current schema.
 func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string) (string, error) {
+	return diffSDLMigrationWithContext(engine, sourceSDL, targetSDL, engineVersion, nil)
+}
+
+// diffSDLMigrationWithContext is DiffSDLMigration plus the optional per-object session
+// context threaded to the engine's registered diff. sessionCtx is nil for the callers
+// without synced metadata (SDL↔SDL DiffSchema, metadata↔metadata DiffMigration); only
+// SDLMigration supplies it.
+func diffSDLMigrationWithContext(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error) {
 	f, ok := diffSDLMigrations[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported for SDL diff migration", engine)
 	}
-	return f(sourceSDL, targetSDL, engineVersion)
+	return f(sourceSDL, targetSDL, engineVersion, sessionCtx)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
