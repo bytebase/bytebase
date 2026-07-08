@@ -7,6 +7,9 @@ import type {
   ConditionGroupExpr,
   EqualityExpr,
   EqualityOperator,
+  ListFactor,
+  ListMembershipExpr,
+  ListMembershipOperator,
   LogicalOperator,
   Operator,
   RawStringExpr,
@@ -22,6 +25,7 @@ import {
   isCompareOperator,
   isConditionGroupExpr,
   isEqualityOperator,
+  isListFactor,
   isLogicalOperator,
   isNegativeOperator,
   isNumberFactor,
@@ -123,6 +127,9 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
         return resolveStringExpr(expr, negative);
       }
       if (isCollectionOperator(operator)) {
+        if (isListMembershipCall(expr)) {
+          return resolveListMembershipExpr(expr, negative);
+        }
         return resolveCollectionExpr(expr, negative);
       }
       throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
@@ -132,6 +139,30 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
     }
   };
   return dfs(expr);
+};
+
+const isStringConstantExpr = (expr: CELExpr): boolean => {
+  return (
+    expr.exprKind?.case === "constExpr" &&
+    expr.exprKind.value.constantKind?.case === "stringValue"
+  );
+};
+
+const isListMembershipCall = (expr: CELExpr): boolean => {
+  const callExpr =
+    expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr || callExpr.function !== "@in") {
+    return false;
+  }
+  const [valueExpr, factorExpr] = callExpr.args;
+  if (!valueExpr || !factorExpr || !isStringConstantExpr(valueExpr)) {
+    return false;
+  }
+  try {
+    return isListFactor(getFactorName(factorExpr));
+  } catch {
+    return false;
+  }
 };
 
 const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
@@ -215,6 +246,28 @@ const resolveStringExpr = (
     type: ExprType.Condition,
     operator,
     args: [factor as StringFactor, getConstantStringValue(value)],
+  };
+};
+
+const resolveListMembershipExpr = (
+  expr: CELExpr,
+  negative: boolean = false
+): ListMembershipExpr => {
+  const callExpr =
+    expr.exprKind?.case === "callExpr" ? expr.exprKind.value : null;
+  if (!callExpr)
+    throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
+  const [valueExpr, factorExpr] = callExpr.args;
+  const operator: ListMembershipOperator = negative
+    ? "@not_contains"
+    : "@contains";
+  return {
+    type: ExprType.Condition,
+    operator,
+    args: [
+      getFactorName(factorExpr) as ListFactor,
+      getConstantStringValue(valueExpr),
+    ],
   };
 };
 

@@ -181,6 +181,10 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone && payload.Approval.GetApprovalInputVersion() == approvalInputVersion {
 		return nil
 	}
+	approvalLabels := store.CanonicalizeIssueLabels(payload.GetLabels())
+	if approvalLabels == nil {
+		approvalLabels = []string{}
+	}
 
 	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
 		// no need to find if feature is not enabled
@@ -216,6 +220,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE {
 			riskLevel := calculateRiskLevelFromCELVars(celVarsList)
 			injectRiskLevelIntoCELVars(celVarsList, riskLevel)
+			injectIssueLabelsIntoCELVars(celVarsList, approvalLabels)
 		}
 
 		// Step 4: Find matching approval template
@@ -252,12 +257,18 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		RiskLevel: riskLevel,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE {
-		updated, err := stores.UpdateIssuePayloadIfPlanApprovalInputVersion(ctx, issue.ProjectID, issue.UID, payloadPatch, approvalInputVersion)
+		requireNoRollout := project.Setting.GetRequireIssueApproval()
+		_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+			PayloadUpsert:                   payloadPatch,
+			RequirePlanApprovalInputVersion: &approvalInputVersion,
+			RequireLabels:                   &approvalLabels,
+			RequireNoRollout:                requireNoRollout,
+		})
 		if err != nil {
+			if errors.Is(err, store.ErrIssueUpdateSkipped) {
+				return nil
+			}
 			return errors.Wrap(err, "failed to update issue payload")
-		}
-		if !updated {
-			return nil
 		}
 	} else if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: payloadPatch,
@@ -303,6 +314,16 @@ func injectRiskLevelIntoCELVars(celVarsList []map[string]any, riskLevel storepb.
 	riskLevelStr := riskLevelToString(riskLevel)
 	for _, celVars := range celVarsList {
 		celVars[common.CELAttributeRiskLevel] = riskLevelStr
+	}
+}
+
+func injectIssueLabelsIntoCELVars(celVarsList []map[string]any, labels []string) {
+	canonicalLabels := store.CanonicalizeIssueLabels(labels)
+	if canonicalLabels == nil {
+		canonicalLabels = []string{}
+	}
+	for _, celVars := range celVarsList {
+		celVars[common.CELAttributeIssueLabels] = canonicalLabels
 	}
 }
 

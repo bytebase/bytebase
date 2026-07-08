@@ -1,5 +1,6 @@
 import { uniq } from "lodash-es";
 import {
+  CEL_ATTRIBUTE_ISSUE_LABELS,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
@@ -38,6 +39,13 @@ export type CompareOperator = (typeof CompareOperatorList)[number];
 export const CollectionOperatorList = ["@in", "@not_in"] as const;
 export type CollectionOperator = (typeof CollectionOperatorList)[number];
 
+export const ListMembershipOperatorList = [
+  "@contains",
+  "@not_contains",
+] as const;
+export type ListMembershipOperator =
+  (typeof ListMembershipOperatorList)[number];
+
 export const StringOperatorList = [
   "contains",
   "@not_contains",
@@ -52,6 +60,7 @@ export type ConditionOperator =
   | EqualityOperator
   | CompareOperator
   | CollectionOperator
+  | ListMembershipOperator
   | StringOperator;
 export type Operator = LogicalOperator | NegativeOperator | ConditionOperator;
 
@@ -75,6 +84,11 @@ export const isCollectionOperator = (
 export const isStringOperator = (op: Operator): op is StringOperator => {
   return StringOperatorList.includes(op as StringOperator);
 };
+export const isListMembershipOperator = (
+  op: Operator
+): op is ListMembershipOperator => {
+  return ListMembershipOperatorList.includes(op as ListMembershipOperator);
+};
 
 // Display labels for operators that differ from their source form.
 const OPERATOR_DISPLAY: Record<string, string> = {
@@ -84,6 +98,7 @@ const OPERATOR_DISPLAY: Record<string, string> = {
   "!=": "≠",
   "@in": "in",
   "@not_in": "not in",
+  "@contains": "contains",
   "@not_contains": "not contains",
 };
 
@@ -184,6 +199,8 @@ const OperatorList: Record<Factor, Operator[]> = {
   // These factors don't have operator candidates for user selection.
   [CEL_ATTRIBUTE_RESOURCE_DATABASE]: [],
   [CEL_ATTRIBUTE_REQUEST_TIME]: [],
+
+  [CEL_ATTRIBUTE_ISSUE_LABELS]: uniq([...ListMembershipOperatorList]),
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

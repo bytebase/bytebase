@@ -1,4 +1,5 @@
 import {
+  CEL_ATTRIBUTE_ISSUE_LABELS,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_EXPORT,
   CEL_ATTRIBUTE_REQUEST_ROLE,
@@ -67,11 +68,15 @@ export type BooleanFactor = (typeof BooleanFactorList)[number];
 export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
+export const ListFactorList = [CEL_ATTRIBUTE_ISSUE_LABELS] as const;
+export type ListFactor = (typeof ListFactorList)[number];
+
 export type Factor =
   | NumberFactor
   | StringFactor
   | BooleanFactor
-  | TimestampFactor;
+  | TimestampFactor
+  | ListFactor;
 
 export const isNumberFactor = (factor: string): factor is NumberFactor => {
   return NumberFactorList.includes(factor as NumberFactor);
@@ -89,4 +94,8 @@ export const isTimestampFactor = (
   factor: string
 ): factor is TimestampFactor => {
   return TimestampFactorList.includes(factor as TimestampFactor);
+};
+
+export const isListFactor = (factor: string): factor is ListFactor => {
+  return ListFactorList.includes(factor as ListFactor);
 };
