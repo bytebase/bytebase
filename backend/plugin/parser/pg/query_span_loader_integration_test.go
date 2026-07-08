@@ -79,6 +79,9 @@ func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "app",
+				Functions: []*storepb.FunctionMetadata{{
+					Name: "customer",
+				}},
 			},
 			{
 				Name: "public",
