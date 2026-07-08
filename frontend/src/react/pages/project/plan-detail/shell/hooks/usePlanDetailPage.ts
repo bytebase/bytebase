@@ -8,7 +8,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  preserveRolloutIdentities,
   preserveTaskRunIdentities,
   sameMessage,
   sameMessageList,
@@ -18,6 +17,7 @@ import {
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -25,7 +25,10 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  RolloutSchema,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
@@ -104,7 +107,12 @@ const preserveSnapshotIdentities = (
   if (sameMessage(IssueSchema, prev.issue, next.issue)) {
     out.issue = prev.issue;
   }
-  out.rollout = preserveRolloutIdentities(prev.rollout, next.rollout);
+  // The rollout store already deep-preserves per-stage/per-task identity and
+  // hands patchState the merged instance, so here a plain reference/structural
+  // guard is enough — keeping the snapshot's rollout identical to the store's.
+  if (sameMessage(RolloutSchema, prev.rollout, next.rollout)) {
+    out.rollout = prev.rollout;
+  }
   if (
     sameMessageList(PlanCheckRunSchema, prev.planCheckRuns, next.planCheckRuns)
   ) {
@@ -231,6 +239,15 @@ export const usePlanDetailPage = ({
   const patchState = useCallback(
     (patch: Partial<PlanDetailPageSnapshot>) => {
       const prevSnapshot = latestSnapshotRef.current;
+      // Seed the shared rollout store from this (already staleness-guarded)
+      // patch, and adopt the store's identity-preserved instance so the deploy
+      // view and the log viewer read the exact same rollout object.
+      if (patch.rollout) {
+        patch = {
+          ...patch,
+          rollout: useAppStore.getState().upsertRollout(patch.rollout),
+        };
+      }
       const nextSnapshot = preserveSnapshotIdentities(
         prevSnapshot,
         applyDerivedState({

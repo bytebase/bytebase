@@ -16,9 +16,9 @@ import { stringifyTaskRunStatus } from "@/utils/v1/issue/rollout";
 import { PlanDetailTaskRunSession } from "../PlanDetailTaskRunSession";
 
 const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
-  [TaskRun_Status.RUNNING]: "text-blue-600",
-  [TaskRun_Status.DONE]: "text-green-600",
-  [TaskRun_Status.FAILED]: "text-red-600",
+  [TaskRun_Status.RUNNING]: "text-info",
+  [TaskRun_Status.DONE]: "text-success",
+  [TaskRun_Status.FAILED]: "text-error",
 };
 
 export function DeployLatestTaskRunInfo({
@@ -42,16 +42,16 @@ export function DeployLatestTaskRunInfo({
     databaseEngine === EngineEnum.POSTGRES;
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-        <span className="shrink-0 font-medium text-gray-700">
+        <span className="shrink-0 font-medium text-control">
           {t("task-run.latest")}
         </span>
-        <span className="text-gray-300">·</span>
+        <span className="text-control-placeholder">·</span>
         <span
           className={cn(
             "flex shrink-0 items-center gap-x-1",
-            STATUS_LABEL_CLASS[taskRun.status] ?? "text-gray-500"
+            STATUS_LABEL_CLASS[taskRun.status] ?? "text-control-light"
           )}
         >
           <TaskRunStatusIcon size="tiny" status={taskRun.status} />
@@ -59,19 +59,19 @@ export function DeployLatestTaskRunInfo({
         </span>
         {updateDate && (
           <>
-            <span className="text-gray-300">·</span>
+            <span className="text-control-placeholder">·</span>
             <HumanizeTs
               ts={updateDate.getTime() / 1000}
-              className="shrink-0 text-gray-500"
+              className="shrink-0 text-control-light"
             />
           </>
         )}
         {executorEmail && (
           <>
-            <span className="text-gray-300">·</span>
+            <span className="text-control-placeholder">·</span>
             <Tooltip content={t("task.executed-by")}>
-              <span className="flex shrink-0 items-center gap-x-1 text-gray-500">
-                <User className="h-3.5 w-3.5" />
+              <span className="flex shrink-0 items-center gap-x-1 text-control-light">
+                <User className="size-3.5" />
                 <span className="truncate">{executorEmail}</span>
               </span>
             </Tooltip>
@@ -79,10 +79,10 @@ export function DeployLatestTaskRunInfo({
         )}
         {duration && (
           <>
-            <span className="text-gray-300">·</span>
+            <span className="text-control-placeholder">·</span>
             <Tooltip content={t("common.duration")}>
-              <span className="flex shrink-0 items-center gap-x-1 tabular-nums text-gray-500">
-                <Clock3 className="h-3.5 w-3.5" />
+              <span className="flex shrink-0 items-center gap-x-1 tabular-nums text-control-light">
+                <Clock3 className="size-3.5" />
                 {duration}
               </span>
             </Tooltip>
@@ -91,7 +91,7 @@ export function DeployLatestTaskRunInfo({
         {historyCount > 1 && (
           <span className="ml-auto flex shrink-0 items-center">
             <Button onClick={onShowHistory} size="xs" appearance="secondary">
-              <History className="h-3.5 w-3.5" />
+              <History className="size-3.5" />
               {t("task-run.history-with-count", { count: historyCount })}
             </Button>
           </span>
@@ -110,8 +110,8 @@ export function DeployLatestTaskRunInfo({
       />
 
       {showSession && (
-        <div className="space-y-1">
-          <div className="text-sm font-medium text-gray-700">
+        <div className="flex flex-col gap-1">
+          <div className="text-sm font-medium text-control">
             {t("issue.task-run.session")}
           </div>
           <PlanDetailTaskRunSession key={taskRun.name} taskRun={taskRun} />

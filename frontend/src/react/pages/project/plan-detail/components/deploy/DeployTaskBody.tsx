@@ -1,14 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/react/components/monaco";
-import {
-  executionDurationOfTaskRun,
-  getTaskRunWaitingMessage,
-} from "@/react/lib/taskRun";
+import { getTaskRunWaitingMessage } from "@/react/lib/taskRun";
 import { cn } from "@/react/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { humanizeDurationV1 } from "@/utils";
 import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
@@ -31,6 +27,7 @@ export function DeployTaskBody({
   onShowHistory,
   statement,
   task,
+  timingDisplay,
 }: {
   databaseEngine?: Engine;
   historyCount: number;
@@ -40,6 +37,8 @@ export function DeployTaskBody({
   onShowHistory: () => void;
   statement: string;
   task: Task;
+  // The latest run's duration, formatted by DeployTaskItem (single source).
+  timingDisplay: string;
 }) {
   const { t } = useTranslation();
   const isReleaseTask = isReleaseBasedTask(task);
@@ -48,20 +47,23 @@ export function DeployTaskBody({
   const waitingComment = latestTaskRun
     ? getTaskRunWaitingMessage(latestTaskRun, t)
     : undefined;
-  const latestRunDuration =
-    latestTaskRun && task.status !== Task_Status.PENDING
-      ? executionDurationOfTaskRun(latestTaskRun)
-      : undefined;
+  // A pending task shows no elapsed time; otherwise reuse the item's string.
+  const duration =
+    task.status === Task_Status.PENDING
+      ? undefined
+      : timingDisplay || undefined;
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <DeployTaskSkippedReason task={task} />
       {waitingComment && (
-        <div className="text-xs italic text-gray-500">{waitingComment}</div>
+        <div className="text-xs italic text-control-light">
+          {waitingComment}
+        </div>
       )}
       {!isReleaseTask ? (
         <div>
-          <div className="mb-1 text-sm font-medium text-gray-700">
+          <div className="mb-1 text-sm font-medium text-control">
             {t("common.statement")}
           </div>
           {isStatementLoading ? (
@@ -83,7 +85,7 @@ export function DeployTaskBody({
                 max={256}
               />
               {isTruncated && (
-                <div className="rounded-b border border-t-0 bg-gray-50 px-3 py-1.5 text-xs text-gray-500">
+                <div className="rounded-b border border-t-0 bg-control-bg px-3 py-1.5 text-xs text-control-light">
                   {t("rollout.task.statement-truncated-hint")}
                 </div>
               )}
@@ -101,11 +103,7 @@ export function DeployTaskBody({
       {latestTaskRun && (
         <DeployLatestTaskRunInfo
           databaseEngine={databaseEngine}
-          duration={
-            latestRunDuration
-              ? humanizeDurationV1(latestRunDuration)
-              : undefined
-          }
+          duration={duration}
           historyCount={historyCount}
           onShowHistory={onShowHistory}
           taskRun={latestTaskRun}

@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { executionDurationOfTaskRun } from "@/react/lib/taskRun";
+import { formatTaskRunDuration } from "@/react/lib/taskRun";
 import { cn } from "@/react/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -14,7 +14,7 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { databaseForTask, humanizeDurationV1 } from "@/utils";
+import { databaseForTask } from "@/utils";
 import { isReleaseBasedTask } from "@/utils/v1/issue/rollout";
 import { isRerunnableTaskStatus } from "../lifecycle/frontierStage";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
@@ -123,13 +123,10 @@ export const DeployTaskItem = memo(function DeployTaskItem({
     task.runTime && task.status === Task_Status.PENDING
       ? getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
       : 0;
-  // Same duration source as the history sheet, so the card and the sheet
-  // render identical strings for the same run.
-  const latestRunDuration = latestTaskRun
-    ? executionDurationOfTaskRun(latestTaskRun)
-    : undefined;
-  const timingDisplay = latestRunDuration
-    ? humanizeDurationV1(latestRunDuration)
+  // Same duration source as the history sheet and the expanded body, so all
+  // three render identical strings for the same run.
+  const timingDisplay = latestTaskRun
+    ? formatTaskRunDuration(latestTaskRun)
     : "";
   const collapsedContextInfo =
     task.status === Task_Status.DONE ? timingDisplay : "";
@@ -175,7 +172,12 @@ export const DeployTaskItem = memo(function DeployTaskItem({
         {/* Same padding in both modes: the header row is button-height (h-6)
             either way, so expanding only reveals content below — nothing
             above the fold moves. */}
-        <div className={cn("py-2.5 pl-3 pr-4", isExpanded && "space-y-3")}>
+        <div
+          className={cn(
+            "py-2.5 pl-3 pr-4",
+            isExpanded && "flex flex-col gap-3"
+          )}
+        >
           <DeployTaskHeader
             actionItems={actionItems}
             collapsedContextInfo={collapsedContextInfo}
@@ -206,6 +208,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
               onShowHistory={() => setHistoryOpen(true)}
               statement={statement}
               task={task}
+              timingDisplay={timingDisplay}
             />
           )}
         </div>

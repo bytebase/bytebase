@@ -106,17 +106,14 @@ export function DeployTaskList({
       autoExpandTaskName(filteredTasks)
   );
   // A card scrolls into view only for an EXTERNAL arrival (a shared link or
-  // back/forward), never for a ?taskId= this list wrote itself. This ref marks
-  // our own writes; comparing against it only when the route has settled (not
-  // every render) is what avoids the intermittent scroll-to-the-wrong-card
-  // jump (BYT-9765).
-  const selfWroteRef = useRef<string | undefined>(undefined);
+  // back/forward), never for a ?taskId= this list wrote itself. The mirror
+  // effect records the value it writes here, and the route-settle handler below
+  // CONSUMES it (one-shot). A persistent marker would misread a later external
+  // navigation back to a previously self-opened task as a self-write and fail
+  // to scroll (BYT-9765).
+  const pendingSelfWriteRef = useRef<string | undefined>(undefined);
   const [arrivalTaskName, setArrivalTaskName] = useState<string | undefined>(
-    () =>
-      isTaskInStage(selectedTaskName) &&
-      selectedTaskName !== selfWroteRef.current
-        ? selectedTaskName
-        : undefined
+    () => (isTaskInStage(selectedTaskName) ? selectedTaskName : undefined)
   );
   // Latest expansion, read by the stable toggle callback without being a dep.
   const expandedTaskNamesRef = useRef(expandedTaskNames);
@@ -173,6 +170,10 @@ export function DeployTaskList({
   // here, once the route has settled, so the transient render during our own
   // write can't be mistaken for an arrival.
   useOnKeyChange(selectedTaskName ?? "", () => {
+    // Consume the one-shot self-write marker: this settled route value counts
+    // as a self-write only if it matches what we just wrote.
+    const wasSelfWrite = selectedTaskName === pendingSelfWriteRef.current;
+    pendingSelfWriteRef.current = undefined;
     if (isTaskInStage(selectedTaskName)) {
       const index = filteredTasks.findIndex(
         (task) => task.name === selectedTaskName
@@ -182,9 +183,7 @@ export function DeployTaskList({
       );
       setDisplayedTaskCount((count) => Math.max(count, index + 1));
       setFocusedTaskName(selectedTaskName);
-      setArrivalTaskName(
-        selectedTaskName === selfWroteRef.current ? undefined : selectedTaskName
-      );
+      setArrivalTaskName(wasSelfWrite ? undefined : selectedTaskName);
     } else {
       setArrivalTaskName(undefined);
     }
@@ -192,8 +191,8 @@ export function DeployTaskList({
 
   // Mirror the focused task into ?stageId&taskId= while this stage is active,
   // so the URL is a shareable link. Only the active stage writes (a hidden
-  // keep-alive list must not hijack the address bar); marking the write in
-  // selfWroteRef keeps it from being read back as an external arrival.
+  // keep-alive list must not hijack the address bar); recording the write in
+  // pendingSelfWriteRef keeps its own route echo from scrolling the card.
   useEffect(() => {
     if (
       readonly ||
@@ -203,7 +202,7 @@ export function DeployTaskList({
     ) {
       return;
     }
-    selfWroteRef.current = focusedTaskName;
+    pendingSelfWriteRef.current = focusedTaskName;
     void router.replace({
       query: deployTaskQuery(stage.name, focusedTaskName),
     });
@@ -265,7 +264,7 @@ export function DeployTaskList({
         />
       )}
 
-      <div className="task-list space-y-3 px-4 py-3">
+      <div className="task-list flex flex-col gap-3 px-4 py-3">
         {visibleTasks.map((task) => (
           <DeployTaskItem
             currentUser={page.currentUser}
@@ -288,7 +287,7 @@ export function DeployTaskList({
         ))}
 
         {filteredTasks.length === 0 && (
-          <div className="py-8 text-center text-gray-500">
+          <div className="py-8 text-center text-control-light">
             {t("rollout.task.no-tasks")}
           </div>
         )}

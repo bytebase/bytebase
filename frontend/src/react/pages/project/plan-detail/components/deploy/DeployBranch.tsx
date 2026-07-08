@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { useSeededState } from "@/react/hooks/useSeededState";
 import { router } from "@/react/router";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -72,11 +71,20 @@ export function DeployBranch() {
   // Stage selection is optimistic: a tab click paints in the same commit,
   // while router.push merely reflects it into the URL. Waiting for the route
   // round trip (which re-renders the whole plan page) reads as a dead click
-  // followed by an all-at-once swap. useSeededState drops the override when
-  // the URL catches up — or changes externally (back/forward).
-  const [optimisticStageName, setOptimisticStageName] = useSeededState<
+  // followed by an all-at-once swap. The override is dropped only once the URL
+  // actually reflects it — clearing on any routeStageId change instead (the
+  // previous approach) let an earlier click's late-settling push reset a newer
+  // click, causing a visible snap-back on rapid tab switches.
+  const [optimisticStageName, setOptimisticStageName] = useState<
     string | undefined
-  >(page.routeStageId ?? "", () => undefined);
+  >(undefined);
+  if (
+    optimisticStageName &&
+    page.routeStageId &&
+    extractStageUID(optimisticStageName) === page.routeStageId
+  ) {
+    setOptimisticStageName(undefined);
+  }
 
   const selectedStage = useMemo(() => {
     if (!page.rollout?.stages.length) return undefined;
@@ -162,7 +170,7 @@ export function DeployBranch() {
   if (!selectedStage) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-500">{t("rollout.no-stages")}</p>
+        <p className="text-control-light">{t("rollout.no-stages")}</p>
       </div>
     );
   }

@@ -50,6 +50,20 @@ describe("sortTaskRunsNewestFirst", () => {
     ]);
     expect(input[0]).toBe(oldest);
   });
+
+  test("orders runs created in the same second by sub-second precision", () => {
+    const tsMs = (seconds: number, millis: number) =>
+      create(TimestampSchema, {
+        seconds: BigInt(seconds),
+        nanos: millis * 1_000_000,
+      });
+    const earlier = makeTaskRun({ name: "r/a", createTime: tsMs(100, 100) });
+    const later = makeTaskRun({ name: "r/b", createTime: tsMs(100, 800) });
+
+    expect(
+      sortTaskRunsNewestFirst([earlier, later]).map((run) => run.name)
+    ).toEqual([later.name, earlier.name]);
+  });
 });
 
 describe("executionDurationOfTaskRun", () => {
@@ -87,6 +101,29 @@ describe("executionDurationOfTaskRun", () => {
     );
     expect(Number(duration?.seconds)).toBeGreaterThanOrEqual(29);
     expect(Number(duration?.seconds)).toBeLessThan(40);
+  });
+
+  test("a running run counts up even without an updateTime yet", () => {
+    const startSeconds = Math.floor(Date.now() / 1000) - 30;
+    const duration = executionDurationOfTaskRun(
+      makeTaskRun({
+        startTime: ts(startSeconds),
+        status: TaskRun_Status.RUNNING,
+      })
+    );
+    expect(Number(duration?.seconds)).toBeGreaterThanOrEqual(29);
+  });
+
+  test("clamps a future start time (clock skew) to zero, never negative", () => {
+    const startSeconds = Math.floor(Date.now() / 1000) + 10_000;
+    const duration = executionDurationOfTaskRun(
+      makeTaskRun({
+        startTime: ts(startSeconds),
+        status: TaskRun_Status.RUNNING,
+      })
+    );
+    expect(duration?.seconds).toBe(0n);
+    expect(duration?.nanos).toBe(0);
   });
 });
 

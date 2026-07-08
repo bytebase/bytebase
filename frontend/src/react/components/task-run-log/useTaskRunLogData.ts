@@ -1,7 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { rolloutServiceClientConnect } from "@/connect";
 import { useLatestRef } from "@/react/hooks/useLatestRef";
+import { useLivePoll } from "@/react/hooks/useLivePoll";
 import { useSeededState } from "@/react/hooks/useSeededState";
 import { sameMessageList } from "@/react/lib/protoIdentity";
 import { useAppStore } from "@/react/stores/app";
@@ -292,7 +293,7 @@ export const useTaskRunLogData = (
   const fetchRelease = useAppStore((state) => state.fetchRelease);
 
   const metadataFetchVersion = useRef(0);
-  const logFetchVersion = useRef(0);
+  const logFetchSeq = useRef(0);
   const sheetFetchVersion = useRef(0);
 
   const rolloutName = useMemo(() => {
@@ -376,63 +377,62 @@ export const useTaskRunLogData = (
     () => seedLogSlice(taskRunName)
   );
 
-  useEffect(() => {
-    const version = ++logFetchVersion.current;
+  // A monotonic per-fetch sequence: initial revalidation and every live-poll
+  // tick take a number, and a response whose number is no longer the latest is
+  // dropped entirely — no cache write, no state write. This keeps overlapping
+  // fetches (a slow one for a RUNNING run resolving after a newer one) from
+  // rewinding the log or clobbering the terminal-status cache.
+  const fetchLog = useCallback(() => {
     if (!taskRunName) {
       return;
     }
-
-    const fetchLog = () => {
-      const request = create(GetTaskRunLogRequestSchema, {
-        parent: taskRunName,
-      });
-      void rolloutServiceClientConnect
-        .getTaskRunLog(request)
-        .then((response) => {
-          cacheLogEntries(taskRunName, {
-            entries: response.entries,
-            status: taskRunStatus,
-          });
-          if (version !== logFetchVersion.current) return;
-          // Identity-stable across live-poll ticks: unchanged entries keep the
-          // previous slice so the viewer doesn't re-render for nothing.
-          setLogSlice((prev) =>
-            prev.state.status === "success" &&
-            sameMessageList(
-              TaskRunLogEntrySchema,
-              prev.entries,
-              response.entries
-            )
-              ? prev
-              : { entries: response.entries, state: { status: "success" } }
-          );
-        })
-        .catch((error: unknown) => {
-          if (version !== logFetchVersion.current) return;
-          // Keep showing stale cached entries over an empty error state.
-          setLogSlice((prev) => ({
-            entries: prev.entries,
-            state: { status: "error", error: getErrorMessage(error) },
-          }));
+    const seq = ++logFetchSeq.current;
+    void rolloutServiceClientConnect
+      .getTaskRunLog(
+        create(GetTaskRunLogRequestSchema, { parent: taskRunName })
+      )
+      .then((response) => {
+        if (seq !== logFetchSeq.current) return;
+        cacheLogEntries(taskRunName, {
+          entries: response.entries,
+          status: taskRunStatus,
         });
-    };
+        // Identity-stable across live-poll ticks: unchanged entries keep the
+        // previous slice so the viewer doesn't re-render for nothing.
+        setLogSlice((prev) =>
+          prev.state.status === "success" &&
+          sameMessageList(TaskRunLogEntrySchema, prev.entries, response.entries)
+            ? prev
+            : { entries: response.entries, state: { status: "success" } }
+        );
+      })
+      .catch((error: unknown) => {
+        if (seq !== logFetchSeq.current) return;
+        // Keep showing stale cached entries over an empty error state.
+        setLogSlice((prev) => ({
+          entries: prev.entries,
+          state: { status: "error", error: getErrorMessage(error) },
+        }));
+      });
+  }, [taskRunName, taskRunStatus, setLogSlice]);
 
-    // Cached entries were painted during render; only revalidate when the
-    // cached copy could still change (run not known to be finished).
+  // Cached entries were painted during render; revalidate on mount / status
+  // change only when the cached copy could still change (run not finished).
+  useEffect(() => {
     if (
+      taskRunName &&
       !isLogCacheFresh(taskRunLogEntriesCache.get(taskRunName), taskRunStatus)
     ) {
       fetchLog();
     }
+  }, [taskRunName, taskRunStatus, fetchLog]);
 
-    if (taskRunStatus !== TaskRun_Status.RUNNING) {
-      return;
-    }
-    const timer = window.setInterval(fetchLog, LIVE_LOG_POLL_INTERVAL_MS);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [taskRunName, taskRunStatus]);
+  // A running task appends log lines as it executes; poll while it runs.
+  useLivePoll(
+    Boolean(taskRunName) && taskRunStatus === TaskRun_Status.RUNNING,
+    LIVE_LOG_POLL_INTERVAL_MS,
+    fetchLog
+  );
 
   // ---- Sheet(s) referenced by the log ----
 
@@ -524,6 +524,19 @@ export const useTaskRunLogData = (
           sheetsMap: EMPTY_SHEETS_MAP,
           state: { status: "success", source: "sheet" },
         });
+      })
+      .catch((error: unknown) => {
+        // Symmetric with the release branch: without this a rejecting fetch
+        // would leave the slice stuck on "loading" and float an unhandled
+        // rejection.
+        if (version !== sheetFetchVersion.current) return;
+        setSheetSlice(
+          sheetlessSlice({
+            status: "error",
+            source: "sheet",
+            error: getErrorMessage(error),
+          })
+        );
       });
   }, [
     fetchRelease,

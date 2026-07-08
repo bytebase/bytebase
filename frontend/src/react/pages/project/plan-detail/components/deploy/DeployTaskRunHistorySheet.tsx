@@ -12,14 +12,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useOnKeyChange } from "@/react/hooks/useOnKeyChange";
 import {
-  executionDurationOfTaskRun,
   executorEmailOfTaskRun,
+  formatTaskRunDuration,
   getTaskRunComment,
 } from "@/react/lib/taskRun";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { humanizeDurationV1 } from "@/utils";
 
 // With this many runs or more, only the newest run starts expanded; older
 // runs collapse to header rows. Keeps the sheet scannable and avoids fetching
@@ -60,6 +60,16 @@ function TaskRunHistoryList({ taskRuns }: { taskRuns: TaskRun[] }) {
       ? new Set([taskRuns[0].name])
       : new Set(taskRuns.map((taskRun) => taskRun.name))
   );
+  // A rerun created while the sheet is open prepends a new newest run; expand
+  // it so the latest is visible without reopening the sheet.
+  useOnKeyChange(taskRuns[0]?.name ?? "", () => {
+    const newest = taskRuns[0]?.name;
+    if (newest) {
+      setExpandedRunNames((prev) =>
+        prev.has(newest) ? prev : new Set(prev).add(newest)
+      );
+    }
+  });
   const toggle = (taskRun: TaskRun) => {
     setExpandedRunNames((prev) => {
       const next = new Set(prev);
@@ -99,7 +109,7 @@ function TaskRunHistoryItem({
   const startTs =
     getTimeForPbTimestampProtoEs(taskRun.startTime, 0) ||
     getTimeForPbTimestampProtoEs(taskRun.createTime, 0);
-  const duration = executionDurationOfTaskRun(taskRun);
+  const duration = formatTaskRunDuration(taskRun);
   const executorEmail = executorEmailOfTaskRun(taskRun);
   const comment = getTaskRunComment(taskRun, t);
 
@@ -132,7 +142,7 @@ function TaskRunHistoryItem({
           {duration && (
             <span className="flex items-center gap-x-1">
               <Clock3 className="size-3" />
-              {humanizeDurationV1(duration)}
+              {duration}
             </span>
           )}
           {executorEmail && (

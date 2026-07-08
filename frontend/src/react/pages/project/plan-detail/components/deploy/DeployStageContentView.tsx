@@ -105,7 +105,7 @@ export const DeployStageContentView = memo(function DeployStageContentView({
                 }}
                 size="sm"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 {t("common.create")}
               </Button>
             </div>

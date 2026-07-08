@@ -325,4 +325,26 @@ describe("DeployTaskList arrival scroll (BYT-9765 offset jump)", () => {
     expect(deepLinkedOf(taskName(1))).toBe("false");
     expect(deepLinkedOf(taskName(2))).toBe("false");
   });
+
+  test("forward-navigation to a self-opened task still deep-links (scrolls)", () => {
+    const stage = makeStage(stageName, [taskName(1), taskName(2)]);
+    const at = (selected?: string) => (
+      <PlanDetailProvider value={makePage(selected)}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+    const { rerender } = render(at());
+
+    // Open t2 ourselves, then let the route settle to it — not an arrival.
+    fireEvent.click(screen.getByText(taskName(2)));
+    rerender(at(taskName(2)));
+    expect(deepLinkedOf(taskName(2))).toBe("false");
+
+    // Back to t1, then FORWARD to t2. The forward navigation is a real arrival
+    // and must deep-link, even though we opened t2 earlier — the self-write
+    // marker is one-shot, not a persistent suppressor.
+    rerender(at(taskName(1)));
+    rerender(at(taskName(2)));
+    expect(deepLinkedOf(taskName(2))).toBe("true");
+  });
 });

@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -6,7 +7,7 @@ import {
   rolloutServiceClientConnect,
   userServiceClientConnect,
 } from "@/connect";
-import { useAppStore } from "@/react/stores/app";
+import { silentContextKey } from "@/connect/context-key";
 import {
   GetIssueRequestSchema,
   type Issue,
@@ -22,6 +23,7 @@ import {
   type Project,
 } from "@/types/proto-es/v1/project_service_pb";
 import {
+  GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
   type Rollout,
   type TaskRun,
@@ -126,13 +128,14 @@ export const fetchPlanSnapshot = async (
       )
       .then((run) => [run] as PlanCheckRun[])
       .catch(() => []),
-    // Fetch through the store so the shared rollout cache stays seeded —
-    // cache-first consumers (e.g. the task-run log viewer) then resolve tasks
-    // without their own GetRollout round trip, and polling keeps it fresh.
+    // Fetch the rollout WITHOUT touching the store here; the caller
+    // (patchState) seeds the store cache after its staleness guard, so a stale
+    // in-flight poll can't overwrite the shared cache the log viewer reads.
     rolloutName
-      ? useAppStore
-          .getState()
-          .fetchRolloutByName(rolloutName)
+      ? rolloutServiceClientConnect
+          .getRollout(create(GetRolloutRequestSchema, { name: rolloutName }), {
+            contextValues: createContextValues().set(silentContextKey, true),
+          })
           .catch(() => undefined)
       : Promise.resolve(undefined),
     rolloutName

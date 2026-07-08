@@ -83,8 +83,8 @@ export function DeployTaskHeader({
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <PlanTargetDisplay size="md" target={task.target} />
             {isExpanded && scheduledTimeTs > 0 && (
-              <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
-                <LoaderCircle className="h-3 w-3 animate-spin motion-reduce:animate-none" />
+              <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
+                <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
                 <HumanizeTs ts={scheduledTimeTs} />
               </span>
             )}
@@ -96,11 +96,11 @@ export function DeployTaskHeader({
             consistent with the app, reachable without scrolling the body. */}
         <div className="ml-auto flex shrink-0 items-center gap-x-2">
           {!isExpanded && (
-            <span className="text-xs tabular-nums text-gray-500">
+            <span className="text-xs tabular-nums text-control-light">
               {scheduledTimeTs > 0 ||
               (task.status === Task_Status.RUNNING && timingDisplay) ? (
-                <span className="flex items-center gap-x-1 text-blue-600">
-                  <LoaderCircle className="h-3 w-3 animate-spin motion-reduce:animate-none" />
+                <span className="flex items-center gap-x-1 text-info">
+                  <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
                   {scheduledTimeTs > 0 ? (
                     <HumanizeTs ts={scheduledTimeTs} />
                   ) : (
@@ -121,9 +121,9 @@ export function DeployTaskHeader({
                   size="xs"
                   appearance={item.key === "RUN" ? "solid" : "outline"}
                 >
-                  {item.key === "RUN" && <Play className="h-3 w-3" />}
-                  {item.key === "SKIP" && <SkipForward className="h-3 w-3" />}
-                  {item.key === "CANCEL" && <X className="h-3 w-3" />}
+                  {item.key === "RUN" && <Play className="size-3" />}
+                  {item.key === "SKIP" && <SkipForward className="size-3" />}
+                  {item.key === "CANCEL" && <X className="size-3" />}
                   {item.label}
                 </Button>
               ))}
@@ -139,15 +139,15 @@ export function DeployTaskHeader({
               order. */}
           <button
             aria-hidden="true"
-            className="shrink-0 rounded-md p-1 text-gray-500 outline-none hover:bg-control-bg/50"
+            className="shrink-0 rounded-md p-1 text-control-light outline-none hover:bg-control-bg/50"
             onClick={onToggleExpand}
             tabIndex={-1}
             type="button"
           >
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="size-4" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="size-4" />
             )}
           </button>
         </div>
@@ -156,7 +156,7 @@ export function DeployTaskHeader({
       {!isExpanded && collapsedStatusText && (
         <div className="mt-1 flex items-center gap-x-2 text-xs">
           {latestTaskRun?.createTime && (
-            <span className="rounded-full border bg-gray-50 px-2 py-0.5 text-gray-500">
+            <span className="rounded-full border bg-control-bg px-2 py-0.5 text-control-light">
               <HumanizeTs
                 ts={
                   getTimeForPbTimestampProtoEs(latestTaskRun.createTime, 0) /
@@ -170,7 +170,7 @@ export function DeployTaskHeader({
               "min-w-0 truncate",
               task.status === Task_Status.FAILED
                 ? "text-error"
-                : "italic text-gray-500"
+                : "italic text-control-light"
             )}
           >
             {collapsedStatusText}

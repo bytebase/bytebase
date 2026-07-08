@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { AlignHorizontalJustifyStart, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useLivePoll } from "@/react/hooks/useLivePoll";
 import { sameMessage } from "@/react/lib/protoIdentity";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
@@ -33,71 +34,59 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<TaskRunSession_Postgres | undefined>();
+  const isRunning = taskRun.status === TaskRun_Status.RUNNING;
 
+  const fetchSession = useCallback(async () => {
+    const response = await rolloutServiceClientConnect.getTaskRunSession(
+      create(GetTaskRunSessionRequestSchema, { parent: taskRun.name }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    );
+    const next =
+      response.session.case === "postgres" ? response.session.value : undefined;
+    // Keep the previous reference when the content is unchanged so the tables
+    // don't re-render for nothing.
+    setSession((prev) =>
+      prev && next && sameMessage(TaskRunSession_PostgresSchema, prev, next)
+        ? prev
+        : next
+    );
+  }, [taskRun.name]);
+
+  // Initial load (with spinner). Resetting session + loading when not running
+  // keeps the panel consistent if the run finishes before the load resolves.
   useEffect(() => {
-    let canceled = false;
-
-    // Only the first load shows the spinner; poll refreshes swap the data in
-    // place.
-    const load = async (initial: boolean) => {
-      try {
-        if (initial) {
-          setLoading(true);
-        }
-        const response = await rolloutServiceClientConnect.getTaskRunSession(
-          create(GetTaskRunSessionRequestSchema, {
-            parent: taskRun.name,
-          }),
-          {
-            contextValues: createContextValues().set(silentContextKey, true),
-          }
-        );
-        if (canceled) {
-          return;
-        }
-        const next =
-          response.session.case === "postgres"
-            ? response.session.value
-            : undefined;
-        // Keep the previous reference when a poll returns identical content so
-        // the tables don't re-render for nothing.
-        setSession((prev) =>
-          prev && next && sameMessage(TaskRunSession_PostgresSchema, prev, next)
-            ? prev
-            : next
-        );
-      } finally {
-        if (!canceled && initial) {
-          setLoading(false);
-        }
-      }
-    };
-
-    if (taskRun.status !== TaskRun_Status.RUNNING) {
+    if (!isRunning) {
       setSession(undefined);
+      setLoading(false);
       return;
     }
-    void load(true);
-    const timer = window.setInterval(() => {
-      void load(false);
-    }, SESSION_POLL_INTERVAL_MS);
+    let canceled = false;
+    setLoading(true);
+    fetchSession()
+      .catch(() => undefined)
+      .finally(() => {
+        if (!canceled) setLoading(false);
+      });
     return () => {
       canceled = true;
-      window.clearInterval(timer);
     };
-  }, [taskRun.name, taskRun.status]);
+  }, [isRunning, fetchSession]);
+
+  // Live refresh while running — swaps data in place (no spinner); a failing
+  // tick is swallowed by useLivePoll.
+  useLivePoll(isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 text-control-light">
-        <Loader2 className="h-5 w-5 animate-spin" />
+        <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
 
   if (!session?.session) {
     return (
-      <div className="rounded-md border bg-gray-50 p-3 text-sm text-control-light">
+      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
         {t("task-run.no-session-found")}
       </div>
     );
@@ -111,7 +100,7 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
       {session.blockingSessions.length > 0 ? (
         <div>
           <div className="flex items-center justify-start gap-x-1 pt-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-control">
               {t("task-run.blocking-sessions")}
             </span>
             <span className="textinfolabel">
@@ -130,8 +119,8 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
       {session.blockedSessions.length > 0 && (
         <div>
           <div className="flex items-center justify-start gap-x-2 pt-2">
-            <AlignHorizontalJustifyStart className="h-4 w-4 opacity-80" />
-            <span className="text-sm font-medium text-gray-700">
+            <AlignHorizontalJustifyStart className="size-4 opacity-80" />
+            <span className="text-sm font-medium text-control">
               {t("task-run.blocked-sessions")}
             </span>
             <span className="textinfolabel">
@@ -152,7 +141,7 @@ function SessionTable({ rows }: { rows: TaskRunSession_Postgres_Session[] }) {
 
   if (normalizedRows.length === 0) {
     return (
-      <div className="rounded-md border bg-gray-50 p-3 text-sm text-control-light">
+      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
         -
       </div>
     );

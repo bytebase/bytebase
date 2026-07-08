@@ -33,11 +33,19 @@ export const createSheetSlice: AppSliceCreator<SheetSlice> = (set, get) => ({
     // resolve to truncated content, so a raw consumer can't join it.
     if (pending && (pending.raw || !raw)) return pending.request;
 
+    // Clear the pending-request entry only if it is still THIS request — a
+    // later raw request may have replaced a preview's entry, and that raw
+    // request must keep coalescing until it resolves.
+    const clearOwnRequest = (requests: SheetSlice["sheetRequests"]) => {
+      if (requests[name]?.request !== request) return requests;
+      const { [name]: _omit, ...rest } = requests;
+      return rest;
+    };
+
     const request = sheetServiceClientConnect
       .getSheet(createProto(GetSheetRequestSchema, { name, raw }))
       .then((sheet: Sheet) => {
         set((state) => {
-          const { [name]: _, ...sheetRequests } = state.sheetRequests;
           const cached = state.sheetsByName[sheet.name];
           // Never replace a complete cached sheet with a truncated preview
           // (a slower non-raw request may resolve after a raw one).
@@ -56,22 +64,19 @@ export const createSheetSlice: AppSliceCreator<SheetSlice> = (set, get) => ({
               ...state.sheetErrorsByName,
               [name]: undefined,
             },
-            sheetRequests,
+            sheetRequests: clearOwnRequest(state.sheetRequests),
           };
         });
         return sheet;
       })
       .catch((error) => {
-        set((state) => {
-          const { [name]: _, ...sheetRequests } = state.sheetRequests;
-          return {
-            sheetErrorsByName: {
-              ...state.sheetErrorsByName,
-              [name]: toError(error),
-            },
-            sheetRequests,
-          };
-        });
+        set((state) => ({
+          sheetErrorsByName: {
+            ...state.sheetErrorsByName,
+            [name]: toError(error),
+          },
+          sheetRequests: clearOwnRequest(state.sheetRequests),
+        }));
         return undefined;
       });
     set((state) => ({
