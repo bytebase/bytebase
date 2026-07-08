@@ -211,6 +211,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	accessTables, err := ExtractAccessTables(stmt, ExtractAccessTablesOption{
 		DefaultDatabase:        e.defaultDatabase,
 		DefaultSchema:          e.searchPath[0],
+		SearchPath:             e.searchPath,
 		GetDatabaseMetadata:    e.gCtx.GetDatabaseMetadataFunc,
 		Ctx:                    ctx,
 		InstanceID:             e.gCtx.InstanceID,

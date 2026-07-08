@@ -106,6 +106,10 @@ func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
 	if _, ok := span.Results[0].SourceColumns[want]; !ok {
 		t.Fatalf("result %q missing public fallback source %+v; have %+v", span.Results[0].Name, want, span.Results[0].SourceColumns)
 	}
+	wantAccess := base.ColumnResource{Database: "db", Schema: "public", Table: "customer"}
+	if _, ok := span.SourceColumns[wantAccess]; !ok {
+		t.Fatalf("span missing public fallback access source %+v; have %+v", wantAccess, span.SourceColumns)
+	}
 }
 
 func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {

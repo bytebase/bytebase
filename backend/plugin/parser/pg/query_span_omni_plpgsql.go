@@ -669,6 +669,7 @@ func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
 	accessTables, err := ExtractAccessTables(sql, ExtractAccessTablesOption{
 		DefaultDatabase:        a.extractor.defaultDatabase,
 		DefaultSchema:          a.extractor.searchPath[0],
+		SearchPath:             a.extractor.searchPath,
 		GetDatabaseMetadata:    a.extractor.gCtx.GetDatabaseMetadataFunc,
 		Ctx:                    a.extractor.ctx,
 		InstanceID:             a.extractor.gCtx.InstanceID,
