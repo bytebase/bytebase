@@ -1252,16 +1252,18 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 			return err
 		}
 	}
+
+	// INVISIBLE column (MySQL 8.0.23+). Emitted before COMMENT to match the SHOW CREATE /
+	// omni-canonical order (verified against 8.0.32 for both regular and generated columns);
+	// like SRID the version-gated comment is parsed back by omni's loader so the dumped `from`
+	// carries invisibility and the diff against an INVISIBLE user `to` is a no-op.
+	writeColumnInvisibleAttribute(buf, column)
+
 	if column.Comment != "" {
 		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", column.Comment); err != nil {
 			return err
 		}
 	}
-
-	// INVISIBLE column (MySQL 8.0.23+). Emitted last to match the SHOW CREATE / omni-canonical
-	// position; like SRID the version-gated comment is parsed back by omni's loader so the
-	// dumped `from` carries invisibility and the diff against an INVISIBLE user `to` is a no-op.
-	writeColumnInvisibleAttribute(buf, column)
 	return nil
 }
 
@@ -1277,8 +1279,9 @@ func writeColumnSRIDAttribute(buf *strings.Builder, column *storepb.ColumnMetada
 }
 
 // writeColumnInvisibleAttribute emits the ` /*!80023 INVISIBLE */` column attribute for
-// invisible columns (MySQL 8.0.23+), as the final attribute to match the SHOW CREATE
-// position. Shared by the SDL dumper and the legacy migration generator.
+// invisible columns (MySQL 8.0.23+). MySQL's canonical SHOW CREATE order places INVISIBLE
+// before COMMENT for both regular and generated columns (verified against 8.0.32), so callers
+// emit it before COMMENT. Shared by the SDL dumper and the legacy migration generator.
 func writeColumnInvisibleAttribute(buf *strings.Builder, column *storepb.ColumnMetadata) {
 	if column.IsInvisible {
 		_, _ = buf.WriteString(" /*!80023 INVISIBLE */")

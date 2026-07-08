@@ -624,7 +624,8 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 // “ `name` “ — the type and every attribute in canonical order. MySQL's grammar puts
 // the attributes in a different order for a generated column (the GENERATED ALWAYS AS
 // clause precedes NOT NULL and SRID) than for a regular column, so the body branches on
-// column.Generation. Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn
+// column.Generation. Both branches emit INVISIBLE before COMMENT, matching MySQL's
+// canonical SHOW CREATE order. Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn
 // (MODIFY COLUMN), which differ only in the leading clause.
 func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetadata) {
 	_, _ = buf.WriteString(column.Type)
@@ -665,14 +666,15 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 		_, _ = buf.WriteString(column.OnUpdate)
 	}
 
+	// INVISIBLE column (MySQL 8.0.23+): before COMMENT, matching the SHOW CREATE canonical
+	// order and the SDL dumper (printColumnClause).
+	writeColumnInvisibleAttribute(buf, column)
+
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
 		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
-
-	// INVISIBLE column (MySQL 8.0.23+): the final attribute, matching the SDL dumper.
-	writeColumnInvisibleAttribute(buf, column)
 }
 
 // writeGeneratedColumnAttributes emits the attributes of a generated column (type and
@@ -682,9 +684,9 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 //
 // The GENERATED ALWAYS AS clause must precede NOT NULL and the SRID attribute — the
 // order the current MySQL grammar accepts and that SHOW CREATE emits (verified against
-// 8.0.32). Note INVISIBLE precedes COMMENT here, unlike a regular column, matching the
-// generated-column canonical form. Generated columns never carry DEFAULT / AUTO_INCREMENT
-// / ON UPDATE, so those clauses are intentionally omitted.
+// 8.0.32). INVISIBLE precedes COMMENT, matching MySQL's canonical order for both regular
+// and generated columns. Generated columns never carry DEFAULT / AUTO_INCREMENT / ON
+// UPDATE, so those clauses are intentionally omitted.
 func writeGeneratedColumnAttributes(buf *strings.Builder, column *storepb.ColumnMetadata) {
 	_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
 	_, _ = buf.WriteString(column.Generation.Expression)

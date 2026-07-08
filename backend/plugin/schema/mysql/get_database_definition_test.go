@@ -382,6 +382,33 @@ func TestPrintColumnClauseSRIDPresence(t *testing.T) {
 		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false}))
 }
 
+// TestPrintColumnClauseInvisibleCommentOrder pins the SDL dumper's INVISIBLE/COMMENT order
+// (BYT-9830). MySQL's canonical SHOW CREATE emits INVISIBLE before COMMENT for both regular
+// and generated columns (verified against 8.0.32), so the dumped form must match — otherwise
+// the dump diverges from SHOW CREATE and from the migration generator's generated-column path.
+func TestPrintColumnClauseInvisibleCommentOrder(t *testing.T) {
+	srid := func(v uint32) *uint32 { return &v }
+	table := &storepb.TableMetadata{Name: "t"}
+
+	render := func(col *storepb.ColumnMetadata) string {
+		var buf strings.Builder
+		require.NoError(t, printColumnClause(&buf, col, table))
+		return buf.String()
+	}
+
+	// Regular INVISIBLE + COMMENT column: INVISIBLE precedes COMMENT.
+	require.Equal(t, "  `a` int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
+		render(&storepb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
+
+	// Generated spatial INVISIBLE + COMMENT column: same canonical INVISIBLE-before-COMMENT order.
+	require.Equal(t,
+		"  `loc` point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
+		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: &storepb.GenerationMetadata{
+			Type:       storepb.GenerationMetadata_TYPE_STORED,
+			Expression: "st_srid(point(`lng`,`lat`),4326)",
+		}}))
+}
+
 // TestWriteColumnDefinitionBodyGeneratedOrder pins the migration generator's attribute
 // order for a generated column (BYT-9830). MySQL's grammar requires the
 // `GENERATED ALWAYS AS (...) STORED|VIRTUAL` clause to precede NOT NULL and the SRID
@@ -415,10 +442,16 @@ func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
 		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: true, Srid: srid(0), Generation: stored}))
 
 	// Generated spatial column that is also INVISIBLE and has a COMMENT: INVISIBLE precedes
-	// COMMENT for a generated column (opposite of a regular column), matching SHOW CREATE.
+	// COMMENT, matching SHOW CREATE's canonical order for both regular and generated columns.
 	require.Equal(t,
 		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
 		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: stored}))
+
+	// Regular (non-generated) INVISIBLE column with a COMMENT: INVISIBLE precedes COMMENT,
+	// the same canonical order as the generated column above (verified against 8.0.32).
+	require.Equal(t,
+		"int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
+		render(&storepb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
 
 	// Plain (non-spatial) VIRTUAL generated column still emits the generation clause and
 	// nothing spurious.
