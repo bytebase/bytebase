@@ -21,7 +21,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
 	if currentSchema != "" {
-		searchPath = []string{currentSchema}
+		searchPath = searchPathForSelectedSchema(currentSchema, searchPath)
 	}
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"}
@@ -85,25 +85,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				continue
 			}
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
 		case *ast.RenameStmt:
 			if n.Relation != nil {
-				db, schema, oldTableName := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, oldTableName)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, oldTableName := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: oldTableName}, true)
 				if n.Newname != "" {
 					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: n.Newname}, false)
@@ -112,25 +100,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.IndexStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.InsertStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			// Count insert rows from VALUES
@@ -140,13 +116,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.UpdateStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			dmlCount++
@@ -156,13 +126,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.DeleteStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			dmlCount++
@@ -176,14 +140,14 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 					if !ok {
 						continue
 					}
-					db, schema, table := extractRangeVarNames(rv, database, searchPath)
+					db, schema, table := extractExistingRangeVarNames(rv, database, searchPath, dbMetadata)
 					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
 				}
 			}
 
 		case *ast.MergeStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -223,6 +187,24 @@ func extractRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []strin
 	}
 	if schema == "" && len(searchPath) > 0 {
 		schema = searchPath[0]
+	}
+	return db, schema, table
+}
+
+func extractExistingRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []string, dbMetadata *model.DatabaseMetadata) (string, string, string) {
+	db := rv.Catalogname
+	schema := rv.Schemaname
+	table := rv.Relname
+	if db == "" {
+		db = defaultDB
+	}
+	if schema == "" {
+		schemaName, _ := dbMetadata.SearchObject(searchPath, table)
+		if schemaName != "" {
+			schema = schemaName
+		} else if len(searchPath) > 0 {
+			schema = searchPath[0]
+		}
 	}
 	return db, schema, table
 }

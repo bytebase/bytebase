@@ -2002,8 +2002,9 @@ const unresolvedSchemaSentinel = "\x00bb_unresolved_schema\x00"
 func schemaForWriteTargetResolution(engine storepb.Engine, databaseName, requestSchema string) string {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		// Execution pins search_path to QueryRequest.schema when set; otherwise the
-		// connection user's default ($user, public) is not knowable here.
+		// Execution uses QueryRequest.schema first when set, with public as a fallback
+		// in the PostgreSQL driver/parser. Without a request schema, the connection
+		// user's default ($user, public) is not knowable here.
 		if requestSchema != "" {
 			return requestSchema
 		}
