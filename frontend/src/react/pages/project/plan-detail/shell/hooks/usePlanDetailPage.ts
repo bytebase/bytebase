@@ -327,24 +327,33 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const isPlanDone = useMemo(() => {
+  const { isPlanDone, hasActiveTasks } = useMemo(() => {
     if (!snapshot.rollout) {
-      return false;
+      return { isPlanDone: false, hasActiveTasks: false };
     }
     const allTasks = snapshot.rollout.stages.flatMap((stage) => stage.tasks);
-    return (
-      allTasks.length > 0 &&
-      allTasks.every(
+    return {
+      isPlanDone:
+        allTasks.length > 0 &&
+        allTasks.every(
+          (task) =>
+            task.status === Task_Status.DONE ||
+            task.status === Task_Status.SKIPPED
+        ),
+      // A task actively transitioning warrants fast polling so PENDING ->
+      // RUNNING -> DONE is observed promptly instead of after a grown backoff.
+      hasActiveTasks: allTasks.some(
         (task) =>
-          task.status === Task_Status.DONE ||
-          task.status === Task_Status.SKIPPED
-      )
-    );
+          task.status === Task_Status.PENDING ||
+          task.status === Task_Status.RUNNING
+      ),
+    };
   }, [snapshot.rollout]);
 
   const { restart: restartPolling } = usePolling({
     enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
     refreshState: fetchState,
+    fast: hasActiveTasks,
   });
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).

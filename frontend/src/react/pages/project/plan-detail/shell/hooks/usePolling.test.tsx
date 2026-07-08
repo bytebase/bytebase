@@ -23,7 +23,9 @@ describe("usePolling", () => {
 
   test("polls with a growing backoff", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
-    renderHook(() => usePolling({ enabled: true, refreshState: refresh }));
+    renderHook(() =>
+      usePolling({ enabled: true, refreshState: refresh, fast: false })
+    );
 
     await act(() => vi.advanceTimersByTimeAsync(1000));
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -38,7 +40,7 @@ describe("usePolling", () => {
   test("restart resets the backoff to the minimum interval", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
-      usePolling({ enabled: true, refreshState: refresh })
+      usePolling({ enabled: true, refreshState: refresh, fast: false })
     );
 
     // Two ticks so the next scheduled interval has grown to 4000.
@@ -66,7 +68,7 @@ describe("usePolling", () => {
         })
     );
     const { result } = renderHook(() =>
-      usePolling({ enabled: true, refreshState: refresh })
+      usePolling({ enabled: true, refreshState: refresh, fast: false })
     );
 
     // First tick fires; its refresh stays in flight.
@@ -82,5 +84,23 @@ describe("usePolling", () => {
     // The restarted minimum-interval tick must still fire ~1s after restart.
     await act(() => vi.advanceTimersByTimeAsync(1000));
     expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  test("fast mode holds the poll at the minimum interval (no backoff)", async () => {
+    // While a task is transitioning (PENDING/RUNNING) the interval must stay at
+    // the floor so the status change is observed promptly, instead of growing
+    // 1s -> 2s -> 4s and leaving a multi-second dead zone.
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      usePolling({ enabled: true, refreshState: refresh, fast: true })
+    );
+
+    // Every tick fires ~1s apart; with backoff the 2nd would wait until t=3000.
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(refresh).toHaveBeenCalledTimes(2);
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(refresh).toHaveBeenCalledTimes(3);
   });
 });

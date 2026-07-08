@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useRef } from "react";
 import { minmax } from "@/utils";
-import { POLLER_INTERVAL } from "../constants";
+
+// Poll cadence: start at `min`, grow ×`growth` up to `max` while quiescent, with
+// ±`jitter` ms of randomization to keep many open dashboards from resynchronizing.
+const POLLER_INTERVAL = {
+  min: 1000,
+  max: 30000,
+  growth: 2,
+  jitter: 250,
+} as const;
 
 export interface UsePollingParams {
   enabled: boolean;
   refreshState: () => Promise<void>;
+  // While true, hold the poll at the minimum (jittered) interval instead of
+  // backing off — foreground freshness during transient work (a task moving
+  // PENDING -> RUNNING -> DONE). Exponential backoff is for relieving a
+  // struggling server after failures, not for keeping a live dashboard fresh;
+  // its growing interval is exactly the dead zone that delays observing a
+  // status change. Back off only once everything is quiescent.
+  fast: boolean;
 }
 
 export interface UsePollingResult {
@@ -18,6 +33,7 @@ export interface UsePollingResult {
 export function usePolling({
   enabled,
   refreshState,
+  fast,
 }: UsePollingParams): UsePollingResult {
   const pollTimerRef = useRef<number | undefined>(undefined);
   // `active` mirrors the effect's mounted+enabled lifetime so a late-resolving
@@ -29,6 +45,10 @@ export function usePolling({
   const epochRef = useRef(0);
   const refreshStateRef = useRef(refreshState);
   refreshStateRef.current = refreshState;
+  // Read the latest `fast` when scheduling the next tick, so a transition that
+  // introduces (or clears) active work takes effect on the following tick.
+  const fastRef = useRef(fast);
+  fastRef.current = fast;
 
   const stopPolling = useCallback(() => {
     if (!pollTimerRef.current) {
@@ -65,7 +85,13 @@ export function usePolling({
           return;
         }
         scheduleNext(
-          Math.min(nextInterval * POLLER_INTERVAL.growth, POLLER_INTERVAL.max)
+          // Active work: stay at the floor. Quiescent: back off toward the cap.
+          fastRef.current
+            ? POLLER_INTERVAL.min
+            : Math.min(
+                nextInterval * POLLER_INTERVAL.growth,
+                POLLER_INTERVAL.max
+              )
         );
       }, nextInterval);
     },
