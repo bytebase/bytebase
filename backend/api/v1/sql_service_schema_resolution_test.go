@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestSchemaForWriteTargetResolution pins the per-engine default schema used to resolve
@@ -37,6 +38,31 @@ func TestSchemaForWriteTargetResolution(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, schemaForWriteTargetResolution(tc.engine, dbName, tc.requestSchema))
+		})
+	}
+}
+
+func TestPostgresWriteTargetSchemaForRequest(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "app"},
+			{Name: "public"},
+		},
+	}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+
+	tests := []struct {
+		name          string
+		requestSchema string
+		want          string
+	}{
+		{"selected schema exists", "app", "app"},
+		{"selected public schema exists", "public", "public"},
+		{"selected schema is missing", "missing", unresolvedSchemaSentinel},
+		{"empty selected schema is unknowable", "", unresolvedSchemaSentinel},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, postgresWriteTargetSchemaForRequest(tc.requestSchema, dbMeta))
 		})
 	}
 }

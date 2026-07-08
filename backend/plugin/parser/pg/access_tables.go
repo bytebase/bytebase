@@ -15,6 +15,8 @@ type ExtractAccessTablesOption struct {
 	DefaultDatabase string
 	// DefaultSchema is the default schema name to use when table reference doesn't specify one.
 	DefaultSchema string
+	// SearchPath is the schema search path to use when table reference doesn't specify one.
+	SearchPath []string
 	// SkipMetadataValidation skips metadata lookup and validation.
 	// When true, returns all table references found in SQL without checking if they exist.
 	SkipMetadataValidation bool
@@ -38,8 +40,11 @@ func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
 	}
 
-	searchPath := []string{option.DefaultSchema}
-	if option.DefaultSchema == "" {
+	searchPath := option.SearchPath
+	if len(searchPath) == 0 && option.DefaultSchema != "" {
+		searchPath = []string{option.DefaultSchema}
+	}
+	if len(searchPath) == 0 {
 		searchPath = []string{"public"}
 	}
 

@@ -62,6 +62,71 @@ func TestExtractChangedResources(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget(t *testing.T) {
+	const statement = `INSERT INTO customer VALUES (1);`
+
+	for _, tc := range []struct {
+		name       string
+		appTables  []*storepb.TableMetadata
+		appFuncs   []*storepb.FunctionMetadata
+		wantSchema string
+	}{
+		{
+			name:       "falls back to public when selected schema lacks the table",
+			wantSchema: "public",
+		},
+		{
+			name: "selected schema still takes precedence",
+			appTables: []*storepb.TableMetadata{{
+				Name: "customer",
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "id", Type: "int"},
+				},
+			}},
+			wantSchema: "app",
+		},
+		{
+			name: "relation lookup skips function in selected schema",
+			appFuncs: []*storepb.FunctionMetadata{{
+				Name: "customer",
+			}},
+			wantSchema: "public",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+				Name: "db",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name:      "app",
+						Tables:    tc.appTables,
+						Functions: tc.appFuncs,
+					},
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{{
+							Name: "customer",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "int"},
+							},
+						}},
+					},
+				},
+			}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+
+			want := model.NewChangedResources(dbMetadata)
+			want.AddTable("db", tc.wantSchema, &storepb.ChangedResourceTable{Name: "customer"}, false)
+
+			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+			require.NoError(t, err)
+			asts := base.ExtractASTs(stmts)
+			got, err := extractChangedResources("db", "app", dbMetadata, asts, statement)
+			require.NoError(t, err)
+			require.Equal(t, want, got.ChangedResources)
+		})
+	}
+}
+
 func TestExtractChangedResourcesTruncate(t *testing.T) {
 	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	const statement = `TRUNCATE TABLE public.t1, myschema.t2;`

@@ -25,7 +25,7 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	}
 	searchPath := meta.GetSearchPath()
 	if schema != "" {
-		searchPath = []string{schema}
+		searchPath = searchPathForSelectedSchema(schema, searchPath)
 	}
 	extractor := newOmniQuerySpanExtractor(database, searchPath, gCtx)
 

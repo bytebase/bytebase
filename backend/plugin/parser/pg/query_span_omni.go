@@ -211,6 +211,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	accessTables, err := ExtractAccessTables(stmt, ExtractAccessTablesOption{
 		DefaultDatabase:        e.defaultDatabase,
 		DefaultSchema:          e.searchPath[0],
+		SearchPath:             e.searchPath,
 		GetDatabaseMetadata:    e.gCtx.GetDatabaseMetadataFunc,
 		Ctx:                    ctx,
 		InstanceID:             e.gCtx.InstanceID,
@@ -1049,11 +1050,17 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []
 		}
 	}
 
-	schema := rv.Schemaname
-	if schema == "" && len(e.searchPath) > 0 {
-		schema = e.searchPath[0]
+	var rel *catalog.Relation
+	if rv.Schemaname != "" {
+		rel = e.cat.GetRelation(rv.Schemaname, rv.Relname)
+	} else {
+		for _, schema := range e.searchPath {
+			rel = e.cat.GetRelation(schema, rv.Relname)
+			if rel != nil {
+				break
+			}
+		}
 	}
-	rel := e.cat.GetRelation(schema, rv.Relname)
 	if rel == nil {
 		return nil
 	}

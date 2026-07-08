@@ -21,7 +21,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
 	if currentSchema != "" {
-		searchPath = []string{currentSchema}
+		searchPath = searchPathForSelectedSchema(currentSchema, searchPath)
 	}
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"}
@@ -66,7 +66,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.CreateStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -85,25 +85,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				continue
 			}
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
 		case *ast.RenameStmt:
 			if n.Relation != nil {
-				db, schema, oldTableName := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, oldTableName)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, oldTableName := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: oldTableName}, true)
 				if n.Newname != "" {
 					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: n.Newname}, false)
@@ -112,25 +100,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.IndexStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.InsertStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			// Count insert rows from VALUES
@@ -140,13 +116,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.UpdateStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			dmlCount++
@@ -156,13 +126,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		case *ast.DeleteStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
-				if schema == "" {
-					schemaName, _ := dbMetadata.SearchObject(searchPath, table)
-					if schemaName != "" {
-						schema = schemaName
-					}
-				}
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			dmlCount++
@@ -176,20 +140,20 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 					if !ok {
 						continue
 					}
-					db, schema, table := extractRangeVarNames(rv, database, searchPath)
+					db, schema, table := extractExistingRangeVarNames(rv, database, searchPath, dbMetadata)
 					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
 				}
 			}
 
 		case *ast.MergeStmt:
 			if n.Relation != nil {
-				db, schema, table := extractRangeVarNames(n.Relation, database, searchPath)
+				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.CreateTableAsStmt:
 			if n.Into != nil && n.Into.Rel != nil {
-				db, schema, table := extractRangeVarNames(n.Into.Rel, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(n.Into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -197,7 +161,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause,
 			// which may sit on the first arm of a set operation).
 			if into := omniIntoClause(n); into != nil && into.Rel != nil {
-				db, schema, table := extractRangeVarNames(into.Rel, database, searchPath)
+				db, schema, table := extractNewRangeVarNames(into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
@@ -227,6 +191,45 @@ func extractRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []strin
 	return db, schema, table
 }
 
+func extractExistingRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []string, dbMetadata *model.DatabaseMetadata) (string, string, string) {
+	db := rv.Catalogname
+	schema := rv.Schemaname
+	table := rv.Relname
+	if db == "" {
+		db = defaultDB
+	}
+	if schema == "" {
+		schemaName := searchRelationObject(dbMetadata, searchPath, table)
+		if schemaName != "" {
+			schema = schemaName
+		} else if len(searchPath) > 0 {
+			schema = searchPath[0]
+		}
+	}
+	return db, schema, table
+}
+
+func extractNewRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath []string, dbMetadata *model.DatabaseMetadata) (string, string, string) {
+	db, schema, table := extractRangeVarNames(rv, defaultDB, searchPath)
+	if rv.Schemaname == "" && len(searchPath) > 1 && dbMetadata.GetSchemaMetadata(schema) == nil {
+		schema = ""
+	}
+	return db, schema, table
+}
+
+func searchRelationObject(dbMetadata *model.DatabaseMetadata, searchPath []string, name string) string {
+	for _, schemaName := range searchPath {
+		schema := dbMetadata.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			continue
+		}
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil {
+			return schema.GetProto().GetName()
+		}
+	}
+	return ""
+}
+
 // handleDropTableOmni handles DROP TABLE/MATERIALIZED VIEW.
 func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
 	if n.Objects == nil {
@@ -239,7 +242,7 @@ func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, 
 		}
 		db, schema, name := extractNameListParts(nameList, database)
 		if schema == "" {
-			schemaName, _ := dbMetadata.SearchObject(searchPath, name)
+			schemaName := searchRelationObject(dbMetadata, searchPath, name)
 			if schemaName == "" {
 				if len(searchPath) > 0 {
 					schema = searchPath[0]
