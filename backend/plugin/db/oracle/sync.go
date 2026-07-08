@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 
@@ -977,8 +978,7 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
-		// Oracle may include a trailing C-string null terminator via the go-ora driver.
-		view.Definition = strings.TrimRight(view.Definition, "\x00")
+		view.Definition = sanitizeOracleDefinition(schemaName, "VIEW", view.Name, view.Definition)
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
 		view.Columns = columnMap[key]
 		view.Triggers = triggerMap[key]
@@ -1124,8 +1124,12 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
 			return nil, err
 		}
-		// Oracle may include a trailing C-string null terminator via the go-ora driver.
-		materializedView.Definition = strings.TrimRight(materializedView.Definition, "\x00")
+		materializedView.Definition = sanitizeOracleDefinition(
+			schemaName,
+			"MATERIALIZED VIEW",
+			materializedView.Name,
+			materializedView.Definition,
+		)
 
 		// Ensure the definition ends with a newline to match expected format
 		if materializedView.Definition != "" && !strings.HasSuffix(materializedView.Definition, "\n") {
@@ -1256,7 +1260,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			case "FUNCTION":
 				function := &storepb.FunctionMetadata{
 					Name:       currentName,
-					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+					Definition: sanitizeOracleDefinition(schemaName, "FUNCTION", currentName, strings.Join(defText, "")),
 				}
 				key := db.TableKey{Schema: schemaName, Table: currentName}
 				if comment, ok := functionCommentMap[key]; ok {
@@ -1266,12 +1270,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			case "PROCEDURE":
 				procedures = append(procedures, &storepb.ProcedureMetadata{
 					Name:       currentName,
-					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+					Definition: sanitizeOracleDefinition(schemaName, "PROCEDURE", currentName, strings.Join(defText, "")),
 				})
 			case "PACKAGE":
 				packages = append(packages, &storepb.PackageMetadata{
 					Name:       currentName,
-					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+					Definition: sanitizeOracleDefinition(schemaName, "PACKAGE", currentName, strings.Join(defText, "")),
 				})
 			default:
 				// Ignore other types
@@ -1286,7 +1290,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	case "FUNCTION":
 		function := &storepb.FunctionMetadata{
 			Name:       currentName,
-			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+			Definition: sanitizeOracleDefinition(schemaName, "FUNCTION", currentName, strings.Join(defText, "")),
 		}
 		key := db.TableKey{Schema: schemaName, Table: currentName}
 		if comment, ok := functionCommentMap[key]; ok {
@@ -1296,12 +1300,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	case "PROCEDURE":
 		procedures = append(procedures, &storepb.ProcedureMetadata{
 			Name:       currentName,
-			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+			Definition: sanitizeOracleDefinition(schemaName, "PROCEDURE", currentName, strings.Join(defText, "")),
 		})
 	case "PACKAGE":
 		packages = append(packages, &storepb.PackageMetadata{
 			Name:       currentName,
-			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
+			Definition: sanitizeOracleDefinition(schemaName, "PACKAGE", currentName, strings.Join(defText, "")),
 		})
 	default:
 		// Ignore other types
@@ -1314,6 +1318,34 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	}
 
 	return functions, procedures, packages, nil
+}
+
+func sanitizeOracleDefinition(schemaName, objectType, objectName, definition string) string {
+	// Oracle may include a trailing C-string null terminator via the go-ora driver.
+	definition = strings.TrimRight(definition, "\x00")
+	if utf8.ValidString(definition) {
+		return definition
+	}
+	slog.Warn("sanitized invalid UTF-8 in Oracle metadata",
+		slog.String("schema", schemaName),
+		slog.String("object_type", objectType),
+		slog.String("object_name", objectName),
+		slog.String("field", "definition"),
+	)
+
+	var sanitized strings.Builder
+	sanitized.Grow(len(definition))
+	for i := 0; i < len(definition); {
+		r, width := utf8.DecodeRuneInString(definition[i:])
+		if r == utf8.RuneError && width == 1 {
+			_, _ = fmt.Fprintf(&sanitized, "\\x%02x", definition[i])
+			i++
+			continue
+		}
+		_, _ = sanitized.WriteString(definition[i : i+width])
+		i += width
+	}
+	return sanitized.String()
 }
 
 // cleanDefaultExpression cleans up Oracle default expressions to make them more portable
