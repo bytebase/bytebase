@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { minmax } from "@/utils";
 
-// Poll cadence: start at `min`, grow ×`growth` up to `max` while quiescent, with
-// ±`jitter` ms of randomization to keep many open dashboards from resynchronizing.
+// Poll cadence: while `fast` (a task transitioning), hold near `fastMin` — the
+// slim status poll is cheap enough to run this tight and still cost less than the
+// old 1s full-snapshot poll. While quiescent, start at `min` and grow ×`growth`
+// up to `max`. ±`jitter` ms of randomization keeps many open dashboards from
+// resynchronizing; `fastMin` is also the absolute floor after jitter.
 const POLLER_INTERVAL = {
   min: 1000,
+  fastMin: 500,
   max: 30000,
   growth: 2,
   jitter: 250,
@@ -12,21 +16,24 @@ const POLLER_INTERVAL = {
 
 export interface UsePollingParams {
   enabled: boolean;
-  refreshState: () => Promise<void>;
-  // While true, hold the poll at the minimum (jittered) interval instead of
-  // backing off — foreground freshness during transient work (a task moving
-  // PENDING -> RUNNING -> DONE). Exponential backoff is for relieving a
-  // struggling server after failures, not for keeping a live dashboard fresh;
-  // its growing interval is exactly the dead zone that delays observing a
-  // status change. Back off only once everything is quiescent.
+  // Invoked on each tick with the current `fast` flag, so the caller can do
+  // lighter work on fast (active) ticks and a fuller refresh on slow ones — the
+  // cadence decision and the work decision then read the same source.
+  refreshState: (fast: boolean) => Promise<void>;
+  // While true, hold the poll at the fast floor instead of backing off —
+  // foreground freshness during transient work (a task moving PENDING ->
+  // RUNNING -> DONE). Exponential backoff is for relieving a struggling server
+  // after failures, not for keeping a live dashboard fresh; its growing interval
+  // is exactly the dead zone that delays observing a status change. Back off only
+  // once everything is quiescent.
   fast: boolean;
 }
 
 export interface UsePollingResult {
-  // Reset the backoff and poll again from the minimum interval. Call this
-  // after a user-triggered mutation (run/skip/cancel a task, etc.) so the UI
-  // watches closely for the resulting status transition instead of waiting out
-  // the current (possibly maxed-out) backoff interval.
+  // Reset the backoff and poll again from the fast floor. Call this after a
+  // user-triggered mutation (run/skip/cancel a task, etc.) so the UI watches
+  // closely for the resulting status transition instead of waiting out the
+  // current (possibly maxed-out) backoff interval.
   restart: () => void;
 }
 
@@ -67,7 +74,7 @@ export function usePolling({
         interval +
           Math.floor(Math.random() * (POLLER_INTERVAL.jitter * 2 + 1)) -
           POLLER_INTERVAL.jitter,
-        POLLER_INTERVAL.min,
+        POLLER_INTERVAL.fastMin,
         POLLER_INTERVAL.max
       );
 
@@ -75,7 +82,7 @@ export function usePolling({
         if (!activeRef.current) {
           return;
         }
-        await refreshStateRef.current().catch(() => undefined);
+        await refreshStateRef.current(fastRef.current).catch(() => undefined);
         if (!activeRef.current) {
           return;
         }
@@ -85,9 +92,9 @@ export function usePolling({
           return;
         }
         scheduleNext(
-          // Active work: stay at the floor. Quiescent: back off toward the cap.
+          // Active work: stay at the fast floor. Quiescent: back off to the cap.
           fastRef.current
-            ? POLLER_INTERVAL.min
+            ? POLLER_INTERVAL.fastMin
             : Math.min(
                 nextInterval * POLLER_INTERVAL.growth,
                 POLLER_INTERVAL.max
@@ -102,7 +109,10 @@ export function usePolling({
     if (!activeRef.current) {
       return;
     }
-    scheduleNext(POLLER_INTERVAL.min);
+    // A user action implies imminent activity, so poll back from the fast floor
+    // regardless of the current `fast` state (which won't flip to true until the
+    // action's fetch lands the new status).
+    scheduleNext(POLLER_INTERVAL.fastMin);
   }, [scheduleNext]);
 
   useEffect(() => {

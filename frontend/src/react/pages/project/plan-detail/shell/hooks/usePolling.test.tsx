@@ -86,21 +86,23 @@ describe("usePolling", () => {
     expect(refresh).toHaveBeenCalledTimes(2);
   });
 
-  test("fast mode holds the poll at the minimum interval (no backoff)", async () => {
+  test("fast mode holds the poll at the fast floor (no backoff)", async () => {
     // While a task is transitioning (PENDING/RUNNING) the interval must stay at
-    // the floor so the status change is observed promptly, instead of growing
-    // 1s -> 2s -> 4s and leaving a multi-second dead zone.
+    // the 500ms fast floor so the status change is observed promptly, instead of
+    // growing 1s -> 2s -> 4s and leaving a multi-second dead zone.
     const refresh = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
       usePolling({ enabled: true, refreshState: refresh, fast: true })
     );
 
-    // Every tick fires ~1s apart; with backoff the 2nd would wait until t=3000.
+    // First tick is the enable start at the 1000ms base; every tick after holds
+    // at the 500ms fast floor. If the fast floor were 1000ms the 2nd tick would
+    // land at t=2000 and this 500ms advance would still show a single call.
     await act(() => vi.advanceTimersByTimeAsync(1000));
     expect(refresh).toHaveBeenCalledTimes(1);
-    await act(() => vi.advanceTimersByTimeAsync(1000));
+    await act(() => vi.advanceTimersByTimeAsync(500));
     expect(refresh).toHaveBeenCalledTimes(2);
-    await act(() => vi.advanceTimersByTimeAsync(1000));
+    await act(() => vi.advanceTimersByTimeAsync(500));
     expect(refresh).toHaveBeenCalledTimes(3);
   });
 });

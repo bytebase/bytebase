@@ -36,7 +36,7 @@ import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
-import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
+import { fetchPlanSnapshot, fetchRolloutState } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
@@ -272,7 +272,7 @@ export const usePlanDetailPage = ({
   // older data and must not overwrite the fresher snapshot when it resolves
   // late — after a task rerun that would flip the status back to the old one.
   const fetchSeqRef = useRef(0);
-  const fetchState = useCallback(async () => {
+  const fetchFullState = useCallback(async () => {
     const current = latestSnapshotRef.current;
     fetchSeqRef.current += 1;
     const seq = fetchSeqRef.current;
@@ -281,6 +281,28 @@ export const usePlanDetailPage = ({
       current.planId,
       routeQueryRef.current
     );
+    if (seq !== fetchSeqRef.current) {
+      return;
+    }
+    patchState(patch);
+  }, [patchState]);
+
+  // The slim "status lane": while a task is transitioning, poll only the rollout
+  // and its task runs instead of the full 7-RPC page snapshot. Cheaper per tick,
+  // so it can run at the fast floor without adding load, and the status
+  // transition surfaces in ~0.5s instead of after the full fetch. Shares
+  // fetchSeqRef with the full fetch, so whichever started last wins and a late
+  // slim tick can never rewind a fresher full result.
+  const fetchStatusState = useCallback(async () => {
+    const rolloutName = latestSnapshotRef.current.rollout?.name;
+    // Only reached on active ticks, which imply a rollout exists; bail rather
+    // than re-decide slim-vs-full (pollTick already gated that) if it doesn't.
+    if (!rolloutName) {
+      return;
+    }
+    fetchSeqRef.current += 1;
+    const seq = fetchSeqRef.current;
+    const patch = await fetchRolloutState(rolloutName);
     if (seq !== fetchSeqRef.current) {
       return;
     }
@@ -350,22 +372,31 @@ export const usePlanDetailPage = ({
     };
   }, [snapshot.rollout]);
 
+  // The poller passes the live `fast` flag into each tick, so a tick uses the
+  // slim status fetch exactly while work is in flight and the full fetch once the
+  // plan settles (refreshing the rest of the page that the slim lane skips).
+  const pollTick = useCallback(
+    (fast: boolean) => (fast ? fetchStatusState() : fetchFullState()),
+    [fetchStatusState, fetchFullState]
+  );
+
   const { restart: restartPolling } = usePolling({
     enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    refreshState: fetchState,
+    refreshState: pollTick,
     fast: hasActiveTasks,
   });
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
   // Resets the poll backoff first — not after the fetch — so the follow-up
-  // status transition (e.g. a task moving PENDING -> RUNNING) is watched on
-  // ~1s ticks from the moment of the action, then fetches immediately. If the
-  // immediate fetch is still in flight when the restarted tick fires, the
-  // fetch sequence guard keeps the newest result authoritative.
+  // status transition (e.g. a task moving PENDING -> RUNNING) is watched from
+  // the fast floor from the moment of the action, then does a full fetch
+  // immediately (the action may have changed more than task status, e.g. created
+  // the rollout). If the immediate fetch is still in flight when the restarted
+  // tick fires, the fetch sequence guard keeps the newest result authoritative.
   const refreshState = useCallback(async () => {
     restartPolling();
-    await fetchState();
-  }, [fetchState, restartPolling]);
+    await fetchFullState();
+  }, [fetchFullState, restartPolling]);
 
   return useDerivedPlanState({
     snapshot,

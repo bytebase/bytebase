@@ -47,6 +47,54 @@ export interface PlanDetailFetchPatch {
   taskRuns: TaskRun[];
 }
 
+// The rollout and its task-run listing are fetched by both the full page
+// snapshot and the slim status lane; only their error handling differs. Keep the
+// request shape — schema, silent context, task-run parent glob — in one place.
+// Fetched WITHOUT touching the store here; the caller (patchState) seeds the
+// store cache after its staleness guard, so a stale in-flight poll can't
+// overwrite the shared cache the log viewer reads.
+const requestRollout = (rolloutName: string) =>
+  rolloutServiceClientConnect.getRollout(
+    create(GetRolloutRequestSchema, { name: rolloutName }),
+    { contextValues: createContextValues().set(silentContextKey, true) }
+  );
+
+const requestRolloutTaskRuns = (rolloutName: string) =>
+  rolloutServiceClientConnect
+    .listTaskRuns(
+      create(ListTaskRunsRequestSchema, {
+        parent: `${rolloutName}/stages/-/tasks/-`,
+      })
+    )
+    .then((response) => response.taskRuns);
+
+// The slim "status lane" poll. While a task is transitioning, the deploy view
+// only needs the rollout (task statuses) and its task runs — not the whole page.
+// Fetching just these two, instead of the 7-RPC full snapshot, lets the poll run
+// at a tight floor without the extra load, so PENDING -> RUNNING -> DONE is
+// observed promptly. Only fields that resolved are returned, so a transient poll
+// failure keeps the existing data instead of flashing the deploy view empty.
+export type PlanDetailStatusPatch = Partial<
+  Pick<PlanDetailFetchPatch, "rollout" | "taskRuns">
+>;
+
+export const fetchRolloutState = async (
+  rolloutName: string
+): Promise<PlanDetailStatusPatch> => {
+  const [rolloutResult, taskRunsResult] = await Promise.allSettled([
+    requestRollout(rolloutName),
+    requestRolloutTaskRuns(rolloutName),
+  ]);
+  const patch: PlanDetailStatusPatch = {};
+  if (rolloutResult.status === "fulfilled") {
+    patch.rollout = rolloutResult.value;
+  }
+  if (taskRunsResult.status === "fulfilled") {
+    patch.taskRuns = taskRunsResult.value;
+  }
+  return patch;
+};
+
 const convertRouteQuery = (query: Record<string, unknown>) => {
   const kv: Record<string, string> = {};
   for (const [key, value] of Object.entries(query)) {
@@ -128,25 +176,11 @@ export const fetchPlanSnapshot = async (
       )
       .then((run) => [run] as PlanCheckRun[])
       .catch(() => []),
-    // Fetch the rollout WITHOUT touching the store here; the caller
-    // (patchState) seeds the store cache after its staleness guard, so a stale
-    // in-flight poll can't overwrite the shared cache the log viewer reads.
     rolloutName
-      ? rolloutServiceClientConnect
-          .getRollout(create(GetRolloutRequestSchema, { name: rolloutName }), {
-            contextValues: createContextValues().set(silentContextKey, true),
-          })
-          .catch(() => undefined)
+      ? requestRollout(rolloutName).catch(() => undefined)
       : Promise.resolve(undefined),
     rolloutName
-      ? rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rolloutName}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
+      ? requestRolloutTaskRuns(rolloutName).catch(() => [])
       : Promise.resolve([] as TaskRun[]),
   ]);
 
