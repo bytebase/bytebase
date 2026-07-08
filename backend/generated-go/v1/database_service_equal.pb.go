@@ -922,6 +922,12 @@ func (x *ColumnMetadata) Equal(y *ColumnMetadata) bool {
 	if x.DefaultConstraintName != y.DefaultConstraintName {
 		return false
 	}
+	if p, q := x.Srid, y.Srid; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if x.IsInvisible != y.IsInvisible {
+		return false
+	}
 	return true
 }
 

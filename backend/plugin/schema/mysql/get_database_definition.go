@@ -1230,6 +1230,12 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 		}
 	}
 
+	// SRID for spatial columns (MySQL 8.0). Emitted after NOT NULL and before DEFAULT to
+	// match the SHOW CREATE / omni-canonical position; the version-gated executable comment
+	// is spliced back as live SQL by omni's loader so the dumped `from` carries the SRID and
+	// the diff against a user `to` with the same SRID is a no-op.
+	writeColumnSRIDAttribute(buf, column)
+
 	if err := printDefaultClause(buf, column); err != nil {
 		return err
 	}
@@ -1246,13 +1252,40 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 			return err
 		}
 	}
+
+	// INVISIBLE column (MySQL 8.0.23+). Emitted before COMMENT to match the SHOW CREATE /
+	// omni-canonical order (verified against 8.0.32 for both regular and generated columns);
+	// like SRID the version-gated comment is parsed back by omni's loader so the dumped `from`
+	// carries invisibility and the diff against an INVISIBLE user `to` is a no-op.
+	writeColumnInvisibleAttribute(buf, column)
+
 	if column.Comment != "" {
 		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", column.Comment); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+// writeColumnSRIDAttribute emits the ` /*!80003 SRID n */` column attribute when the
+// column carries an explicit SRID — including the valid SRID 0, which presence (not a
+// zero sentinel) distinguishes from "no SRID". Shared by the SDL dumper
+// (printColumnClause) and the legacy migration generator (writeAddColumn /
+// writeModifyColumn) so both render the same canonical form.
+func writeColumnSRIDAttribute(buf *strings.Builder, column *storepb.ColumnMetadata) {
+	if column.Srid != nil {
+		_, _ = fmt.Fprintf(buf, " /*!80003 SRID %d */", column.GetSrid())
+	}
+}
+
+// writeColumnInvisibleAttribute emits the ` /*!80023 INVISIBLE */` column attribute for
+// invisible columns (MySQL 8.0.23+). MySQL's canonical SHOW CREATE order places INVISIBLE
+// before COMMENT for both regular and generated columns (verified against 8.0.32), so callers
+// emit it before COMMENT. Shared by the SDL dumper and the legacy migration generator.
+func writeColumnInvisibleAttribute(buf *strings.Builder, column *storepb.ColumnMetadata) {
+	if column.IsInvisible {
+		_, _ = buf.WriteString(" /*!80023 INVISIBLE */")
+	}
 }
 
 // normalizeColumnType rewrites engine-specific column-type spellings the omni SDL parser

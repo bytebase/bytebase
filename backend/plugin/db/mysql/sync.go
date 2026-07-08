@@ -68,8 +68,8 @@ var (
 // after the numeric version, e.g. "-MariaDB", "-OceanBase-v4.2", "-TiDB-v7.5") denotes
 // a stock MySQL server. MySQL-compatible engines registered as MYSQL report MySQL-like
 // version numbers but do not implement every stock information_schema feature, so any
-// stock-only query or decode (binary default encodings) must be gated on this single
-// predicate.
+// stock-only query or decode (SRS_ID column select, binary default encodings, column
+// INVISIBLE capture) must be gated on this single predicate.
 func isStockMySQL(versionSuffix string) bool {
 	return !strings.Contains(versionSuffix, "MariaDB") &&
 		!strings.Contains(versionSuffix, "OceanBase") &&
@@ -202,6 +202,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
 	}
 	atLeast800 := semVersion.GE(semver.MustParse("8.0.0"))
+	atLeast803 := semVersion.GE(semver.MustParse("8.0.3"))
 	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
 	atLeast5_7_0 := semVersion.GE(semver.MustParse("5.7.0"))
@@ -327,8 +328,17 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query column info.
+	// SRS_ID (spatial reference id) was added to information_schema.COLUMNS in stock
+	// MySQL 8.0.3 (the same version encoded by the /*!80003 SRID */ renderer). Stock
+	// 8.0.0–8.0.2 lack it, as do 5.7/5.6, MariaDB, OceanBase, and TiDB (which may report
+	// an 8.x MySQL-compat version), so selecting it there would fail the whole sync —
+	// they select NULL instead.
 	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
-	columnQuery := `
+	sridSelect := "NULL"
+	if atLeast803 && stockMySQL {
+		sridSelect = "SRS_ID"
+	}
+	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
@@ -340,13 +350,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			IFNULL(COLLATION_NAME, ''),
 			QUOTE(COLUMN_COMMENT),
 			convert(GENERATION_EXPRESSION using BINARY),
-			EXTRA
+			EXTRA,
+			%s
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, sridSelect)
 	if !atLeast5_7_0 {
 		// GENERATION_EXPRESSION does not exist in MySQL 5.6.
-		columnQuery = `
+		columnQuery = fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
@@ -358,10 +369,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			IFNULL(COLLATION_NAME, ''),
 			QUOTE(COLUMN_COMMENT),
 			NULL,
-			EXTRA
+			EXTRA,
+			%s
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, sridSelect)
 	}
 	columnRows, err := d.db.QueryContext(ctx, columnQuery, d.databaseName)
 	if err != nil {
@@ -373,6 +385,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		var tableName, nullable, extra, tp string
 		var defaultStr sql.NullString
 		var generationExpr []byte
+		var srid sql.NullInt64
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
@@ -385,6 +398,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			&column.Comment,
 			&generationExpr,
 			&extra,
+			&srid,
 		); err != nil {
 			return nil, err
 		}
@@ -397,6 +411,22 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		column.Type = GetColumnTypeCanonicalSynonym(tp)
 		column.Nullable = nullableBool
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra, binaryDefaultFmt)
+		// SRID presence tracks SRS_ID being non-NULL: spatial columns with an explicit
+		// SRID (MySQL 8.0), INCLUDING the valid SRID 0. SRS_IDs are unsigned 32-bit, so
+		// the value must not be squeezed through int32 (custom SRSs may be >= 2^31).
+		if srid.Valid {
+			v := uint32(srid.Int64)
+			column.Srid = &v
+		}
+		// A user-declared INVISIBLE column surfaces as the INVISIBLE token in EXTRA
+		// (MySQL 8.0.23+). Captured on stock MySQL only: MariaDB 10.3+ also reports
+		// INVISIBLE in EXTRA, but the writers emit the MySQL-versioned
+		// /*!80023 INVISIBLE */ form, which MariaDB ignores — capturing there would
+		// yield a permanently non-converging diff. On stock MySQL the dumper re-emits
+		// the attribute and the declarative diff stays a no-op.
+		if stockMySQL && isInvisibleColumnExtra(extra) {
+			column.IsInvisible = true
+		}
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 		invisible := containsInvisibleChars(generationExpr)
@@ -1229,6 +1259,21 @@ func isCleanDefaultText(value []byte) bool {
 		}
 	}
 	return true
+}
+
+// isInvisibleColumnExtra reports whether the information_schema.COLUMNS.EXTRA value
+// carries the standalone INVISIBLE token (MySQL 8.0.23+; MariaDB 10.3+ reports the
+// same token, but the capture site gates on isStockMySQL — see SyncDBSchema). EXTRA
+// can hold several space-separated tokens (e.g. "VIRTUAL GENERATED INVISIBLE" or
+// "DEFAULT_GENERATED on update CURRENT_TIMESTAMP INVISIBLE"), so the token is matched
+// as a whole field rather than a substring.
+func isInvisibleColumnExtra(extra string) bool {
+	for _, tok := range strings.Fields(extra) {
+		if strings.EqualFold(tok, "INVISIBLE") {
+			return true
+		}
+	}
+	return false
 }
 
 // UnescapeExpressionDefault unescapes the default expression for MySQL.

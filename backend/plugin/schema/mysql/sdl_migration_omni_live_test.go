@@ -743,3 +743,53 @@ CREATE TABLE author (
 		})
 	}
 }
+
+// TestSDLSpatialSRIDPresenceLive verifies the SRID presence semantics (X5) against the
+// live 8.0 oracle: a geometry column with EXPLICIT SRID 0 (information_schema reports
+// SRS_ID=0 — a valid SRS, distinct from "no SRID" which reports NULL) and one with SRID
+// 4326 must both round-trip — dump -> SDL -> apply to a fresh database -> re-dump —
+// with byte-identical dumps and an empty self-diff. Before the fix the 0-sentinel
+// conflated SRID 0 with "no SRID" and dropped the attribute at dump time.
+func TestSDLSpatialSRIDPresenceLive(t *testing.T) {
+	skipUnlessLiveOracle(t)
+	ctx := context.Background()
+	srv := liveServers[0] // 8.0 — the SRID column attribute is an 8.0-only surface.
+
+	const ddl = `
+CREATE TABLE geo (
+	id INT PRIMARY KEY,
+	pt0 GEOMETRY NOT NULL /*!80003 SRID 0 */,
+	pt4326 POINT NOT NULL /*!80003 SRID 4326 */,
+	ptnone GEOMETRY NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+`
+	dbA := newLiveDatabase(ctx, t, srv, "sdl_srid_a")
+	require.NoError(t, applyDDL(ctx, t, srv, dbA, ddl))
+	dumpA := dumpSDL(ctx, t, srv, dbA)
+
+	// The dump must carry the explicit SRID 0 (presence, not a zero sentinel), the
+	// SRID 4326, and no SRID attribute on the undeclared column.
+	require.Contains(t, dumpA, "`pt0` geometry NOT NULL /*!80003 SRID 0 */")
+	require.Contains(t, dumpA, "`pt4326` point NOT NULL /*!80003 SRID 4326 */")
+	require.Contains(t, dumpA, "`ptnone` geometry NOT NULL,")
+	require.NotContains(t, dumpA, "`ptnone` geometry NOT NULL /*!80003")
+
+	// Apply the dump to a fresh database and re-dump: the round-trip must be lossless.
+	dbB := newLiveDatabase(ctx, t, srv, "sdl_srid_b")
+	require.NoError(t, applyDDL(ctx, t, srv, dbB, dumpA))
+	dumpB := dumpSDL(ctx, t, srv, dbB)
+	require.Equal(t, dumpA, dumpB, "dump -> apply -> re-dump must be byte-stable")
+
+	selfDiff, err := mysqlDiffSDLMigration(dumpB, dumpA, srv.version)
+	require.NoError(t, err)
+	require.Empty(t, selfDiff, "SRID round-trip self-diff must be empty")
+
+	// Removing a real SRID restriction must diff (4326 -> unset is a column change).
+	// Note the 0 <-> unset transition is folded to a no-op by omni's canonicalizer
+	// (out of scope here); the dump above still preserves the explicit SRID 0
+	// faithfully, so the declared schema round-trips byte-exact.
+	noSridTarget := strings.Replace(dumpA, "`pt4326` point NOT NULL /*!80003 SRID 4326 */", "`pt4326` point NOT NULL", 1)
+	change, err := mysqlDiffSDLMigration(dumpA, noSridTarget, srv.version)
+	require.NoError(t, err)
+	require.Contains(t, change, "MODIFY", "dropping an explicit SRID 4326 must produce a column modification")
+}

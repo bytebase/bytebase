@@ -737,9 +737,10 @@ func TestGetViewDefFromCreateView(t *testing.T) {
 }
 
 // TestIsStockMySQL pins the single stock-MySQL predicate gating stock-only
-// information_schema surfaces (the binary-default decode): MariaDB, OceanBase, and TiDB
-// report MySQL-like versions but lack them, so a compatible engine registered as MYSQL
-// must not trip the stock-only queries.
+// information_schema surfaces (the SRS_ID column select, the binary-default decode,
+// and the column INVISIBLE capture): MariaDB, OceanBase, and TiDB report MySQL-like
+// versions but lack them, so a compatible engine registered as MYSQL must not trip
+// the stock-only queries.
 func TestIsStockMySQL(t *testing.T) {
 	testCases := []struct {
 		rest string
@@ -754,6 +755,36 @@ func TestIsStockMySQL(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		require.Equal(t, tc.want, isStockMySQL(tc.rest), "rest=%q", tc.rest)
+	}
+}
+
+// TestInvisibleColumnCaptureGate pins the SyncDBSchema column-scan condition
+// (stockMySQL && isInvisibleColumnExtra): MariaDB 10.3+ reports the same INVISIBLE
+// token in information_schema.COLUMNS.EXTRA, but the writers emit only the
+// MySQL-versioned /*!80023 INVISIBLE */ form, which MariaDB ignores — capturing the
+// attribute there would produce a permanently non-converging declarative diff, so it
+// is captured on stock MySQL only.
+func TestInvisibleColumnCaptureGate(t *testing.T) {
+	testCases := []struct {
+		rest  string
+		extra string
+		want  bool
+	}{
+		// Stock MySQL 8.0.23+ captures the attribute.
+		{rest: "", extra: "INVISIBLE", want: true},
+		{rest: "-log", extra: "DEFAULT_GENERATED on update CURRENT_TIMESTAMP INVISIBLE", want: true},
+		{rest: "", extra: "VIRTUAL GENERATED INVISIBLE", want: true},
+		{rest: "", extra: "", want: false},
+		{rest: "", extra: "auto_increment", want: false},
+		// MariaDB reports INVISIBLE in EXTRA too, but must not capture it.
+		{rest: "-MariaDB-1:10.6.12+maria~ubu2004", extra: "INVISIBLE", want: false},
+		// OceanBase/TiDB report MySQL-like versions; never capture there either.
+		{rest: "-OceanBase-v4.2.1", extra: "INVISIBLE", want: false},
+		{rest: "-TiDB-v7.5.0", extra: "INVISIBLE", want: false},
+	}
+	for _, tc := range testCases {
+		got := isStockMySQL(tc.rest) && isInvisibleColumnExtra(tc.extra)
+		require.Equal(t, tc.want, got, "rest=%q extra=%q", tc.rest, tc.extra)
 	}
 }
 

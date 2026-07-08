@@ -24,9 +24,10 @@ package mysql
 //	          match the mutation ledger exactly.
 //
 // The menu is the A4 menu PLUS (8.0-only where marked): add/drop CHECK constraint (8.0),
-// add/drop FULLTEXT index, add/modify/drop STORED and VIRTUAL generated columns, toggle
-// index INVISIBLE (8.0), and ENUM member append. 5.7-illegal mutations are gated off the
-// 5.7 menu.
+// add/drop FULLTEXT index, add/drop SPATIAL column+index with SRID (8.0 — the SRID
+// attribute is 8.0-only), add/modify/drop STORED and VIRTUAL generated columns, toggle
+// column/index INVISIBLE (8.0), and ENUM member append. 5.7-illegal mutations are gated
+// off the 5.7 menu.
 //
 // Determinism: the mutation stream is a pure function of the seed (the seed is in the
 // subtest name); the schema model is parsed from the previous round's dump in statement
@@ -75,7 +76,7 @@ const (
 
 // ----------------------------------------------------------------------------
 // Stateful-fuzz aux schema: seeds the droppable/modifiable object pool for the NEW menu
-// kinds. entSfAuxCommon is 5.7-legal; entSfAux80 seeds the 8.0-only kinds (index
+// kinds. entSfAuxCommon is 5.7-legal; entSfAux80 seeds the 8.0-only kinds (SRID spatial,
 // INVISIBLE, CHECK) and is appended on 8.0 only.
 // ----------------------------------------------------------------------------
 
@@ -105,9 +106,16 @@ CREATE TABLE ent_sf_gen (
 `
 
 const entSfAux80 = `
+CREATE TABLE ent_sf_geo (
+	id bigint unsigned NOT NULL,
+	pt point NOT NULL SRID 4326,
+	PRIMARY KEY (id),
+	SPATIAL KEY ent_sf_sp_seed (pt)
+) ENGINE=InnoDB;
 CREATE TABLE ent_sf_vis (
 	id bigint unsigned NOT NULL,
 	visa int NOT NULL DEFAULT '0',
+	visb int INVISIBLE NOT NULL DEFAULT '0',
 	visc int NOT NULL DEFAULT '0',
 	PRIMARY KEY (id),
 	KEY ent_sf_ki_a (visa) INVISIBLE,
@@ -189,8 +197,8 @@ type entSfLedger struct {
 
 // ----------------------------------------------------------------------------
 // Extended schema model: everything the A4 model parses, plus the constructs the new
-// menu mutates (FULLTEXT keys, CHECK constraints, generated columns, INVISIBLE indexes,
-// ENUM columns) and the referential protections they imply.
+// menu mutates (FULLTEXT/SPATIAL keys, CHECK constraints, generated columns, INVISIBLE
+// columns/indexes, ENUM columns) and the referential protections they imply.
 // ----------------------------------------------------------------------------
 
 type entSfIdxRec struct {
@@ -213,21 +221,26 @@ type entSfSchema struct {
 	procedures []string
 	idx        []entSfIdxRec // non-PK B-tree indexes, visible AND invisible
 	fulltext   []entSfNamedRec
+	spatial    []entSfIdxRec // cols[0] is the single spatial column
 	checks     []entSfNamedRec
 	genCols    []entSfGenRec
 	enumCols   []entSfColRec
+	invisCols  []entSfColRec
+	// visibleCols counts non-INVISIBLE columns per table (a toggle must leave >= 1).
+	visibleCols map[string]int
 	// protected are "table.col" keys drop/modify must not touch beyond the base model's
-	// own exclusions: fulltext/invisible-index parts, generated-expression and
+	// own exclusions: fulltext/spatial/invisible-index parts, generated-expression and
 	// CHECK-expression references.
 	protected map[string]bool
-	// noPartition marks tables that cannot gain a partition clause (FULLTEXT indexes are
-	// unsupported on partitioned tables).
+	// noPartition marks tables that cannot gain a partition clause (FULLTEXT/SPATIAL
+	// indexes are unsupported on partitioned tables).
 	noPartition map[string]bool
 }
 
 var (
 	entSfReIdxLine  = regexp.MustCompile("^(UNIQUE )?KEY `(\\w+)` \\((.+?)\\)( /\\*!80000 INVISIBLE \\*/)?,?$")
 	entSfReFtLine   = regexp.MustCompile("^FULLTEXT KEY `(\\w+)` \\((.+?)\\),?$")
+	entSfReSpLine   = regexp.MustCompile("^SPATIAL KEY `(\\w+)` \\(`(\\w+)`\\),?$")
 	entSfReChkLine  = regexp.MustCompile("^CONSTRAINT `(\\w+)` CHECK \\((.+)\\),?$")
 	entSfReColLine  = regexp.MustCompile("^`(\\w+)` (.+?),?$")
 	entSfReViewHdr  = regexp.MustCompile("(?i)^CREATE .*?VIEW `(\\w+)`")
@@ -237,13 +250,17 @@ var (
 	entSfReEnumSpec = regexp.MustCompile(`enum\(([^)]*)\)`)
 )
 
-const entSfInvisibleIdxToken = " /*!80000 INVISIBLE */"
+const (
+	entSfInvisibleColToken = " /*!80023 INVISIBLE */"
+	entSfInvisibleIdxToken = " /*!80000 INVISIBLE */"
+)
 
 // entSfParse builds the extended model from a canonical dump.
 func entSfParse(t *testing.T, source string) *entSfSchema {
 	t.Helper()
 	m := &entSfSchema{
 		base:        entFuzzModel(t, source),
+		visibleCols: map[string]int{},
 		protected:   map[string]bool{},
 		noPartition: map[string]bool{},
 	}
@@ -294,6 +311,12 @@ func (m *entSfSchema) parseTableExtras(stmt string) {
 			}
 			continue
 		}
+		if mm := entSfReSpLine.FindStringSubmatch(line); mm != nil {
+			m.spatial = append(m.spatial, entSfIdxRec{table: table, name: mm[1], cols: []string{mm[2]}})
+			m.noPartition[table] = true
+			m.protected[table+"."+mm[2]] = true
+			continue
+		}
 		if mm := entSfReChkLine.FindStringSubmatch(line); mm != nil {
 			m.checks = append(m.checks, entSfNamedRec{table: table, name: mm[1]})
 			for _, c := range entFzReCol.FindAllStringSubmatch(mm[2], -1) {
@@ -326,6 +349,11 @@ func (m *entSfSchema) parseTableExtras(stmt string) {
 			if strings.HasPrefix(strings.TrimPrefix(def, "`"+col+"` "), "enum(") {
 				m.enumCols = append(m.enumCols, entSfColRec{table: table, col: col})
 			}
+			if strings.HasSuffix(def, strings.TrimSpace(entSfInvisibleColToken)) {
+				m.invisCols = append(m.invisCols, entSfColRec{table: table, col: col})
+			} else {
+				m.visibleCols[table]++
+			}
 		}
 	}
 }
@@ -357,10 +385,12 @@ func entSfMenu(version string) []string {
 	}
 	if version != "5.7" {
 		// 5.7-illegal kinds: CHECK is parsed-and-ignored on 5.7 (nothing syncs back, so
-		// convergence is impossible); index INVISIBLE is 8.0-only syntax.
+		// convergence is impossible); the SRID column attribute and column/index
+		// INVISIBLE are 8.0-only syntax.
 		menu = append(menu,
 			"add_check", "drop_check",
-			"toggle_idx_invisible",
+			"add_spatial", "drop_spatial",
+			"toggle_col_invisible", "toggle_idx_invisible",
 		)
 	}
 	return menu
@@ -975,6 +1005,59 @@ func entSfGenerate(t *testing.T, kind string, m *entSfSchema, rng *rand.Rand, st
 			delta: entSfCounts{indexes: -1}, touched: tableKey(pick.table),
 		}, true
 
+	case "add_spatial":
+		// A NOT NULL POINT column with an SRID plus its SPATIAL index, in one mutation.
+		// SPATIAL indexes are unsupported on partitioned tables; the table is locked so
+		// no same-round mutation interleaves with the two-clause add.
+		var cands []*entFzTable
+		for _, tbl := range entSfMutableTables(m, state) {
+			if !tbl.partitioned {
+				cands = append(cands, tbl)
+			}
+		}
+		if len(cands) == 0 {
+			return entSfMutation{}, false
+		}
+		pick := cands[rng.Intn(len(cands))]
+		state.lockedTables[pick.name] = true
+		table, col, idx := pick.name, name("sp"), name("spi")
+		return entSfMutation{
+			entFzMutation: entFzMutation{
+				desc: fmt.Sprintf("add_spatial %s.%s (SRID 4326) + %s", table, col, idx),
+				apply: func(t *testing.T, source string) string {
+					s := addColumnToTable(t, source, table, "`"+col+"` point NOT NULL /*!80003 SRID 4326 */")
+					return addIndexToTable(t, s, table, "SPATIAL KEY `"+idx+"` (`"+col+"`)")
+				},
+			},
+			delta: entSfCounts{columns: 1, indexes: 1}, budget: 400, touched: tableKey(table),
+		}, true
+
+	case "drop_spatial":
+		// Index and column leave together (a dangling SPATIAL KEY over a dropped column
+		// would be an invalid target).
+		var cands []entSfIdxRec
+		for _, rec := range m.spatial {
+			if !state.lockedTables[rec.table] {
+				cands = append(cands, rec)
+			}
+		}
+		if len(cands) == 0 {
+			return entSfMutation{}, false
+		}
+		pick := cands[rng.Intn(len(cands))]
+		state.lockedTables[pick.table] = true
+		col := pick.cols[0]
+		return entSfMutation{
+			entFzMutation: entFzMutation{
+				desc: fmt.Sprintf("drop_spatial %s.%s (+column %s)", pick.table, pick.name, col),
+				apply: func(t *testing.T, source string) string {
+					s := entDropLineInTable(t, source, pick.table, "SPATIAL KEY `"+pick.name+"`")
+					return entDropLineInTable(t, s, pick.table, "`"+col+"` point")
+				},
+			},
+			delta: entSfCounts{columns: -1, indexes: -1}, touched: tableKey(pick.table),
+		}, true
+
 	case "add_check":
 		cands := entSfColCandidates(m, state, entSfIsIntRest)
 		if len(cands) == 0 {
@@ -1099,6 +1182,54 @@ func entSfGenerate(t *testing.T, kind string, m *entSfSchema, rng *rand.Rand, st
 				},
 			},
 			delta: entSfCounts{columns: -1}, touched: tableKey(pick.table),
+		}, true
+
+	case "toggle_col_invisible":
+		// Visible -> invisible needs >= 2 visible columns left; invisible -> visible is
+		// always legal. Both directions render/strip the /*!80023 INVISIBLE */ token the
+		// dumper and omni loader agree on.
+		type cand struct {
+			rec entSfColRec
+			on  bool
+		}
+		var cands []cand
+		for _, rec := range m.invisCols {
+			key := rec.table + "." + rec.col
+			if !state.usedCols[key] && !state.lockedTables[rec.table] && !entFzProtectedTables[rec.table] {
+				cands = append(cands, cand{rec: rec, on: false})
+			}
+		}
+		for _, rec := range entSfColCandidates(m, state, func(rest string) bool {
+			return entSfIsIntRest(rest) || strings.HasPrefix(rest, "varchar")
+		}) {
+			if m.visibleCols[rec.table] < 2 {
+				continue
+			}
+			if strings.Contains(m.colDef(rec.table, rec.col), "INVISIBLE") {
+				continue
+			}
+			cands = append(cands, cand{rec: rec, on: true})
+		}
+		if len(cands) == 0 {
+			return entSfMutation{}, false
+		}
+		pick := cands[rng.Intn(len(cands))]
+		state.usedCols[pick.rec.table+"."+pick.rec.col] = true
+		line := m.colDef(pick.rec.table, pick.rec.col)
+		newLine := line + entSfInvisibleColToken
+		dir := "->invisible"
+		if !pick.on {
+			newLine = strings.TrimSuffix(line, entSfInvisibleColToken)
+			dir = "->visible"
+		}
+		return entSfMutation{
+			entFzMutation: entFzMutation{
+				desc: fmt.Sprintf("toggle_col_invisible %s.%s %s", pick.rec.table, pick.rec.col, dir),
+				apply: func(t *testing.T, source string) string {
+					return entReplaceLineInTable(t, source, pick.rec.table, "`"+pick.rec.col+"`", newLine)
+				},
+			},
+			budget: 60, touched: tableKey(pick.rec.table),
 		}, true
 
 	case "toggle_idx_invisible":

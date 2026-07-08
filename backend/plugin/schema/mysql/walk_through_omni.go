@@ -762,6 +762,16 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 				Expression: col.Generated.Expr,
 			}
 		}
+		// Spatial SRID (MySQL 8.0): presence-carrying — an explicit SRID (including the
+		// valid SRID 0) is distinct from "no SRID". SRS_IDs are unsigned 32-bit, so the
+		// omni catalog's int value is widened to uint32 to match the store proto.
+		if col.HasSRID {
+			srid := uint32(col.SRID)
+			colMeta.Srid = &srid
+		}
+		// INVISIBLE column (MySQL 8.0.23+): user-declared invisibility (distinct from
+		// system-hidden functional-index backing columns filtered above).
+		colMeta.IsInvisible = col.Invisible
 		table.Columns = append(table.Columns, colMeta)
 	}
 
