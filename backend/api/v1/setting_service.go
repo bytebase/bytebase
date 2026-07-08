@@ -277,6 +277,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
+			case "value.workspace_profile.maximum_role_expiration":
+				if payload.MaximumRoleExpiration != nil {
+					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+					if payload.MaximumRoleExpiration.Seconds <= 0 {
+						payload.MaximumRoleExpiration = nil
+					}
+				}
+				oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
 			case "value.workspace_profile.domains":
 				if err := validateDomains(payload.Domains); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))

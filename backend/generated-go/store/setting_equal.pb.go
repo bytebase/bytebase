@@ -173,6 +173,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if !x.SqlEditorCustomTheme.Equal(y.SqlEditorCustomTheme) {
 		return false
 	}
+	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 

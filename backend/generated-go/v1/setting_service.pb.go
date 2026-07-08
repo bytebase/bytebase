@@ -993,7 +993,7 @@ type WorkspaceProfileSetting struct {
 	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
-	// The max expiration duration for role grants and data access requests.
+	// The max expiration duration for data access requests.
 	MaximumRequestExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_request_expiration,json=maximumRequestExpiration,proto3" json:"maximum_request_expiration,omitempty"`
 	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,7,rep,name=domains,proto3" json:"domains,omitempty"`
@@ -1035,8 +1035,11 @@ type WorkspaceProfileSetting struct {
 	// The enforced CUSTOM theme's full definition — present ONLY when
 	// sql_editor_theme_id is a custom uuid. tokens is always complete.
 	SqlEditorCustomTheme *SQLEditorThemeSetting `protobuf:"bytes,24,opt,name=sql_editor_custom_theme,json=sqlEditorCustomTheme,proto3" json:"sql_editor_custom_theme,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The max expiration duration for request role.
+	// Deprecated: use just-in-time access request flows instead.
+	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,25,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1226,6 +1229,13 @@ func (x *WorkspaceProfileSetting) GetSqlEditorThemeId() string {
 func (x *WorkspaceProfileSetting) GetSqlEditorCustomTheme() *SQLEditorThemeSetting {
 	if x != nil {
 		return x.SqlEditorCustomTheme
+	}
+	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetMaximumRoleExpiration() *durationpb.Duration {
+	if x != nil {
+		return x.MaximumRoleExpiration
 	}
 	return nil
 }
@@ -3444,7 +3454,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\x88\x0e\n" +
+	"\apayload\"\xdb\x0e\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3470,7 +3480,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rquery_timeout\x18\x15 \x01(\v2\x19.google.protobuf.DurationR\fqueryTimeout\x125\n" +
 	"\x17allow_email_code_signin\x18\x16 \x01(\bR\x14allowEmailCodeSignin\x12-\n" +
 	"\x13sql_editor_theme_id\x18\x17 \x01(\tR\x10sqlEditorThemeId\x12Y\n" +
-	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2\".bytebase.v1.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x1a\x93\x03\n" +
+	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2\".bytebase.v1.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x12Q\n" +
+	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -3739,57 +3750,58 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	53, // 20: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
 	53, // 21: bytebase.v1.WorkspaceProfileSetting.query_timeout:type_name -> google.protobuf.Duration
 	17, // 22: bytebase.v1.WorkspaceProfileSetting.sql_editor_custom_theme:type_name -> bytebase.v1.SQLEditorThemeSetting
-	36, // 23: bytebase.v1.SQLEditorThemeSetting.tokens:type_name -> bytebase.v1.SQLEditorThemeSetting.TokensEntry
-	37, // 24: bytebase.v1.Announcement.theme:type_name -> bytebase.v1.Announcement.AnnouncementTheme
-	38, // 25: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
-	39, // 26: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	43, // 27: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
-	44, // 28: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
-	45, // 29: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
-	46, // 30: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
-	47, // 31: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
-	4,  // 32: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
-	49, // 33: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
-	5,  // 34: bytebase.v1.EmailSetting.type:type_name -> bytebase.v1.EmailSetting.Type
-	51, // 35: bytebase.v1.EmailSetting.smtp:type_name -> bytebase.v1.EmailSetting.SMTPConfig
-	25, // 36: bytebase.v1.TestEmailSettingRequest.email_setting:type_name -> bytebase.v1.EmailSetting
-	54, // 37: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
-	28, // 38: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
-	29, // 39: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
-	30, // 40: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
-	31, // 41: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
-	32, // 42: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
-	33, // 43: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
-	53, // 44: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
-	55, // 45: bytebase.v1.SQLEditorThemeSetting.TokensEntry.value:type_name -> google.type.Color
-	55, // 46: bytebase.v1.Announcement.AnnouncementTheme.background:type_name -> google.type.Color
-	55, // 47: bytebase.v1.Announcement.AnnouncementTheme.text:type_name -> google.type.Color
-	56, // 48: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	57, // 49: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	2,  // 50: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
-	40, // 51: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	42, // 52: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	41, // 53: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	22, // 54: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
-	48, // 55: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
-	3,  // 56: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
-	50, // 57: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	55, // 58: bytebase.v1.EnvironmentSetting.Environment.color:type_name -> google.type.Color
-	6,  // 59: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
-	7,  // 60: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
-	8,  // 61: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	10, // 62: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	12, // 63: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	26, // 64: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
-	9,  // 65: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	13, // 66: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	13, // 67: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	27, // 68: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
-	65, // [65:69] is the sub-list for method output_type
-	61, // [61:65] is the sub-list for method input_type
-	61, // [61:61] is the sub-list for extension type_name
-	61, // [61:61] is the sub-list for extension extendee
-	0,  // [0:61] is the sub-list for field type_name
+	53, // 23: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	36, // 24: bytebase.v1.SQLEditorThemeSetting.tokens:type_name -> bytebase.v1.SQLEditorThemeSetting.TokensEntry
+	37, // 25: bytebase.v1.Announcement.theme:type_name -> bytebase.v1.Announcement.AnnouncementTheme
+	38, // 26: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
+	39, // 27: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	43, // 28: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
+	44, // 29: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
+	45, // 30: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
+	46, // 31: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
+	47, // 32: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
+	4,  // 33: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
+	49, // 34: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
+	5,  // 35: bytebase.v1.EmailSetting.type:type_name -> bytebase.v1.EmailSetting.Type
+	51, // 36: bytebase.v1.EmailSetting.smtp:type_name -> bytebase.v1.EmailSetting.SMTPConfig
+	25, // 37: bytebase.v1.TestEmailSettingRequest.email_setting:type_name -> bytebase.v1.EmailSetting
+	54, // 38: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
+	28, // 39: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
+	29, // 40: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
+	30, // 41: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
+	31, // 42: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
+	32, // 43: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
+	33, // 44: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
+	53, // 45: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
+	55, // 46: bytebase.v1.SQLEditorThemeSetting.TokensEntry.value:type_name -> google.type.Color
+	55, // 47: bytebase.v1.Announcement.AnnouncementTheme.background:type_name -> google.type.Color
+	55, // 48: bytebase.v1.Announcement.AnnouncementTheme.text:type_name -> google.type.Color
+	56, // 49: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	57, // 50: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	2,  // 51: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+	40, // 52: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	42, // 53: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	41, // 54: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	22, // 55: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
+	48, // 56: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
+	3,  // 57: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
+	50, // 58: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
+	55, // 59: bytebase.v1.EnvironmentSetting.Environment.color:type_name -> google.type.Color
+	6,  // 60: bytebase.v1.EmailSetting.SMTPConfig.encryption:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Encryption
+	7,  // 61: bytebase.v1.EmailSetting.SMTPConfig.authentication:type_name -> bytebase.v1.EmailSetting.SMTPConfig.Authentication
+	8,  // 62: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	10, // 63: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	12, // 64: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	26, // 65: bytebase.v1.SettingService.TestEmailSetting:input_type -> bytebase.v1.TestEmailSettingRequest
+	9,  // 66: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	13, // 67: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	13, // 68: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	27, // 69: bytebase.v1.SettingService.TestEmailSetting:output_type -> bytebase.v1.TestEmailSettingResponse
+	66, // [66:70] is the sub-list for method output_type
+	62, // [62:66] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }

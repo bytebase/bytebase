@@ -29008,7 +29008,7 @@ components:
           $ref: '#/components/schemas/bytebase.v1.Announcement'
         maximumRequestExpiration:
           title: maximum_request_expiration
-          description: The max expiration duration for role grants and data access requests.
+          description: The max expiration duration for data access requests.
           $ref: '#/components/schemas/google.protobuf.Duration'
         domains:
           type: array
@@ -29095,6 +29095,12 @@ components:
             The enforced CUSTOM theme's full definition — present ONLY when
              sql_editor_theme_id is a custom uuid. tokens is always complete.
           $ref: '#/components/schemas/bytebase.v1.SQLEditorThemeSetting'
+        maximumRoleExpiration:
+          title: maximum_role_expiration
+          description: |-
+            The max expiration duration for request role.
+             Deprecated: use just-in-time access request flows instead.
+          $ref: '#/components/schemas/google.protobuf.Duration'
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:
