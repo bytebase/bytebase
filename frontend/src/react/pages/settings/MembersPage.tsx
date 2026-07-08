@@ -894,16 +894,16 @@ function formatExpirationDate(timestampMs?: number): string {
 // must be in the future and within the cap.
 function isExpirationValid(
   form: RoleBindingFormState,
-  maximumRequestExpirationDays: number | undefined
+  maximumRoleExpirationDays: number | undefined
 ): boolean {
   if (form.expirationTimestampInMS === undefined) {
-    return maximumRequestExpirationDays === undefined;
+    return maximumRoleExpirationDays === undefined;
   }
   const now = Date.now();
   if (form.expirationTimestampInMS <= now) return false;
   if (
-    maximumRequestExpirationDays !== undefined &&
-    form.expirationTimestampInMS > now + maximumRequestExpirationDays * 86400000
+    maximumRoleExpirationDays !== undefined &&
+    form.expirationTimestampInMS > now + maximumRoleExpirationDays * 86400000
   ) {
     return false;
   }
@@ -1040,14 +1040,14 @@ function ProjectRoleBindingForm({
   onRemove,
   canRemove,
   projectName,
-  maximumRequestExpirationDays,
+  maximumRoleExpirationDays,
 }: {
   form: RoleBindingFormState;
   onChange: (updated: RoleBindingFormState) => void;
   onRemove: () => void;
   canRemove: boolean;
   projectName: string;
-  maximumRequestExpirationDays: number | undefined;
+  maximumRoleExpirationDays: number | undefined;
 }) {
   const { t } = useTranslation();
 
@@ -1057,16 +1057,16 @@ function ProjectRoleBindingForm({
     () =>
       EXPIRATION_PRESETS.filter(
         (preset) =>
-          maximumRequestExpirationDays === undefined ||
-          preset.days <= maximumRequestExpirationDays
+          maximumRoleExpirationDays === undefined ||
+          preset.days <= maximumRoleExpirationDays
       ),
-    [maximumRequestExpirationDays]
+    [maximumRoleExpirationDays]
   );
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
   const maxDatetime =
-    maximumRequestExpirationDays !== undefined
+    maximumRoleExpirationDays !== undefined
       ? dayjs()
-          .add(maximumRequestExpirationDays, "days")
+          .add(maximumRoleExpirationDays, "days")
           .format("YYYY-MM-DDTHH:mm")
       : undefined;
   const now = Date.now();
@@ -1076,9 +1076,8 @@ function ProjectRoleBindingForm({
     form.expirationTimestampInMS <= now;
   const expirationExceedsMax =
     form.expirationTimestampInMS !== undefined &&
-    maximumRequestExpirationDays !== undefined &&
-    form.expirationTimestampInMS >
-      now + maximumRequestExpirationDays * 86400000;
+    maximumRoleExpirationDays !== undefined &&
+    form.expirationTimestampInMS > now + maximumRoleExpirationDays * 86400000;
   const factorList = useMemo<Factor[]>(
     () => [
       CEL_ATTRIBUTE_RESOURCE_DATABASE,
@@ -1155,9 +1154,9 @@ function ProjectRoleBindingForm({
     // Seed the picker with the current timestamp, or a default 1 week
     // (clamped to the cap) when switching from "Never".
     const seedDays =
-      maximumRequestExpirationDays === undefined
+      maximumRoleExpirationDays === undefined
         ? 7
-        : Math.min(7, maximumRequestExpirationDays);
+        : Math.min(7, maximumRoleExpirationDays);
     onChange({
       ...form,
       expirationCustom: true,
@@ -1290,7 +1289,7 @@ function ProjectRoleBindingForm({
         </label>
         <div className="flex flex-wrap gap-1.5">
           {/* "Never" is only offered when the workspace sets no cap. */}
-          {maximumRequestExpirationDays === undefined && (
+          {maximumRoleExpirationDays === undefined && (
             <ExpirationChip
               label={t("project.members.never-expires")}
               selected={
@@ -1327,10 +1326,10 @@ function ProjectRoleBindingForm({
             maxDate={maxDatetime}
           />
         )}
-        {maximumRequestExpirationDays !== undefined && (
+        {maximumRoleExpirationDays !== undefined && (
           <p className="text-xs text-control-light">
             {t("project.members.request-role.max-expiration-hint", {
-              days: maximumRequestExpirationDays,
+              days: maximumRoleExpirationDays,
             })}
           </p>
         )}
@@ -1342,7 +1341,7 @@ function ProjectRoleBindingForm({
         {expirationExceedsMax && (
           <p className="text-xs text-error">
             {t("project.members.request-role.expiration-exceeds-max", {
-              days: maximumRequestExpirationDays,
+              days: maximumRoleExpirationDays,
             })}
           </p>
         )}
@@ -1454,9 +1453,9 @@ function EditMemberRoleDrawer({
   // grants are exempt; returns undefined when no cap is set. Mirrors
   // RequestRoleSheet so direct grants and role requests behave the same.
   const workspaceProfile = useAppStore((s) => s.getWorkspaceProfile());
-  const maximumRequestExpirationDays = useMemo(() => {
+  const maximumRoleExpirationDays = useMemo(() => {
     if (form.role === PresetRoleType.PROJECT_OWNER) return undefined;
-    const seconds = workspaceProfile.maximumRequestExpiration?.seconds;
+    const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
     return Math.floor(Number(seconds) / (60 * 60 * 24));
   }, [workspaceProfile, form.role]);
@@ -1764,7 +1763,7 @@ function EditMemberRoleDrawer({
   const allowConfirm = isProjectCreateMode
     ? selectedBindings.length > 0 &&
       !!form.role &&
-      isExpirationValid(form, maximumRequestExpirationDays) &&
+      isExpirationValid(form, maximumRoleExpirationDays) &&
       !(
         roleHasDatabaseLimitation(form.role) &&
         form.databaseMode === "SELECT" &&
@@ -1992,7 +1991,7 @@ function EditMemberRoleDrawer({
                   onRemove={() => {}}
                   canRemove={false}
                   projectName={projectName}
-                  maximumRequestExpirationDays={maximumRequestExpirationDays}
+                  maximumRoleExpirationDays={maximumRoleExpirationDays}
                 />
               </div>
             ) : (

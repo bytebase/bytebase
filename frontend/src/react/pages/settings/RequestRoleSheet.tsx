@@ -222,9 +222,9 @@ function RequestRoleForm({
   // owners can request unbounded expirations), otherwise the workspace cap
   // applies. Returns undefined when no cap is set.
   const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
-  const maximumRequestExpirationDays = useMemo(() => {
+  const maximumRoleExpirationDays = useMemo(() => {
     if (role === PresetRoleType.PROJECT_OWNER) return undefined;
-    const seconds = workspaceProfile.maximumRequestExpiration?.seconds;
+    const seconds = workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
     return Math.floor(Number(seconds) / (60 * 60 * 24));
   }, [workspaceProfile, role]);
@@ -265,10 +265,8 @@ function RequestRoleForm({
   // can't silently pick a time earlier today and submit a zero-duration
   // role grant.
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
-  const maxDatetime = maximumRequestExpirationDays
-    ? dayjs()
-        .add(maximumRequestExpirationDays, "days")
-        .format("YYYY-MM-DDTHH:mm")
+  const maxDatetime = maximumRoleExpirationDays
+    ? dayjs().add(maximumRoleExpirationDays, "days").format("YYYY-MM-DDTHH:mm")
     : undefined;
 
   const expirationIsInPast =
@@ -280,9 +278,9 @@ function RequestRoleForm({
   // disables over-cap dates in its picker).
   const expirationExceedsMax =
     !!expirationTimestamp &&
-    !!maximumRequestExpirationDays &&
+    !!maximumRoleExpirationDays &&
     dayjs(expirationTimestamp).isAfter(
-      dayjs().add(maximumRequestExpirationDays, "days")
+      dayjs().add(maximumRoleExpirationDays, "days")
     );
 
   const labelsMisconfigured =
@@ -309,7 +307,7 @@ function RequestRoleForm({
   // pick an expiration — leaving it empty sends `roleGrant.expiration` as
   // `undefined`, which the backend's approval runner treats as effectively
   // unbounded (math.MaxInt32 days), bypassing the cap entirely.
-  const expirationRequired = maximumRequestExpirationDays !== undefined;
+  const expirationRequired = maximumRoleExpirationDays !== undefined;
 
   const canSubmit =
     !submitting &&
@@ -610,10 +608,10 @@ function RequestRoleForm({
               minDate={minDatetime}
               maxDate={maxDatetime}
             />
-            {maximumRequestExpirationDays !== undefined && (
+            {maximumRoleExpirationDays !== undefined && (
               <p className="text-xs text-control-light">
                 {t("project.members.request-role.max-expiration-hint", {
-                  days: maximumRequestExpirationDays,
+                  days: maximumRoleExpirationDays,
                 })}
               </p>
             )}
@@ -625,7 +623,7 @@ function RequestRoleForm({
             {expirationExceedsMax && (
               <p className="text-xs text-error">
                 {t("project.members.request-role.expiration-exceeds-max", {
-                  days: maximumRequestExpirationDays,
+                  days: maximumRoleExpirationDays,
                 })}
               </p>
             )}

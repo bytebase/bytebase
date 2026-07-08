@@ -4661,7 +4661,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
 | announcement | [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement) |  | The setting of custom announcement |
-| maximum_request_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for role grants and data access requests. |
+| maximum_request_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for data access requests. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode) |  | The workspace database change mode. |
@@ -4679,6 +4679,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
 | sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
+| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 
 
 

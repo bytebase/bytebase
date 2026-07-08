@@ -5,12 +5,13 @@ import { X } from "lucide-react";
 import {
   forwardRef,
   type KeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useImperativeHandle,
   useState,
 } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
   PermissionGuard,
@@ -25,10 +26,15 @@ import type { SectionHandle } from "./useSettingSection";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
 
-interface SecurityState {
-  enableWatermark: boolean;
+interface ExpirationState {
   inputValue: number;
   neverExpire: boolean;
+}
+
+interface SecurityState {
+  enableWatermark: boolean;
+  maximumRoleExpiration: ExpirationState;
+  maximumRequestExpiration: ExpirationState;
   domains: string[];
   enableRestriction: boolean;
 }
@@ -37,6 +43,30 @@ interface SecuritySectionProps {
   title: string;
   onDirtyChange: () => void;
 }
+
+const getExpirationState = (
+  secondsValue: bigint | number | undefined
+): ExpirationState => {
+  let inputValue = DEFAULT_EXPIRATION_DAYS;
+  let neverExpire = true;
+  const seconds = secondsValue ? Number(secondsValue) : undefined;
+  if (seconds && seconds > 0) {
+    inputValue =
+      Math.floor(seconds / (60 * 60 * 24)) || DEFAULT_EXPIRATION_DAYS;
+    neverExpire = false;
+  }
+  return { inputValue, neverExpire };
+};
+
+const getExpirationDuration = (expiration: ExpirationState) => {
+  const seconds = expiration.neverExpire
+    ? -1
+    : expiration.inputValue * 24 * 60 * 60;
+  return create(DurationSchema, {
+    seconds: BigInt(seconds),
+    nanos: 0,
+  });
+};
 
 export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
   function SecuritySection({ title, onDirtyChange }, ref) {
@@ -55,18 +85,6 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       // Watermark
       const enableWatermark = profile.watermark;
 
-      // Maximum role expiration
-      let inputValue = DEFAULT_EXPIRATION_DAYS;
-      let neverExpire = true;
-      const seconds = profile.maximumRequestExpiration?.seconds
-        ? Number(profile.maximumRequestExpiration.seconds)
-        : undefined;
-      if (seconds && seconds > 0) {
-        inputValue =
-          Math.floor(seconds / (60 * 60 * 24)) || DEFAULT_EXPIRATION_DAYS;
-        neverExpire = false;
-      }
-
       // Domain restriction
       const domains = Array.isArray(profile.domains)
         ? [...profile.domains]
@@ -75,8 +93,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
 
       return {
         enableWatermark,
-        inputValue,
-        neverExpire,
+        maximumRoleExpiration: getExpirationState(
+          profile.maximumRoleExpiration?.seconds
+        ),
+        maximumRequestExpiration: getExpirationState(
+          profile.maximumRequestExpiration?.seconds
+        ),
         domains,
         enableRestriction,
       };
@@ -116,20 +138,28 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       }
 
       // Maximum role expiration
-      if (
-        state.neverExpire !== init.neverExpire ||
-        state.inputValue !== init.inputValue
-      ) {
-        let seconds = -1;
-        if (!state.neverExpire) {
-          seconds = state.inputValue * 24 * 60 * 60;
-        }
+      if (!isEqual(state.maximumRoleExpiration, init.maximumRoleExpiration)) {
         await useAppStore.getState().updateWorkspaceProfile({
           payload: {
-            maximumRequestExpiration: create(DurationSchema, {
-              seconds: BigInt(seconds),
-              nanos: 0,
-            }),
+            maximumRoleExpiration: getExpirationDuration(
+              state.maximumRoleExpiration
+            ),
+          },
+          updateMask: create(FieldMaskSchema, {
+            paths: ["value.workspace_profile.maximum_role_expiration"],
+          }),
+        });
+      }
+
+      // Maximum request expiration
+      if (
+        !isEqual(state.maximumRequestExpiration, init.maximumRequestExpiration)
+      ) {
+        await useAppStore.getState().updateWorkspaceProfile({
+          payload: {
+            maximumRequestExpiration: getExpirationDuration(
+              state.maximumRequestExpiration
+            ),
           },
           updateMask: create(FieldMaskSchema, {
             paths: ["value.workspace_profile.maximum_request_expiration"],
@@ -208,6 +238,71 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       });
     };
 
+    const renderExpirationField = (
+      key: "maximumRoleExpiration" | "maximumRequestExpiration",
+      title: string,
+      description: ReactNode
+    ) => {
+      const expiration = state[key];
+      return (
+        <div>
+          <p className="text-base font-semibold flex flex-row justify-start items-center">
+            <span className="mr-2">{title}</span>
+          </p>
+          <p className="text-sm text-gray-400 mt-1">{description}</p>
+          <div className="mt-3 w-full flex flex-row">
+            <div className="flex items-center gap-4">
+              <div className="relative w-60">
+                <Input
+                  type="number"
+                  className="pr-14"
+                  value={expiration.inputValue}
+                  min={1}
+                  step={1}
+                  disabled={!canEdit || expiration.neverExpire}
+                  onChange={(e) => {
+                    const val = Math.max(1, Math.floor(Number(e.target.value)));
+                    if (!Number.isNaN(val)) {
+                      setState((prev) => ({
+                        ...prev,
+                        [key]: {
+                          ...prev[key],
+                          inputValue: val,
+                        },
+                      }));
+                    }
+                  }}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                  {t("settings.general.workspace.maximum-expiration.days")}
+                </span>
+              </div>
+              <label className="flex items-center gap-x-2">
+                <Checkbox
+                  checked={expiration.neverExpire}
+                  disabled={!canEdit}
+                  onCheckedChange={(checked) =>
+                    setState((prev) => ({
+                      ...prev,
+                      [key]: {
+                        ...prev[key],
+                        neverExpire: checked,
+                      },
+                    }))
+                  }
+                />
+                <span>
+                  {t(
+                    "settings.general.workspace.maximum-expiration.never-expires"
+                  )}
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div id="security" className="py-6 lg:flex gap-y-4 lg:gap-y-0">
         <div className="text-left lg:w-1/4">
@@ -241,66 +336,24 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
               </div>
             </div>
 
-            {/* Maximum Role Expiration */}
-            <div>
-              <p className="text-base font-semibold flex flex-row justify-start items-center">
-                <span className="mr-2">
-                  {t(
-                    "settings.general.workspace.maximum-request-expiration.self"
-                  )}
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                {t(
-                  "settings.general.workspace.maximum-request-expiration.description"
-                )}
-              </p>
-              <div className="mt-3 w-full flex flex-row">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-60">
-                    <Input
-                      type="number"
-                      className="pr-14"
-                      value={state.inputValue}
-                      min={1}
-                      step={1}
-                      disabled={!canEdit || state.neverExpire}
-                      onChange={(e) => {
-                        const val = Math.max(
-                          1,
-                          Math.floor(Number(e.target.value))
-                        );
-                        if (!Number.isNaN(val)) {
-                          setState((prev) => ({ ...prev, inputValue: val }));
-                        }
-                      }}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
-                      {t(
-                        "settings.general.workspace.maximum-request-expiration.days"
-                      )}
-                    </span>
-                  </div>
-                  <label className="flex items-center gap-x-2">
-                    <Checkbox
-                      checked={state.neverExpire}
-                      disabled={!canEdit}
-                      onCheckedChange={(checked) =>
-                        setState((prev) => ({
-                          ...prev,
-                          neverExpire: checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      {t(
-                        "settings.general.workspace.maximum-request-expiration.never-expires"
-                      )}
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
+            {renderExpirationField(
+              "maximumRoleExpiration",
+              t("settings.general.workspace.maximum-role-expiration.self"),
+              <Trans
+                i18nKey="settings.general.workspace.maximum-role-expiration.description"
+                components={{
+                  highlight: <span className="font-medium text-warning" />,
+                }}
+              />
+            )}
+
+            {renderExpirationField(
+              "maximumRequestExpiration",
+              t("settings.general.workspace.maximum-request-expiration.self"),
+              t(
+                "settings.general.workspace.maximum-request-expiration.description"
+              )
+            )}
 
             {/* Domain Restriction */}
             <div>

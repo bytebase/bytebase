@@ -202,6 +202,8 @@ const mocks = vi.hoisted(() => ({
   createIssue: vi.fn(),
   pushNotification: vi.fn(),
   currentUser: { name: "users/me@example.com", email: "me@example.com" },
+  maximumRoleExpirationSeconds: undefined as number | undefined,
+  maximumRequestExpirationSeconds: undefined as number | undefined,
 }));
 
 vi.mock("@/connect", () => ({
@@ -230,7 +232,16 @@ vi.mock("@/react/stores/app", () => ({
             : [],
       }),
       // Migrated off the Pinia useSettingV1Store mock.
-      getWorkspaceProfile: () => ({ maximumRequestExpiration: undefined }),
+      getWorkspaceProfile: () => ({
+        maximumRoleExpiration:
+          mocks.maximumRoleExpirationSeconds === undefined
+            ? undefined
+            : { seconds: BigInt(mocks.maximumRoleExpirationSeconds) },
+        maximumRequestExpiration:
+          mocks.maximumRequestExpirationSeconds === undefined
+            ? undefined
+            : { seconds: BigInt(mocks.maximumRequestExpirationSeconds) },
+      }),
     }),
 }));
 
@@ -255,6 +266,8 @@ beforeEach(() => {
   mocks.createIssue.mockResolvedValue({
     name: "projects/foo/issues/1",
   });
+  mocks.maximumRoleExpirationSeconds = undefined;
+  mocks.maximumRequestExpirationSeconds = undefined;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -335,6 +348,26 @@ beforeEach(async () => {
 });
 
 describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
+  it("shows the workspace maximum expiration hint when role requests are capped", async () => {
+    mocks.maximumRoleExpirationSeconds = 30 * 24 * 60 * 60;
+
+    await renderSheet(false);
+
+    expect(container.textContent).toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+  });
+
+  it("does not cap role requests with the request access expiration", async () => {
+    mocks.maximumRequestExpirationSeconds = 30 * 24 * 60 * 60;
+
+    await renderSheet(false);
+
+    expect(container.textContent).not.toContain(
+      "project.members.request-role.max-expiration-hint"
+    );
+  });
+
   it("Submit is enabled with empty reason when enforceIssueTitle is false", async () => {
     await renderSheet(false);
     await selectRole("roles/projectOwner");

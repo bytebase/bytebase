@@ -472,8 +472,8 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			}
 		}
 
-		// Enforce the workspace maximum request expiration cap (project owner is
-		// exempt), mirroring SetIamPolicy. The role grant's condition carries the
+		// Enforce the workspace maximum role expiration cap (project owner is
+		// exempt). The role grant's condition carries the
 		// `request.time < timestamp(...)` clause that becomes the IAM binding, so
 		// validating it here also rejects a missing expiration when a cap is set.
 		if request.Issue.RoleGrant.GetRole() != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) {
@@ -481,8 +481,8 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 			}
-			if maximumRequestExpiration := workspaceProfileSetting.GetMaximumRequestExpiration(); maximumRequestExpiration != nil {
-				if err := validateExpirationInExpression(request.Issue.RoleGrant.GetCondition().GetExpression(), maximumRequestExpiration); err != nil {
+			if maximumRoleExpiration := workspaceProfileSetting.GetMaximumRoleExpiration(); maximumRoleExpiration != nil {
+				if err := validateExpirationInExpression(request.Issue.RoleGrant.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate role expiration"))
 				}
 			}
