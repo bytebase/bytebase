@@ -199,7 +199,7 @@ func extractExistingRangeVarNames(rv *ast.RangeVar, defaultDB string, searchPath
 		db = defaultDB
 	}
 	if schema == "" {
-		schemaName, _ := dbMetadata.SearchObject(searchPath, table)
+		schemaName := searchRelationObject(dbMetadata, searchPath, table)
 		if schemaName != "" {
 			schema = schemaName
 		} else if len(searchPath) > 0 {
@@ -221,7 +221,7 @@ func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, 
 		}
 		db, schema, name := extractNameListParts(nameList, database)
 		if schema == "" {
-			schemaName, _ := dbMetadata.SearchObject(searchPath, name)
+			schemaName := searchRelationObject(dbMetadata, searchPath, name)
 			if schemaName == "" {
 				if len(searchPath) > 0 {
 					schema = searchPath[0]
@@ -232,6 +232,19 @@ func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, 
 		}
 		changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: name}, true)
 	}
+}
+
+func searchRelationObject(dbMetadata *model.DatabaseMetadata, searchPath []string, name string) string {
+	for _, schemaName := range searchPath {
+		schema := dbMetadata.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			continue
+		}
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil {
+			return schema.GetProto().GetName()
+		}
+	}
+	return ""
 }
 
 // handleDropIndexOmni handles DROP INDEX.

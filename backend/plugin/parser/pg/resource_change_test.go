@@ -68,6 +68,7 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 	for _, tc := range []struct {
 		name       string
 		appTables  []*storepb.TableMetadata
+		appFuncs   []*storepb.FunctionMetadata
 		wantSchema string
 	}{
 		{
@@ -84,14 +85,22 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 			}},
 			wantSchema: "app",
 		},
+		{
+			name: "relation lookup skips function in selected schema",
+			appFuncs: []*storepb.FunctionMetadata{{
+				Name: "customer",
+			}},
+			wantSchema: "public",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
 				Name: "db",
 				Schemas: []*storepb.SchemaMetadata{
 					{
-						Name:   "app",
-						Tables: tc.appTables,
+						Name:      "app",
+						Tables:    tc.appTables,
+						Functions: tc.appFuncs,
 					},
 					{
 						Name: "public",
