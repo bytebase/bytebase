@@ -74,7 +74,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   resetQuickstartProgress: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyIntroState(email);
+    const key = storageKeyIntroState(getWorkspaceCacheScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
     const next = {
       ...previous,
@@ -86,13 +86,14 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   },
 
   // Mirrors the Pinia `useUIStateStore.getIntroStateByKey`. Reads the per-user
-  // localStorage map; `introStateVersion` (read by callers' selectors) is what
-  // makes a subsequent `saveIntroStateByKey` re-trigger the read.
+  // localStorage map scoped to the current workspace;
+  // `introStateVersion` (read by callers' selectors) is what makes a
+  // subsequent `saveIntroStateByKey` re-trigger the read.
   getIntroStateByKey: (key) => {
     const email = getCurrentUserEmail(get);
     if (!email) return false;
     const map = readJson<Record<string, boolean>>(
-      storageKeyIntroState(email),
+      storageKeyIntroState(getWorkspaceCacheScope(get), email),
       {}
     );
     return map[key] ?? false;
@@ -103,7 +104,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   saveIntroStateByKey: ({ key, newState }) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const storageKey = storageKeyIntroState(email);
+    const storageKey = storageKeyIntroState(getWorkspaceCacheScope(get), email);
     const previous = readJson<Record<string, boolean>>(storageKey, {});
     writeJson(storageKey, { ...previous, [key]: newState });
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));

@@ -11,7 +11,7 @@ import {
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   SQL_EDITOR_WORKSHEET_MODULE,
-  WORKSPACE_ROUTE_USERS,
+  WORKSPACE_ROUTE_MEMBERS,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -212,9 +212,9 @@ export function Quickstart() {
       },
       {
         name: t("quick-start.visit-member"),
-        link: { name: WORKSPACE_ROUTE_USERS },
+        link: { name: WORKSPACE_ROUTE_MEMBERS },
         done: memberVisited,
-        requiredPermissions: ["bb.workspaces.getIamPolicy", "bb.users.list"],
+        requiredPermissions: ["bb.workspaces.getIamPolicy"],
       },
     ];
     return all.filter((item) => {

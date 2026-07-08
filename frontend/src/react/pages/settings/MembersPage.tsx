@@ -2068,6 +2068,16 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   >();
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
 
+  useEffect(() => {
+    const store = useAppStore.getState();
+    if (!store.getIntroStateByKey("member.visit")) {
+      store.saveIntroStateByKey({
+        key: "member.visit",
+        newState: true,
+      });
+    }
+  }, []);
+
   const hasRequestRoleFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );

@@ -59,8 +59,16 @@ vi.mock("@/react/components/ui/dropdown-menu", () => ({
   DropdownMenuTrigger: ({ children }: { children: ReactElement }) => (
     <div>{children}</div>
   ),
-  DropdownMenuContent: ({ children }: { children: ReactElement[] }) => (
-    <div>{children}</div>
+  DropdownMenuContent: ({
+    children,
+    className,
+  }: {
+    children: ReactElement[];
+    className?: string;
+  }) => (
+    <div data-testid="profile-menu-content" className={className}>
+      {children}
+    </div>
   ),
   DropdownMenuItem: ({
     children,
@@ -167,6 +175,22 @@ beforeEach(async () => {
 });
 
 describe("ProfileMenuTrigger", () => {
+  test("expands the profile menu content instead of scrolling it", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const content = container.querySelector(
+      "[data-testid='profile-menu-content']"
+    );
+    expect(content?.className).toContain("max-h-none");
+    expect(content?.className).toContain("overflow-visible");
+
+    unmount();
+  });
+
   test("supports locale changes, workspace toggle, and logout", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
