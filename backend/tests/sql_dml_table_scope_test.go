@@ -663,10 +663,16 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		)
 		setProjectBindings(t, readBinding(email), scopedBinding("roles/repro-write", email, cond))
 
-		// Ensure public.t_sbx exists (the granted target) via the change-database flow.
+		// Ensure both targets exist via the change-database flow. With the SQL Editor
+		// public fallback, PostgreSQL only routes the unqualified INSERT to
+		// other_schema.t_sbx if the selected-schema relation exists.
 		setupSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 			Parent: ctl.project.Name,
-			Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE IF NOT EXISTS public.t_sbx (id int);`)},
+			Sheet: &v1pb.Sheet{Content: []byte(`
+				CREATE SCHEMA IF NOT EXISTS other_schema;
+				CREATE TABLE IF NOT EXISTS public.t_sbx (id int);
+				CREATE TABLE IF NOT EXISTS other_schema.t_sbx (id int);
+			`)},
 		}))
 		ra.NoError(err)
 		ra.NoError(ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false))
