@@ -469,15 +469,31 @@ func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing
 	require.EqualValues(t, 2, planCheckRun.Result.GetApprovalInputVersion())
 }
 
-func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRollout(t *testing.T) {
+func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApprovalRequired(t *testing.T) {
 	ctx := context.Background()
 	s := setupApprovalRunnerStore(ctx, t)
+	require.NoError(t, s.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Setting:    &storepb.Project{RequireIssueApproval: true},
+	}))
 
 	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+						Target:      "instances/prod",
+						Database:    "app",
+						Environment: "prod",
+					},
+				},
+			}},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 
@@ -506,6 +522,57 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRollout(t *testing.
 	require.NoError(t, err)
 	require.Nil(t, got.Payload.GetApproval())
 	require.Equal(t, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, got.Payload.GetRiskLevel())
+}
+
+func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequired(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+						Target:      "instances/prod",
+						Database:    "app",
+						Environment: "prod",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{Labels: []string{"prod"}},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	approvalInputVersion := int64(2)
+	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
+	require.NoError(t, err)
+	require.True(t, marked)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	require.NoError(t, err)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Nil(t, got.Payload.GetApproval().GetApprovalTemplate())
 }
 
 func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {

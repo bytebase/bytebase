@@ -257,11 +257,12 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		RiskLevel: riskLevel,
 	}
 	if issue.Type == storepb.Issue_DATABASE_CHANGE {
+		requireNoRollout := project.Setting.GetRequireIssueApproval()
 		_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 			PayloadUpsert:                   payloadPatch,
 			RequirePlanApprovalInputVersion: &approvalInputVersion,
 			RequireLabels:                   &approvalLabels,
-			RequireNoRollout:                true,
+			RequireNoRollout:                requireNoRollout,
 		})
 		if err != nil {
 			if errors.Is(err, store.ErrIssueUpdateSkipped) {
