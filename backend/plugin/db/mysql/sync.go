@@ -68,8 +68,8 @@ var (
 // after the numeric version, e.g. "-MariaDB", "-OceanBase-v4.2", "-TiDB-v7.5") denotes
 // a stock MySQL server. MySQL-compatible engines registered as MYSQL report MySQL-like
 // version numbers but do not implement every stock information_schema feature, so any
-// stock-only query or decode (SRS_ID column select, binary default encodings) must be
-// gated on this single predicate.
+// stock-only query or decode (SRS_ID column select, binary default encodings, column
+// INVISIBLE capture) must be gated on this single predicate.
 func isStockMySQL(versionSuffix string) bool {
 	return !strings.Contains(versionSuffix, "MariaDB") &&
 		!strings.Contains(versionSuffix, "OceanBase") &&
@@ -419,9 +419,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			column.Srid = &v
 		}
 		// A user-declared INVISIBLE column surfaces as the INVISIBLE token in EXTRA
-		// (MySQL 8.0.23+). Captured so the dumper can re-emit the /*!80023 INVISIBLE */
-		// attribute and the declarative diff stays a no-op.
-		if isInvisibleColumnExtra(extra) {
+		// (MySQL 8.0.23+). Captured on stock MySQL only: MariaDB 10.3+ also reports
+		// INVISIBLE in EXTRA, but the writers emit the MySQL-versioned
+		// /*!80023 INVISIBLE */ form, which MariaDB ignores — capturing there would
+		// yield a permanently non-converging diff. On stock MySQL the dumper re-emits
+		// the attribute and the declarative diff stays a no-op.
+		if stockMySQL && isInvisibleColumnExtra(extra) {
 			column.IsInvisible = true
 		}
 		key := db.TableKey{Schema: "", Table: tableName}
@@ -1259,8 +1262,9 @@ func isCleanDefaultText(value []byte) bool {
 }
 
 // isInvisibleColumnExtra reports whether the information_schema.COLUMNS.EXTRA value
-// carries the standalone INVISIBLE token (MySQL 8.0.23+). EXTRA can hold several
-// space-separated tokens (e.g. "VIRTUAL GENERATED INVISIBLE" or
+// carries the standalone INVISIBLE token (MySQL 8.0.23+; MariaDB 10.3+ reports the
+// same token, but the capture site gates on isStockMySQL — see SyncDBSchema). EXTRA
+// can hold several space-separated tokens (e.g. "VIRTUAL GENERATED INVISIBLE" or
 // "DEFAULT_GENERATED on update CURRENT_TIMESTAMP INVISIBLE"), so the token is matched
 // as a whole field rather than a substring.
 func isInvisibleColumnExtra(extra string) bool {
