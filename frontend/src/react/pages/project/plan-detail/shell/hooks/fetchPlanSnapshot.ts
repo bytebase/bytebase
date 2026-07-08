@@ -72,8 +72,7 @@ const requestRolloutTaskRuns = (rolloutName: string) =>
 // only needs the rollout (task statuses) and its task runs — not the whole page.
 // Fetching just these two, instead of the 7-RPC full snapshot, lets the poll run
 // at a tight floor without the extra load, so PENDING -> RUNNING -> DONE is
-// observed promptly. Only fields that resolved are returned, so a transient poll
-// failure keeps the existing data instead of flashing the deploy view empty.
+// observed promptly.
 export type PlanDetailStatusPatch = Partial<
   Pick<PlanDetailFetchPatch, "rollout" | "taskRuns">
 >;
@@ -85,14 +84,17 @@ export const fetchRolloutState = async (
     requestRollout(rolloutName),
     requestRolloutTaskRuns(rolloutName),
   ]);
-  const patch: PlanDetailStatusPatch = {};
-  if (rolloutResult.status === "fulfilled") {
-    patch.rollout = rolloutResult.value;
+  // Apply the rollout and its task runs together or not at all. A partial patch
+  // could advance the rollout to a terminal state while leaving stale task runs,
+  // which stops polling (isPlanDone) with the latest run still shown as RUNNING.
+  // On any failure keep the existing data untouched and let the next tick retry.
+  if (
+    rolloutResult.status !== "fulfilled" ||
+    taskRunsResult.status !== "fulfilled"
+  ) {
+    return {};
   }
-  if (taskRunsResult.status === "fulfilled") {
-    patch.taskRuns = taskRunsResult.value;
-  }
-  return patch;
+  return { rollout: rolloutResult.value, taskRuns: taskRunsResult.value };
 };
 
 const convertRouteQuery = (query: Record<string, unknown>) => {

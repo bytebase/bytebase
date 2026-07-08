@@ -34,6 +34,7 @@ import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
+import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot, fetchRolloutState } from "./fetchPlanSnapshot";
@@ -354,6 +355,7 @@ export const usePlanDetailPage = ({
       return { isPlanDone: false, hasActiveTasks: false };
     }
     const allTasks = snapshot.rollout.stages.flatMap((stage) => stage.tasks);
+    const nowMs = Date.now();
     return {
       isPlanDone:
         allTasks.length > 0 &&
@@ -362,12 +364,12 @@ export const usePlanDetailPage = ({
             task.status === Task_Status.DONE ||
             task.status === Task_Status.SKIPPED
         ),
-      // A task actively transitioning warrants fast polling so PENDING ->
-      // RUNNING -> DONE is observed promptly instead of after a grown backoff.
-      hasActiveTasks: allTasks.some(
-        (task) =>
-          task.status === Task_Status.PENDING ||
-          task.status === Task_Status.RUNNING
+      // Fast-poll only tasks actually transitioning (RUNNING, or PENDING and
+      // due) so PENDING -> RUNNING -> DONE is observed promptly — but a task
+      // scheduled for a future maintenance window stays on the backed-off poll
+      // instead of hammering the rollout RPCs while it waits.
+      hasActiveTasks: allTasks.some((task) =>
+        isTaskActivelyTransitioning(task, nowMs)
       ),
     };
   }, [snapshot.rollout]);

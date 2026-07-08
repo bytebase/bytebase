@@ -1,6 +1,11 @@
 import i18n from "@/react/i18n";
 import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
-import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
+import {
+  getTimeForPbTimestampProtoEs,
+  isValidDatabaseName,
+  UNKNOWN_ID,
+  unknownDatabase,
+} from "@/types";
 import type {
   Plan,
   Plan_TaskStatusCount,
@@ -134,6 +139,24 @@ export const releaseNameOfTaskV1 = (task: Task): string => {
     }
   }
   return "";
+};
+
+// A task is "actively transitioning" — worth fast-polling — when it is RUNNING,
+// or PENDING and expected to start imminently. A PENDING task scheduled for a
+// future run_time (a maintenance window, possibly hours out) is NOT imminent, so
+// it's excluded: the deploy view backs off instead of hammering the rollout RPCs
+// while it waits. `nowMs` is injected for testability.
+export const isTaskActivelyTransitioning = (
+  task: Task,
+  nowMs: number = Date.now()
+): boolean => {
+  if (task.status === Task_Status.RUNNING) {
+    return true;
+  }
+  if (task.status !== Task_Status.PENDING) {
+    return false;
+  }
+  return !task.runTime || getTimeForPbTimestampProtoEs(task.runTime) <= nowMs;
 };
 
 // Task_Status ONLY. Task_Status and TaskRun_Status share names but their
