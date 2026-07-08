@@ -214,7 +214,7 @@ export function Quickstart() {
         name: t("quick-start.visit-member"),
         link: { name: WORKSPACE_ROUTE_MEMBERS },
         done: memberVisited,
-        requiredPermissions: ["bb.workspaces.getIamPolicy", "bb.users.list"],
+        requiredPermissions: ["bb.workspaces.getIamPolicy"],
       },
     ];
     return all.filter((item) => {

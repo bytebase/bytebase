@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     (key: string) => key !== "hidden" && key !== "member.visit"
   ),
   getOrFetchProjectByName: vi.fn(async () => ({ name: "" })),
+  hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
   loadProjectIamPolicy: vi.fn(async () => undefined),
   saveIntroStateByKey: vi.fn(),
 }));
@@ -63,7 +64,7 @@ vi.mock("@/store", () => ({
 vi.mock("@/utils", () => ({
   extractProjectResourceName: (name: string) => name,
   hasProjectPermissionV2: () => true,
-  hasWorkspacePermissionV2: () => true,
+  hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
 vi.mock("@/types", () => ({
@@ -81,6 +82,7 @@ beforeEach(() => {
   mocks.getIntroStateByKey.mockImplementation(
     (key: string) => key !== "hidden" && key !== "member.visit"
   );
+  mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -110,6 +112,19 @@ describe("Quickstart", () => {
 
     expect(memberLink?.getAttribute("data-route-name")).toBe(
       "workspace.members"
+    );
+  });
+
+  it("shows the member visit item when user can access workspace IAM policy", async () => {
+    mocks.hasWorkspacePermissionV2.mockImplementation(
+      (permission) => permission === "bb.workspaces.getIamPolicy"
+    );
+
+    await render(<Quickstart />);
+
+    expect(container.textContent).toContain("quick-start.visit-member");
+    expect(mocks.hasWorkspacePermissionV2).not.toHaveBeenCalledWith(
+      "bb.users.list"
     );
   });
 });
