@@ -530,66 +530,10 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		_, _ = buf.WriteString("  `")
 		_, _ = buf.WriteString(col.Name)
 		_, _ = buf.WriteString("` ")
-		_, _ = buf.WriteString(col.Type)
-
-		if col.CharacterSet != "" {
-			_, _ = buf.WriteString(" CHARACTER SET ")
-			_, _ = buf.WriteString(col.CharacterSet)
-		}
-		if col.Collation != "" {
-			_, _ = buf.WriteString(" COLLATE ")
-			_, _ = buf.WriteString(col.Collation)
-		}
-
-		if !col.Nullable {
-			_, _ = buf.WriteString(" NOT NULL")
-		}
-
-		// Spatial SRID (MySQL 8.0): after NOT NULL, before DEFAULT — the SDL dumper's
-		// canonical position (see printColumnClause).
-		writeColumnSRIDAttribute(buf, col)
-
-		// Handle AUTO_INCREMENT before default value
-		if hasAutoIncrement(col) {
-			_, _ = buf.WriteString(" AUTO_INCREMENT")
-		} else if hasDefaultValue(col) && !hasAutoIncrement(col) && col.Generation == nil {
-			// Don't add DEFAULT if this is a generated column
-			if e := getDefaultExpression(col); e != "" {
-				_, _ = buf.WriteString(" DEFAULT ")
-				_, _ = buf.WriteString(e)
-			}
-		}
-
-		// Handle ON UPDATE
-		if col.OnUpdate != "" {
-			_, _ = buf.WriteString(" ON UPDATE ")
-			_, _ = buf.WriteString(col.OnUpdate)
-		}
-
-		// Handle generated columns
-		if col.Generation != nil && col.Generation.Expression != "" {
-			_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
-			_, _ = buf.WriteString(col.Generation.Expression)
-			_, _ = buf.WriteString(") ")
-			switch col.Generation.Type {
-			case storepb.GenerationMetadata_TYPE_STORED:
-				_, _ = buf.WriteString("STORED")
-			case storepb.GenerationMetadata_TYPE_VIRTUAL:
-				_, _ = buf.WriteString("VIRTUAL")
-			default:
-				// Default to VIRTUAL for unknown types
-				_, _ = buf.WriteString("VIRTUAL")
-			}
-		}
-
-		if col.Comment != "" {
-			_, _ = buf.WriteString(" COMMENT '")
-			_, _ = buf.WriteString(col.Comment)
-			_, _ = buf.WriteString("'")
-		}
-
-		// INVISIBLE column (MySQL 8.0.23+): the final attribute, matching the SDL dumper.
-		writeColumnInvisibleAttribute(buf, col)
+		// Reuse the shared column-definition body so the inline CREATE TABLE and the
+		// ADD/MODIFY COLUMN paths emit the same canonical attribute order (notably the
+		// generated-column ordering: GENERATED ALWAYS AS (...) precedes NOT NULL/SRID).
+		writeColumnDefinitionBody(buf, col)
 	}
 
 	// Write primary key constraint inline if exists
@@ -677,10 +621,11 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 }
 
 // writeColumnDefinitionBody emits the column definition following the leading
-// “ `name` “ — the type and every attribute in canonical order (charset/collation,
-// NOT NULL, SRID, AUTO_INCREMENT/DEFAULT, ON UPDATE, generated, comment, INVISIBLE).
-// Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn (MODIFY COLUMN), which
-// differ only in the leading clause.
+// “ `name` “ — the type and every attribute in canonical order. MySQL's grammar puts
+// the attributes in a different order for a generated column (the GENERATED ALWAYS AS
+// clause precedes NOT NULL and SRID) than for a regular column, so the body branches on
+// column.Generation. Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn
+// (MODIFY COLUMN), which differ only in the leading clause.
 func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetadata) {
 	_, _ = buf.WriteString(column.Type)
 
@@ -691,6 +636,11 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 	if column.Collation != "" {
 		_, _ = buf.WriteString(" COLLATE ")
 		_, _ = buf.WriteString(column.Collation)
+	}
+
+	if column.Generation != nil && column.Generation.Expression != "" {
+		writeGeneratedColumnAttributes(buf, column)
+		return
 	}
 
 	if !column.Nullable {
@@ -704,8 +654,7 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 	// Handle AUTO_INCREMENT before default value
 	if hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" AUTO_INCREMENT")
-	} else if hasDefaultValue(column) && !hasAutoIncrement(column) && column.Generation == nil {
-		// Don't add DEFAULT if this is a generated column
+	} else if hasDefaultValue(column) && !hasAutoIncrement(column) {
 		_, _ = buf.WriteString(" DEFAULT ")
 		_, _ = buf.WriteString(getDefaultExpression(column))
 	}
@@ -716,22 +665,6 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 		_, _ = buf.WriteString(column.OnUpdate)
 	}
 
-	// Handle generated columns
-	if column.Generation != nil && column.Generation.Expression != "" {
-		_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
-		_, _ = buf.WriteString(column.Generation.Expression)
-		_, _ = buf.WriteString(") ")
-		switch column.Generation.Type {
-		case storepb.GenerationMetadata_TYPE_STORED:
-			_, _ = buf.WriteString("STORED")
-		case storepb.GenerationMetadata_TYPE_VIRTUAL:
-			_, _ = buf.WriteString("VIRTUAL")
-		default:
-			// Default to VIRTUAL for unknown types
-			_, _ = buf.WriteString("VIRTUAL")
-		}
-	}
-
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
 		_, _ = buf.WriteString(column.Comment)
@@ -740,6 +673,49 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 
 	// INVISIBLE column (MySQL 8.0.23+): the final attribute, matching the SDL dumper.
 	writeColumnInvisibleAttribute(buf, column)
+}
+
+// writeGeneratedColumnAttributes emits the attributes of a generated column (type and
+// charset/collation already written) in MySQL's canonical order:
+//
+//	GENERATED ALWAYS AS (expr) STORED|VIRTUAL [NOT NULL] [SRID] [INVISIBLE] [COMMENT]
+//
+// The GENERATED ALWAYS AS clause must precede NOT NULL and the SRID attribute — the
+// order the current MySQL grammar accepts and that SHOW CREATE emits (verified against
+// 8.0.32). Note INVISIBLE precedes COMMENT here, unlike a regular column, matching the
+// generated-column canonical form. Generated columns never carry DEFAULT / AUTO_INCREMENT
+// / ON UPDATE, so those clauses are intentionally omitted.
+func writeGeneratedColumnAttributes(buf *strings.Builder, column *storepb.ColumnMetadata) {
+	_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
+	_, _ = buf.WriteString(column.Generation.Expression)
+	_, _ = buf.WriteString(") ")
+	switch column.Generation.Type {
+	case storepb.GenerationMetadata_TYPE_STORED:
+		_, _ = buf.WriteString("STORED")
+	case storepb.GenerationMetadata_TYPE_VIRTUAL:
+		_, _ = buf.WriteString("VIRTUAL")
+	default:
+		// Default to VIRTUAL for unknown types
+		_, _ = buf.WriteString("VIRTUAL")
+	}
+
+	if !column.Nullable {
+		_, _ = buf.WriteString(" NOT NULL")
+	}
+
+	// Spatial SRID (MySQL 8.0): after NOT NULL for a generated column, matching the
+	// SHOW CREATE canonical position.
+	writeColumnSRIDAttribute(buf, column)
+
+	// INVISIBLE column (MySQL 8.0.23+): for a generated column this precedes COMMENT,
+	// matching the SHOW CREATE canonical order.
+	writeColumnInvisibleAttribute(buf, column)
+
+	if column.Comment != "" {
+		_, _ = buf.WriteString(" COMMENT '")
+		_, _ = buf.WriteString(column.Comment)
+		_, _ = buf.WriteString("'")
+	}
 }
 
 func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
