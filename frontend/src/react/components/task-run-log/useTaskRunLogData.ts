@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { rolloutServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { useLatestRef } from "@/react/hooks/useLatestRef";
-import { useLivePoll } from "@/react/hooks/useLivePoll";
+import { usePolling } from "@/react/hooks/usePolling";
 import { useSeededState } from "@/react/hooks/useSeededState";
 import { sameMessageList } from "@/react/lib/protoIdentity";
 import { useAppStore } from "@/react/stores/app";
@@ -381,6 +381,7 @@ export const useTaskRunLogData = (
     taskRunName ?? "",
     () => seedLogSlice(taskRunName)
   );
+  const taskRunNameRef = useLatestRef(taskRunName);
 
   // A monotonic per-fetch sequence: initial revalidation and every live-poll
   // tick take a number, and a response whose number is no longer the latest is
@@ -391,6 +392,7 @@ export const useTaskRunLogData = (
     if (!taskRunName) {
       return;
     }
+    const requestedTaskRunName = taskRunName;
     const seq = ++logFetchSeq.current;
     // Returned (not `void`ed) so the live poller awaits it and can't start an
     // overlapping tick while the RPC is in flight — otherwise a call slower than
@@ -402,8 +404,13 @@ export const useTaskRunLogData = (
         { contextValues: createContextValues().set(silentContextKey, true) }
       )
       .then((response) => {
-        if (seq !== logFetchSeq.current) return;
-        cacheLogEntries(taskRunName, {
+        if (
+          seq !== logFetchSeq.current ||
+          requestedTaskRunName !== taskRunNameRef.current
+        ) {
+          return;
+        }
+        cacheLogEntries(requestedTaskRunName, {
           entries: response.entries,
           status: taskRunStatus,
         });
@@ -417,14 +424,19 @@ export const useTaskRunLogData = (
         );
       })
       .catch((error: unknown) => {
-        if (seq !== logFetchSeq.current) return;
+        if (
+          seq !== logFetchSeq.current ||
+          requestedTaskRunName !== taskRunNameRef.current
+        ) {
+          return;
+        }
         // Keep showing stale cached entries over an empty error state.
         setLogSlice((prev) => ({
           entries: prev.entries,
           state: { status: "error", error: getErrorMessage(error) },
         }));
       });
-  }, [taskRunName, taskRunStatus, setLogSlice]);
+  }, [taskRunName, taskRunNameRef, taskRunStatus, setLogSlice]);
 
   // Cached entries were painted during render; revalidate on mount / status
   // change only when the cached copy could still change (run not finished).
@@ -440,7 +452,7 @@ export const useTaskRunLogData = (
   // A running task appends log lines as it executes; poll while it runs — but
   // only while this card is live (its stage visible), so a hidden kept-alive
   // stage doesn't keep issuing background log RPCs until the run finishes.
-  useLivePoll(
+  usePolling(
     live && Boolean(taskRunName) && taskRunStatus === TaskRun_Status.RUNNING,
     LIVE_LOG_POLL_INTERVAL_MS,
     fetchLog

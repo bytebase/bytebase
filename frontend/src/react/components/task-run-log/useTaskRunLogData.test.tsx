@@ -75,8 +75,13 @@ const renderHook = (
   const container = document.createElement("div");
   const root = createRoot(container);
   let latest: UseTaskRunLogDataResult | undefined;
+  let props = { taskRunName, taskRunStatus, live };
   const Probe = () => {
-    latest = useTaskRunLogData(taskRunName, taskRunStatus, live);
+    latest = useTaskRunLogData(
+      props.taskRunName,
+      props.taskRunStatus,
+      props.live
+    );
     return null;
   };
   act(() => {
@@ -84,6 +89,19 @@ const renderHook = (
   });
   return {
     result: () => latest as UseTaskRunLogDataResult,
+    rerender: (
+      nextTaskRunName: string,
+      nextTaskRunStatus?: TaskRun_Status,
+      nextLive = true
+    ) =>
+      act(() => {
+        props = {
+          taskRunName: nextTaskRunName,
+          taskRunStatus: nextTaskRunStatus,
+          live: nextLive,
+        };
+        root.render(<Probe />);
+      }),
     flush: async () => {
       await act(async () => {
         await Promise.resolve();
@@ -338,6 +356,51 @@ describe("useTaskRunLogData caching", () => {
     const reopened = renderHook(taskRunName, TaskRun_Status.DONE);
     expect(reopened.result().entries).toHaveLength(2);
     reopened.unmount();
+  });
+
+  test("drops a late log response when the same viewer switches to another task run", async () => {
+    mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
+    mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
+    const oldRunName = `${TASK_NAME}/taskRuns/late-previous-run`;
+    const newRunName = `${TASK_NAME}/taskRuns/cached-next-run`;
+
+    // Seed a fresh terminal cache for the next run, so switching to it does not
+    // start a new fetch that would otherwise bump the sequence guard.
+    mocks.getTaskRunLog.mockResolvedValueOnce({
+      entries: [{ deployId: "new-1" }, { deployId: "new-2" }],
+    });
+    const seed = renderHook(newRunName, TaskRun_Status.DONE);
+    await seed.flush();
+    expect(seed.result().entries).toHaveLength(2);
+    seed.unmount();
+
+    let resolveOld: (value: { entries: { deployId: string }[] }) => void =
+      () => {};
+    mocks.getTaskRunLog.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOld = resolve;
+      })
+    );
+    const hook = renderHook(oldRunName, TaskRun_Status.RUNNING);
+    await hook.flush();
+
+    hook.rerender(newRunName, TaskRun_Status.DONE);
+    expect(hook.result().entries).toHaveLength(2);
+
+    await act(async () => {
+      resolveOld({ entries: [{ deployId: "old-stale" }] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      hook
+        .result()
+        .entries.map(
+          (entry) => (entry as unknown as { deployId: string }).deployId
+        )
+    ).toEqual(["new-1", "new-2"]);
+    hook.unmount();
   });
 
   test("seeds a complete cached sheet on the first render", () => {

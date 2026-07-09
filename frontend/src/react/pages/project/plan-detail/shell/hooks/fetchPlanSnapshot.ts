@@ -69,35 +69,6 @@ const requestRolloutTaskRuns = (rolloutName: string) =>
     )
     .then((response) => response.taskRuns);
 
-// The slim "status lane" poll. While a task is transitioning, the deploy view
-// only needs the rollout (task statuses) and its task runs — not the whole page.
-// Fetching just these two, instead of the 7-RPC full snapshot, lets the poll run
-// at a tight floor without the extra load, so PENDING -> RUNNING -> DONE is
-// observed promptly.
-export type PlanDetailStatusPatch = Partial<
-  Pick<PlanDetailFetchPatch, "rollout" | "taskRuns">
->;
-
-export const fetchRolloutState = async (
-  rolloutName: string
-): Promise<PlanDetailStatusPatch> => {
-  const [rolloutResult, taskRunsResult] = await Promise.allSettled([
-    requestRollout(rolloutName),
-    requestRolloutTaskRuns(rolloutName),
-  ]);
-  // Apply the rollout and its task runs together or not at all. A partial patch
-  // could advance the rollout to a terminal state while leaving stale task runs,
-  // which stops polling (isPlanDone) with the latest run still shown as RUNNING.
-  // On any failure keep the existing data untouched and let the next tick retry.
-  if (
-    rolloutResult.status !== "fulfilled" ||
-    taskRunsResult.status !== "fulfilled"
-  ) {
-    return {};
-  }
-  return { rollout: rolloutResult.value, taskRuns: taskRunsResult.value };
-};
-
 const convertRouteQuery = (query: Record<string, unknown>) => {
   const kv: Record<string, string> = {};
   for (const [key, value] of Object.entries(query)) {

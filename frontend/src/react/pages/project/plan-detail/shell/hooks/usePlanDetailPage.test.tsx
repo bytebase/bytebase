@@ -15,7 +15,6 @@ import type { PlanDetailPageSnapshot } from "./types";
 
 const mocks = vi.hoisted(() => ({
   fetchPlanSnapshot: vi.fn(),
-  fetchRolloutState: vi.fn(),
   getIssueRoute: vi.fn(() => ({ name: "issue-detail" })),
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
@@ -47,7 +46,6 @@ vi.mock("@/utils", () => ({
 
 vi.mock("./fetchPlanSnapshot", () => ({
   fetchPlanSnapshot: mocks.fetchPlanSnapshot,
-  fetchRolloutState: mocks.fetchRolloutState,
 }));
 
 import { PlanDetailStoreProvider } from "../../shared/stores/PlanDetailStoreProvider";
@@ -99,7 +97,6 @@ describe("usePlanDetailPage", () => {
       async (_projectId: string, planId: string) =>
         buildSnapshotPatch({ planId })
     );
-    mocks.fetchRolloutState.mockResolvedValue({});
   });
 
   test("defaults to only the changes phase on the specs route", async () => {
@@ -585,184 +582,82 @@ describe("usePlanDetailPage", () => {
     expect(after.taskRuns[1]).toBe(before.taskRuns[1]);
   });
 
-  test("poll ticks use the slim status lane while a task is active", async () => {
-    vi.useFakeTimers();
-    try {
-      const activePatch = {
-        ...buildSnapshotPatch({ planId: "plan-1" }),
-        rollout: create(RolloutSchema, {
-          name: "projects/foo/rollouts/1",
-          stages: [
+  const rolloutWithTask = (status: Task_Status) =>
+    create(RolloutSchema, {
+      name: "projects/foo/rollouts/1",
+      stages: [
+        {
+          name: "projects/foo/rollouts/1/stages/s1",
+          tasks: [
             {
-              name: "projects/foo/rollouts/1/stages/s1",
-              tasks: [
-                {
-                  name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
-                  status: Task_Status.RUNNING,
-                },
-              ],
+              name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
+              status,
             },
           ],
-        }),
-      };
-      mocks.fetchPlanSnapshot.mockResolvedValue(activePatch);
-      mocks.fetchRolloutState.mockResolvedValue({
-        rollout: activePatch.rollout,
-        taskRuns: [],
+        },
+      ],
+    });
+
+  test("polls the full snapshot on the active cadence while a task transitions", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.fetchPlanSnapshot.mockResolvedValue({
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        rollout: rolloutWithTask(Task_Status.RUNNING),
       });
 
       const { result } = renderHook(
         () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
         { wrapper }
       );
-
-      // Flush the initial full fetch so the RUNNING rollout is in the snapshot.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
       expect(result.current.ready).toBe(true);
-
       mocks.fetchPlanSnapshot.mockClear();
-      mocks.fetchRolloutState.mockClear();
 
-      // Cross the first poll tick (scheduled at the 1000ms base, jittered). With
-      // a task RUNNING the tick must take the slim status lane, not re-fetch the
-      // full page.
+      // A RUNNING task → the poll re-fetches the full snapshot every ~1s.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(1300);
+        await vi.advanceTimersByTimeAsync(1000);
       });
-      expect(mocks.fetchRolloutState).toHaveBeenCalled();
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("uses the idle cadence when no task is transitioning", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.fetchPlanSnapshot.mockResolvedValue({
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        rollout: rolloutWithTask(Task_Status.NOT_STARTED),
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      // No active task → the fast (1s) cadence must not fire; the idle (15s) one
+      // eventually does.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
       expect(mocks.fetchPlanSnapshot).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  test("wakes up to the fast status lane when a scheduled task comes due", async () => {
-    vi.useFakeTimers();
-    try {
-      const BASE = 1_700_000_000_000;
-      vi.setSystemTime(BASE);
-      // A PENDING task scheduled to run 10s from now — not active yet.
-      const scheduled = {
-        ...buildSnapshotPatch({ planId: "plan-1" }),
-        rollout: create(RolloutSchema, {
-          name: "projects/foo/rollouts/1",
-          stages: [
-            {
-              name: "projects/foo/rollouts/1/stages/s1",
-              tasks: [
-                {
-                  name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
-                  status: Task_Status.PENDING,
-                  runTime: { seconds: BigInt(Math.floor(BASE / 1000) + 10) },
-                },
-              ],
-            },
-          ],
-        }),
-      };
-      mocks.fetchPlanSnapshot.mockResolvedValue(scheduled);
-      mocks.fetchRolloutState.mockResolvedValue({
-        rollout: scheduled.rollout,
-        taskRuns: [],
-      });
-
-      const { result } = renderHook(
-        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
-        { wrapper }
-      );
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(14000);
       });
-      expect(result.current.ready).toBe(true);
-      mocks.fetchRolloutState.mockClear();
-
-      // Before the run_time the task is not active, so no slim-lane poll runs.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(mocks.fetchRolloutState).not.toHaveBeenCalled();
-
-      // Crossing the run_time fires the wake-up, which flips the activity flag.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(11000);
-      });
-      // Now that the task is active, a following poll tick takes the fast status
-      // lane (a separate advance so the flag's re-render has committed first).
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(35000);
-      });
-      expect(mocks.fetchRolloutState).toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  test("a slim poll tick does not supersede an in-flight full refresh", async () => {
-    vi.useFakeTimers();
-    try {
-      const activePatch = {
-        ...buildSnapshotPatch({ planId: "plan-1" }),
-        projectTitle: "orig",
-        rollout: create(RolloutSchema, {
-          name: "projects/foo/rollouts/1",
-          stages: [
-            {
-              name: "projects/foo/rollouts/1/stages/s1",
-              tasks: [
-                {
-                  name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
-                  status: Task_Status.RUNNING,
-                },
-              ],
-            },
-          ],
-        }),
-      };
-      mocks.fetchPlanSnapshot.mockResolvedValue(activePatch);
-      mocks.fetchRolloutState.mockResolvedValue({
-        rollout: activePatch.rollout,
-        taskRuns: [],
-      });
-
-      const { result } = renderHook(
-        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
-        { wrapper }
-      );
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(0);
-      });
-      expect(result.current.ready).toBe(true);
-      mocks.fetchRolloutState.mockClear();
-
-      // A user action triggers a full refresh whose fetch stays in flight. The
-      // restart also arms the fast poll (the task is RUNNING).
-      let resolveFull: (patch: Partial<PlanDetailPageSnapshot>) => void = () =>
-        undefined;
-      mocks.fetchPlanSnapshot.mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveFull = resolve;
-        })
-      );
-      let refreshDone: Promise<void> = Promise.resolve();
-      act(() => {
-        refreshDone = result.current.refreshState();
-      });
-
-      // The restarted fast poll fires while the full fetch is in flight; the
-      // slim lane must be skipped so it can't drop the richer full result.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(mocks.fetchRolloutState).not.toHaveBeenCalled();
-
-      // The full refresh resolves and its plan-wide update (projectTitle) lands.
-      await act(async () => {
-        resolveFull({ ...activePatch, projectTitle: "updated-by-action" });
-        await refreshDone;
-      });
-      expect(result.current.projectTitle).toBe("updated-by-action");
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

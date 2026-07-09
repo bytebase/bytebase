@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { usePolling } from "@/react/hooks/usePolling";
 import {
   preserveTaskRunIdentities,
   sameMessage,
@@ -30,7 +31,6 @@ import {
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
-import { getTimeForPbTimestampProtoEs } from "@/types/timestamp";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
@@ -38,21 +38,21 @@ import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
-import { fetchPlanSnapshot, fetchRolloutState } from "./fetchPlanSnapshot";
+import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { usePhaseState } from "./usePhaseState";
-import { usePolling } from "./usePolling";
 import { useRedirects } from "./useRedirects";
 import { useRouteSelection } from "./useRouteSelection";
 
-// Browser timers store the delay in a signed 32-bit int; anything larger than
-// this (~24.8 days) can overflow and fire immediately. The scheduled-task
-// wake-up clamps to it and re-arms in chunks for tasks further out.
-const MAX_WAKE_UP_DELAY_MS = 2 ** 31 - 1;
+// Poll cadence: fast while a task is transitioning (PENDING/RUNNING) so a status
+// change surfaces within ~1s; idle otherwise, just to catch externally-created
+// rollouts/tasks and a scheduled task starting, without hammering the server.
+const ACTIVE_POLL_INTERVAL_MS = 1000;
+const IDLE_POLL_INTERVAL_MS = 15000;
 
 const buildDefaultSnapshot = (
   projectId: string,
@@ -192,9 +192,6 @@ export const usePlanDetailPage = ({
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
-  // Bumped by the scheduled-task wake-up (below) to force the activity memo to
-  // recompute against the current clock when a future run_time comes due.
-  const [dueTick, setDueTick] = useState(0);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
   const isEditing = editing.isEditing;
@@ -277,61 +274,22 @@ export const usePlanDetailPage = ({
     [syncDefaultActivePhases]
   );
 
-  // Monotonic fetch sequence: a fetch that was already in flight when a newer
-  // one started (e.g. a poll tick overlapping a user-action refresh) carries
-  // older data and must not overwrite the fresher snapshot when it resolves
-  // late — after a task rerun that would flip the status back to the old one.
+  // Monotonic fetch sequence: a fetch already in flight when a newer one started
+  // (a poll tick overlapping a user-action refresh) carries older data and must
+  // not overwrite the fresher snapshot when it resolves late.
   const fetchSeqRef = useRef(0);
-  // A full fetch takes priority over the slim status lane: it carries the whole
-  // page (plan / issue / checks), so a slim poll must never supersede one in
-  // flight (below). Counted, not a boolean, to tolerate overlapping refreshes.
-  const fullFetchInFlightRef = useRef(0);
-  const fetchFullState = useCallback(async () => {
+  const fetchState = useCallback(async () => {
     const current = latestSnapshotRef.current;
     fetchSeqRef.current += 1;
     const seq = fetchSeqRef.current;
-    fullFetchInFlightRef.current += 1;
-    try {
-      const patch = await fetchPlanSnapshot(
-        current.projectId,
-        current.planId,
-        routeQueryRef.current,
-        // Background poll / post-action refresh: stay silent so a transient
-        // failure doesn't spam the global toast (the initial load is loud).
-        true
-      );
-      if (seq !== fetchSeqRef.current) {
-        return;
-      }
-      patchState(patch);
-    } finally {
-      fullFetchInFlightRef.current -= 1;
-    }
-  }, [patchState]);
-
-  // The slim "status lane": while a task is transitioning, poll only the rollout
-  // and its task runs instead of the full 7-RPC page snapshot. Cheaper per tick,
-  // so it can run at the fast floor without adding load, and the status
-  // transition surfaces in ~0.5s instead of after the full fetch. Shares
-  // fetchSeqRef with the full fetch, so a full fetch (which carries everything)
-  // always supersedes an in-flight slim tick.
-  const fetchStatusState = useCallback(async () => {
-    // Never supersede an in-flight full refresh: the shared fetch sequence would
-    // drop the full result (plan / issue / check updates from a user action),
-    // and the slim patch can't carry those. The full fetch refreshes the rollout
-    // and task runs too, so skipping this tick loses nothing.
-    if (fullFetchInFlightRef.current > 0) {
-      return;
-    }
-    const rolloutName = latestSnapshotRef.current.rollout?.name;
-    // Only reached on active ticks, which imply a rollout exists; bail rather
-    // than re-decide slim-vs-full (pollTick already gated that) if it doesn't.
-    if (!rolloutName) {
-      return;
-    }
-    fetchSeqRef.current += 1;
-    const seq = fetchSeqRef.current;
-    const patch = await fetchRolloutState(rolloutName);
+    const patch = await fetchPlanSnapshot(
+      current.projectId,
+      current.planId,
+      routeQueryRef.current,
+      // Background poll / post-action refresh: stay silent so a transient
+      // failure doesn't spam the global toast (the initial load is loud).
+      true
+    );
     if (seq !== fetchSeqRef.current) {
       return;
     }
@@ -378,21 +336,14 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const { isPlanDone, hasActiveTasks, nextDueMs } = useMemo(() => {
+  const { isPlanDone, hasActiveTasks } = useMemo(() => {
     if (!snapshot.rollout) {
-      return {
-        isPlanDone: false,
-        hasActiveTasks: false,
-        nextDueMs: undefined as number | undefined,
-      };
+      return { isPlanDone: false, hasActiveTasks: false };
     }
     const nowMs = Date.now();
     let taskCount = 0;
     let allSettled = true;
     let hasActiveTasks = false;
-    // The earliest future run_time among still-scheduled PENDING tasks, so the
-    // wake-up below can flip to the fast lane the moment one comes due.
-    let nextDueMs: number | undefined;
     for (const stage of snapshot.rollout.stages) {
       for (const task of stage.tasks) {
         taskCount++;
@@ -402,79 +353,35 @@ export const usePlanDetailPage = ({
         ) {
           allSettled = false;
         }
-        // Fast-poll only tasks actually transitioning (RUNNING, or PENDING and
-        // due) so PENDING -> RUNNING -> DONE is observed promptly; a task
-        // scheduled for a future maintenance window stays on the backed-off poll
-        // instead of hammering the rollout RPCs while it waits.
+        // Poll fast for a task actually transitioning (RUNNING, or a PENDING
+        // task due to run now); a task scheduled for a future maintenance window
+        // stays on the idle cadence rather than polling every second while it
+        // waits — the idle poll still catches it once the backend starts it.
         if (isTaskActivelyTransitioning(task, nowMs)) {
           hasActiveTasks = true;
-        } else if (task.status === Task_Status.PENDING && task.runTime) {
-          const due = getTimeForPbTimestampProtoEs(task.runTime);
-          if (due > nowMs) {
-            nextDueMs =
-              nextDueMs === undefined ? due : Math.min(nextDueMs, due);
-          }
         }
       }
     }
-    return {
-      isPlanDone: taskCount > 0 && allSettled,
-      hasActiveTasks,
-      nextDueMs,
-    };
-  }, [snapshot.rollout, dueTick]);
+    return { isPlanDone: taskCount > 0 && allSettled, hasActiveTasks };
+  }, [snapshot.rollout]);
 
-  // The poller passes the live `fast` flag into each tick, so a tick uses the
-  // slim status fetch exactly while work is in flight and the full fetch once the
-  // plan settles (refreshing the rest of the page that the slim lane skips).
-  const pollTick = useCallback(
-    (fast: boolean) => (fast ? fetchStatusState() : fetchFullState()),
-    [fetchStatusState, fetchFullState]
+  // Poll the whole snapshot on a fixed cadence: fast while a task is
+  // transitioning so PENDING -> RUNNING -> DONE surfaces promptly, idle
+  // otherwise (a failed task awaiting rerun, a scheduled task, an unstarted
+  // rollout) to catch changes without hammering the server. Stops once every
+  // task is terminal. usePolling pauses on a hidden tab and never overlaps a
+  // slow fetch. A user action's immediate fetch (refreshState) surfaces the
+  // result at once, and the cadence tightens as soon as that status is active.
+  usePolling(
+    snapshot.ready && !snapshot.isCreating && !isPlanDone,
+    hasActiveTasks ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
+    fetchState
   );
 
-  const { restart: restartPolling } = usePolling({
-    enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    refreshState: pollTick,
-    fast: hasActiveTasks,
-  });
-
-  // A PENDING task scheduled for a future run_time won't flip `hasActiveTasks`
-  // on its own: the memo only recomputes when the rollout changes, and quiet
-  // polls preserve rollout identity. Without a nudge the page would keep polling
-  // slow and observe the maintenance-window PENDING -> RUNNING up to 30s late.
-  // Wake up exactly when the next task comes due — recompute the flag against
-  // the current clock and drop the cadence to the fast status lane at once.
-  useEffect(() => {
-    if (nextDueMs === undefined) {
-      return;
-    }
-    // Clamp so a far-future wait can't overflow the timer and fire immediately;
-    // dueTick re-runs this effect, re-arming in chunks until the due time is
-    // within range. restartPolling only when actually due, so a chunk boundary
-    // doesn't needlessly drop the cadence.
-    const timer = window.setTimeout(
-      () => {
-        setDueTick((tick) => tick + 1);
-        if (Date.now() >= nextDueMs) {
-          restartPolling();
-        }
-      },
-      Math.min(Math.max(0, nextDueMs - Date.now()), MAX_WAKE_UP_DELAY_MS)
-    );
-    return () => window.clearTimeout(timer);
-  }, [nextDueMs, restartPolling, dueTick]);
-
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
-  // Resets the poll backoff first — not after the fetch — so the follow-up
-  // status transition (e.g. a task moving PENDING -> RUNNING) is watched from
-  // the fast floor from the moment of the action, then does a full fetch
-  // immediately (the action may have changed more than task status, e.g. created
-  // the rollout). If the immediate fetch is still in flight when the restarted
-  // tick fires, the fetch sequence guard keeps the newest result authoritative.
   const refreshState = useCallback(async () => {
-    restartPolling();
-    await fetchFullState();
-  }, [fetchFullState, restartPolling]);
+    await fetchState();
+  }, [fetchState]);
 
   return useDerivedPlanState({
     snapshot,

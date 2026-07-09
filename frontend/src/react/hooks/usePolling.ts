@@ -2,22 +2,19 @@ import { useEffect } from "react";
 import { useLatestRef } from "./useLatestRef";
 
 /**
- * Runs `fn` on a loop while `enabled`, waiting `intervalMs` between the end of
- * one call and the start of the next — and only while the tab is visible (a
- * background tab does no work). `fn` may be async; a rejected tick is swallowed
- * so it never surfaces as an unhandled rejection or stops the loop. The loop is
- * stopped on unmount or when `enabled` goes false.
- *
- * Rescheduling AFTER each call settles (rather than a fixed interval) is
- * deliberate: a call slower than `intervalMs` must not overlap the next tick.
- * Callers guard responses with a start-of-fetch sequence, so overlapping calls
- * would let every response be invalidated by the next tick and leave the view
- * stuck loading/stale under sustained latency.
+ * Polls `fn` while `enabled`, waiting `intervalMs` between the end of one call
+ * and the start of the next — so a call slower than the interval can't overlap
+ * the next tick — and only while the tab is visible (a background tab does no
+ * work). `fn` may be async; a rejected tick is swallowed so it never surfaces as
+ * an unhandled rejection or stops the loop. The loop stops on unmount or when
+ * `enabled` goes false, and reschedules when `intervalMs` changes.
  *
  * `fn` is read through a ref, so passing a fresh closure each render does not
- * restart the loop — only `enabled`/`intervalMs` changes do.
+ * restart the loop — only `enabled`/`intervalMs` changes do. To poll again right
+ * away after a user action, do an immediate fetch in the action handler; the
+ * next tick follows `intervalMs` from there.
  */
-export function useLivePoll(
+export function usePolling(
   enabled: boolean,
   intervalMs: number,
   fn: () => void | Promise<void>

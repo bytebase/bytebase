@@ -1,8 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { useLivePoll } from "./useLivePoll";
+import { usePolling } from "./usePolling";
 
-describe("useLivePoll", () => {
+describe("usePolling", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -28,7 +28,7 @@ describe("useLivePoll", () => {
         })
     );
 
-    renderHook(() => useLivePoll(true, 5000, fn));
+    renderHook(() => usePolling(true, 5000, fn));
 
     // First tick fires after the interval; its call stays in flight.
     await act(async () => {
@@ -58,7 +58,7 @@ describe("useLivePoll", () => {
   test("stops the loop when disabled and on unmount", async () => {
     const fn = vi.fn().mockResolvedValue(undefined);
     const { rerender, unmount } = renderHook(
-      ({ enabled }: { enabled: boolean }) => useLivePoll(enabled, 1000, fn),
+      ({ enabled }: { enabled: boolean }) => usePolling(enabled, 1000, fn),
       { initialProps: { enabled: true } }
     );
 

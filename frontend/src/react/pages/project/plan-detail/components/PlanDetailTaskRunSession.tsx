@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
-import { useLivePoll } from "@/react/hooks/useLivePoll";
+import { usePolling } from "@/react/hooks/usePolling";
 import { sameMessage } from "@/react/lib/protoIdentity";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
@@ -91,8 +91,8 @@ export function PlanDetailTaskRunSession({
   }, [isRunning, fetchSession]);
 
   // Live refresh while running — swaps data in place (no spinner); a failing
-  // tick is swallowed by useLivePoll.
-  useLivePoll(active && isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
+  // tick is swallowed by usePolling.
+  usePolling(active && isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
 
   if (loading) {
     return (
