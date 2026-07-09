@@ -88,7 +88,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
 						StartPosition: common.ConvertANTLRLineToPosition(line),
 					})
-				} else if rowCount > int64(maxRow) {
+				} else if rowCount = capRowsByLimit(rowCount, ins.Select.Limit); rowCount > int64(maxRow) {
 					advice = append(advice, &storepb.Advice{
 						Status:        level,
 						Code:          code.InsertTooManyRows.Int32(),
@@ -126,6 +126,25 @@ func contentStartIndex(text string) int {
 		}
 	}
 	return 0
+}
+
+func capRowsByLimit(rowCount int64, limit *ast.Limit) int64 {
+	limitCount, ok := limitRowCount(limit)
+	if !ok || limitCount >= rowCount {
+		return rowCount
+	}
+	return limitCount
+}
+
+func limitRowCount(limit *ast.Limit) (int64, bool) {
+	if limit == nil || limit.Count == nil {
+		return 0, false
+	}
+	lit, ok := limit.Count.(*ast.IntLit)
+	if !ok || lit.Value < 0 {
+		return 0, false
+	}
+	return lit.Value, true
 }
 
 func getInsertRows(res []any) (int64, error) {

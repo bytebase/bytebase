@@ -2,6 +2,9 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +15,68 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
+
+var testMySQLAdvisorExplainRows [][]driver.Value
+
+func init() {
+	sql.Register("test_mysql_advisor_explain", testMySQLAdvisorExplainDriver{})
+}
+
+type testMySQLAdvisorExplainDriver struct{}
+
+func (testMySQLAdvisorExplainDriver) Open(string) (driver.Conn, error) {
+	return testMySQLAdvisorExplainConn{}, nil
+}
+
+type testMySQLAdvisorExplainConn struct{}
+
+func (testMySQLAdvisorExplainConn) Prepare(string) (driver.Stmt, error) {
+	return nil, driver.ErrSkip
+}
+
+func (testMySQLAdvisorExplainConn) Close() error {
+	return nil
+}
+
+func (testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
+	return testMySQLAdvisorExplainTx{}, nil
+}
+
+func (testMySQLAdvisorExplainConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+	return &testMySQLAdvisorExplainResultRows{rows: testMySQLAdvisorExplainRows}, nil
+}
+
+type testMySQLAdvisorExplainTx struct{}
+
+func (testMySQLAdvisorExplainTx) Commit() error {
+	return nil
+}
+
+func (testMySQLAdvisorExplainTx) Rollback() error {
+	return nil
+}
+
+type testMySQLAdvisorExplainResultRows struct {
+	rows [][]driver.Value
+	idx  int
+}
+
+func (*testMySQLAdvisorExplainResultRows) Columns() []string {
+	return []string{"id", "select_type", "table", "type", "rows", "filtered"}
+}
+
+func (*testMySQLAdvisorExplainResultRows) Close() error {
+	return nil
+}
+
+func (r *testMySQLAdvisorExplainResultRows) Next(dest []driver.Value) error {
+	if r.idx >= len(r.rows) {
+		return io.EOF
+	}
+	copy(dest, r.rows[r.idx])
+	r.idx++
+	return nil
+}
 
 func TestMySQLRules(t *testing.T) {
 	rules := []*storepb.SQLReviewRule{
@@ -88,6 +153,53 @@ func TestMySQLRules(t *testing.T) {
 
 	for _, rule := range rules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
+	}
+}
+
+func TestMySQLRowLimitAdvisorsCapExplainEstimateByLimit(t *testing.T) {
+	testMySQLAdvisorExplainRows = [][]driver.Value{
+		{int64(1), "SIMPLE", "td", "ALL", int64(1000), "100.00"},
+	}
+	db, err := sql.Open("test_mysql_advisor_explain", "")
+	require.NoError(t, err)
+	defer db.Close()
+
+	sm := sheet.NewManager()
+	for _, tc := range []struct {
+		name      string
+		statement string
+		ruleType  storepb.SQLReviewRule_Type
+	}{
+		{
+			name:      "affected row limit",
+			statement: "UPDATE td SET c = 1 WHERE c = 0 LIMIT 3;",
+			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+		},
+		{
+			name:      "insert row limit",
+			statement: "INSERT INTO td SELECT * FROM source WHERE c = 0 LIMIT 3;",
+			ruleType:  storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{
+				{
+					Type:  tc.ruleType,
+					Level: storepb.SQLReviewRule_WARNING,
+					Payload: &storepb.SQLReviewRule_NumberPayload{
+						NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+							Number: 5,
+						},
+					},
+				},
+			}, advisor.Context{
+				DBType:          storepb.Engine_MYSQL,
+				Driver:          db,
+				NoAppendBuiltin: true,
+			})
+			require.NoError(t, err)
+			require.Empty(t, adviceList)
+		})
 	}
 }
 
