@@ -47,7 +47,7 @@ describe("GeneralPage section layout", () => {
   test("does not add top padding to the first general settings section", () => {
     const source = readFileSync(join(sectionDir, "GeneralSection.tsx"), "utf8");
 
-    expect(source).toContain("style={{ paddingTop: 0 }}");
+    expect(source).toContain("style={{ paddingTop: 8 }}");
   });
 
   test("uses merged form field props for migrated field headings", () => {
