@@ -33,11 +33,20 @@ vi.mock("@/react/components/ui/sheet", () => ({
   SheetTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock("@/react/components/task-run-log", () => ({
-  TaskRunLogViewer: ({ taskRunName }: { taskRunName: string }) => (
-    <div data-task-run-name={taskRunName} data-testid="log-viewer" />
-  ),
-}));
+const viewerMounts = vi.hoisted(() => ({ count: 0 }));
+vi.mock("@/react/components/task-run-log", async () => {
+  const { useEffect } = await import("react");
+  return {
+    TaskRunLogViewer: ({ taskRunName }: { taskRunName: string }) => {
+      // Counts fresh mounts so a test can assert the viewer remounts (rather
+      // than re-renders in place) when its key changes.
+      useEffect(() => {
+        viewerMounts.count += 1;
+      }, []);
+      return <div data-task-run-name={taskRunName} data-testid="log-viewer" />;
+    },
+  };
+});
 
 vi.mock("@/react/components/HumanizeTs", () => ({
   HumanizeTs: ({ ts }: { ts: number }) => <span>{ts}</span>,
@@ -105,6 +114,48 @@ describe("DeployTaskRunHistorySheet", () => {
       `${taskName}/taskRuns/1`,
     ]);
     cleanup();
+  });
+
+  test("remounts the log viewer when a run flips RUNNING -> DONE", () => {
+    viewerMounts.count = 0;
+    const run = (status: TaskRun_Status) =>
+      create(TaskRunSchema, {
+        createTime: create(TimestampSchema, { seconds: 1000n }),
+        creator: "users/runner@example.com",
+        name: `${taskName}/taskRuns/1`,
+        status,
+      });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <DeployTaskRunHistorySheet
+          onOpenChange={() => {}}
+          open={true}
+          taskRuns={[run(TaskRun_Status.RUNNING)]}
+        />
+      );
+    });
+    expect(viewerMounts.count).toBe(1);
+
+    // Same run, now DONE. Status is part of the viewer key, so it must remount
+    // (not re-render in place) — that's what triggers useTaskRunLogData's
+    // unmount cleanup to invalidate any in-flight RUNNING log request.
+    act(() => {
+      root.render(
+        <DeployTaskRunHistorySheet
+          onOpenChange={() => {}}
+          open={true}
+          taskRuns={[run(TaskRun_Status.DONE)]}
+        />
+      );
+    });
+    expect(viewerMounts.count).toBe(2);
+
+    act(() => root.unmount());
+    container.remove();
   });
 
   test("collapses older runs at four or more, expanding on click", () => {

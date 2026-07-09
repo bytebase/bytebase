@@ -49,6 +49,11 @@ import { usePolling } from "./usePolling";
 import { useRedirects } from "./useRedirects";
 import { useRouteSelection } from "./useRouteSelection";
 
+// Browser timers store the delay in a signed 32-bit int; anything larger than
+// this (~24.8 days) can overflow and fire immediately. The scheduled-task
+// wake-up clamps to it and re-arms in chunks for tasks further out.
+const MAX_WAKE_UP_DELAY_MS = 2 ** 31 - 1;
+
 const buildDefaultSnapshot = (
   projectId: string,
   planId: string
@@ -443,15 +448,21 @@ export const usePlanDetailPage = ({
     if (nextDueMs === undefined) {
       return;
     }
+    // Clamp so a far-future wait can't overflow the timer and fire immediately;
+    // dueTick re-runs this effect, re-arming in chunks until the due time is
+    // within range. restartPolling only when actually due, so a chunk boundary
+    // doesn't needlessly drop the cadence.
     const timer = window.setTimeout(
       () => {
         setDueTick((tick) => tick + 1);
-        restartPolling();
+        if (Date.now() >= nextDueMs) {
+          restartPolling();
+        }
       },
-      Math.max(0, nextDueMs - Date.now())
+      Math.min(Math.max(0, nextDueMs - Date.now()), MAX_WAKE_UP_DELAY_MS)
     );
     return () => window.clearTimeout(timer);
-  }, [nextDueMs, restartPolling]);
+  }, [nextDueMs, restartPolling, dueTick]);
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
   // Resets the poll backoff first — not after the fetch — so the follow-up

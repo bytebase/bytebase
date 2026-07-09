@@ -155,8 +155,12 @@ function TaskRunHistoryItem({
       </button>
       {isExpanded && (
         <div className="border-t p-3">
+          {/* Status is part of the key (as in the latest-run panel): a
+              RUNNING -> DONE flip remounts the viewer so useTaskRunLogData's
+              unmount cleanup invalidates the in-flight RUNNING log request,
+              which would otherwise cache an incomplete RUNNING log. */}
           <TaskRunLogViewer
-            key={taskRun.name}
+            key={`logs-${taskRun.name}-${taskRun.status}`}
             taskRunName={taskRun.name}
             taskRunStatus={taskRun.status}
           />
