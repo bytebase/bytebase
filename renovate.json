@@ -4,7 +4,22 @@
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
   "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the pnpm version pinned in scripts/Dockerfile",
+      "fileMatch": ["^scripts/Dockerfile$"],
+      "matchStrings": ["pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm"
+    }
+  ],
   "packageRules": [
+    {
+      "groupName": "pnpm",
+      "description": "Bump pnpm together across package.json, workflows, and the Dockerfile",
+      "matchPackageNames": ["pnpm"]
+    },
     {
       "matchManagers": ["npm"],
       "postUpgradeTasks": {
