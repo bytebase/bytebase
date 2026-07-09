@@ -105,4 +105,33 @@ describe("PlanDetailTaskRunSession", () => {
 
     act(() => root.unmount());
   });
+
+  test("pauses the session poll while the stage is hidden (inactive)", async () => {
+    mocks.getTaskRunSession.mockResolvedValue(responseWithPid("111"));
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    // Active + running: the initial load plus at least one 5s poll tick fire.
+    await act(async () => {
+      root.render(<PlanDetailTaskRunSession taskRun={runningTaskRun} active />);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    const callsWhileActive = mocks.getTaskRunSession.mock.calls.length;
+    expect(callsWhileActive).toBeGreaterThanOrEqual(2);
+
+    // Switch stages: the card stays mounted but goes inactive — the poll stops.
+    await act(async () => {
+      root.render(
+        <PlanDetailTaskRunSession taskRun={runningTaskRun} active={false} />
+      );
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15000);
+    });
+    expect(mocks.getTaskRunSession.mock.calls.length).toBe(callsWhileActive);
+
+    act(() => root.unmount());
+  });
 });

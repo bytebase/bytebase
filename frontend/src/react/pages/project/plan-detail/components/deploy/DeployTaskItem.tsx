@@ -37,6 +37,7 @@ import { useDeployTaskStatement } from "./useDeployTaskStatement";
 // changes one task re-renders that one card — the other mounted cards (across
 // every kept-alive stage) skip entirely.
 export const DeployTaskItem = memo(function DeployTaskItem({
+  active,
   currentUser,
   deepLinked,
   isExpanded,
@@ -53,6 +54,9 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   task,
   taskRuns,
 }: {
+  // Whether this card's stage is the visible one; forwarded to pause the live
+  // log/session polls in the expanded body while a kept-alive stage is hidden.
+  active?: boolean;
   currentUser: User;
   deepLinked: boolean;
   isExpanded: boolean;
@@ -200,6 +204,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
           />
           {isExpanded && (
             <DeployTaskBody
+              active={active}
               databaseEngine={databaseEngine}
               historyCount={taskRuns.length}
               isStatementLoading={isStatementLoading}

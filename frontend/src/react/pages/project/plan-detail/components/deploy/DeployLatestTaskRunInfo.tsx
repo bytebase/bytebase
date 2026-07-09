@@ -22,12 +22,16 @@ const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
 };
 
 export function DeployLatestTaskRunInfo({
+  active = true,
   databaseEngine,
   duration,
   historyCount,
   onShowHistory,
   taskRun,
 }: {
+  // When false, the card's stage is hidden (kept mounted); pause the live log
+  // and session polls below.
+  active?: boolean;
   databaseEngine?: Engine;
   duration?: string;
   historyCount: number;
@@ -104,6 +108,7 @@ export function DeployLatestTaskRunInfo({
           caches during render — and the status prop still drives terminal
           cache freshness and the live poll while running. */}
       <TaskRunLogViewer
+        active={active}
         key={`logs-${taskRun.name}-${taskRun.status}`}
         taskRunName={taskRun.name}
         taskRunStatus={taskRun.status}
@@ -114,7 +119,11 @@ export function DeployLatestTaskRunInfo({
           <div className="text-sm font-medium text-control">
             {t("issue.task-run.session")}
           </div>
-          <PlanDetailTaskRunSession key={taskRun.name} taskRun={taskRun} />
+          <PlanDetailTaskRunSession
+            active={active}
+            key={taskRun.name}
+            taskRun={taskRun}
+          />
         </div>
       )}
     </div>

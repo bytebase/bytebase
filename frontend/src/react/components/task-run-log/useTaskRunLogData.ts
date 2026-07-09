@@ -290,7 +290,10 @@ export const useTaskRunLogData = (
   taskRunName?: string,
   // When provided, a terminal status lets a cached log skip revalidation
   // entirely — a finished run's log never changes.
-  taskRunStatus?: TaskRun_Status
+  taskRunStatus?: TaskRun_Status,
+  // When false, the live log poll is paused (e.g. the card's stage is hidden but
+  // kept mounted). The already-fetched log stays; only background refresh stops.
+  live = true
 ): UseTaskRunLogDataResult => {
   const fetchRelease = useAppStore((state) => state.fetchRelease);
 
@@ -430,9 +433,11 @@ export const useTaskRunLogData = (
     }
   }, [taskRunName, taskRunStatus, fetchLog]);
 
-  // A running task appends log lines as it executes; poll while it runs.
+  // A running task appends log lines as it executes; poll while it runs — but
+  // only while this card is live (its stage visible), so a hidden kept-alive
+  // stage doesn't keep issuing background log RPCs until the run finishes.
   useLivePoll(
-    Boolean(taskRunName) && taskRunStatus === TaskRun_Status.RUNNING,
+    live && Boolean(taskRunName) && taskRunStatus === TaskRun_Status.RUNNING,
     LIVE_LOG_POLL_INTERVAL_MS,
     fetchLog
   );

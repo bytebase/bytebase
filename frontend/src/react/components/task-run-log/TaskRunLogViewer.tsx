@@ -26,6 +26,9 @@ export interface TaskRunLogViewerProps {
   // TaskRun in hand (changelog/revision pages) omit it and always revalidate,
   // even though those runs are terminal by construction.
   taskRunStatus?: TaskRun_Status;
+  // When false, pause the live log poll — the card is mounted but its stage is
+  // hidden. Defaults to live.
+  active?: boolean;
 }
 
 // memo: both props are scalars and data flows in via zustand subscriptions
@@ -34,11 +37,13 @@ export interface TaskRunLogViewerProps {
 export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   taskRunName,
   taskRunStatus,
+  active = true,
 }: TaskRunLogViewerProps) {
   const { t } = useTranslation();
   const { entries, logFetch, sheet, sheetsMap } = useTaskRunLogData(
     taskRunName,
-    taskRunStatus
+    taskRunStatus,
+    active
   );
 
   const getSectionLabel = useCallback(

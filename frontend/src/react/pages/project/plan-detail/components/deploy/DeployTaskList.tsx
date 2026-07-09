@@ -267,6 +267,7 @@ export function DeployTaskList({
       <div className="task-list flex flex-col gap-3 px-4 py-3">
         {visibleTasks.map((task) => (
           <DeployTaskItem
+            active={active}
             currentUser={page.currentUser}
             deepLinked={arrivalTaskName === task.name}
             key={task.name}

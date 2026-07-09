@@ -67,12 +67,16 @@ const makeRolloutWithTask = () => ({
   stages: [{ tasks: [{ name: TASK_NAME, sheet: SHEET_NAME }] }],
 });
 
-const renderHook = (taskRunName: string, taskRunStatus?: TaskRun_Status) => {
+const renderHook = (
+  taskRunName: string,
+  taskRunStatus?: TaskRun_Status,
+  live = true
+) => {
   const container = document.createElement("div");
   const root = createRoot(container);
   let latest: UseTaskRunLogDataResult | undefined;
   const Probe = () => {
-    latest = useTaskRunLogData(taskRunName, taskRunStatus);
+    latest = useTaskRunLogData(taskRunName, taskRunStatus, live);
     return null;
   };
   act(() => {
@@ -214,6 +218,32 @@ describe("useTaskRunLogData caching", () => {
     expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
     expect(second.result().entries).toHaveLength(2);
     second.unmount();
+  });
+
+  test("does not live-poll the log while the stage is hidden (inactive)", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
+      mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
+      const taskRunName = `${TASK_NAME}/taskRuns/inactive-poll`;
+      mocks.getTaskRunLog.mockResolvedValue({ entries: [{ deployId: "a" }] });
+
+      // Inactive + running: the mount revalidation still fires once…
+      const hook = renderHook(taskRunName, TaskRun_Status.RUNNING, false);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(1);
+
+      // …but the 5s live poll must not run while the card's stage is hidden.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15000);
+      });
+      expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(1);
+      hook.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("revalidates once when a cached running log remounts as done", async () => {

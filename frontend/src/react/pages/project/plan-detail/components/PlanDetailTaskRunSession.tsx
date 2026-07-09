@@ -30,7 +30,15 @@ import {
 // rather than the moment the panel opened.
 const SESSION_POLL_INTERVAL_MS = 5000;
 
-export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
+export function PlanDetailTaskRunSession({
+  taskRun,
+  // When false, pause the live session poll — the card is mounted but its stage
+  // is hidden. Defaults to live.
+  active = true,
+}: {
+  taskRun: TaskRun;
+  active?: boolean;
+}) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<TaskRunSession_Postgres | undefined>();
@@ -84,7 +92,7 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
 
   // Live refresh while running — swaps data in place (no spinner); a failing
   // tick is swallowed by useLivePoll.
-  useLivePoll(isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
+  useLivePoll(active && isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
 
   if (loading) {
     return (

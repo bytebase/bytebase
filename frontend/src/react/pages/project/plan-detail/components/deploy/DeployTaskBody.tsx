@@ -19,6 +19,7 @@ import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 // inputs (the statement, store lookups) stay in the orchestrating
 // DeployTaskItem; pure derivations of `task`/`latestTaskRun` live here.
 export function DeployTaskBody({
+  active,
   databaseEngine,
   historyCount,
   isStatementLoading,
@@ -29,6 +30,8 @@ export function DeployTaskBody({
   task,
   timingDisplay,
 }: {
+  // Whether this card's stage is the visible one; forwarded to pause live polls.
+  active?: boolean;
   databaseEngine?: Engine;
   historyCount: number;
   isStatementLoading: boolean;
@@ -102,6 +105,7 @@ export function DeployTaskBody({
 
       {latestTaskRun && (
         <DeployLatestTaskRunInfo
+          active={active}
           databaseEngine={databaseEngine}
           duration={duration}
           historyCount={historyCount}
