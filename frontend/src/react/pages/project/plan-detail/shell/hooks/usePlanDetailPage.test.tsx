@@ -638,6 +638,75 @@ describe("usePlanDetailPage", () => {
     }
   });
 
+  test("a slim poll tick does not supersede an in-flight full refresh", async () => {
+    vi.useFakeTimers();
+    try {
+      const activePatch = {
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        projectTitle: "orig",
+        rollout: create(RolloutSchema, {
+          name: "projects/foo/rollouts/1",
+          stages: [
+            {
+              name: "projects/foo/rollouts/1/stages/s1",
+              tasks: [
+                {
+                  name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
+                  status: Task_Status.RUNNING,
+                },
+              ],
+            },
+          ],
+        }),
+      };
+      mocks.fetchPlanSnapshot.mockResolvedValue(activePatch);
+      mocks.fetchRolloutState.mockResolvedValue({
+        rollout: activePatch.rollout,
+        taskRuns: [],
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchRolloutState.mockClear();
+
+      // A user action triggers a full refresh whose fetch stays in flight. The
+      // restart also arms the fast poll (the task is RUNNING).
+      let resolveFull: (patch: Partial<PlanDetailPageSnapshot>) => void = () =>
+        undefined;
+      mocks.fetchPlanSnapshot.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFull = resolve;
+        })
+      );
+      let refreshDone: Promise<void> = Promise.resolve();
+      act(() => {
+        refreshDone = result.current.refreshState();
+      });
+
+      // The restarted fast poll fires while the full fetch is in flight; the
+      // slim lane must be skipped so it can't drop the richer full result.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(mocks.fetchRolloutState).not.toHaveBeenCalled();
+
+      // The full refresh resolves and its plan-wide update (projectTitle) lands.
+      await act(async () => {
+        resolveFull({ ...activePatch, projectTitle: "updated-by-action" });
+        await refreshDone;
+      });
+      expect(result.current.projectTitle).toBe("updated-by-action");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("a stale in-flight fetch cannot overwrite a newer refresh", async () => {
     const { result } = renderHook(
       () =>

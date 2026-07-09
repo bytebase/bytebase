@@ -273,28 +273,44 @@ export const usePlanDetailPage = ({
   // older data and must not overwrite the fresher snapshot when it resolves
   // late — after a task rerun that would flip the status back to the old one.
   const fetchSeqRef = useRef(0);
+  // A full fetch takes priority over the slim status lane: it carries the whole
+  // page (plan / issue / checks), so a slim poll must never supersede one in
+  // flight (below). Counted, not a boolean, to tolerate overlapping refreshes.
+  const fullFetchInFlightRef = useRef(0);
   const fetchFullState = useCallback(async () => {
     const current = latestSnapshotRef.current;
     fetchSeqRef.current += 1;
     const seq = fetchSeqRef.current;
-    const patch = await fetchPlanSnapshot(
-      current.projectId,
-      current.planId,
-      routeQueryRef.current
-    );
-    if (seq !== fetchSeqRef.current) {
-      return;
+    fullFetchInFlightRef.current += 1;
+    try {
+      const patch = await fetchPlanSnapshot(
+        current.projectId,
+        current.planId,
+        routeQueryRef.current
+      );
+      if (seq !== fetchSeqRef.current) {
+        return;
+      }
+      patchState(patch);
+    } finally {
+      fullFetchInFlightRef.current -= 1;
     }
-    patchState(patch);
   }, [patchState]);
 
   // The slim "status lane": while a task is transitioning, poll only the rollout
   // and its task runs instead of the full 7-RPC page snapshot. Cheaper per tick,
   // so it can run at the fast floor without adding load, and the status
   // transition surfaces in ~0.5s instead of after the full fetch. Shares
-  // fetchSeqRef with the full fetch, so whichever started last wins and a late
-  // slim tick can never rewind a fresher full result.
+  // fetchSeqRef with the full fetch, so a full fetch (which carries everything)
+  // always supersedes an in-flight slim tick.
   const fetchStatusState = useCallback(async () => {
+    // Never supersede an in-flight full refresh: the shared fetch sequence would
+    // drop the full result (plan / issue / check updates from a user action),
+    // and the slim patch can't carry those. The full fetch refreshes the rollout
+    // and task runs too, so skipping this tick loses nothing.
+    if (fullFetchInFlightRef.current > 0) {
+      return;
+    }
     const rolloutName = latestSnapshotRef.current.rollout?.name;
     // Only reached on active ticks, which imply a rollout exists; bail rather
     // than re-decide slim-vs-full (pollTick already gated that) if it doesn't.
