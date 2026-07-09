@@ -135,6 +135,14 @@ export function DeployTaskList({
       initialDisplayedCount(filteredTasks, selectedTaskName)
     );
     setExpandedTaskNames(initialExpandedNames(filteredTasks, selectedTaskName));
+    // Reseed the focused task too: a task may have become RUNNING/FAILED while
+    // this stage was mounted-but-hidden, so the default-open card — and the URL
+    // mirror that follows it — must reflect the current statuses, not the ones
+    // captured at the hidden mount (which would write a stale ?taskId=).
+    setFocusedTaskName(
+      (isTaskInStage(selectedTaskName) ? selectedTaskName : undefined) ??
+        autoExpandTaskName(filteredTasks)
+    );
   }
 
   // When the visible task set changes (a plan edit, a filter change), re-derive

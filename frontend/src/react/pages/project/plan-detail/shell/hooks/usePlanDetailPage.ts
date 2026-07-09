@@ -30,6 +30,7 @@ import {
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import { getTimeForPbTimestampProtoEs } from "@/types/timestamp";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
@@ -186,6 +187,9 @@ export const usePlanDetailPage = ({
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
+  // Bumped by the scheduled-task wake-up (below) to force the activity memo to
+  // recompute against the current clock when a future run_time comes due.
+  const [dueTick, setDueTick] = useState(0);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
   const isEditing = editing.isEditing;
@@ -369,29 +373,51 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const { isPlanDone, hasActiveTasks } = useMemo(() => {
+  const { isPlanDone, hasActiveTasks, nextDueMs } = useMemo(() => {
     if (!snapshot.rollout) {
-      return { isPlanDone: false, hasActiveTasks: false };
+      return {
+        isPlanDone: false,
+        hasActiveTasks: false,
+        nextDueMs: undefined as number | undefined,
+      };
     }
-    const allTasks = snapshot.rollout.stages.flatMap((stage) => stage.tasks);
     const nowMs = Date.now();
+    let taskCount = 0;
+    let allSettled = true;
+    let hasActiveTasks = false;
+    // The earliest future run_time among still-scheduled PENDING tasks, so the
+    // wake-up below can flip to the fast lane the moment one comes due.
+    let nextDueMs: number | undefined;
+    for (const stage of snapshot.rollout.stages) {
+      for (const task of stage.tasks) {
+        taskCount++;
+        if (
+          task.status !== Task_Status.DONE &&
+          task.status !== Task_Status.SKIPPED
+        ) {
+          allSettled = false;
+        }
+        // Fast-poll only tasks actually transitioning (RUNNING, or PENDING and
+        // due) so PENDING -> RUNNING -> DONE is observed promptly; a task
+        // scheduled for a future maintenance window stays on the backed-off poll
+        // instead of hammering the rollout RPCs while it waits.
+        if (isTaskActivelyTransitioning(task, nowMs)) {
+          hasActiveTasks = true;
+        } else if (task.status === Task_Status.PENDING && task.runTime) {
+          const due = getTimeForPbTimestampProtoEs(task.runTime);
+          if (due > nowMs) {
+            nextDueMs =
+              nextDueMs === undefined ? due : Math.min(nextDueMs, due);
+          }
+        }
+      }
+    }
     return {
-      isPlanDone:
-        allTasks.length > 0 &&
-        allTasks.every(
-          (task) =>
-            task.status === Task_Status.DONE ||
-            task.status === Task_Status.SKIPPED
-        ),
-      // Fast-poll only tasks actually transitioning (RUNNING, or PENDING and
-      // due) so PENDING -> RUNNING -> DONE is observed promptly — but a task
-      // scheduled for a future maintenance window stays on the backed-off poll
-      // instead of hammering the rollout RPCs while it waits.
-      hasActiveTasks: allTasks.some((task) =>
-        isTaskActivelyTransitioning(task, nowMs)
-      ),
+      isPlanDone: taskCount > 0 && allSettled,
+      hasActiveTasks,
+      nextDueMs,
     };
-  }, [snapshot.rollout]);
+  }, [snapshot.rollout, dueTick]);
 
   // The poller passes the live `fast` flag into each tick, so a tick uses the
   // slim status fetch exactly while work is in flight and the full fetch once the
@@ -406,6 +432,26 @@ export const usePlanDetailPage = ({
     refreshState: pollTick,
     fast: hasActiveTasks,
   });
+
+  // A PENDING task scheduled for a future run_time won't flip `hasActiveTasks`
+  // on its own: the memo only recomputes when the rollout changes, and quiet
+  // polls preserve rollout identity. Without a nudge the page would keep polling
+  // slow and observe the maintenance-window PENDING -> RUNNING up to 30s late.
+  // Wake up exactly when the next task comes due — recompute the flag against
+  // the current clock and drop the cadence to the fast status lane at once.
+  useEffect(() => {
+    if (nextDueMs === undefined) {
+      return;
+    }
+    const timer = window.setTimeout(
+      () => {
+        setDueTick((tick) => tick + 1);
+        restartPolling();
+      },
+      Math.max(0, nextDueMs - Date.now())
+    );
+    return () => window.clearTimeout(timer);
+  }, [nextDueMs, restartPolling]);
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
   // Resets the poll backoff first — not after the fetch — so the follow-up

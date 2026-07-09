@@ -273,6 +273,33 @@ describe("DeployTaskList keep-alive activation", () => {
     });
   });
 
+  test("first activation reseeds focus to a task that went active while hidden", () => {
+    routerMocks.replace.mockClear();
+    // Mount hidden with everything not-started — the captured default focus is
+    // the first task.
+    const hidden = makeStage(stageName, [
+      { name: taskName(1), status: Task_Status.NOT_STARTED },
+      { name: taskName(2), status: Task_Status.NOT_STARTED },
+    ]);
+    const { rerender } = render(renderActive(hidden, false));
+
+    // Still hidden, t2 starts running. Same task names, so the name-keyed reseed
+    // doesn't fire — the captured focus (t1) is now stale.
+    const running = makeStage(stageName, [
+      { name: taskName(1), status: Task_Status.DONE },
+      { name: taskName(2), status: Task_Status.RUNNING },
+    ]);
+    rerender(renderActive(running, false));
+
+    // On first activation the default-open card AND the URL mirror must reflect
+    // the current statuses (t2), not the stale mount-time default (t1).
+    rerender(renderActive(running, true));
+    expect(expandedOf(taskName(2))).toBe("true");
+    expect(routerMocks.replace).toHaveBeenLastCalledWith({
+      query: { phase: "deploy", stageId: "s", taskId: "t2" },
+    });
+  });
+
   test("bypasses the leave guard for the internal URL sync while editing", () => {
     routerMocks.replace.mockClear();
     const bypass = vi.fn();

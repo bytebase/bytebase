@@ -638,6 +638,67 @@ describe("usePlanDetailPage", () => {
     }
   });
 
+  test("wakes up to the fast status lane when a scheduled task comes due", async () => {
+    vi.useFakeTimers();
+    try {
+      const BASE = 1_700_000_000_000;
+      vi.setSystemTime(BASE);
+      // A PENDING task scheduled to run 10s from now — not active yet.
+      const scheduled = {
+        ...buildSnapshotPatch({ planId: "plan-1" }),
+        rollout: create(RolloutSchema, {
+          name: "projects/foo/rollouts/1",
+          stages: [
+            {
+              name: "projects/foo/rollouts/1/stages/s1",
+              tasks: [
+                {
+                  name: "projects/foo/rollouts/1/stages/s1/tasks/t1",
+                  status: Task_Status.PENDING,
+                  runTime: { seconds: BigInt(Math.floor(BASE / 1000) + 10) },
+                },
+              ],
+            },
+          ],
+        }),
+      };
+      mocks.fetchPlanSnapshot.mockResolvedValue(scheduled);
+      mocks.fetchRolloutState.mockResolvedValue({
+        rollout: scheduled.rollout,
+        taskRuns: [],
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchRolloutState.mockClear();
+
+      // Before the run_time the task is not active, so no slim-lane poll runs.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(mocks.fetchRolloutState).not.toHaveBeenCalled();
+
+      // Crossing the run_time fires the wake-up, which flips the activity flag.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(11000);
+      });
+      // Now that the task is active, a following poll tick takes the fast status
+      // lane (a separate advance so the flag's re-render has committed first).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(35000);
+      });
+      expect(mocks.fetchRolloutState).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("a slim poll tick does not supersede an in-flight full refresh", async () => {
     vi.useFakeTimers();
     try {
