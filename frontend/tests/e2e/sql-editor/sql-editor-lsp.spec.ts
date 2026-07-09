@@ -86,6 +86,9 @@ test.afterAll(async () => {
   await sharedContext?.close();
   if (pgPort) {
     execSql(env.databaseId, pgPort, `DROP TABLE IF EXISTS public.${LSP_FIXTURE_TABLE}`);
+    // Re-sync so the shared server's catalog metadata drops the fixture too;
+    // otherwise later spec files see a phantom table.
+    await env.api.syncDatabase(env.database);
   }
 });
 
