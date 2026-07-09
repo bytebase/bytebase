@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { AlignHorizontalJustifyStart, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -36,11 +36,19 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   const [session, setSession] = useState<TaskRunSession_Postgres | undefined>();
   const isRunning = taskRun.status === TaskRun_Status.RUNNING;
 
+  // Monotonic per-fetch sequence: two overlapping 5s poll ticks (or a tick still
+  // in flight when the run settles) must not write a stale session over fresher
+  // data. A response whose number is no longer the latest is dropped.
+  const sessionFetchSeq = useRef(0);
   const fetchSession = useCallback(async () => {
+    const seq = ++sessionFetchSeq.current;
     const response = await rolloutServiceClientConnect.getTaskRunSession(
       create(GetTaskRunSessionRequestSchema, { parent: taskRun.name }),
       { contextValues: createContextValues().set(silentContextKey, true) }
     );
+    if (seq !== sessionFetchSeq.current) {
+      return;
+    }
     const next =
       response.session.case === "postgres" ? response.session.value : undefined;
     // Keep the previous reference when the content is unchanged so the tables
@@ -56,6 +64,8 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   // keeps the panel consistent if the run finishes before the load resolves.
   useEffect(() => {
     if (!isRunning) {
+      // Invalidate any in-flight fetch so it can't re-populate after the clear.
+      sessionFetchSeq.current++;
       setSession(undefined);
       setLoading(false);
       return;
