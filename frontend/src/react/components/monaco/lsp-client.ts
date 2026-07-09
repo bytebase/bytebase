@@ -1,7 +1,15 @@
 import { omit, throttle } from "lodash-es";
-import { MonacoLanguageClient } from "monaco-languageclient";
-import type { ExecuteCommandParams } from "vscode-languageclient";
-import { CloseAction, ErrorAction, State } from "vscode-languageclient";
+import type {
+  ExecuteCommandParams,
+  LanguageClientOptions,
+  MessageTransports,
+} from "vscode-languageclient";
+import {
+  BaseLanguageClient,
+  CloseAction,
+  ErrorAction,
+  State,
+} from "vscode-languageclient";
 import {
   toSocket,
   WebSocketMessageReader,
@@ -32,6 +40,36 @@ export type ConnectionState = {
   url: string;
   ws: Promise<WebSocket> | undefined;
 };
+
+// Inline replacement for `monaco-languageclient`'s `MonacoLanguageClient`,
+// which was a ~15-line subclass and the only thing we consumed from that
+// package. All the LSP machinery lives in `vscode-languageclient`, whose
+// undeclared `import "vscode"` resolves to the top-level `vscode` alias
+// (`@codingame/monaco-vscode-extension-api`) in package.json — that alias
+// must stay for language features to register against the same API
+// instance that `initializeMonacoServices` initializes.
+class MonacoLanguageClient extends BaseLanguageClient {
+  private readonly messageTransports: MessageTransports;
+
+  constructor({
+    name,
+    clientOptions,
+    messageTransports,
+  }: {
+    name: string;
+    clientOptions: LanguageClientOptions;
+    messageTransports: MessageTransports;
+  }) {
+    super(name.toLowerCase(), name, clientOptions);
+    this.messageTransports = messageTransports;
+  }
+
+  protected createMessageTransports(
+    _encoding: string
+  ): Promise<MessageTransports> {
+    return Promise.resolve(this.messageTransports);
+  }
+}
 
 const listeners = new Set<() => void>();
 
@@ -215,8 +253,9 @@ const reconnect = async () => {
 };
 
 const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
-  // `monaco-languageclient` v9+ requires `@codingame/monaco-vscode-api`'s
-  // `initialize()` to have completed before `new MonacoLanguageClient(...)`,
+  // `vscode-languageclient` touches the `vscode` API at construction time,
+  // which requires `@codingame/monaco-vscode-api`'s `initialize()` to have
+  // completed before `new MonacoLanguageClient(...)`,
   // otherwise the constructor throws "Default api is not ready yet, do not
   // forget to import 'vscode/localExtensionHost' and wait for services
   // initialization". `MonacoEditor.tsx` kicks off `initializeLSPClient()`
