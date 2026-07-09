@@ -14,6 +14,10 @@ export default defineConfig({
   globalTeardown: path.resolve(__dirname, "tests/e2e/framework/global-teardown.ts"),
   use: {
     headless: !headed,
+    // Set BYTEBASE_BROWSER_CHANNEL=chrome to drive the locally installed
+    // Chrome instead of the downloaded Playwright Chromium (useful when
+    // the browser download is unavailable).
+    channel: process.env.BYTEBASE_BROWSER_CHANNEL || undefined,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
