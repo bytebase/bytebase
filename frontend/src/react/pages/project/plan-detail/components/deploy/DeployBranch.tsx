@@ -181,12 +181,28 @@ export function DeployBranch() {
         hasPendingTasks={hasPendingTasks}
         onOpenPreview={() => setPendingOpen(true)}
         onSelectStage={(stage) => {
+          const stageId = extractStageUID(stage.name);
+          // Already the selected stage in the URL — nothing to navigate (also
+          // avoids a no-op push that would leave a one-shot guard bypass unused).
+          if (stageId === page.routeStageId) {
+            return;
+          }
           setOptimisticStageName(stage.name);
+          // A stage switch is an internal same-path query change and a pure
+          // visibility flip — keep-alive preserves every stage's editor state,
+          // so no edit is lost. Bypass the unsaved-edits guard so it doesn't
+          // cancel this push (which would strand the optimistic stage the URL
+          // never caught up to) or pop a spurious discard dialog. Only while
+          // editing, so the one-shot bypass is consumed by this push instead of
+          // lingering to a later real leave.
+          if (page.isEditing) {
+            page.bypassLeaveGuardOnce();
+          }
           // The URL carries only the stage; each stage's card expansion is its
           // own local state (kept alive across switches), so there's nothing
           // per-task to restore through the URL.
           void router.push({
-            query: { phase: "deploy", stageId: extractStageUID(stage.name) },
+            query: { phase: "deploy", stageId },
           });
         }}
         rollout={page.rollout}

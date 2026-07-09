@@ -193,6 +193,7 @@ export function DeployTaskList({
   // so the URL is a shareable link. Only the active stage writes (a hidden
   // keep-alive list must not hijack the address bar); recording the write in
   // pendingSelfWriteRef keeps its own route echo from scrolling the card.
+  const { isEditing, bypassLeaveGuardOnce } = page;
   useEffect(() => {
     if (
       readonly ||
@@ -203,10 +204,26 @@ export function DeployTaskList({
       return;
     }
     pendingSelfWriteRef.current = focusedTaskName;
+    // This is an internal, same-path query sync (a shareable ?taskId=), not a
+    // page leave — bypass the unsaved-edits guard so it doesn't cancel the write
+    // (which would strand pendingSelfWriteRef and desync focus from the URL) or
+    // pop a spurious discard dialog mid-edit. Only while editing, so the one-shot
+    // bypass is consumed by this navigation instead of lingering to a real leave.
+    if (isEditing) {
+      bypassLeaveGuardOnce();
+    }
     void router.replace({
       query: deployTaskQuery(stage.name, focusedTaskName),
     });
-  }, [active, readonly, focusedTaskName, selectedTaskName, stage.name]);
+  }, [
+    active,
+    readonly,
+    focusedTaskName,
+    selectedTaskName,
+    stage.name,
+    isEditing,
+    bypassLeaveGuardOnce,
+  ]);
 
   const visibleTasks = filteredTasks.slice(0, displayedTaskCount);
   const hasMoreTasks = filteredTasks.length > displayedTaskCount;

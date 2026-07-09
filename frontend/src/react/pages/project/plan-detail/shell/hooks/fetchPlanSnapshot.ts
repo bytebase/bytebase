@@ -111,8 +111,16 @@ const convertRouteQuery = (query: Record<string, unknown>) => {
 export const fetchPlanSnapshot = async (
   projectId: string,
   planId: string,
-  routeQuery: Record<string, unknown> = {}
+  routeQuery: Record<string, unknown> = {},
+  // When true (background poll ticks), suppress the global CRITICAL error toast
+  // on transient failures — the poll runs every few seconds, so a flaky backend
+  // would otherwise spam toasts. The initial load stays loud (default) so a
+  // first-load failure is visible; 404/403 are handled explicitly by the caller.
+  silent = false
 ): Promise<PlanDetailFetchPatch> => {
+  const silentCtx = silent
+    ? { contextValues: createContextValues().set(silentContextKey, true) }
+    : undefined;
   // The plan fetch depends only on route ids, so it runs alongside the
   // project/user wave instead of being serialized behind it. The detached
   // no-op catch keeps a plan failure from surfacing as an unhandled rejection
@@ -124,7 +132,8 @@ export const fetchPlanSnapshot = async (
       : planServiceClientConnect.getPlan(
           create(GetPlanRequestSchema, {
             name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
-          })
+          }),
+          silentCtx
         );
   planPromise?.catch(() => undefined);
 
@@ -132,9 +141,10 @@ export const fetchPlanSnapshot = async (
     projectServiceClientConnect.getProject(
       create(GetProjectRequestSchema, {
         name: `${PROJECT_NAME_PREFIX}${projectId}`,
-      })
+      }),
+      silentCtx
     ),
-    userServiceClientConnect.getCurrentUser({}),
+    userServiceClientConnect.getCurrentUser({}, silentCtx),
   ]);
 
   if (!planPromise) {
@@ -168,14 +178,18 @@ export const fetchPlanSnapshot = async (
   const [issue, planCheckRuns, rollout, taskRuns] = await Promise.all([
     plan.issue
       ? issueServiceClientConnect
-          .getIssue(create(GetIssueRequestSchema, { name: plan.issue }))
+          .getIssue(
+            create(GetIssueRequestSchema, { name: plan.issue }),
+            silentCtx
+          )
           .catch(() => undefined)
       : Promise.resolve(undefined),
     planServiceClientConnect
       .getPlanCheckRun(
         create(GetPlanCheckRunRequestSchema, {
           name: `${plan.name}/planCheckRun`,
-        })
+        }),
+        silentCtx
       )
       .then((run) => [run] as PlanCheckRun[])
       .catch(() => []),

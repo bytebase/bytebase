@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getRollout: vi.fn(),
   listTaskRuns: vi.fn(),
+  getPlan: vi.fn(),
+  getProject: vi.fn(),
+  getCurrentUser: vi.fn(),
+  getIssue: vi.fn(),
+  getPlanCheckRun: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -10,13 +15,16 @@ vi.mock("@/connect", () => ({
     getRollout: mocks.getRollout,
     listTaskRuns: mocks.listTaskRuns,
   },
-  issueServiceClientConnect: {},
-  planServiceClientConnect: {},
-  projectServiceClientConnect: {},
-  userServiceClientConnect: {},
+  issueServiceClientConnect: { getIssue: mocks.getIssue },
+  planServiceClientConnect: {
+    getPlan: mocks.getPlan,
+    getPlanCheckRun: mocks.getPlanCheckRun,
+  },
+  projectServiceClientConnect: { getProject: mocks.getProject },
+  userServiceClientConnect: { getCurrentUser: mocks.getCurrentUser },
 }));
 
-import { fetchRolloutState } from "./fetchPlanSnapshot";
+import { fetchPlanSnapshot, fetchRolloutState } from "./fetchPlanSnapshot";
 
 const ROLLOUT = "projects/p/rollouts/1";
 
@@ -67,5 +75,49 @@ describe("fetchRolloutState", () => {
     const patch = await fetchRolloutState(ROLLOUT);
 
     expect(patch).toEqual({});
+  });
+});
+
+describe("fetchPlanSnapshot silent flag", () => {
+  // hasRollout:false + no issue keeps the fetch to plan/project/user/checkRun.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getPlan.mockResolvedValue({
+      name: "projects/p/plans/1",
+      hasRollout: false,
+    });
+    mocks.getProject.mockResolvedValue({
+      title: "P",
+      requireIssueApproval: false,
+      requirePlanCheckNoError: false,
+    });
+    mocks.getCurrentUser.mockResolvedValue({ name: "users/me" });
+    mocks.getPlanCheckRun.mockResolvedValue({});
+  });
+
+  const silentArg = expect.objectContaining({
+    contextValues: expect.anything(),
+  });
+
+  test("a background poll (silent=true) passes the silent context to every request", async () => {
+    await fetchPlanSnapshot("p", "1", {}, true);
+    expect(mocks.getPlan).toHaveBeenCalledWith(expect.anything(), silentArg);
+    expect(mocks.getProject).toHaveBeenCalledWith(expect.anything(), silentArg);
+    expect(mocks.getCurrentUser).toHaveBeenCalledWith({}, silentArg);
+    expect(mocks.getPlanCheckRun).toHaveBeenCalledWith(
+      expect.anything(),
+      silentArg
+    );
+  });
+
+  test("the initial load (silent=false) stays loud — no silent context", async () => {
+    await fetchPlanSnapshot("p", "1", {}, false);
+    expect(mocks.getPlan).toHaveBeenCalledWith(expect.anything(), undefined);
+    expect(mocks.getProject).toHaveBeenCalledWith(expect.anything(), undefined);
+    expect(mocks.getCurrentUser).toHaveBeenCalledWith({}, undefined);
+    expect(mocks.getPlanCheckRun).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined
+    );
   });
 });

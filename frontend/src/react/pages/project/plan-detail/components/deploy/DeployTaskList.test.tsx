@@ -273,6 +273,51 @@ describe("DeployTaskList keep-alive activation", () => {
     });
   });
 
+  test("bypasses the leave guard for the internal URL sync while editing", () => {
+    routerMocks.replace.mockClear();
+    const bypass = vi.fn();
+    const stage = makeStage(stageName, [
+      { name: taskName(1), status: Task_Status.DONE },
+      { name: taskName(2), status: Task_Status.RUNNING },
+    ]);
+    const page = {
+      ...makePage(),
+      isEditing: true,
+      bypassLeaveGuardOnce: bypass,
+    } as unknown as PlanDetailPageState;
+    render(
+      <PlanDetailProvider value={page}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+    // The internal same-path mirror still writes the URL, and bypasses the
+    // unsaved-edits guard so no discard dialog interrupts it mid-edit.
+    expect(routerMocks.replace).toHaveBeenCalledWith({
+      query: { phase: "deploy", stageId: "s", taskId: "t2" },
+    });
+    expect(bypass).toHaveBeenCalled();
+  });
+
+  test("does not touch the leave guard when not editing", () => {
+    routerMocks.replace.mockClear();
+    const bypass = vi.fn();
+    const stage = makeStage(stageName, [
+      { name: taskName(1), status: Task_Status.RUNNING },
+    ]);
+    const page = {
+      ...makePage(),
+      isEditing: false,
+      bypassLeaveGuardOnce: bypass,
+    } as unknown as PlanDetailPageState;
+    render(
+      <PlanDetailProvider value={page}>
+        <DeployTaskList stage={stage} />
+      </PlanDetailProvider>
+    );
+    expect(routerMocks.replace).toHaveBeenCalled();
+    expect(bypass).not.toHaveBeenCalled();
+  });
+
   test("switching away and back preserves state without re-seeding", () => {
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     const { rerender } = render(renderActive(stage, true));

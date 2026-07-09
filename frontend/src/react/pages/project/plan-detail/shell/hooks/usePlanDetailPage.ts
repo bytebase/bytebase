@@ -286,7 +286,10 @@ export const usePlanDetailPage = ({
       const patch = await fetchPlanSnapshot(
         current.projectId,
         current.planId,
-        routeQueryRef.current
+        routeQueryRef.current,
+        // Background poll / post-action refresh: stay silent so a transient
+        // failure doesn't spam the global toast (the initial load is loud).
+        true
       );
       if (seq !== fetchSeqRef.current) {
         return;
