@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
@@ -60,13 +62,50 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		}
 
 		if rowsColumn.Valid {
-			return rowsColumn.Int64, nil
+			return capAffectedRowsByLimit(rowsColumn.Int64, statement), nil
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
 	return 0, nil
+}
+
+func capAffectedRowsByLimit(count int64, statement string) int64 {
+	limit, ok := affectedRowsLimit(statement)
+	if !ok || limit >= count {
+		return count
+	}
+	return limit
+}
+
+func affectedRowsLimit(statement string) (int64, bool) {
+	list, err := mysqlparser.ParseMySQLOmni(statement)
+	if err != nil || list == nil || len(list.Items) != 1 {
+		return 0, false
+	}
+
+	var limit *ast.Limit
+	switch stmt := list.Items[0].(type) {
+	case *ast.UpdateStmt:
+		limit = stmt.Limit
+	case *ast.DeleteStmt:
+		limit = stmt.Limit
+	case *ast.InsertStmt:
+		if stmt.Select != nil {
+			limit = stmt.Select.Limit
+		}
+	default:
+		return 0, false
+	}
+	if limit == nil || limit.Count == nil {
+		return 0, false
+	}
+	lit, ok := limit.Count.(*ast.IntLit)
+	if !ok || lit.Value < 0 {
+		return 0, false
+	}
+	return lit.Value, true
 }
 
 func countAffectedRowsForOceanBase(ctx context.Context, sqlDB *sql.DB, dml string) (int64, error) {
