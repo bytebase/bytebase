@@ -491,6 +491,20 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			// The pivot's FOR/aggregate inputs must resolve against the
+			// pivot source ONLY: with a join source, SUM(C) has to attribute
+			// to the USING-merged column (both sides), not the first operand.
+			name:      "pivot aggregate over join source resolves merged input",
+			statement: "SELECT ONE_S FROM (T JOIN T2 USING (C)) PIVOT (SUM(C) AS S FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "ONE_S", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "B"},
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+					{Database: "PUBLIC", Table: "T2", Column: "C"},
+				})},
+			},
+		},
+		{
 			name:      "pivot alias joins another table",
 			statement: "SELECT P.ONE_CNT, T2.C FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE)) P JOIN T2 ON P.A = T2.C",
 			want: []base.QuerySpanResult{

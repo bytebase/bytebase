@@ -584,7 +584,15 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 	if err != nil {
 		return nil, err
 	}
-	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
+	// While deriving the transform's output, the scope is exactly the
+	// extracted source: the clause's inputs resolve against it alone, never
+	// against enclosing join operands or the source's own leaked operands
+	// (a USING-merged column must attribute to both sides, not to the first
+	// operand in the slice).
+	q.tableSourcesFrom = nil
+	if source != nil {
+		q.tableSourcesFrom = []base.TableSource{source}
+	}
 
 	excluded := make(map[string]bool)
 	pivotSources := make(base.SourceColumnSet)
@@ -660,7 +668,15 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 	if err != nil {
 		return nil, err
 	}
-	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
+	// While deriving the transform's output, the scope is exactly the
+	// extracted source: the clause's inputs resolve against it alone, never
+	// against enclosing join operands or the source's own leaked operands
+	// (a USING-merged column must attribute to both sides, not to the first
+	// operand in the slice).
+	q.tableSourcesFrom = nil
+	if source != nil {
+		q.tableSourcesFrom = []base.TableSource{source}
+	}
 
 	valueColumns := omniExprList(unpivot.ValueColumns)
 	inputSources := make([]base.SourceColumnSet, len(valueColumns))
@@ -790,7 +806,15 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 	if err != nil {
 		return nil, err
 	}
-	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
+	// While deriving the transform's output, the scope is exactly the
+	// extracted source: the clause's inputs resolve against it alone, never
+	// against enclosing join operands or the source's own leaked operands
+	// (a USING-merged column must attribute to both sides, not to the first
+	// operand in the slice).
+	q.tableSourcesFrom = nil
+	if source != nil {
+		q.tableSourcesFrom = []base.TableSource{source}
+	}
 
 	partitionResults, err := q.extractOmniResultList(ref.PartitionBy)
 	if err != nil {
