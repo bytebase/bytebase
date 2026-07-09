@@ -467,6 +467,24 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			// (subquery) PIVOT (...) alias — the alias qualifies projected
+			// and ORDER BY references (the shape stmt-level parsing broke).
+			name:      "pivot trailing alias qualifies references",
+			statement: "SELECT P.A, P.ONE_CNT FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO)) P ORDER BY P.A",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "ONE_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+			},
+		},
+		{
+			name:      "pivot alias joins another table",
+			statement: "SELECT P.ONE_CNT, T2.C FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE)) P JOIN T2 ON P.A = T2.C",
+			want: []base.QuerySpanResult{
+				{Name: "ONE_CNT", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T2", Column: "C"}})},
+			},
+		},
+		{
 			name:      "pivot explicit projection",
 			statement: "SELECT A FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE, 2 AS TWO))",
 			want: []base.QuerySpanResult{

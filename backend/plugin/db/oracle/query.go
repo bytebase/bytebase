@@ -391,8 +391,6 @@ func isSimpleOracleSelect(selectStmt *oracleast.SelectStmt) bool {
 		selectStmt.OrderBy == nil &&
 		selectStmt.ForUpdate == nil &&
 		selectStmt.FetchFirst == nil &&
-		selectStmt.Pivot == nil &&
-		selectStmt.Unpivot == nil &&
 		selectStmt.Op == oracleast.SETOP_NONE
 }
 
