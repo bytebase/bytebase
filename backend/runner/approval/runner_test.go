@@ -424,6 +424,40 @@ func TestUnfoldDatabaseTargetsFallsBackWhenResolvedGroupNameDiffers(t *testing.T
 	require.Equal(t, []string{"instances/prod/databases/app"}, got)
 }
 
+func TestUnfoldSpecTargetsDirectTargetDoesNotListProjectDatabases(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	setupApprovalDatabaseGroupFixture(ctx, t, s)
+
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "other",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = s.GetDB().ExecContext(ctx, `
+		INSERT INTO db (instance, name, project, metadata)
+		VALUES ($1, $2, $3, $4::jsonb)
+	`, "other", "broken", "project-a", `{"labels":"not-a-map"}`)
+	require.NoError(t, err)
+
+	targets, err := unfoldSpecTargets(ctx, s, []*storepb.PlanConfig_Spec{{
+		Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+				Targets: []string{"instances/prod/databases/app"},
+			},
+		},
+	}}, "project-a", nil, nil)
+	require.NoError(t, err)
+	require.Len(t, targets, 1)
+	require.Equal(t, "prod", targets[0].database.InstanceID)
+	require.Equal(t, "app", targets[0].database.DatabaseName)
+}
+
 func TestBuildCELVariablesForDatabaseChangeCreatesMissingPlanCheckRun(t *testing.T) {
 	ctx := context.Background()
 	s := setupApprovalRunnerStore(ctx, t)
