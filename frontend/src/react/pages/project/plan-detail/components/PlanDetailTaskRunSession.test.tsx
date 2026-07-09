@@ -106,6 +106,78 @@ describe("PlanDetailTaskRunSession", () => {
     act(() => root.unmount());
   });
 
+  test("a live-poll response is not masked by a slow initial fetch", async () => {
+    let resolveInitial: () => void = () => {};
+    mocks.getTaskRunSession
+      // #1 initial load — held in flight (slow / contended DB).
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveInitial = () => resolve(responseWithPid("111"));
+        })
+      )
+      // #2 poll tick — resolves promptly with fresh data.
+      .mockResolvedValueOnce(responseWithPid("222"))
+      .mockReturnValue(new Promise(() => {}));
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PlanDetailTaskRunSession taskRun={runningTaskRun} />);
+    });
+    // While the initial fetch is still pending, the spinner is shown.
+    expect(container.querySelector(".animate-spin")).not.toBeNull();
+
+    // A poll tick resolves with data before the initial fetch settles.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SESSION_POLL_INTERVAL_MS);
+      await Promise.resolve();
+    });
+
+    // The fresh session must render now, not stay hidden behind the spinner
+    // until the slow initial fetch settles.
+    expect(container.textContent).toContain("222");
+    expect(container.querySelector(".animate-spin")).toBeNull();
+
+    // The initial fetch is superseded by the newer poll seq, so its late
+    // resolution can't rewind the panel.
+    await act(async () => {
+      resolveInitial();
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain("222");
+
+    act(() => root.unmount());
+  });
+
+  test("does not fetch on mount while the stage is hidden (inactive)", async () => {
+    mocks.getTaskRunSession.mockResolvedValue(responseWithPid("111"));
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    // Mount RUNNING but inactive (a hidden kept-alive stage): no request fires.
+    await act(async () => {
+      root.render(
+        <PlanDetailTaskRunSession taskRun={runningTaskRun} active={false} />
+      );
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15000);
+    });
+    expect(mocks.getTaskRunSession).not.toHaveBeenCalled();
+
+    // Becoming active loads it lazily.
+    await act(async () => {
+      root.render(<PlanDetailTaskRunSession taskRun={runningTaskRun} active />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mocks.getTaskRunSession).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   test("pauses the session poll while the stage is hidden (inactive)", async () => {
     mocks.getTaskRunSession.mockResolvedValue(responseWithPid("111"));
     const container = document.createElement("div");

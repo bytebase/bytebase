@@ -663,6 +663,70 @@ describe("usePlanDetailPage", () => {
     }
   });
 
+  test("a stale poll from the previous plan cannot overwrite the new plan", async () => {
+    vi.useFakeTimers();
+    try {
+      const patchFor = (
+        planId: string,
+        title: string,
+        status: Task_Status
+      ) => ({
+        ...buildSnapshotPatch({ planId }),
+        projectTitle: title,
+        rollout: rolloutWithTask(status),
+      });
+      mocks.fetchPlanSnapshot.mockImplementation(
+        async (_projectId: string, planId: string) =>
+          planId === "plan-a"
+            ? patchFor("plan-a", "A", Task_Status.RUNNING)
+            : patchFor("plan-b", "B", Task_Status.NOT_STARTED)
+      );
+
+      const { result, rerender } = renderHook(
+        ({ planId }: { planId: string }) =>
+          usePlanDetailPage({ projectId: "foo", planId }),
+        { initialProps: { planId: "plan-a" }, wrapper }
+      );
+      // Initial plan-A load: its RUNNING task arms the 1s active cadence.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.projectTitle).toBe("A");
+
+      // Hold the next fetch — the first plan-A poll tick — in flight.
+      let releaseStalePoll: () => void = () => {};
+      mocks.fetchPlanSnapshot.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseStalePoll = () =>
+              resolve(patchFor("plan-a", "A-late", Task_Status.RUNNING));
+          })
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      // Navigate to plan B; the page is not remounted, so the plan-A poll stays
+      // in flight. B's initial load resolves and wins.
+      rerender({ planId: "plan-b" });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.projectTitle).toBe("B");
+
+      // The held plan-A poll resolves late — the page-identity guard must drop
+      // it so it can't merge plan A's data onto plan B's snapshot.
+      await act(async () => {
+        releaseStalePoll();
+        await Promise.resolve();
+      });
+      expect(result.current.projectTitle).toBe("B");
+      expect(result.current.planId).toBe("plan-b");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("a stale in-flight fetch cannot overwrite a newer refresh", async () => {
     const { result } = renderHook(
       () =>

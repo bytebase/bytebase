@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
-import { setSheetStatement } from "@/utils/v1/sheet";
+import { extractSheetUID, setSheetStatement } from "@/utils/v1/sheet";
 
 const state = {
   uid: -101,
@@ -83,7 +83,14 @@ export const getSpecStatementContent = (
   spec: Plan_Spec
 ): Uint8Array | undefined => {
   if (spec.config.case !== "changeDatabaseConfig") return undefined;
-  return getLocalSheetByName(spec.config.value.sheet).content;
+  const sheetName = spec.config.value.sheet;
+  // Only local (unsaved) sheets keep their content here; guard the UID so a
+  // persisted sheet name doesn't mint a phantom empty local sheet and return
+  // misleading empty bytes (same local/remote split as checkSpecStatement).
+  if (!sheetName || !extractSheetUID(sheetName).startsWith("-")) {
+    return undefined;
+  }
+  return getLocalSheetByName(sheetName).content;
 };
 
 // Byte-equality for statement content. The reference check is the O(1) fast

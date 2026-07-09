@@ -113,7 +113,10 @@ export const createPlanSkeleton = async (
     );
   }
 
-  const databaseNameList = (query.databaseList ?? "").split(",");
+  const databaseList = query.databaseList ?? "";
+  // Guard the empty case: "".split(",") yields [""], which would create a spec
+  // with a single empty-string target.
+  const databaseNameList = databaseList ? databaseList.split(",") : [];
   const targets = query.databaseGroupName
     ? [query.databaseGroupName]
     : databaseNameList;

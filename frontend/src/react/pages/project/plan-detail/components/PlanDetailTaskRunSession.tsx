@@ -78,6 +78,12 @@ export function PlanDetailTaskRunSession({
       setLoading(false);
       return;
     }
+    if (!active) {
+      // Hidden kept-alive stage: skip the initial fetch (the live poll is also
+      // paused) so a stage the user can't see doesn't issue a request on mount.
+      // The load runs lazily once the stage becomes active.
+      return;
+    }
     let canceled = false;
     setLoading(true);
     fetchSession()
@@ -88,13 +94,17 @@ export function PlanDetailTaskRunSession({
     return () => {
       canceled = true;
     };
-  }, [isRunning, fetchSession]);
+  }, [active, isRunning, fetchSession]);
 
   // Live refresh while running — swaps data in place (no spinner); a failing
   // tick is swallowed by usePolling.
   usePolling(active && isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
 
-  if (loading) {
+  // Spinner only before any data lands. A live-poll response that resolves
+  // before a slow initial fetch (plausible on a contended DB — exactly what
+  // this panel surfaces) must not stay hidden behind the spinner, and a hung
+  // initial fetch must not mask session data the poll already fetched.
+  if (loading && !session) {
     return (
       <div className="flex items-center justify-center py-8 text-control-light">
         <Loader2 className="size-5 animate-spin" />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLatestRef } from "@/react/hooks/useLatestRef";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   canRolloutTasks,
@@ -19,13 +19,13 @@ export const useDeployTaskActions = ({
   currentUser,
   issue,
   project,
-  stage,
+  environment,
   task,
 }: {
   currentUser: User;
   issue?: Issue;
   project: Project;
-  stage?: Stage;
+  environment?: string;
   task: Task;
 }): DeployTaskActionState & { permissionReady: boolean } => {
   const [permissionReady, setPermissionReady] = useState(false);
@@ -33,7 +33,9 @@ export const useDeployTaskActions = ({
   // The permission context is per project + environment — the helpers below
   // never read task fields — so the effect and memo key on those stable
   // strings and read the latest task through this ref instead of re-running
-  // when the task identity changes.
+  // when the task identity changes. Taking `environment` (not the whole stage
+  // object, which the snapshot gate rebuilds every poll tick) keeps the memo
+  // from recomputing on ticks that only touched a sibling task.
   const taskRef = useLatestRef(task);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const useDeployTaskActions = ({
     const load = async () => {
       setPermissionReady(false);
       await preloadRolloutPermissionContext({
-        environment: stage?.environment,
+        environment,
         projectName: project.name,
         tasks: [taskRef.current],
       });
@@ -53,20 +55,20 @@ export const useDeployTaskActions = ({
     return () => {
       canceled = true;
     };
-  }, [project.name, stage?.environment]);
+  }, [project.name, environment]);
 
   const canPerformActions = useMemo(() => {
-    if (!permissionReady || !stage) {
+    if (!permissionReady || environment === undefined) {
       return false;
     }
     return canRolloutTasks({
       currentUser,
-      environment: stage.environment,
+      environment,
       issue,
       project,
       tasks: [taskRef.current],
     });
-  }, [currentUser, issue, permissionReady, project, stage]);
+  }, [currentUser, issue, permissionReady, project, environment]);
 
   return {
     ...getDeployTaskActionState({

@@ -148,10 +148,13 @@ describe("DeployTaskList deep-linked task", () => {
   const taskName = (id: number) => `${stageName}/tasks/t${id}`;
   const manyTasks = Array.from({ length: 30 }, (_, i) => taskName(i + 1));
 
-  test("expands the deep-linked task alongside the auto pick", () => {
+  test("expands only the deep-linked task, not the auto pick", () => {
     const stage = makeStage(stageName, [taskName(1), taskName(2), taskName(3)]);
     render(renderList(stage, taskName(3)));
-    expect(expandedOf(taskName(1))).toBe("true");
+    // An explicit ?taskId= selection is the focus — the auto pick (the first
+    // task) must NOT also open, or a reloaded deep link shows two cards.
+    expect(expandedOf(taskName(1))).toBe("false");
+    expect(expandedOf(taskName(2))).toBe("false");
     expect(expandedOf(taskName(3))).toBe("true");
   });
 

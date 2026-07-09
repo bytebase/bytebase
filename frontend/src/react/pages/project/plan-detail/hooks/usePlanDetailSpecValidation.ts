@@ -8,6 +8,14 @@ import {
   useLocalSheetsVersion,
 } from "../utils/localSheet";
 
+const sameStringSet = (a: Set<string>, b: Set<string>): boolean => {
+  if (a.size !== b.size) return false;
+  for (const value of b) {
+    if (!a.has(value)) return false;
+  }
+  return true;
+};
+
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
   if (
     spec.config?.case !== "changeDatabaseConfig" &&
@@ -64,7 +72,10 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
         })
       );
       if (!canceled) {
-        setEmptySpecIdSet(next);
+        // Reuse the prior Set when membership is unchanged: this runs on every
+        // keystroke (localSheetsVersion bumps per edit), and a fresh Set ref
+        // each time would re-render the header for nothing.
+        setEmptySpecIdSet((prev) => (sameStringSet(prev, next) ? prev : next));
       }
     };
 

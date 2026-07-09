@@ -290,7 +290,15 @@ export const usePlanDetailPage = ({
       // failure doesn't spam the global toast (the initial load is loud).
       true
     );
-    if (seq !== fetchSeqRef.current) {
+    // The page isn't remounted on plan->plan navigation, so a poll started for
+    // the previous plan can still be in flight after the switch. The seq guard
+    // doesn't bump on navigation, so also drop the patch when the page identity
+    // has changed — otherwise the old plan's data would merge onto the new
+    // plan's snapshot (wrong data under a correct URL, until the next poll).
+    if (
+      seq !== fetchSeqRef.current ||
+      latestSnapshotRef.current.pageKey !== current.pageKey
+    ) {
       return;
     }
     patchState(patch);

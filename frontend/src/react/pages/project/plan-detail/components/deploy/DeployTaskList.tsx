@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { useLatestRef } from "@/react/hooks/useLatestRef";
 import { useOnKeyChange } from "@/react/hooks/useOnKeyChange";
 import { router } from "@/react/router";
 import {
@@ -40,17 +41,18 @@ const initialExpandedNames = (
   tasks: Task[],
   selectedTaskName?: string
 ): Set<string> => {
-  const names = new Set<string>();
-  const autoName = autoExpandTaskName(tasks);
-  if (autoName) names.add(autoName);
-  // A deep-linked (?taskId=) task starts expanded alongside the auto pick.
+  // An explicit ?taskId= selection is the user's focus — open only that task.
+  // (Matches focusedTaskName's selection-wins logic; opening the auto pick too
+  // would leave two unrelated cards expanded on reload of a deep link.)
   if (
     selectedTaskName &&
     tasks.some((task) => task.name === selectedTaskName)
   ) {
-    names.add(selectedTaskName);
+    return new Set([selectedTaskName]);
   }
-  return names;
+  // No selection: open a sensible default so the list isn't all-collapsed.
+  const autoName = autoExpandTaskName(tasks);
+  return autoName ? new Set([autoName]) : new Set();
 };
 
 // Grow the page so a deep-linked task beyond the first page is visible.
@@ -82,6 +84,12 @@ export function DeployTaskList({
   // Full task resource name resolved from the ?taskId= deep link.
   const selectedTaskName = page.selectedTaskName;
   const filteredTasks = stage.tasks;
+  // The stage object is rebuilt every poll tick, so passing it to the memoized
+  // cards would re-render all of them each tick. The cards take the stage's
+  // stable identity as primitives and reach the live object through this stable
+  // accessor only when the action panel opens.
+  const stageRef = useLatestRef(stage);
+  const getStage = useCallback(() => stageRef.current, [stageRef]);
   const isTaskInStage = (name: string | undefined): name is string =>
     !!name && filteredTasks.some((task) => task.name === name);
 
@@ -306,7 +314,8 @@ export function DeployTaskList({
             plan={page.plan}
             project={page.project}
             rolloutName={page.rollout?.name ?? ""}
-            stage={stage}
+            getStage={getStage}
+            stageEnvironment={stage.environment}
             task={task}
             taskRuns={page.taskRunsByTaskName.get(task.name) ?? EMPTY_TASK_RUNS}
           />

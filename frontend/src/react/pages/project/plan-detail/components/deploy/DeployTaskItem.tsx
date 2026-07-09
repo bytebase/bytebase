@@ -35,11 +35,16 @@ import { useDeployTaskStatement } from "./useDeployTaskStatement";
 // memo + props only (no page context): every input is identity-stable across
 // poll ticks thanks to the snapshot gate's structural sharing, so a tick that
 // changes one task re-renders that one card — the other mounted cards (across
-// every kept-alive stage) skip entirely.
+// every kept-alive stage, and the siblings in this one) skip entirely. The
+// stage object itself is NOT stable (the gate rebuilds it whenever any task in
+// it changes), so the card takes the stage's stable identity (name +
+// environment) as primitives and reads the live stage lazily through getStage
+// only where the rarely-open action panel needs it.
 export const DeployTaskItem = memo(function DeployTaskItem({
   active,
   currentUser,
   deepLinked,
+  getStage,
   isExpanded,
   isSelected,
   isSelectable,
@@ -50,7 +55,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   plan,
   project,
   rolloutName,
-  stage,
+  stageEnvironment,
   task,
   taskRuns,
 }: {
@@ -69,7 +74,12 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   plan: Plan;
   project: Project;
   rolloutName: string;
-  stage: Stage;
+  // Stable identity of this task's stage (the stage object churns every poll
+  // tick; the environment doesn't). Drives the always-on permission check.
+  stageEnvironment: string;
+  // Reads the live stage on demand — only the action panel (open on user
+  // interaction) needs the full object, so it stays out of the memo inputs.
+  getStage: () => Stage;
   task: Task;
   // This task's runs, newest first (grouped upstream with stable identities).
   taskRuns: TaskRun[];
@@ -114,7 +124,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
     currentUser,
     issue,
     project,
-    stage,
+    environment: stageEnvironment,
     task,
   });
   const rollbackableTaskRun =
@@ -232,7 +242,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             }
           }}
           open={actionOpen}
-          target={{ type: "tasks", tasks: [task], stage }}
+          target={{ type: "tasks", tasks: [task], stage: getStage() }}
         />
       )}
 

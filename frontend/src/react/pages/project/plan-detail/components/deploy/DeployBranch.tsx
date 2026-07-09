@@ -193,22 +193,27 @@ export function DeployBranch() {
           }
           const stageId = extractStageUID(stage.name);
           setOptimisticStageName(stage.name);
-          // A stage switch is an internal same-path query change and a pure
-          // visibility flip — keep-alive preserves every stage's editor state,
-          // so no edit is lost. Bypass the unsaved-edits guard so it doesn't
-          // cancel this push (which would strand the optimistic stage the URL
-          // never caught up to) or pop a spurious discard dialog. Only while
-          // editing, so the one-shot bypass is consumed by this push instead of
-          // lingering to a later real leave.
-          if (page.isEditing) {
-            page.bypassLeaveGuardOnce();
-          }
           // The URL carries only the stage; each stage's card expansion is its
           // own local state (kept alive across switches), so there's nothing
           // per-task to restore through the URL.
-          void router.push({
-            query: { phase: "deploy", stageId },
-          });
+          const target = { query: { phase: "deploy", stageId } };
+          // A stage switch is an internal same-path query change and a pure
+          // visibility flip — keep-alive preserves every stage's editor state,
+          // so no edit is lost. Bypass the unsaved-edits guard so it doesn't
+          // cancel this push or pop a spurious discard dialog. Arm it ONLY when
+          // the push will actually change the URL: the one-shot is consumed by
+          // the router guard that fires on a real navigation, so arming it for a
+          // no-op push (e.g. a rapid switch-back whose intermediate push hasn't
+          // committed) would leave it set for the next genuine leave, silently
+          // skipping the discard prompt.
+          if (
+            page.isEditing &&
+            router.resolve(target).fullPath !==
+              router.currentRoute.value.fullPath
+          ) {
+            page.bypassLeaveGuardOnce();
+          }
+          void router.push(target);
         }}
         rollout={page.rollout}
         selectedStageId={selectedStage.name}
