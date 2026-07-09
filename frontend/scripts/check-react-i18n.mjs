@@ -80,9 +80,15 @@ const DYNAMIC_PREFIXES = [
   //   - sheet.{mine,shared} — src/views/sql-editor/Sheet/context.ts
   "sheet.mine",
   "sheet.shared",
-  //   - task.status.available / .not-started — src/utils/v1/issue/rollout.ts
+  //   - task.status.* — stringifyTaskStatus / stringifyTaskRunStatus
+  //     (src/utils/v1/issue/rollout.ts); failed/skipped also have literal
+  //     React callers and stay unlisted
   "task.status.available",
+  "task.status.canceled",
+  "task.status.done",
   "task.status.not-started",
+  "task.status.pending",
+  "task.status.running",
   //   - auth.token-expired-description — src/connect/middlewares/authInterceptorMiddleware.ts
   "auth.token-expired-description",
   //   - issue.title.export-data — src/utils/v1/issue/issue.ts

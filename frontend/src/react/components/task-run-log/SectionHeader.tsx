@@ -3,6 +3,21 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/react/lib/utils";
 import type { Section } from "./types";
 
+// The status glyph shared by the collapsible header and the sole-section
+// (non-collapsible) label in TaskRunLogViewer, so the two can't drift.
+export function SectionStatusIcon({ section }: { section: Section }) {
+  const StatusIcon = section.statusIcon;
+  return (
+    <StatusIcon
+      className={cn(
+        "h-3.5 w-3.5 shrink-0",
+        section.statusClass,
+        section.status === "running" && "animate-spin"
+      )}
+    />
+  );
+}
+
 export interface SectionHeaderProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   section: Section;
@@ -19,8 +34,6 @@ export function SectionHeader({
   className,
   ...props
 }: SectionHeaderProps) {
-  const StatusIcon = section.statusIcon;
-
   return (
     <button
       type="button"
@@ -38,13 +51,7 @@ export function SectionHeader({
       ) : (
         <ChevronRight className="size-3.5 shrink-0 text-control-placeholder" />
       )}
-      <StatusIcon
-        className={cn(
-          "h-3.5 w-3.5 shrink-0",
-          section.statusClass,
-          section.status === "running" && "animate-spin"
-        )}
-      />
+      <SectionStatusIcon section={section} />
       <span className="text-control">{section.label}</span>
       {section.entryCount > 1 ? (
         <span className="text-control-placeholder">({section.entryCount})</span>

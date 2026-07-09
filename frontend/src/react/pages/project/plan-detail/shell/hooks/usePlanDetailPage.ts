@@ -7,19 +7,35 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/react/router";
+import { usePolling } from "@/react/hooks/usePolling";
+import {
+  preserveTaskRunIdentities,
+  sameMessage,
+  sameMessageList,
+} from "@/react/lib/protoIdentity";
 import {
   PLAN_DETAIL_PHASE_CHANGES,
   PLAN_DETAIL_PHASE_DEPLOY,
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/react/router/handles";
+import { useAppStore } from "@/react/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  PlanCheckRunSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
+import {
+  RolloutSchema,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
+import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
@@ -27,12 +43,16 @@ import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
-import { useLayoutMode } from "./useLayoutMode";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { usePhaseState } from "./usePhaseState";
-import { usePolling } from "./usePolling";
 import { useRedirects } from "./useRedirects";
 import { useRouteSelection } from "./useRouteSelection";
+
+// Poll cadence: fast while a task is transitioning (PENDING/RUNNING) so a status
+// change surfaces within ~1s; idle otherwise, just to catch externally-created
+// rollouts/tasks and a scheduled task starting, without hammering the server.
+const ACTIVE_POLL_INTERVAL_MS = 1000;
+const IDLE_POLL_INTERVAL_MS = 15000;
 
 const buildDefaultSnapshot = (
   projectId: string,
@@ -69,6 +89,47 @@ const applyDerivedState = (
     readonly,
     ready: !snapshot.isInitializing && !!snapshot.plan.name,
   };
+};
+
+// Structural sharing across snapshot updates: every poll tick rebuilds all
+// objects from the wire, but a slice whose content is unchanged keeps its
+// previous reference here, and a fully-unchanged snapshot returns `prev`
+// itself so the caller can skip the state update entirely. This is what makes
+// a quiet poll tick render nothing — object identity is the contract every
+// downstream memo, effect dep, and prop comparison keys off.
+const preserveSnapshotIdentities = (
+  prev: PlanDetailPageSnapshot,
+  next: PlanDetailPageSnapshot
+): PlanDetailPageSnapshot => {
+  const out = { ...next };
+  if (sameMessage(UserSchema, prev.currentUser, next.currentUser)) {
+    out.currentUser = prev.currentUser;
+  }
+  if (sameMessage(ProjectSchema, prev.project, next.project)) {
+    out.project = prev.project;
+  }
+  if (sameMessage(PlanSchema, prev.plan, next.plan)) {
+    out.plan = prev.plan;
+  }
+  if (sameMessage(IssueSchema, prev.issue, next.issue)) {
+    out.issue = prev.issue;
+  }
+  // The rollout store already deep-preserves per-stage/per-task identity and
+  // hands patchState the merged instance, so here a plain reference/structural
+  // guard is enough — keeping the snapshot's rollout identical to the store's.
+  if (sameMessage(RolloutSchema, prev.rollout, next.rollout)) {
+    out.rollout = prev.rollout;
+  }
+  if (
+    sameMessageList(PlanCheckRunSchema, prev.planCheckRuns, next.planCheckRuns)
+  ) {
+    out.planCheckRuns = prev.planCheckRuns;
+  }
+  out.taskRuns = preserveTaskRunIdentities(prev.taskRuns, next.taskRuns);
+  const changed = (Object.keys(out) as (keyof PlanDetailPageSnapshot)[]).some(
+    (key) => out[key] !== prev[key]
+  );
+  return changed ? out : prev;
 };
 
 const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
@@ -116,14 +177,12 @@ export const usePlanDetailPage = ({
   routeName,
   routeQuery = {},
   specId,
-  pageHost,
 }: {
   projectId: string;
   planId: string;
   routeName?: string;
   routeQuery?: Record<string, unknown>;
   specId?: string;
-  pageHost: HTMLDivElement | null;
 }): PlanDetailPageState => {
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PlanDetailPageSnapshot>(() =>
@@ -132,8 +191,6 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
-  const layout = useLayoutMode(pageHost);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
@@ -188,40 +245,64 @@ export const usePlanDetailPage = ({
 
   const patchState = useCallback(
     (patch: Partial<PlanDetailPageSnapshot>) => {
-      const nextSnapshot = applyDerivedState({
-        ...latestSnapshotRef.current,
-        ...patch,
-      });
+      const prevSnapshot = latestSnapshotRef.current;
+      // Seed the shared rollout store from this (already staleness-guarded)
+      // patch, and adopt the store's identity-preserved instance so the deploy
+      // view and the log viewer read the exact same rollout object.
+      if (patch.rollout) {
+        patch = {
+          ...patch,
+          rollout: useAppStore.getState().upsertRollout(patch.rollout),
+        };
+      }
+      const nextSnapshot = preserveSnapshotIdentities(
+        prevSnapshot,
+        applyDerivedState({
+          ...prevSnapshot,
+          ...patch,
+        })
+      );
       syncDefaultActivePhases(nextSnapshot);
+      if (nextSnapshot === prevSnapshot) {
+        // Content-identical (the common quiet poll tick) — no state update,
+        // so nothing under the provider re-renders.
+        return;
+      }
       latestSnapshotRef.current = nextSnapshot;
       setSnapshot(nextSnapshot);
     },
     [syncDefaultActivePhases]
   );
 
+  // Monotonic fetch sequence: a fetch already in flight when a newer one started
+  // (a poll tick overlapping a user-action refresh) carries older data and must
+  // not overwrite the fresher snapshot when it resolves late.
+  const fetchSeqRef = useRef(0);
   const fetchState = useCallback(async () => {
-    try {
-      setIsRefreshing(true);
-      const current = latestSnapshotRef.current;
-      const patch = await fetchPlanSnapshot(
-        current.projectId,
-        current.planId,
-        routeQueryRef.current
-      );
-      patchState(patch);
-    } finally {
-      setIsRefreshing(false);
+    const current = latestSnapshotRef.current;
+    fetchSeqRef.current += 1;
+    const seq = fetchSeqRef.current;
+    const patch = await fetchPlanSnapshot(
+      current.projectId,
+      current.planId,
+      routeQueryRef.current,
+      // Background poll / post-action refresh: stay silent so a transient
+      // failure doesn't spam the global toast (the initial load is loud).
+      true
+    );
+    // The page isn't remounted on plan->plan navigation, so a poll started for
+    // the previous plan can still be in flight after the switch. The seq guard
+    // doesn't bump on navigation, so also drop the patch when the page identity
+    // has changed — otherwise the old plan's data would merge onto the new
+    // plan's snapshot (wrong data under a correct URL, until the next poll).
+    if (
+      seq !== fetchSeqRef.current ||
+      latestSnapshotRef.current.pageKey !== current.pageKey
+    ) {
+      return;
     }
+    patchState(patch);
   }, [patchState]);
-
-  const closeTaskPanel = useCallback(() => {
-    void router.replace({
-      query: {
-        ...(routePhase ? { phase: routePhase } : {}),
-        ...(routeStageId ? { stageId: routeStageId } : {}),
-      },
-    });
-  }, [routePhase, routeStageId]);
 
   useInitialFetch({
     projectId,
@@ -263,51 +344,66 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const isPlanDone = useMemo(() => {
+  const { isPlanDone, hasActiveTasks } = useMemo(() => {
     if (!snapshot.rollout) {
-      return false;
+      return { isPlanDone: false, hasActiveTasks: false };
     }
-    const allTasks = snapshot.rollout.stages.flatMap((stage) => stage.tasks);
-    return (
-      allTasks.length > 0 &&
-      allTasks.every(
-        (task) =>
-          task.status === Task_Status.DONE ||
-          task.status === Task_Status.SKIPPED
-      )
-    );
+    const nowMs = Date.now();
+    let taskCount = 0;
+    let allSettled = true;
+    let hasActiveTasks = false;
+    for (const stage of snapshot.rollout.stages) {
+      for (const task of stage.tasks) {
+        taskCount++;
+        if (
+          task.status !== Task_Status.DONE &&
+          task.status !== Task_Status.SKIPPED
+        ) {
+          allSettled = false;
+        }
+        // Poll fast for a task actually transitioning (RUNNING, or a PENDING
+        // task due to run now); a task scheduled for a future maintenance window
+        // stays on the idle cadence rather than polling every second while it
+        // waits — the idle poll still catches it once the backend starts it.
+        if (isTaskActivelyTransitioning(task, nowMs)) {
+          hasActiveTasks = true;
+        }
+      }
+    }
+    return { isPlanDone: taskCount > 0 && allSettled, hasActiveTasks };
   }, [snapshot.rollout]);
 
-  const { restart: restartPolling } = usePolling({
-    enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    refreshState: fetchState,
-  });
+  // Poll the whole snapshot on a fixed cadence: fast while a task is
+  // transitioning so PENDING -> RUNNING -> DONE surfaces promptly, idle
+  // otherwise (a failed task awaiting rerun, a scheduled task, an unstarted
+  // rollout) to catch changes without hammering the server. Stops once every
+  // task is terminal. usePolling pauses on a hidden tab and never overlaps a
+  // slow fetch. A user action's immediate fetch (refreshState) surfaces the
+  // result at once, and the cadence tightens as soon as that status is active.
+  usePolling(
+    snapshot.ready && !snapshot.isCreating && !isPlanDone,
+    hasActiveTasks ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
+    fetchState
+  );
 
   // Public refresh used by user actions (run/skip/cancel a task, edits, etc.).
-  // It fetches immediately and then resets the poll backoff so the follow-up
-  // status transition (e.g. a task moving PENDING -> RUNNING) is observed on
-  // the next ~1s tick instead of waiting out the current backoff interval.
   const refreshState = useCallback(async () => {
     await fetchState();
-    restartPolling();
-  }, [fetchState, restartPolling]);
+  }, [fetchState]);
 
   return useDerivedPlanState({
     snapshot,
     isEditing,
-    isRefreshing,
     isRunningChecks,
     setIsRunningChecks,
     phase,
     editing,
-    layout,
     routeName,
     routePhase,
     routeStageId,
     routeTaskId,
     patchState,
     refreshState,
-    closeTaskPanel,
     resolveLeaveConfirm,
   });
 };

@@ -22,12 +22,26 @@ export function useEditingScopes() {
     [setEditing]
   );
 
-  return {
-    editingScopes,
-    isEditing,
-    setEditing: setScopeEditing,
-    bypassLeaveGuardOnce,
-    pendingLeaveConfirm,
-    setPendingLeaveConfirm,
-  };
+  // Stable facade: every field is already reference-stable, so memoize the
+  // wrapper too. This keeps the derived `page` context value stable across
+  // renders (it depends on this object), so context consumers re-render only on
+  // real changes instead of on every page-hook render.
+  return useMemo(
+    () => ({
+      editingScopes,
+      isEditing,
+      setEditing: setScopeEditing,
+      bypassLeaveGuardOnce,
+      pendingLeaveConfirm,
+      setPendingLeaveConfirm,
+    }),
+    [
+      editingScopes,
+      isEditing,
+      setScopeEditing,
+      bypassLeaveGuardOnce,
+      pendingLeaveConfirm,
+      setPendingLeaveConfirm,
+    ]
+  );
 }

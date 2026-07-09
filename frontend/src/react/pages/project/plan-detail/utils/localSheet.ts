@@ -1,13 +1,53 @@
 import { create } from "@bufbuild/protobuf";
+import { useSyncExternalStore } from "react";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { extractSheetUID, setSheetStatement } from "@/utils/v1/sheet";
 
 const state = {
   uid: -101,
 };
 
 const localSheetsByName = new Map<string, Sheet>();
+
+// Local sheets live outside React state, so edits need an explicit external-
+// store signal (consumed via useSyncExternalStore). Nothing re-runs "for free"
+// anymore: snapshot updates preserve identity when content is unchanged, so a
+// hidden dependency on this map must subscribe here instead of riding on
+// unrelated re-renders.
+let localSheetsVersion = 0;
+const localSheetListeners = new Set<() => void>();
+
+export const subscribeLocalSheets = (listener: () => void): (() => void) => {
+  localSheetListeners.add(listener);
+  return () => {
+    localSheetListeners.delete(listener);
+  };
+};
+
+export const getLocalSheetsVersion = (): number => localSheetsVersion;
+
+// Subscribe a component to local-sheet edits. Any consumer that reads local
+// sheet content during render (getSpecStatementContent) must call this, or it
+// won't re-render when the statement is edited — the identity-preserving
+// snapshot no longer re-renders the tree "for free" on a content-identical edit.
+// Include the returned version in the deps of any memo that reads that content.
+export const useLocalSheetsVersion = (): number =>
+  useSyncExternalStore(subscribeLocalSheets, getLocalSheetsVersion);
+
+// Write a local sheet's statement and notify subscribers (e.g. the
+// empty-statement validation behind the create button).
+export const setLocalSheetStatement = (
+  sheet: Sheet,
+  statement: string
+): void => {
+  setSheetStatement(sheet, statement);
+  localSheetsVersion += 1;
+  for (const listener of localSheetListeners) {
+    listener();
+  }
+};
 
 export const createEmptyLocalSheet = () => {
   return create(SheetSchema, {});
@@ -43,7 +83,14 @@ export const getSpecStatementContent = (
   spec: Plan_Spec
 ): Uint8Array | undefined => {
   if (spec.config.case !== "changeDatabaseConfig") return undefined;
-  return getLocalSheetByName(spec.config.value.sheet).content;
+  const sheetName = spec.config.value.sheet;
+  // Only local (unsaved) sheets keep their content here; guard the UID so a
+  // persisted sheet name doesn't mint a phantom empty local sheet and return
+  // misleading empty bytes (same local/remote split as checkSpecStatement).
+  if (!sheetName || !extractSheetUID(sheetName).startsWith("-")) {
+    return undefined;
+  }
+  return getLocalSheetByName(sheetName).content;
 };
 
 // Byte-equality for statement content. The reference check is the O(1) fast

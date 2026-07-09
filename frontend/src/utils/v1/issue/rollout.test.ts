@@ -11,6 +11,7 @@ import {
   getRolloutStatus,
   getStageStatus,
   getStageStatusFromCounts,
+  isTaskActivelyTransitioning,
 } from "./rollout";
 
 const stage = (...statuses: Task_Status[]) =>
@@ -116,5 +117,50 @@ describe("getStageStatusFromCounts", () => {
 
   test("empty counts fall back to unspecified", () => {
     expect(getStageStatusFromCounts([])).toBe(Task_Status.STATUS_UNSPECIFIED);
+  });
+});
+
+describe("isTaskActivelyTransitioning", () => {
+  const NOW = 1_700_000_000_000; // fixed "now" in ms
+  const at = (offsetSec: number) => ({
+    seconds: BigInt(NOW / 1000 + offsetSec),
+  });
+  const task = (status: Task_Status, runTime?: { seconds: bigint }) =>
+    create(TaskSchema, runTime ? { status, runTime } : { status });
+
+  test("RUNNING is always active, regardless of run_time", () => {
+    expect(isTaskActivelyTransitioning(task(Task_Status.RUNNING), NOW)).toBe(
+      true
+    );
+    expect(
+      isTaskActivelyTransitioning(task(Task_Status.RUNNING, at(3600)), NOW)
+    ).toBe(true);
+  });
+
+  test("PENDING is active when unscheduled or already due", () => {
+    expect(isTaskActivelyTransitioning(task(Task_Status.PENDING), NOW)).toBe(
+      true
+    );
+    expect(
+      isTaskActivelyTransitioning(task(Task_Status.PENDING, at(-3600)), NOW)
+    ).toBe(true);
+  });
+
+  test("PENDING scheduled for a future run_time is not active", () => {
+    expect(
+      isTaskActivelyTransitioning(task(Task_Status.PENDING, at(3600)), NOW)
+    ).toBe(false);
+  });
+
+  test("settled and not-started tasks are never active", () => {
+    for (const status of [
+      Task_Status.NOT_STARTED,
+      Task_Status.DONE,
+      Task_Status.FAILED,
+      Task_Status.CANCELED,
+      Task_Status.SKIPPED,
+    ]) {
+      expect(isTaskActivelyTransitioning(task(status), NOW)).toBe(false);
+    }
   });
 });

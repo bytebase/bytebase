@@ -9,12 +9,3 @@ export type RollbackItem = {
   task: Task;
   taskRun: TaskRun;
 };
-
-export type DeployBranchProps = {
-  selectedTask?: Task;
-  onCloseTaskPanel: () => void;
-};
-
-export type DeployTaskDetailPanelProps = {
-  task: Task;
-};

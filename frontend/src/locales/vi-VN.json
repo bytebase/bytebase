@@ -3131,7 +3131,6 @@
       "description": "Đặt ngày và giờ cụ thể để các tác vụ tự động bắt đầu chạy. Hữu ích cho các khung giờ bảo trì hoặc ngoài giờ cao điểm.",
       "self": "Lên lịch cho sau"
     },
-    "scheduled-time": "Thời gian đã lên lịch",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
     "select-task": "Chọn tác vụ",
     "skip-prior-backup": "Bỏ qua sao lưu trước",
@@ -3156,8 +3155,8 @@
     "blocking-sessions": "Phiên chặn",
     "blocking-sessions-description": "Các phiên đang chặn phiên hiện tại",
     "history": "Lịch sử",
+    "history-with-count": "Lịch sử ({{count}})",
     "latest": "Mới nhất",
-    "latest-logs": "Nhật ký mới nhất",
     "log-detail": {
       "backing-up": "đang sao lưu...",
       "backup-completed": "đã hoàn thành ({{count}} bảng)",
@@ -3185,6 +3184,7 @@
       "replica-n": "Bản sao #{{n}}",
       "summary": "{{sections}} phần · {{entries}} mục"
     },
+    "no-blocking-sessions": "Không có phiên chặn nào",
     "no-session-found": "Không tìm thấy phiên",
     "rollback": {
       "available": "Có {{count}} mục có thể hoàn tác",
@@ -3193,6 +3193,7 @@
         "description": "Xem lại các câu lệnh hoàn tác đã tạo trước khi tạo kế hoạch hoàn tác."
       }
     },
+    "run-number": "Lần chạy #{{number}}",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {{time}}.",

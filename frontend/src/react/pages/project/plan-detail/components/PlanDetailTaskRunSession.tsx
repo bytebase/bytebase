@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { AlignHorizontalJustifyStart, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { usePolling } from "@/react/hooks/usePolling";
+import { sameMessage } from "@/react/lib/protoIdentity";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   GetTaskRunSessionRequestSchema,
@@ -20,64 +22,99 @@ import {
   TaskRun_Status,
   type TaskRunSession_Postgres,
   type TaskRunSession_Postgres_Session,
+  TaskRunSession_PostgresSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 
-export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
+// A running task holds its session for the duration of the execution; refresh
+// on this cadence so blocking/blocked sessions reflect the live database state
+// rather than the moment the panel opened.
+const SESSION_POLL_INTERVAL_MS = 5000;
+
+export function PlanDetailTaskRunSession({
+  taskRun,
+  // When false, pause the live session poll — the card is mounted but its stage
+  // is hidden. Defaults to live.
+  active = true,
+}: {
+  taskRun: TaskRun;
+  active?: boolean;
+}) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<TaskRunSession_Postgres | undefined>();
+  const isRunning = taskRun.status === TaskRun_Status.RUNNING;
 
+  // Monotonic per-fetch sequence: two overlapping 5s poll ticks (or a tick still
+  // in flight when the run settles) must not write a stale session over fresher
+  // data. A response whose number is no longer the latest is dropped.
+  const sessionFetchSeq = useRef(0);
+  const fetchSession = useCallback(async () => {
+    const seq = ++sessionFetchSeq.current;
+    const response = await rolloutServiceClientConnect.getTaskRunSession(
+      create(GetTaskRunSessionRequestSchema, { parent: taskRun.name }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    );
+    if (seq !== sessionFetchSeq.current) {
+      return;
+    }
+    const next =
+      response.session.case === "postgres" ? response.session.value : undefined;
+    // Keep the previous reference when the content is unchanged so the tables
+    // don't re-render for nothing.
+    setSession((prev) =>
+      prev && next && sameMessage(TaskRunSession_PostgresSchema, prev, next)
+        ? prev
+        : next
+    );
+  }, [taskRun.name]);
+
+  // Initial load (with spinner). Resetting session + loading when not running
+  // keeps the panel consistent if the run finishes before the load resolves.
   useEffect(() => {
+    if (!isRunning) {
+      // Invalidate any in-flight fetch so it can't re-populate after the clear.
+      sessionFetchSeq.current++;
+      setSession(undefined);
+      setLoading(false);
+      return;
+    }
+    if (!active) {
+      // Hidden kept-alive stage: skip the initial fetch (the live poll is also
+      // paused) so a stage the user can't see doesn't issue a request on mount.
+      // The load runs lazily once the stage becomes active.
+      return;
+    }
     let canceled = false;
-
-    const load = async () => {
-      if (taskRun.status !== TaskRun_Status.RUNNING) {
-        setSession(undefined);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await rolloutServiceClientConnect.getTaskRunSession(
-          create(GetTaskRunSessionRequestSchema, {
-            parent: taskRun.name,
-          }),
-          {
-            contextValues: createContextValues().set(silentContextKey, true),
-          }
-        );
-        if (canceled) {
-          return;
-        }
-        if (response.session.case === "postgres") {
-          setSession(response.session.value);
-        } else {
-          setSession(undefined);
-        }
-      } finally {
-        if (!canceled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
+    setLoading(true);
+    fetchSession()
+      .catch(() => undefined)
+      .finally(() => {
+        if (!canceled) setLoading(false);
+      });
     return () => {
       canceled = true;
     };
-  }, [taskRun.name, taskRun.status]);
+  }, [active, isRunning, fetchSession]);
 
-  if (loading) {
+  // Live refresh while running — swaps data in place (no spinner); a failing
+  // tick is swallowed by usePolling.
+  usePolling(active && isRunning, SESSION_POLL_INTERVAL_MS, fetchSession);
+
+  // Spinner only before any data lands. A live-poll response that resolves
+  // before a slow initial fetch (plausible on a contended DB — exactly what
+  // this panel surfaces) must not stay hidden behind the spinner, and a hung
+  // initial fetch must not mask session data the poll already fetched.
+  if (loading && !session) {
     return (
       <div className="flex items-center justify-center py-8 text-control-light">
-        <Loader2 className="h-5 w-5 animate-spin" />
+        <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
 
   if (!session?.session) {
     return (
-      <div className="rounded-md border bg-gray-50 p-3 text-sm text-control-light">
+      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
         {t("task-run.no-session-found")}
       </div>
     );
@@ -86,22 +123,34 @@ export function PlanDetailTaskRunSession({ taskRun }: { taskRun: TaskRun }) {
   return (
     <div className="flex w-full flex-col gap-y-2">
       <SessionTable rows={[session.session]} />
-      <div>
-        <div className="flex items-center justify-start gap-x-1 pt-2">
-          <span className="textlabel">{t("task-run.blocking-sessions")}</span>
-          <span className="textinfolabel">
-            ({t("task-run.blocking-sessions-description")})
-          </span>
+      {/* When nothing blocks (the common case), a one-line note replaces the
+          header + description + empty table box. */}
+      {session.blockingSessions.length > 0 ? (
+        <div>
+          <div className="flex items-center justify-start gap-x-1 pt-2">
+            <span className="text-sm font-medium text-control">
+              {t("task-run.blocking-sessions")}
+            </span>
+            <span className="textinfolabel">
+              ({t("task-run.blocking-sessions-description")})
+            </span>
+          </div>
+          <div className="mt-2">
+            <SessionTable rows={session.blockingSessions} />
+          </div>
         </div>
-        <div className="mt-2">
-          <SessionTable rows={session.blockingSessions} />
+      ) : (
+        <div className="text-sm text-control-light">
+          {t("task-run.no-blocking-sessions")}
         </div>
-      </div>
+      )}
       {session.blockedSessions.length > 0 && (
         <div>
           <div className="flex items-center justify-start gap-x-2 pt-2">
-            <AlignHorizontalJustifyStart className="h-4 w-4 opacity-80" />
-            <span className="textlabel">{t("task-run.blocked-sessions")}</span>
+            <AlignHorizontalJustifyStart className="size-4 opacity-80" />
+            <span className="text-sm font-medium text-control">
+              {t("task-run.blocked-sessions")}
+            </span>
             <span className="textinfolabel">
               {t("task-run.blocked-sessions-description")}
             </span>
@@ -120,7 +169,7 @@ function SessionTable({ rows }: { rows: TaskRunSession_Postgres_Session[] }) {
 
   if (normalizedRows.length === 0) {
     return (
-      <div className="rounded-md border bg-gray-50 p-3 text-sm text-control-light">
+      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
         -
       </div>
     );

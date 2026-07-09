@@ -116,7 +116,6 @@ const createDefaultSections = () => ({
   areAllExpanded: true,
   totalSections: 1,
   totalEntries: 1,
-  totalDuration: "2s",
 });
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
@@ -143,12 +142,14 @@ beforeEach(() => {
 });
 
 describe("TaskRunLogViewer", () => {
-  test("renders the summary and section content", () => {
+  test("drops the summary scaffolding for a lone section", () => {
     const { container, unmount } = renderIntoContainer(
       createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
     );
 
-    expect(container.textContent).toContain("1 sections · 1 entries");
+    // A single section has no structure worth disclosing: no summary bar, but
+    // its label and entries render directly.
+    expect(container.textContent).not.toContain("1 sections · 1 entries");
     expect(container.textContent).toContain("Command Execute");
     expect(container.textContent).toContain("SELECT 1;");
 
@@ -262,13 +263,14 @@ describe("TaskRunLogViewer", () => {
       areAllExpanded: true,
       totalSections: 2,
       totalEntries: 2,
-      totalDuration: "",
     });
 
     const { container, unmount } = renderIntoContainer(
       createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
     );
 
+    // More than one section keeps the summary bar and the disclosure chrome.
+    expect(container.textContent).toContain("2 sections · 2 entries");
     expect(container.textContent).toContain("ORPHAN SELECT");
     expect(container.textContent).toContain("v1: 001.sql");
     expect(container.textContent?.indexOf("ORPHAN SELECT") ?? -1).toBeLessThan(

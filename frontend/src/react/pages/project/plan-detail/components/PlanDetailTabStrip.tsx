@@ -51,7 +51,9 @@ export function PlanDetailTabItem({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center rounded-t-lg border transition-all",
+        // No transition here: the tab body swaps in the same commit, so a
+        // color fade makes the highlight lag the content and read as flicker.
+        "relative flex shrink-0 items-center rounded-t-lg border",
         selected
           ? "border-gray-200 border-b-transparent bg-white"
           : "border-b-gray-200 border-transparent hover:opacity-80"
