@@ -195,6 +195,12 @@ describe("useTaskRunLogData caching", () => {
     const first = renderHook(taskRunName, TaskRun_Status.RUNNING);
     await first.flush();
     expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(1);
+    // The log poll runs every 5s while running, so its request must be silent —
+    // a transient failure must not spam the global error toast.
+    expect(mocks.getTaskRunLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ contextValues: expect.anything() })
+    );
     first.unmount();
 
     mocks.getTaskRunLog.mockResolvedValue({

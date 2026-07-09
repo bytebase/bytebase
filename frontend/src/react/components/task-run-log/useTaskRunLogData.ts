@@ -1,6 +1,8 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { rolloutServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { useLatestRef } from "@/react/hooks/useLatestRef";
 import { useLivePoll } from "@/react/hooks/useLivePoll";
 import { useSeededState } from "@/react/hooks/useSeededState";
@@ -389,7 +391,8 @@ export const useTaskRunLogData = (
     const seq = ++logFetchSeq.current;
     void rolloutServiceClientConnect
       .getTaskRunLog(
-        create(GetTaskRunLogRequestSchema, { parent: taskRunName })
+        create(GetTaskRunLogRequestSchema, { parent: taskRunName }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
       )
       .then((response) => {
         if (seq !== logFetchSeq.current) return;

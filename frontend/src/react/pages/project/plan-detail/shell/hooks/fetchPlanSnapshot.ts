@@ -64,7 +64,8 @@ const requestRolloutTaskRuns = (rolloutName: string) =>
     .listTaskRuns(
       create(ListTaskRunsRequestSchema, {
         parent: `${rolloutName}/stages/-/tasks/-`,
-      })
+      }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
     )
     .then((response) => response.taskRuns);
 

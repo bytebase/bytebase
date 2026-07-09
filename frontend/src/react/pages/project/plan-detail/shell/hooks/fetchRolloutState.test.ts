@@ -33,6 +33,20 @@ describe("fetchRolloutState", () => {
 
     expect(patch.rollout).toEqual({ name: ROLLOUT });
     expect(patch.taskRuns).toEqual([{ name: "tr1" }]);
+
+    // Both slim-lane requests must be silent: they poll every ~500ms, so a
+    // transient failure must not spam the global error toast.
+    const contextArg = expect.objectContaining({
+      contextValues: expect.anything(),
+    });
+    expect(mocks.getRollout).toHaveBeenCalledWith(
+      expect.anything(),
+      contextArg
+    );
+    expect(mocks.listTaskRuns).toHaveBeenCalledWith(
+      expect.anything(),
+      contextArg
+    );
   });
 
   test("returns an empty patch when task runs fail — no partial terminal rollout", async () => {
