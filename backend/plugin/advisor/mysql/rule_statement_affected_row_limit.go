@@ -56,9 +56,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 				continue
 			}
 
-			// Only handle UPDATE and DELETE statements.
-			switch node.(type) {
-			case *ast.UpdateStmt, *ast.DeleteStmt:
+			var limit *ast.Limit
+			switch stmt := node.(type) {
+			case *ast.UpdateStmt:
+				limit = stmt.Limit
+			case *ast.DeleteStmt:
+				limit = stmt.Limit
 			default:
 				continue
 			}
@@ -87,7 +90,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
 						StartPosition: common.ConvertANTLRLineToPosition(line),
 					})
-				} else if rowCount > int64(maxRow) {
+				} else if rowCount = capRowsByLimit(rowCount, limit); rowCount > int64(maxRow) {
 					advice = append(advice, &storepb.Advice{
 						Status:        level,
 						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
