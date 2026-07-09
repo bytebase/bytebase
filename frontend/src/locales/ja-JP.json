@@ -3127,7 +3127,6 @@
       "description": "タスクを自動的に実行開始する日時を指定します。メンテナンス期間やオフピーク時に便利です。",
       "self": "後でスケジュールする"
     },
-    "scheduled-time": "スケジュール時刻",
     "select-scheduled-time": "予定時刻を選択してください",
     "select-task": "タスクを選択",
     "skip-prior-backup": "事前バックアップをスキップ",
@@ -3152,8 +3151,8 @@
     "blocking-sessions": "ブロッキングセッション",
     "blocking-sessions-description": "現在のセッションをブロックしているセッション",
     "history": "履歴",
+    "history-with-count": "履歴（{{count}}）",
     "latest": "最新",
-    "latest-logs": "最新ログ",
     "log-detail": {
       "backing-up": "バックアップ中...",
       "backup-completed": "完了しました（{{count}} テーブル）",
@@ -3181,6 +3180,7 @@
       "replica-n": "レプリカ #{{n}}",
       "summary": "{{sections}} セクション · {{entries}} エントリ"
     },
+    "no-blocking-sessions": "ブロッキングセッションはありません",
     "no-session-found": "セッションが見つかりません",
     "rollback": {
       "available": "{{count}} 件のロールバックが利用可能",
@@ -3189,6 +3189,7 @@
         "description": "ロールバックプランを作成する前に生成されたロールバック文を確認してください。"
       }
     },
+    "run-number": "実行 #{{number}}",
     "status": {
       "enqueued": "実行を待っています。",
       "enqueued-with-rollout-time": "{{time}} の後に実行される予定です。",

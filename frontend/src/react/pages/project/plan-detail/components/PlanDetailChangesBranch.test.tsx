@@ -36,6 +36,8 @@ const mocks = vi.hoisted(() => ({
     string,
     { content: Uint8Array; contentSize: bigint; name: string }
   >(),
+  localSheetsVersion: 0,
+  localSheetListeners: new Set<() => void>(),
   patchState: vi.fn(),
   routerPush: vi.fn(),
   databaseStore: {
@@ -345,30 +347,51 @@ vi.mock("@/utils/v1/databaseGroup", () => ({
     name.split("/databaseGroups/")[1] ?? name,
 }));
 
-vi.mock("../utils/localSheet", () => ({
-  getLocalSheetByName: (name: string) => {
-    const existing = mocks.localSheets.get(name);
-    if (existing) return existing;
-    const sheet = { name, content: new Uint8Array(), contentSize: 0n };
-    mocks.localSheets.set(name, sheet);
-    return sheet;
-  },
-  getNextLocalSheetUID: () => "-1",
-  getSpecStatementContent: (spec: {
-    config?: { case?: string; value?: { sheet?: string } };
-  }) => {
-    if (spec.config?.case !== "changeDatabaseConfig") return undefined;
-    const sheetName = spec.config.value?.sheet;
-    const sheet = sheetName ? mocks.localSheets.get(sheetName) : undefined;
-    return sheet?.content;
-  },
-  isSameStatementContent: (a?: Uint8Array, b?: Uint8Array) => {
-    if (a === b) return true;
-    if (!a || !b || a.length !== b.length) return false;
-    return a.every((byte, index) => byte === b[index]);
-  },
-  removeLocalSheet: vi.fn(),
-}));
+vi.mock("../utils/localSheet", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    getLocalSheetByName: (name: string) => {
+      const existing = mocks.localSheets.get(name);
+      if (existing) return existing;
+      const sheet = { name, content: new Uint8Array(), contentSize: 0n };
+      mocks.localSheets.set(name, sheet);
+      return sheet;
+    },
+    getNextLocalSheetUID: () => "-1",
+    getSpecStatementContent: (spec: {
+      config?: { case?: string; value?: { sheet?: string } };
+    }) => {
+      if (spec.config?.case !== "changeDatabaseConfig") return undefined;
+      const sheetName = spec.config.value?.sheet;
+      const sheet = sheetName ? mocks.localSheets.get(sheetName) : undefined;
+      return sheet?.content;
+    },
+    isSameStatementContent: (a?: Uint8Array, b?: Uint8Array) => {
+      if (a === b) return true;
+      if (!a || !b || a.length !== b.length) return false;
+      return a.every((byte, index) => byte === b[index]);
+    },
+    removeLocalSheet: vi.fn(),
+    setLocalSheetStatement: (
+      sheet: { content: Uint8Array; contentSize: bigint },
+      statement: string
+    ) => {
+      const content = new TextEncoder().encode(statement);
+      sheet.content = content;
+      sheet.contentSize = BigInt(content.byteLength);
+      mocks.localSheetsVersion += 1;
+      for (const listener of mocks.localSheetListeners) listener();
+    },
+    useLocalSheetsVersion: () =>
+      useSyncExternalStore(
+        (listener) => {
+          mocks.localSheetListeners.add(listener);
+          return () => mocks.localSheetListeners.delete(listener);
+        },
+        () => mocks.localSheetsVersion
+      ),
+  };
+});
 
 vi.mock("../utils/options", () => ({
   allowGhostForDatabase: () => false,
@@ -543,8 +566,6 @@ function buildPageState(): PlanDetailPageState {
   return {
     activePhases: new Set(["changes"]),
     bypassLeaveGuardOnce: vi.fn(),
-    closeTaskPanel: vi.fn(),
-    containerWidth: 1200,
     currentUser: {
       name: "users/me@example.com",
     } as PlanDetailPageState["currentUser"],
@@ -552,7 +573,6 @@ function buildPageState(): PlanDetailPageState {
     isCreating: true,
     isEditing: false,
     isInitializing: false,
-    isRefreshing: false,
     isRunningChecks: false,
     pageKey: "foo/create/spec-1",
     patchState: mocks.patchState,
@@ -594,8 +614,8 @@ function buildPageState(): PlanDetailPageState {
     selectedTaskName: undefined,
     setEditing: vi.fn(),
     setIsRunningChecks: vi.fn(),
-    layoutMode: "DESKTOP",
     taskRuns: [],
+    taskRunsByTaskName: new Map(),
     togglePhase: vi.fn(),
   };
 }
@@ -1016,6 +1036,9 @@ describe("PlanDetailChangesBranch", () => {
       content: new TextEncoder().encode("create table t(id int);"),
       contentSize: 0n,
     });
+    // A real statement edit goes through setLocalSheetStatement, which bumps the
+    // local-sheet version so subscribed consumers re-read the content.
+    mocks.localSheetsVersion += 1;
 
     act(render);
     await flush();

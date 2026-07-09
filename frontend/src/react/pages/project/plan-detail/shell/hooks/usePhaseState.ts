@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 
@@ -13,11 +13,16 @@ export function usePhaseState() {
     [activePhases]
   );
 
-  return {
-    activePhases,
-    isActive,
-    setActivePhases,
-    togglePhase,
-    expandPhase,
-  };
+  // Stable facade (see useEditingScopes): memoize so the derived `page` context
+  // value stays reference-stable and consumers don't re-render every render.
+  return useMemo(
+    () => ({
+      activePhases,
+      isActive,
+      setActivePhases,
+      togglePhase,
+      expandPhase,
+    }),
+    [activePhases, isActive, setActivePhases, togglePhase, expandPhase]
+  );
 }

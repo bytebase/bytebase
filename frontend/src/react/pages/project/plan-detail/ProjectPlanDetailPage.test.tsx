@@ -53,17 +53,6 @@ vi.mock("@/react/components/ui/button", () => ({
   }) => <button onClick={onClick}>{children}</button>,
 }));
 
-vi.mock("@/react/components/ui/sheet", () => ({
-  Sheet: ({ children, open }: { children: ReactNode; open: boolean }) =>
-    open ? <div>{children}</div> : null,
-  SheetBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SheetContent: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-  SheetHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SheetTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}));
-
 vi.mock("@/react/lib/utils", () => ({
   cn: (...classes: Array<string | false | null | undefined>) =>
     classes.filter(Boolean).join(" "),
@@ -71,10 +60,6 @@ vi.mock("@/react/lib/utils", () => ({
 
 vi.mock("./components/deploy/DeployBranch", () => ({
   DeployBranch: () => null,
-}));
-
-vi.mock("./components/deploy/DeployTaskDetailPanel", () => ({
-  DeployTaskDetailPanel: () => null,
 }));
 
 vi.mock("./components/review/PlanReviewSection", () => ({
@@ -110,10 +95,6 @@ vi.mock("./components/PlanDetailHeaderDetails", () => ({
   PlanDetailHeaderDetails: () => null,
 }));
 
-vi.mock("./shell/constants", () => ({
-  INLINE_TASK_PANEL_BREAKPOINT_PX: 1024,
-}));
-
 vi.mock("./shell/hooks/usePlanDetailPage", () => ({
   usePlanDetailPage: mocks.usePlanDetailPage,
 }));
@@ -147,14 +128,11 @@ const buildPage = (): PlanDetailPageState =>
   ({
     activePhases: new Set(["changes"]),
     bypassLeaveGuardOnce: vi.fn(),
-    closeTaskPanel: vi.fn(),
-    containerWidth: 1200,
     currentUser: { name: "users/me@example.com" },
     expandPhase: vi.fn(),
     isCreating: true,
     isEditing: false,
     isInitializing: false,
-    isRefreshing: false,
     pageKey: "foo/create/spec-1",
     patchState: vi.fn(),
     pendingLeaveConfirm: false,
@@ -181,7 +159,6 @@ const buildPage = (): PlanDetailPageState =>
     routePhase: "changes",
     selectedTaskName: undefined,
     setEditing: vi.fn(),
-    layoutMode: "NONE",
     taskRuns: [],
     togglePhase: vi.fn(),
   }) as unknown as PlanDetailPageState;

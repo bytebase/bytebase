@@ -3,7 +3,18 @@ import { useAppStore } from "@/react/stores/app";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
-import { getLocalSheetByName } from "../utils/localSheet";
+import {
+  getLocalSheetByName,
+  useLocalSheetsVersion,
+} from "../utils/localSheet";
+
+const sameStringSet = (a: Set<string>, b: Set<string>): boolean => {
+  if (a.size !== b.size) return false;
+  for (const value of b) {
+    if (!a.has(value)) return false;
+  }
+  return true;
+};
 
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
   if (
@@ -43,6 +54,10 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
   const [emptySpecIdSet, setEmptySpecIdSet] = useState<Set<string>>(
     () => new Set()
   );
+  // Draft statements live in mutable local sheets outside React state; this
+  // version bumps on every local-sheet write so edits re-run the validation
+  // (the `specs` identity alone doesn't change while typing on a draft plan).
+  const localSheetsVersion = useLocalSheetsVersion();
 
   useEffect(() => {
     let canceled = false;
@@ -57,7 +72,10 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
         })
       );
       if (!canceled) {
-        setEmptySpecIdSet(next);
+        // Reuse the prior Set when membership is unchanged: this runs on every
+        // keystroke (localSheetsVersion bumps per edit), and a fresh Set ref
+        // each time would re-render the header for nothing.
+        setEmptySpecIdSet((prev) => (sameStringSet(prev, next) ? prev : next));
       }
     };
 
@@ -66,7 +84,7 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
     return () => {
       canceled = true;
     };
-  }, [specs]);
+  }, [specs, localSheetsVersion]);
 
   return {
     emptySpecIdSet,

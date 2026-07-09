@@ -48,6 +48,7 @@ import {
   createEmptyLocalSheet,
   getLocalSheetByName,
   removeLocalSheet,
+  setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
@@ -65,7 +66,7 @@ export function PlanDetailStatementSection({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const { patchState, setEditing } = page;
+  const { setEditing } = page;
   const databasesByName = useAppStore((s) => s.databasesByName);
   const currentUser = page.currentUser;
   const project = page.project;
@@ -275,13 +276,14 @@ export function PlanDetailStatementSection({
   const updateLocalStatement = (nextStatement: string) => {
     if (!sheetName) return;
     const sheet = getLocalSheetByName(sheetName);
-    setSheetStatement(sheet, nextStatement);
+    // Notifying write: the empty-statement validation subscribes to local
+    // sheets. (Previously this cloned the plan into patchState purely to
+    // force a re-render — the identity-preserving snapshot rightly ignores a
+    // content-identical clone, so the signal must be explicit.)
+    setLocalSheetStatement(sheet, nextStatement);
     setStatement(nextStatement);
     setDraftStatement(nextStatement);
     setIsSheetOversize(false);
-    if (page.isCreating) {
-      patchState({ plan: clone(PlanSchema, page.plan) });
-    }
   };
 
   const handleUploadClick = () => inputRef.current?.click();

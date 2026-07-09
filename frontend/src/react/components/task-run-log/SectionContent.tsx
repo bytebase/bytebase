@@ -60,7 +60,7 @@ export function SectionContent({
           <span className={cn("shrink-0", item.levelClass)}>
             {item.levelIndicator}
           </span>
-          <span className={cn("break-all", item.detailClass)}>
+          <span className={cn("min-w-0 break-words", item.detailClass)}>
             {item.detail}
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-x-2">

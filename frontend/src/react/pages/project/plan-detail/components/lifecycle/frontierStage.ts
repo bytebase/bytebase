@@ -26,15 +26,16 @@ export function stageHasRunnableTasks(stage: Stage): boolean {
   );
 }
 
-// A task that already executed once (failed or canceled) — running the stage
-// again is a re-run rather than a first run. Mirrors the per-task "Retry" label,
-// which keys off a prior execution. Named in full so it isn't mistaken for
-// stageHasRunningTasks.
+// A task that already executed once (failed or canceled) — running it again is
+// a re-run ("Rerun") rather than a first run ("Run"). The single source for the
+// verb choice at both the task and stage level.
+export function isRerunnableTaskStatus(status: Task_Status): boolean {
+  return status === Task_Status.FAILED || status === Task_Status.CANCELED;
+}
+
+// Named in full so it isn't mistaken for stageHasRunningTasks.
 export function stageHasFailedOrCanceledTasks(stage: Stage): boolean {
-  return stage.tasks.some(
-    (task) =>
-      task.status === Task_Status.FAILED || task.status === Task_Status.CANCELED
-  );
+  return stage.tasks.some((task) => isRerunnableTaskStatus(task.status));
 }
 
 export function stageHasRunningTasks(stage: Stage): boolean {

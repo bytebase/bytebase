@@ -7,7 +7,6 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { PlanDetailPhase } from "../../shared/stores/types";
-import type { PlanDetailLayoutMode } from "./useLayoutMode";
 
 export type { PlanDetailPhase } from "../../shared/stores/types";
 
@@ -35,24 +34,22 @@ export interface PlanDetailPageSnapshot {
 
 export interface PlanDetailPageState extends PlanDetailPageSnapshot {
   isEditing: boolean;
-  isRefreshing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;
   activePhases: Set<PlanDetailPhase>;
   routeName?: string;
   routePhase?: string;
   routeStageId?: string;
-  routeTaskId?: string;
   selectedTaskName?: string;
+  // The plan's task runs grouped by task name, newest first, with group
+  // identities preserved across poll ticks that didn't touch the task.
+  taskRunsByTaskName: Map<string, TaskRun[]>;
   pendingLeaveConfirm: boolean;
-  layoutMode: PlanDetailLayoutMode;
-  containerWidth: number;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
   refreshState: () => Promise<void>;
   bypassLeaveGuardOnce: () => void;
   setEditing: (scope: string, editing: boolean) => void;
   togglePhase: (phase: PlanDetailPhase) => void;
   expandPhase: (phase: PlanDetailPhase) => void;
-  closeTaskPanel: () => void;
   resolveLeaveConfirm: (confirmed: boolean) => void;
 }

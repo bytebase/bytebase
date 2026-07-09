@@ -3127,7 +3127,6 @@
       "description": "Set a specific date and time for tasks to automatically start running. Useful for maintenance windows or off-peak hours.",
       "self": "Schedule for later"
     },
-    "scheduled-time": "Scheduled time",
     "select-scheduled-time": "Select scheduled time",
     "select-task": "Select Task",
     "skip-prior-backup": "Skip prior backup",
@@ -3152,8 +3151,8 @@
     "blocking-sessions": "Blocking Sessions",
     "blocking-sessions-description": "The sessions that are blocking the current session",
     "history": "History",
+    "history-with-count": "History ({{count}})",
     "latest": "Latest",
-    "latest-logs": "Latest Logs",
     "log-detail": {
       "backing-up": "Backing up...",
       "backup-completed": "completed ({{count}} tables)",
@@ -3181,6 +3180,7 @@
       "replica-n": "Replica #{{n}}",
       "summary": "{{sections}} sections · {{entries}} entries"
     },
+    "no-blocking-sessions": "No blocking sessions",
     "no-session-found": "No session found",
     "rollback": {
       "available": "{{count}} rollback available",
@@ -3189,6 +3189,7 @@
         "description": "Review the generated rollback statements before creating the rollback plan."
       }
     },
+    "run-number": "Run #{{number}}",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {{time}}.",

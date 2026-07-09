@@ -1,5 +1,5 @@
-import { Code2, Loader2, MessageSquareMore, Rocket, X } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,27 +10,18 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
-import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
-import { INLINE_TASK_PANEL_BREAKPOINT_PX } from "./shell/constants";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
 import { PlanDetailProvider } from "./shell/PlanDetailContext";
@@ -96,43 +87,7 @@ function ProjectPlanDetailPageInner({
     routeName,
     routeQuery,
     specId,
-    pageHost,
   });
-  const selectedTask = useMemo(() => {
-    if (!page.routeTaskId || !page.rollout) {
-      return undefined;
-    }
-    for (const stage of page.rollout.stages) {
-      const task = stage.tasks.find((item) =>
-        item.name.endsWith(`/${page.routeTaskId}`)
-      );
-      if (task) {
-        return task;
-      }
-    }
-    return undefined;
-  }, [page.rollout, page.routeTaskId]);
-  const supportsInlineDetailPanel =
-    page.layoutMode === "DESKTOP" &&
-    page.containerWidth >= INLINE_TASK_PANEL_BREAKPOINT_PX;
-  const showDesktopDetail = supportsInlineDetailPanel && !!selectedTask;
-  const showTaskDrawer =
-    !!selectedTask && !showDesktopDetail && page.layoutMode !== "NONE";
-
-  const desktopLayoutStyle = useMemo<CSSProperties>(() => {
-    const baseStyle: CSSProperties = {
-      minHeight: "calc(100vh - 4rem)",
-    };
-
-    if (showDesktopDetail) {
-      return {
-        ...baseStyle,
-        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 50%)",
-      };
-    }
-
-    return baseStyle;
-  }, [showDesktopDetail]);
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
@@ -292,95 +247,67 @@ function ProjectPlanDetailPageInner({
           </header>
           <PlanDetailHeaderDetails />
 
-          <div
-            className="min-h-0 flex flex-1 flex-col lg:grid"
-            style={desktopLayoutStyle}
-          >
-            <main className="min-w-0 flex-1">
-              {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
+          <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+            {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
                   which the connector line fills so it stays continuous. */}
-              <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
-                <PhaseSection
-                  anchorId={planPhaseAnchorId("changes")}
-                  badge={phaseConfigs.changes.badge}
-                  expanded={page.activePhases.has("changes")}
-                  icon={<Code2 className="size-3 md:size-4" />}
-                  lineClass={phaseConfigs.changes.lineClass}
-                  label={t("plan.navigator.changes")}
-                  onSelect={() => page.expandPhase("changes")}
-                  status={phaseConfigs.changes.status}
-                  onToggle={() => page.togglePhase("changes")}
-                  summary={buildChangesSummary(page.plan, t)}
-                >
-                  <PlanDetailChangesBranch
-                    onSelectedSpecIdChange={setSelectedSpecId}
-                    selectedSpecId={selectedSpecId}
-                  />
-                </PhaseSection>
-
-                {reviewVisible && (
-                  <PhaseSection
-                    anchorId={planPhaseAnchorId("review")}
-                    badge={phaseConfigs.review.badge}
-                    expanded={page.activePhases.has("review")}
-                    icon={<MessageSquareMore className="size-3 md:size-4" />}
-                    lineClass={phaseConfigs.review.lineClass}
-                    label={t("plan.navigator.review")}
-                    onSelect={() => page.expandPhase("review")}
-                    status={phaseConfigs.review.status}
-                    onToggle={() => page.togglePhase("review")}
-                    summary={buildReviewSummary(page.issue, t)}
-                    future={
-                      <p className="mt-0.5 text-sm text-control-placeholder">
-                        {t("plan.phase.review-description")}
-                      </p>
-                    }
-                  >
-                    <PlanReviewSection />
-                  </PhaseSection>
-                )}
-
-                <PhaseSection
-                  anchorId={planPhaseAnchorId("deploy")}
-                  badge={phaseConfigs.deploy.badge}
-                  expanded={page.activePhases.has("deploy")}
-                  icon={<Rocket className="size-3 md:size-4" />}
-                  isLast
-                  label={t("plan.navigator.deploy")}
-                  status={phaseConfigs.deploy.status}
-                  onSelect={() => page.expandPhase("deploy")}
-                  onToggle={() => page.togglePhase("deploy")}
-                  summary={buildDeploySummary(page.rollout, t)}
-                  future={<PlanDetailDeployFuture />}
-                >
-                  <DeployBranch
-                    selectedTask={selectedTask}
-                    onCloseTaskPanel={page.closeTaskPanel}
-                  />
-                </PhaseSection>
-              </div>
-            </main>
-
-            {showDesktopDetail && selectedTask && (
-              <DesktopColumn
-                header={
-                  <div className="flex items-center justify-between border-b bg-white px-4 py-2">
-                    <span className="textinfolabel">{t("common.detail")}</span>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={page.closeTaskPanel}
-                    >
-                      <X className="h-4 w-4" />
-                      {t("common.close")}
-                    </Button>
-                  </div>
-                }
+            <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+              <PhaseSection
+                anchorId={planPhaseAnchorId("changes")}
+                badge={phaseConfigs.changes.badge}
+                expanded={page.activePhases.has("changes")}
+                icon={<Code2 className="size-3 md:size-4" />}
+                lineClass={phaseConfigs.changes.lineClass}
+                label={t("plan.navigator.changes")}
+                onSelect={() => page.expandPhase("changes")}
+                status={phaseConfigs.changes.status}
+                onToggle={() => page.togglePhase("changes")}
+                summary={buildChangesSummary(page.plan, t)}
               >
-                <DeployTaskDetailPanel task={selectedTask} />
-              </DesktopColumn>
-            )}
-          </div>
+                <PlanDetailChangesBranch
+                  onSelectedSpecIdChange={setSelectedSpecId}
+                  selectedSpecId={selectedSpecId}
+                />
+              </PhaseSection>
+
+              {reviewVisible && (
+                <PhaseSection
+                  anchorId={planPhaseAnchorId("review")}
+                  badge={phaseConfigs.review.badge}
+                  expanded={page.activePhases.has("review")}
+                  icon={<MessageSquareMore className="size-3 md:size-4" />}
+                  lineClass={phaseConfigs.review.lineClass}
+                  label={t("plan.navigator.review")}
+                  onSelect={() => page.expandPhase("review")}
+                  status={phaseConfigs.review.status}
+                  onToggle={() => page.togglePhase("review")}
+                  summary={buildReviewSummary(page.issue, t)}
+                  future={
+                    <p className="mt-0.5 text-sm text-control-placeholder">
+                      {t("plan.phase.review-description")}
+                    </p>
+                  }
+                >
+                  <PlanReviewSection />
+                </PhaseSection>
+              )}
+
+              <PhaseSection
+                anchorId={planPhaseAnchorId("deploy")}
+                badge={phaseConfigs.deploy.badge}
+                expanded={page.activePhases.has("deploy")}
+                icon={<Rocket className="size-3 md:size-4" />}
+                isLast
+                label={t("plan.navigator.deploy")}
+                status={phaseConfigs.deploy.status}
+                onSelect={() => page.expandPhase("deploy")}
+                onToggle={() => page.togglePhase("deploy")}
+                summary={buildDeploySummary(page.rollout, t)}
+                future={<PlanDetailDeployFuture />}
+              >
+                <DeployBranch />
+              </PhaseSection>
+            </div>
+          </main>
         </div>
 
         {!page.ready && (
@@ -391,29 +318,6 @@ function ProjectPlanDetailPageInner({
             </div>
           </div>
         )}
-
-        <Sheet
-          onOpenChange={(open) => {
-            if (!open) {
-              page.closeTaskPanel();
-            }
-          }}
-          open={showTaskDrawer}
-        >
-          <SheetContent
-            className="w-[40rem] max-w-[calc(100vw-2rem)]"
-            width="wide"
-          >
-            <SheetHeader>
-              <SheetTitle>{t("common.detail")}</SheetTitle>
-            </SheetHeader>
-            <SheetBody className="px-0 py-0">
-              {selectedTask ? (
-                <DeployTaskDetailPanel task={selectedTask} />
-              ) : null}
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
 
         <AlertDialog
           open={page.pendingLeaveConfirm}
@@ -556,23 +460,6 @@ function PhaseSection({
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function DesktopColumn({
-  children,
-  header,
-}: {
-  children: ReactNode;
-  header?: ReactNode;
-}) {
-  return (
-    <div className="min-w-0 border-l bg-white">
-      <div className="sticky top-0 flex max-h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)] flex-col overflow-hidden">
-        {header ? <div className="shrink-0">{header}</div> : null}
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

@@ -68,17 +68,11 @@ const page = {
   refreshState: () => Promise.resolve(),
 } as unknown as PlanDetailPageState;
 
-const renderStage = (stage: Stage) => (
-  <PlanDetailProvider value={page}>
-    <DeployStageContentView stage={stage} />
-  </PlanDetailProvider>
-);
-
 const visibleTaskNames = () =>
   screen.queryAllByTestId("visible-task").map((node) => node.textContent);
 
 describe("DeployStageContentView filter scoping", () => {
-  test("does not carry the task filter across stages (BYT-9762)", () => {
+  test("each stage instance keeps its own filter (BYT-9762)", () => {
     const testStage = makeStage("projects/p1/rollouts/r1/stages/test", [
       {
         name: "projects/p1/rollouts/r1/stages/test/tasks/t1",
@@ -100,21 +94,23 @@ describe("DeployStageContentView filter scoping", () => {
       },
     ]);
 
-    const { rerender } = render(renderStage(testStage));
+    // All stages stay mounted side by side (the active one is visible, the
+    // rest are hidden by the parent); each instance owns its stage's filter.
+    render(
+      <PlanDetailProvider value={page}>
+        <DeployStageContentView stage={testStage} />
+        <DeployStageContentView active={false} stage={prodStage} />
+      </PlanDetailProvider>
+    );
 
-    // Both Test tasks visible before filtering.
-    expect(visibleTaskNames()).toHaveLength(2);
+    // All four tasks rendered before filtering.
+    expect(visibleTaskNames()).toHaveLength(4);
 
-    // Filter the Test stage down to RUNNING tasks.
-    fireEvent.click(screen.getByTestId("select-running"));
+    // Filter the Test stage down to RUNNING tasks. Prod has no RUNNING task —
+    // a filter leaking across stages (BYT-9762) would hide its tasks too.
+    fireEvent.click(screen.getAllByTestId("select-running")[0]);
     expect(visibleTaskNames()).toEqual([
       "projects/p1/rollouts/r1/stages/test/tasks/t1",
-    ]);
-
-    // Switch to the Prod stage (same instance, no `key`). Prod has no RUNNING
-    // task, so a leaked filter would hide everything; the filter must reset.
-    rerender(renderStage(prodStage));
-    expect(visibleTaskNames()).toEqual([
       "projects/p1/rollouts/r1/stages/prod/tasks/p1",
       "projects/p1/rollouts/r1/stages/prod/tasks/p2",
     ]);

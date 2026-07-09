@@ -1,5 +1,3 @@
-import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
@@ -15,18 +13,16 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import {
+  executionDurationOfTaskRun,
+  getTaskRunComment,
+  sortTaskRunsNewestFirst,
+} from "@/react/lib/taskRun";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  getDateForPbTimestampProtoEs,
-  getTimeForPbTimestampProtoEs,
-} from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import {
-  type Task,
-  type TaskRun,
-  TaskRun_Status,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   databaseForTask,
   extractDatabaseResourceName,
@@ -64,13 +60,10 @@ export function IssueDetailTaskRunTable({
     return map;
   }, [page.rollout?.stages]);
 
-  const sortedTaskRuns = useMemo(() => {
-    return [...taskRuns].sort((left, right) => {
-      const leftTime = left.createTime ? Number(left.createTime.seconds) : 0;
-      const rightTime = right.createTime ? Number(right.createTime.seconds) : 0;
-      return rightTime - leftTime;
-    });
-  }, [taskRuns]);
+  const sortedTaskRuns = useMemo(
+    () => sortTaskRunsNewestFirst(taskRuns),
+    [taskRuns]
+  );
 
   useEffect(() => {
     if (!showDatabaseColumn) {
@@ -135,6 +128,7 @@ export function IssueDetailTaskRunTable({
           <TableBody>
             {sortedTaskRuns.map((taskRun) => {
               const database = getDatabaseForTaskRun(taskRun);
+              const duration = executionDurationOfTaskRun(taskRun);
               return (
                 <TableRow key={taskRun.name}>
                   <TableCell className="px-2">
@@ -160,11 +154,7 @@ export function IssueDetailTaskRunTable({
                   </TableCell>
                   <TableCell className="pr-6 whitespace-nowrap">
                     <span className="whitespace-nowrap text-sm text-control">
-                      {executionDurationOfTaskRun(taskRun)
-                        ? humanizeDurationV1(
-                            executionDurationOfTaskRun(taskRun)
-                          )
-                        : "-"}
+                      {duration ? humanizeDurationV1(duration) : "-"}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -179,31 +169,7 @@ export function IssueDetailTaskRunTable({
 
 function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   const { t } = useTranslation();
-  const earliestAllowedTime = taskRun.runTime
-    ? getTimeForPbTimestampProtoEs(taskRun.runTime)
-    : null;
-
-  const comment = (() => {
-    if (taskRun.status === TaskRun_Status.PENDING) {
-      if (earliestAllowedTime) {
-        return t("task-run.status.enqueued-with-rollout-time", {
-          time: formatAbsoluteDateTime(earliestAllowedTime),
-        });
-      }
-      return t("task-run.status.enqueued");
-    }
-    if (taskRun.status === TaskRun_Status.RUNNING && taskRun.schedulerInfo) {
-      const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.cause?.case === "parallelTasksLimit") {
-        return t("task-run.status.waiting-max-tasks-per-rollout", {
-          time: formatAbsoluteDateTime(
-            getTimeForPbTimestampProtoEs(taskRun.schedulerInfo.reportTime)
-          ),
-        });
-      }
-    }
-    return taskRun.detail || "-";
-  })();
+  const comment = getTaskRunComment(taskRun, t);
 
   return (
     <div className="flex flex-col gap-y-0.5 xl:flex-row xl:items-center xl:gap-x-1">
@@ -277,28 +243,4 @@ function IssueDetailTaskRunDatabaseCell({ database }: { database: Database }) {
       <span className="truncate text-gray-800">{databaseName}</span>
     </div>
   );
-}
-
-function executionDurationOfTaskRun(taskRun: TaskRun) {
-  const { startTime, updateTime } = taskRun;
-  if (!startTime || !updateTime) {
-    return undefined;
-  }
-  if (Number(startTime.seconds) === 0) {
-    return undefined;
-  }
-  if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - getTimeForPbTimestampProtoEs(startTime);
-    return create(DurationSchema, {
-      nanos: (elapsedMS % 1000) * 1e6,
-      seconds: BigInt(Math.floor(elapsedMS / 1000)),
-    });
-  }
-  const elapsedMS =
-    getTimeForPbTimestampProtoEs(updateTime) -
-    getTimeForPbTimestampProtoEs(startTime);
-  return create(DurationSchema, {
-    nanos: (elapsedMS % 1000) * 1e6,
-    seconds: BigInt(Math.floor(elapsedMS / 1000)),
-  });
 }

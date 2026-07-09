@@ -8,8 +8,6 @@ import type { TaskRunLogDetailText } from "./model";
 import {
   buildReleaseFileGroups,
   buildSectionsFromEntries,
-  formatDuration,
-  getEntryTimeRange,
   getUniqueReplicaIds,
   groupEntriesByReleaseFile,
   groupEntriesByReplica,
@@ -64,7 +62,6 @@ export interface UseTaskRunLogSectionsResult {
   areAllExpanded: boolean;
   totalSections: number;
   totalEntries: number;
-  totalDuration: string;
 }
 
 export const useTaskRunLogSections = ({
@@ -472,22 +469,6 @@ export const useTaskRunLogSections = ({
     sections,
   ]);
 
-  const totalDuration = useMemo(() => {
-    if (entries.length === 0) return "";
-    const timeRanges = entries.map(getEntryTimeRange);
-    const startTimes = timeRanges
-      .map((range) => range.start)
-      .filter((time) => time > 0);
-    const endTimes = timeRanges
-      .map((range) => range.end)
-      .filter((time) => time > 0);
-    if (startTimes.length === 0 || endTimes.length === 0) return "";
-
-    const startTime = Math.min(...startTimes);
-    const endTime = Math.max(...endTimes);
-    return formatDuration(endTime - startTime);
-  }, [entries]);
-
   return {
     sections,
     hasMultipleReplicas,
@@ -508,6 +489,5 @@ export const useTaskRunLogSections = ({
     areAllExpanded,
     totalSections,
     totalEntries,
-    totalDuration,
   };
 };

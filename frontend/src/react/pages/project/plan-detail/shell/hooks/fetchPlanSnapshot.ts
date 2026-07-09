@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -6,6 +7,7 @@ import {
   rolloutServiceClientConnect,
   userServiceClientConnect,
 } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import {
   GetIssueRequestSchema,
   type Issue,
@@ -45,6 +47,28 @@ export interface PlanDetailFetchPatch {
   taskRuns: TaskRun[];
 }
 
+// The rollout and its task-run listing are fetched by both the full page
+// snapshot and the slim status lane; only their error handling differs. Keep the
+// request shape — schema, silent context, task-run parent glob — in one place.
+// Fetched WITHOUT touching the store here; the caller (patchState) seeds the
+// store cache after its staleness guard, so a stale in-flight poll can't
+// overwrite the shared cache the log viewer reads.
+const requestRollout = (rolloutName: string) =>
+  rolloutServiceClientConnect.getRollout(
+    create(GetRolloutRequestSchema, { name: rolloutName }),
+    { contextValues: createContextValues().set(silentContextKey, true) }
+  );
+
+const requestRolloutTaskRuns = (rolloutName: string) =>
+  rolloutServiceClientConnect
+    .listTaskRuns(
+      create(ListTaskRunsRequestSchema, {
+        parent: `${rolloutName}/stages/-/tasks/-`,
+      }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    )
+    .then((response) => response.taskRuns);
+
 const convertRouteQuery = (query: Record<string, unknown>) => {
   const kv: Record<string, string> = {};
   for (const [key, value] of Object.entries(query)) {
@@ -58,18 +82,43 @@ const convertRouteQuery = (query: Record<string, unknown>) => {
 export const fetchPlanSnapshot = async (
   projectId: string,
   planId: string,
-  routeQuery: Record<string, unknown> = {}
+  routeQuery: Record<string, unknown> = {},
+  // When true (background poll ticks), suppress the global CRITICAL error toast
+  // on transient failures — the poll runs every few seconds, so a flaky backend
+  // would otherwise spam toasts. The initial load stays loud (default) so a
+  // first-load failure is visible; 404/403 are handled explicitly by the caller.
+  silent = false
 ): Promise<PlanDetailFetchPatch> => {
+  const silentCtx = silent
+    ? { contextValues: createContextValues().set(silentContextKey, true) }
+    : undefined;
+  // The plan fetch depends only on route ids, so it runs alongside the
+  // project/user wave instead of being serialized behind it. The detached
+  // no-op catch keeps a plan failure from surfacing as an unhandled rejection
+  // when the first wave throws before the plan is awaited; the await below
+  // still propagates the error.
+  const planPromise =
+    planId.toLowerCase() === "create"
+      ? undefined
+      : planServiceClientConnect.getPlan(
+          create(GetPlanRequestSchema, {
+            name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
+          }),
+          silentCtx
+        );
+  planPromise?.catch(() => undefined);
+
   const [project, currentUser] = await Promise.all([
     projectServiceClientConnect.getProject(
       create(GetProjectRequestSchema, {
         name: `${PROJECT_NAME_PREFIX}${projectId}`,
-      })
+      }),
+      silentCtx
     ),
-    userServiceClientConnect.getCurrentUser({}),
+    userServiceClientConnect.getCurrentUser({}, silentCtx),
   ]);
 
-  if (planId.toLowerCase() === "create") {
+  if (!planPromise) {
     const plan = await createPlanSkeleton(
       project,
       convertRouteQuery(routeQuery)
@@ -92,48 +141,36 @@ export const fetchPlanSnapshot = async (
     };
   }
 
-  const plan = await planServiceClientConnect.getPlan(
-    create(GetPlanRequestSchema, {
-      name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
-    })
-  );
+  const plan = await planPromise;
 
-  const [issue, planCheckRuns, rollout] = await Promise.all([
+  // The rollout name is derived from the plan name, so task runs can load in
+  // parallel with the rollout instead of being serialized behind it.
+  const rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
+  const [issue, planCheckRuns, rollout, taskRuns] = await Promise.all([
     plan.issue
       ? issueServiceClientConnect
-          .getIssue(create(GetIssueRequestSchema, { name: plan.issue }))
+          .getIssue(
+            create(GetIssueRequestSchema, { name: plan.issue }),
+            silentCtx
+          )
           .catch(() => undefined)
       : Promise.resolve(undefined),
     planServiceClientConnect
       .getPlanCheckRun(
         create(GetPlanCheckRunRequestSchema, {
           name: `${plan.name}/planCheckRun`,
-        })
+        }),
+        silentCtx
       )
       .then((run) => [run] as PlanCheckRun[])
       .catch(() => []),
-    plan.hasRollout
-      ? rolloutServiceClientConnect
-          .getRollout(
-            create(GetRolloutRequestSchema, {
-              name: getRolloutFromPlan(plan.name),
-            })
-          )
-          .catch(() => undefined)
+    rolloutName
+      ? requestRollout(rolloutName).catch(() => undefined)
       : Promise.resolve(undefined),
+    rolloutName
+      ? requestRolloutTaskRuns(rolloutName).catch(() => [])
+      : Promise.resolve([] as TaskRun[]),
   ]);
-
-  const taskRuns =
-    rollout !== undefined
-      ? await rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rollout.name}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
-      : [];
 
   return {
     currentUser,
