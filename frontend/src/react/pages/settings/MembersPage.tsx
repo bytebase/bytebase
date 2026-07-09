@@ -34,6 +34,11 @@ import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  ProjectPageInfo,
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import { UserCell } from "@/react/components/UserCell";
@@ -69,6 +74,10 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
@@ -2246,8 +2255,11 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     [project]
   );
 
+  const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
+  const PageToolbar = projectName ? ProjectPageToolbar : WorkspacePageToolbar;
+
   return (
-    <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
+    <PageLayout>
       {!projectName && remainingUserCount <= 3 && (
         <Alert
           variant="warning"
@@ -2269,16 +2281,21 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         />
       )}
       {projectName && (
-        <div className="textinfolabel mb-4">
-          {t("project.members.description")}{" "}
-          <LearnMoreLink
-            href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-            className="text-accent"
-          />
-        </div>
+        <ProjectPageInfo
+          className="mb-2"
+          description={
+            <>
+              {t("project.members.description")}{" "}
+              <LearnMoreLink
+                href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
+                className="text-accent"
+              />
+            </>
+          }
+        />
       )}
 
-      <div className="flex items-center justify-between gap-x-2 mb-4">
+      <PageToolbar>
         <SearchInput
           placeholder={t("settings.members.search-member")}
           value={memberSearchText}
@@ -2352,7 +2369,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
               </PermissionGuard>
             ))}
         </div>
-      </div>
+      </PageToolbar>
 
       <Tabs
         value={memberViewTab}
@@ -2410,6 +2427,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

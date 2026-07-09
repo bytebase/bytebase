@@ -22,6 +22,10 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import {
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -495,8 +499,8 @@ export function DatabasesPage() {
   );
 
   return (
-    <div className="py-4 flex flex-col relative">
-      <div className="w-full px-4 pb-2 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2">
+    <WorkspacePageLayout padding="flush" className="relative">
+      <WorkspacePageToolbar className="px-4 flex-col items-start gap-2 sm:flex-row sm:items-end">
         <AdvancedSearch
           params={searchParams}
           onParamsChange={setSearchParams}
@@ -517,7 +521,7 @@ export function DatabasesPage() {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </WorkspacePageToolbar>
 
       <DatabaseTable
         filter={filter}
@@ -570,6 +574,6 @@ export function DatabasesPage() {
         onClose={() => setShowTransferDrawer(false)}
         onTransfer={handleTransferProject}
       />
-    </div>
+    </WorkspacePageLayout>
   );
 }

@@ -130,7 +130,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
 
     return (
       <>
-        <FormSection title={title}>
+        <FormSection title={title} style={{ paddingTop: 8 }}>
           <PermissionGuard
             permissions={["bb.settings.setWorkspaceProfile"]}
             display="block"

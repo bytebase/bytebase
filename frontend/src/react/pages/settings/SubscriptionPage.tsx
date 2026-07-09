@@ -16,6 +16,7 @@ import {
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
+import { WorkspacePageLayout } from "@/react/components/WorkspacePageLayout";
 import {
   useNotify,
   useServerState,
@@ -168,9 +169,9 @@ export function SubscriptionPage({
   };
 
   return (
-    <div className="w-full px-4 py-4 mx-auto">
+    <WorkspacePageLayout>
       {/* Plan stats grid */}
-      <div className="w-full grid grid-cols-2 gap-6 lg:grid-cols-3 3xl:grid-cols-4 my-4">
+      <div className="w-full grid grid-cols-2 gap-6 lg:grid-cols-3 3xl:grid-cols-4 mb-4">
         {/* Current plan */}
         <div className="flex flex-col text-left">
           <div className="flex items-center text-main">
@@ -378,7 +379,7 @@ export function SubscriptionPage({
           onOpenChange={setShowInstanceAssignmentSheet}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }
 

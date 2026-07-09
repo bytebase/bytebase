@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseGroupDataTable } from "@/react/components/DatabaseGroupDataTable";
 import { SearchInput } from "@/react/components/ui/search-input";
+import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 
 type Props = {
+  readonly className?: string;
   readonly projectName: string;
   readonly view: DatabaseGroupView;
   /** Leading caption shown to the left of the search box. */
@@ -44,6 +46,7 @@ type Props = {
  * `DatabaseGroupDataTable`.
  */
 export function DatabaseGroupTable({
+  className,
   projectName,
   view,
   leadingLabel,
@@ -101,7 +104,7 @@ export function DatabaseGroupTable({
   }, [sourceList, search]);
 
   return (
-    <div className="flex flex-col gap-y-3">
+    <div className={cn("flex flex-col gap-y-3", className)}>
       {(leadingLabel || trailingAction) && (
         <div className="w-full flex flex-row justify-between items-center gap-x-2">
           {leadingLabel ? (

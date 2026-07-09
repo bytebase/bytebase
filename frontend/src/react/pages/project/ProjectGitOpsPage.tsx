@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { ProjectPageLayout } from "@/react/components/ProjectPageLayout";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button, buttonVariants } from "@/react/components/ui/button";
@@ -303,7 +304,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
     selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITLAB;
 
   return (
-    <div className="w-full px-4 flex flex-col gap-y-1 py-4">
+    <ProjectPageLayout className="gap-y-1">
       {/* Section 1: What is GitOps */}
       <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
         <div className="flex flex-col gap-y-1">
@@ -618,7 +619,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         onClose={() => setShowCreateDrawer(false)}
         onCreated={handleWorkloadIdentityCreated}
       />
-    </div>
+    </ProjectPageLayout>
   );
 }
 

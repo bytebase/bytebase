@@ -27,6 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+} from "@/react/components/WorkspacePageLayout";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { WebhookType } from "@/types/proto-es/v1/common_pb";
@@ -399,7 +403,7 @@ export function IMPage() {
 
   if (settingsView.length === 0) {
     return (
-      <div className="w-full px-4 flex flex-col gap-y-4 py-4">
+      <WorkspacePageLayout className="gap-y-4">
         <Description />
         <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-4 text-control-light">
           <span>{t("common.no-data")}</span>
@@ -415,12 +419,12 @@ export function IMPage() {
             </PermissionGuard>
           )}
         </div>
-      </div>
+      </WorkspacePageLayout>
     );
   }
 
   return (
-    <div className="w-full px-4 flex flex-col gap-y-4 py-4">
+    <WorkspacePageLayout className="gap-y-4">
       <Description />
 
       {settingsView.map((item, i) => (
@@ -515,20 +519,24 @@ export function IMPage() {
           </PermissionGuard>
         </div>
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }
 
 function Description() {
   const { t } = useTranslation();
   return (
-    <div className="textinfolabel">
-      {t("settings.im-integration.description")}{" "}
-      <LearnMoreLink
-        href="https://docs.bytebase.com/change-database/webhook?source=console"
-        className="text-accent hover:underline"
-      />
-    </div>
+    <WorkspacePageInfo
+      description={
+        <>
+          {t("settings.im-integration.description")}{" "}
+          <LearnMoreLink
+            href="https://docs.bytebase.com/change-database/webhook?source=console"
+            className="text-accent"
+          />
+        </>
+      }
+    />
   );
 }
 

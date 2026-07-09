@@ -53,6 +53,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { useIdentityProviderList } from "@/react/hooks/useAppState";
 import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { router } from "@/react/router";
@@ -2054,18 +2059,22 @@ export function IDPsPage() {
   };
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4">
+    <WorkspacePageLayout className="gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO} />
 
-      <div className="textinfolabel">
-        {t("settings.sso.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/administration/sso/overview?source=console"
-          className="text-accent"
-        />
-      </div>
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("settings.sso.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/administration/sso/overview?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
-      <div className="w-full flex justify-end">
+      <WorkspacePageToolbar align="end">
         <PermissionGuard permissions={["bb.identityProviders.create"]}>
           <Button disabled={!canCreate} onClick={handleCreateSSO}>
             <FeatureBadge
@@ -2077,7 +2086,7 @@ export function IDPsPage() {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </WorkspacePageToolbar>
 
       {ready ? (
         <div className="border rounded-sm overflow-hidden">
@@ -2135,6 +2144,6 @@ export function IDPsPage() {
           onCreated={handleProviderCreated}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

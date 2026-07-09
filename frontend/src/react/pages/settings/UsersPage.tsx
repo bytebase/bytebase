@@ -41,6 +41,10 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
@@ -1006,9 +1010,9 @@ export function UsersPage() {
   };
 
   return (
-    <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
+    <WorkspacePageLayout>
       {/* Action bar */}
-      <div className="flex items-center justify-between gap-x-2 mb-4">
+      <WorkspacePageToolbar>
         <SearchInput
           placeholder={t("common.filter-by-name")}
           value={userSearchText}
@@ -1038,7 +1042,7 @@ export function UsersPage() {
             {t("common.create")}
           </Button>
         </div>
-      </div>
+      </WorkspacePageToolbar>
 
       <div className="flex flex-col gap-y-4">
         <ComponentPermissionGuard permissions={["bb.users.list"]}>
@@ -1145,6 +1149,6 @@ export function UsersPage() {
         open={showAadSyncDrawer}
         onClose={() => setShowAadSyncDrawer(false)}
       />
-    </div>
+    </WorkspacePageLayout>
   );
 }

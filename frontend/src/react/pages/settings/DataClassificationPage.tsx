@@ -8,6 +8,11 @@ import { ClassificationTree } from "@/react/components/ClassificationTree";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import classificationExample from "@/react/lib/sensitive-data/classification-example.json";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -286,21 +291,25 @@ export function DataClassificationPage() {
   if (!loaded) return null;
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4">
+    <WorkspacePageLayout className="gap-y-4">
       {!hasClassificationFeature && (
         <FeatureAttention feature={PlanFeature.FEATURE_DATA_CLASSIFICATION} />
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-control-light">
-          {t("database.classification.description")}
-          <LearnMoreLink
-            href="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
-            className="ml-1 text-accent"
-          />
-        </div>
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("database.classification.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
-        {allowEdit && (
+      {allowEdit && (
+        <WorkspacePageToolbar align="end">
           <div className="flex items-center justify-end gap-x-2 shrink-0">
             {editing ? (
               <>
@@ -371,8 +380,8 @@ export function DataClassificationPage() {
               </>
             )}
           </div>
-        )}
-      </div>
+        </WorkspacePageToolbar>
+      )}
 
       {editing && (
         <>
@@ -406,6 +415,6 @@ export function DataClassificationPage() {
       )}
 
       {!editing && !emptyConfig && <ClassificationTree config={formerConfig} />}
-    </div>
+    </WorkspacePageLayout>
   );
 }

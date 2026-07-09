@@ -23,8 +23,13 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import {
+  ProjectPageContent,
+  ProjectPageFooter,
+  ProjectPageInfo,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
 import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
-import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -117,15 +122,6 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const me = useCurrentUser();
 
   const [showAddSpecDrawer, setShowAddSpecDrawer] = useState(false);
-
-  // Hint dismissal
-  const HINT_KEY = "plan.hint-dismissed";
-  const hideHint = useAppStore((s) => s.getIntroStateByKey(HINT_KEY));
-  const dismissHint = useCallback(() => {
-    useAppStore
-      .getState()
-      .saveIntroStateByKey({ key: HINT_KEY, newState: true });
-  }, []);
 
   // Search
   const defaultSearchParams = useCallback(
@@ -297,11 +293,9 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   );
 
   return (
-    <div className="py-4 w-full flex flex-col">
-      <div className="px-4 flex flex-col gap-y-2 pb-2">
-        {!hideHint && (
-          <Alert description={t("plan.subtitle")} onDismiss={dismissHint} />
-        )}
+    <ProjectPageLayout>
+      <div className="flex flex-col gap-y-2">
+        <ProjectPageInfo description={t("plan.subtitle")} />
         <div className="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
           <div className="w-full flex flex-1 items-center justify-between gap-x-2">
             <AdvancedSearch
@@ -326,7 +320,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
       </div>
 
       {/* Plan list */}
-      <div className="mt-2">
+      <ProjectPageContent>
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
             <Loader2 className="size-5 animate-spin" />
@@ -340,7 +334,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         )}
 
         {paged.dataList.length > 0 && (
-          <div className="mt-4 mx-2">
+          <ProjectPageFooter>
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}
@@ -349,9 +343,9 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
               isFetchingMore={paged.isFetchingMore}
               onLoadMore={paged.loadMore}
             />
-          </div>
+          </ProjectPageFooter>
         )}
-      </div>
+      </ProjectPageContent>
 
       <AddSpecDrawer
         open={showAddSpecDrawer}
@@ -360,7 +354,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         onCreated={handleSpecCreated}
         title={t("plan.new-plan")}
       />
-    </div>
+    </ProjectPageLayout>
   );
 }
 
@@ -524,7 +518,7 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
   }, [isMobile, columns, setWidths]);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-sm border border-block-border">
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, i) => (
