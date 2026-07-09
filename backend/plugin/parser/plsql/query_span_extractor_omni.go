@@ -573,15 +573,18 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 	if pivot == nil {
 		return nil, nil
 	}
+	// Capture the FROM scope before extracting the source: a join source
+	// appends its operands to tableSourcesFrom, and they must not leak past
+	// this transform — the clause replaces them with its own output.
+	oldFrom := q.tableSourcesFrom
+	defer func() {
+		q.tableSourcesFrom = oldFrom
+	}()
 	source, err := q.extractOmniTableExpr(pivot.Source)
 	if err != nil {
 		return nil, err
 	}
-	oldFrom := q.tableSourcesFrom
 	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
-	defer func() {
-		q.tableSourcesFrom = oldFrom
-	}()
 
 	excluded := make(map[string]bool)
 	pivotSources := make(base.SourceColumnSet)
@@ -646,15 +649,18 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 	if unpivot == nil {
 		return nil, nil
 	}
+	// Capture the FROM scope before extracting the source: a join source
+	// appends its operands to tableSourcesFrom, and they must not leak past
+	// this transform — the clause replaces them with its own output.
+	oldFrom := q.tableSourcesFrom
+	defer func() {
+		q.tableSourcesFrom = oldFrom
+	}()
 	source, err := q.extractOmniTableExpr(unpivot.Source)
 	if err != nil {
 		return nil, err
 	}
-	oldFrom := q.tableSourcesFrom
 	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
-	defer func() {
-		q.tableSourcesFrom = oldFrom
-	}()
 
 	valueColumns := omniExprList(unpivot.ValueColumns)
 	inputSources := make([]base.SourceColumnSet, len(valueColumns))
@@ -773,15 +779,18 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 	if ref == nil {
 		return nil, nil
 	}
+	// Capture the FROM scope before extracting the source: a join source
+	// appends its operands to tableSourcesFrom, and they must not leak past
+	// this transform — the clause replaces them with its own output.
+	oldFrom := q.tableSourcesFrom
+	defer func() {
+		q.tableSourcesFrom = oldFrom
+	}()
 	source, err := q.extractOmniTableExpr(ref.Source)
 	if err != nil {
 		return nil, err
 	}
-	oldFrom := q.tableSourcesFrom
 	q.tableSourcesFrom = append(q.tableSourcesFrom, source)
-	defer func() {
-		q.tableSourcesFrom = oldFrom
-	}()
 
 	partitionResults, err := q.extractOmniResultList(ref.PartitionBy)
 	if err != nil {

@@ -477,6 +477,20 @@ func TestOracleOmniTypedLongTailTableSources(t *testing.T) {
 			},
 		},
 		{
+			// A pivot whose source is a parenthesized join must not leak the
+			// join operands into the FROM scope: the USING-merged column has
+			// to resolve to the pivot output (both sides), not to the first
+			// leaked operand.
+			name:      "pivot over join source resolves merged columns",
+			statement: "SELECT C FROM (T JOIN T2 USING (C)) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE))",
+			want: []base.QuerySpanResult{
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+					{Database: "PUBLIC", Table: "T2", Column: "C"},
+				})},
+			},
+		},
+		{
 			name:      "pivot alias joins another table",
 			statement: "SELECT P.ONE_CNT, T2.C FROM (SELECT A, B FROM T) PIVOT (COUNT(*) AS CNT FOR B IN (1 AS ONE)) P JOIN T2 ON P.A = T2.C",
 			want: []base.QuerySpanResult{
