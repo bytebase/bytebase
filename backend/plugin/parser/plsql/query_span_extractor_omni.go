@@ -277,20 +277,6 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 	if stmt.Op != 0 {
 		return q.extractOmniSetSelect(stmt)
 	}
-	if stmt.Pivot != nil {
-		source, err := q.extractOmniPivot(stmt.Pivot)
-		if err != nil {
-			return nil, err
-		}
-		return q.projectOmniTransformedSelect(stmt, source)
-	}
-	if stmt.Unpivot != nil {
-		source, err := q.extractOmniUnpivot(stmt.Unpivot)
-		if err != nil {
-			return nil, err
-		}
-		return q.projectOmniTransformedSelect(stmt, source)
-	}
 	if stmt.ModelClause != nil {
 		source, err := q.extractOmniModelSelect(stmt)
 		if err != nil {
