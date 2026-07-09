@@ -1,12 +1,11 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/react/stores/app";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import {
   getLocalSheetByName,
-  getLocalSheetsVersion,
-  subscribeLocalSheets,
+  useLocalSheetsVersion,
 } from "../utils/localSheet";
 
 const checkSpecStatement = async (spec: Plan_Spec): Promise<boolean> => {
@@ -50,10 +49,7 @@ export function usePlanDetailSpecValidation(specs: Plan_Spec[]) {
   // Draft statements live in mutable local sheets outside React state; this
   // version bumps on every local-sheet write so edits re-run the validation
   // (the `specs` identity alone doesn't change while typing on a draft plan).
-  const localSheetsVersion = useSyncExternalStore(
-    subscribeLocalSheets,
-    getLocalSheetsVersion
-  );
+  const localSheetsVersion = useLocalSheetsVersion();
 
   useEffect(() => {
     let canceled = false;

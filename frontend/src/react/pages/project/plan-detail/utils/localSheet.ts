@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { useSyncExternalStore } from "react";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
@@ -26,6 +27,14 @@ export const subscribeLocalSheets = (listener: () => void): (() => void) => {
 };
 
 export const getLocalSheetsVersion = (): number => localSheetsVersion;
+
+// Subscribe a component to local-sheet edits. Any consumer that reads local
+// sheet content during render (getSpecStatementContent) must call this, or it
+// won't re-render when the statement is edited — the identity-preserving
+// snapshot no longer re-renders the tree "for free" on a content-identical edit.
+// Include the returned version in the deps of any memo that reads that content.
+export const useLocalSheetsVersion = (): number =>
+  useSyncExternalStore(subscribeLocalSheets, getLocalSheetsVersion);
 
 // Write a local sheet's statement and notify subscribers (e.g. the
 // empty-statement validation behind the create button).

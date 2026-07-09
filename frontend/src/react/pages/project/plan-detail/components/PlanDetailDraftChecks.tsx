@@ -14,7 +14,10 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
-import { getSpecStatementContent } from "../utils/localSheet";
+import {
+  getSpecStatementContent,
+  useLocalSheetsVersion,
+} from "../utils/localSheet";
 import { transformReleaseCheckResultsToPlanCheckRuns } from "../utils/planCheck";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
@@ -34,11 +37,16 @@ export function PlanDetailDraftChecks({
   const page = usePlanDetailContext();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
 
+  // Re-read the statement bytes whenever a local sheet edit bumps the version,
+  // so "Run checks" sends the current SQL rather than the bytes captured on the
+  // first render.
+  const localSheetsVersion = useLocalSheetsVersion();
   // content is already the UTF-8 statement bytes, so we send it as-is and use
   // its reference as the staleness signature — no decode/re-encode roundtrip.
   const content = useMemo(
+    // localSheetsVersion is a dep so the read re-runs on a local sheet edit.
     () => getSpecStatementContent(selectedSpec),
-    [selectedSpec]
+    [selectedSpec, localSheetsVersion]
   );
 
   const formattedCheckRuns = useMemo(

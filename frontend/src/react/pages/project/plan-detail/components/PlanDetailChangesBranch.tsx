@@ -121,6 +121,7 @@ import {
   getSpecStatementContent,
   isSameStatementContent,
   setLocalSheetStatement,
+  useLocalSheetsVersion,
 } from "../utils/localSheet";
 import {
   allowGhostForDatabase,
@@ -493,10 +494,18 @@ export function PlanDetailChangesBranch({
       [specId]: (prev[specId] ?? 0) + 1,
     }));
   }, []);
-  const draftContent =
-    selectedSpec && page.isCreating
-      ? getSpecStatementContent(selectedSpec)
-      : undefined;
+  // Re-read on every local sheet edit so the staleness gate below hides check
+  // results computed for SQL that has since changed (this component doesn't
+  // otherwise re-render on a local edit).
+  const localSheetsVersion = useLocalSheetsVersion();
+  const draftContent = useMemo(
+    // localSheetsVersion is a dep so the read re-runs on a local sheet edit.
+    () =>
+      selectedSpec && page.isCreating
+        ? getSpecStatementContent(selectedSpec)
+        : undefined,
+    [selectedSpec, page.isCreating, localSheetsVersion]
+  );
   const draftCheckState = selectedSpec
     ? draftCheckResultsBySpecId[selectedSpec.id]
     : undefined;
