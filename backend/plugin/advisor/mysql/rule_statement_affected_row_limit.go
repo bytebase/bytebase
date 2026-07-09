@@ -58,7 +58,9 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 			var limit *ast.Limit
 			switch stmt := node.(type) {
-			case *ast.UpdateStmt, *ast.DeleteStmt:
+			case *ast.UpdateStmt:
+				limit = stmt.Limit
+			case *ast.DeleteStmt:
 				limit = stmt.Limit
 			default:
 				continue
