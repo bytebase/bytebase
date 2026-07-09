@@ -392,7 +392,11 @@ export const useTaskRunLogData = (
       return;
     }
     const seq = ++logFetchSeq.current;
-    void rolloutServiceClientConnect
+    // Returned (not `void`ed) so the live poller awaits it and can't start an
+    // overlapping tick while the RPC is in flight — otherwise a call slower than
+    // the poll interval would be invalidated by the next tick's seq bump and the
+    // log could stay loading/stale under sustained latency.
+    return rolloutServiceClientConnect
       .getTaskRunLog(
         create(GetTaskRunLogRequestSchema, { parent: taskRunName }),
         { contextValues: createContextValues().set(silentContextKey, true) }

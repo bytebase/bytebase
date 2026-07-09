@@ -181,12 +181,17 @@ export function DeployBranch() {
         hasPendingTasks={hasPendingTasks}
         onOpenPreview={() => setPendingOpen(true)}
         onSelectStage={(stage) => {
-          const stageId = extractStageUID(stage.name);
-          // Already the selected stage in the URL — nothing to navigate (also
-          // avoids a no-op push that would leave a one-shot guard bypass unused).
-          if (stageId === page.routeStageId) {
+          // Compare against the stage on screen, not page.routeStageId: an
+          // earlier optimistic switch may have already pushed a different stage
+          // to the URL while routeStageId still reads the old value (its
+          // re-render is pending). Keying off selectedStage lets a quick click
+          // back to the route stage supersede that pending switch instead of
+          // being dropped as a no-op — and re-clicking the visible stage is
+          // still a true no-op (so no unused one-shot guard bypass).
+          if (stage.name === selectedStage.name) {
             return;
           }
+          const stageId = extractStageUID(stage.name);
           setOptimisticStageName(stage.name);
           // A stage switch is an internal same-path query change and a pure
           // visibility flip — keep-alive preserves every stage's editor state,

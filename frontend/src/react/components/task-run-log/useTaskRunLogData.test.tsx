@@ -246,6 +246,34 @@ describe("useTaskRunLogData caching", () => {
     }
   });
 
+  test("does not overlap live log polls while a fetch is slow", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
+      mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
+      const taskRunName = `${TASK_NAME}/taskRuns/slow-poll`;
+      // Every log fetch stays pending — slower than the 5s poll interval.
+      mocks.getTaskRunLog.mockReturnValue(new Promise(() => {}));
+
+      const hook = renderHook(taskRunName, TaskRun_Status.RUNNING, true);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      // fetchLog returns its promise, so the live poller awaits it and can't
+      // start another tick while the fetch is in flight. Past several intervals
+      // there's at most the mount revalidation plus one still-pending poll — a
+      // fixed setInterval (or a `void`ed promise) would have fired many more.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30000);
+      });
+      expect(mocks.getTaskRunLog.mock.calls.length).toBeLessThanOrEqual(2);
+      hook.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("revalidates once when a cached running log remounts as done", async () => {
     mocks.rolloutsByName = { [ROLLOUT_NAME]: makeRolloutWithTask() };
     mocks.getSheetByName.mockReturnValue(makeSheet("select 1", 8));
