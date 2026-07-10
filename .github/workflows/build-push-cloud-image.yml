@@ -23,7 +23,7 @@ jobs:
       git_commit: ${{ steps.extract.outputs.git_commit }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract build args
         id: extract
@@ -81,7 +81,7 @@ jobs:
       GIT_COMMIT: ${{ needs.build-bytebase.outputs.git_commit }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Login to DockerHub
         uses: docker/login-action@v4
