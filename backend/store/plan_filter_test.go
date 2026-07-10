@@ -39,18 +39,10 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "has_issue filter - true",
-			filter:   `has_issue == true`,
-			wantSQL:  "(issue.id IS NOT NULL)",
-			wantArgs: []any{},
-			wantErr:  false,
-		},
-		{
-			name:     "has_issue filter - false",
-			filter:   `has_issue == false`,
-			wantSQL:  "(issue.id IS NULL)",
-			wantArgs: []any{},
-			wantErr:  false,
+			name:        "has_issue filter is unsupported",
+			filter:      `has_issue == true`,
+			wantErr:     true,
+			errContains: `unsupported variable "has_issue"`,
 		},
 		{
 			name:     "title filter",
@@ -128,13 +120,6 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "AND condition with has_rollout and has_issue",
-			filter:   `has_rollout == true && has_issue == true`,
-			wantSQL:  "((plan.config->>'hasRollout' = $1 AND issue.id IS NOT NULL))",
-			wantArgs: []any{"true"},
-			wantErr:  false,
-		},
-		{
 			name:     "complex AND condition",
 			filter:   `title == "Test Plan" && state == "STATE_ACTIVE" && has_rollout == true`,
 			wantSQL:  "(((plan.name = $1 AND plan.deleted = $2) AND plan.config->>'hasRollout' = $3))",
@@ -177,12 +162,6 @@ func TestGetListPlanFilter(t *testing.T) {
 			filter:      `has_rollout == "true"`,
 			wantErr:     true,
 			errContains: `"has_rollout" should be bool`,
-		},
-		{
-			name:        "has_issue with non-bool value",
-			filter:      `has_issue == "true"`,
-			wantErr:     true,
-			errContains: `"has_issue" should be bool`,
 		},
 		{
 			name:        "invalid time format",

@@ -153,7 +153,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config,
 			plan.deleted
 		FROM plan
-		LEFT JOIN issue on plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE plan.project = ?
 	`, find.ProjectID)
 
@@ -341,15 +340,6 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return qb.Q().Space("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false"), nil
 					}
 					return qb.Q().Space("plan.config->>'hasRollout' = ?", "true"), nil
-				case "has_issue":
-					hasIssue, ok := value.(bool)
-					if !ok {
-						return nil, errors.Errorf(`"has_issue" should be bool`)
-					}
-					if !hasIssue {
-						return qb.Q().Space("issue.id IS NULL"), nil
-					}
-					return qb.Q().Space("issue.id IS NOT NULL"), nil
 				case "title":
 					return qb.Q().Space("plan.name = ?", value), nil
 				case "spec_type":
