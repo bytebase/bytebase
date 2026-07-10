@@ -340,7 +340,7 @@ importers:
         version: 8.5.16
       pretty-print-json:
         specifier: ^3.0.6
-        version: 3.0.7
+        version: 3.0.8
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -3445,8 +3445,8 @@ packages:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
 
-  pretty-print-json@3.0.7:
-    resolution: {integrity: sha512-/uSMbG4866Bniq893+qMKNArlaq5qWjH74+yRptgTe/F118OXZAgJ6tvSRA0fVn92wWFhRWvYWc75iSGPXLPbQ==}
+  pretty-print-json@3.0.8:
+    resolution: {integrity: sha512-N6TPqi2MxgXz7mOo9ktcgqbtJHvKqS2RbZfbq+0TW1FponM0Nh34g8dau5rkwPsPScmZOBnA1OYrBjGg6wQprg==}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -7624,7 +7624,7 @@ snapshots:
       ansi-styles: 5.2.0
       react-is: 17.0.2
 
-  pretty-print-json@3.0.7: {}
+  pretty-print-json@3.0.8: {}
 
   process-nextick-args@2.0.1: {}
 
