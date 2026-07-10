@@ -1,9 +1,14 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["src/**/*", "!!src/bbkit/BBUtil.ts", "!!src/types/proto-es/**"]
+    "includes": [
+      "src/**/*",
+      "!**/*.svg",
+      "!!src/bbkit/BBUtil.ts",
+      "!!src/types/proto-es/**"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -20,11 +25,12 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "preset": "none",
       "complexity": {
         "noUselessCatchBinding": "error",
         "noUselessEscapeInRegex": "error",
-        "noUselessTypeConstraint": "error"
+        "noUselessTypeConstraint": "error",
+        "useArrayFind": "error"
       },
       "correctness": {
         "noConstantCondition": "error",
@@ -36,12 +42,6 @@
         "useIsNan": "error",
         "useValidForDirection": "error"
       },
-      "nursery": {
-        "noForIn": "error",
-        "useArraySortCompare": "error",
-        "useFind": "error",
-        "useSpread": "error"
-      },
       "style": {
         "noCommonJs": "error",
         "noNamespace": "error",
@@ -49,7 +49,8 @@
         "useAsConstAssertion": "error",
         "useBlockStatements": "off",
         "useExportType": "error",
-        "useSelfClosingElements": "error"
+        "useSelfClosingElements": "error",
+        "useSpreadOverApply": "error"
       },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",
@@ -69,7 +70,9 @@
         "noNonNullAssertedOptionalChain": "error",
         "noSparseArray": "error",
         "noUnsafeDeclarationMerging": "error",
-        "useNamespaceKeyword": "error"
+        "useNamespaceKeyword": "error",
+        "noForIn": "error",
+        "useArraySortCompare": "error"
       }
     }
   },

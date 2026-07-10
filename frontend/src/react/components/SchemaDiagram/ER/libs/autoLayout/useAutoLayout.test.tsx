@@ -126,7 +126,9 @@ describe("useAutoLayout", () => {
       to: string;
     }>;
     expect(nodeList).toHaveLength(2);
-    expect(nodeList.map((n) => n.id).sort()).toEqual(["id-orders", "id-users"]);
+    expect(
+      nodeList.map((n) => n.id).sort((a, b) => a.localeCompare(b))
+    ).toEqual(["id-orders", "id-users"]);
     expect(nodeList[0].group).toBe("schema-public");
     expect(edgeList).toHaveLength(1);
     expect(edgeList[0].from).toBe("id-orders");
