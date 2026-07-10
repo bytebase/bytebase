@@ -19,6 +19,10 @@ import {
 import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
@@ -376,38 +380,36 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, [projectName, selectedDatabaseNames]);
 
   return (
-    <div className="py-4 flex flex-col">
-      <div className="px-4 flex flex-col gap-y-2 pb-2">
-        <div className="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2">
-          <AdvancedSearch
-            params={searchParams}
-            onParamsChange={setSearchParams}
-            placeholder={t("database.filter-database")}
-            scopeOptions={scopeOptions}
-          />
-          <PermissionGuard
-            permissions={[
-              "bb.instances.list",
-              "bb.plans.create",
-              "bb.sheets.create",
-            ]}
-            project={project}
+    <ProjectPageLayout>
+      <ProjectPageToolbar className="flex-col items-start gap-2 sm:flex-row sm:items-end">
+        <AdvancedSearch
+          params={searchParams}
+          onParamsChange={setSearchParams}
+          placeholder={t("database.filter-database")}
+          scopeOptions={scopeOptions}
+        />
+        <PermissionGuard
+          permissions={[
+            "bb.instances.list",
+            "bb.plans.create",
+            "bb.sheets.create",
+          ]}
+          project={project}
+        >
+          <Button
+            disabled={
+              !hasProjectPermission("bb.instances.list") ||
+              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((permission) =>
+                hasProjectPermission(permission)
+              )
+            }
+            onClick={() => setShowCreateDrawer(true)}
           >
-            <Button
-              disabled={
-                !hasProjectPermission("bb.instances.list") ||
-                !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(
-                  hasProjectPermission
-                )
-              }
-              onClick={() => setShowCreateDrawer(true)}
-            >
-              <Plus className="size-4 mr-1" />
-              {t("common.create")}
-            </Button>
-          </PermissionGuard>
-        </div>
-      </div>
+            <Plus className="size-4 mr-1" />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
+      </ProjectPageToolbar>
 
       <DatabaseTable
         filter={filter}
@@ -493,6 +495,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           </AlertDialogContent>
         </AlertDialog>
       )}
-    </div>
+    </ProjectPageLayout>
   );
 }

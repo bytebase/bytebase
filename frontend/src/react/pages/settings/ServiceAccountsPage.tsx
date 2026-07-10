@@ -4,6 +4,10 @@ import { Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
@@ -28,6 +32,10 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { writeTextToClipboard } from "@/react/lib/clipboard";
@@ -739,10 +747,13 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
     activeData.updateCache([serviceAccountToUser(sa)]);
   };
 
+  const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
+  const PageToolbar = projectName ? ProjectPageToolbar : WorkspacePageToolbar;
+
   return (
-    <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
+    <PageLayout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <PageToolbar>
         <h2 className="text-lg font-medium leading-7 text-main">
           {t("settings.members.service-accounts")}
         </h2>
@@ -766,7 +777,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </PageToolbar>
 
       <div className="flex flex-col gap-y-4">
         {/* Active list */}
@@ -847,6 +858,6 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         onCreated={handleCreated}
         onUpdated={handleUpdated}
       />
-    </div>
+    </PageLayout>
   );
 }

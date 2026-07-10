@@ -17,6 +17,11 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { router } from "@/react/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -278,16 +283,20 @@ export function SQLReviewPage() {
   );
 
   return (
-    <div className="px-4 py-4 mx-auto flex flex-col gap-y-4">
-      <div className="textinfolabel">
-        {t("sql-review.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-          className="normal-link"
-        />
-      </div>
+    <WorkspacePageLayout className="gap-y-4">
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("sql-review.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/sql-review/review-rules?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
-      <div className="flex justify-end items-center gap-x-2">
+      <WorkspacePageToolbar align="end">
         <SearchInput
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
@@ -301,7 +310,7 @@ export function SQLReviewPage() {
             {t("common.create")}
           </Button>
         )}
-      </div>
+      </WorkspacePageToolbar>
 
       {policyList.length > 0 ? (
         <PolicyTable
@@ -320,6 +329,6 @@ export function SQLReviewPage() {
           )}
         </div>
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

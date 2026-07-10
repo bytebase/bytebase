@@ -13,7 +13,6 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
-import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { RouterLink } from "@/react/components/RouterLink";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
@@ -723,36 +722,33 @@ export function AuditLogTable({
   const pageSizeOptions = getPageSizeOptions();
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-y-4">
       {/* Header */}
-      <div className="px-4 py-4 flex flex-col gap-y-2">
-        <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
-        <div className="flex items-center gap-x-2">
-          <AdvancedSearch
-            params={searchParams}
-            scopeOptions={scopeOptions}
-            onParamsChange={setSearchParams}
+      <div className="flex items-center gap-x-2">
+        <AdvancedSearch
+          params={searchParams}
+          scopeOptions={scopeOptions}
+          onParamsChange={setSearchParams}
+        />
+        <TimeRangePicker
+          params={searchParams}
+          onParamsChange={setSearchParams}
+        />
+        {canExport && (
+          <ExportDropdown
+            disabled={!hasAuditLogFeature || !!disableExportTip || exporting}
+            tooltip={disableExportTip}
+            onExport={handleExport}
           />
-          <TimeRangePicker
-            params={searchParams}
-            onParamsChange={setSearchParams}
-          />
-          {canExport && (
-            <ExportDropdown
-              disabled={!hasAuditLogFeature || !!disableExportTip || exporting}
-              tooltip={disableExportTip}
-              onExport={handleExport}
-            />
-          )}
-        </div>
+        )}
       </div>
 
       {/* Table */}
       {hasAuditLogFeature ? (
         <div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-sm border border-block-border">
             <Table
-              className="border-t border-block-border table-fixed"
+              className="table-fixed"
               style={{ minWidth: `${totalWidth}px` }}
             >
               <colgroup>
@@ -817,7 +813,7 @@ export function AuditLogTable({
           </div>
 
           {/* Pagination footer */}
-          <div className="mt-4 mx-2">
+          <div className="mt-4">
             <PagedTableFooter
               pageSize={pageSize}
               pageSizeOptions={pageSizeOptions}
@@ -829,7 +825,7 @@ export function AuditLogTable({
           </div>
         </div>
       ) : (
-        <div className="mx-4 py-12 border rounded-sm flex items-center justify-center text-control-placeholder">
+        <div className="py-12 border rounded-sm flex items-center justify-center text-control-placeholder">
           {t("common.no-data")}
         </div>
       )}

@@ -27,6 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import {
+  WorkspacePageContent,
+  WorkspacePageFooter,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -607,9 +613,9 @@ export function ProjectsPage() {
   const pageSizeOptions = getPageSizeOptions();
 
   return (
-    <div className="py-4 flex flex-col">
+    <WorkspacePageLayout padding="flush">
       {/* Header: Search + Create */}
-      <div className="flex items-center justify-between px-4 pb-2 gap-x-2">
+      <WorkspacePageToolbar className="px-4">
         <AdvancedSearch
           params={searchParams}
           scopeOptions={scopeOptions}
@@ -625,9 +631,9 @@ export function ProjectsPage() {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </WorkspacePageToolbar>
 
-      <div className="overflow-x-auto border rounded-sm">
+      <WorkspacePageContent className="overflow-x-auto border rounded-sm">
         <ProjectTable
           className="min-w-[700px]"
           projectList={projects}
@@ -650,9 +656,9 @@ export function ProjectsPage() {
           onSortChange={(key) => toggleSort(key)}
           onRowClick={(project, e) => handleRowClick(project, e)}
         />
-      </div>
+      </WorkspacePageContent>
 
-      <div className="mt-4 mx-2">
+      <WorkspacePageFooter>
         <PagedTableFooter
           pageSize={pageSize}
           pageSizeOptions={pageSizeOptions}
@@ -661,7 +667,7 @@ export function ProjectsPage() {
           isFetchingMore={isFetchingMore}
           onLoadMore={loadMore}
         />
-      </div>
+      </WorkspacePageFooter>
 
       {/* Batch operations bar (sticky at bottom; rendered after the
           table so selection doesn't shift table position) */}
@@ -749,6 +755,6 @@ export function ProjectsPage() {
           </div>
         </div>
       </ConfirmDialog>
-    </div>
+    </WorkspacePageLayout>
   );
 }

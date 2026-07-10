@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import { RulesSection } from "@/react/components/CustomApproval/RulesSection";
 import { APPROVAL_SOURCES } from "@/react/components/CustomApproval/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
-import { Alert } from "@/react/components/ui/alert";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+} from "@/react/components/WorkspacePageLayout";
 import { useAppStore } from "@/react/stores/app";
 import {
   useWorkspaceApprovalSettingStore,
@@ -37,13 +40,13 @@ export function CustomApprovalPage() {
   }, []);
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4 text-sm">
-      <div ref={featureAttentionRef}>
+    <WorkspacePageLayout className="gap-y-4 text-sm">
+      <div ref={featureAttentionRef} className="empty:hidden">
         <FeatureAttention feature={PlanFeature.FEATURE_APPROVAL_WORKFLOW} />
       </div>
 
       {hasFeature && (
-        <Alert variant="info">
+        <WorkspacePageInfo>
           <ul className="flex flex-col gap-y-1 list-disc pl-5">
             <li>
               {t(
@@ -55,7 +58,7 @@ export function CustomApprovalPage() {
             </li>
             <li>{t("custom-approval.rule.approval-rule-matching.priority")}</li>
           </ul>
-        </Alert>
+        </WorkspacePageInfo>
       )}
 
       {!ready ? (
@@ -76,7 +79,7 @@ export function CustomApprovalPage() {
           ))}
         </div>
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }
 

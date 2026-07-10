@@ -21,7 +21,6 @@ import {
 import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
-import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -31,6 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
@@ -560,17 +564,25 @@ export function GlobalMaskingPage() {
   };
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4">
+    <WorkspacePageLayout className="gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
-      {hasSensitiveDataFeature && (
-        <Alert
-          variant="info"
-          description={t("custom-approval.rule.first-match-wins")}
-        />
-      )}
 
-      {/* Toolbar */}
-      <div className="flex flex-row items-center justify-end">
+      <WorkspacePageInfo
+        description={
+          <>
+            {hasSensitiveDataFeature && (
+              <>{t("custom-approval.rule.first-match-wins")} </>
+            )}
+            {t("settings.sensitive-data.global-rules.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/security/data-masking/overview/?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
+
+      <WorkspacePageToolbar align="end">
         {reorderRules ? (
           <div className="flex items-center gap-x-2">
             <Button
@@ -622,16 +634,7 @@ export function GlobalMaskingPage() {
             </Button>
           </div>
         )}
-      </div>
-
-      {/* Description */}
-      <div className="textinfolabel">
-        {t("settings.sensitive-data.global-rules.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/security/data-masking/overview/?source=console"
-          className="text-accent hover:underline"
-        />
-      </div>
+      </WorkspacePageToolbar>
 
       {/* Empty state */}
       {items.length === 0 && (
@@ -702,6 +705,6 @@ export function GlobalMaskingPage() {
           </div>
         </div>
       ))}
-    </div>
+    </WorkspacePageLayout>
   );
 }

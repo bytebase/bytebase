@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { AuditLogTable } from "@/react/components/AuditLogTable";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import {
+  ProjectPageContent,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -24,15 +28,15 @@ export function ProjectAuditLogPage({ projectId }: { projectId: string }) {
   );
 
   return (
-    <div className="flex flex-col">
-      <div className="mx-4 mb-2">
-        <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
-      </div>
-      <AuditLogTable
-        parent={projectName}
-        canExport={canExport}
-        readonlyScopes={readonlyScopes}
-      />
-    </div>
+    <ProjectPageLayout className="gap-y-2">
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
+      <ProjectPageContent>
+        <AuditLogTable
+          parent={projectName}
+          canExport={canExport}
+          readonlyScopes={readonlyScopes}
+        />
+      </ProjectPageContent>
+    </ProjectPageLayout>
   );
 }

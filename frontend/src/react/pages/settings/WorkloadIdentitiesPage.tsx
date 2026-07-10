@@ -3,6 +3,10 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
 import { UserCell } from "@/react/components/UserCell";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -16,6 +20,10 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
@@ -345,10 +353,13 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     setShowDrawer(true);
   };
 
+  const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
+  const PageToolbar = projectName ? ProjectPageToolbar : WorkspacePageToolbar;
+
   return (
-    <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
+    <PageLayout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <PageToolbar>
         <p className="text-lg font-medium leading-7 text-main">
           {t("settings.members.workload-identities")}
         </p>
@@ -375,7 +386,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </PageToolbar>
 
       <div className="flex flex-col gap-y-4">
         {activeData.isLoading && activeData.dataList.length === 0 ? (
@@ -458,6 +469,6 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
           activeData.updateCache([workloadIdentityToUser(wi)]);
         }}
       />
-    </div>
+    </PageLayout>
   );
 }

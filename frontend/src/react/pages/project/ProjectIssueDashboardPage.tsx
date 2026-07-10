@@ -10,7 +10,12 @@ import {
   PresetButtons,
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
-import { Alert } from "@/react/components/ui/alert";
+import {
+  ProjectPageContent,
+  ProjectPageFooter,
+  ProjectPageInfo,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
@@ -41,15 +46,6 @@ export function ProjectIssueDashboardPage({
   const me = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
-
-  // Hint
-  const HINT_KEY = "issue.hint-dismissed";
-  const hideHint = useAppStore((s) => s.getIntroStateByKey(HINT_KEY));
-  const dismissHint = useCallback(() => {
-    useAppStore
-      .getState()
-      .saveIntroStateByKey({ key: HINT_KEY, newState: true });
-  }, []);
 
   // Read-only scopes
   const readonlyScopes: VueSearchScope[] = useMemo(
@@ -236,11 +232,9 @@ export function ProjectIssueDashboardPage({
   }, [paged]);
 
   return (
-    <div className="py-4 flex flex-col">
-      <div className="px-4 flex flex-col gap-y-2">
-        {!hideHint && (
-          <Alert description={t("issue.subtitle")} onDismiss={dismissHint} />
-        )}
+    <ProjectPageLayout>
+      <div className="flex flex-col gap-y-2">
+        <ProjectPageInfo description={t("issue.subtitle")} />
         <IssueSearchBar
           params={searchParams}
           onParamsChange={setSearchParams}
@@ -251,7 +245,7 @@ export function ProjectIssueDashboardPage({
         <PresetButtons params={searchParams} onParamsChange={setSearchParams} />
       </div>
 
-      <div className="mt-2">
+      <ProjectPageContent>
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -272,7 +266,7 @@ export function ProjectIssueDashboardPage({
           ))
         )}
         {paged.dataList.length > 0 && (
-          <div className="mt-4 mx-2">
+          <ProjectPageFooter>
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}
@@ -281,9 +275,9 @@ export function ProjectIssueDashboardPage({
               isFetchingMore={paged.isFetchingMore}
               onLoadMore={paged.loadMore}
             />
-          </div>
+          </ProjectPageFooter>
         )}
-      </div>
+      </ProjectPageContent>
 
       {selectedIssues.length > 0 && (
         <BatchActionBar
@@ -304,6 +298,6 @@ export function ProjectIssueDashboardPage({
         onClose={() => setBatchAction(undefined)}
         onUpdated={handleBatchUpdated}
       />
-    </div>
+    </ProjectPageLayout>
   );
 }

@@ -23,6 +23,11 @@ import {
   loadMonacoEditor,
   setMonacoModelLanguage,
 } from "@/react/components/monaco/core";
+import {
+  ProjectPageContent,
+  ProjectPageInfo,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
@@ -428,21 +433,25 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
   if (!project) return null;
 
   return (
-    <div className="w-full h-full overflow-hidden flex flex-col px-4 py-4">
-      <p className="text-sm text-control-light">
-        {t("database.sync-schema.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/change-database/synchronize-schema?source=console"
-          className="normal-link"
-        />
-      </p>
+    <ProjectPageLayout className="h-full">
+      <ProjectPageInfo
+        description={
+          <>
+            {t("database.sync-schema.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/change-database/synchronize-schema?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-2 text-control-placeholder text-sm">
           <div className="animate-spin rounded-full size-5 border-b-2 border-control-placeholder" />
         </div>
       ) : (
-        <div className="pt-4 flex-1 overflow-hidden flex flex-col gap-y-4">
+        <ProjectPageContent className="flex-1 overflow-hidden flex flex-col gap-y-4">
           {/* Step indicator */}
           <StepIndicator steps={stepList} currentIndex={currentStep} />
 
@@ -507,7 +516,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
               )}
             </div>
           </div>
-        </div>
+        </ProjectPageContent>
       )}
 
       {/* Confirm revert dialog */}
@@ -525,7 +534,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </ProjectPageLayout>
   );
 }
 

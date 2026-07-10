@@ -666,7 +666,7 @@ export function ProjectSettingsPage() {
   // Render
   // -----------------------------------------------------------------------
   return (
-    <div className="w-full flex flex-col gap-y-0 pt-4 px-4">
+    <div className="w-full flex flex-col gap-y-0 px-4">
       <div className="divide-y divide-block-border">
         {/* ============================================================= */}
         {/* Section 1: General */}

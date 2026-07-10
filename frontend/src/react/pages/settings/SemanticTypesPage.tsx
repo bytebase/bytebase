@@ -30,6 +30,11 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getSemanticTemplateList } from "@/types";
@@ -338,9 +343,13 @@ export function SemanticTypesPage() {
   };
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4">
+    <WorkspacePageLayout>
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
-      <div className="flex justify-end">
+      <WorkspacePageInfo
+        description={t("settings.sensitive-data.semantic-types.label")}
+      />
+
+      <WorkspacePageToolbar align="end">
         <div className="flex items-center gap-x-2">
           <Button
             appearance="outline"
@@ -354,11 +363,7 @@ export function SemanticTypesPage() {
             {t("common.create")}
           </Button>
         </div>
-      </div>
-
-      <p className="text-sm text-control-placeholder">
-        {t("settings.sensitive-data.semantic-types.label")}
-      </p>
+      </WorkspacePageToolbar>
 
       <div className="border rounded-sm overflow-hidden">
         <Table>
@@ -432,7 +437,7 @@ export function SemanticTypesPage() {
           onDismiss={() => setAlgorithmDrawer(null)}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }
 

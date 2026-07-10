@@ -1,18 +1,20 @@
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Badge } from "@/react/components/ui/badge";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+} from "@/react/components/WorkspacePageLayout";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 export function RiskAssessmentPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-6 text-sm">
+    <WorkspacePageLayout className="gap-y-6 text-sm">
       <FeatureAttention feature={PlanFeature.FEATURE_RISK_ASSESSMENT} />
 
-      <div className="textinfolabel">
-        {t("custom-approval.risk.description")}
-      </div>
+      <WorkspacePageInfo description={t("custom-approval.risk.description")} />
 
       <div className="flex flex-col gap-6">
         <div>
@@ -65,6 +67,6 @@ export function RiskAssessmentPage() {
           </p>
         </div>
       </div>
-    </div>
+    </WorkspacePageLayout>
   );
 }

@@ -58,6 +58,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import {
+  WorkspacePageContent,
+  WorkspacePageFooter,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
@@ -1091,12 +1097,12 @@ export function InstancesPage() {
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   return (
-    <div className="py-4 flex flex-col">
+    <WorkspacePageLayout padding="flush">
       {/* Instance count warning */}
       {quotaExhausted && (
         <Alert
           variant="warning"
-          className="mx-4 mb-4"
+          className="mb-4"
           title={t("subscription.usage.instance-count.title")}
           description={t("subscription.usage.instance-count.runoutof", {
             total: instanceCountLimit,
@@ -1105,7 +1111,7 @@ export function InstancesPage() {
       )}
 
       {/* Header: Search + Create */}
-      <div className="flex items-center justify-between px-4 pb-2 gap-x-2">
+      <WorkspacePageToolbar className="px-4">
         <AdvancedSearch
           params={searchParams}
           scopeOptions={scopeOptions}
@@ -1118,9 +1124,9 @@ export function InstancesPage() {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </WorkspacePageToolbar>
 
-      <div className="overflow-x-auto border rounded-sm">
+      <WorkspacePageContent className="overflow-x-auto border rounded-sm">
         <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
           <colgroup>
             {widths.map((w, i) => (
@@ -1205,9 +1211,9 @@ export function InstancesPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </WorkspacePageContent>
 
-      <div className="mt-4 mx-2">
+      <WorkspacePageFooter>
         <PagedTableFooter
           pageSize={pageSize}
           pageSizeOptions={pageSizeOptions}
@@ -1216,7 +1222,7 @@ export function InstancesPage() {
           isFetchingMore={isFetchingMore}
           onLoadMore={loadMore}
         />
-      </div>
+      </WorkspacePageFooter>
 
       {/* Batch operations bar (sticky at bottom; rendered after the
           table so selection doesn't shift table position) */}
@@ -1291,6 +1297,6 @@ export function InstancesPage() {
           onUpdated={handleRowAction}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

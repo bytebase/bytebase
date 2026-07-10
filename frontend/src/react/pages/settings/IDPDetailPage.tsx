@@ -23,6 +23,10 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+} from "@/react/components/WorkspacePageLayout";
 import { router, useCurrentRoute } from "@/react/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -1420,14 +1424,18 @@ export function IDPDetailPage() {
   const ProviderIcon = getProviderIcon(localIdp.type);
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-6">
-      <div className="textinfolabel">
-        {t("settings.sso.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/administration/sso/overview?source=console"
-          className="text-accent"
-        />
-      </div>
+    <WorkspacePageLayout className="gap-y-6">
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("settings.sso.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/administration/sso/overview?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
       <div className="divide-y divide-block-border">
         {/* General Section */}
@@ -1583,6 +1591,6 @@ export function IDPDetailPage() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

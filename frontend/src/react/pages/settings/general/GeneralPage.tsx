@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { StickyActionFooter } from "@/react/components/ui/sticky-action-footer";
+import { WorkspacePageLayout } from "@/react/components/WorkspacePageLayout";
 import { useServerState } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/store";
@@ -144,7 +145,7 @@ export function GeneralPage() {
   }, []);
 
   return (
-    <div className="px-4 divide-y divide-block-border py-4">
+    <WorkspacePageLayout className="py-0 divide-y divide-block-border">
       <GeneralSection
         ref={generalRef}
         title={t("common.general")}
@@ -218,6 +219,6 @@ export function GeneralPage() {
           right={<Button onClick={handleUpdate}>{t("common.update")}</Button>}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

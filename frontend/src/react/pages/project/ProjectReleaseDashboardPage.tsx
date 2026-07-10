@@ -5,7 +5,12 @@ import { useTranslation } from "react-i18next";
 import { releaseServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
-import { Alert } from "@/react/components/ui/alert";
+import {
+  ProjectPageContent,
+  ProjectPageFooter,
+  ProjectPageInfo,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
 import { Button } from "@/react/components/ui/button";
 import {
   Table,
@@ -95,10 +100,9 @@ export function ProjectReleaseDashboardPage({
   });
 
   return (
-    <div className="py-4 w-full flex flex-col">
-      <div className="px-4 flex flex-col gap-y-2 pb-2">
-        <Alert
-          variant="info"
+    <ProjectPageLayout>
+      <div className="flex flex-col gap-y-2">
+        <ProjectPageInfo
           description={
             <>
               <span>{t("release.usage-description")}</span>
@@ -131,7 +135,7 @@ export function ProjectReleaseDashboardPage({
       </div>
 
       {/* Release table */}
-      <div className="mt-2">
+      <ProjectPageContent>
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
             <Loader2 className="size-5 animate-spin" />
@@ -145,7 +149,7 @@ export function ProjectReleaseDashboardPage({
         )}
 
         {paged.dataList.length > 0 && (
-          <div className="mt-4 mx-2">
+          <ProjectPageFooter>
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}
@@ -154,10 +158,10 @@ export function ProjectReleaseDashboardPage({
               isFetchingMore={paged.isFetchingMore}
               onLoadMore={paged.loadMore}
             />
-          </div>
+          </ProjectPageFooter>
         )}
-      </div>
-    </div>
+      </ProjectPageContent>
+    </ProjectPageLayout>
   );
 }
 

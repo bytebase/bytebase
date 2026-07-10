@@ -53,6 +53,11 @@ import {
 import { Textarea } from "@/react/components/ui/textarea";
 import { BlockTooltip } from "@/react/components/ui/tooltip";
 import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/react/components/WorkspacePageLayout";
+import {
   displayRoleDescriptionFromList,
   displayRoleTitleFromList,
 } from "@/react/lib/role";
@@ -777,20 +782,24 @@ export function RolesPage() {
   };
 
   return (
-    <div className="w-full px-4 py-4 flex flex-col gap-y-4">
+    <WorkspacePageLayout className="gap-y-4">
       {showFeatureModal && (
         <FeatureAttention feature={PlanFeature.FEATURE_CUSTOM_ROLES} />
       )}
 
-      <div className="textinfolabel">
-        {t("role.setting.description")}{" "}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/administration/roles?source=console"
-          className="text-accent"
-        />
-      </div>
+      <WorkspacePageInfo
+        description={
+          <>
+            {t("role.setting.description")}{" "}
+            <LearnMoreLink
+              href="https://docs.bytebase.com/administration/roles?source=console"
+              className="text-accent"
+            />
+          </>
+        }
+      />
 
-      <div className="w-full flex justify-end">
+      <WorkspacePageToolbar align="end">
         <PermissionGuard permissions={["bb.roles.create"]}>
           <Button disabled={!canCreate} onClick={addRole}>
             <FeatureBadge
@@ -802,7 +811,7 @@ export function RolesPage() {
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </WorkspacePageToolbar>
 
       {/* Roles Table */}
       {ready ? (
@@ -900,6 +909,6 @@ export function RolesPage() {
           onCancel={() => setDeleteTarget(undefined)}
         />
       )}
-    </div>
+    </WorkspacePageLayout>
   );
 }

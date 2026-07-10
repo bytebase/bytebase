@@ -5,6 +5,10 @@ import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
+  ProjectPageContent,
+  ProjectPageLayout,
+} from "@/react/components/ProjectPageLayout";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
@@ -102,13 +106,12 @@ export function ProjectDatabaseGroupsPage({
   }, [deleteTarget]);
 
   return (
-    <div className="py-4 flex flex-col gap-y-2">
-      <div className="px-4 flex flex-col gap-y-2">
-        <FeatureAttention feature={PlanFeature.FEATURE_DATABASE_GROUPS} />
-      </div>
+    <ProjectPageLayout>
+      <FeatureAttention feature={PlanFeature.FEATURE_DATABASE_GROUPS} />
 
-      <div className="px-4">
+      <ProjectPageContent>
         <DatabaseGroupTable
+          className="gap-y-4"
           projectName={projectName}
           view={DatabaseGroupView.BASIC}
           externalList={dbGroupList}
@@ -128,7 +131,7 @@ export function ProjectDatabaseGroupsPage({
             </Button>
           }
         />
-      </div>
+      </ProjectPageContent>
 
       <AlertDialog
         open={deleteTarget !== null}
@@ -155,6 +158,6 @@ export function ProjectDatabaseGroupsPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ProjectPageLayout>
   );
 }

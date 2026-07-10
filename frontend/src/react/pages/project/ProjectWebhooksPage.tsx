@@ -3,6 +3,11 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
+  ProjectPageContent,
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
@@ -108,22 +113,24 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
   }, [deleteTarget, project, deleteProjectWebhook, t]);
 
   return (
-    <div className="py-4 flex flex-col">
-      <div className="px-4 pb-2 flex items-center justify-end">
+    <ProjectPageLayout>
+      <ProjectPageToolbar align="end">
         <PermissionGuard permissions={["bb.projects.update"]} project={project}>
           <Button disabled={!allowEdit} onClick={handleAdd}>
             <Plus className="size-4 mr-1" />
             {t("common.create")}
           </Button>
         </PermissionGuard>
-      </div>
+      </ProjectPageToolbar>
 
-      <WebhookTable
-        webhooks={webhooks}
-        allowEdit={allowEdit}
-        onRowClick={handleRowClick}
-        onDelete={setDeleteTarget}
-      />
+      <ProjectPageContent>
+        <WebhookTable
+          webhooks={webhooks}
+          allowEdit={allowEdit}
+          onRowClick={handleRowClick}
+          onDelete={setDeleteTarget}
+        />
+      </ProjectPageContent>
 
       <AlertDialog
         open={deleteTarget !== null}
@@ -152,7 +159,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ProjectPageLayout>
   );
 }
 
@@ -172,82 +179,77 @@ function WebhookTable({
   const activityItemList = projectWebhookV1ActivityItemList();
 
   return (
-    <div className="px-4">
-      <div className="border rounded-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-control-bg">
-              <TableHead className="w-60">{t("common.name")}</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
-              {allowEdit && <TableHead className="w-12" />}
+    <div className="border rounded-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="w-60">{t("common.name")}</TableHead>
+            <TableHead>URL</TableHead>
+            <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
+            {allowEdit && <TableHead className="w-12" />}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {webhooks.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={allowEdit ? 4 : 3}
+                className="py-8 text-center text-control-light"
+              >
+                {t("common.no-data")}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {webhooks.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={allowEdit ? 4 : 3}
-                  className="py-8 text-center text-control-light"
-                >
-                  {t("common.no-data")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              webhooks.map((webhook) => {
-                const activityTitles = webhook.notificationTypes.map(
-                  (activity) => {
-                    const item = activityItemList.find(
-                      (item) => item.activity === activity
-                    );
-                    return item
-                      ? item.title
-                      : Activity_Type[activity] || `ACTIVITY_${activity}`;
-                  }
-                );
+          ) : (
+            webhooks.map((webhook) => {
+              const activityTitles = webhook.notificationTypes.map(
+                (activity) => {
+                  const item = activityItemList.find(
+                    (item) => item.activity === activity
+                  );
+                  return item
+                    ? item.title
+                    : Activity_Type[activity] || `ACTIVITY_${activity}`;
+                }
+              );
 
-                return (
-                  <TableRow
-                    key={webhook.name}
-                    className="cursor-pointer"
-                    onClick={(e) => onRowClick(e, webhook)}
-                  >
+              return (
+                <TableRow
+                  key={webhook.name}
+                  className="cursor-pointer"
+                  onClick={(e) => onRowClick(e, webhook)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-x-2">
+                      <WebhookTypeIcon type={webhook.type} className="size-5" />
+                      {webhook.title}
+                    </div>
+                  </TableCell>
+                  <TableCell className="truncate max-w-xs text-control-light">
+                    {webhook.url}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-2">
+                      {activityTitles.map((title) => (
+                        <span
+                          key={title}
+                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
+                        >
+                          {title}
+                        </span>
+                      ))}
+                    </div>
+                  </TableCell>
+                  {allowEdit && (
                     <TableCell>
-                      <div className="flex items-center gap-x-2">
-                        <WebhookTypeIcon
-                          type={webhook.type}
-                          className="size-5"
-                        />
-                        {webhook.title}
-                      </div>
+                      <ActionDropdown webhook={webhook} onDelete={onDelete} />
                     </TableCell>
-                    <TableCell className="truncate max-w-xs text-control-light">
-                      {webhook.url}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        {activityTitles.map((title) => (
-                          <span
-                            key={title}
-                            className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
-                          >
-                            {title}
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
-                    {allowEdit && (
-                      <TableCell>
-                        <ActionDropdown webhook={webhook} onDelete={onDelete} />
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  )}
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

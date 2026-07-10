@@ -11,6 +11,12 @@ import {
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import {
+  ProjectPageContent,
+  ProjectPageFooter,
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/react/components/ProjectPageLayout";
 import { RouterLink } from "@/react/components/RouterLink";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Badge } from "@/react/components/ui/badge";
@@ -519,18 +525,15 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   }, [confirmAction, activateAccessGrant, revokeAccessGrant, t, paged]);
 
   return (
-    <div className="py-4 w-full flex flex-col">
-      <div className="mx-4 mb-2">
-        <FeatureAttention feature={PlanFeature.FEATURE_JIT} />
-      </div>
+    <ProjectPageLayout>
+      <FeatureAttention feature={PlanFeature.FEATURE_JIT} />
 
       <ComponentPermissionGuard
         permissions={["bb.accessGrants.list"]}
         project={project}
-        className="mx-4"
       >
         <>
-          <div className="px-4 pb-2 flex items-center gap-x-2">
+          <ProjectPageToolbar align="start">
             <AdvancedSearch
               params={searchParams}
               onParamsChange={setSearchParams}
@@ -541,10 +544,10 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               params={searchParams}
               onParamsChange={setSearchParams}
             />
-          </div>
+          </ProjectPageToolbar>
 
           {!hasJITFeature ? (
-            <div className="mx-4 py-12 border rounded-sm flex items-center justify-center text-control-light">
+            <div className="py-12 border rounded-sm flex items-center justify-center text-control-light">
               {t("common.no-data")}
             </div>
           ) : paged.isLoading ? (
@@ -556,7 +559,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               {t("common.no-data")}
             </div>
           ) : (
-            <div ref={fitTableContainer} className="px-4">
+            <ProjectPageContent ref={fitTableContainer}>
               <div className="border rounded-sm overflow-x-auto">
                 <Table
                   className="w-auto table-fixed"
@@ -620,7 +623,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                 </Table>
               </div>
 
-              <div className="mt-4">
+              <ProjectPageFooter>
                 <PagedTableFooter
                   pageSize={paged.pageSize}
                   pageSizeOptions={paged.pageSizeOptions}
@@ -629,8 +632,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                   isFetchingMore={paged.isFetchingMore}
                   onLoadMore={paged.loadMore}
                 />
-              </div>
-            </div>
+              </ProjectPageFooter>
+            </ProjectPageContent>
           )}
         </>
       </ComponentPermissionGuard>
@@ -670,7 +673,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </ProjectPageLayout>
   );
 }
 
