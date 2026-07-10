@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/nyaruka/phonenumbers/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
