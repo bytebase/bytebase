@@ -60,7 +60,7 @@
     "i18next": "^26.0.10",
     "immer": "^11.1.8",
     "is-chinese": "^2.0.0",
-    "js-yaml": "4.2.0",
+    "js-yaml": "4.3.0",
     "jszip": "^3.10.1",
     "lodash-es": "4.18.1",
     "lossless-json": "^4.3.0",
