@@ -91,7 +91,7 @@ require (
 	github.com/xuri/excelize/v2 v2.10.1
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.1.0
-	go.mongodb.org/mongo-driver/v2 v2.6.0
+	go.mongodb.org/mongo-driver/v2 v2.8.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.53.0
 	golang.org/x/oauth2 v0.36.0
