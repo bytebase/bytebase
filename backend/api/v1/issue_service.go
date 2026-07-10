@@ -673,14 +673,22 @@ func validateDraftReviewPlan(plan *store.PlanMessage) error {
 	return nil
 }
 
-// ApproveIssue approves the approval flow of the issue.
-func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1pb.ApproveIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, name string) (*store.IssueMessage, error) {
+	issue, err := s.getIssueMessage(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 	if issue.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before it can be approved"))
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval actions are allowed"))
+	}
+	return issue, nil
+}
+
+// ApproveIssue approves the approval flow of the issue.
+func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1pb.ApproveIssueRequest]) (*connect.Response[v1pb.Issue], error) {
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
+	if err != nil {
+		return nil, err
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
@@ -800,12 +808,9 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 // RejectIssue rejects a issue.
 func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1pb.RejectIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
-	}
-	if issue.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before it can be rejected"))
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
@@ -917,12 +922,9 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 
 // RequestIssue requests a issue.
 func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1pb.RequestIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
-	}
-	if issue.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval can be requested"))
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
@@ -1065,12 +1067,9 @@ func (s *IssueService) updateIssueApprovalPayload(ctx context.Context, issue *st
 // Idempotent: returns the existing issue unchanged when approval-finding
 // has already completed.
 func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Request[v1pb.RetryIssueApprovalRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
-	}
-	if issue.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval finding can be retried"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
