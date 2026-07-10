@@ -20,8 +20,6 @@
     "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "strict": true,
     "skipLibCheck": true,
     "paths": {

@@ -19,7 +19,7 @@
     "test": "vitest run --passWithNoTests",
     "precoverage": "pnpm run prepare:artifacts",
     "coverage": "vitest --coverage",
-    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && pnpm fix",
+    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node --compiler typescript-6 i18n.ts && pnpm fix",
     "sort:i18n": "node scripts/sort_i18n_keys.mjs",
     "generate:openapi-index": "node scripts/generate_openapi_index.js"
   },
@@ -142,6 +142,7 @@
     "tailwindcss": "4.3.2",
     "ts-node": "^10.9.2",
     "typescript": "7.0.2",
+    "typescript-6": "npm:typescript@6.0.3",
     "unified": "^11.0.5",
     "vite": "8.0.16",
     "vite-bundle-visualizer": "^1.2.1",

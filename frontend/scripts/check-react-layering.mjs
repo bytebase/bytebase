@@ -14,7 +14,9 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import ts from "typescript";
+// typescript 7 (the native compiler) no longer ships the JS compiler API,
+// so this scanner parses with the pinned typescript 6 alias instead.
+import ts from "typescript-6";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
