@@ -132,6 +132,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 	authContext.Resources = resources
+	authContext.Permission = getPermissionForRequest(request, authContext.Permission)
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
@@ -222,6 +223,13 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 
 	return nil
+}
+
+func getPermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		return permission.InstancesCreate
+	}
+	return defaultPermission
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
@@ -422,6 +430,14 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	shortMethod := methodTokens[2]
 
 	var resources []string
+
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		// During instance creation, the request carries an inline instance so
+		// the handler can preview remote databases before the instance exists.
+		// Use the workspace resource instead of validating the future instance name.
+		resources = append(resources, "")
+		return resources, nil
+	}
 
 	// Transferring database projects needs to check both projects.
 	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
