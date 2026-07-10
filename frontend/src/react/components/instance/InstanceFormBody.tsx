@@ -447,7 +447,7 @@ function SyncDatabases({
     return () => {
       cancelled = true;
     };
-  }, [syncAll]);
+  }, [syncAll, isCreatingProp, pendingCreateInstance, instance]);
 
   if (hideAdvancedFeatures) return null;
 
@@ -1289,17 +1289,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 onScanIntervalChange={changeScanInterval}
               />
             )}
-
-            {/* Sync Databases */}
-            {basicInfo.engine !== Engine.DYNAMODB && (
-              <SyncDatabases
-                isCreating={isCreating}
-                showLabel={!isCreating}
-                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
-                syncDatabases={basicInfo.syncDatabases}
-                onSyncDatabasesChange={handleChangeSyncDatabases}
-              />
-            )}
           </div>
         </div>
 
@@ -1620,6 +1609,19 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 </Alert>
               )}
             </>
+          )}
+
+          {/* Sync Databases */}
+          {basicInfo.engine !== Engine.DYNAMODB && (
+            <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+              <SyncDatabases
+                isCreating={isCreating}
+                showLabel={!isCreating}
+                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
+                syncDatabases={basicInfo.syncDatabases}
+                onSyncDatabasesChange={handleChangeSyncDatabases}
+              />
+            </div>
           )}
         </div>
 

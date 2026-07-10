@@ -22,4 +22,32 @@ describe("InstanceFormBody", () => {
       "inert={isConnectionOptionsCollapsed ? true : undefined}"
     );
   });
+
+  test("renders database sync controls inside the connection card", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    const connectionCardIndex = source.indexOf("{/* Connection Card */}");
+    const syncDatabasesIndex = source.indexOf("{/* Sync Databases */}");
+    const connectionOptionsIndex = source.indexOf(
+      "{/* Connection Options Card */}"
+    );
+
+    expect(connectionCardIndex).toBeGreaterThanOrEqual(0);
+    expect(syncDatabasesIndex).toBeGreaterThan(connectionCardIndex);
+    expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
+  });
+
+  test("refetches database previews when pending create instance changes", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain(
+      "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
+    );
+  });
 });
