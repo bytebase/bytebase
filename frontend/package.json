@@ -141,7 +141,7 @@
     "rollup": "4.62.2",
     "tailwindcss": "4.3.2",
     "ts-node": "^10.9.2",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "unified": "^11.0.5",
     "vite": "8.0.16",
     "vite-bundle-visualizer": "^1.2.1",
