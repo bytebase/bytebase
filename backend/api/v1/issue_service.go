@@ -418,34 +418,30 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, err
 	}
 	created := false
-	if issue.Payload.GetDraft() {
-		existing, err := s.findIssueForDraftCreate(ctx, issue)
+	issueToCreate := issue
+	existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		issue = existing
+	} else {
+		issue, err = s.store.CreateIssue(ctx, issueToCreate)
 		if err != nil {
-			return nil, err
-		}
-		if existing != nil {
+			if errors.Is(err, store.ErrPlanHasRollout) {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot create a draft issue because the plan already has a rollout"))
+			}
+			existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
+			if lookupErr != nil {
+				return nil, lookupErr
+			}
+			if existing == nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+			}
 			issue = existing
 		} else {
-			issue, err = s.store.CreateIssue(ctx, issue)
-			if err != nil {
-				existing, lookupErr := s.findIssueForDraftCreate(ctx, issue)
-				if lookupErr != nil {
-					return nil, lookupErr
-				}
-				if existing == nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-				}
-				issue = existing
-			} else {
-				created = true
-			}
+			created = true
 		}
-	} else {
-		issue, err = s.store.CreateIssue(ctx, issue)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-		}
-		created = true
 	}
 
 	if created && !issue.Payload.GetDraft() {
@@ -463,7 +459,11 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) findIssueForDraftCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
+func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
+		return nil, nil
+	}
+
 	existing, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ProjectIDs: []string{issue.ProjectID},
@@ -472,8 +472,14 @@ func (s *IssueService) findIssueForDraftCreate(ctx context.Context, issue *store
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find issue by plan"))
 	}
-	if existing != nil && !existing.Payload.GetDraft() {
+	if existing == nil {
+		return nil, nil
+	}
+	if !existing.Payload.GetDraft() {
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", *issue.PlanUID))
+	}
+	if !issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("plan %d already has a draft issue; update or submit the existing draft instead of creating another issue", *issue.PlanUID))
 	}
 	return existing, nil
 }
@@ -673,6 +679,9 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, err
 	}
+	if issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before it can be approved"))
+	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
@@ -795,6 +804,9 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, err
 	}
+	if issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before it can be rejected"))
+	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
@@ -908,6 +920,9 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
+	}
+	if issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval can be requested"))
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
@@ -1053,6 +1068,9 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
+	}
+	if issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval finding can be retried"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -1322,6 +1340,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *IssueService) shouldResetApprovalForIssueLabels(ctx context.Context, issue *store.IssueMessage) (bool, error) {
+	if issue.Payload.GetDraft() {
+		return false, nil
+	}
+
 	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
 		return false, nil
 	}

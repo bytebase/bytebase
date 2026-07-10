@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
@@ -109,6 +110,180 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 	require.Equal(t, storepb.Issue_DONE, gotIssue.Status)
 }
 
+func TestCreateRolloutAndPendingTasksRejectsDraft(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	draft, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Draft: true},
+	})
+	require.NoError(t, err)
+	require.True(t, draft.Payload.GetDraft())
+	require.False(t, plan.Config.GetHasRollout())
+	require.Equal(t, storepb.Issue_OPEN, draft.Status)
+
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, draft, &store.ProjectMessage{
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: false},
+	}, []*store.TaskMessage{})
+
+	gotPlan, getPlanErr := stores.GetPlan(ctx, &store.FindPlanMessage{
+		ProjectID: "project-a",
+		UID:       &plan.UID,
+	})
+	require.NoError(t, getPlanErr)
+	require.NotNil(t, gotPlan)
+	gotIssue := getIssueForTest(ctx, t, stores, draft.UID)
+	assert.Error(t, err)
+	assert.False(t, gotPlan.Config.GetHasRollout())
+	assert.Equal(t, storepb.Issue_OPEN, gotIssue.Status)
+	assert.True(t, gotIssue.Payload.GetDraft())
+}
+
+func TestCreateRolloutAndPendingTasksRejectsPersistedDraftWithStaleIssueSnapshot(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	draft, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Draft: true},
+	})
+	require.NoError(t, err)
+
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, nil, &store.ProjectMessage{
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: false},
+	}, []*store.TaskMessage{})
+
+	require.ErrorIs(t, err, errDraftIssueNotSubmitted)
+	gotPlan, getPlanErr := stores.GetPlan(ctx, &store.FindPlanMessage{
+		ProjectID: "project-a",
+		UID:       &plan.UID,
+	})
+	require.NoError(t, getPlanErr)
+	require.False(t, gotPlan.Config.GetHasRollout())
+	gotIssue := getIssueForTest(ctx, t, stores, draft.UID)
+	require.Equal(t, storepb.Issue_OPEN, gotIssue.Status)
+	require.True(t, gotIssue.Payload.GetDraft())
+}
+
+func TestCreateDraftAndRolloutAreSerialized(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	for i := range 10 {
+		t.Run(fmt.Sprintf("attempt-%d", i), func(t *testing.T) {
+			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+				ProjectID: "project-a",
+				Name:      "draft rollout race",
+				Config: &storepb.PlanConfig{
+					Specs: []*storepb.PlanConfig_Spec{{
+						Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+							ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+								SheetSha256: "sheet",
+							},
+						},
+					}},
+				},
+			}, "creator@example.com")
+			require.NoError(t, err)
+
+			start := make(chan struct{})
+			draftResult := make(chan error, 1)
+			rolloutResult := make(chan error, 1)
+			go func() {
+				<-start
+				_, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+					Parent: "projects/project-a",
+					Issue: &v1pb.Issue{
+						Type:  v1pb.Issue_DATABASE_CHANGE,
+						Plan:  common.FormatPlan("project-a", plan.UID),
+						Draft: true,
+					},
+				}))
+				draftResult <- err
+			}()
+			go func() {
+				<-start
+				rolloutResult <- CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, nil, &store.ProjectMessage{
+					ResourceID: "project-a",
+					Setting:    &storepb.Project{RequireIssueApproval: false},
+				}, []*store.TaskMessage{})
+			}()
+			close(start)
+			draftErr := <-draftResult
+			rolloutErr := <-rolloutResult
+
+			require.NotEqual(t, draftErr == nil, rolloutErr == nil)
+			if draftErr == nil {
+				require.ErrorIs(t, rolloutErr, errDraftIssueNotSubmitted)
+			} else {
+				require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(draftErr))
+				require.NoError(t, rolloutErr)
+			}
+
+			gotPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{
+				ProjectID: "project-a",
+				UID:       &plan.UID,
+			})
+			require.NoError(t, err)
+			linkedIssue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+				ProjectIDs: []string{"project-a"},
+				PlanUID:    &plan.UID,
+			})
+			require.NoError(t, err)
+			require.NotEqual(t, gotPlan.Config.GetHasRollout(), linkedIssue != nil)
+			if linkedIssue != nil {
+				require.True(t, linkedIssue.Payload.GetDraft())
+				require.Equal(t, storepb.Issue_OPEN, linkedIssue.Status)
+			}
+		})
+	}
+}
+
+func TestCreateDraftIssueRejectedAfterRollout(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "rolled out plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						SheetSha256: "sheet",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	require.NoError(t, CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, nil, &store.ProjectMessage{
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: false},
+	}, []*store.TaskMessage{}))
+
+	_, err = service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Type:  v1pb.Issue_DATABASE_CHANGE,
+			Plan:  common.FormatPlan("project-a", plan.UID),
+			Draft: true,
+		},
+	}))
+
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	linkedIssue, getErr := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{"project-a"},
+		PlanUID:    &plan.UID,
+	})
+	require.NoError(t, getErr)
+	require.Nil(t, linkedIssue)
+}
+
 func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -137,6 +312,114 @@ func TestUpdateIssueLabelsDoesNotResetCreateDatabaseApproval(t *testing.T) {
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 	require.Len(t, service.bus.ApprovalCheckChan, 0)
+}
+
+func TestUpdateIssueLabelsOnDraftPreservesApproval(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	draft, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Draft: true},
+	})
+	require.NoError(t, err)
+	require.True(t, draft.Payload.GetDraft())
+	expectedApproval := draft.Payload.GetApproval()
+
+	updateIssueLabels(ctx, t, service, draft, []string{"environment:staging"})
+
+	got := getIssueForTest(ctx, t, stores, draft.UID)
+	assert.True(t, got.Payload.GetDraft())
+	assert.Equal(t, []string{"environment:staging"}, got.Payload.GetLabels())
+	assert.Equal(t, expectedApproval, got.Payload.GetApproval())
+	assert.Empty(t, service.bus.ApprovalCheckChan)
+}
+
+func TestRetryIssueApprovalRejectsDraft(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	draft, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Draft: true},
+	})
+	require.NoError(t, err)
+	require.True(t, draft.Payload.GetDraft())
+
+	_, err = service.RetryIssueApproval(ctx, connect.NewRequest(&v1pb.RetryIssueApprovalRequest{
+		Name: common.FormatIssue(draft.ProjectID, draft.UID),
+	}))
+
+	got := getIssueForTest(ctx, t, stores, draft.UID)
+	assert.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	assert.True(t, got.Payload.GetDraft())
+	assert.Equal(t, draft.Payload.GetApproval(), got.Payload.GetApproval())
+	assert.Empty(t, service.bus.ApprovalCheckChan)
+}
+
+func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+
+	tests := []struct {
+		name string
+		call func(service *IssueService, issueName string) error
+	}{
+		{
+			name: "approve",
+			call: func(service *IssueService, issueName string) error {
+				_, err := service.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+		{
+			name: "reject",
+			call: func(service *IssueService, issueName string) error {
+				_, err := service.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+		{
+			name: "request",
+			call: func(service *IssueService, issueName string) error {
+				_, err := service.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service := newIssueServiceForTest(t, stores)
+			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+				ProjectID: "project-a",
+				Name:      fmt.Sprintf("%s draft approval plan", test.name),
+				Config:    &storepb.PlanConfig{},
+			}, "creator@example.com")
+			require.NoError(t, err)
+			draft, err := stores.CreateIssue(ctx, &store.IssueMessage{
+				ProjectID:    "project-a",
+				CreatorEmail: "creator@example.com",
+				Title:        fmt.Sprintf("%s draft", test.name),
+				Type:         storepb.Issue_DATABASE_CHANGE,
+				Payload:      &storepb.Issue{Draft: true},
+				PlanUID:      &plan.UID,
+			})
+			require.NoError(t, err)
+			require.True(t, draft.Payload.GetDraft())
+			require.Nil(t, draft.Payload.GetApproval())
+
+			err = test.call(service, common.FormatIssue(draft.ProjectID, draft.UID))
+
+			got := getIssueForTest(ctx, t, stores, draft.UID)
+			assert.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+			assert.Equal(t, draft, got)
+			assert.Empty(t, service.bus.ApprovalCheckChan)
+			assert.Empty(t, service.bus.RolloutCreationChan)
+		})
+	}
 }
 
 func TestCreateDraftIssue(t *testing.T) {
@@ -353,6 +636,67 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, concurrentIssues, 1)
+}
+
+func TestCreateSubmittedIssueBlockedByExistingDraft(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "draft conflict plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{
+				{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							SheetSha256: "sheet",
+						},
+					},
+				},
+			},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	draft, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "original draft",
+		Description:  "original description",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload: &storepb.Issue{
+			Labels: []string{"original"},
+			Draft:  true,
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+	require.True(t, draft.Payload.GetDraft())
+
+	_, err = service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Title:       "submitted replacement",
+			Description: "replacement description",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Plan:        common.FormatPlan("project-a", plan.UID),
+			Labels:      []string{"replacement"},
+			Draft:       false,
+		},
+	}))
+
+	issues, listErr := stores.ListIssues(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{"project-a"},
+		PlanUID:    &plan.UID,
+	})
+	require.NoError(t, listErr)
+	assert.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	assert.Len(t, issues, 1)
+	if assert.NotEmpty(t, issues) {
+		assert.Equal(t, draft, issues[0])
+	}
+	assert.Empty(t, service.bus.ApprovalCheckChan)
 }
 
 func TestCreateDraftIssueBlockedByExistingNonDraftIssue(t *testing.T) {

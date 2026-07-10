@@ -149,6 +149,48 @@ func TestUpdateIssueApprovalResetSkipsStalePlanApprovalInputVersion(t *testing.T
 	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
 }
 
+func TestResetIssueApprovalFindingSkipsDraftIssue(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanServiceTestStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "draft issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Draft: true,
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 1,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, updated, err := resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s, issue, 2)
+	require.NoError(t, err)
+	require.False(t, updated)
+	require.Nil(t, updatedIssue)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.True(t, got.Payload.GetDraft())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 1, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
 func setupPlanServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 

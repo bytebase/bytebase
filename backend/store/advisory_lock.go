@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"strconv"
 )
 
 // AdvisoryLockKey defines lock identifiers for distributed coordination.
@@ -22,7 +23,15 @@ const (
 	// AdvisoryLockKeyVCSProviderUser is used as the namespace for active VCS
 	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
+	// AdvisoryLockKeyPlanIssueRollout serializes linked issue creation and
+	// rollout creation for the same plan.
+	AdvisoryLockKeyPlanIssueRollout AdvisoryLockKey = 1005
 )
+
+func acquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
+	key := projectID + "/" + strconv.FormatInt(planUID, 10)
+	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyPlanIssueRollout, key)
+}
 
 // AdvisoryLock holds a dedicated connection for a session-level advisory lock.
 type AdvisoryLock struct {

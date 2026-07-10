@@ -190,6 +190,25 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	}
 	defer tx.Rollback()
 
+	if create.PlanUID != nil {
+		if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
+			return nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
+		}
+
+		var hasRollout bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT COALESCE((config->>'hasRollout')::boolean, false)
+			FROM plan
+			WHERE project = $1
+			  AND id = $2`,
+			create.ProjectID, *create.PlanUID).Scan(&hasRollout); err != nil {
+			return nil, errors.Wrapf(err, "failed to get plan %d", *create.PlanUID)
+		}
+		if create.Payload.GetDraft() && hasRollout {
+			return nil, ErrPlanHasRollout
+		}
+	}
+
 	nextID, err := nextProjectID(ctx, tx, "issue", create.ProjectID)
 	if err != nil {
 		return nil, err
