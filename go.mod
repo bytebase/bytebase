@@ -68,7 +68,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.10.0
 	github.com/moby/moby/api v1.55.0
 	github.com/modelcontextprotocol/go-sdk v1.6.1
-	github.com/nyaruka/phonenumbers v1.8.0
+	github.com/nyaruka/phonenumbers/v2 v2.0.2
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/paulmach/orb v0.13.0
 	github.com/pb33f/libopenapi v0.38.5
