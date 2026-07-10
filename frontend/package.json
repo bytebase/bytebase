@@ -128,7 +128,7 @@
     "@types/semver": "7.7.1",
     "@types/slug": "5.0.9",
     "@vitejs/plugin-legacy": "~7.2.1",
-    "autoprefixer": "10.5.0",
+    "autoprefixer": "10.5.2",
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.4.2",
     "esbuild": "0.28.1",
