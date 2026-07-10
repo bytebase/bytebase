@@ -132,6 +132,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 	authContext.Resources = resources
+	authContext.Permission = getPermissionForRequest(request, authContext.Permission)
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
@@ -222,6 +223,13 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 
 	return nil
+}
+
+func getPermissionForRequest(request any, defaultPermission permission.Permission) permission.Permission {
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		return permission.InstancesCreate
+	}
+	return defaultPermission
 }
 
 func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {

@@ -39,4 +39,15 @@ describe("InstanceFormBody", () => {
     expect(syncDatabasesIndex).toBeGreaterThan(connectionCardIndex);
     expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
   });
+
+  test("refetches database previews when pending create instance changes", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain(
+      "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
+    );
+  });
 });

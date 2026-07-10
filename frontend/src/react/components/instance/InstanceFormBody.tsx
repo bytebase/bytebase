@@ -459,7 +459,7 @@ function SyncDatabases({
     return () => {
       cancelled = true;
     };
-  }, [syncAll]);
+  }, [syncAll, isCreatingProp, pendingCreateInstance, instance]);
 
   if (hideAdvancedFeatures) return null;
 
