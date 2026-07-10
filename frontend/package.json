@@ -69,7 +69,7 @@
     "markdown-it": "^14.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@35.0.0",
     "normalize-wheel": "^1.0.1",
-    "pev2": "1.21.0",
+    "pev2": "1.22.0",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "qrcode.react": "^4.2.0",
