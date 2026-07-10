@@ -119,8 +119,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       js-yaml:
-        specifier: 4.2.0
-        version: 4.2.0
+        specifier: 4.3.0
+        version: 4.3.0
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -2884,8 +2884,8 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  js-yaml@4.2.0:
-    resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
+  js-yaml@4.3.0:
+    resolution: {integrity: sha512-1td788aAnnZ5qs7V2QIRl1owjtYpbKt749Y3xauqQgwIIGF/xXWz1wMTEBx5O3LK3lXLVuqXPdPxj2BoFHaW9Q==}
     hasBin: true
 
   jschardet@3.1.4:
@@ -5456,7 +5456,7 @@ snapshots:
   '@rollup/plugin-yaml@4.1.2(rollup@4.62.2)':
     dependencies:
       '@rollup/pluginutils': 5.1.4(rollup@4.62.2)
-      js-yaml: 4.2.0
+      js-yaml: 4.3.0
       tosource: 2.0.0-alpha.3
     optionalDependencies:
       rollup: 4.62.2
@@ -6827,7 +6827,7 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@4.2.0:
+  js-yaml@4.3.0:
     dependencies:
       argparse: 2.0.1
 
