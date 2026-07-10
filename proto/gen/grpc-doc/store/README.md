@@ -2776,6 +2776,7 @@ Issue is the metadata for issues that track database operations and access reque
 | labels | [string](#string) | repeated | Labels attached to categorize and filter the issue. |
 | risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  | Risk level for the issue, calculated from statement types. |
 | access_grant_id | [string](#string) |  | The access grant id for ACCESS_GRANT type issue. |
+| is_draft | [bool](#bool) |  | Whether this issue is a Draft Review Issue. Missing from persisted payloads means false. |
 
 
 

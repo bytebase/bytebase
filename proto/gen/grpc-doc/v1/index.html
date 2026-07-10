@@ -9696,6 +9696,23 @@ This field is populated when syncing from the database. When empty (e.g., when p
 from SQL files), the system cannot automatically drop the constraint. </p></td>
                 </tr>
 
+                <tr>
+                  <td>srid</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td>optional</td>
+                  <td><p>The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+Unset means the column declares no SRID; presence carries the explicit SRID,
+including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+int32). </p></td>
+                </tr>
+
+                <tr>
+                  <td>is_invisible</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23&#43; only. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
@@ -16620,6 +16637,13 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td></td>
                   <td><p>The access grant associated with this issue.
 Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+
+                <tr>
+                  <td>is_draft</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether this issue is a Draft Review Issue. </p></td>
                 </tr>
 
             </tbody>
@@ -34819,3 +34843,4 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
     </table>
   </body>
 </html>
+

@@ -122,7 +122,8 @@ type FindIssueMessage struct {
 	Limit  *int
 	Offset *int
 
-	Query *string
+	Query        *string
+	ExcludeDraft bool
 
 	LabelList     []string
 	RiskLevelList []storepb.RiskLevel
@@ -583,6 +584,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			riskLevelStrings = append(riskLevelStrings, rl.String())
 		}
 		where.And("payload->>'riskLevel' = ANY(?)", riskLevelStrings)
+	}
+	if find.ExcludeDraft {
+		where.And("COALESCE(issue.payload->>'isDraft', 'false') = 'false'")
 	}
 
 	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {

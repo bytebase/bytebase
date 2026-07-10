@@ -152,6 +152,9 @@ type Issue struct {
 	RiskLevel RiskLevel `protobuf:"varint,4,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
 	// The access grant id for ACCESS_GRANT type issue.
 	AccessGrantId string `protobuf:"bytes,5,opt,name=access_grant_id,json=accessGrantId,proto3" json:"access_grant_id,omitempty"`
+	// Whether this issue is a Draft Review Issue.
+	// Missing from persisted payloads means false.
+	IsDraft       bool `protobuf:"varint,6,opt,name=is_draft,json=isDraft,proto3" json:"is_draft,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -219,6 +222,13 @@ func (x *Issue) GetAccessGrantId() string {
 		return x.AccessGrantId
 	}
 	return ""
+}
+
+func (x *Issue) GetIsDraft() bool {
+	if x != nil {
+		return x.IsDraft
+	}
+	return false
 }
 
 // RoleGrant contains details for requesting a project role.
@@ -300,7 +310,7 @@ var File_store_issue_proto protoreflect.FileDescriptor
 
 const file_store_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xb7\x03\n" +
+	"\x11store/issue.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"\xd2\x03\n" +
 	"\x05Issue\x12@\n" +
 	"\bapproval\x18\x01 \x01(\v2$.bytebase.store.IssuePayloadApprovalR\bapproval\x128\n" +
 	"\n" +
@@ -308,7 +318,8 @@ const file_store_issue_proto_rawDesc = "" +
 	"\x06labels\x18\x03 \x03(\tR\x06labels\x128\n" +
 	"\n" +
 	"risk_level\x18\x04 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\x12&\n" +
-	"\x0faccess_grant_id\x18\x05 \x01(\tR\raccessGrantId\"n\n" +
+	"\x0faccess_grant_id\x18\x05 \x01(\tR\raccessGrantId\x12\x19\n" +
+	"\bis_draft\x18\x06 \x01(\bR\aisDraft\"n\n" +
 	"\x04Type\x12\x1a\n" +
 	"\x16ISSUE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +

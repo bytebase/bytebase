@@ -257,6 +257,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 		return nil, err
 	}
 	issueFind.ProjectIDs = []string{projectID}
+	issueFind.ExcludeDraft = true
 
 	orderByKeys, err := store.GetIssueOrders(req.Msg.OrderBy)
 	if err != nil {
@@ -336,6 +337,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		}
 	}
 	issueFind.ProjectIDs = projectIDs
+	issueFind.ExcludeDraft = true
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
@@ -398,7 +400,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	issueLabels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
-	if project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
+	if !req.Msg.Issue.GetIsDraft() && project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
@@ -415,14 +417,42 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, err
 	}
-	issue, err = s.store.CreateIssue(ctx, issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+	created := false
+	if issue.Payload.GetIsDraft() {
+		existing, err := s.findIssueForDraftCreate(ctx, issue)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil {
+			issue = existing
+		} else {
+			issue, err = s.store.CreateIssue(ctx, issue)
+			if err != nil {
+				existing, lookupErr := s.findIssueForDraftCreate(ctx, issue)
+				if lookupErr != nil {
+					return nil, lookupErr
+				}
+				if existing == nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+				}
+				issue = existing
+			} else {
+				created = true
+			}
+		}
+	} else {
+		issue, err = s.store.CreateIssue(ctx, issue)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+		}
+		created = true
 	}
 
-	issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	if created && !issue.Payload.GetIsDraft() {
+		issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	converted, err := s.convertToIssue(issue)
@@ -433,10 +463,29 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(converted), nil
 }
 
+func (s *IssueService) findIssueForDraftCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
+	existing, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{issue.ProjectID},
+		PlanUID:    issue.PlanUID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find issue by plan"))
+	}
+	if existing != nil && !existing.Payload.GetIsDraft() {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", *issue.PlanUID))
+	}
+	return existing, nil
+}
+
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {
 	var planUID *int64
 	var roleGrant *storepb.RoleGrant
 	var title, description string
+
+	if request.Issue.GetIsDraft() && request.Issue.Type != v1pb.Issue_DATABASE_CHANGE {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issues must be database change issues"))
+	}
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
@@ -529,6 +578,11 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
+		if request.Issue.GetIsDraft() {
+			if err := validateDraftReviewPlan(plan); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+		}
 		for _, spec := range plan.Config.GetSpecs() {
 			if spec.GetExportDataConfig() != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
@@ -571,11 +625,46 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 				ApprovalTemplate:    nil,
 				Approvers:           nil,
 			},
-			Labels: labels,
+			Labels:  labels,
+			IsDraft: request.Issue.GetIsDraft(),
 		},
 	}
 
 	return issue, nil
+}
+
+func validateDraftReviewPlan(plan *store.PlanMessage) error {
+	if plan.Deleted {
+		return errors.Errorf("draft issues require an active plan")
+	}
+	specs := plan.Config.GetSpecs()
+	if len(specs) == 0 {
+		return errors.Errorf("draft issues require a database plan")
+	}
+
+	var kind string
+	for _, spec := range specs {
+		var specKind string
+		switch config := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			specKind = "create database"
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			if config.ChangeDatabaseConfig.GetRelease() != "" {
+				return errors.Errorf("draft issues are not supported for GitOps plans")
+			}
+			specKind = "change database"
+		case *storepb.PlanConfig_Spec_ExportDataConfig:
+			return errors.Errorf("draft issues are not supported for export plans")
+		default:
+			return errors.Errorf("draft issues require a database plan")
+		}
+		if kind == "" {
+			kind = specKind
+		} else if kind != specKind {
+			return errors.Errorf("draft issues are not supported for mixed plans")
+		}
+	}
+	return nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
