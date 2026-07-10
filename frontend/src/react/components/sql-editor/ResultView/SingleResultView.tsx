@@ -4,6 +4,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   CopyIcon,
   InfoIcon,
   XIcon,
@@ -27,6 +28,7 @@ import {
   DataExportButton,
   type DataExportRequest,
 } from "@/react/components/DataExportButton";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -35,10 +37,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
+import { writeTextToClipboard } from "@/react/lib/clipboard";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
@@ -62,14 +66,18 @@ import {
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
 import { isNullOrUndefined } from "@/utils/util";
-import { getInstanceResource } from "@/utils/v1/database";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  getInstanceResource,
+} from "@/utils/v1/database";
+import { instanceV1Name } from "@/utils/v1/instance";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { SQLResultViewProvider, useSelectionContext } from "./context";
 import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 import { DetailPanel } from "./DetailPanel";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { ResultStatusBar, RichDatabaseName } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import type { ResultTableColumn, ResultTableRow, SortState } from "./types";
 import {
@@ -753,13 +761,33 @@ function SingleResultViewInner({
           </div>
 
           {/* Status bar */}
-          <ResultStatusBar
-            database={database}
-            statement={result.statement ?? ""}
-            queryTime={queryTime}
-            showVisualizeButton={showVisualizeButton}
-            onVisualizeExplain={visualizeExplain}
-          />
+          <div className="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light">
+            <div className="flex items-center gap-x-2">
+              <RichDatabaseName database={database} />
+              <div className="flex items-center gap-x-1 min-w-0">
+                <EllipsisText
+                  text={result.statement ?? ""}
+                  className="truncate"
+                />
+                <CopyInlineButton text={result.statement ?? ""} />
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-x-2">
+              {showVisualizeButton && (
+                <Button
+                  size="sm"
+                  appearance="link"
+                  className="h-auto px-0 text-xs"
+                  onClick={visualizeExplain}
+                >
+                  {t("sql-editor.visualize-explain")}
+                </Button>
+              )}
+              <span>
+                {t("sql-editor.query-time")}: {queryTime}
+              </span>
+            </div>
+          </div>
         </>
       )}
 
@@ -801,6 +829,29 @@ function useLocalStorageBoolean(
 }
 
 /**
+ * Inline simplified renderer mirroring the visible output of Vue
+ * `RichDatabaseName` with default props: engine icon + instance title +
+ * chevron + environment + database. Skips the popover-on-hover branch
+ * (only used by `tooltip="instance"` callers; result-view doesn't set it).
+ */
+function RichDatabaseName({ database }: { database: Database }) {
+  const instance = getInstanceResource(database);
+  const environment = getDatabaseEnvironment(database);
+  const { databaseName } = extractDatabaseResourceName(database.name);
+  return (
+    <div className="flex flex-row justify-start items-center gap-x-1">
+      <EngineIcon engine={instance.engine} className="size-4" />
+      <span>{instanceV1Name(instance)}</span>
+      <ChevronRightIcon className="size-3" />
+      <span className="flex flex-row items-center gap-x-1">
+        <span className="text-control-light">{environment.title}</span>
+        <span>{databaseName}</span>
+      </span>
+    </div>
+  );
+}
+
+/**
  * Inline simplified `DatabaseInfo` for the export drawer's form-prefix slot.
  * Vue version showed `[engine] instance > [env] database`; we mirror that.
  */
@@ -811,6 +862,28 @@ function DatabaseInfo({ database }: { database: Database }) {
       <span className="text-xs text-control-light">{t("common.database")}</span>
       <RichDatabaseName database={database} />
     </div>
+  );
+}
+
+function CopyInlineButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    if (await writeTextToClipboard(text)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } else {
+      // ignore
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="text-control-light hover:text-control"
+      aria-label="copy"
+    >
+      <CopyIcon className={cn("size-3", copied && "text-accent")} />
+    </button>
   );
 }
 
