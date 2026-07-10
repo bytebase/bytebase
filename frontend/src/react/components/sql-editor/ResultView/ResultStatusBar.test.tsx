@@ -165,4 +165,34 @@ describe("ResultStatusBar", () => {
 
     expect(databaseLabel.classList.contains("hidden")).toBe(true);
   });
+
+  test("keeps a long database label when the capped width still fits", () => {
+    render(
+      <ResultStatusBar
+        database={database}
+        statement="SELECT 1"
+        queryTime="3 ms"
+      />
+    );
+
+    const statusLeft = screen.getByTestId("result-status-left");
+    const databaseLabel = screen.getByTestId("result-status-database");
+    const statement = screen.getByTestId("result-status-statement");
+
+    setElementWidth(statusLeft, { clientWidth: 520, scrollWidth: 520 });
+    setElementWidth(databaseLabel, { clientWidth: 230, scrollWidth: 900 });
+    setElementWidth(statement, { clientWidth: 250, scrollWidth: 250 });
+
+    act(() => {
+      for (const callback of resizeCallbacks) {
+        callback([] as unknown as ResizeObserverEntry[], {
+          disconnect: vi.fn(),
+          observe: vi.fn(),
+          unobserve: vi.fn(),
+        });
+      }
+    });
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(false);
+  });
 });

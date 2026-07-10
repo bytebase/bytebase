@@ -44,7 +44,8 @@ export function ResultStatusBar({
       if (!statusLeft || !databaseLabel || !statementLabel) return;
 
       const databaseWidth =
-        databaseLabel.scrollWidth || databaseLabel.clientWidth;
+        databaseLabel.getBoundingClientRect().width ||
+        databaseLabel.clientWidth;
       if (databaseWidth > 0) {
         databaseWidthRef.current = databaseWidth;
       }
