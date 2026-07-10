@@ -70,6 +70,39 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
 			line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
 
+			if countSQL, ok := mysqlparser.AffectedRowsCountSQL(text); ok {
+				res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, countSQL)
+				if err != nil {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("\"%s\" count failed: %s", text, err.Error()),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+					continue
+				}
+				rowCount, err := getCountRows(res)
+				if err != nil {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.Internal.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				} else if rowCount = capRowsByLimit(rowCount, limit); rowCount > int64(maxRow) {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("\"%s\" affected %d rows. The count exceeds %d.", text, rowCount, maxRow),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				}
+				continue
+			}
+
 			explainCount++
 			res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
 			if err != nil {
@@ -157,4 +190,42 @@ func getRows(res []any) (int64, error) {
 	}
 
 	return 0, nil
+}
+
+func getCountRows(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) != 3 {
+		return 0, errors.Errorf("expected 3 but got %d", len(res))
+	}
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", res[2])
+	}
+	if len(rowList) < 1 {
+		return 0, errors.Errorf("not found any data")
+	}
+	row, ok := rowList[0].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
+	}
+	if len(row) < 1 {
+		return 0, errors.Errorf("not found any column")
+	}
+
+	switch col := row[0].(type) {
+	case int:
+		return int64(col), nil
+	case int32:
+		return int64(col), nil
+	case int64:
+		return col, nil
+	case string:
+		v, err := strconv.ParseInt(col, 10, 64)
+		if err != nil {
+			return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
+		}
+		return v, nil
+	default:
+		return 0, errors.Errorf("expected int or int64 but got %T", col)
+	}
 }

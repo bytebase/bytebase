@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,7 @@ import (
 )
 
 var testMySQLAdvisorExplainRows [][]driver.Value
+var testMySQLAdvisorCountRows [][]driver.Value
 
 func init() {
 	sql.Register("test_mysql_advisor_explain", testMySQLAdvisorExplainDriver{})
@@ -42,7 +44,13 @@ func (testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
 	return testMySQLAdvisorExplainTx{}, nil
 }
 
-func (testMySQLAdvisorExplainConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+func (testMySQLAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	if strings.HasPrefix(strings.ToLower(query), "select count(*)") {
+		return &testMySQLAdvisorExplainResultRows{
+			columns: []string{"count(*)"},
+			rows:    testMySQLAdvisorCountRows,
+		}, nil
+	}
 	return &testMySQLAdvisorExplainResultRows{rows: testMySQLAdvisorExplainRows}, nil
 }
 
@@ -57,11 +65,15 @@ func (testMySQLAdvisorExplainTx) Rollback() error {
 }
 
 type testMySQLAdvisorExplainResultRows struct {
-	rows [][]driver.Value
-	idx  int
+	columns []string
+	rows    [][]driver.Value
+	idx     int
 }
 
-func (*testMySQLAdvisorExplainResultRows) Columns() []string {
+func (r *testMySQLAdvisorExplainResultRows) Columns() []string {
+	if len(r.columns) > 0 {
+		return r.columns
+	}
 	return []string{"id", "select_type", "table", "type", "rows", "filtered"}
 }
 
@@ -160,6 +172,7 @@ func TestMySQLRowLimitAdvisorsCapExplainEstimateByLimit(t *testing.T) {
 	testMySQLAdvisorExplainRows = [][]driver.Value{
 		{int64(1), "SIMPLE", "td", "ALL", int64(1000), "100.00"},
 	}
+	testMySQLAdvisorCountRows = nil
 	db, err := sql.Open("test_mysql_advisor_explain", "")
 	require.NoError(t, err)
 	defer db.Close()
@@ -201,6 +214,45 @@ func TestMySQLRowLimitAdvisorsCapExplainEstimateByLimit(t *testing.T) {
 			require.Empty(t, adviceList)
 		})
 	}
+}
+
+func TestMySQLAffectedRowLimitCountsSingleTableDMLWithSubqueryPredicate(t *testing.T) {
+	testMySQLAdvisorExplainRows = [][]driver.Value{
+		{int64(1), "UPDATE", "target_table", "ALL", int64(3900000), "100.00"},
+		{int64(2), "DEPENDENT SUBQUERY", "related_table", "ref", int64(1), "10.00"},
+	}
+	testMySQLAdvisorCountRows = [][]driver.Value{{int64(12000)}}
+	db, err := sql.Open("test_mysql_advisor_explain", "")
+	require.NoError(t, err)
+	defer db.Close()
+
+	sm := sheet.NewManager()
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, `
+		UPDATE target_table o
+		SET o.target_flag = 1
+		WHERE o.target_flag IS NULL
+		  AND EXISTS (
+		    SELECT 1
+		    FROM related_table t
+		    WHERE t.join_key = o.join_key
+		  );
+	`, []*storepb.SQLReviewRule{
+		{
+			Type:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			Level: storepb.SQLReviewRule_ERROR,
+			Payload: &storepb.SQLReviewRule_NumberPayload{
+				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+					Number: 20000,
+				},
+			},
+		},
+	}, advisor.Context{
+		DBType:          storepb.Engine_MYSQL,
+		Driver:          db,
+		NoAppendBuiltin: true,
+	})
+	require.NoError(t, err)
+	require.Empty(t, adviceList)
 }
 
 func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {

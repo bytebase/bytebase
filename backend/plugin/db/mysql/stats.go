@@ -20,6 +20,15 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		return countAffectedRowsForOceanBase(ctx, d.db, statement)
 	}
 
+	countSQL, ok := mysqlparser.AffectedRowsCountSQL(statement)
+	if ok {
+		count, err := d.queryAffectedRowsCount(ctx, countSQL)
+		if err != nil {
+			return 0, err
+		}
+		return capAffectedRowsByLimit(count, statement), nil
+	}
+
 	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
 	rows, err := d.db.QueryContext(ctx, explainSQL)
 	if err != nil {
@@ -63,6 +72,27 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 
 		if rowsColumn.Valid {
 			return capAffectedRowsByLimit(rowsColumn.Int64, statement), nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return 0, nil
+}
+
+func (d *Driver) queryAffectedRowsCount(ctx context.Context, countSQL string) (int64, error) {
+	rows, err := d.db.QueryContext(ctx, countSQL)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var count sql.NullInt64
+		if err := rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		if count.Valid {
+			return count.Int64, nil
 		}
 	}
 	if err := rows.Err(); err != nil {
