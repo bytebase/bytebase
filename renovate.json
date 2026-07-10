@@ -47,6 +47,11 @@
       "matchPackageNames": ["go", "golangci/golangci-lint"]
     },
     {
+      "groupName": "connectrpc",
+      "description": "Group @connectrpc packages since connect-web pins an exact peer version of connect",
+      "matchPackagePatterns": ["^@connectrpc/"]
+    },
+    {
       "groupName": "i18next",
       "description": "Group i18next, react-i18next, and i18next plugins so peer-dep major bumps land together",
       "matchPackagePatterns": ["^i18next$", "^react-i18next$", "^i18next-"]
