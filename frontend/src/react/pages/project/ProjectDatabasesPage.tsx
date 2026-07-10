@@ -399,7 +399,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           <Button
             disabled={
               !hasProjectPermission("bb.instances.list") ||
-              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(hasProjectPermission)
+              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((permission) =>
+                hasProjectPermission(permission)
+              )
             }
             onClick={() => setShowCreateDrawer(true)}
           >

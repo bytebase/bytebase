@@ -14,13 +14,13 @@ import {
 } from "@/utils/v1/database";
 import { instanceV1Name } from "@/utils/v1/instance";
 
-interface ResultStatusBarProps {
+type ResultStatusBarProps = Readonly<{
   database: Database;
   statement: string;
   queryTime: string;
   showVisualizeButton?: boolean;
   onVisualizeExplain?: () => void;
-}
+}>;
 
 export function ResultStatusBar({
   database,
@@ -126,11 +126,11 @@ export function RichDatabaseName({
   ref,
   database,
   hidden = false,
-}: {
+}: Readonly<{
   ref?: Ref<HTMLDivElement>;
   database: Database;
   hidden?: boolean;
-}) {
+}>) {
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);
   const { databaseName } = extractDatabaseResourceName(database.name);
