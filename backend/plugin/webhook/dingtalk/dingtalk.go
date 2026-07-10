@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/cenkalti/backoff/v5"
-	"github.com/nyaruka/phonenumbers"
+	"github.com/nyaruka/phonenumbers/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
