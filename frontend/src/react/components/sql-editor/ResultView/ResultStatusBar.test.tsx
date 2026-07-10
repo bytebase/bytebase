@@ -3,7 +3,7 @@ import { act } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ResultStatusBar } from "./ResultStatusBar";
+import { ResultStatusBar, RichDatabaseName } from "./ResultStatusBar";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: {
@@ -107,6 +107,13 @@ describe("ResultStatusBar", () => {
     expect(statement.className).toContain("flex-1");
     expect(statement.className).not.toContain("max-w-3xl");
     expect(statement.textContent).toContain("SELECT db.environment");
+  });
+
+  test("does not cap rich database names outside the status bar", () => {
+    render(<RichDatabaseName database={database} />);
+
+    const databaseLabel = screen.getByTestId("result-status-database");
+    expect(databaseLabel.className).not.toContain("max-w-[45%]");
   });
 
   test("lets the statement use available space while keeping copy attached", () => {

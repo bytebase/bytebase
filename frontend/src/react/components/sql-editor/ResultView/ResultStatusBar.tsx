@@ -79,6 +79,7 @@ export function ResultStatusBar({
           ref={databaseRef}
           database={database}
           hidden={hideDatabase}
+          className="max-w-[45%] shrink"
         />
         <div
           ref={statementRef}
@@ -126,10 +127,12 @@ export function RichDatabaseName({
   ref,
   database,
   hidden = false,
+  className,
 }: Readonly<{
   ref?: Ref<HTMLDivElement>;
   database: Database;
   hidden?: boolean;
+  className?: string;
 }>) {
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);
@@ -138,7 +141,8 @@ export function RichDatabaseName({
     <div
       ref={ref}
       className={cn(
-        "flex min-w-0 max-w-[45%] shrink items-center gap-x-1 overflow-hidden whitespace-nowrap",
+        "flex min-w-0 items-center gap-x-1 overflow-hidden whitespace-nowrap",
+        className,
         hidden && "hidden"
       )}
       data-testid="result-status-database"
