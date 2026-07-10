@@ -586,7 +586,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("payload->>'riskLevel' = ANY(?)", riskLevelStrings)
 	}
 	if find.ExcludeDraft {
-		where.And("COALESCE(issue.payload->>'isDraft', 'false') = 'false'")
+		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
 
 	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {

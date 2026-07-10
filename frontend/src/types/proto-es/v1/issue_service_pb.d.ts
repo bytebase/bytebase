@@ -577,9 +577,9 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   /**
    * Whether this issue is a Draft Review Issue.
    *
-   * @generated from field: bool is_draft = 20;
+   * @generated from field: bool draft = 20;
    */
-  isDraft: boolean;
+  draft: boolean;
 };
 
 /**

@@ -20843,9 +20843,9 @@ components:
             The access grant associated with this issue.
              Format: projects/{project}/accessGrants/{access_grant}
           readOnly: true
-        isDraft:
+        draft:
           type: boolean
-          title: is_draft
+          title: draft
           description: (OPTIONAL) Whether this issue is a Draft Review Issue.
       title: Issue
       additionalProperties: false

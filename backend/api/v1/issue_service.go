@@ -400,7 +400,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	issueLabels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
-	if !req.Msg.Issue.GetIsDraft() && project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
+	if !req.Msg.Issue.GetDraft() && project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
@@ -418,7 +418,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, err
 	}
 	created := false
-	if issue.Payload.GetIsDraft() {
+	if issue.Payload.GetDraft() {
 		existing, err := s.findIssueForDraftCreate(ctx, issue)
 		if err != nil {
 			return nil, err
@@ -448,7 +448,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		created = true
 	}
 
-	if created && !issue.Payload.GetIsDraft() {
+	if created && !issue.Payload.GetDraft() {
 		issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -472,7 +472,7 @@ func (s *IssueService) findIssueForDraftCreate(ctx context.Context, issue *store
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find issue by plan"))
 	}
-	if existing != nil && !existing.Payload.GetIsDraft() {
+	if existing != nil && !existing.Payload.GetDraft() {
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", *issue.PlanUID))
 	}
 	return existing, nil
@@ -483,7 +483,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 	var roleGrant *storepb.RoleGrant
 	var title, description string
 
-	if request.Issue.GetIsDraft() && request.Issue.Type != v1pb.Issue_DATABASE_CHANGE {
+	if request.Issue.GetDraft() && request.Issue.Type != v1pb.Issue_DATABASE_CHANGE {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issues must be database change issues"))
 	}
 
@@ -578,7 +578,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
-		if request.Issue.GetIsDraft() {
+		if request.Issue.GetDraft() {
 			if err := validateDraftReviewPlan(plan); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
@@ -625,8 +625,8 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 				ApprovalTemplate:    nil,
 				Approvers:           nil,
 			},
-			Labels:  labels,
-			IsDraft: request.Issue.GetIsDraft(),
+			Labels: labels,
+			Draft:  request.Issue.GetDraft(),
 		},
 	}
 

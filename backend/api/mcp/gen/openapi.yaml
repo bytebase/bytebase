@@ -12732,9 +12732,9 @@ components:
           description: |-
             The access grant associated with this issue.
              Format: projects/{project}/accessGrants/{access_grant}
-        isDraft:
+        draft:
           type: boolean
-          title: is_draft
+          title: draft
           description: Whether this issue is a Draft Review Issue.
       title: Issue
       additionalProperties: false

@@ -166,33 +166,33 @@ func TestCreateDraftIssue(t *testing.T) {
 	response, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: "projects/project-a",
 		Issue: &v1pb.Issue{
-			Type:    v1pb.Issue_DATABASE_CHANGE,
-			Plan:    common.FormatPlan("project-a", plan.UID),
-			IsDraft: true,
+			Type:  v1pb.Issue_DATABASE_CHANGE,
+			Plan:  common.FormatPlan("project-a", plan.UID),
+			Draft: true,
 		},
 	}))
 	require.NoError(t, err)
 	require.Equal(t, common.FormatPlan("project-a", plan.UID), response.Msg.Plan)
 	require.Equal(t, "draft plan", response.Msg.Title)
 	require.Equal(t, "draft description", response.Msg.Description)
-	require.True(t, response.Msg.IsDraft)
+	require.True(t, response.Msg.Draft)
 
 	stored, err := stores.GetIssue(ctx, &store.FindIssueMessage{
 		ProjectIDs: []string{"project-a"},
 		PlanUID:    &plan.UID,
 	})
 	require.NoError(t, err)
-	require.True(t, stored.Payload.GetIsDraft())
+	require.True(t, stored.Payload.GetDraft())
 
-	var rawIsDraft string
+	var rawDraft string
 	err = stores.GetDB().QueryRowContext(
 		ctx,
-		"SELECT payload->>'isDraft' FROM issue WHERE project = $1 AND id = $2",
+		"SELECT payload->>'draft' FROM issue WHERE project = $1 AND id = $2",
 		"project-a",
 		stored.UID,
-	).Scan(&rawIsDraft)
+	).Scan(&rawDraft)
 	require.NoError(t, err)
-	require.Equal(t, "true", rawIsDraft)
+	require.Equal(t, "true", rawDraft)
 
 	_, err = stores.GetDB().ExecContext(
 		ctx,
@@ -221,13 +221,13 @@ func TestCreateDraftIssue(t *testing.T) {
 	createDatabaseDraft, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: "projects/project-a",
 		Issue: &v1pb.Issue{
-			Type:    v1pb.Issue_DATABASE_CHANGE,
-			Plan:    common.FormatPlan("project-a", createDatabasePlan.UID),
-			IsDraft: true,
+			Type:  v1pb.Issue_DATABASE_CHANGE,
+			Plan:  common.FormatPlan("project-a", createDatabasePlan.UID),
+			Draft: true,
 		},
 	}))
 	require.NoError(t, err)
-	require.True(t, createDatabaseDraft.Msg.GetIsDraft())
+	require.True(t, createDatabaseDraft.Msg.GetDraft())
 }
 
 func TestCreateDraftIssueIsIdempotent(t *testing.T) {
@@ -262,7 +262,7 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        common.FormatPlan("project-a", plan.UID),
 			Labels:      []string{"original"},
-			IsDraft:     true,
+			Draft:       true,
 		},
 	}))
 	require.NoError(t, err)
@@ -275,7 +275,7 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        common.FormatPlan("project-a", plan.UID),
 			Labels:      []string{"replacement"},
-			IsDraft:     true,
+			Draft:       true,
 		},
 	}))
 	require.NoError(t, err)
@@ -324,10 +324,10 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 			response, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 				Parent: "projects/project-a",
 				Issue: &v1pb.Issue{
-					Title:   title,
-					Type:    v1pb.Issue_DATABASE_CHANGE,
-					Plan:    common.FormatPlan("project-a", concurrentPlan.UID),
-					IsDraft: true,
+					Title: title,
+					Type:  v1pb.Issue_DATABASE_CHANGE,
+					Plan:  common.FormatPlan("project-a", concurrentPlan.UID),
+					Draft: true,
 				},
 			}))
 			results <- createResult{response: response, err: err}
@@ -386,25 +386,25 @@ func TestCreateDraftIssueBlockedByExistingNonDraftIssue(t *testing.T) {
 		PlanUID:      &plan.UID,
 	})
 	require.NoError(t, err)
-	require.False(t, existing.Payload.GetIsDraft())
+	require.False(t, existing.Payload.GetDraft())
 
-	var hasIsDraft bool
+	var hasDraft bool
 	err = stores.GetDB().QueryRowContext(
 		ctx,
-		"SELECT payload ? 'isDraft' FROM issue WHERE project = $1 AND id = $2",
+		"SELECT payload ? 'draft' FROM issue WHERE project = $1 AND id = $2",
 		"project-a",
 		existing.UID,
-	).Scan(&hasIsDraft)
+	).Scan(&hasDraft)
 	require.NoError(t, err)
-	require.False(t, hasIsDraft)
+	require.False(t, hasDraft)
 
 	_, err = service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: "projects/project-a",
 		Issue: &v1pb.Issue{
-			Title:   "draft replacement",
-			Type:    v1pb.Issue_DATABASE_CHANGE,
-			Plan:    common.FormatPlan("project-a", plan.UID),
-			IsDraft: true,
+			Title: "draft replacement",
+			Type:  v1pb.Issue_DATABASE_CHANGE,
+			Plan:  common.FormatPlan("project-a", plan.UID),
+			Draft: true,
 		},
 	}))
 	require.Equal(t, connect.CodeAlreadyExists, connect.CodeOf(err))
@@ -417,13 +417,13 @@ func TestCreateDraftIssueBlockedByExistingNonDraftIssue(t *testing.T) {
 	require.Equal(t, existing.UID, stored.UID)
 	require.Equal(t, "submitted issue", stored.Title)
 	require.Equal(t, []string{"original"}, stored.Payload.GetLabels())
-	require.False(t, stored.Payload.GetIsDraft())
+	require.False(t, stored.Payload.GetDraft())
 
 	direct, err := service.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
 		Name: common.FormatIssue("project-a", existing.UID),
 	}))
 	require.NoError(t, err)
-	require.False(t, direct.Msg.GetIsDraft())
+	require.False(t, direct.Msg.GetDraft())
 }
 
 func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
@@ -483,41 +483,41 @@ func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
 		{
 			name: "no plan",
 			issue: &v1pb.Issue{
-				Type:    v1pb.Issue_DATABASE_CHANGE,
-				IsDraft: true,
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Draft: true,
 			},
 		},
 		{
 			name: "GitOps plan",
 			issue: &v1pb.Issue{
-				Type:    v1pb.Issue_DATABASE_CHANGE,
-				Plan:    common.FormatPlan("project-a", gitOpsPlan.UID),
-				IsDraft: true,
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Plan:  common.FormatPlan("project-a", gitOpsPlan.UID),
+				Draft: true,
 			},
 		},
 		{
 			name: "mixed plan",
 			issue: &v1pb.Issue{
-				Type:    v1pb.Issue_DATABASE_CHANGE,
-				Plan:    common.FormatPlan("project-a", mixedPlan.UID),
-				IsDraft: true,
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Plan:  common.FormatPlan("project-a", mixedPlan.UID),
+				Draft: true,
 			},
 		},
 		{
 			name: "export plan",
 			issue: &v1pb.Issue{
-				Type:    v1pb.Issue_DATABASE_CHANGE,
-				Plan:    common.FormatPlan("project-a", exportPlan.UID),
-				IsDraft: true,
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Plan:  common.FormatPlan("project-a", exportPlan.UID),
+				Draft: true,
 			},
 		},
 		{
 			name: "non-database issue",
 			issue: &v1pb.Issue{
-				Title:   "role request",
-				Type:    v1pb.Issue_ROLE_GRANT,
-				Plan:    common.FormatPlan("project-a", validPlan.UID),
-				IsDraft: true,
+				Title: "role request",
+				Type:  v1pb.Issue_ROLE_GRANT,
+				Plan:  common.FormatPlan("project-a", validPlan.UID),
+				Draft: true,
 			},
 		},
 	}
@@ -565,7 +565,7 @@ func TestIssueListsHideDraftIssues(t *testing.T) {
 		CreatorEmail: "creator@example.com",
 		Title:        "draft",
 		Type:         storepb.Issue_DATABASE_CHANGE,
-		Payload:      &storepb.Issue{IsDraft: true},
+		Payload:      &storepb.Issue{Draft: true},
 		PlanUID:      &draftPlan.UID,
 	})
 	require.NoError(t, err)
@@ -590,7 +590,7 @@ func TestIssueListsHideDraftIssues(t *testing.T) {
 		Name: common.FormatIssue("project-a", draft.UID),
 	}))
 	require.NoError(t, err)
-	require.True(t, direct.Msg.GetIsDraft())
+	require.True(t, direct.Msg.GetDraft())
 }
 
 func issueNames(issues []*v1pb.Issue) []string {

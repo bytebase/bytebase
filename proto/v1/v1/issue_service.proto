@@ -482,7 +482,7 @@ message Issue {
   ];
 
   // Whether this issue is a Draft Review Issue.
-  bool is_draft = 20 [(google.api.field_behavior) = OPTIONAL];
+  bool draft = 20 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RoleGrant {
