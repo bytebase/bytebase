@@ -134,7 +134,7 @@
     "esbuild": "0.28.1",
     "jsdom": "27.4.0",
     "micromark-util-sanitize-uri": "^2.0.1",
-    "postcss": "8.5.14",
+    "postcss": "8.5.16",
     "pretty-print-json": "^3.0.6",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
