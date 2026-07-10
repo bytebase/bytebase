@@ -423,6 +423,14 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 
 	var resources []string
 
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		// During instance creation, the request carries an inline instance so
+		// the handler can preview remote databases before the instance exists.
+		// Use the workspace resource instead of validating the future instance name.
+		resources = append(resources, "")
+		return resources, nil
+	}
+
 	// Transferring database projects needs to check both projects.
 	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
 	switch r := request.(type) {

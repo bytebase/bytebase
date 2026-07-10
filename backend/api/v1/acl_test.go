@@ -129,6 +129,21 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello"},
 		},
 		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{"instances/hello"},
+		},
+		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{""},
+		},
+		{
 			request: &v1pb.BatchSyncInstancesRequest{
 				Requests: []*v1pb.SyncInstanceRequest{
 					{Name: "instances/hello"},
