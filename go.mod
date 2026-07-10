@@ -28,7 +28,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.28
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.30
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.43.0
-	github.com/beltran/gohive/v2 v2.0.0
+	github.com/beltran/gohive/v2 v2.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260510192859-8526a440b352
