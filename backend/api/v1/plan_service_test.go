@@ -150,67 +150,32 @@ func TestUpdateIssueApprovalResetSkipsStalePlanApprovalInputVersion(t *testing.T
 	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
 }
 
-func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
+func TestPlanServiceListPlansKeepsIssueLessDraftsVisible(t *testing.T) {
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
 
-	createPlan := func(name string, config *storepb.PlanConfig) *store.PlanMessage {
-		t.Helper()
-		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
-			ProjectID: "project-a",
-			Name:      name,
-			Config:    config,
-		}, "creator@example.com")
-		require.NoError(t, err)
-		return plan
-	}
-	changeConfig := func(id, release string) *storepb.PlanConfig {
-		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: id,
+	changeDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "change draft",
+		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: "change",
 			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
 			},
-		}}}
-	}
-	createConfig := func(id string) *storepb.PlanConfig {
-		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: id,
+		}}},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	createDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "create draft",
+		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: "create",
 			Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 				CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
 			},
-		}}}
-	}
-
-	malformedChange := createPlan("malformed change", changeConfig("malformed-change", ""))
-	createPlan("malformed create", createConfig("malformed-create"))
-	createPlan("malformed mixed", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{
-		createConfig("mixed-create").Specs[0],
-		changeConfig("mixed-change", "").Specs[0],
-	}})
-	gitOps := createPlan("gitops", changeConfig("gitops", "projects/project-a/releases/release-a"))
-	linked := createPlan("linked", changeConfig("linked", ""))
-	export := createPlan("export", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-		Id: "export",
-		Config: &storepb.PlanConfig_Spec_ExportDataConfig{
-			ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{},
-		},
-	}}})
-	deleted := createPlan("deleted", changeConfig("deleted", ""))
-	_, err := stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       deleted.UID,
-		ProjectID: deleted.ProjectID,
-		Deleted:   new(true),
-	})
-	require.NoError(t, err)
-	_, err = stores.CreateIssue(ctx, &store.IssueMessage{
-		ProjectID:    linked.ProjectID,
-		CreatorEmail: "creator@example.com",
-		Title:        "linked issue",
-		Type:         storepb.Issue_DATABASE_CHANGE,
-		Payload:      &storepb.Issue{},
-		PlanUID:      &linked.UID,
-	})
+		}}},
+	}, "creator@example.com")
 	require.NoError(t, err)
 
 	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
@@ -222,13 +187,7 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	for _, plan := range response.Msg.Plans {
 		got = append(got, plan.Title)
 	}
-	require.ElementsMatch(t, []string{gitOps.Name, linked.Name, export.Name, deleted.Name}, got)
-
-	gotMalformed, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
-		Name: fmt.Sprintf("projects/project-a/plans/%d", malformedChange.UID),
-	}))
-	require.NoError(t, err)
-	require.Equal(t, malformedChange.Name, gotMalformed.Msg.Title)
+	require.ElementsMatch(t, []string{changeDraft.Name, createDraft.Name}, got)
 }
 
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {

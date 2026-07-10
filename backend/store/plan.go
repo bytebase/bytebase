@@ -45,9 +45,6 @@ type FindPlanMessage struct {
 	ProjectID string
 
 	HasRollout *bool
-	// ExcludeMalformedUIPlans excludes active issue-less database plans, except
-	// homogeneous release-backed change database plans.
-	ExcludeMalformedUIPlans bool
 
 	Limit  *int
 	Offset *int
@@ -156,7 +153,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config,
 			plan.deleted
 		FROM plan
-		LEFT JOIN issue on plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE plan.project = ?
 	`, find.ProjectID)
 
@@ -176,30 +172,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		} else {
 			q.And("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false")
 		}
-	}
-	if find.ExcludeMalformedUIPlans {
-		q.And(`(
-			plan.deleted
-			OR issue.id IS NOT NULL
-			OR NOT EXISTS (
-				SELECT 1
-				FROM jsonb_array_elements(plan.config->'specs') AS spec
-				WHERE spec->'createDatabaseConfig' IS NOT NULL
-					OR spec->'changeDatabaseConfig' IS NOT NULL
-			)
-			OR (
-				NOT EXISTS (
-					SELECT 1
-					FROM jsonb_array_elements(plan.config->'specs') AS spec
-					WHERE spec->'changeDatabaseConfig' IS NULL
-				)
-				AND EXISTS (
-					SELECT 1
-					FROM jsonb_array_elements(plan.config->'specs') AS spec
-					WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL
-				)
-			)
-		)`)
 	}
 
 	q.Space("ORDER BY id DESC")

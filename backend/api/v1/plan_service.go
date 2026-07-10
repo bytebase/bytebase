@@ -92,11 +92,10 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
-		Workspace:               common.GetWorkspaceIDFromContext(ctx),
-		Limit:                   &limitPlusOne,
-		Offset:                  &offset.offset,
-		ProjectID:               projectID,
-		ExcludeMalformedUIPlans: true,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
+		ProjectID: projectID,
 	}
 
 	if req.Filter != "" {
