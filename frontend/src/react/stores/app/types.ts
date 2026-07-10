@@ -1040,7 +1040,6 @@ export interface PlanFind {
   creator?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
-  hasIssue?: boolean;
   hasRollout?: boolean;
   specType?: string;
   state?: "ACTIVE" | "DELETED";

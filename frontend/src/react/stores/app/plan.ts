@@ -31,9 +31,6 @@ export const buildPlanFilter = (find: PlanFind): string => {
       `create_time <= "${dayjs(find.createdTsBefore).utc().format()}"`
     );
   }
-  if (find.hasIssue !== undefined) {
-    filter.push(`has_issue == ${find.hasIssue}`);
-  }
   if (find.hasRollout !== undefined) {
     filter.push(`has_rollout == ${find.hasRollout}`);
   }
