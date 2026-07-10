@@ -59,6 +59,7 @@
   ],
   "ignoreDeps": [
     "github.com/pingcap/tidb/pkg/parser",
-    "github.com/elastic/go-elasticsearch/v7"
+    "github.com/elastic/go-elasticsearch/v7",
+    "typescript-6"
   ]
 }
