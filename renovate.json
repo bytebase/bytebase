@@ -16,6 +16,11 @@
   ],
   "packageRules": [
     {
+      "matchDatasources": ["npm"],
+      "description": "Wait out pnpm 11's 24h minimumReleaseAge supply-chain policy so PRs don't arrive with failing installs",
+      "minimumReleaseAge": "1 day"
+    },
+    {
       "groupName": "pnpm",
       "description": "Bump pnpm together across package.json, workflows, and the Dockerfile",
       "matchPackageNames": ["pnpm"]
