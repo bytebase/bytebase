@@ -36,6 +36,7 @@ require (
 	github.com/bytebase/omni v0.0.0-20260709103218-72e9a03222dc
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
 	github.com/databricks/databricks-sdk-go v0.156.0
