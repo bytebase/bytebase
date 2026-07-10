@@ -132,10 +132,10 @@ importers:
         version: 4.3.0
       lucide-react:
         specifier: ^1.14.0
-        version: 1.23.0(react@19.2.7)
+        version: 1.24.0(react@19.2.7)
       lucide-static:
         specifier: ^1.14.0
-        version: 1.23.0
+        version: 1.24.0
       markdown-it:
         specifier: ^14.1.0
         version: 14.3.0
@@ -3094,13 +3094,13 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-react@1.23.0:
-    resolution: {integrity: sha512-38BpJcD0JhFosxHApP/BYsBetLpQFRoTRzEzstM/XCc3jsAG7wqaY1lgVwxiUe3xqYE+lNxo2PkCmYwXWrwwIw==}
+  lucide-react@1.24.0:
+    resolution: {integrity: sha512-YT6mBD8lGKkg4nM39enlm94/sfJIiW0YKUT60fBy4YK8tai31ylg1VhGNWxkpSKHo9UagfnZqwIff3HTDQwXeA==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  lucide-static@1.23.0:
-    resolution: {integrity: sha512-V4tqLEHfvsptGaAZMD8sFJKeGsz2nTAU0+ctxTX3afao/5bs+mhrvvGDmvQmyI7YhQwpIFodZmnkPTMYyGzH4Q==}
+  lucide-static@1.24.0:
+    resolution: {integrity: sha512-NDSgPb/RWllI9QooPbGXfQCXQi/45oquDmtljeN3qVxqfEUf91uM2C4zijy8bs+pEWxKckA0/WZLZT43YD4Xnw==}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -7022,11 +7022,11 @@ snapshots:
 
   ltgt@2.2.1: {}
 
-  lucide-react@1.23.0(react@19.2.7):
+  lucide-react@1.24.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
-  lucide-static@1.23.0: {}
+  lucide-static@1.24.0: {}
 
   lz-string@1.5.0: {}
 
