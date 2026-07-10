@@ -638,6 +638,57 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 	require.Len(t, concurrentIssues, 1)
 }
 
+func TestCreateDraftIssueDoesNotExposeAnotherCreatorsDraft(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "private draft plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						SheetSha256: "sheet",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	existing, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "private draft",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Draft: true},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	otherCtx := context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
+		Email: "other@example.com",
+		Name:  "other",
+	})
+	response, err := service.CreateIssue(otherCtx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Type:  v1pb.Issue_DATABASE_CHANGE,
+			Plan:  common.FormatPlan("project-a", plan.UID),
+			Draft: true,
+		},
+	}))
+
+	require.Nil(t, response)
+	require.Equal(t, connect.CodeAlreadyExists, connect.CodeOf(err))
+	stored, getErr := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{"project-a"},
+		PlanUID:    &plan.UID,
+	})
+	require.NoError(t, getErr)
+	require.Equal(t, existing, stored)
+}
+
 func TestCreateSubmittedIssueBlockedByExistingDraft(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)

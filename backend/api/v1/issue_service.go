@@ -481,6 +481,9 @@ func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *stor
 	if !issue.Payload.GetDraft() {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("plan %d already has a draft issue; update or submit the existing draft instead of creating another issue", *issue.PlanUID))
 	}
+	if existing.CreatorEmail != issue.CreatorEmail {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a draft issue", *issue.PlanUID))
+	}
 	return existing, nil
 }
 
