@@ -112,7 +112,7 @@
     "@types/d3-shape": "^3.1.7",
     "@types/downloadjs": "1.4.6",
     "@types/file-saver": "^2.0.7",
-    "@types/jsdom": "27.0.0",
+    "@types/jsdom": "28.0.3",
     "@types/lodash-es": "4.17.12",
     "@types/markdown-it": "^14.1.2",
     "@types/mdast": "^4.0.4",
