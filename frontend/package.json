@@ -1,7 +1,7 @@
 {
   "name": "bytebase",
   "license": "SEE LICENSE IN LICENSE",
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
     "copy:config-files": "sh ./scripts/copy_config_files.sh",
     "prepare:artifacts": "pnpm run copy:config-files && pnpm run generate:openapi-index",
