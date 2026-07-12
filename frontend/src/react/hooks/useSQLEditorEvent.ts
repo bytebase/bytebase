@@ -12,7 +12,7 @@ export function useSQLEditorEvent<E extends keyof SQLEditorEvents>(
   handlerRef.current = handler;
 
   useEffect(() => {
-    const unsubscribe = sqlEditorEvents.on(event, (data) => {
+    const unsubscribe = sqlEditorEvents.on(event, ({ data }) => {
       handlerRef.current(data as SQLEditorEvents[E]);
     });
     return unsubscribe;

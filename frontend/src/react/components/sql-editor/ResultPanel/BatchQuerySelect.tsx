@@ -218,7 +218,11 @@ export function BatchQuerySelect({
   useEffect(() => {
     const unsubscribe = resultTabEvents.on(
       "close-tab",
-      ({ index, action }: { index: number; action: CloseTabAction }) => {
+      ({
+        data: { index, action },
+      }: {
+        data: { index: number; action: CloseTabAction };
+      }) => {
         const max = items.length - 1;
         switch (action) {
           case "CLOSE":
