@@ -24,7 +24,7 @@ export const useSetCenter = (canvas: Element | null) => {
   stateRef.current = { canvas, zoom, setZoom, setPosition, rectOfTable };
 
   useEffect(() => {
-    const off = events.on("set-center", (e) => {
+    const off = events.on("set-center", ({ data: e }) => {
       const {
         canvas: el,
         zoom: currentZoom,

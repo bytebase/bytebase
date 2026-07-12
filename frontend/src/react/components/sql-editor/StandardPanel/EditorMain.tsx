@@ -80,7 +80,7 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "execute-sql",
-      async ({ connection, statement, batchQueryContext }) => {
+      async ({ data: { connection, statement, batchQueryContext } }) => {
         const database = await useAppStore
           .getState()
           .getOrFetchDatabaseByName(connection.database);

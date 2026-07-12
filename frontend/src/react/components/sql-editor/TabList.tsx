@@ -219,7 +219,7 @@ export function TabList() {
   useEffect(() => {
     const unsubscribe = tabListEvents.on(
       "close-tab",
-      async ({ tab, index, action }) => {
+      async ({ data: { tab, index, action } }) => {
         const tabsState = getSQLEditorTabsState();
         const snapshot = tabsState.openTmpTabList
           .map((persisted) => tabsState.tabsById.get(persisted.id))

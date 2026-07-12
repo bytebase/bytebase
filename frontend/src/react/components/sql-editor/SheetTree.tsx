@@ -316,7 +316,7 @@ export function SheetTree({
   // the input. Again keyed on the stable `.key`, not the object identity.
   useEffect(() => {
     if (!editingKey) return;
-    const unsub = events.on("on-built", ({ viewMode }) => {
+    const unsub = events.on("on-built", ({ data: { viewMode } }) => {
       if (viewMode !== view) return;
       const input = document.getElementById(
         `sheet-input-${editingKey}`
