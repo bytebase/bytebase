@@ -126,7 +126,7 @@
     "@types/scrollparent": "^2.0.3",
     "@types/semver": "7.7.1",
     "@types/slug": "5.0.9",
-    "@vitejs/plugin-legacy": "~7.2.1",
+    "@vitejs/plugin-legacy": "~8.2.0",
     "autoprefixer": "10.5.2",
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.4.2",
