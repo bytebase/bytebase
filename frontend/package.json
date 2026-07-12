@@ -131,7 +131,7 @@
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.4.2",
     "esbuild": "0.28.1",
-    "jsdom": "27.4.0",
+    "jsdom": "29.1.1",
     "micromark-util-sanitize-uri": "^2.0.1",
     "postcss": "8.5.16",
     "pretty-print-json": "^3.0.6",
