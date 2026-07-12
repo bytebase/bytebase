@@ -282,7 +282,13 @@ function isHiddenInput(el: Element): boolean {
 }
 
 function hasPointerCursor(el: Element): boolean {
-  return window.getComputedStyle(el).cursor === "pointer";
+  if (window.getComputedStyle(el).cursor !== "pointer") return false;
+  // `cursor` is inherited, so every descendant of a clickable container
+  // reports "pointer". Only the element that establishes the pointer
+  // region is the click target; descendants that merely inherit it are
+  // plain content.
+  const parent = el.parentElement;
+  return !parent || window.getComputedStyle(parent).cursor !== "pointer";
 }
 
 function isNaiveSelectElement(el: Element): boolean {
