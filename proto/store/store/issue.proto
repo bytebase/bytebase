@@ -46,6 +46,9 @@ message Issue {
 
   // The access grant id for ACCESS_GRANT type issue.
   string access_grant_id = 5;
+  // Whether this issue is a Draft Review Issue.
+  // Missing from persisted payloads means false.
+  bool draft = 6;
 }
 
 // RoleGrant contains details for requesting a project role.

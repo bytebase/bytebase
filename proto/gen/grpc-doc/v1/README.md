@@ -5581,6 +5581,7 @@ PlanService manages deployment plans for database changes.
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
 | approval_status | [ApprovalStatus](#bytebase-v1-ApprovalStatus) |  | The overall approval status for the issue. |
 | access_grant | [string](#string) |  | The access grant associated with this issue. Format: projects/{project}/accessGrants/{access_grant} |
+| draft | [bool](#bool) |  | Whether this issue is a Draft Review Issue. |
 
 
 

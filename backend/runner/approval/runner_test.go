@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -607,6 +608,66 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 	require.Nil(t, got.Payload.GetApproval().GetApprovalTemplate())
+}
+
+func TestProcessIssueSkipsDraft(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "draft plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+						Target:      "instances/prod",
+						Database:    "app",
+						Environment: "prod",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "draft issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Draft: true},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	b, err := bus.New()
+	require.NoError(t, err)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+
+	NewRunner(s, b, nil, licenseService).processIssue(ctx, bus.IssueRef{
+		ProjectID: issue.ProjectID,
+		UID:       issue.UID,
+	})
+
+	gotIssue, err := s.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &issue.UID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, gotIssue)
+	require.True(t, gotIssue.Payload.GetDraft())
+	require.Nil(t, gotIssue.Payload.GetApproval())
+
+	gotPlan, err := s.GetPlan(ctx, &store.FindPlanMessage{
+		ProjectID: issue.ProjectID,
+		UID:       &plan.UID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, gotPlan)
+	require.False(t, gotPlan.Config.GetHasRollout())
+	require.Empty(t, b.RolloutCreationChan)
 }
 
 func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {

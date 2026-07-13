@@ -78,6 +78,10 @@ type TaskStatusCount struct {
 	Count       int32
 }
 
+// ErrDraftIssueNotSubmitted indicates rollout creation was rejected because its
+// currently linked issue is still a draft.
+var ErrDraftIssueNotSubmitted = errors.New("draft issue must be submitted before rollout creation")
+
 // IssueApprovalGuard carries the approval-input version used for rollout
 // creation. When issue approval is required, it also carries the issue approval
 // snapshot that the API layer has already accepted. The store uses it only as a
@@ -518,31 +522,47 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	}
 	defer tx.Rollback()
 
+	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, projectID, planUID); err != nil {
+		return false, nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
+	}
+
 	var approvalInputVersion *int64
 	if issueApprovalGuard != nil {
 		approvalInputVersion = &issueApprovalGuard.ApprovalInputVersion
 	}
 
+	var currentIssueUID int64
+	var payload []byte
+	issueFound := true
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id, payload
+		FROM issue
+		WHERE project = $1
+		  AND plan_id = $2
+		FOR UPDATE`,
+		projectID, planUID).Scan(&currentIssueUID, &payload); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			issueFound = false
+		} else {
+			return false, nil, errors.Wrap(err, "failed to lock linked issue")
+		}
+	}
+
+	currentIssuePayload := &storepb.Issue{}
+	if issueFound {
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, currentIssuePayload); err != nil {
+			return false, nil, errors.Wrap(err, "failed to unmarshal issue payload")
+		}
+		if currentIssuePayload.GetDraft() {
+			return false, nil, ErrDraftIssueNotSubmitted
+		}
+	}
+
 	if issueApprovalGuard != nil && issueApprovalGuard.Approval != nil {
-		var payload []byte
-		if err := tx.QueryRowContext(ctx, `
-			SELECT payload
-			FROM issue
-			WHERE project = $1
-			  AND id = $2
-			  AND plan_id = $3
-			FOR UPDATE`,
-			projectID, issueApprovalGuard.IssueUID, planUID).Scan(&payload); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return false, nil, nil
-			}
-			return false, nil, errors.Wrapf(err, "failed to lock issue approval")
+		if !issueFound || currentIssueUID != issueApprovalGuard.IssueUID {
+			return false, nil, nil
 		}
-		current, err := isIssueApprovalPayloadSameAsGuard(payload, issueApprovalGuard)
-		if err != nil {
-			return false, nil, err
-		}
-		if !current {
+		if !isIssueApprovalPayloadSameAsGuard(currentIssuePayload, issueApprovalGuard) {
 			return false, nil, nil
 		}
 	}
@@ -584,22 +604,18 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	return true, tasks, nil
 }
 
-func isIssueApprovalPayloadSameAsGuard(payload []byte, guard *IssueApprovalGuard) (bool, error) {
-	if guard == nil || guard.Approval == nil {
-		return false, nil
+func isIssueApprovalPayloadSameAsGuard(issuePayload *storepb.Issue, guard *IssueApprovalGuard) bool {
+	if issuePayload == nil || guard == nil || guard.Approval == nil {
+		return false
 	}
 	if guard.Approval.GetApprovalInputVersion() != guard.ApprovalInputVersion {
-		return false, nil
-	}
-	issuePayload := &storepb.Issue{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issuePayload); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal issue payload")
+		return false
 	}
 	approval := issuePayload.GetApproval()
 	if approval == nil || !approval.GetApprovalFindingDone() {
-		return false, nil
+		return false
 	}
-	return approval.Equal(guard.Approval), nil
+	return approval.Equal(guard.Approval)
 }
 
 func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {

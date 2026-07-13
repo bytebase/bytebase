@@ -573,6 +573,13 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * @generated from field: string access_grant = 19;
    */
   accessGrant: string;
+
+  /**
+   * Whether this issue is a Draft Review Issue.
+   *
+   * @generated from field: bool draft = 20;
+   */
+  draft: boolean;
 };
 
 /**

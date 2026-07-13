@@ -42,11 +42,19 @@ type RolloutService struct {
 	iamManager     *iam.Manager
 }
 
-var errStaleRolloutApproval = errors.New("cannot create rollout because issue approval is stale")
+var (
+	errStaleRolloutApproval   = errors.New("cannot create rollout because issue approval is stale")
+	errDraftIssueNotSubmitted = errors.New("cannot create rollout for a draft issue; submit it first")
+)
 
 // IsStaleRolloutApprovalError reports whether rollout creation lost the approval-version race.
 func IsStaleRolloutApprovalError(err error) bool {
 	return errors.Is(err, errStaleRolloutApproval)
+}
+
+// IsDraftIssueNotSubmittedError reports whether rollout creation was blocked by a draft issue.
+func IsDraftIssueNotSubmittedError(err error) bool {
+	return errors.Is(err, errDraftIssueNotSubmitted)
 }
 
 // NewRolloutService returns a rollout service instance.
@@ -272,6 +280,9 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
 	}
+	if issue != nil && issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errDraftIssueNotSubmitted)
+	}
 
 	// Check permission: allow if user has bb.rollouts.create permission
 	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.RolloutsCreate, user, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
@@ -308,7 +319,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
-		if IsStaleRolloutApprovalError(err) {
+		if IsStaleRolloutApprovalError(err) || IsDraftIssueNotSubmittedError(err) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -400,6 +411,10 @@ func CreateRolloutAndPendingTasks(
 	project *store.ProjectMessage,
 	tasks []*store.TaskMessage,
 ) error {
+	if issue != nil && issue.Payload.GetDraft() {
+		return errDraftIssueNotSubmitted
+	}
+
 	var err error
 	if tasks == nil {
 		tasks, err = GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
@@ -424,6 +439,9 @@ func CreateRolloutAndPendingTasks(
 	}
 	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, issueApprovalGuard, tasks)
 	if err != nil {
+		if errors.Is(err, store.ErrDraftIssueNotSubmitted) {
+			return errDraftIssueNotSubmitted
+		}
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}
 	if !marked {

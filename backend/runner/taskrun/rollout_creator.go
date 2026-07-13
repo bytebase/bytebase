@@ -99,6 +99,12 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		slog.Debug("issue not found for rollout creation", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 		return
 	}
+	if issue.Payload.GetDraft() {
+		slog.Debug("issue is a draft, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
+			slog.Int("plan_id", int(planID)))
+		return
+	}
 
 	// Skip canceled issues
 	if issue.Status == storepb.Issue_CANCELED {
@@ -176,6 +182,12 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Create rollout and pending tasks
 	// Use issue creator's email since this is auto-rollout for their issue
 	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, issue.CreatorEmail, plan, issue, project, nil); err != nil {
+		if apiv1.IsDraftIssueNotSubmittedError(err) {
+			slog.Info("skip auto-rollout because issue is still a draft",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)))
+			return
+		}
 		if apiv1.IsStaleRolloutApprovalError(err) {
 			slog.Info("skip auto-rollout because issue approval is stale",
 				slog.String("project", ref.ProjectID),

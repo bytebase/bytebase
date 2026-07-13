@@ -12732,6 +12732,10 @@ components:
           description: |-
             The access grant associated with this issue.
              Format: projects/{project}/accessGrants/{access_grant}
+        draft:
+          type: boolean
+          title: draft
+          description: Whether this issue is a Draft Review Issue.
       title: Issue
       additionalProperties: false
     bytebase.v1.Issue.Approver:
