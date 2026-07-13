@@ -17,6 +17,7 @@
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && tsc --build --force",
     "pretest": "pnpm run prepare:artifacts",
     "test": "vitest run --passWithNoTests",
+    "test:e2e:install": "playwright install chromium",
     "precoverage": "pnpm run prepare:artifacts",
     "coverage": "vitest --coverage",
     "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node --compiler typescript-6 i18n.ts && pnpm fix",
