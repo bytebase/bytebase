@@ -141,9 +141,19 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid code_verifier")
 	}
 
-	// Delete code after all validations pass (single use)
-	if err := s.store.DeleteOAuth2AuthorizationCode(ctx, client.ClientID, req.Code); err != nil {
-		slog.Warn("failed to delete OAuth2 authorization code after use", slog.String("code", req.Code), log.BBError(err))
+	// Consume the code after all validations pass. This atomic delete is the
+	// single-use gate: PKCE is verified above so a failed verifier never burns
+	// the code, and concurrent redemptions race here so only the caller that
+	// actually claims the row proceeds to issue tokens. A consume failure aborts
+	// issuance rather than warning and continuing (the prior behavior left the
+	// code replayable on a transient error).
+	consumed, err := s.store.ConsumeOAuth2AuthorizationCode(ctx, client.ClientID, req.Code)
+	if err != nil {
+		slog.Error("failed to consume OAuth2 authorization code", slog.String("code", req.Code), log.BBError(err))
+		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to consume authorization code")
+	}
+	if !consumed {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid or expired code")
 	}
 
 	// Get user
@@ -200,9 +210,18 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token has expired")
 	}
 
-	// Delete token after validations pass (single use, will issue new one)
-	if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
-		slog.Warn("failed to delete OAuth2 refresh token after use", log.BBError(err))
+	// Consume the refresh token after validations pass. This atomic delete is
+	// the single-use rotation gate: concurrent refreshes race here so only the
+	// caller that actually claims the row issues a new pair. A consume failure
+	// aborts issuance rather than warning and continuing (the prior behavior
+	// left the token replayable on a transient error).
+	consumed, err := s.store.ConsumeOAuth2RefreshToken(ctx, client.ClientID, tokenHash)
+	if err != nil {
+		slog.Error("failed to consume OAuth2 refresh token", log.BBError(err))
+		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to consume refresh token")
+	}
+	if !consumed {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid refresh token")
 	}
 
 	// Get user
