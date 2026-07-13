@@ -1765,6 +1765,8 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       }
     },
+    "add-database": "Agregar base de datos",
+    "add-database-empty-placeholder": "Agrega una base de datos de una instancia existente a este proyecto",
     "connect-database": "Conectar base de datos",
     "connect-database-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
     "connect-database-intro-description": "Conecta una base de datos para que Bytebase pueda sincronizarla en este proyecto.",

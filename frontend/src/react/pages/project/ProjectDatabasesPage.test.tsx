@@ -56,7 +56,10 @@ vi.mock("@/react/components/PermissionGuard", () => ({
 vi.mock("@/react/components/database", async () => {
   const React = await import("react");
   return {
-    CreateDatabaseSheet: () => null,
+    CreateDatabaseSheet: ({ open }: { open: boolean }) =>
+      open
+        ? React.createElement("div", { "data-testid": "create-database-sheet" })
+        : null,
     DatabaseBatchOperationsBar: () => null,
     DatabaseTable: ({
       emptyPlaceholder,
@@ -207,6 +210,41 @@ describe("ProjectDatabasesPage", () => {
       name: "workspace.instance.create",
       query: { project: "demo" },
     });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("opens the add database sheet when the project is empty but the workspace has instances", async () => {
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    const button = container.querySelector(
+      "button:not([data-product-intro-target])"
+    ) as HTMLButtonElement;
+    expect(button.textContent?.trim()).toContain("project.add-database");
+    expect(container.textContent).toContain(
+      "project.add-database-empty-placeholder"
+    );
+    expect(container.textContent).not.toContain("project.connect-database");
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(
+      container.querySelector("[data-testid='create-database-sheet']")
+    ).not.toBeNull();
 
     act(() => {
       root.unmount();

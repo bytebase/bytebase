@@ -102,6 +102,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [workspaceHasInstance, setWorkspaceHasInstance] = useState<
+    boolean | undefined
+  >(undefined);
   const autoRefreshCountRef = useRef(0);
 
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -277,6 +280,32 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     return () => window.clearInterval(timer);
   }, [syncingInstanceId, visibleDatabases.length, refresh]);
 
+  useEffect(() => {
+    if (!hasWorkspacePermissionV2("bb.instances.list")) {
+      setWorkspaceHasInstance(false);
+      return;
+    }
+
+    let cancelled = false;
+    useAppStore
+      .getState()
+      .fetchInstanceList({ pageSize: 1 })
+      .then(({ instances }) => {
+        if (!cancelled) {
+          setWorkspaceHasInstance(instances.length > 0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWorkspaceHasInstance(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Batch operation handlers
   const handleSyncSchema = useCallback(async () => {
     if (syncing) return;
@@ -418,6 +447,18 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const hasVisibleDatabase = visibleDatabases.length > 0;
   const showSyncingInstanceHint = !!syncingInstanceId && !hasVisibleDatabase;
   const showPostSyncNextAction = !!syncingInstanceId && hasVisibleDatabase;
+  const checkingWorkspaceInstance =
+    !hasVisibleDatabase &&
+    !showSyncingInstanceHint &&
+    workspaceHasInstance === undefined;
+  const emptyProjectHasInstance =
+    !hasVisibleDatabase &&
+    workspaceHasInstance === true &&
+    !showSyncingInstanceHint;
+  const emptyProjectShouldConnectInstance =
+    !hasVisibleDatabase &&
+    workspaceHasInstance === false &&
+    !showSyncingInstanceHint;
 
   const handleCreateFirstChange = useCallback(() => {
     const firstDatabase = visibleDatabases[0];
@@ -443,7 +484,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (productIntro !== CONNECT_DATABASE_PRODUCT_INTRO) return;
-    if (showSyncingInstanceHint || hasVisibleDatabase || !canCreateInstance) {
+    if (
+      showSyncingInstanceHint ||
+      hasVisibleDatabase ||
+      workspaceHasInstance !== false ||
+      !canCreateInstance
+    ) {
       return;
     }
     void showProductIntroOnce({
@@ -457,11 +503,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     hasVisibleDatabase,
     productIntro,
     showSyncingInstanceHint,
+    workspaceHasInstance,
     t,
   ]);
 
   const handleCreateDatabaseAction = useCallback(() => {
-    if (!hasVisibleDatabase) {
+    if (checkingWorkspaceInstance) return;
+    if (emptyProjectShouldConnectInstance) {
       if (!hasWorkspacePermissionV2("bb.instances.create")) return;
       router.push({
         name: INSTANCE_ROUTE_CREATE,
@@ -470,7 +518,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       return;
     }
     setShowCreateDrawer(true);
-  }, [hasVisibleDatabase, projectId]);
+  }, [checkingWorkspaceInstance, emptyProjectShouldConnectInstance, projectId]);
 
   return (
     <ProjectPageLayout>
@@ -484,30 +532,40 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         {!showSyncingInstanceHint && (
           <PermissionGuard
             permissions={
-              hasVisibleDatabase
+              hasVisibleDatabase || emptyProjectHasInstance
                 ? ["bb.instances.list", "bb.plans.create", "bb.sheets.create"]
                 : ["bb.instances.create"]
             }
-            project={hasVisibleDatabase ? project : undefined}
+            project={
+              hasVisibleDatabase || emptyProjectHasInstance
+                ? project
+                : undefined
+            }
           >
             <Button
               data-product-intro-target={
-                hasVisibleDatabase ? undefined : CONNECT_DATABASE_PRODUCT_INTRO
+                emptyProjectShouldConnectInstance
+                  ? CONNECT_DATABASE_PRODUCT_INTRO
+                  : undefined
               }
               disabled={
-                hasVisibleDatabase
-                  ? !hasProjectPermission("bb.instances.list") ||
-                    !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((permission) =>
-                      hasProjectPermission(permission)
-                    )
-                  : !canCreateInstance
+                checkingWorkspaceInstance
+                  ? true
+                  : hasVisibleDatabase || emptyProjectHasInstance
+                    ? !hasProjectPermission("bb.instances.list") ||
+                      !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(
+                        (permission) => hasProjectPermission(permission)
+                      )
+                    : !canCreateInstance
               }
               onClick={handleCreateDatabaseAction}
             >
               <Plus className="size-4 mr-1" />
               {hasVisibleDatabase
                 ? t("common.create")
-                : t("project.connect-database")}
+                : emptyProjectHasInstance
+                  ? t("project.add-database")
+                  : t("project.connect-database")}
             </Button>
           </PermissionGuard>
         )}
@@ -585,7 +643,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             </div>
           ) : (
             <span className="text-sm text-control-light">
-              {t("project.connect-database-empty-placeholder")}
+              {emptyProjectHasInstance
+                ? t("project.add-database-empty-placeholder")
+                : t("project.connect-database-empty-placeholder")}
             </span>
           )
         }
