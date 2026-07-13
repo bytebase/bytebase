@@ -60,11 +60,19 @@ vi.mock("./DatabaseTableView", () => ({
   DatabaseTableView: ({
     databases,
     emptyPlaceholder,
+    onRowClick,
+    selectOnRowClick,
   }: {
     databases: Database[];
     emptyPlaceholder?: React.ReactNode;
+    onRowClick?: (database: Database, event: React.MouseEvent) => void;
+    selectOnRowClick?: boolean;
   }) => (
-    <div data-testid="database-names">
+    <div
+      data-testid="database-names"
+      data-has-row-click={Boolean(onRowClick)}
+      data-select-on-row-click={Boolean(selectOnRowClick)}
+    >
       {databases.map((database) => database.name).join(",")}
       {emptyPlaceholder && (
         <div data-testid="empty-placeholder">{emptyPlaceholder}</div>
@@ -203,5 +211,33 @@ describe("DatabaseTable", () => {
     expect(
       container.querySelector("[data-testid='empty-placeholder']")
     ).toBeNull();
+  });
+
+  test("uses selection instead of navigation for selectable rows", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mocks.fetchDatabases.mockResolvedValueOnce({
+      databases: [db1],
+      nextPageToken: "",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable
+          filter={{}}
+          parent="instances/i"
+          selectOnRowClick
+          selectedNames={new Set()}
+          onSelectedNamesChange={vi.fn()}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const view = container.querySelector("[data-testid='database-names']");
+    expect(view?.getAttribute("data-has-row-click")).toBe("false");
+    expect(view?.getAttribute("data-select-on-row-click")).toBe("true");
   });
 });

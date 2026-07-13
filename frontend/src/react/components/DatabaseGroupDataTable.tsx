@@ -2,6 +2,7 @@ import { EllipsisVertical, ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,12 +176,11 @@ export function DatabaseGroupDataTable({
                     >
                       {showSelection && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type={singleSelection ? "radio" : "checkbox"}
-                            className="rounded-xs border-control-border"
+                          <Checkbox
                             checked={isSelected}
-                            onChange={(e) =>
-                              toggleSingle(group.name, e.target.checked)
+                            aria-label={group.title}
+                            onCheckedChange={(checked) =>
+                              toggleSingle(group.name, checked)
                             }
                           />
                         </TableCell>
