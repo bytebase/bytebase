@@ -5,12 +5,12 @@
 
 - [v1/annotation.proto](#v1_annotation-proto)
     - [AuthMethod](#bytebase-v1-AuthMethod)
-  
+
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
-  
+
 - [v1/access_grant_service.proto](#v1_access_grant_service-proto)
     - [AccessGrant](#bytebase-v1-AccessGrant)
     - [ActivateAccessGrantRequest](#bytebase-v1-ActivateAccessGrantRequest)
@@ -21,16 +21,16 @@
     - [RevokeAccessGrantRequest](#bytebase-v1-RevokeAccessGrantRequest)
     - [SearchMyAccessGrantsRequest](#bytebase-v1-SearchMyAccessGrantsRequest)
     - [SearchMyAccessGrantsResponse](#bytebase-v1-SearchMyAccessGrantsResponse)
-  
+
     - [AccessGrant.Status](#bytebase-v1-AccessGrant-Status)
-  
+
     - [AccessGrantService](#bytebase-v1-AccessGrantService)
-  
+
 - [v1/common.proto](#v1_common-proto)
     - [PermissionDeniedDetail](#bytebase-v1-PermissionDeniedDetail)
     - [Position](#bytebase-v1-Position)
     - [Range](#bytebase-v1-Range)
-  
+
     - [ApprovalStatus](#bytebase-v1-ApprovalStatus)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
@@ -39,7 +39,7 @@
     - [StatementType](#bytebase-v1-StatementType)
     - [VCSType](#bytebase-v1-VCSType)
     - [WebhookType](#bytebase-v1-WebhookType)
-  
+
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
     - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
@@ -85,23 +85,23 @@
     - [TaskRunSession](#bytebase-v1-TaskRunSession)
     - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
     - [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session)
-  
+
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
     - [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type)
     - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
-  
+
     - [RolloutService](#bytebase-v1-RolloutService)
-  
+
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [InstanceRole](#bytebase-v1-InstanceRole)
     - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
     - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
-  
+
     - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
-  
+
 - [v1/instance_service.proto](#v1_instance_service-proto)
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
     - [BatchSyncInstancesRequest](#bytebase-v1-BatchSyncInstancesRequest)
@@ -134,7 +134,7 @@
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
-  
+
     - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
     - [DataSource.CloudSQLIPType](#bytebase-v1-DataSource-CloudSQLIPType)
     - [DataSource.RedisType](#bytebase-v1-DataSource-RedisType)
@@ -143,9 +143,9 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
-  
+
     - [InstanceService](#bytebase-v1-InstanceService)
-  
+
 - [v1/database_service.proto](#v1_database_service-proto)
     - [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest)
     - [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse)
@@ -205,7 +205,7 @@
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
-  
+
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
@@ -217,9 +217,9 @@
     - [SyncStatus](#bytebase-v1-SyncStatus)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
-  
+
     - [DatabaseService](#bytebase-v1-DatabaseService)
-  
+
 - [v1/sql_service.proto](#v1_sql_service-proto)
     - [AICompletionRequest](#bytebase-v1-AICompletionRequest)
     - [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message)
@@ -251,7 +251,7 @@
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
     - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
     - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
-  
+
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
@@ -259,9 +259,9 @@
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
-  
+
     - [SQLService](#bytebase-v1-SQLService)
-  
+
 - [v1/plan_service.proto](#v1_plan_service-proto)
     - [CancelPlanCheckRunRequest](#bytebase-v1-CancelPlanCheckRunRequest)
     - [CancelPlanCheckRunResponse](#bytebase-v1-CancelPlanCheckRunResponse)
@@ -285,12 +285,12 @@
     - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
     - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
-  
+
     - [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type)
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
-  
+
     - [PlanService](#bytebase-v1-PlanService)
-  
+
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
@@ -318,14 +318,14 @@
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
-  
+
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
     - [IssueStatus](#bytebase-v1-IssueStatus)
-  
+
     - [IssueService](#bytebase-v1-IssueService)
-  
+
 - [v1/setting_service.proto](#v1_setting_service-proto)
     - [AISetting](#bytebase-v1-AISetting)
     - [Algorithm](#bytebase-v1-Algorithm)
@@ -371,7 +371,7 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
     - [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction)
-  
+
     - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
@@ -380,18 +380,18 @@
     - [EmailSetting.Type](#bytebase-v1-EmailSetting-Type)
     - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source)
-  
+
     - [SettingService](#bytebase-v1-SettingService)
-  
+
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
-  
+
     - [ActuatorService](#bytebase-v1-ActuatorService)
-  
+
 - [v1/ai_service.proto](#v1_ai_service-proto)
     - [AIChatMessage](#bytebase-v1-AIChatMessage)
     - [AIChatRequest](#bytebase-v1-AIChatRequest)
@@ -399,11 +399,11 @@
     - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
     - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
-  
+
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
-  
+
     - [AIService](#bytebase-v1-AIService)
-  
+
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
     - [BindingDelta](#bytebase-v1-BindingDelta)
@@ -411,9 +411,9 @@
     - [IamPolicy](#bytebase-v1-IamPolicy)
     - [PolicyDelta](#bytebase-v1-PolicyDelta)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-  
+
     - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
-  
+
 - [v1/audit_log_service.proto](#v1_audit_log_service-proto)
     - [AuditData](#bytebase-v1-AuditData)
     - [AuditLog](#bytebase-v1-AuditLog)
@@ -422,11 +422,11 @@
     - [RequestMetadata](#bytebase-v1-RequestMetadata)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
     - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
-  
+
     - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
-  
+
     - [AuditLogService](#bytebase-v1-AuditLogService)
-  
+
 - [v1/user_service.proto](#v1_user_service-proto)
     - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
     - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
@@ -440,9 +440,9 @@
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
     - [User.Profile](#bytebase-v1-User-Profile)
-  
+
     - [UserService](#bytebase-v1-UserService)
-  
+
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
@@ -459,17 +459,17 @@
     - [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest)
     - [SignupRequest](#bytebase-v1-SignupRequest)
     - [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest)
-  
+
     - [AuthService](#bytebase-v1-AuthService)
-  
+
 - [v1/cel_service.proto](#v1_cel_service-proto)
     - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
     - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
     - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
     - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
-  
+
     - [CelService](#bytebase-v1-CelService)
-  
+
 - [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
     - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
@@ -483,11 +483,11 @@
     - [TableCatalog](#bytebase-v1-TableCatalog)
     - [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns)
     - [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest)
-  
+
     - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
-  
+
     - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
-  
+
 - [v1/database_group_service.proto](#v1_database_group_service-proto)
     - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
@@ -497,11 +497,11 @@
     - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
     - [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse)
     - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
-  
+
     - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
-  
+
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
-  
+
 - [v1/group_service.proto](#v1_group_service-proto)
     - [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest)
     - [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse)
@@ -513,11 +513,11 @@
     - [ListGroupsRequest](#bytebase-v1-ListGroupsRequest)
     - [ListGroupsResponse](#bytebase-v1-ListGroupsResponse)
     - [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest)
-  
+
     - [GroupMember.Role](#bytebase-v1-GroupMember-Role)
-  
+
     - [GroupService](#bytebase-v1-GroupService)
-  
+
 - [v1/idp_service.proto](#v1_idp_service-proto)
     - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
     - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
@@ -537,13 +537,13 @@
     - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
     - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
     - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
-  
+
     - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
     - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol)
     - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
-  
+
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
-  
+
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
@@ -560,12 +560,12 @@
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
-  
+
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
-  
+
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
-  
+
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
@@ -590,11 +590,11 @@
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
     - [Webhook](#bytebase-v1-Webhook)
-  
+
     - [Activity.Type](#bytebase-v1-Activity-Type)
-  
+
     - [ProjectService](#bytebase-v1-ProjectService)
-  
+
 - [v1/release_service.proto](#v1_release_service-proto)
     - [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest)
     - [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse)
@@ -612,11 +612,11 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
     - [VCSUser](#bytebase-v1-VCSUser)
-  
+
     - [Release.Type](#bytebase-v1-Release-Type)
-  
+
     - [ReleaseService](#bytebase-v1-ReleaseService)
-  
+
 - [v1/review_config_service.proto](#v1_review_config_service-proto)
     - [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest)
     - [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest)
@@ -632,12 +632,12 @@
     - [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload)
     - [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
-  
+
     - [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-v1-SQLReviewRule-Type)
-  
+
     - [ReviewConfigService](#bytebase-v1-ReviewConfigService)
-  
+
 - [v1/revision_service.proto](#v1_revision_service-proto)
     - [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest)
     - [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse)
@@ -647,11 +647,11 @@
     - [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest)
     - [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse)
     - [Revision](#bytebase-v1-Revision)
-  
+
     - [Revision.Type](#bytebase-v1-Revision-Type)
-  
+
     - [RevisionService](#bytebase-v1-RevisionService)
-  
+
 - [v1/role_service.proto](#v1_role_service-proto)
     - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
     - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
@@ -660,11 +660,11 @@
     - [ListRolesResponse](#bytebase-v1-ListRolesResponse)
     - [Role](#bytebase-v1-Role)
     - [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest)
-  
+
     - [Role.Type](#bytebase-v1-Role-Type)
-  
+
     - [RoleService](#bytebase-v1-RoleService)
-  
+
 - [v1/service_account_service.proto](#v1_service_account_service-proto)
     - [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest)
     - [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest)
@@ -674,18 +674,18 @@
     - [ServiceAccount](#bytebase-v1-ServiceAccount)
     - [UndeleteServiceAccountRequest](#bytebase-v1-UndeleteServiceAccountRequest)
     - [UpdateServiceAccountRequest](#bytebase-v1-UpdateServiceAccountRequest)
-  
+
     - [ServiceAccountService](#bytebase-v1-ServiceAccountService)
-  
+
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
     - [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest)
     - [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
-  
+
     - [SheetService](#bytebase-v1-SheetService)
-  
+
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest)
     - [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest)
@@ -707,15 +707,15 @@
     - [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest)
     - [VerifyCheckoutSessionRequest](#bytebase-v1-VerifyCheckoutSessionRequest)
     - [VerifyCheckoutSessionResponse](#bytebase-v1-VerifyCheckoutSessionResponse)
-  
+
     - [BillingInterval](#bytebase-v1-BillingInterval)
     - [PlanFeature](#bytebase-v1-PlanFeature)
     - [PlanType](#bytebase-v1-PlanType)
     - [PurchaseDiscount.Type](#bytebase-v1-PurchaseDiscount-Type)
     - [PurchasePlanAdditional.Type](#bytebase-v1-PurchasePlanAdditional-Type)
-  
+
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
-  
+
 - [v1/workload_identity_service.proto](#v1_workload_identity_service-proto)
     - [CreateWorkloadIdentityRequest](#bytebase-v1-CreateWorkloadIdentityRequest)
     - [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest)
@@ -726,11 +726,11 @@
     - [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest)
     - [WorkloadIdentity](#bytebase-v1-WorkloadIdentity)
     - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
-  
+
     - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
-  
+
     - [WorkloadIdentityService](#bytebase-v1-WorkloadIdentityService)
-  
+
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
     - [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest)
     - [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse)
@@ -743,11 +743,11 @@
     - [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest)
     - [Worksheet](#bytebase-v1-Worksheet)
     - [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer)
-  
+
     - [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility)
-  
+
     - [WorksheetService](#bytebase-v1-WorksheetService)
-  
+
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
     - [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest)
     - [GetWorkspaceRequest](#bytebase-v1-GetWorkspaceRequest)
@@ -756,9 +756,9 @@
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
-  
+
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
-  
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -769,7 +769,7 @@
 ## v1/annotation.proto
 
 
- 
+
 
 
 <a name="bytebase-v1-AuthMethod"></a>
@@ -784,7 +784,7 @@ Authorization method for RPC calls.
 | CUSTOM | 2 | Custom authorization logic. |
 
 
- 
+
 
 
 <a name="v1_annotation-proto-extensions"></a>
@@ -797,9 +797,9 @@ Authorization method for RPC calls.
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
 | permission | string | .google.protobuf.MethodOptions | 100001 | The permission required to call this method. |
 
- 
 
- 
+
+
 
 
 
@@ -969,7 +969,7 @@ Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#
 
 
 
- 
+
 
 
 <a name="bytebase-v1-AccessGrant-Status"></a>
@@ -985,9 +985,9 @@ The status of the access grant.
 | REVOKED | 3 | The access grant has been revoked. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-AccessGrantService"></a>
@@ -1004,7 +1004,7 @@ AccessGrantService manages temporary access grants within projects.
 | RevokeAccessGrant | [RevokeAccessGrantRequest](#bytebase-v1-RevokeAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Revokes an active access grant. |
 | SearchMyAccessGrants | [SearchMyAccessGrantsRequest](#bytebase-v1-SearchMyAccessGrantsRequest) | [SearchMyAccessGrantsResponse](#bytebase-v1-SearchMyAccessGrantsResponse) | Searches access grants created by the caller. |
 
- 
+
 
 
 
@@ -1080,7 +1080,7 @@ Check the documentation of the field using Range for specific semantics.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-ApprovalStatus"></a>
@@ -1263,11 +1263,11 @@ Webhook integration type.
 | GOOGLE_CHAT | 8 | Google Chat integration. |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -2022,7 +2022,7 @@ PostgreSQL session information read from `pg_stat_activity`.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Task-Status"></a>
@@ -2121,9 +2121,9 @@ The type of log entry.
 | GHOST_MIGRATION | 10 | gh-ost online migration. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-RolloutService"></a>
@@ -2145,7 +2145,7 @@ RolloutService manages the execution of deployment plans.
 | BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) | Cancels multiple task runs. PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive a best-effort cancellation request and may continue running if the request is missed or the executor does not stop. The response does not report which task runs were actually canceled. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
 | PreviewTaskRunRollback | [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest) | [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse) | Generates rollback SQL for a completed task run. Permissions required: bb.taskRuns.list |
 
- 
+
 
 
 
@@ -2211,11 +2211,11 @@ When paginating, all other parameters provided to `ListInstanceRoles` must match
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-InstanceRoleService"></a>
@@ -2227,7 +2227,7 @@ InstanceRoleService manages database roles within instances.
 | ----------- | ------------ | ------------- | ------------|
 | ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) | Lists all database roles in an instance. Permissions required: bb.instanceRoles.list |
 
- 
+
 
 
 
@@ -2323,6 +2323,7 @@ InstanceRoleService manages database roles within instances.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+| project | [string](#string) |  | The project to assign newly discovered databases to during initial sync. Format: projects/{project} |
 
 
 
@@ -2825,7 +2826,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
- 
+
 
 
 <a name="bytebase-v1-DataSource-AuthenticationType"></a>
@@ -2938,9 +2939,9 @@ CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM conne
 | READ_ONLY | 2 | Read-only data source for query operations. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-InstanceService"></a>
@@ -2964,7 +2965,7 @@ InstanceService manages database instances and their connections.
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Removes a read-only data source from an instance. Permissions required: bb.instances.update |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) | Updates a data source configuration. Permissions required: bb.instances.update |
 
- 
+
 
 
 
@@ -4114,7 +4115,7 @@ ViewMetadata is the metadata for views.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Changelog-Status"></a>
@@ -4278,9 +4279,9 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | SUSPENDED | 2 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-DatabaseService"></a>
@@ -4305,7 +4306,7 @@ DatabaseService manages databases and their schemas.
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Retrieves a specific changelog entry. Permissions required: bb.changelogs.get |
 | GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Generates schema DDL for a database object. Permissions required: bb.databases.getSchema |
 
- 
+
 
 
 
@@ -4862,7 +4863,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Advice-Level"></a>
@@ -4961,9 +4962,9 @@ RuleType indicates the source of the linting rule.
 | EXCEPTION | 6 | Exception message indicating error conditions. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-SQLService"></a>
@@ -4981,7 +4982,7 @@ SQLService executes SQL queries and manages query operations.
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |
 | AICompletion | [AICompletionRequest](#bytebase-v1-AICompletionRequest) | [AICompletionResponse](#bytebase-v1-AICompletionResponse) | Provides AI-powered SQL completion and generation. Permissions required: None (authenticated users only, requires AI to be enabled) |
 
- 
+
 
 
 
@@ -5371,7 +5372,7 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 
 
 
- 
+
 
 
 <a name="bytebase-v1-PlanCheckRun-Result-Type"></a>
@@ -5402,9 +5403,9 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 | CANCELED | 4 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-PlanService"></a>
@@ -5422,7 +5423,7 @@ PlanService manages deployment plans for database changes.
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) | Executes validation checks on a deployment plan. Permissions required: bb.planCheckRuns.run |
 | CancelPlanCheckRun | [CancelPlanCheckRunRequest](#bytebase-v1-CancelPlanCheckRunRequest) | [CancelPlanCheckRunResponse](#bytebase-v1-CancelPlanCheckRunResponse) | Cancels the plan check run for a deployment plan. Permissions required: bb.planCheckRuns.run |
 
- 
+
 
 
 
@@ -5896,7 +5897,7 @@ The issue&#39;s `name` field is used to identify the issue to update. Format: pr
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Issue-Approver-Status"></a>
@@ -5955,9 +5956,9 @@ The status of an issue.
 | CANCELED | 3 | Issue is canceled. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-IssueService"></a>
@@ -5981,7 +5982,7 @@ IssueService manages issues for tracking database changes and tasks.
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
 
- 
+
 
 
 
@@ -6757,7 +6758,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 
 
- 
+
 
 
 <a name="bytebase-v1-AISetting-Provider"></a>
@@ -6875,9 +6876,9 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | REQUEST_ACCESS | 5 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-SettingService"></a>
@@ -6892,7 +6893,7 @@ SettingService manages workspace-level settings and configurations.
 | UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Updates a workspace setting. Permissions required: bb.settings.set |
 | TestEmailSetting | [TestEmailSettingRequest](#bytebase-v1-TestEmailSettingRequest) | [TestEmailSettingResponse](#bytebase-v1-TestEmailSettingResponse) | Sends a test email using the provided config (without persisting). Permissions required: bb.settings.set |
 
- 
+
 
 
 
@@ -6992,11 +6993,11 @@ Request message for setting up sample data.
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-ActuatorService"></a>
@@ -7010,7 +7011,7 @@ ActuatorService manages system health and operational information.
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 
- 
+
 
 
 
@@ -7121,7 +7122,7 @@ Token usage for a single AI provider call.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-AIChatMessageRole"></a>
@@ -7138,9 +7139,9 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-AIService"></a>
@@ -7152,7 +7153,7 @@ AIService provides AI chat capabilities for the page agent.
 | ----------- | ------------ | ------------- | ------------|
 | Chat | [AIChatRequest](#bytebase-v1-AIChatRequest) | [AIChatResponse](#bytebase-v1-AIChatResponse) | Chat sends a conversation with tool definitions to the configured AI provider and returns the AI response. |
 
- 
+
 
 
 
@@ -7267,7 +7268,7 @@ Request message for setting an IAM policy.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-BindingDelta-Action"></a>
@@ -7282,11 +7283,11 @@ Type of action performed on a binding.
 | REMOVE | 2 | Remove a binding. |
 
 
- 
 
- 
 
- 
+
+
+
 
 
 
@@ -7428,7 +7429,7 @@ Response message for searching audit logs.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-AuditLog-Severity"></a>
@@ -7449,9 +7450,9 @@ Severity level for audit log entries.
 | EMERGENCY | 8 | System is unusable. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-AuditLogService"></a>
@@ -7464,7 +7465,7 @@ AuditLogService manages audit logs for system activities and API calls.
 | SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
 | ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
 
- 
+
 
 
 
@@ -7687,11 +7688,11 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-UserService"></a>
@@ -7711,7 +7712,7 @@ UserService manages user accounts and authentication.
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
 | UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
 
- 
+
 
 
 
@@ -7955,11 +7956,11 @@ Response from refreshing the access token.
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-AuthService"></a>
@@ -7979,7 +7980,7 @@ AuthService handles user authentication operations.
 | ResetPassword | [ResetPasswordRequest](#bytebase-v1-ResetPasswordRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Resets the user&#39;s password using a password reset token from email. Permissions required: None (validates via token) |
 | SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup. Always returns success (no email enumeration). Enforces 60-sec resend cooldown. Permissions required: None |
 
- 
+
 
 
 
@@ -8049,11 +8050,11 @@ Response message for batch parsing CEL expressions.
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-CelService"></a>
@@ -8066,7 +8067,7 @@ CelService manages CEL (Common Expression Language) parsing and formatting opera
 | BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) | Parses multiple CEL expression strings into AST representations. Permissions required: None |
 | BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) | Converts multiple CEL AST representations back into expression strings. Permissions required: None |
 
- 
+
 
 
 
@@ -8273,7 +8274,7 @@ The catalog&#39;s `name` field is used to identify the database catalog to updat
 
 
 
- 
+
 
 
 <a name="bytebase-v1-ObjectSchema-Type"></a>
@@ -8291,9 +8292,9 @@ Object schema data types.
 | ARRAY | 5 | Array type. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-DatabaseCatalogService"></a>
@@ -8306,7 +8307,7 @@ DatabaseCatalogService manages database schema metadata and classification.
 | GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Gets the catalog metadata for a database. Permissions required: bb.databaseCatalogs.get |
 | UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) | Updates catalog metadata such as classifications and labels. Permissions required: bb.databaseCatalogs.update |
 
- 
+
 
 
 
@@ -8454,7 +8455,7 @@ The database group&#39;s `name` field is used to identify the database group to 
 
 
 
- 
+
 
 
 <a name="bytebase-v1-DatabaseGroupView"></a>
@@ -8469,9 +8470,9 @@ View options for database group responses.
 | DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-DatabaseGroupService"></a>
@@ -8487,7 +8488,7 @@ DatabaseGroupService manages database groups for organizing databases by criteri
 | UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.databaseGroups.update When allow_missing=true, also requires: bb.databaseGroups.create |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.databaseGroups.delete |
 
- 
+
 
 
 
@@ -8669,7 +8670,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 
 
 
- 
+
 
 
 <a name="bytebase-v1-GroupMember-Role"></a>
@@ -8684,9 +8685,9 @@ The role of a group member.
 | MEMBER | 2 | Group member. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-GroupService"></a>
@@ -8703,7 +8704,7 @@ GroupService manages user groups for organizing users and permissions.
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
 | DeleteGroup | [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a group. Group owners or users with bb.groups.delete permission can delete. Permissions required: bb.groups.delete OR caller is group owner |
 
- 
+
 
 
 
@@ -9030,7 +9031,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
- 
+
 
 
 <a name="bytebase-v1-IdentityProviderType"></a>
@@ -9072,9 +9073,9 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-IdentityProviderService"></a>
@@ -9091,7 +9092,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 | DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
 | TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
 
- 
+
 
 
 
@@ -9361,7 +9362,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
- 
+
 
 
 <a name="bytebase-v1-PolicyResourceType"></a>
@@ -9393,9 +9394,9 @@ The type of organizational policy.
 | DATA_QUERY | 6 | Query data access policy. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-OrgPolicyService"></a>
@@ -9411,7 +9412,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) | Updates an existing organizational policy. Permissions required: bb.policies.update |
 | DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an organizational policy. Permissions required: bb.policies.delete |
 
- 
+
 
 
 
@@ -9818,7 +9819,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Activity-Type"></a>
@@ -9837,9 +9838,9 @@ Activity type enumeration.
 | ISSUE_APPROVED | 15 | ISSUE_APPROVED represents an issue being fully approved. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-ProjectService"></a>
@@ -9865,7 +9866,7 @@ ProjectService manages projects that group databases and changes.
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) | Removes a webhook from a project. Permissions required: bb.projects.update |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) | Tests a webhook by sending a test notification. Permissions required: bb.projects.update |
 
- 
+
 
 
 
@@ -10157,7 +10158,7 @@ Version control system source information.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Release-Type"></a>
@@ -10172,9 +10173,9 @@ The type of schema change.
 | DECLARATIVE | 2 | Declarative schema definition. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-ReleaseService"></a>
@@ -10193,7 +10194,7 @@ ReleaseService manages releases for coordinating deployments.
 | CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) | Validates a release by dry-running checks on target databases. Permissions required: bb.releases.check |
 | ListReleaseCategories | [ListReleaseCategoriesRequest](#bytebase-v1-ListReleaseCategoriesRequest) | [ListReleaseCategoriesResponse](#bytebase-v1-ListReleaseCategoriesResponse) | Lists all unique categories in a project. Permissions required: bb.releases.list |
 
- 
+
 
 
 
@@ -10426,7 +10427,7 @@ The name field is used to identify the SQL review config to update. |
 
 
 
- 
+
 
 
 <a name="bytebase-v1-SQLReviewRule-Level"></a>
@@ -10556,9 +10557,9 @@ The severity level for SQL review rules.
 | STATEMENT_DISALLOW_TRUNCATE | 111 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-ReviewConfigService"></a>
@@ -10574,7 +10575,7 @@ ReviewConfigService manages approval flow configurations.
 | UpdateReviewConfig | [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Updates a SQL review configuration. Permissions required: bb.reviewConfigs.update When allow_missing=true, also requires: bb.reviewConfigs.create |
 | DeleteReviewConfig | [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SQL review configuration. Permissions required: bb.reviewConfigs.delete |
 
- 
+
 
 
 
@@ -10722,7 +10723,7 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Revision-Type"></a>
@@ -10737,9 +10738,9 @@ The type of schema revision.
 | DECLARATIVE | 2 | Declarative schema definition. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-RevisionService"></a>
@@ -10754,7 +10755,7 @@ RevisionService manages schema revision history.
 | BatchCreateRevisions | [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest) | [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse) | Creates multiple schema revisions in a single operation. Permissions required: bb.revisions.create |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a schema revision. Permissions required: bb.revisions.delete |
 
- 
+
 
 
 
@@ -10873,7 +10874,7 @@ Role defines a set of permissions that can be assigned to users.
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Role-Type"></a>
@@ -10888,9 +10889,9 @@ Role defines a set of permissions that can be assigned to users.
 | CUSTOM | 2 | User-defined role that can be modified. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-RoleService"></a>
@@ -10906,7 +10907,7 @@ RoleService manages workspace roles and permissions.
 | UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) | Updates a role&#39;s properties. Permissions required: bb.roles.update When allow_missing=true, also requires: bb.roles.create |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a custom role. Permissions required: bb.roles.delete |
 
- 
+
 
 
 
@@ -11057,11 +11058,11 @@ The service account&#39;s `name` field is used to identify the service account t
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-ServiceAccountService"></a>
@@ -11078,7 +11079,7 @@ ServiceAccountService manages service accounts for API integrations.
 | DeleteServiceAccount | [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a service account. Permissions required: bb.serviceAccounts.delete |
 | UndeleteServiceAccount | [UndeleteServiceAccountRequest](#bytebase-v1-UndeleteServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Restores a deleted service account. Permissions required: bb.serviceAccounts.undelete |
 
- 
+
 
 
 
@@ -11168,11 +11169,11 @@ ServiceAccountService manages service accounts for API integrations.
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-SheetService"></a>
@@ -11186,7 +11187,7 @@ SheetService manages SQL scripts and saved queries.
 | BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) | Creates multiple SQL sheets in a single operation. Permissions required: bb.sheets.create |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Retrieves a SQL sheet by name. Permissions required: bb.sheets.get |
 
- 
+
 
 
 
@@ -11510,7 +11511,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
- 
+
 
 
 <a name="bytebase-v1-BillingInterval"></a>
@@ -11647,9 +11648,9 @@ PlanFeature represents the available features in Bytebase
 | USER | 1 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-SubscriptionService"></a>
@@ -11669,7 +11670,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | VerifyCheckoutSession | [VerifyCheckoutSessionRequest](#bytebase-v1-VerifyCheckoutSessionRequest) | [VerifyCheckoutSessionResponse](#bytebase-v1-VerifyCheckoutSessionResponse) | VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only). |
 | ListPurchasePlans | [ListPurchasePlansRequest](#bytebase-v1-ListPurchasePlansRequest) | [ListPurchasePlansResponse](#bytebase-v1-ListPurchasePlansResponse) | ListPurchasePlans returns available plans for self-service purchase. |
 
- 
+
 
 
 
@@ -11838,7 +11839,7 @@ WorkloadIdentityConfig for API layer
 
 
 
- 
+
 
 
 <a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
@@ -11853,9 +11854,9 @@ ProviderType identifies the CI/CD platform.
 | GITLAB | 2 |  |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-WorkloadIdentityService"></a>
@@ -11872,7 +11873,7 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | DeleteWorkloadIdentity | [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a workload identity. Permissions required: bb.workloadIdentities.delete |
 | UndeleteWorkloadIdentity | [UndeleteWorkloadIdentityRequest](#bytebase-v1-UndeleteWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Restores a deleted workload identity. Permissions required: bb.workloadIdentities.undelete |
 
- 
+
 
 
 
@@ -12073,7 +12074,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 
 
- 
+
 
 
 <a name="bytebase-v1-Worksheet-Visibility"></a>
@@ -12089,9 +12090,9 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 
- 
 
- 
+
+
 
 
 <a name="bytebase-v1-WorksheetService"></a>
@@ -12109,7 +12110,7 @@ WorksheetService manages SQL worksheets for query development.
 | BatchUpdateWorksheetOrganizer | [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest) | [BatchUpdateWorksheetOrganizerResponse](#bytebase-v1-BatchUpdateWorksheetOrganizerResponse) | Batch update the organizers of worksheets. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets) |
 | DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a worksheet. The access is the same as UpdateWorksheet method. Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets) |
 
- 
+
 
 
 
@@ -12222,11 +12223,11 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
- 
 
- 
 
- 
+
+
+
 
 
 <a name="bytebase-v1-WorkspaceService"></a>
@@ -12244,7 +12245,7 @@ WorkspaceService manages workspace-level operations and profile.
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
 
- 
+
 
 
 

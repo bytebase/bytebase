@@ -169,12 +169,13 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       return upsertInstances([response])[0];
     },
 
-    createInstance: async (instance, validateOnly = false) => {
+    createInstance: async (instance, validateOnly = false, options) => {
       const response = await instanceServiceClientConnect.createInstance(
         createProto(CreateInstanceRequestSchema, {
           instance,
           instanceId: extractInstanceResourceName(instance.name),
           validateOnly,
+          project: options?.project,
         }),
         {
           contextValues: createContextValues().set(

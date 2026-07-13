@@ -26,10 +26,13 @@ import {
   useNotify,
   useWorkspacePermission,
 } from "@/react/hooks/useAppState";
+import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
 import { projectNamePrefix } from "@/react/lib/resourceName";
 import { useNavigate } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { extractProjectResourceName } from "@/utils";
 
 export interface ProjectCreateDialogProps {
   open: boolean;
@@ -112,7 +115,13 @@ export function ProjectCreateDialog({
         onCreated(createdProject);
       } else {
         setRecentProject(createdProject.name);
-        void navigate.push({ path: `/${createdProject.name}` });
+        void navigate.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(createdProject.name),
+          },
+          query: { intro: CONNECT_DATABASE_PRODUCT_INTRO },
+        });
       }
 
       onClose();

@@ -1,12 +1,17 @@
 package v1
 
 import (
+	"errors"
+	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T) {
@@ -15,6 +20,67 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "allowAllFiles")
+}
+
+func TestClassifyConnectionFailure(t *testing.T) {
+	testCases := []struct {
+		err  error
+		want string
+	}{
+		{err: errors.New("dial tcp 10.0.0.5:5432: i/o timeout"), want: connectionCategoryTimeout},
+		{err: errors.New("password authentication failed for user bytebase"), want: connectionCategoryAuthFailed},
+		{err: errors.New("permission denied for schema public"), want: connectionCategoryPermissionDenied},
+		{err: errors.New("tls: failed to verify certificate: x509: certificate signed by unknown authority"), want: connectionCategorySSLTLSFailed},
+		{err: errors.New("dial tcp 10.0.0.5:5432: connection refused"), want: connectionCategoryNetworkUnreachable},
+		{err: errors.New("unsupported engine"), want: connectionCategoryUnsupportedEngine},
+		{err: errors.New("driver returned an unexpected error"), want: connectionCategoryUnknown},
+	}
+
+	for _, tc := range testCases {
+		require.Equal(t, tc.want, classifyConnectionFailure(tc.err))
+	}
+}
+
+func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
+	instance := &store.InstanceMessage{
+		Metadata: &storepb.Instance{
+			Engine: storepb.Engine_POSTGRES,
+		},
+	}
+	dataSource := &storepb.DataSource{
+		Type:                  storepb.DataSourceType_ADMIN,
+		Host:                  "sensitive.example.com",
+		Port:                  "5432",
+		Username:              "bytebase",
+		Password:              "secret",
+		Database:              "prod",
+		UseSsl:                true,
+		SshHost:               "bastion.example.com",
+		ObfuscatedSshPassword: "obfuscated",
+		ExternalSecret:        &storepb.DataSourceExternalSecret{},
+		AdditionalAddresses:   []*storepb.DataSource_Address{{Host: "replica.example.com", Port: "5432"}},
+	}
+
+	attrs := buildInstanceConnectionLogAttrs(v1connect.InstanceServiceCreateInstanceProcedure, connectionCategoryAuthFailed, instance, dataSource, 1500*time.Millisecond)
+	got := make(map[string]any)
+	for _, attr := range attrs {
+		got[attr.Key] = attr.Value.Any()
+	}
+
+	require.Equal(t, map[string]any{
+		"source":              v1connect.InstanceServiceCreateInstanceProcedure,
+		"engine":              storepb.Engine_POSTGRES.String(),
+		"data_source_type":    storepb.DataSourceType_ADMIN.String(),
+		"category":            connectionCategoryAuthFailed,
+		"elapsed_ms":          int64(1500),
+		"has_ssl":             true,
+		"has_ssh":             true,
+		"has_external_secret": true,
+	}, got)
+	for _, key := range []string{"host", "port", "username", "database", "password", "dsn", "sql"} {
+		require.NotContains(t, got, key)
+	}
+	require.IsType(t, slog.Attr{}, attrs[0])
 }
 
 func TestValidateExternalSecretForSaaS(t *testing.T) {

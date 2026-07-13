@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Plus } from "lucide-react";
+import { Plus, SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -22,6 +22,7 @@ import {
   ProjectPageLayout,
   ProjectPageToolbar,
 } from "@/react/components/ProjectPageLayout";
+import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -32,6 +33,16 @@ import { Button } from "@/react/components/ui/button";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+  showProductIntroOnce,
+} from "@/react/lib/productIntro";
+import { router } from "@/react/router";
+import {
+  INSTANCE_ROUTE_CREATE,
+  SQL_EDITOR_DATABASE_MODULE,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
@@ -56,6 +67,7 @@ import {
 import { unknownDatabase } from "@/types/v1/database";
 import {
   engineNameV1,
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   getDefaultPagination,
   hasProjectPermissionV2,
@@ -90,6 +102,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
+  const autoRefreshCountRef = useRef(0);
 
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
@@ -215,6 +228,15 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
+  const syncingInstanceId = useMemo(() => {
+    const { syncingInstance, syncInstance } = router.currentRoute.value.query;
+    const value = syncingInstance ?? syncInstance;
+    return typeof value === "string" && value ? value : undefined;
+  }, []);
+  const productIntro = useMemo(() => {
+    const value = router.currentRoute.value.query[PRODUCT_INTRO_QUERY_KEY];
+    return typeof value === "string" ? value : undefined;
+  }, []);
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -227,6 +249,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     () => selectedDatabases.map((db) => db.name),
     [selectedDatabases]
   );
+  const canCreateInstance = hasWorkspacePermissionV2("bb.instances.create");
 
   // Mirror `selectedDatabases` into a ref so the batch-operation handlers
   // below can read the latest value without listing it as a dep. Otherwise
@@ -240,6 +263,19 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     setRefreshToken((prev) => prev + 1);
     setSelectedNames(new Set());
   }, []);
+
+  useEffect(() => {
+    if (!syncingInstanceId || visibleDatabases.length > 0) return;
+    autoRefreshCountRef.current = 0;
+    const timer = window.setInterval(() => {
+      autoRefreshCountRef.current += 1;
+      refresh();
+      if (autoRefreshCountRef.current >= 12) {
+        window.clearInterval(timer);
+      }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [syncingInstanceId, visibleDatabases.length, refresh]);
 
   // Batch operation handlers
   const handleSyncSchema = useCallback(async () => {
@@ -379,6 +415,63 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     preCreateIssue(projectName, selectedDatabaseNames);
   }, [projectName, selectedDatabaseNames]);
 
+  const hasVisibleDatabase = visibleDatabases.length > 0;
+  const showSyncingInstanceHint = !!syncingInstanceId && !hasVisibleDatabase;
+  const showPostSyncNextAction = !!syncingInstanceId && hasVisibleDatabase;
+
+  const handleCreateFirstChange = useCallback(() => {
+    const firstDatabase = visibleDatabases[0];
+    if (!firstDatabase) return;
+    preCreateIssue(projectName, [firstDatabase.name]);
+  }, [projectName, visibleDatabases]);
+
+  const handleOpenFirstDatabaseInSQLEditor = useCallback(() => {
+    const firstDatabase = visibleDatabases[0];
+    if (!firstDatabase) return;
+    const { instanceName, databaseName } = extractDatabaseResourceName(
+      firstDatabase.name
+    );
+    router.push({
+      name: SQL_EDITOR_DATABASE_MODULE,
+      params: {
+        project: projectId,
+        instance: instanceName,
+        database: databaseName,
+      },
+    });
+  }, [projectId, visibleDatabases]);
+
+  useEffect(() => {
+    if (productIntro !== CONNECT_DATABASE_PRODUCT_INTRO) return;
+    if (showSyncingInstanceHint || hasVisibleDatabase || !canCreateInstance) {
+      return;
+    }
+    void showProductIntroOnce({
+      id: CONNECT_DATABASE_PRODUCT_INTRO,
+      title: t("project.connect-database-intro-title"),
+      description: t("project.connect-database-intro-description"),
+      closeLabel: t("common.close"),
+    });
+  }, [
+    canCreateInstance,
+    hasVisibleDatabase,
+    productIntro,
+    showSyncingInstanceHint,
+    t,
+  ]);
+
+  const handleCreateDatabaseAction = useCallback(() => {
+    if (!hasVisibleDatabase) {
+      if (!hasWorkspacePermissionV2("bb.instances.create")) return;
+      router.push({
+        name: INSTANCE_ROUTE_CREATE,
+        query: { project: projectId },
+      });
+      return;
+    }
+    setShowCreateDrawer(true);
+  }, [hasVisibleDatabase, projectId]);
+
   return (
     <ProjectPageLayout>
       <ProjectPageToolbar className="flex-col items-start gap-2 sm:flex-row sm:items-end">
@@ -388,28 +481,89 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           placeholder={t("database.filter-database")}
           scopeOptions={scopeOptions}
         />
-        <PermissionGuard
-          permissions={[
-            "bb.instances.list",
-            "bb.plans.create",
-            "bb.sheets.create",
-          ]}
-          project={project}
-        >
-          <Button
-            disabled={
-              !hasProjectPermission("bb.instances.list") ||
-              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((permission) =>
-                hasProjectPermission(permission)
-              )
+        {!showSyncingInstanceHint && (
+          <PermissionGuard
+            permissions={
+              hasVisibleDatabase
+                ? ["bb.instances.list", "bb.plans.create", "bb.sheets.create"]
+                : ["bb.instances.create"]
             }
-            onClick={() => setShowCreateDrawer(true)}
+            project={hasVisibleDatabase ? project : undefined}
           >
-            <Plus className="size-4 mr-1" />
-            {t("common.create")}
-          </Button>
-        </PermissionGuard>
+            <Button
+              data-product-intro-target={
+                hasVisibleDatabase ? undefined : CONNECT_DATABASE_PRODUCT_INTRO
+              }
+              disabled={
+                hasVisibleDatabase
+                  ? !hasProjectPermission("bb.instances.list") ||
+                    !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((permission) =>
+                      hasProjectPermission(permission)
+                    )
+                  : !canCreateInstance
+              }
+              onClick={handleCreateDatabaseAction}
+            >
+              <Plus className="size-4 mr-1" />
+              {hasVisibleDatabase
+                ? t("common.create")
+                : t("project.connect-database")}
+            </Button>
+          </PermissionGuard>
+        )}
       </ProjectPageToolbar>
+
+      {showSyncingInstanceHint && (
+        <Alert
+          variant="info"
+          title={t("db.project-instance-syncing-title", {
+            instance: syncingInstanceId,
+          })}
+          description={
+            <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+              <span>{t("db.project-instance-syncing-description")}</span>
+              <Button size="sm" appearance="outline" onClick={refresh}>
+                {t("common.refresh")}
+              </Button>
+            </div>
+          }
+        />
+      )}
+
+      {showPostSyncNextAction && (
+        <Alert
+          variant="info"
+          title={t("db.project-instance-synced-title")}
+          description={
+            <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+              <span>{t("db.project-instance-synced-description")}</span>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                <PermissionGuard
+                  permissions={["bb.sql.select"]}
+                  project={project}
+                >
+                  <Button
+                    size="sm"
+                    appearance="outline"
+                    onClick={handleOpenFirstDatabaseInSQLEditor}
+                  >
+                    <SquareTerminal className="size-4" />
+                    {t("db.project-instance-synced-sql-editor-action")}
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard
+                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                  project={project}
+                >
+                  <Button size="sm" onClick={handleCreateFirstChange}>
+                    {t("db.project-instance-synced-action")}
+                  </Button>
+                </PermissionGuard>
+              </div>
+            </div>
+          }
+        />
+      )}
 
       <DatabaseTable
         filter={filter}
@@ -419,6 +573,22 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         onSelectedNamesChange={setSelectedNames}
         onDatabasesChange={setVisibleDatabases}
         refreshToken={refreshToken}
+        emptyPlaceholder={
+          showSyncingInstanceHint ? (
+            <div className="flex flex-col items-center gap-y-3 text-center">
+              <div className="text-sm text-control-light">
+                {t("db.project-instance-syncing-empty")}
+              </div>
+              <Button size="sm" appearance="outline" onClick={refresh}>
+                {t("common.refresh")}
+              </Button>
+            </div>
+          ) : (
+            <span className="text-sm text-control-light">
+              {t("project.connect-database-empty-placeholder")}
+            </span>
+          )
+        }
       />
 
       {/* Batch operations bar */}

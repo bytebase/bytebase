@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import {
   createContext,
@@ -35,6 +36,11 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { FeatureModal } from "../ui/feature-modal";
+import {
+  type ConnectionFailureCategory,
+  connectionFailureCategoryHeader,
+  normalizeConnectionFailureCategory,
+} from "./ConnectionRecovery";
 import type { BasicInfo, DataSourceEditState, EditDataSource } from "./common";
 import {
   calcDataSourceUpdateMask,
@@ -48,6 +54,12 @@ export type LocalState = {
   editingDataSourceId: string | undefined;
   isTestingConnection: boolean;
   isRequesting: boolean;
+};
+
+type TestConnectionResult = {
+  success: boolean;
+  message: string;
+  failureCategory: ConnectionFailureCategory;
 };
 
 export interface InstanceFormContextValue {
@@ -94,7 +106,7 @@ export interface InstanceFormContextValue {
   testConnection: (
     editingDS: EditDataSource,
     silent?: boolean
-  ) => Promise<{ success: boolean; message: string }>;
+  ) => Promise<TestConnectionResult>;
   pendingCreateInstance: Instance;
   valueChanged: boolean;
   isEditing: boolean;
@@ -153,6 +165,7 @@ export function InstanceFormProvider({
   const [showConnectionOptionsEvent, setShowConnectionOptionsEvent] =
     useState(0);
   const syncedInstanceNameRef = useRef(instance?.name);
+  const isCreating = instance === undefined;
 
   useEffect(() => {
     if (syncedInstanceNameRef.current === instance?.name) {
@@ -173,11 +186,25 @@ export function InstanceFormProvider({
     setMissingFeature(undefined);
   }, [instance]);
 
+  useEffect(() => {
+    if (!isCreating || basicInfo.environment) {
+      return;
+    }
+
+    const firstEnvironment = environmentList[0];
+    if (!firstEnvironment) {
+      return;
+    }
+
+    setBasicInfo((prev) =>
+      prev.environment ? prev : { ...prev, environment: firstEnvironment.name }
+    );
+  }, [basicInfo.environment, environmentList, isCreating]);
+
   const emitShowConnectionOptions = useCallback(() => {
     setShowConnectionOptionsEvent((prev) => prev + 1);
   }, []);
 
-  const isCreating = instance === undefined;
   const allowEdit = isCreating
     ? true
     : (instance?.state || State.STATE_UNSPECIFIED) === State.ACTIVE &&
@@ -424,8 +451,8 @@ export function InstanceFormProvider({
     async (
       editingDS: EditDataSource,
       silent = false
-    ): Promise<{ success: boolean; message: string }> => {
-      const ok = () => {
+    ): Promise<TestConnectionResult> => {
+      const ok = (): TestConnectionResult => {
         if (!silent) {
           pushNotification({
             module: "bytebase",
@@ -434,9 +461,14 @@ export function InstanceFormProvider({
           });
         }
         setState((prev) => ({ ...prev, isTestingConnection: false }));
-        return { success: true, message: "" };
+        return { success: true, message: "", failureCategory: "unknown" };
       };
-      const fail = (host: string, err: unknown) => {
+      const fail = (host: string, err: unknown): TestConnectionResult => {
+        const failureCategory = normalizeConnectionFailureCategory(
+          err instanceof ConnectError
+            ? err.metadata.get(connectionFailureCategoryHeader)
+            : undefined
+        );
         let error = extractGrpcErrorMessage(err);
         if (!silent) {
           if (host === "localhost" || host === "127.0.0.1") {
@@ -451,7 +483,7 @@ export function InstanceFormProvider({
           });
         }
         setState((prev) => ({ ...prev, isTestingConnection: false }));
-        return { success: false, message: error };
+        return { success: false, message: error, failureCategory };
       };
 
       setState((prev) => ({ ...prev, isTestingConnection: true }));

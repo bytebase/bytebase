@@ -9709,6 +9709,12 @@ components:
           type: boolean
           title: validate_only
           description: Validate only also tests the data source connection.
+        project:
+          type: string
+          title: project
+          description: |-
+            The project to assign newly discovered databases to during initial sync.
+             Format: projects/{project}
       title: CreateInstanceRequest
       additionalProperties: false
     bytebase.v1.CreateIssueCommentRequest:

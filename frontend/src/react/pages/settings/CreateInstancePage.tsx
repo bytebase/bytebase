@@ -11,7 +11,10 @@ import {
 import type { InfoSection } from "@/react/components/instance/info-content";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { router } from "@/react/router";
-import { INSTANCE_ROUTE_DASHBOARD } from "@/react/router/handles";
+import {
+  INSTANCE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 
@@ -41,6 +44,28 @@ export function CreateInstancePage() {
   }, [t]);
 
   const goBack = useCallback(() => {
+    const {
+      project: projectId,
+      syncingInstance,
+      syncInstance,
+      intro,
+    } = router.currentRoute.value.query;
+    if (typeof projectId === "string" && projectId) {
+      const query: Record<string, string> = {};
+      const instanceId = syncingInstance ?? syncInstance;
+      if (typeof instanceId === "string" && instanceId) {
+        query.syncingInstance = instanceId;
+      }
+      if (typeof intro === "string" && intro) {
+        query.intro = intro;
+      }
+      router.push({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId },
+        ...(Object.keys(query).length > 0 ? { query } : {}),
+      });
+      return;
+    }
     router.push({ name: INSTANCE_ROUTE_DASHBOARD });
   }, []);
 

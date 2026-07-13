@@ -23,10 +23,18 @@ vi.mock("@/react/components/RouterLink", () => ({
   RouterLink: ({
     children,
     className,
+    rel,
+    target,
   }: {
     children: React.ReactNode;
     className?: string;
-  }) => <a className={className}>{children}</a>,
+    rel?: string;
+    target?: string;
+  }) => (
+    <a className={className} target={target} rel={rel}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
@@ -105,6 +113,42 @@ describe("ResourceLink", () => {
     expect(links[0].querySelector("svg")).toBeTruthy();
     expect(links[1].className).toContain("normal-link");
     expect(links[1].textContent).toContain("Sample project");
+
+    unmount();
+  });
+
+  test("can hide the resource type label for inline project links", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ResourceLink resource="projects/sample" showResourceType={false} />
+    );
+
+    render();
+
+    const link = container.querySelector("a");
+    expect(link?.textContent).toBe("Sample project");
+    expect(link?.textContent).not.toContain("common.project");
+
+    unmount();
+  });
+
+  test("passes through link attributes for inline project links", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ResourceLink
+        resource="projects/sample"
+        showResourceType={false}
+        className="underline underline-offset-2"
+        target="_blank"
+        rel="noopener noreferrer"
+      />
+    );
+
+    render();
+
+    const link = container.querySelector("a");
+    expect(link?.className).toContain("normal-link");
+    expect(link?.className).toContain("underline underline-offset-2");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
 
     unmount();
   });

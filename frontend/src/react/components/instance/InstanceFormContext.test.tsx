@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSourceSchema,
@@ -54,6 +54,8 @@ vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
 }));
 
+let mockEnvironmentList: { id: string; name: string }[] = [];
+
 vi.mock("@/react/stores/app", () => {
   const appState = () => ({
     createDataSource: vi.fn(),
@@ -64,7 +66,7 @@ vi.mock("@/react/stores/app", () => {
     instanceLicenseCount: () => 1,
     activatedInstanceCount: () => 0,
     currentPlan: () => 1,
-    environmentList: [],
+    environmentList: mockEnvironmentList,
   });
   return {
     useAppStore: Object.assign(
@@ -129,6 +131,7 @@ const Probe = () => {
     <div
       data-title={ctx.basicInfo.title}
       data-host={ctx.adminDataSource.host}
+      data-environment={ctx.basicInfo.environment}
     />
   );
 };
@@ -153,6 +156,26 @@ const renderIntoContainer = () => {
 };
 
 describe("InstanceFormProvider", () => {
+  beforeEach(() => {
+    mockEnvironmentList = [];
+  });
+
+  test("selects the first environment by default when creating an instance", async () => {
+    mockEnvironmentList = [{ id: "dev", name: "environments/dev" }];
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <Probe />
+      </InstanceFormProvider>
+    );
+
+    const probe = harness.container.firstElementChild as HTMLElement;
+    expect(probe.dataset.environment).toBe("environments/dev");
+
+    harness.unmount();
+  });
+
   test("refreshes form state when an unknown instance is replaced by the fetched instance", async () => {
     const fetchedInstance = create(InstanceSchema, {
       name: "instances/prod",

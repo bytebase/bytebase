@@ -20,4 +20,21 @@ describe("ProjectCreateDialog layout", () => {
     expect(source).not.toContain('className="flex flex-col gap-y-6"');
     expect(source).not.toContain("<label");
   });
+
+  test("opens the database page after creating a project", () => {
+    const source = readFileSync(
+      join(componentDir, "ProjectCreateDialog.tsx"),
+      "utf8"
+    );
+
+    expect(source).toContain("PROJECT_V1_ROUTE_DATABASES");
+    expect(source).toContain("name: PROJECT_V1_ROUTE_DATABASES");
+    expect(source).toContain(
+      "projectId: extractProjectResourceName(createdProject.name)"
+    );
+    expect(source).toContain(
+      "query: { intro: CONNECT_DATABASE_PRODUCT_INTRO }"
+    );
+    expect(source).not.toContain("path: `/${createdProject.name}`");
+  });
 });

@@ -672,6 +672,7 @@
     "column": "列",
     "columns": "カラム",
     "comment": "コメント",
+    "connect-databases": "データベースを接続",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
@@ -808,6 +809,13 @@
     "packages": "パッケージ",
     "partitions": "パーティション",
     "procedures": "ストアドプロシージャ",
+    "project-instance-synced-action": "最初の変更を作成",
+    "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。準備ができたら、管理されたデータベース変更から始めてください。",
+    "project-instance-synced-sql-editor-action": "SQL Editor を開く",
+    "project-instance-synced-title": "データベースが接続されました",
+    "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
+    "project-instance-syncing-empty": "データベースはまだ同期中です。しばらくしてからこのページを更新すると表示されます。",
+    "project-instance-syncing-title": "{{instance}} のデータベースを同期中です。",
     "schema": {
       "default": "デフォルトスキーマ"
     },
@@ -932,8 +940,76 @@
       "psc": "Private Service Connect (PSC)",
       "public": "パブリック IP"
     },
+    "connect-database-to-project": "データベースをプロジェクトに接続",
+    "connecting-database-to-project": "データベースを接続中...",
     "connection-info": "接続情報",
     "connection-options": "接続オプション",
+    "connection-recovery": {
+      "auth": {
+        "description": "ユーザー名、パスワード、トークン、または IAM 認証設定を確認してから、もう一度接続をテストしてください。",
+        "steps": {
+          "credentials": "ユーザー名、パスワード、トークン、またはシークレットマネージャーの値が最新であることを確認してください。",
+          "method": "選択した認証方式がデータベース設定と一致していることを確認してください。",
+          "retry": "認証情報が Bytebase 外でローテーションされる場合は、再試行前にシークレットソースを更新してください。"
+        },
+        "title": "データベース認証情報を確認"
+      },
+      "docs": "接続ガイドを開く",
+      "network": {
+        "description": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
+        "steps": {
+          "address": "ホストまたはソケットとポートがデータベースエンドポイントと一致していることを確認してください。",
+          "firewall": "Bytebase Cloud を使用する場合は、必要な Cloud IP をデータベースファイアウォールの許可リストに追加してください。",
+          "private-network": "プライベートデータベースの場合は、VPN、プライベートネットワーク、または SSH トンネルを先に設定してください。"
+        },
+        "title": "ネットワーク到達性を確認"
+      },
+      "permission": {
+        "description": "スキーマメタデータの読み取りと、利用予定のワークフロー実行に必要なデータベース権限を持つアカウントを使用してください。",
+        "steps": {
+          "account": "スキーマメタデータを読み取れるデータベースアカウントを使用してください。",
+          "database": "対象データベースがこのアカウントから見えることを確認してください。",
+          "workflow": "スキーマ変更や SQL Editor など、利用予定のワークフローに必要な追加権限だけを付与してください。"
+        },
+        "title": "データベース権限を確認"
+      },
+      "timeout": {
+        "description": "データベースが時間内に応答しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
+        "steps": {
+          "load": "データベースがオンラインで、新しい接続を受け付けていることを確認してください。",
+          "retry": "データベースがファイアウォールの背後にある場合は、許可リストまたはトンネル設定を完了してから再試行してください。",
+          "route": "ルーティング、プロキシ、トンネル、ポート、接続タイムアウト設定を確認してください。"
+        },
+        "title": "ファイアウォールとルーティングを確認"
+      },
+      "tls": {
+        "description": "SSL/TLS モード、証明書、サーバー名、CA 設定を確認してから、もう一度接続をテストしてください。",
+        "steps": {
+          "certificates": "CA、クライアント証明書、キーの値またはパスを確認してください。",
+          "hostname": "証明書がサーバー名と一致していることを確認してください。",
+          "mode": "require や verify-full など、データベースが要求する SSL/TLS モードを確認してください。"
+        },
+        "title": "SSL/TLS 設定を確認"
+      },
+      "unknown": {
+        "description": "まず基本的な接続項目を確認し、エンジン固有のオプションは接続ガイドを参照してください。",
+        "steps": {
+          "fields": "ホスト、ポート、ユーザー名、パスワードまたはシークレットソース、SSL/TLS モードを確認してください。",
+          "help": "データベースがプライベートの場合は、VPN、プライベートネットワーク、または SSH トンネルを設定してから再試行してください。",
+          "logs": "データベースにファイアウォールルールがある場合は、Bytebase Cloud またはデプロイ済み Bytebase ネットワークからの接続を許可してください。"
+        },
+        "title": "接続設定を確認"
+      },
+      "unsupported": {
+        "description": "選択したエンジンが対象データベースと一致しないか、このエンジン/バージョンはまだサポートされていません。",
+        "steps": {
+          "engine": "選択したデータベースエンジンが対象データベースと一致していることを確認してください。",
+          "retry": "別のエンジンを選択するか接続設定を更新してから再試行してください。",
+          "version": "このエンジンまたはバージョンが Bytebase でサポートされているか確認してください。"
+        },
+        "title": "データベースエンジンのサポートを確認"
+      }
+    },
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
     "database-region": "データベース領域",
     "default-role": "デフォルトロール",
@@ -1169,7 +1245,9 @@
     },
     "sync-databases": {
       "add-database": "+ データベースを追加し、Enterキーを押して送信します",
-      "description": "選択したデータベースのみを同期します。",
+      "description": "このインスタンスから同期するデータベースを選択してください。",
+      "project-description": "同期されたデータベースは <project>{{project}}</project> に追加されます。",
+      "project-sync-all": "すべてのデータベースをこのプロジェクトに同期する",
       "search-database": "データベースを検索",
       "self": "データベースを同期する",
       "sync-all": "すべてのデータベースを同期する"
@@ -1687,6 +1765,10 @@
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       }
     },
+    "connect-database": "データベースに接続",
+    "connect-database-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
+    "connect-database-intro-description": "データベースを接続すると、Bytebase がこのプロジェクトに同期します。",
+    "connect-database-intro-title": "最初のデータベースを接続",
     "create-modal": {
       "project-name": "プロジェクト名前",
       "success-prompt": "{{name}} が正常に作成されました。"
@@ -2481,6 +2563,7 @@
       "workload-identity-tag-hint": "すべてのタグを許可する場合は空欄にしてください"
     },
     "profile": {
+      "default-project-name": "新しいプロジェクト",
       "display-name": "あなたの名前",
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
@@ -2493,9 +2576,10 @@
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "role": "ロール",
       "setup-failed": "プロフィールの更新に失敗しました。",
+      "setup-first-project": "最初のプロジェクトを設定",
       "setup-skip": "後で設定する",
       "setup-success": "プロフィールが更新されました。",
-      "setup-title": "ようこそ！プロフィールを設定してください",
+      "setup-title": "ようこそ！ワークスペースを設定してください",
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)",
       "workspace-name": "ワークスペース名",
       "workspace-name-placeholder": "ワークスペース名を入力"

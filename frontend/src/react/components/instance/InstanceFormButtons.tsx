@@ -2,10 +2,13 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -16,7 +19,11 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { convertKVListToLabels, isValidSpannerHost } from "@/utils";
+import {
+  convertKVListToLabels,
+  extractInstanceResourceName,
+  isValidSpannerHost,
+} from "@/utils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,6 +33,10 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { StickyActionFooter } from "../ui/sticky-action-footer";
+import {
+  type ConnectionFailureCategory,
+  ConnectionRecovery,
+} from "./ConnectionRecovery";
 import type { EditDataSource } from "./common";
 import {
   calcDataSourceUpdateMask,
@@ -45,6 +56,7 @@ interface InstanceFormButtonsProps {
 type ConnectionFailureDialogState = {
   open: boolean;
   message: string;
+  failureCategory: ConnectionFailureCategory;
 };
 
 export function InstanceFormButtons({
@@ -87,6 +99,7 @@ export function InstanceFormButtons({
     useState<ConnectionFailureDialogState>({
       open: false,
       message: "",
+      failureCategory: "unknown",
     });
   const [connectionFailureResolver, setConnectionFailureResolver] = useState<
     ((confirmed: boolean) => void) | undefined
@@ -165,18 +178,21 @@ export function InstanceFormButtons({
     setConnectionFailureDialogState({
       open: false,
       message: "",
+      failureCategory: "unknown",
     });
     connectionFailureResolver?.(confirmed);
     setConnectionFailureResolver(undefined);
   };
 
   const confirmContinueWithConnectionFailure = async (
-    message: string
+    message: string,
+    failureCategory: ConnectionFailureCategory
   ): Promise<boolean> => {
     return await new Promise<boolean>((resolve) => {
       setConnectionFailureDialogState({
         open: true,
         message,
+        failureCategory,
       });
       setConnectionFailureResolver(() => resolve);
     });
@@ -212,6 +228,19 @@ export function InstanceFormButtons({
     return inst;
   };
 
+  const getRouteProjectContext = () => {
+    const projectId = router.currentRoute.value.query.project;
+    if (typeof projectId !== "string" || projectId.length === 0) {
+      return;
+    }
+    return {
+      id: projectId,
+      name: `${projectNamePrefix}${projectId}`,
+    };
+  };
+
+  const projectContext = getRouteProjectContext();
+
   const doCreate = async () => {
     if (!isCreating) return;
 
@@ -225,12 +254,26 @@ export function InstanceFormButtons({
     try {
       const createdInstance = await useAppStore
         .getState()
-        .createInstance(payload);
+        .createInstance(payload, false, {
+          project: projectContext?.name,
+        });
       if (onCreated) {
         onCreated(createdInstance);
       } else {
-        router.push(`/${createdInstance.name}`);
-        onDismiss?.();
+        if (projectContext) {
+          router.push({
+            name: PROJECT_V1_ROUTE_DATABASES,
+            params: { projectId: projectContext.id },
+            query: {
+              syncingInstance: extractInstanceResourceName(
+                createdInstance.name
+              ),
+              intro: CONNECT_DATABASE_PRODUCT_INTRO,
+            },
+          });
+        } else {
+          router.push(`/${createdInstance.name}`);
+        }
       }
 
       pushNotification({
@@ -242,6 +285,11 @@ export function InstanceFormButtons({
             0: createdInstance.title,
           }
         ),
+        description: projectContext
+          ? t("db.syncing-databases-for-instance", {
+              0: createdInstance.title,
+            })
+          : undefined,
       });
     } finally {
       setState((prev) => ({ ...prev, isRequesting: false }));
@@ -256,7 +304,8 @@ export function InstanceFormButtons({
     } else {
       maybeOpenConnectionOptions(editingDS);
       const confirmed = await confirmContinueWithConnectionFailure(
-        testResult.message
+        testResult.message,
+        testResult.failureCategory
       );
       if (confirmed) {
         doCreate();
@@ -361,7 +410,8 @@ export function InstanceFormButtons({
       if (!testResult.success) {
         maybeOpenConnectionOptions(editState);
         const continueAnyway = await confirmContinueWithConnectionFailure(
-          testResult.message
+          testResult.message,
+          testResult.failureCategory
         );
         if (!continueAnyway) return true;
       }
@@ -401,7 +451,8 @@ export function InstanceFormButtons({
           if (!testResult.success) {
             maybeOpenConnectionOptions(editingDS);
             const continueAnyway = await confirmContinueWithConnectionFailure(
-              testResult.message
+              testResult.message,
+              testResult.failureCategory
             );
             if (!continueAnyway) return true;
           }
@@ -479,8 +530,12 @@ export function InstanceFormButtons({
         }
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent className="max-w-2xl">
         <AlertDialogTitle>{t("common.warning")}</AlertDialogTitle>
+        <ConnectionRecovery
+          category={connectionFailureDialogState.failureCategory}
+          className="my-2"
+        />
         <AlertDialogDescription className="whitespace-pre-wrap break-all">
           {t("instance.unable-to-connect", {
             0: connectionFailureDialogState.message,
@@ -525,7 +580,13 @@ export function InstanceFormButtons({
               }
               onClick={tryCreate}
             >
-              {state.isRequesting ? t("common.creating") : t("common.create")}
+              {state.isRequesting
+                ? projectContext
+                  ? t("instance.connecting-database-to-project")
+                  : t("common.creating")
+                : projectContext
+                  ? t("instance.connect-database-to-project")
+                  : t("common.create")}
             </Button>
           }
         />
