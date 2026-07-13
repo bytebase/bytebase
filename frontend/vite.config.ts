@@ -20,7 +20,19 @@ const extractHostPort = (url: string) => {
 export default defineConfig({
   plugins: [
     legacy({
-      targets: ["> 0.08%, not dead"],
+      // Explicit version floors, matching what "> 0.08%, not dead" resolved
+      // to as of caniuse-lite 1.0.30001792. Usage-based queries re-resolve
+      // against every caniuse-lite/browserslist update; a 2026-07 data update
+      // pulled Chrome 39-60 above the threshold, which made the babel pass
+      // in plugin-legacy's renderChunk down-level every chunk to ES5 and
+      // took the release build from ~2.5min to ~32min (13x).
+      targets: [
+        "chrome >= 103",
+        "edge >= 100",
+        "firefox >= 115",
+        "safari >= 15",
+        "ios >= 11",
+      ],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
     }),
     {
