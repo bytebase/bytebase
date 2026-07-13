@@ -15,6 +15,24 @@ export interface ReviewBadge {
   variant: "default" | "secondary" | "destructive" | "warning" | "success";
 }
 
+export type PlanDraftState = "draft" | "incomplete" | undefined;
+
+export function getPlanDraftState(input: {
+  approvalStatus: ApprovalStatus;
+  hasRollout: boolean;
+  isGitOpsPlan: boolean;
+  issueName: string;
+}): PlanDraftState {
+  if (
+    input.isGitOpsPlan ||
+    input.hasRollout ||
+    input.approvalStatus !== ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED
+  ) {
+    return undefined;
+  }
+  return input.issueName ? "draft" : "incomplete";
+}
+
 export function getReviewBadge(
   input: ReviewBadgeInput
 ): ReviewBadge | undefined {

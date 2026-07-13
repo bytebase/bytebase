@@ -1520,7 +1520,6 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
-    "cannot-create": "Không thể tạo kế hoạch",
     "checks": {
       "completed": "Đã hoàn thành kiểm tra kế hoạch",
       "failed-to-run": "Không thể chạy kiểm tra kế hoạch",
@@ -1533,6 +1532,7 @@
     "description": {
       "placeholder": "Thêm mô tả"
     },
+    "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
@@ -1564,6 +1564,7 @@
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
+      "incomplete": "Chưa hoàn tất",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
       "rerun": "Chạy lại",
@@ -1659,6 +1660,11 @@
         "re-request-review": "yêu cầu xét duyệt lại",
         "title": "Bị {{user}} từ chối"
       }
+    },
+    "rollback": {
+      "description_one": "Hoàn tác 1 tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
+      "description_other": "Hoàn tác {{count}} tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
+      "title": "Hoàn tác bản triển khai #{{rolloutId}}"
     },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",

@@ -33,6 +33,7 @@ export type PlanLifecycleHeaderState =
   // Draft & review setup.
   | { kind: "create" }
   | { kind: "ready-for-review" }
+  | { kind: "incomplete" }
   | { kind: "closed" } // terminal stamp
   // Review.
   | { kind: "review-generating" } // disabled + loading
@@ -55,6 +56,7 @@ export interface PlanLifecycleResolverInput {
   hasIssue: boolean;
 
   issueStatus: IssueStatus | undefined;
+  issueDraft: boolean;
   approvalStatus: ApprovalStatus;
   hasCurrentStep: boolean;
   isCurrentUserCandidate: boolean;
@@ -101,6 +103,12 @@ export function resolvePlanLifecycleHeaderState(
     return { kind: "closed" };
   }
 
+  // Draft is the lifecycle boundary. Malformed stale rollout/approval data must
+  // never surface governance or deploy controls before the draft is submitted.
+  if (input.hasIssue && input.issueDraft) {
+    return { kind: "ready-for-review" };
+  }
+
   // A canceled review is terminal even after a rollout was created — surface the
   // closed stamp, not deploy actions (matches the issue detail page). This must
   // precede the rollout branch, which otherwise wins on a stale/orphaned rollout.
@@ -120,9 +128,11 @@ export function resolvePlanLifecycleHeaderState(
     return { kind: "none" };
   }
 
-  // No review issue yet: the draft can be submitted for review.
+  // Persisted plans must have a linked Draft Review Issue. A missing or
+  // unloadable issue is the durable partial-success state left when the second
+  // create call fails; expose it instead of offering another create/retry.
   if (!input.hasIssue) {
-    return { kind: "ready-for-review" };
+    return { kind: "incomplete" };
   }
 
   // Issue exists but is no longer open (review canceled) and never produced a

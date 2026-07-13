@@ -49,8 +49,9 @@ export function usePlanLifecycleHeader(
   // `issue` object — polling replaces `page.issue` with a fresh reference every
   // tick, which would re-run the resolver and re-render the header even when the
   // status/approval it consumes is unchanged.
-  const hasIssue = !!page.plan.issue || !!page.issue;
+  const hasIssue = !!page.issue;
   const issueStatus = page.issue?.status;
+  const issueDraft = page.issue?.draft ?? false;
   const approvalStatus =
     page.issue?.approvalStatus ?? ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED;
 
@@ -63,6 +64,7 @@ export function usePlanLifecycleHeader(
         planState: page.plan.state,
         hasIssue,
         issueStatus,
+        issueDraft,
         approvalStatus,
         hasCurrentStep: currentRole !== "",
         isCurrentUserCandidate,
@@ -77,6 +79,7 @@ export function usePlanLifecycleHeader(
       hasIssue,
       isCurrentUserCandidate,
       isGitOpsPlan,
+      issueDraft,
       issueStatus,
       page.isCreating,
       page.plan.state,

@@ -324,10 +324,12 @@ const makeIssueComment = (status: IssueComment_Approval_Status): IssueComment =>
 
 const makeIssue = ({
   approvalStatus,
+  draft = false,
   status = IssueStatus.OPEN,
   roles = ["roles/PROJECT_OWNER"],
 }: {
   approvalStatus: ApprovalStatus;
+  draft?: boolean;
   status?: IssueStatus;
   roles?: string[];
 }): Issue =>
@@ -335,6 +337,7 @@ const makeIssue = ({
     name: "projects/p1/issues/123",
     creator: "users/creator@example.com",
     approvalStatus,
+    draft,
     status,
     approvers: [],
     approvalTemplate: {
@@ -438,6 +441,28 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("PlanReviewSection — five review states", () => {
+  test("draft review issue hides governance UI until it is submitted", () => {
+    const issue = makeIssue({
+      approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+      draft: true,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, makePlan())}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("issue.approval-flow.self");
+    expect(container.textContent).not.toContain("plan.review.footer.");
+    expect(container.textContent).not.toContain(
+      "custom-approval.approval-flow.skip"
+    );
+
+    unmount();
+  });
+
   test("in-progress (PENDING, checks pass): footer shows waiting-on-review + muted underline bypass link", () => {
     const issue = makeIssue({ approvalStatus: ApprovalStatus.PENDING });
     const plan = makePlan();

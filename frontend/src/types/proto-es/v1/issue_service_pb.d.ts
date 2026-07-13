@@ -998,6 +998,14 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
      */
     value: IssueComment_PlanUpdate;
     case: "planUpdate";
+  } | {
+    /**
+     * Review submission event.
+     *
+     * @generated from field: bytebase.v1.IssueComment.ReviewSubmission review_submission = 13;
+     */
+    value: IssueComment_ReviewSubmission;
+    case: "reviewSubmission";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1119,6 +1127,20 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
  * Use `create(IssueComment_IssueUpdateSchema)` to create a new message.
  */
 export declare const IssueComment_IssueUpdateSchema: GenMessage<IssueComment_IssueUpdate>;
+
+/**
+ * Review submission event information.
+ *
+ * @generated from message bytebase.v1.IssueComment.ReviewSubmission
+ */
+export declare type IssueComment_ReviewSubmission = Message<"bytebase.v1.IssueComment.ReviewSubmission"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.IssueComment.ReviewSubmission.
+ * Use `create(IssueComment_ReviewSubmissionSchema)` to create a new message.
+ */
+export declare const IssueComment_ReviewSubmissionSchema: GenMessage<IssueComment_ReviewSubmission>;
 
 /**
  * Plan update event information (snapshot of plan.config.specs before

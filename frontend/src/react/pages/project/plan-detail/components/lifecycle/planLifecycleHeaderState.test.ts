@@ -29,6 +29,7 @@ const base: PlanLifecycleResolverInput = {
   planState: State.ACTIVE,
   hasIssue: true,
   issueStatus: IssueStatus.OPEN,
+  issueDraft: false,
   approvalStatus: ApprovalStatus.PENDING,
   hasCurrentStep: false,
   isCurrentUserCandidate: false,
@@ -58,12 +59,42 @@ describe("resolvePlanLifecycleHeaderState — draft & terminal", () => {
     expect(resolve({ planState: State.DELETED }).kind).toBe("closed");
   });
 
-  test("no issue yet -> ready for review", () => {
-    expect(resolve({ hasIssue: false }).kind).toBe("ready-for-review");
+  test("a valid Draft Review Issue is ready for review", () => {
+    expect(resolve({ issueDraft: true }).kind).toBe("ready-for-review");
+  });
+
+  test("draft lifecycle wins over malformed stale rollout data", () => {
+    expect(
+      resolve({
+        issueDraft: true,
+        hasRollout: true,
+        rollout: rollout(stage("s1", [Task_Status.NOT_STARTED])),
+      }).kind
+    ).toBe("ready-for-review");
+  });
+
+  test("a persisted plan without a loadable linked issue is incomplete", () => {
+    expect(resolve({ hasIssue: false }).kind).toBe("incomplete");
   });
 
   test("canceled review with no rollout -> closed", () => {
     expect(resolve({ issueStatus: IssueStatus.CANCELED }).kind).toBe("closed");
+  });
+
+  test("closing and reopening a draft preserves its draft lifecycle", () => {
+    expect(
+      resolve({
+        issueDraft: true,
+        planState: State.DELETED,
+        issueStatus: IssueStatus.CANCELED,
+      }).kind
+    ).toBe("closed");
+    expect(
+      resolve({
+        issueDraft: true,
+        issueStatus: IssueStatus.OPEN,
+      }).kind
+    ).toBe("ready-for-review");
   });
 
   test("canceled review is terminal even with a rollout (not deploy)", () => {

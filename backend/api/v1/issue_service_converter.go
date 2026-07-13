@@ -306,6 +306,10 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		r.Event = convertToIssueCommentEventApproval(e)
 	case *storepb.IssueCommentPayload_IssueUpdate_:
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
+	case *storepb.IssueCommentPayload_ReviewSubmission_:
+		r.Event = &v1pb.IssueComment_ReviewSubmission_{
+			ReviewSubmission: &v1pb.IssueComment_ReviewSubmission{},
+		}
 	case *storepb.IssueCommentPayload_PlanUpdate_:
 		projectID, _, _ := common.GetProjectIDIssueUID(issueName)
 		r.Event = convertToIssueCommentEventPlanUpdate(projectID, e)

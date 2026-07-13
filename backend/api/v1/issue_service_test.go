@@ -996,6 +996,51 @@ func issueNames(issues []*v1pb.Issue) []string {
 	return names
 }
 
+func TestUpdateDraftIssueMetadataMustUsePlan(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "plan-owned title",
+		Config:    &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        plan.Name,
+		Description:  "plan-owned description",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Draft: true},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	for _, path := range []string{"title", "description"} {
+		t.Run(path, func(t *testing.T) {
+			_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue: &v1pb.Issue{
+					Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+					Title:       "direct issue title",
+					Description: "direct issue description",
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{path}},
+			}))
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		})
+	}
+
+	stored, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, plan.Name, stored.Title)
+	require.Equal(t, "plan-owned description", stored.Description)
+}
+
 func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 

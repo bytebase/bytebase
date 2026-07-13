@@ -1354,6 +1354,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewSubmission"><span class="badge">M</span>IssueComment.ReviewSubmission</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListIssueCommentsRequest"><span class="badge">M</span>ListIssueCommentsRequest</a>
                 </li>
               
@@ -3895,7 +3899,7 @@ Examples:
               <tr>
                 <td>APPROVAL_STATUS_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Unspecified approval status.</p></td>
+                <td><p>No approval workflow has started, including for a linked draft issue.</p></td>
               </tr>
             
               <tr>
@@ -16763,6 +16767,13 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
                   <td><p>Plan update event. </p></td>
                 </tr>
               
+                <tr>
+                  <td>review_submission</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewSubmission">IssueComment.ReviewSubmission</a></td>
+                  <td></td>
+                  <td><p>Review submission event. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16895,6 +16906,13 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
           </table>
 
           
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewSubmission">IssueComment.ReviewSubmission</h3>
+        <p>Review submission event information.</p>
+
+        
 
         
       

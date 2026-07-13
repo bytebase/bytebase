@@ -1520,7 +1520,6 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
-    "cannot-create": "Cannot create plan",
     "checks": {
       "completed": "Plan checks completed",
       "failed-to-run": "Failed to run plan checks",
@@ -1533,6 +1532,7 @@
     "description": {
       "placeholder": "Add description"
     },
+    "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
@@ -1564,6 +1564,7 @@
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
+      "incomplete": "Incomplete",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
       "rerun": "Rerun",
@@ -1659,6 +1660,11 @@
         "re-request-review": "re-request review",
         "title": "Rejected by {{user}}"
       }
+    },
+    "rollback": {
+      "description_one": "Roll back 1 selected task from rollout #{{rolloutId}}.",
+      "description_other": "Roll back {{count}} selected tasks from rollout #{{rolloutId}}.",
+      "title": "Rollback rollout #{{rolloutId}}"
     },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",

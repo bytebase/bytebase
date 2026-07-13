@@ -522,8 +522,8 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	}
 	defer tx.Rollback()
 
-	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, projectID, planUID); err != nil {
-		return false, nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
+	if err := acquirePlanAdvisoryLock(ctx, tx, projectID, planUID); err != nil {
+		return false, nil, errors.Wrap(err, "failed to acquire Plan lock")
 	}
 
 	var approvalInputVersion *int64

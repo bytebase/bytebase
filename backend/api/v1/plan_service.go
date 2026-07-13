@@ -92,10 +92,11 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
-		ProjectID: projectID,
+		Workspace:               common.GetWorkspaceIDFromContext(ctx),
+		Limit:                   &limitPlusOne,
+		Offset:                  &offset.offset,
+		ProjectID:               projectID,
+		ExcludeMalformedUIPlans: true,
 	}
 
 	if req.Filter != "" {
@@ -303,6 +304,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	var databaseGroup *v1pb.DatabaseGroup
 	var issueCommentCreates []*store.IssueCommentMessage
 	var issueToReset *store.IssueMessage
+	var linkedIssueFetched bool
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -344,6 +346,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
+			linkedIssueFetched = true
 			if issue != nil {
 				if !planSpecsEqualSet(oldPlan.Config.GetSpecs(), allSpecs) {
 					issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
@@ -366,10 +369,53 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
+	var linkedDraftIssue *store.IssueMessage
+	linkedDraftIssueUpdate := &store.UpdatePlanLinkedIssueMessage{
+		Title:       planUpdate.Name,
+		Description: planUpdate.Description,
+	}
+	if planUpdate.Deleted != nil && *planUpdate.Deleted != oldPlan.Deleted {
+		status := storepb.Issue_OPEN
+		if *planUpdate.Deleted {
+			status = storepb.Issue_CANCELED
+		}
+		linkedDraftIssueUpdate.Status = &status
+	}
+	if planUpdate.Config != nil || linkedDraftIssueUpdate.Title != nil || linkedDraftIssueUpdate.Description != nil || linkedDraftIssueUpdate.Status != nil {
+		issue := issueToReset
+		if !linkedIssueFetched {
+			var err error
+			issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{
+				Workspace:  common.GetWorkspaceIDFromContext(ctx),
+				ProjectIDs: []string{projectID},
+				PlanUID:    &oldPlan.UID,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
+			}
+		}
+		if issue == nil {
+			planUpdate.RequireNoLinkedIssue = true
+		} else if issue.Payload.GetDraft() {
+			linkedDraftIssue = issue
+		}
+	}
+
+	if linkedDraftIssue != nil {
+		linkedDraftIssueUpdate.UID = linkedDraftIssue.UID
+		planUpdate.LinkedIssue = linkedDraftIssueUpdate
+	}
+
 	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
 		if errors.Is(err, store.ErrPlanHasRollout) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update specs for plan that has a rollout"))
+		}
+		if errors.Is(err, store.ErrPlanIssueNotDraft) {
+			return nil, connect.NewError(connect.CodeAborted, errors.New("linked draft issue was submitted while the Plan was being updated"))
+		}
+		if errors.Is(err, store.ErrPlanChanged) {
+			return nil, connect.NewError(connect.CodeAborted, errors.New("linked Issue changed while the Plan was being updated"))
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
@@ -962,7 +1008,9 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		if issue := issueByPlanKey[key]; issue != nil {
 			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
-			v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+			if !issue.Payload.GetDraft() {
+				v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+			}
 		}
 
 		if planCheckRun := planCheckRunByPlanKey[key]; planCheckRun != nil {

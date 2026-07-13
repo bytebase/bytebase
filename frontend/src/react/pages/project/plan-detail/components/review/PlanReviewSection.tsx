@@ -56,6 +56,16 @@ export function PlanReviewSection() {
 
   if (!issue) return null;
 
+  if (issue.draft) {
+    return (
+      <ReviewActivityTimeline
+        comments={comments}
+        issue={issue}
+        plan={page.plan}
+      />
+    );
+  }
+
   if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     return (
       <div className="flex items-center gap-x-2 p-4 text-sm text-control-placeholder">

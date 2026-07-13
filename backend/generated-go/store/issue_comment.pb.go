@@ -29,6 +29,7 @@ type IssueCommentPayload struct {
 	//	*IssueCommentPayload_Approval_
 	//	*IssueCommentPayload_IssueUpdate_
 	//	*IssueCommentPayload_PlanUpdate_
+	//	*IssueCommentPayload_ReviewSubmission_
 	Event         isIssueCommentPayload_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -105,6 +106,15 @@ func (x *IssueCommentPayload) GetPlanUpdate() *IssueCommentPayload_PlanUpdate {
 	return nil
 }
 
+func (x *IssueCommentPayload) GetReviewSubmission() *IssueCommentPayload_ReviewSubmission {
+	if x != nil {
+		if x, ok := x.Event.(*IssueCommentPayload_ReviewSubmission_); ok {
+			return x.ReviewSubmission
+		}
+	}
+	return nil
+}
+
 type isIssueCommentPayload_Event interface {
 	isIssueCommentPayload_Event()
 }
@@ -121,11 +131,17 @@ type IssueCommentPayload_PlanUpdate_ struct {
 	PlanUpdate *IssueCommentPayload_PlanUpdate `protobuf:"bytes,7,opt,name=plan_update,json=planUpdate,proto3,oneof"`
 }
 
+type IssueCommentPayload_ReviewSubmission_ struct {
+	ReviewSubmission *IssueCommentPayload_ReviewSubmission `protobuf:"bytes,8,opt,name=review_submission,json=reviewSubmission,proto3,oneof"`
+}
+
 func (*IssueCommentPayload_Approval_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_IssueUpdate_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_PlanUpdate_) isIssueCommentPayload_Event() {}
+
+func (*IssueCommentPayload_ReviewSubmission_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
@@ -271,6 +287,43 @@ func (x *IssueCommentPayload_IssueUpdate) GetToLabels() []string {
 	return nil
 }
 
+// ReviewSubmission records that an issue entered review.
+type IssueCommentPayload_ReviewSubmission struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueCommentPayload_ReviewSubmission) Reset() {
+	*x = IssueCommentPayload_ReviewSubmission{}
+	mi := &file_store_issue_comment_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueCommentPayload_ReviewSubmission) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueCommentPayload_ReviewSubmission) ProtoMessage() {}
+
+func (x *IssueCommentPayload_ReviewSubmission) ProtoReflect() protoreflect.Message {
+	mi := &file_store_issue_comment_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueCommentPayload_ReviewSubmission.ProtoReflect.Descriptor instead.
+func (*IssueCommentPayload_ReviewSubmission) Descriptor() ([]byte, []int) {
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 2}
+}
+
 // PlanUpdate carries before/after snapshots of plan.config.specs,
 // emitted once per PlanService.UpdatePlan call whose specs branch
 // produces a non-cosmetic diff. The renderer computes per-spec
@@ -285,7 +338,7 @@ type IssueCommentPayload_PlanUpdate struct {
 
 func (x *IssueCommentPayload_PlanUpdate) Reset() {
 	*x = IssueCommentPayload_PlanUpdate{}
-	mi := &file_store_issue_comment_proto_msgTypes[3]
+	mi := &file_store_issue_comment_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +350,7 @@ func (x *IssueCommentPayload_PlanUpdate) String() string {
 func (*IssueCommentPayload_PlanUpdate) ProtoMessage() {}
 
 func (x *IssueCommentPayload_PlanUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[3]
+	mi := &file_store_issue_comment_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +363,7 @@ func (x *IssueCommentPayload_PlanUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueCommentPayload_PlanUpdate.ProtoReflect.Descriptor instead.
 func (*IssueCommentPayload_PlanUpdate) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 2}
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3}
 }
 
 func (x *IssueCommentPayload_PlanUpdate) GetFromSpecs() []*PlanConfig_Spec {
@@ -331,13 +384,14 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xe6\a\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xdf\b\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
 	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12Q\n" +
 	"\vplan_update\x18\a \x01(\v2..bytebase.store.IssueCommentPayload.PlanUpdateH\x00R\n" +
-	"planUpdate\x1aX\n" +
+	"planUpdate\x12c\n" +
+	"\x11review_submission\x18\b \x01(\v24.bytebase.store.IssueCommentPayload.ReviewSubmissionH\x00R\x10reviewSubmission\x1aX\n" +
 	"\bApproval\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x1a\xd1\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
@@ -358,7 +412,8 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x0f_to_descriptionB\x0e\n" +
 	"\f_from_statusB\f\n" +
 	"\n" +
-	"_to_status\x1a\x88\x01\n" +
+	"_to_status\x1a\x12\n" +
+	"\x10ReviewSubmission\x1a\x88\x01\n" +
 	"\n" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
@@ -379,30 +434,32 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 	return file_store_issue_comment_proto_rawDescData
 }
 
-var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_issue_comment_proto_goTypes = []any{
-	(*IssueCommentPayload)(nil),               // 0: bytebase.store.IssueCommentPayload
-	(*IssueCommentPayload_Approval)(nil),      // 1: bytebase.store.IssueCommentPayload.Approval
-	(*IssueCommentPayload_IssueUpdate)(nil),   // 2: bytebase.store.IssueCommentPayload.IssueUpdate
-	(*IssueCommentPayload_PlanUpdate)(nil),    // 3: bytebase.store.IssueCommentPayload.PlanUpdate
-	(IssuePayloadApproval_Approver_Status)(0), // 4: bytebase.store.IssuePayloadApproval.Approver.Status
-	(Issue_Status)(0),                         // 5: bytebase.store.Issue.Status
-	(*PlanConfig_Spec)(nil),                   // 6: bytebase.store.PlanConfig.Spec
+	(*IssueCommentPayload)(nil),                  // 0: bytebase.store.IssueCommentPayload
+	(*IssueCommentPayload_Approval)(nil),         // 1: bytebase.store.IssueCommentPayload.Approval
+	(*IssueCommentPayload_IssueUpdate)(nil),      // 2: bytebase.store.IssueCommentPayload.IssueUpdate
+	(*IssueCommentPayload_ReviewSubmission)(nil), // 3: bytebase.store.IssueCommentPayload.ReviewSubmission
+	(*IssueCommentPayload_PlanUpdate)(nil),       // 4: bytebase.store.IssueCommentPayload.PlanUpdate
+	(IssuePayloadApproval_Approver_Status)(0),    // 5: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                            // 6: bytebase.store.Issue.Status
+	(*PlanConfig_Spec)(nil),                      // 7: bytebase.store.PlanConfig.Spec
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
 	2, // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	3, // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
-	4, // 3: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	5, // 4: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
-	5, // 5: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	6, // 6: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
-	6, // 7: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	4, // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
+	3, // 3: bytebase.store.IssueCommentPayload.review_submission:type_name -> bytebase.store.IssueCommentPayload.ReviewSubmission
+	5, // 4: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	6, // 5: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
+	6, // 6: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
+	7, // 7: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
+	7, // 8: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }
@@ -417,6 +474,7 @@ func file_store_issue_comment_proto_init() {
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),
 		(*IssueCommentPayload_PlanUpdate_)(nil),
+		(*IssueCommentPayload_ReviewSubmission_)(nil),
 	}
 	file_store_issue_comment_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
@@ -425,7 +483,7 @@ func file_store_issue_comment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_comment_proto_rawDesc), len(file_store_issue_comment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

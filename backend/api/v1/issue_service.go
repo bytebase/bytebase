@@ -1220,6 +1220,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	var labelsChangedWithApprovalReset bool
 	var labelsForApprovalReset []string
 	for _, path := range req.Msg.UpdateMask.Paths {
+		if issue.Payload.GetDraft() && (path == "title" || path == "description") {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issue %s metadata must be updated through its Plan", req.Msg.Issue.Name))
+		}
 		updateMasks[path] = true
 		switch path {
 		case "title":

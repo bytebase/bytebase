@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -21,6 +22,13 @@ import (
 
 // ErrPlanHasRollout indicates that a plan update was rejected because rollout already started.
 var ErrPlanHasRollout = errors.New("plan has rollout")
+
+// ErrPlanIssueNotDraft indicates that a guarded plan update lost a race with Issue submission.
+var ErrPlanIssueNotDraft = errors.New("plan issue is not draft")
+
+// ErrPlanChanged indicates that a guarded operation observed a different Plan
+// or linked Issue state after acquiring the Plan advisory lock.
+var ErrPlanChanged = errors.New("plan changed")
 
 // PlanMessage is the message for plan.
 type PlanMessage struct {
@@ -45,6 +53,9 @@ type FindPlanMessage struct {
 	ProjectID string
 
 	HasRollout *bool
+	// ExcludeMalformedUIPlans excludes active issue-less database plans, except
+	// homogeneous release-backed change database plans.
+	ExcludeMalformedUIPlans bool
 
 	Limit  *int
 	Offset *int
@@ -72,7 +83,21 @@ type UpdatePlanMessage struct {
 	// user-visible invariant is about spec immutability after rollout, including
 	// spec edits that do not otherwise affect approval input.
 	RequireNoRollout bool
-	Deleted          *bool
+	// LinkedIssue applies draft Issue metadata/status in the same transaction as the Plan update.
+	// The store locks Issue then Plan so submission and Plan updates serialize in both directions.
+	LinkedIssue *UpdatePlanLinkedIssueMessage
+	// RequireNoLinkedIssue rejects the update if an Issue was linked after the
+	// caller observed no linked Issue.
+	RequireNoLinkedIssue bool
+	Deleted              *bool
+}
+
+// UpdatePlanLinkedIssueMessage is the atomic linked draft Issue patch applied with a Plan update.
+type UpdatePlanLinkedIssueMessage struct {
+	UID         int64
+	Title       *string
+	Description *string
+	Status      *storepb.Issue_Status
 }
 
 // CreatePlan creates a new plan.
@@ -173,6 +198,35 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			q.And("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false")
 		}
 	}
+	if find.ExcludeMalformedUIPlans {
+		q.And(`(
+			plan.deleted
+			OR EXISTS (
+				SELECT 1
+				FROM issue
+				WHERE issue.project = plan.project
+				  AND issue.plan_id = plan.id
+			)
+			OR NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(plan.config->'specs') AS spec
+				WHERE spec->'createDatabaseConfig' IS NOT NULL
+					OR spec->'changeDatabaseConfig' IS NOT NULL
+			)
+			OR (
+				NOT EXISTS (
+					SELECT 1
+					FROM jsonb_array_elements(plan.config->'specs') AS spec
+					WHERE spec->'changeDatabaseConfig' IS NULL
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM jsonb_array_elements(plan.config->'specs') AS spec
+					WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL
+				)
+			)
+		)`)
+	}
 
 	q.Space("ORDER BY id DESC")
 	if v := find.Limit; v != nil {
@@ -253,6 +307,17 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 	if patch.RequireNoRollout {
 		where.Space("AND COALESCE((config->>'hasRollout')::boolean, false) = false")
 	}
+	if linkedIssue := patch.LinkedIssue; linkedIssue != nil {
+		where.Space(`
+			AND EXISTS (
+				SELECT 1
+				FROM issue
+				WHERE issue.project = plan.project
+				  AND issue.id = ?
+				  AND issue.plan_id = plan.id
+				  AND COALESCE((issue.payload->>'draft')::boolean, false)
+			)`, linkedIssue.UID)
+	}
 
 	q := qb.Q().Space(`UPDATE plan SET ? WHERE ?
 		RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted`,
@@ -263,11 +328,75 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
+	if patch.LinkedIssue != nil && patch.RequireNoLinkedIssue {
+		return nil, errors.New("LinkedIssue and RequireNoLinkedIssue are mutually exclusive")
+	}
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin guarded plan update")
+	}
+	defer tx.Rollback()
+
+	if err := acquirePlanAdvisoryLock(ctx, tx, patch.ProjectID, patch.UID); err != nil {
+		return nil, errors.Wrap(err, "failed to acquire Plan lock for update")
+	}
+
+	var linkedIssueName, linkedIssueDescription string
+	if linkedIssue := patch.LinkedIssue; linkedIssue != nil {
+		var draft bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT
+				COALESCE((payload->>'draft')::boolean, false),
+				name,
+				description
+			FROM issue
+			WHERE project = $1
+			  AND id = $2
+			  AND plan_id = $3
+			FOR UPDATE`,
+			patch.ProjectID, linkedIssue.UID, patch.UID).Scan(&draft, &linkedIssueName, &linkedIssueDescription); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, ErrPlanIssueNotDraft
+			}
+			return nil, errors.Wrapf(err, "failed to lock linked issue")
+		}
+		if !draft {
+			return nil, ErrPlanIssueNotDraft
+		}
+	} else if patch.RequireNoLinkedIssue {
+		var linkedIssueExists bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM issue
+				WHERE project = $1
+				  AND plan_id = $2
+			)`,
+			patch.ProjectID, patch.UID).Scan(&linkedIssueExists); err != nil {
+			return nil, errors.Wrap(err, "failed to revalidate linked issue")
+		}
+		if linkedIssueExists {
+			return nil, ErrPlanChanged
+		}
+	}
+
+	var lockedPlanUID int64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan
+		WHERE project = $1
+		  AND id = $2
+		FOR UPDATE`,
+		patch.ProjectID, patch.UID).Scan(&lockedPlanUID); err != nil {
+		return nil, errors.Wrapf(err, "failed to lock plan")
+	}
+	queryRowContext := tx.QueryRowContext
+
 	plan := PlanMessage{
 		Config: &storepb.PlanConfig{},
 	}
 	var config []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, finalArgs...).Scan(
+	if err := queryRowContext(ctx, query, finalArgs...).Scan(
 		&plan.UID,
 		&plan.Creator,
 		&plan.CreatedAt,
@@ -285,6 +414,52 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal plan config")
+	}
+	if linkedIssue := patch.LinkedIssue; linkedIssue != nil && (linkedIssue.Title != nil || linkedIssue.Description != nil || linkedIssue.Status != nil) {
+		issueSet := qb.Q().Comma("updated_at = ?", time.Now())
+		title := linkedIssueName
+		if linkedIssue.Title != nil {
+			title = *linkedIssue.Title
+			issueSet.Comma("name = ?", title)
+		}
+		description := linkedIssueDescription
+		if linkedIssue.Description != nil {
+			description = *linkedIssue.Description
+			issueSet.Comma("description = ?", description)
+		}
+		if linkedIssue.Status != nil {
+			issueSet.Comma("status = ?", linkedIssue.Status.String())
+		}
+		if linkedIssue.Title != nil || linkedIssue.Description != nil {
+			issueSet.Comma("ts_vector = ?", getTSVector(fmt.Sprintf("%s %s", title, description)))
+		}
+		issueUpdate := qb.Q().Space(`
+			UPDATE issue
+			SET ?
+			WHERE project = ?
+			  AND id = ?
+			  AND COALESCE((payload->>'draft')::boolean, false)`,
+			issueSet, patch.ProjectID, linkedIssue.UID)
+		query, args, err := issueUpdate.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build linked issue update")
+		}
+		result, err := tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to update linked issue")
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to inspect linked issue update")
+		}
+		if rowsAffected == 0 {
+			return nil, ErrPlanIssueNotDraft
+		}
+	}
+	if tx != nil {
+		if err := tx.Commit(); err != nil {
+			return nil, errors.Wrapf(err, "failed to commit guarded plan update")
+		}
 	}
 
 	return &plan, nil

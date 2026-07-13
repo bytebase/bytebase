@@ -4,14 +4,18 @@
 // description-edit state; the title row owns the title + lifecycle slot.
 import { create } from "@bufbuild/protobuf";
 import { ChevronUp, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { planServiceClientConnect } from "@/connect";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
 import { Textarea } from "@/react/components/ui/textarea";
 import { cn } from "@/react/lib/utils";
 import { pushNotification } from "@/store";
+import {
+  IssueSchema,
+  UpdateIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanSchema,
   UpdatePlanRequestSchema,
@@ -26,27 +30,47 @@ export function PlanDetailHeaderDetails() {
   const { patchState, setEditing } = page;
   const currentUser = page.currentUser;
   const project = page.project;
-  const [description, setDescription] = useState(page.plan.description);
+  const draftIssue = page.issue?.draft === true;
+  const persistedDescription =
+    page.issue && !draftIssue ? page.issue.description : page.plan.description;
+  const [description, setDescription] = useState(persistedDescription);
   const [editingDescription, setEditingDescription] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const pageKeyRef = useRef(page.pageKey);
+  pageKeyRef.current = page.pageKey;
 
   useEffect(() => {
-    setDescription((prev) =>
-      prev === page.plan.description ? prev : page.plan.description
-    );
-  }, [page.plan.description]);
+    setDescription(persistedDescription);
+    setEditingDescription(false);
+    setShowFullDescription(false);
+    setUpdating(false);
+    setEditing("description", false);
+  }, [page.pageKey]);
+
+  useEffect(() => {
+    if (!editingDescription) {
+      setDescription((prev) =>
+        prev === persistedDescription ? prev : persistedDescription
+      );
+    }
+  }, [editingDescription, persistedDescription]);
 
   const allowDescriptionEdit = useMemo(() => {
     if (page.readonly) return false;
     if (page.isCreating) return true;
     if (!page.issue && page.plan.hasRollout) return false;
-    return (
+    const canUpdatePlan =
       page.plan.creator === currentUser.name ||
-      hasProjectPermissionV2(project, "bb.plans.update")
-    );
+      hasProjectPermissionV2(project, "bb.plans.update");
+    if (draftIssue) return canUpdatePlan;
+    if (page.issue) {
+      return hasProjectPermissionV2(project, "bb.issues.update");
+    }
+    return canUpdatePlan;
   }, [
     currentUser.name,
+    draftIssue,
     page.isCreating,
     page.issue,
     page.plan.creator,
@@ -67,19 +91,37 @@ export function PlanDetailHeaderDetails() {
       return;
     }
 
+    const actionPageKey = page.pageKey;
     let saved = false;
     try {
       setUpdating(true);
-      const planPatch = create(PlanSchema, { ...page.plan, description });
-      const response = await planServiceClientConnect.updatePlan(
-        create(UpdatePlanRequestSchema, {
-          plan: planPatch,
-          updateMask: { paths: ["description"] },
-        })
-      );
-      patchState({ plan: response });
+      if (page.issue && !draftIssue) {
+        const issuePatch = create(IssueSchema, {
+          ...page.issue,
+          description,
+        });
+        const response = await issueServiceClientConnect.updateIssue(
+          create(UpdateIssueRequestSchema, {
+            issue: issuePatch,
+            updateMask: { paths: ["description"] },
+          })
+        );
+        if (pageKeyRef.current !== actionPageKey) return;
+        patchState({ issue: response });
+      } else {
+        const planPatch = create(PlanSchema, { ...page.plan, description });
+        const response = await planServiceClientConnect.updatePlan(
+          create(UpdatePlanRequestSchema, {
+            plan: planPatch,
+            updateMask: { paths: ["description"] },
+          })
+        );
+        if (pageKeyRef.current !== actionPageKey) return;
+        patchState({ plan: response });
+      }
       saved = true;
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -87,10 +129,12 @@ export function PlanDetailHeaderDetails() {
         description: String(error),
       });
     } finally {
-      setUpdating(false);
-      if (saved) {
-        setEditingDescription(false);
-        setEditing("description", false);
+      if (pageKeyRef.current === actionPageKey) {
+        setUpdating(false);
+        if (saved) {
+          setEditingDescription(false);
+          setEditing("description", false);
+        }
       }
     }
   };
@@ -117,21 +161,21 @@ export function PlanDetailHeaderDetails() {
                 ) : (
                   <Button
                     onClick={() => {
-                      setDescription(page.plan.description);
+                      setDescription(persistedDescription);
                       setEditingDescription(false);
                       setEditing("description", false);
                     }}
                     size="xs"
                     appearance="secondary"
                   >
-                    <ChevronUp className="mr-1 h-4 w-4" />
+                    <ChevronUp className="mr-1 size-4" />
                     {t("common.collapse")}
                   </Button>
                 )}
                 {!page.isCreating && (
                   <Button
                     onClick={() => {
-                      setDescription(page.plan.description);
+                      setDescription(persistedDescription);
                       setEditingDescription(false);
                       setEditing("description", false);
                     }}
@@ -163,7 +207,8 @@ export function PlanDetailHeaderDetails() {
               className={cn(
                 "relative w-full rounded-md border border-transparent px-2 py-1 text-left text-sm text-control-light transition-all duration-200",
                 !showFullDescription && "max-h-[4.5rem] overflow-hidden",
-                allowDescriptionEdit && "cursor-pointer hover:border-gray-200"
+                allowDescriptionEdit &&
+                  "cursor-pointer hover:border-control-border"
               )}
               onClick={() => {
                 if (!allowDescriptionEdit) return;
@@ -184,22 +229,23 @@ export function PlanDetailHeaderDetails() {
                 <MarkdownEditor content={description} mode="preview" />
               </div>
               {!showFullDescription && isDescriptionLong && (
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent" />
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent" />
               )}
             </div>
             {isDescriptionLong && (
-              <button
-                className="mt-1 px-2 text-xs text-control-placeholder hover:text-control"
+              <Button
+                className="mt-1 px-2 text-control-placeholder hover:text-control"
                 onClick={(event) => {
                   event.stopPropagation();
                   setShowFullDescription((value) => !value);
                 }}
-                type="button"
+                size="xs"
+                appearance="link"
               >
                 {showFullDescription
                   ? t("common.show-less")
                   : t("common.show-more")}
-              </button>
+              </Button>
             )}
           </div>
         ) : allowDescriptionEdit ? (
@@ -212,7 +258,7 @@ export function PlanDetailHeaderDetails() {
             size="xs"
             appearance="secondary"
           >
-            <Plus className="mr-1 h-4 w-4" />
+            <Plus className="mr-1 size-4" />
             {t("plan.description.placeholder")}
           </Button>
         ) : null}

@@ -169,6 +169,7 @@
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
+    - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -2967,6 +2968,7 @@ Type represents the category of issue.
 | approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
+| review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
 
 
 
@@ -3023,6 +3025,16 @@ add/remove/update from the snapshot pair.
 | ----- | ---- | ----- | ----------- |
 | from_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 | to_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-ReviewSubmission"></a>
+
+### IssueCommentPayload.ReviewSubmission
+ReviewSubmission records that an issue entered review.
 
 
 

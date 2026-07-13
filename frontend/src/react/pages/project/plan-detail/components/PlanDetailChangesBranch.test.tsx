@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -87,18 +87,8 @@ vi.mock("@/react/components/EnvironmentLabel", () => ({
 }));
 
 vi.mock("@/react/components/ui/button", () => ({
-  Button: ({
-    children,
-    disabled,
-    onClick,
-  }: {
-    children: ReactNode;
-    disabled?: boolean;
-    onClick?: () => void;
-  }) => (
-    <button disabled={disabled} onClick={onClick}>
-      {children}
-    </button>
+  Button: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>{children}</button>
   ),
 }));
 
@@ -808,10 +798,190 @@ describe("PlanDetailChangesBranch", () => {
     await flush();
     expect(container.textContent).toContain("group-a");
 
-    renderHarness(1);
+    renderHarness(0);
     await flush();
 
     expect(container.textContent).toContain("group-a");
+  });
+
+  it("discards a pending change when navigating to another plan", async () => {
+    const page = buildPageState();
+    page.isCreating = false;
+    page.pageKey = "foo/plan-1";
+    page.planId = "plan-1";
+    page.plan.name = "projects/foo/plans/plan-1";
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.getAttribute("aria-label") === "plan.add-spec"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find((button) =>
+          button.textContent?.includes("common.database-group")
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("tr")].find((row) =>
+          row.textContent?.includes("group-a")
+        ) as HTMLTableRowElement
+      ).click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "common.confirm"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+
+    expect(
+      [...container.querySelectorAll("button")].filter((button) =>
+        button.textContent?.includes("plan.spec.type.database-change")
+      )
+    ).toHaveLength(2);
+    expect(
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.getAttribute("aria-label") === "plan.add-spec"
+        ) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
+
+    const nextPage = buildPageState();
+    nextPage.isCreating = false;
+    nextPage.pageKey = "foo/plan-2";
+    nextPage.planId = "plan-2";
+    nextPage.plan.name = "projects/foo/plans/plan-2";
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={nextPage}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(
+      [...container.querySelectorAll("button")].filter((button) =>
+        button.textContent?.includes("plan.spec.type.database-change")
+      )
+    ).toHaveLength(1);
+    expect(
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.getAttribute("aria-label") === "plan.add-spec"
+        ) as HTMLButtonElement
+      ).disabled
+    ).toBe(false);
+    expect(container.textContent).toContain("spec-1::0");
+  });
+
+  it("clears per-spec editor state when the page identity changes", async () => {
+    const sheetName = "projects/foo/sheets/-1";
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("select 1;"),
+      contentSize: 0n,
+    });
+    mocks.getPlanOptionVisibility.mockReturnValue({
+      shouldShow: true,
+      showGhost: false,
+      showInstanceRole: false,
+      showIsolationLevel: false,
+      showPreBackup: false,
+      showTransactionMode: true,
+    });
+    const page = buildPageState();
+    page.pageKey = "foo/create-1";
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { sheet: sheetName, targets: [DB_WIDGETS] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "run draft checks"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    expect(container.textContent).toContain("spec-1:check-run-for-spec-1:0");
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "switch-off"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "run draft checks"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    expect(container.textContent).toContain("spec-1:check-run-for-spec-1:1");
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={{ ...page, pageKey: "foo/create-2" }}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1::0");
+    expect(container.textContent).not.toContain("check-run-for-spec-1");
   });
 
   it("does not navigate while adding a change to a creating plan", async () => {
