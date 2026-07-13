@@ -1746,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "データベースを追加",
+    "add-database-empty-placeholder": "既存のインスタンスのデータベースをこのプロジェクトに追加します",
     "batch": {
       "archive": {
         "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。",
@@ -1765,8 +1767,6 @@
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       }
     },
-    "add-database": "データベースを追加",
-    "add-database-empty-placeholder": "既存のインスタンスのデータベースをこのプロジェクトに追加します",
     "connect-database": "データベースに接続",
     "connect-database-empty-placeholder": "インスタンスを接続して、このプロジェクトにデータベースを同期します",
     "connect-database-intro-description": "データベースを接続すると、Bytebase がこのプロジェクトに同期します。",

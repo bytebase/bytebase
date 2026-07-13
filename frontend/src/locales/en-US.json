@@ -1746,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "Add database",
+    "add-database-empty-placeholder": "Add a database in an existing instance to this project",
     "batch": {
       "archive": {
         "description": "This will archive the selected projects. You can restore them later if needed.",
@@ -1765,8 +1767,6 @@
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       }
     },
-    "add-database": "Add database",
-    "add-database-empty-placeholder": "Add a database in an existing instance to this project",
     "connect-database": "Connect database",
     "connect-database-empty-placeholder": "Connect an instance to sync databases into this project",
     "connect-database-intro-description": "Connect a database so Bytebase can sync it into this project.",

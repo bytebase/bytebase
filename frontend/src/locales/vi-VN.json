@@ -1746,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "Thêm cơ sở dữ liệu",
+    "add-database-empty-placeholder": "Thêm cơ sở dữ liệu trong một phiên bản hiện có vào dự án này",
     "batch": {
       "archive": {
         "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
@@ -1765,8 +1767,6 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       }
     },
-    "add-database": "Thêm cơ sở dữ liệu",
-    "add-database-empty-placeholder": "Thêm cơ sở dữ liệu trong một phiên bản hiện có vào dự án này",
     "connect-database": "Kết nối cơ sở dữ liệu",
     "connect-database-empty-placeholder": "Kết nối một phiên bản để đồng bộ cơ sở dữ liệu vào dự án này",
     "connect-database-intro-description": "Kết nối cơ sở dữ liệu để Bytebase đồng bộ vào dự án này.",
