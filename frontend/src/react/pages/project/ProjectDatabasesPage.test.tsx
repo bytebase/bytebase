@@ -13,7 +13,9 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   showProductIntroOnce: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
-  fetchInstanceList: vi.fn(async () => ({ instances: [] })),
+  fetchInstanceList: vi.fn(async () => ({
+    instances: [] as { name: string; title: string }[],
+  })),
   workspacePermissions: new Set<string>([
     "bb.instances.create",
     "bb.instances.list",
