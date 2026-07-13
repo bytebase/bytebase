@@ -54,6 +54,8 @@ describe("project page layout", () => {
     expect(source).toContain("paddingInline: 16");
     expect(source).toContain("rowGap: 16");
     expect(source).toContain('<Alert role="note"');
+    expect(source).toContain('overflowX: "clip"');
+    expect(source).not.toContain('overflowX: "hidden"');
     expect(source).not.toContain("paddingBottom: 8");
   });
 

@@ -672,6 +672,7 @@
     "column": "列",
     "columns": "列",
     "comment": "注释",
+    "connect-databases": "连接数据库",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
@@ -808,6 +809,13 @@
     "packages": "包",
     "partitions": "分区",
     "procedures": "存储过程",
+    "project-instance-synced-action": "创建第一个变更",
+    "project-instance-synced-description": "你的数据库已在此项目中就绪。准备好后，可以从受管数据库变更开始。",
+    "project-instance-synced-sql-editor-action": "打开 SQL Editor",
+    "project-instance-synced-title": "数据库已连接",
+    "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",
+    "project-instance-syncing-empty": "数据库仍在同步中。稍后刷新此页面即可在这里看到它们。",
+    "project-instance-syncing-title": "{{instance}} 的数据库正在同步。",
     "schema": {
       "default": "默认 Schema"
     },
@@ -932,8 +940,76 @@
       "psc": "Private Service Connect (PSC)",
       "public": "公共 IP"
     },
+    "connect-database-to-project": "连接数据库到项目",
+    "connecting-database-to-project": "正在连接数据库...",
     "connection-info": "连接信息",
     "connection-options": "连接选项",
+    "connection-recovery": {
+      "auth": {
+        "description": "请检查用户名、密码、令牌或 IAM 认证配置，然后重新测试连接。",
+        "steps": {
+          "credentials": "确认用户名、密码、令牌或密钥管理器中的值是最新的。",
+          "method": "检查选择的认证方式是否与数据库配置一致。",
+          "retry": "如果凭据在 Bytebase 外部轮换，请先更新密钥来源再重试。"
+        },
+        "title": "检查数据库凭据"
+      },
+      "docs": "打开连接指南",
+      "network": {
+        "description": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
+        "steps": {
+          "address": "确认主机或 Socket、端口与数据库端点一致。",
+          "firewall": "如果使用 Bytebase Cloud，请在数据库防火墙中允许所需的 Cloud IP。",
+          "private-network": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道。"
+        },
+        "title": "检查网络连通性"
+      },
+      "permission": {
+        "description": "请使用具备所需数据库权限的账号，以读取 schema 元数据并执行你计划使用的工作流。",
+        "steps": {
+          "account": "使用可读取 schema 元数据的数据库账号。",
+          "database": "确认目标数据库对该账号可见。",
+          "workflow": "仅为计划使用的工作流授予额外权限，例如 schema 变更或 SQL Editor。"
+        },
+        "title": "检查数据库权限"
+      },
+      "timeout": {
+        "description": "数据库未及时响应。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
+        "steps": {
+          "load": "确认数据库在线并接受新连接。",
+          "retry": "如果数据库位于防火墙后，请先完成允许列表或隧道配置再重试。",
+          "route": "检查路由、代理、隧道、端口和连接超时设置。"
+        },
+        "title": "检查防火墙和路由"
+      },
+      "tls": {
+        "description": "请检查 SSL/TLS 模式、证书、服务器名称和 CA 设置，然后重新测试连接。",
+        "steps": {
+          "certificates": "确认 CA、客户端证书和密钥的值或路径正确。",
+          "hostname": "确认证书匹配服务器名称。",
+          "mode": "检查数据库要求的 SSL/TLS 模式，例如 require 或 verify-full。"
+        },
+        "title": "检查 SSL/TLS 设置"
+      },
+      "unknown": {
+        "description": "先检查基础连接配置，再参考连接指南中的数据库引擎专属选项。",
+        "steps": {
+          "fields": "检查主机、端口、用户名、密码或密钥来源，以及 SSL/TLS 模式。",
+          "help": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道后再重试。",
+          "logs": "如果数据库有防火墙规则，请允许 Bytebase Cloud 或已部署的 Bytebase 网络连接。"
+        },
+        "title": "检查连接配置"
+      },
+      "unsupported": {
+        "description": "所选数据库引擎与目标数据库不匹配，或该引擎/版本暂不支持。",
+        "steps": {
+          "engine": "确认选择的数据库引擎与目标数据库一致。",
+          "retry": "选择其他引擎或更新连接配置后重试。",
+          "version": "检查 Bytebase 是否支持该引擎或版本。"
+        },
+        "title": "检查数据库引擎支持"
+      }
+    },
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
     "default-role": "默认角色",
@@ -1169,7 +1245,9 @@
     },
     "sync-databases": {
       "add-database": "+ 添加数据库，按回车键提交",
-      "description": "仅同步选定的数据库。",
+      "description": "选择要从此实例同步的数据库。",
+      "project-description": "同步的数据库将添加到 <project>{{project}}</project>。",
+      "project-sync-all": "将所有数据库同步到此项目",
       "search-database": "搜索数据库",
       "self": "同步数据库",
       "sync-all": "同步所有数据库"
@@ -1668,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "添加数据库",
+    "add-database-empty-placeholder": "将现有实例中的数据库添加到此项目",
     "batch": {
       "archive": {
         "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
@@ -1687,6 +1767,10 @@
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
       }
     },
+    "connect-database": "连接数据库",
+    "connect-database-empty-placeholder": "连接实例，将数据库同步到此项目",
+    "connect-database-intro-description": "连接数据库后，Bytebase 会将它同步到这个项目中。",
+    "connect-database-intro-title": "连接第一个数据库",
     "create-modal": {
       "project-name": "项目名称",
       "success-prompt": "成功创建 {{name}}."
@@ -2481,6 +2565,7 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
+      "default-project-name": "新项目",
       "display-name": "您的姓名",
       "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
@@ -2493,9 +2578,10 @@
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
       "role": "角色",
       "setup-failed": "更新个人资料失败。",
+      "setup-first-project": "设置第一个项目",
       "setup-skip": "稍后再说",
       "setup-success": "个人资料已更新。",
-      "setup-title": "欢迎！设置您的个人资料",
+      "setup-title": "欢迎！设置您的工作空间",
       "subscription": "（升级到付费方案来解锁角色管理）",
       "workspace-name": "工作空间名称",
       "workspace-name-placeholder": "输入工作空间名称"

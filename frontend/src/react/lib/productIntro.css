@@ -1,0 +1,98 @@
+.bb-product-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000000;
+  pointer-events: none;
+}
+
+.bb-product-intro-stage {
+  position: fixed;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 4px rgb(var(--color-background)),
+    0 0 0 7px rgb(var(--color-accent) / 72%),
+    0 0 0 9999px rgb(var(--color-overlay) / 38%),
+    0 12px 28px rgb(var(--color-overlay) / 20%);
+  pointer-events: none;
+}
+
+.bb-product-intro-popover {
+  position: fixed;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 32px));
+  padding: 18px 20px 18px;
+  color: rgb(var(--color-main));
+  background: rgb(var(--color-background));
+  border: 1px solid rgb(var(--color-block-border));
+  border-radius: 8px;
+  box-shadow:
+    0 12px 28px rgb(var(--color-overlay) / 18%),
+    0 2px 8px rgb(var(--color-overlay) / 10%);
+  pointer-events: auto;
+}
+
+.bb-product-intro-title {
+  padding-right: 24px;
+  color: rgb(var(--color-main));
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.bb-product-intro-description {
+  margin-top: 8px;
+  color: rgb(var(--color-control));
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.bb-product-intro-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: rgb(var(--color-control-light));
+  font-size: 24px;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bb-product-intro-close:hover,
+.bb-product-intro-close:focus {
+  color: rgb(var(--color-main));
+  background: rgb(var(--color-control-bg));
+}
+
+.bb-product-intro-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgb(var(--color-background));
+  border: 1px solid rgb(var(--color-block-border));
+  transform: rotate(45deg);
+}
+
+.bb-product-intro-arrow-top {
+  top: -6px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.bb-product-intro-arrow-bottom {
+  bottom: -6px;
+  border-top: 0;
+  border-left: 0;
+}
+
+.bb-product-intro-active {
+  position: relative;
+  z-index: 1000000001;
+}

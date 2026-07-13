@@ -262,6 +262,10 @@ message CreateInstanceRequest {
 
   // Validate only also tests the data source connection.
   bool validate_only = 3;
+
+  // The project to assign newly discovered databases to during initial sync.
+  // Format: projects/{project}
+  string project = 4;
 }
 
 message UpdateInstanceRequest {

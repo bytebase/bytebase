@@ -210,7 +210,6 @@ export function GeneralPage() {
 
       {isDirty && (
         <StickyActionFooter
-          className="-mb-4"
           left={
             <Button appearance="outline" onClick={handleRevert}>
               {t("common.cancel")}

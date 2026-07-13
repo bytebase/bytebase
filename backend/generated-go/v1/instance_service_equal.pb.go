@@ -83,6 +83,9 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 	if x.ValidateOnly != y.ValidateOnly {
 		return false
 	}
+	if x.Project != y.Project {
+		return false
+	}
 	return true
 }
 

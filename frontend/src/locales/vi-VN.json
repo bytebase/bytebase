@@ -672,6 +672,7 @@
     "column": "Cột",
     "columns": "Cột",
     "comment": "Bình luận",
+    "connect-databases": "Kết nối cơ sở dữ liệu",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
@@ -808,6 +809,13 @@
     "packages": "Gói",
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
+    "project-instance-synced-action": "Tạo thay đổi đầu tiên",
+    "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng một thay đổi cơ sở dữ liệu được quản trị khi bạn sẵn sàng.",
+    "project-instance-synced-sql-editor-action": "Mở SQL Editor",
+    "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
+    "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
+    "project-instance-syncing-empty": "Cơ sở dữ liệu vẫn đang được đồng bộ hóa. Hãy làm mới trang này sau ít phút để thấy chúng ở đây.",
+    "project-instance-syncing-title": "Cơ sở dữ liệu từ {{instance}} đang được đồng bộ hóa.",
     "schema": {
       "default": "Schema mặc định"
     },
@@ -932,8 +940,76 @@
       "psc": "Private Service Connect (PSC)",
       "public": "IP công khai"
     },
+    "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
+    "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
+    "connection-recovery": {
+      "auth": {
+        "description": "Kiểm tra tên người dùng, mật khẩu, token hoặc cấu hình xác thực IAM, rồi kiểm tra kết nối lại.",
+        "steps": {
+          "credentials": "Xác nhận tên người dùng, mật khẩu, token hoặc giá trị trong secret manager còn hiệu lực.",
+          "method": "Kiểm tra phương thức xác thực đã chọn có khớp với cấu hình cơ sở dữ liệu hay không.",
+          "retry": "Nếu thông tin xác thực được xoay vòng bên ngoài Bytebase, hãy cập nhật nguồn secret trước khi thử lại."
+        },
+        "title": "Kiểm tra thông tin đăng nhập cơ sở dữ liệu"
+      },
+      "docs": "Mở hướng dẫn kết nối",
+      "network": {
+        "description": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
+        "steps": {
+          "address": "Xác minh host hoặc socket và port khớp với endpoint cơ sở dữ liệu.",
+          "firewall": "Nếu dùng Bytebase Cloud, hãy thêm IP Cloud bắt buộc vào allowlist của firewall cơ sở dữ liệu.",
+          "private-network": "Với cơ sở dữ liệu riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước."
+        },
+        "title": "Kiểm tra khả năng truy cập mạng"
+      },
+      "permission": {
+        "description": "Dùng tài khoản có quyền cơ sở dữ liệu cần thiết để đọc siêu dữ liệu schema và chạy các quy trình bạn định dùng.",
+        "steps": {
+          "account": "Dùng tài khoản cơ sở dữ liệu có thể đọc siêu dữ liệu schema.",
+          "database": "Xác nhận các cơ sở dữ liệu mục tiêu hiển thị với tài khoản này.",
+          "workflow": "Chỉ cấp thêm quyền cho quy trình bạn định dùng, ví dụ thay đổi schema hoặc SQL Editor."
+        },
+        "title": "Kiểm tra quyền cơ sở dữ liệu"
+      },
+      "timeout": {
+        "description": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "steps": {
+          "load": "Xác nhận cơ sở dữ liệu đang online và nhận kết nối mới.",
+          "retry": "Nếu cơ sở dữ liệu nằm sau firewall, hãy hoàn tất allowlist hoặc tunnel trước khi thử lại.",
+          "route": "Kiểm tra định tuyến, proxy, tunnel, port và cấu hình timeout kết nối."
+        },
+        "title": "Kiểm tra firewall và định tuyến"
+      },
+      "tls": {
+        "description": "Kiểm tra chế độ SSL/TLS, chứng chỉ, tên máy chủ và cấu hình CA, rồi kiểm tra kết nối lại.",
+        "steps": {
+          "certificates": "Xác minh CA, chứng chỉ máy khách và giá trị hoặc đường dẫn khóa.",
+          "hostname": "Xác nhận chứng chỉ khớp với tên máy chủ.",
+          "mode": "Kiểm tra chế độ SSL/TLS mà cơ sở dữ liệu yêu cầu, ví dụ require hoặc verify-full."
+        },
+        "title": "Kiểm tra cấu hình SSL/TLS"
+      },
+      "unknown": {
+        "description": "Bắt đầu với các thông tin kết nối cơ bản, rồi dùng hướng dẫn cho tùy chọn theo từng engine.",
+        "steps": {
+          "fields": "Kiểm tra host, port, username, password hoặc nguồn secret và chế độ SSL/TLS.",
+          "help": "Nếu cơ sở dữ liệu là riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước khi thử lại.",
+          "logs": "Nếu cơ sở dữ liệu có firewall, hãy cho phép Bytebase Cloud hoặc mạng Bytebase đã triển khai kết nối."
+        },
+        "title": "Kiểm tra cấu hình kết nối"
+      },
+      "unsupported": {
+        "description": "Engine đã chọn không khớp với cơ sở dữ liệu mục tiêu hoặc engine/phiên bản này chưa được hỗ trợ.",
+        "steps": {
+          "engine": "Xác nhận engine cơ sở dữ liệu đã chọn khớp với cơ sở dữ liệu mục tiêu.",
+          "retry": "Chọn engine khác hoặc cập nhật cấu hình kết nối, rồi thử lại.",
+          "version": "Kiểm tra Bytebase có hỗ trợ engine hoặc phiên bản này hay không."
+        },
+        "title": "Kiểm tra hỗ trợ engine cơ sở dữ liệu"
+      }
+    },
     "create-gcp-credentials": "Để tạo thông tin xác thực, xem",
     "database-region": "Khu vực cơ sở dữ liệu",
     "default-role": "Vai trò mặc định",
@@ -1169,7 +1245,9 @@
     },
     "sync-databases": {
       "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
-      "description": "Chỉ đồng bộ các cơ sở dữ liệu đã chọn.",
+      "description": "Chọn cơ sở dữ liệu cần đồng bộ từ instance này.",
+      "project-description": "Các cơ sở dữ liệu được đồng bộ sẽ được thêm vào <project>{{project}}</project>.",
+      "project-sync-all": "Đồng bộ tất cả cơ sở dữ liệu vào dự án này",
       "search-database": "Tìm kiếm cơ sở dữ liệu",
       "self": "Đồng bộ cơ sở dữ liệu",
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu"
@@ -1668,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "Thêm cơ sở dữ liệu",
+    "add-database-empty-placeholder": "Thêm cơ sở dữ liệu trong một phiên bản hiện có vào dự án này",
     "batch": {
       "archive": {
         "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
@@ -1687,6 +1767,10 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       }
     },
+    "connect-database": "Kết nối cơ sở dữ liệu",
+    "connect-database-empty-placeholder": "Kết nối một phiên bản để đồng bộ cơ sở dữ liệu vào dự án này",
+    "connect-database-intro-description": "Kết nối cơ sở dữ liệu để Bytebase đồng bộ vào dự án này.",
+    "connect-database-intro-title": "Kết nối cơ sở dữ liệu đầu tiên",
     "create-modal": {
       "project-name": "Dự án Tên",
       "success-prompt": "Đã tạo thành công dự án {{name}}."
@@ -2481,6 +2565,7 @@
       "workload-identity-tag-hint": "Để trống để cho phép tất cả tag"
     },
     "profile": {
+      "default-project-name": "Dự án mới",
       "display-name": "Tên của bạn",
       "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
@@ -2493,9 +2578,10 @@
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
       "role": "Vai trò",
       "setup-failed": "Cập nhật hồ sơ thất bại.",
+      "setup-first-project": "Thiết lập dự án đầu tiên",
       "setup-skip": "Để sau",
       "setup-success": "Hồ sơ đã được cập nhật.",
-      "setup-title": "Chào mừng! Thiết lập hồ sơ của bạn",
+      "setup-title": "Chào mừng! Thiết lập không gian làm việc của bạn",
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)",
       "workspace-name": "Tên không gian làm việc",
       "workspace-name-placeholder": "Nhập tên không gian làm việc"

@@ -672,6 +672,7 @@
     "column": "Column",
     "columns": "Columns",
     "comment": "Comment",
+    "connect-databases": "Connect databases",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
@@ -808,6 +809,13 @@
     "packages": "Packages",
     "partitions": "Partitions",
     "procedures": "Procedures",
+    "project-instance-synced-action": "Create first change",
+    "project-instance-synced-description": "Your database is ready in this project. Start with a governed database change when you are ready.",
+    "project-instance-synced-sql-editor-action": "Open SQL Editor",
+    "project-instance-synced-title": "Database connected",
+    "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
+    "project-instance-syncing-empty": "Databases are still syncing. Refresh this page in a moment to see them here.",
+    "project-instance-syncing-title": "Databases from {{instance}} are syncing.",
     "schema": {
       "default": "Default schema"
     },
@@ -932,8 +940,76 @@
       "psc": "Private Service Connect (PSC)",
       "public": "Public IP"
     },
+    "connect-database-to-project": "Connect database to project",
+    "connecting-database-to-project": "Connecting database...",
     "connection-info": "Connection info",
     "connection-options": "Connection Options",
+    "connection-recovery": {
+      "auth": {
+        "description": "Verify the username, password, token, or IAM authentication settings, then test the connection again.",
+        "steps": {
+          "credentials": "Confirm the username, password, token, or secret-manager value is current.",
+          "method": "Check that the selected authentication method matches your database setup.",
+          "retry": "If credentials rotate outside Bytebase, update the secret source before retrying."
+        },
+        "title": "Check database credentials"
+      },
+      "docs": "Open connection guide",
+      "network": {
+        "description": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
+        "steps": {
+          "address": "Verify the host or socket and port match the database endpoint.",
+          "firewall": "If you use Bytebase Cloud, allowlist the required Cloud IP in your database firewall.",
+          "private-network": "For a private database, configure VPN, private networking, or an SSH tunnel first."
+        },
+        "title": "Check network reachability"
+      },
+      "permission": {
+        "description": "Use an account with the required database privileges to read schema metadata and run the workflows you plan to use.",
+        "steps": {
+          "account": "Use a database account that can read schema metadata.",
+          "database": "Confirm the target databases are visible to this account.",
+          "workflow": "Grant extra privileges only for the workflows you plan to run, such as schema change or SQL Editor."
+        },
+        "title": "Check database permissions"
+      },
+      "timeout": {
+        "description": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "steps": {
+          "load": "Confirm the database is online and accepts new connections.",
+          "retry": "If the database is behind a firewall, finish the allowlist or tunnel setup before retrying.",
+          "route": "Check routing, proxy, tunnel, port, and connection timeout settings."
+        },
+        "title": "Check firewall and routing"
+      },
+      "tls": {
+        "description": "Review SSL/TLS mode, certificates, server name, and CA settings, then test the connection again.",
+        "steps": {
+          "certificates": "Verify CA, client certificate, and key values or paths.",
+          "hostname": "Confirm the certificate matches the server name.",
+          "mode": "Check the SSL/TLS mode required by your database, such as require or verify-full."
+        },
+        "title": "Check SSL/TLS settings"
+      },
+      "unknown": {
+        "description": "Start with the connection basics, then use the guide for engine-specific options.",
+        "steps": {
+          "fields": "Check host, port, username, password or secret source, and SSL/TLS mode.",
+          "help": "If your database is private, configure VPN, private networking, or an SSH tunnel before retrying.",
+          "logs": "If the database has firewall rules, allow Bytebase Cloud or your deployed Bytebase network to connect."
+        },
+        "title": "Review connection settings"
+      },
+      "unsupported": {
+        "description": "The selected engine does not match the target database or this engine/version is not supported yet.",
+        "steps": {
+          "engine": "Confirm the selected database engine matches the target database.",
+          "retry": "Select another engine or update the connection settings, then retry.",
+          "version": "Check whether this engine or version is supported by Bytebase."
+        },
+        "title": "Check database engine support"
+      }
+    },
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",
     "default-role": "Default role",
@@ -1169,7 +1245,9 @@
     },
     "sync-databases": {
       "add-database": "+ Add database, press enter to submit",
-      "description": "Only sync selected databases.",
+      "description": "Choose which databases to sync from this instance.",
+      "project-description": "Synced databases will be added to <project>{{project}}</project>.",
+      "project-sync-all": "Sync all databases to this project",
       "search-database": "Search database",
       "self": "Sync Databases",
       "sync-all": "Sync all databases"
@@ -1668,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "Add database",
+    "add-database-empty-placeholder": "Add a database in an existing instance to this project",
     "batch": {
       "archive": {
         "description": "This will archive the selected projects. You can restore them later if needed.",
@@ -1687,6 +1767,10 @@
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       }
     },
+    "connect-database": "Connect database",
+    "connect-database-empty-placeholder": "Connect an instance to sync databases into this project",
+    "connect-database-intro-description": "Connect a database so Bytebase can sync it into this project.",
+    "connect-database-intro-title": "Connect your first database",
     "create-modal": {
       "project-name": "Project Name",
       "success-prompt": "Successfully created project {{name}}."
@@ -2481,6 +2565,7 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "default-project-name": "New project",
       "display-name": "Your name",
       "display-name-placeholder": "Enter your name",
       "email": "Email",
@@ -2493,9 +2578,10 @@
       "phone-tips": "Be sure to include the country code +1xxxxxx",
       "role": "Role",
       "setup-failed": "Failed to update profile.",
+      "setup-first-project": "Setup 1st project",
       "setup-skip": "I'll do this later",
       "setup-success": "Profile updated.",
-      "setup-title": "Welcome! Set up your profile",
+      "setup-title": "Welcome! Set up your workspace",
       "subscription": "(Upgrade to enable role management)",
       "workspace-name": "Workspace name",
       "workspace-name-placeholder": "Enter workspace name"

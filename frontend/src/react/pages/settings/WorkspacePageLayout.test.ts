@@ -67,6 +67,9 @@ describe("workspace list page layout", () => {
 
     expect(source).toContain("paddingBlock: 16");
     expect(source).toContain("rowGap: 16");
+    expect(source).toContain('overflowX: "clip"');
+    expect(source).not.toContain('overflowX: "hidden"');
+    expect(source).toContain("marginInline: 8");
     expect(source).toContain('padding?: "page" | "flush"');
     expect(source).toContain('padding = "page"');
     expect(source).toContain("pagePadding");
@@ -134,6 +137,7 @@ describe("workspace list page layout", () => {
     expect(source).toContain(
       '<WorkspacePageLayout className="py-0 divide-y divide-block-border">'
     );
+    expect(source).not.toContain('className="-mb-4"');
   });
 
   test("does not reserve top gap for hidden custom approval feature attention", () => {

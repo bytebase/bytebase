@@ -1,3 +1,4 @@
+import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -31,15 +32,25 @@ const mocks = vi.hoisted(() => ({
   } as IamPolicy,
   updateUser: vi.fn(),
   updateWorkspace: vi.fn(),
+  createProject: vi.fn(),
+  setRecentProject: vi.fn(),
   routerReplace: vi.fn(),
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
+  canCreateProject: true,
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
   useWorkspace: () => mocks.workspace,
-  useWorkspacePermission: () => mocks.canUpdateWorkspace,
+  useWorkspacePermission: (permission: string) =>
+    permission === "bb.projects.create"
+      ? mocks.canCreateProject
+      : mocks.canUpdateWorkspace,
+  useCreateProject: () => ({
+    createProject: mocks.createProject,
+    setRecentProject: mocks.setRecentProject,
+  }),
 }));
 
 vi.mock("@/react/stores/app", () => ({
@@ -64,11 +75,36 @@ vi.mock("@/react/router", async (importOriginal) => ({
   },
 }));
 
+vi.mock("@/react/components/ResourceIdField", async () => {
+  const React = await import("react");
+  return {
+    ResourceIdField: ({
+      value,
+      resourceTitle,
+      onChange,
+      onValidationChange,
+    }: {
+      value: string;
+      resourceTitle?: string;
+      onChange?: (value: string) => void;
+      onValidationChange?: (valid: boolean) => void;
+    }) => {
+      React.useEffect(() => {
+        if (!resourceTitle) return;
+        onChange?.("new-project");
+        onValidationChange?.(true);
+      }, [onChange, onValidationChange, resourceTitle]);
+      return <input data-testid="project-resource-id" readOnly value={value} />;
+    },
+  };
+});
+
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
 vi.mock("@/utils", () => ({
+  extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
@@ -77,8 +113,18 @@ vi.mock("@/react/components/UserAvatar", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string) =>
+      (
+        ({
+          "settings.profile.setup-title": "Welcome! Set up your workspace",
+          "settings.profile.setup-first-project": "Setup 1st project",
+          "settings.profile.default-project-name": "New project",
+          "settings.profile.create-project-description":
+            "Optional. If you create a project here, we will take you to its database page next.",
+        }) as Record<string, string>
+      )[key] ?? key,
   }),
 }));
 
@@ -104,6 +150,7 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.canUpdateWorkspace = true;
+  mocks.canCreateProject = true;
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -112,6 +159,10 @@ beforeEach(async () => {
       },
     ],
   } as IamPolicy;
+  mocks.createProject.mockResolvedValue({
+    name: "projects/new-project",
+    title: "New Project",
+  });
   ({ ProfileSetupPage } = await import("./ProfileSetupPage"));
 });
 
@@ -122,8 +173,23 @@ describe("ProfileSetupPage", () => {
     page.render();
 
     expect(page.container.textContent).toContain(
+      "Welcome! Set up your workspace"
+    );
+    expect(page.container.textContent).toContain(
       "settings.profile.workspace-name"
     );
+    const displayNameInput = page.container.querySelector(
+      "[data-testid='profile-display-name']"
+    );
+    const workspaceNameInput = page.container.querySelector(
+      "[data-testid='profile-workspace-title']"
+    );
+    expect(displayNameInput).toBeTruthy();
+    expect(workspaceNameInput).toBeTruthy();
+    expect(displayNameInput?.closest("[data-slot='form-field']")).toBeTruthy();
+    expect(
+      workspaceNameInput?.closest("[data-slot='form-field']")
+    ).toBeTruthy();
     expect(mocks.hasWorkspacePermissionV2).not.toHaveBeenCalled();
 
     page.unmount();
@@ -149,6 +215,95 @@ describe("ProfileSetupPage", () => {
     expect(page.container.textContent).not.toContain(
       "settings.profile.workspace-name"
     );
+
+    page.unmount();
+  });
+
+  test("can optionally create a project and continue to its databases page", async () => {
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    expect(page.container.textContent).toContain("Setup 1st project");
+    expect(page.container.textContent).not.toContain(
+      "settings.profile.create-project-description"
+    );
+    expect(page.container.textContent).not.toContain(
+      "Optional. If you create a project here, we will take you to its database page next."
+    );
+    expect(
+      page.container.querySelector("[data-testid='create-project-toggle']")
+    ).toBeNull();
+
+    const projectNameInput = page.container.querySelector(
+      "[data-testid='profile-project-title']"
+    ) as HTMLInputElement;
+    expect(projectNameInput.value).toBe("New project");
+    expect(
+      page.container.querySelector("[data-testid='project-resource-id']")
+    ).toBeTruthy();
+    expect(
+      projectNameInput.closest("[data-slot='form-field']")?.className
+    ).not.toContain("border-control-border");
+    expect(
+      [...page.container.querySelectorAll("[data-slot='form-field']")].some(
+        (field) => field.className.includes("border-control-border")
+      )
+    ).toBe(false);
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.save")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      save.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.createProject).toHaveBeenCalledWith(
+      "New project",
+      "new-project"
+    );
+    expect(mocks.setRecentProject).toHaveBeenCalledWith("projects/new-project");
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: { projectId: "new-project" },
+      query: { intro: "connect-database" },
+    });
+
+    page.unmount();
+  });
+
+  test("does not create a project when the optional project name is empty", async () => {
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    const projectNameInput = page.container.querySelector(
+      "[data-testid='profile-project-title']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(projectNameInput, { target: { value: "" } });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      page.container.querySelector("[data-testid='project-resource-id']")
+    ).toBeNull();
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.save")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      save.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.createProject).not.toHaveBeenCalled();
+    expect(mocks.setRecentProject).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).toHaveBeenCalledWith("/");
 
     page.unmount();
   });

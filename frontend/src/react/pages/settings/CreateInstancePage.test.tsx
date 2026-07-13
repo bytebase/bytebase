@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useUnsavedChangesGuard: vi.fn(),
+  routerCurrentQuery: {} as Record<string, unknown>,
+  routerPush: vi.fn(),
   instanceFormContext: {
     basicInfo: { engine: 0 },
     state: { isRequesting: false },
@@ -28,7 +30,12 @@ vi.mock("@/react/hooks/useUnsavedChangesGuard", () => ({
 
 vi.mock("@/react/router", () => ({
   router: {
-    push: vi.fn(),
+    push: mocks.routerPush,
+    currentRoute: {
+      get value() {
+        return { query: mocks.routerCurrentQuery };
+      },
+    },
   },
 }));
 
@@ -54,14 +61,26 @@ vi.mock("@/react/components/instance", () => ({
   InstanceFormButtons: ({ className }: { className?: string }) => (
     <div data-testid="instance-form-buttons" className={className} />
   ),
-  InstanceFormProvider: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+  InstanceFormProvider: ({
+    children,
+    onDismiss,
+  }: {
+    children: React.ReactNode;
+    onDismiss?: () => void;
+  }) => (
+    <div>
+      <button type="button" data-testid="dismiss" onClick={onDismiss}>
+        dismiss
+      </button>
+      {children}
+    </div>
   ),
   useInstanceFormContext: () => mocks.instanceFormContext,
 }));
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.routerCurrentQuery = {};
   mocks.instanceFormContext.state.isRequesting = false;
   mocks.instanceFormContext.valueChanged = false;
   globalThis.ResizeObserver = class ResizeObserver {
@@ -125,6 +144,111 @@ describe("CreateInstancePage", () => {
     });
 
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("dismisses to the workspace instance dashboard by default", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<CreateInstancePage />);
+    });
+
+    const dismiss = container.querySelector(
+      "[data-testid='dismiss']"
+    ) as HTMLButtonElement;
+    act(() => {
+      dismiss.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.instance",
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("dismisses to the project database page when project context is present", () => {
+    mocks.routerCurrentQuery = { project: "demo" };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<CreateInstancePage />);
+    });
+
+    const dismiss = container.querySelector(
+      "[data-testid='dismiss']"
+    ) as HTMLButtonElement;
+    act(() => {
+      dismiss.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: { projectId: "demo" },
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps syncing instance and intro context when dismissing to the project database page", () => {
+    mocks.routerCurrentQuery = {
+      project: "demo",
+      syncInstance: "prod",
+      intro: "connect-database",
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<CreateInstancePage />);
+    });
+
+    const dismiss = container.querySelector(
+      "[data-testid='dismiss']"
+    ) as HTMLButtonElement;
+    act(() => {
+      dismiss.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: { projectId: "demo" },
+      query: {
+        syncingInstance: "prod",
+        intro: "connect-database",
+      },
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("shows the instance form directly for project-context setup", () => {
+    mocks.routerCurrentQuery = { project: "demo" };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<CreateInstancePage />);
+    });
+
+    expect(container.textContent).not.toContain(
+      "instance.create-readiness.title"
+    );
+    expect(
+      container.querySelector("[data-testid='instance-form-body']")
+    ).not.toBe(null);
 
     act(() => {
       root.unmount();

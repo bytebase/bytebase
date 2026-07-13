@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
 import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import { cn } from "@/react/lib/utils";
 
@@ -139,4 +139,49 @@ function TableCell({ className, ...props }: ComponentPropsWithoutRef<"td">) {
   );
 }
 
-export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };
+interface TableEmptyViewProps
+  extends Omit<ComponentPropsWithoutRef<"td">, "children"> {
+  children?: ReactNode;
+  contentClassName?: string;
+  contentStyle?: CSSProperties;
+  contentTestId?: string;
+}
+
+function TableEmptyView({
+  className,
+  children,
+  contentClassName,
+  contentStyle,
+  contentTestId,
+  ...props
+}: Readonly<TableEmptyViewProps>) {
+  return (
+    <TableRow>
+      <TableCell
+        className={cn("text-center text-control-placeholder", className)}
+        {...props}
+      >
+        <div
+          data-testid={contentTestId}
+          className={cn(
+            "flex min-h-40 items-center justify-center",
+            contentClassName
+          )}
+          style={contentStyle}
+        >
+          {children}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyView,
+  TableHead,
+  TableHeader,
+  TableRow,
+};

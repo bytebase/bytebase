@@ -7,7 +7,7 @@ const styles = stylex.create({
   root: {
     display: "flex",
     flexDirection: "column",
-    overflowX: "hidden",
+    overflowX: "clip",
     paddingBlock: 16,
     rowGap: 16,
     width: "100%",
@@ -19,6 +19,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   footer: {
+    marginInline: 8,
     marginTop: 16,
   },
   toolbar: {

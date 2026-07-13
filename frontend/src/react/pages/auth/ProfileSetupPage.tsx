@@ -1,29 +1,39 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
+import { FormField } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import {
+  useCreateProject,
   useCurrentUser,
   useWorkspace,
   useWorkspacePermission,
 } from "@/react/hooks/useAppState";
+import { CONNECT_DATABASE_PRODUCT_INTRO } from "@/react/lib/productIntro";
 import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import type { ValidatedMessage } from "@/types";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import { extractProjectResourceName } from "@/utils";
 
 export function ProfileSetupPage() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
   const updateWorkspace = useAppStore((state) => state.updateWorkspace);
+  const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
   const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
+  const canCreateProject = useWorkspacePermission("bb.projects.create");
 
   // Show workspace name field only if the user is the sole member of the
   // workspace (i.e. they just created it), not when they were invited.
@@ -49,15 +59,50 @@ export function ProfileSetupPage() {
     }
   }, [currentUser.email, currentUser.title]);
   const [workspaceTitle, setWorkspaceTitle] = useState(workspace?.title ?? "");
+  const [projectTitle, setProjectTitle] = useState(() =>
+    t("settings.profile.default-project-name")
+  );
+  const [projectResourceId, setProjectResourceId] = useState("");
+  const [isProjectResourceIdValid, setIsProjectResourceIdValid] =
+    useState(false);
   const [saving, setSaving] = useState(false);
+  const projectTitleTrimmed = projectTitle.trim();
+  const shouldCreateProject = canCreateProject && !!projectTitleTrimmed;
 
   const redirectUrl = () => {
     const q = new URLSearchParams(window.location.search);
     return q.get("redirect") || "/";
   };
 
+  const validateProjectResourceId = useCallback(
+    async (id: string): Promise<ValidatedMessage[]> => {
+      try {
+        const existing = await useAppStore
+          .getState()
+          .fetchProject(`${projectNamePrefix}${id}`, true);
+        if (!existing) return [];
+        return [
+          {
+            type: "error",
+            message: t("resource-id.validation.duplicated", {
+              resource: t("common.project"),
+            }),
+          },
+        ];
+      } catch {
+        return [];
+      }
+    },
+    [t]
+  );
+
+  const canSave =
+    !!name.trim() &&
+    !saving &&
+    (!shouldCreateProject || isProjectResourceIdValid);
+
   const handleSave = async () => {
-    if (!currentUser?.name || !name.trim()) return;
+    if (!currentUser?.name || !canSave) return;
     setSaving(true);
     try {
       await updateUser(
@@ -75,12 +120,31 @@ export function ProfileSetupPage() {
           ["title"]
         );
       }
+      let createdProjectName = "";
+      if (shouldCreateProject) {
+        const createdProject = await createProject(
+          projectTitleTrimmed,
+          projectResourceId
+        );
+        setRecentProject(createdProject.name);
+        createdProjectName = createdProject.name;
+      }
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("settings.profile.setup-success"),
       });
-      router.replace(redirectUrl());
+      if (createdProjectName) {
+        router.replace({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(createdProjectName),
+          },
+          query: { intro: CONNECT_DATABASE_PRODUCT_INTRO },
+        });
+      } else {
+        router.replace(redirectUrl());
+      }
     } catch {
       pushNotification({
         module: "bytebase",
@@ -100,7 +164,7 @@ export function ProfileSetupPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <div className="w-full max-w-sm flex flex-col items-center gap-y-6">
+      <div className="w-full max-w-lg mx-4 flex flex-col items-center gap-y-6">
         <UserAvatar
           title={displayName}
           colorSeed={currentUser?.email}
@@ -115,11 +179,9 @@ export function ProfileSetupPage() {
         </div>
 
         <div className="w-full flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-1.5">
-            <label className="text-sm font-medium">
-              {t("settings.profile.display-name")}
-            </label>
+          <FormField title={t("settings.profile.display-name")}>
             <Input
+              data-testid="profile-display-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("settings.profile.display-name-placeholder")}
@@ -130,25 +192,45 @@ export function ProfileSetupPage() {
                 }
               }}
             />
-          </div>
+          </FormField>
 
           {canRenameWorkspace && (
-            <div className="flex flex-col gap-y-1.5">
-              <label className="text-sm font-medium">
-                {t("settings.profile.workspace-name")}
-              </label>
+            <FormField title={t("settings.profile.workspace-name")}>
               <Input
+                data-testid="profile-workspace-title"
                 value={workspaceTitle}
                 onChange={(e) => setWorkspaceTitle(e.target.value)}
                 placeholder={t("settings.profile.workspace-name-placeholder")}
               />
-            </div>
+            </FormField>
+          )}
+
+          {canCreateProject && (
+            <FormField title={t("settings.profile.setup-first-project")}>
+              <Input
+                data-testid="profile-project-title"
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                placeholder={t("quick-action.new-project")}
+              />
+              {projectTitleTrimmed && (
+                <ResourceIdField
+                  suffix
+                  value={projectResourceId}
+                  resourceName={t("common.project")}
+                  resourceTitle={projectTitle}
+                  validate={validateProjectResourceId}
+                  onChange={setProjectResourceId}
+                  onValidationChange={setIsProjectResourceIdValid}
+                />
+              )}
+            </FormField>
           )}
 
           <div className="flex flex-col gap-y-2 mt-2">
             <Button
               onClick={() => void handleSave()}
-              disabled={!name.trim() || saving}
+              disabled={!canSave}
               className="w-full"
             >
               {t("common.save")}
