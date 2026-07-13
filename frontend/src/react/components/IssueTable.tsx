@@ -297,7 +297,10 @@ export function PresetButtons({
 
   return (
     <Tabs
-      value={activePreset || undefined}
+      // `null` keeps the Tabs controlled with no active tab when the current
+      // filter matches no preset; `undefined` would flip it to uncontrolled,
+      // which auto-selects (and dead-locks) the first tab.
+      value={activePreset || null}
       onValueChange={(value) => selectPreset(value as PresetValue)}
     >
       <TabsList className="relative overflow-x-auto border-b-0 pt-2 gap-x-0 after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-control-border hide-scrollbar">

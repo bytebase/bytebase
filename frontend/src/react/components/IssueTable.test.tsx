@@ -74,4 +74,30 @@ describe("PresetButtons", () => {
       ],
     });
   });
+
+  test("keeps every tab unselected when the filter matches no preset", () => {
+    const onParamsChange = vi.fn();
+    render(
+      <PresetButtons
+        params={{
+          query: "",
+          scopes: [
+            { id: "status", value: "OPEN" },
+            { id: "approval", value: "APPROVED" },
+          ],
+        }}
+        onParamsChange={onParamsChange}
+      />
+    );
+
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).toHaveAttribute("aria-selected", "false");
+    }
+
+    // A tab click from the no-match state must still apply its preset.
+    fireEvent.click(
+      screen.getByRole("tab", { name: "issue.waiting-approval" })
+    );
+    expect(onParamsChange).toHaveBeenCalled();
+  });
 });

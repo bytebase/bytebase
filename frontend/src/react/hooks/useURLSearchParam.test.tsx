@@ -2,7 +2,21 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { describe, expect, test } from "vitest";
-import { useURLSearchParam } from "./useURLSearchParam";
+import {
+  createAdvancedSearchParser,
+  useURLSearchParam,
+} from "./useURLSearchParam";
+
+describe("createAdvancedSearchParser", () => {
+  test("keeps unsupported scope-looking tokens as query text", () => {
+    const parse = createAdvancedSearchParser(["state", "label"]);
+
+    expect(parse("state:ALL project:foo bar")).toEqual({
+      query: "bar project:foo",
+      scopes: [{ id: "state", value: "ALL" }],
+    });
+  });
+});
 
 describe("useURLSearchParam", () => {
   test("uses the URL as the source of truth across Back and Forward", async () => {

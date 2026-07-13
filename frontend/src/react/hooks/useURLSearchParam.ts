@@ -18,8 +18,14 @@ export const createAdvancedSearchParser =
   (allowedScopes: readonly string[]) =>
   (value: string): SearchParams => {
     const params = buildSearchParamsBySearchText(value);
+    // A token that parses as a globally valid scope but isn't supported on
+    // this page stays in the URL as plain query text instead of being
+    // dropped (e.g. `project:foo` on a page without a project scope).
+    const rejected = params.scopes
+      .filter((scope) => !allowedScopes.includes(scope.id))
+      .map((scope) => `${scope.id}:${scope.value}`);
     return {
-      query: params.query,
+      query: [params.query, ...rejected].filter(Boolean).join(" "),
       scopes: params.scopes.filter((scope) => allowedScopes.includes(scope.id)),
     };
   };
