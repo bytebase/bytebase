@@ -259,21 +259,17 @@ export function InstanceFormButtons({
         });
       if (onCreated) {
         onCreated(createdInstance);
+      } else if (projectContext) {
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: { projectId: projectContext.id },
+          query: {
+            syncingInstance: extractInstanceResourceName(createdInstance.name),
+            intro: CONNECT_DATABASE_PRODUCT_INTRO,
+          },
+        });
       } else {
-        if (projectContext) {
-          router.push({
-            name: PROJECT_V1_ROUTE_DATABASES,
-            params: { projectId: projectContext.id },
-            query: {
-              syncingInstance: extractInstanceResourceName(
-                createdInstance.name
-              ),
-              intro: CONNECT_DATABASE_PRODUCT_INTRO,
-            },
-          });
-        } else {
-          router.push(`/${createdInstance.name}`);
-        }
+        router.push(`/${createdInstance.name}`);
       }
 
       pushNotification({

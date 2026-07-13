@@ -37,10 +37,10 @@ export const normalizeConnectionFailureCategory = (
 export function ConnectionRecovery({
   category,
   className,
-}: {
+}: Readonly<{
   category: ConnectionFailureCategory;
   className?: string;
-}) {
+}>) {
   const { t } = useTranslation();
   const recovery = {
     auth_failed: {

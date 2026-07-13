@@ -169,22 +169,23 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       return upsertInstances([response])[0];
     },
 
-    createInstance: async (instance, validateOnly = false, options) => {
+    createInstance: async (instance, validateOnly, options) => {
+      const validateOnlyValue = validateOnly ?? false;
       const response = await instanceServiceClientConnect.createInstance(
         createProto(CreateInstanceRequestSchema, {
           instance,
           instanceId: extractInstanceResourceName(instance.name),
-          validateOnly,
+          validateOnly: validateOnlyValue,
           project: options?.project,
         }),
         {
           contextValues: createContextValues().set(
             silentContextKey,
-            validateOnly
+            validateOnlyValue
           ),
         }
       );
-      if (!validateOnly) {
+      if (!validateOnlyValue) {
         upsertInstances([response]);
       }
       return response;

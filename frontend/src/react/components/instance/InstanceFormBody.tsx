@@ -768,7 +768,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
   useEffect(() => {
     if (!routeProjectName) return;
-    void useAppStore.getState().fetchProject(routeProjectName, true);
+    useAppStore
+      .getState()
+      .fetchProject(routeProjectName, true)
+      .catch(() => {
+        // Ignore prefetch failure. The instance creation request still uses the
+        // route project name directly.
+      });
   }, [routeProjectName]);
 
   const setResourceId = useCallback(

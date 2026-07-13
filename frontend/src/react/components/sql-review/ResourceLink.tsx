@@ -7,6 +7,7 @@ import {
 } from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
   environmentNamePrefix,
@@ -70,9 +71,7 @@ function EnvironmentResourceLink({
     <RouterLink
       {...linkProps}
       to={{ path: `/${resource}` }}
-      className={["inline-flex items-center gap-x-1 normal-link", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
     >
       {showResourceType && (
         <span className="text-control-light text-xs mr-0.5">
@@ -111,9 +110,7 @@ function ProjectResourceLink({
     <RouterLink
       {...linkProps}
       to={{ path: `/${resource}` }}
-      className={["inline-flex items-center gap-x-1 normal-link", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
     >
       {showResourceType && (
         <span className="text-control-light text-xs mr-0.5">

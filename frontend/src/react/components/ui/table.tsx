@@ -154,7 +154,7 @@ function TableEmptyView({
   contentStyle,
   contentTestId,
   ...props
-}: TableEmptyViewProps) {
+}: Readonly<TableEmptyViewProps>) {
   return (
     <TableRow>
       <TableCell
