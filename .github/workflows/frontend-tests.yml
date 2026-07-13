@@ -23,6 +23,10 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: '11.12.0'
+          # pnpm 11.12.0 cannot be installed via the bootstrap pnpm's
+          # self-update (crashes in lockfileToDepGraph); fetch the
+          # standalone binary instead.
+          standalone: true
       - uses: actions/setup-node@v6
         with:
           node-version: '24.18.0'
@@ -45,6 +49,10 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           version: '11.12.0'
+          # pnpm 11.12.0 cannot be installed via the bootstrap pnpm's
+          # self-update (crashes in lockfileToDepGraph); fetch the
+          # standalone binary instead.
+          standalone: true
       - uses: actions/setup-node@v6
         with:
           node-version: '24.18.0'
