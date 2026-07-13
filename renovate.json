@@ -55,6 +55,18 @@
       "groupName": "i18next",
       "description": "Group i18next, react-i18next, and i18next plugins so peer-dep major bumps land together",
       "matchPackageNames": ["/^i18next$/", "/^react-i18next$/", "/^i18next-/"]
+    },
+    {
+      "matchPackageNames": ["@vitejs/plugin-legacy"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "description": "v8's modern-browser detection imports a data: URI module, which our CSP script-src blocks — every browser then falls back to the broken legacy (SystemJS) bundle. Re-enable once the detection is CSP-compatible or we drop legacy chunks (renderLegacyChunks: false)."
+    },
+    {
+      "matchPackageNames": ["vscode-languageclient"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "description": "v10 dropped the browser-field mapping on the root export, so `import \"vscode-languageclient\"` loads the common build and the browser RAL is never installed — the LSP client dies with 'No runtime abstraction layer installed'. Re-enable after migrating imports to vscode-languageclient/browser and verifying LSP in a real browser."
     }
   ],
   "ignoreDeps": [
