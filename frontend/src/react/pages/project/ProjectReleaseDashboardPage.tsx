@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { releaseServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
@@ -29,7 +30,7 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import { ListReleaseCategoriesRequestSchema } from "@/types/proto-es/v1/release_service_pb";
-import { buildCategoryFilter, buildCategoryQuery } from "@/utils/releaseFilter";
+import { buildCategoryFilter } from "@/utils/releaseFilter";
 
 const MAX_SHOW_FILES_COUNT = 3;
 
@@ -44,13 +45,11 @@ export function ProjectReleaseDashboardPage({
   );
   const projectName = `${projectNamePrefix}${projectId}`;
 
-  // Category filter from URL
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    () => {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("category") || undefined;
-    }
-  );
+  // Empty string means "All" — elided from the URL as the default.
+  const [selectedCategory, setSelectedCategory] = useURLSearchParam({
+    param: "category",
+    defaultValue: "",
+  });
 
   // Fetch categories
   const [categories, setCategories] = useState<string[]>([]);
@@ -67,17 +66,6 @@ export function ProjectReleaseDashboardPage({
       .catch(() => setCategories([]))
       .finally(() => setCategoriesLoading(false));
   }, [projectName]);
-
-  // URL sync
-  const isUpdatingUrl = useRef(false);
-  useEffect(() => {
-    if (isUpdatingUrl.current) return;
-    isUpdatingUrl.current = true;
-    const query = buildCategoryQuery(selectedCategory);
-    router.replace({ query }).finally(() => {
-      isUpdatingUrl.current = false;
-    });
-  }, [selectedCategory]);
 
   // Fetch releases
   const fetchReleaseList = useCallback(
@@ -126,7 +114,7 @@ export function ProjectReleaseDashboardPage({
             <Button
               appearance="secondary"
               size="sm"
-              onClick={() => setSelectedCategory(undefined)}
+              onClick={() => setSelectedCategory("")}
             >
               {t("common.clear-filters")}
             </Button>
@@ -175,16 +163,16 @@ function CategorySelect({
   categories,
   loading,
 }: {
-  value: string | undefined;
-  onChange: (value: string | undefined) => void;
+  value: string;
+  onChange: (value: string) => void;
   categories: string[];
   loading: boolean;
 }) {
   return (
     <select
       className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-background focus:outline-none focus:border-accent"
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value || undefined)}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
       disabled={loading}
     >
       <option value="">All</option>

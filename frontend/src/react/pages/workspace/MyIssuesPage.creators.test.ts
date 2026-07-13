@@ -11,4 +11,11 @@ describe("my issue list creator cache", () => {
       /batchGetOrFetchUsers\(paged\.dataList\.map\(\(issue\) => issue\.creator\)\)/
     );
   });
+
+  test("shares the workspace layout and bordered issue-list surface", () => {
+    expect(source).toContain("WorkspacePageLayout");
+    expect(source).toContain("WorkspacePageContent");
+    expect(source).toContain("<IssueListPanel");
+    expect(source).toContain('<WorkspacePageFooter className="px-2">');
+  });
 });

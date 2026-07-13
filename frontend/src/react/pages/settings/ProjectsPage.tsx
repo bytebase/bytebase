@@ -38,8 +38,14 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
+import {
+  createAdvancedSearchParser,
+  legacyStateSearchParams,
+  serializeAdvancedSearch,
+  useURLSearchParam,
+} from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
@@ -51,6 +57,8 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+
+const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
 
 export function projectIssuesRoute(project: Project) {
   return {
@@ -232,35 +240,17 @@ function ProjectActionDropdown({
 export function ProjectsPage() {
   const { t } = useTranslation();
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
+  const route = useCurrentRoute();
 
-  // Search state — managed as SearchParams (query + scopes)
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const currentRoute = router.currentRoute.value;
-    // Migrate old URL format
-    const queryState = currentRoute.query.state as string;
-    if (queryState === "archived" || queryState === "all") {
-      const stateValue = queryState === "archived" ? "DELETED" : "ALL";
-      return { query: "", scopes: [{ id: "state", value: stateValue }] };
-    }
-    const queryString = currentRoute.query.q as string;
-    if (queryString) {
-      const scopes: { id: string; value: string }[] = [];
-      const queryParts: string[] = [];
-      for (const token of queryString.split(/\s+/).filter(Boolean)) {
-        const colonIdx = token.indexOf(":");
-        if (colonIdx > 0) {
-          const id = token.substring(0, colonIdx);
-          const value = token.substring(colonIdx + 1);
-          if (value && (id === "state" || id === "label")) {
-            scopes.push({ id, value });
-            continue;
-          }
-        }
-        queryParts.push(token);
-      }
-      return { query: queryParts.join(" "), scopes };
-    }
-    return { query: "", scopes: [] };
+  const defaultSearchParams = useMemo<SearchParams>(
+    () => legacyStateSearchParams(route.query.state),
+    [route.query.state]
+  );
+  const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
+    param: "q",
+    parse: parseProjectSearch,
+    serialize: serializeAdvancedSearch,
+    defaultValue: defaultSearchParams,
   });
 
   // Scope options for the AdvancedSearch
@@ -313,20 +303,6 @@ export function ProjectsPage() {
       });
     }
   }, []);
-
-  // Sync search state to URL
-  useEffect(() => {
-    const parts: string[] = [];
-    for (const scope of searchParams.scopes) {
-      parts.push(`${scope.id}:${scope.value}`);
-    }
-    if (searchParams.query) parts.push(searchParams.query);
-    const queryString = parts.join(" ");
-    const currentQuery = router.currentRoute.value.query.q as string;
-    if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: { q: queryString } });
-    }
-  }, [searchParams]);
 
   // Data fetching state
   const [projects, setProjects] = useState<Project[]>([]);
@@ -669,8 +645,7 @@ export function ProjectsPage() {
         />
       </WorkspacePageFooter>
 
-      {/* Batch operations bar (sticky at bottom; rendered after the
-          table so selection doesn't shift table position) */}
+      {/* Batch operations bar is fixed within the visible main content. */}
       {canDelete && (
         <SelectionActionBar
           count={selectedProjectList.length}
