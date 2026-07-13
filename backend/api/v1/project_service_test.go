@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -517,6 +519,44 @@ func TestValidateLabels(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateProjectDeletingIssueLabelDefinitionPreservesExistingIssueLabels(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Setting: &storepb.Project{
+			IssueLabels: []*storepb.Label{
+				{Value: "kept"},
+				{Value: "obsolete"},
+			},
+		},
+	}))
+
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Labels: []string{"kept", "obsolete"}},
+	})
+	require.NoError(t, err)
+
+	response, err := NewProjectService(stores, nil, nil).UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:        "projects/project-a",
+			IssueLabels: []*v1pb.Label{{Value: "kept"}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"issue_labels"}},
+	}))
+	require.NoError(t, err)
+	require.Equal(t, []*v1pb.Label{{Value: "kept"}}, response.Msg.GetIssueLabels())
+
+	got, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.Equal(t, []string{"kept", "obsolete"}, got.Payload.GetLabels())
 }
 
 func TestValidateIssueLabelsColor(t *testing.T) {

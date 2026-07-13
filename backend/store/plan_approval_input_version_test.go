@@ -2,8 +2,10 @@ package store_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -962,7 +964,14 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalResetsBeforeRollout(t *testing.T)
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 
@@ -999,7 +1008,15 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalDoesNotResetAfterRollout(t *testi
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			HasRollout:           false,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 
@@ -1033,6 +1050,95 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalDoesNotResetAfterRollout(t *testi
 	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
 }
 
+func TestUpdateIssueLabelsAndMaybeResetApprovalDoesNotResetDraft(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Draft:  true,
+			Labels: []string{"prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, approvalResetApplied, err := s.UpdateIssueLabelsAndMaybeResetApproval(ctx, "project-a", issue.UID, []string{"stage"})
+	require.NoError(t, err)
+	require.False(t, approvalResetApplied)
+	require.Equal(t, []string{"stage"}, updatedIssue.Payload.GetLabels())
+	require.True(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestUpdateIssueLabelsAndMaybeResetApprovalDoesNotResetCreateDatabase(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload: &storepb.Issue{
+			Labels: []string{"prod"},
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+
+	updatedIssue, approvalResetApplied, err := s.UpdateIssueLabelsAndMaybeResetApproval(ctx, "project-a", issue.UID, []string{"stage"})
+	require.NoError(t, err)
+	require.False(t, approvalResetApplied)
+	require.Equal(t, []string{"stage"}, updatedIssue.Payload.GetLabels())
+	require.True(t, updatedIssue.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, updatedIssue.Payload.GetApproval().GetApprovalInputVersion())
+}
+
 func TestUpdateIssueLabelsAndMaybeResetApprovalUsesCurrentPlanVersion(t *testing.T) {
 	ctx := context.Background()
 	s := setupPlanApprovalInputVersionStore(ctx, t)
@@ -1041,7 +1147,14 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalUsesCurrentPlanVersion(t *testing
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 
@@ -1087,7 +1200,14 @@ func TestUpdateIssueLabelsAndMaybeResetApprovalNoopsWhenLockedLabelsMatch(t *tes
 		ProjectID:   "project-a",
 		Name:        "plan-a",
 		Description: "",
-		Config:      &storepb.PlanConfig{ApprovalInputVersion: 2},
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
 	}, "creator@example.com")
 	require.NoError(t, err)
 
@@ -1285,6 +1405,220 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsSkipsStaleIssueApproval
 	require.NotNil(t, got)
 	require.Equal(t, storepb.RiskLevel_LOW, got.Payload.GetRiskLevel())
 	require.EqualValues(t, 1, got.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestUpdateIssueDraftGuardAllowsSubmissionAndSkipsStaleDraftLabelWrite(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Draft: true},
+	})
+	require.NoError(t, err)
+
+	requireDraft := true
+	submitted, err := s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+		RemoveDraft:  true,
+		RequireDraft: &requireDraft,
+	})
+	require.NoError(t, err)
+	require.False(t, submitted.Payload.GetDraft())
+
+	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Labels: []string{"stage"}},
+		RequireDraft:  &requireDraft,
+	})
+	require.ErrorIs(t, err, store.ErrIssueUpdateSkipped)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.False(t, got.Payload.GetDraft())
+	require.Empty(t, got.Payload.GetLabels())
+}
+
+func TestUpdateIssuePlanSnapshotGuard(t *testing.T) {
+	tests := []struct {
+		name                   string
+		mutatePlan             func(context.Context, *testing.T, *store.Store, *store.PlanMessage) *store.PlanMessage
+		wantSkip               bool
+		useCurrentPlanSnapshot bool
+	}{
+		{
+			name: "matching active plan",
+			mutatePlan: func(_ context.Context, _ *testing.T, _ *store.Store, plan *store.PlanMessage) *store.PlanMessage {
+				return plan
+			},
+		},
+		{
+			name: "stale plan update time",
+			mutatePlan: func(ctx context.Context, t *testing.T, s *store.Store, plan *store.PlanMessage) *store.PlanMessage {
+				description := "closed after validation"
+				updated, err := s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+					UID:         plan.UID,
+					ProjectID:   plan.ProjectID,
+					Description: &description,
+				})
+				require.NoError(t, err)
+				return updated
+			},
+			wantSkip: true,
+		},
+		{
+			name: "inactive plan",
+			mutatePlan: func(ctx context.Context, t *testing.T, s *store.Store, plan *store.PlanMessage) *store.PlanMessage {
+				deleted := true
+				updated, err := s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+					UID:       plan.UID,
+					ProjectID: plan.ProjectID,
+					Deleted:   &deleted,
+				})
+				require.NoError(t, err)
+				return updated
+			},
+			wantSkip:               true,
+			useCurrentPlanSnapshot: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			s := setupPlanApprovalInputVersionStore(ctx, t)
+
+			plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+				ProjectID: "project-a",
+				Name:      "plan-a",
+				Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+			}, "creator@example.com")
+			require.NoError(t, err)
+			issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+				ProjectID:    "project-a",
+				CreatorEmail: "creator@example.com",
+				Title:        "issue-a",
+				Type:         storepb.Issue_DATABASE_CHANGE,
+				Payload:      &storepb.Issue{Draft: true},
+				PlanUID:      &plan.UID,
+			})
+			require.NoError(t, err)
+
+			validatedUpdatedAt := plan.UpdatedAt
+			currentPlan := test.mutatePlan(ctx, t, s, plan)
+			if test.useCurrentPlanSnapshot {
+				validatedUpdatedAt = currentPlan.UpdatedAt
+			}
+			version := int64(2)
+			requireDraft := true
+			_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
+				RemoveDraft:                     true,
+				RequireDraft:                    &requireDraft,
+				RequirePlanApprovalInputVersion: &version,
+				RequirePlanUpdatedAt:            &validatedUpdatedAt,
+				RequirePlanActive:               true,
+			})
+			if test.wantSkip {
+				require.ErrorIs(t, err, store.ErrIssueUpdateSkipped)
+				got, getErr := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+				require.NoError(t, getErr)
+				require.True(t, got.Payload.GetDraft())
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateIssuePlanSnapshotGuardWaitsForConcurrentPlanUpdate(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanApprovalInputVersionStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "plan-a",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Draft: true},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	planUpdate, err := s.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer planUpdate.Rollback()
+	_, err = planUpdate.ExecContext(ctx, `
+		UPDATE plan
+		SET updated_at = updated_at + INTERVAL '1 second'
+		WHERE project = $1 AND id = $2
+	`, plan.ProjectID, plan.UID)
+	require.NoError(t, err)
+
+	requireDraft := true
+	version := int64(2)
+	updateResult := make(chan error, 1)
+	go func() {
+		_, err := s.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+			RemoveDraft:                     true,
+			RequireDraft:                    &requireDraft,
+			RequirePlanApprovalInputVersion: &version,
+			RequirePlanUpdatedAt:            &plan.UpdatedAt,
+			RequirePlanActive:               true,
+		})
+		updateResult <- err
+	}()
+
+	waitForTransactionBlock(ctx, t, s.GetDB(), planUpdate)
+
+	require.NoError(t, planUpdate.Commit())
+	require.ErrorIs(t, receiveTestResult(t, updateResult, "guarded Issue update did not return"), store.ErrIssueUpdateSkipped)
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.True(t, got.Payload.GetDraft())
+}
+
+func waitForTransactionBlock(ctx context.Context, t *testing.T, db *sql.DB, tx *sql.Tx) {
+	t.Helper()
+	var blockerPID int
+	require.NoError(t, tx.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&blockerPID))
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var waiting bool
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_stat_activity AS activity
+				WHERE activity.pid <> pg_backend_pid()
+				  AND $1 = ANY(pg_blocking_pids(activity.pid))
+			)
+		`, blockerPID).Scan(&waiting))
+		if waiting {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for a session blocked by transaction PID %d", blockerPID)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func receiveTestResult[T any](t *testing.T, result <-chan T, timeoutMessage string) T {
+	t.Helper()
+	select {
+	case value := <-result:
+		return value
+	case <-time.After(5 * time.Second):
+		t.Fatal(timeoutMessage)
+		var zero T
+		return zero
+	}
 }
 
 func requirePlanSpecID(t *testing.T, config *storepb.PlanConfig, id string) {

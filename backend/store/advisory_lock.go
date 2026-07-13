@@ -24,7 +24,7 @@ const (
 	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
 	// AdvisoryLockKeyPlanOperations serializes Plan updates, linked Issue
-	// creation, and rollout creation for the same Plan.
+	// creation, Plan-check creation, and rollout creation.
 	// Callers acquire it before taking any row lock.
 	AdvisoryLockKeyPlanOperations AdvisoryLockKey = 1005
 )

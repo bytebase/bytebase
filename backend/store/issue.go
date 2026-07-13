@@ -86,12 +86,22 @@ type UpdateIssueMessage struct {
 	// if it does not.
 	ConditionalPayloadUpsert *storepb.Issue
 	RemoveLabels             bool
+	RemoveDraft              bool
 
-	RequirePlanApprovalInputVersion  *int64
-	RequireIssueApprovalInputVersion *int64
-	RequireApprovalFindingDone       *bool
-	RequireLabels                    *[]string
-	RequireNoRollout                 bool
+	RequirePlanApprovalInputVersion         *int64
+	RequirePlanUpdatedAt                    *time.Time
+	RequirePlanActive                       bool
+	RequirePlanTitle                        bool
+	RequireIssueApprovalInputVersion        *int64
+	RequireApprovalFindingDone              *bool
+	RequireApproval                         *storepb.IssuePayloadApproval
+	RequireStatus                           *storepb.Issue_Status
+	RequireLabels                           *[]string
+	RequirePlanCheckRunUpdatedAt            *time.Time
+	RequirePlanCheckRunApprovalInputVersion *int64
+	RequirePlanCheckRunStatus               *PlanCheckRunStatus
+	RequireDraft                            *bool
+	RequireNoRollout                        bool
 	// SkipIfCurrentApprovalFindingDone skips when approval finding is already done
 	// for the same approval input version.
 	SkipIfCurrentApprovalFindingDone *int64
@@ -288,6 +298,9 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if patch.RemoveLabels {
 		payloadSet.Space("|| jsonb_build_object('labels', ?::JSONB)", nil)
 	}
+	if patch.RemoveDraft {
+		payloadSet.Space("|| jsonb_build_object('draft', false)")
+	}
 	if v := patch.ConditionalPayloadUpsert; v != nil {
 		if patch.ConditionalPlanApprovalInputVersion == nil {
 			return nil, errors.New("ConditionalPayloadUpsert requires ConditionalPlanApprovalInputVersion")
@@ -329,9 +342,50 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
+	var result sql.Result
+	if patch.RequirePlanApprovalInputVersion != nil || patch.RequirePlanUpdatedAt != nil {
+		tx, err := s.GetDB().BeginTx(ctx, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to begin guarded issue update")
+		}
+		defer tx.Rollback()
+
+		if oldIssue != nil && oldIssue.PlanUID != nil {
+			var lockedIssueUID int64
+			if err := tx.QueryRowContext(ctx, `
+				SELECT id
+				FROM issue
+				WHERE project = $1
+				  AND id = $2
+				FOR UPDATE`,
+				projectID, uid).Scan(&lockedIssueUID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, errors.Wrapf(err, "failed to lock issue")
+			}
+
+			var lockedPlanUID int64
+			if err := tx.QueryRowContext(ctx, `
+				SELECT id
+				FROM plan
+				WHERE project = $1
+				  AND id = $2
+				FOR SHARE`,
+				projectID, *oldIssue.PlanUID).Scan(&lockedPlanUID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, errors.Wrapf(err, "failed to lock linked plan")
+			}
+		}
+
+		result, err = tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, errors.Wrapf(err, "failed to commit guarded issue update")
+		}
+	} else {
+		result, err = s.GetDB().ExecContext(ctx, query, args...)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if hasGuard {
 		rowsAffected, err := result.RowsAffected()
@@ -391,7 +445,7 @@ func (s *Store) UpdateIssueLabelsAndMaybeResetApproval(ctx context.Context, proj
 
 	approvalResetApplied := false
 	var approvalInputVersion int64
-	if planUID.Valid {
+	if planUID.Valid && !currentPayload.GetDraft() {
 		planConfig := &storepb.PlanConfig{}
 		var config []byte
 		if err := tx.QueryRowContext(ctx, `
@@ -409,9 +463,12 @@ func (s *Store) UpdateIssueLabelsAndMaybeResetApproval(ctx context.Context, proj
 		if err := common.ProtojsonUnmarshaler.Unmarshal(config, planConfig); err != nil {
 			return nil, false, errors.Wrap(err, "failed to unmarshal plan config")
 		}
-		if !planConfig.GetHasRollout() {
-			approvalResetApplied = true
-			approvalInputVersion = planConfig.GetApprovalInputVersion()
+		for _, spec := range planConfig.GetSpecs() {
+			if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok && !planConfig.GetHasRollout() {
+				approvalResetApplied = true
+				approvalInputVersion = planConfig.GetApprovalInputVersion()
+				break
+			}
 		}
 	}
 
@@ -480,11 +537,50 @@ func marshalCanonicalIssueLabels(labels []string) ([]byte, error) {
 func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int64) (*qb.Query, bool, error) {
 	where := qb.Q().Space("project = ? AND id = ?", projectID, uid)
 	hasGuard := false
-	if version := patch.RequirePlanApprovalInputVersion; version != nil {
-		where.Space("AND ?", issuePlanApprovalInputVersionCondition(*version, patch.RequireNoRollout))
-		hasGuard = true
-	} else if patch.RequireNoRollout {
+	if patch.RequireNoRollout && patch.RequirePlanApprovalInputVersion == nil {
 		return nil, false, errors.New("RequireNoRollout requires RequirePlanApprovalInputVersion")
+	}
+	if (patch.RequirePlanActive || patch.RequirePlanTitle) && patch.RequirePlanUpdatedAt == nil {
+		return nil, false, errors.New("Plan active and title guards require RequirePlanUpdatedAt")
+	}
+	hasPlanCheckGuard := patch.RequirePlanCheckRunUpdatedAt != nil ||
+		patch.RequirePlanCheckRunApprovalInputVersion != nil ||
+		patch.RequirePlanCheckRunStatus != nil
+	if hasPlanCheckGuard &&
+		(patch.RequirePlanCheckRunUpdatedAt == nil ||
+			patch.RequirePlanCheckRunApprovalInputVersion == nil ||
+			patch.RequirePlanCheckRunStatus == nil) {
+		return nil, false, errors.New("plan check run snapshot guard requires updated time, approval input version, and status")
+	}
+	if hasPlanCheckGuard && patch.RequirePlanUpdatedAt == nil {
+		return nil, false, errors.New("plan check run guard requires RequirePlanUpdatedAt")
+	}
+	if patch.RequirePlanApprovalInputVersion != nil || patch.RequirePlanUpdatedAt != nil {
+		where.Space("AND ?", issuePlanCondition(
+			patch.RequirePlanApprovalInputVersion,
+			patch.RequirePlanUpdatedAt,
+			patch.RequirePlanActive,
+			patch.RequirePlanTitle,
+			patch.RequireNoRollout,
+		))
+		hasGuard = true
+	}
+	if hasPlanCheckGuard {
+		where.Space(`
+			AND EXISTS (
+				SELECT 1
+				FROM plan_check_run
+				WHERE plan_check_run.project = issue.project
+				  AND plan_check_run.plan_id = issue.plan_id
+				  AND plan_check_run.updated_at = ?
+				  AND COALESCE((plan_check_run.result->>'approvalInputVersion')::bigint, 0) = ?
+				  AND plan_check_run.status = ?
+			)`,
+			*patch.RequirePlanCheckRunUpdatedAt,
+			*patch.RequirePlanCheckRunApprovalInputVersion,
+			*patch.RequirePlanCheckRunStatus,
+		)
+		hasGuard = true
 	}
 	if version := patch.RequireIssueApprovalInputVersion; version != nil {
 		where.Space("AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?", *version)
@@ -494,12 +590,28 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 		where.Space("AND COALESCE((payload->'approval'->>'approvalFindingDone')::boolean, false) = ?", *done)
 		hasGuard = true
 	}
+	if approval := patch.RequireApproval; approval != nil {
+		approvalBytes, err := protojson.Marshal(approval)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "failed to marshal required issue approval")
+		}
+		where.Space("AND payload->'approval' = ?::jsonb", string(approvalBytes))
+		hasGuard = true
+	}
+	if status := patch.RequireStatus; status != nil {
+		where.Space("AND status = ?", status.String())
+		hasGuard = true
+	}
 	if labels := patch.RequireLabels; labels != nil {
 		labelBytes, err := marshalCanonicalIssueLabels(*labels)
 		if err != nil {
 			return nil, false, err
 		}
 		where.Space("AND COALESCE(NULLIF(payload->'labels', 'null'::jsonb), '[]'::jsonb) = ?::jsonb", string(labelBytes))
+		hasGuard = true
+	}
+	if draft := patch.RequireDraft; draft != nil {
+		where.Space("AND COALESCE((payload->>'draft')::boolean, false) = ?", *draft)
 		hasGuard = true
 	}
 	if version := patch.SkipIfCurrentApprovalFindingDone; version != nil {
@@ -514,10 +626,25 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 }
 
 func issuePlanApprovalInputVersionCondition(approvalInputVersion int64, requireNoRollout bool) *qb.Query {
+	return issuePlanCondition(&approvalInputVersion, nil, false, false, requireNoRollout)
+}
+
+func issuePlanCondition(approvalInputVersion *int64, updatedAt *time.Time, requireActive bool, requireTitle bool, requireNoRollout bool) *qb.Query {
 	planWhere := qb.Q().Space(`
 		plan.project = issue.project
-		  AND plan.id = issue.plan_id
-		  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?`, approvalInputVersion)
+		  AND plan.id = issue.plan_id`)
+	if approvalInputVersion != nil {
+		planWhere.Space("AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = ?", *approvalInputVersion)
+	}
+	if updatedAt != nil {
+		planWhere.Space("AND plan.updated_at = ?", *updatedAt)
+	}
+	if requireActive {
+		planWhere.Space("AND plan.deleted = false")
+	}
+	if requireTitle {
+		planWhere.Space("AND BTRIM(plan.name) <> ''")
+	}
 	if requireNoRollout {
 		planWhere.Space("AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false")
 	}
@@ -709,8 +836,15 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 	defer tx.Rollback()
 
-	// Fetch current issues to validate project membership and get old statuses.
-	fetchQuery := qb.Q().Space("SELECT id, status FROM issue WHERE id = ANY(?) AND project = ?", issueUIDs, projectID)
+	// Lock current issues to serialize status changes with draft submission.
+	fetchQuery := qb.Q().Space(`
+		SELECT id, status, COALESCE((payload->>'draft')::boolean, false)
+		FROM issue
+		WHERE id = ANY(?) AND project = ?
+		ORDER BY id
+		FOR UPDATE`,
+		issueUIDs, projectID,
+	)
 	fetchSQL, fetchArgs, err := fetchQuery.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build fetch sql")
@@ -726,7 +860,8 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	for rows.Next() {
 		var issueID int64
 		var statusString string
-		if err := rows.Scan(&issueID, &statusString); err != nil {
+		var draft bool
+		if err := rows.Scan(&issueID, &statusString, &draft); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan issue")
 		}
 		statusValue, ok := storepb.Issue_Status_value[statusString]
@@ -734,6 +869,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
 		issueStatus := storepb.Issue_Status(statusValue)
+		if draft {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status for draft issue %d; submit the issue first", issueID)}
+		}
 
 		// Prevent changing status from DONE to other statuses.
 		if issueStatus == storepb.Issue_DONE && newStatus != storepb.Issue_DONE {

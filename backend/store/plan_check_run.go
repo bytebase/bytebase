@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -65,6 +66,23 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return false, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
+
+	if err := acquirePlanAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
+		return false, errors.Wrap(err, "failed to acquire Plan lock for plan check run")
+	}
+	var lockedPlanUID int64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan
+		WHERE project = $1
+		  AND id = $2
+		FOR UPDATE`,
+		create.ProjectID, create.PlanUID).Scan(&lockedPlanUID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "failed to lock plan for plan check run")
+	}
 
 	nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
 	if err != nil {

@@ -260,7 +260,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
 	}
 	if project != nil {
-		issue, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
+		issue, err := startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}

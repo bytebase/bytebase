@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -239,6 +240,17 @@ func TestInjectIssueLabelsIntoCELVars(t *testing.T) {
 	for _, celVars := range celVarsList {
 		require.Equal(t, []string{"prod", "security"}, celVars[common.CELAttributeIssueLabels])
 	}
+}
+
+func TestBuildFallbackCELVarsExcludesIssueLabels(t *testing.T) {
+	got := buildFallbackCELVars([]map[string]any{{
+		common.CELAttributeResourceProjectID: "project-a",
+		common.CELAttributeIssueLabels:       []string{"prod"},
+	}})
+
+	require.Equal(t, []map[string]any{{
+		common.CELAttributeResourceProjectID: "project-a",
+	}}, got)
 }
 
 func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
@@ -550,7 +562,7 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApproval
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	_, err = findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
 	require.NoError(t, err)
 
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
@@ -600,7 +612,7 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	err = findApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
+	_, err = findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, &storepb.WorkspaceApprovalSetting{})
 	require.NoError(t, err)
 
 	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
@@ -608,6 +620,311 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 	require.Nil(t, got.Payload.GetApproval().GetApprovalTemplate())
+}
+
+func TestFindApprovalTemplateForCreateDatabaseDoesNotGuardLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+						Target:      "instances/prod",
+						Database:    "app",
+						Environment: "prod",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	staleIssue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{Labels: []string{"prod"}},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	_, err = s.UpdateIssue(ctx, "project-a", staleIssue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Labels: []string{"stage"}},
+	})
+	require.NoError(t, err)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	_, err = findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, staleIssue, &storepb.WorkspaceApprovalSetting{
+		Rules: []*storepb.WorkspaceApprovalSetting_Rule{{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE,
+			Condition: &expr.Expr{Expression: `"prod" in issue.labels`},
+			Template:  &storepb.ApprovalTemplate{Title: "label-specific"},
+		}},
+	})
+	require.NoError(t, err)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &staleIssue.UID})
+	require.NoError(t, err)
+	require.Equal(t, []string{"stage"}, got.Payload.GetLabels())
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
+	require.Nil(t, got.Payload.GetApproval().GetApprovalTemplate())
+}
+
+func TestFindApprovalTemplateForChangeDatabaseGuardsCanonicalLabels(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID:   "project-a",
+		Name:        "plan-a",
+		Description: "",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	staleIssue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue-a",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  "",
+		Payload:      &storepb.Issue{Labels: []string{" prod ", "security", "prod"}},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"prod", "security"}, staleIssue.Payload.GetLabels())
+
+	_, err = s.UpdateIssue(ctx, "project-a", staleIssue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Labels: []string{"stage"}},
+	})
+	require.NoError(t, err)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeProd, s, false, "")
+	require.NoError(t, err)
+	_, err = findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, staleIssue, &storepb.WorkspaceApprovalSetting{})
+	require.NoError(t, err)
+
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &staleIssue.UID})
+	require.NoError(t, err)
+	require.Equal(t, []string{"stage"}, got.Payload.GetLabels())
+	require.Nil(t, got.Payload.GetApproval())
+}
+
+func TestConcurrentProcessIssueOnlyWinningApprovalFindingCreatesRollout(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "duplicate approval finding",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs: []*storepb.PlanConfig_Spec{{
+				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
+						Target:      "instances/prod",
+						Database:    "app",
+						Environment: "prod",
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "duplicate approval finding",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  false,
+				ApprovalInputVersion: 2,
+			},
+		},
+		PlanUID: &plan.UID,
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_APPROVAL,
+		Workspace: "default",
+		Value:     &storepb.WorkspaceApprovalSetting{},
+	})
+	require.NoError(t, err)
+	b, err := bus.New()
+	require.NoError(t, err)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	runner := NewRunner(s, b, nil, licenseService)
+	ref := bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+
+	results := runApprovalFindingCallsBehindIssueLock(ctx, t, s, issue, "%FROM issue%FOR UPDATE%", []func() error{
+		func() error {
+			runner.processIssue(ctx, ref)
+			return nil
+		},
+		func() error {
+			runner.processIssue(ctx, ref)
+			return nil
+		},
+	})
+
+	require.NoError(t, results[0])
+	require.NoError(t, results[1])
+	require.Len(t, b.RolloutCreationChan, 1)
+	got, err := s.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &issue.UID,
+	})
+	require.NoError(t, err)
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+}
+
+func TestConcurrentNonDatabaseApprovalFindingOnlyWritesOnce(t *testing.T) {
+	ctx := context.Background()
+	s := setupApprovalRunnerStore(ctx, t)
+	_, err := s.GetDB().ExecContext(ctx, `
+		CREATE TABLE approval_finding_write_count (
+			issue_id bigint PRIMARY KEY,
+			writes integer NOT NULL
+		);
+		CREATE FUNCTION count_approval_finding_write() RETURNS trigger
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			IF COALESCE((NEW.payload->'approval'->>'approvalFindingDone')::boolean, false) THEN
+				INSERT INTO approval_finding_write_count (issue_id, writes)
+				VALUES (NEW.id, 1)
+				ON CONFLICT (issue_id) DO UPDATE
+				SET writes = approval_finding_write_count.writes + 1;
+			END IF;
+			RETURN NEW;
+		END;
+		$$;
+		CREATE TRIGGER count_approval_finding_write
+		AFTER UPDATE OF payload ON issue
+		FOR EACH ROW EXECUTE FUNCTION count_approval_finding_write();
+	`)
+	require.NoError(t, err)
+	issue, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "non-database duplicate approval finding",
+		Type:         storepb.Issue_DATABASE_EXPORT,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{ApprovalFindingDone: false},
+		},
+	})
+	require.NoError(t, err)
+	secondIssue, err := s.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &issue.UID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, secondIssue)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	approvalSetting := &storepb.WorkspaceApprovalSetting{}
+
+	results := runApprovalFindingCallsBehindIssueLock(ctx, t, s, issue, "%UPDATE issue SET%", []func() error{
+		func() error {
+			_, err := findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, issue, approvalSetting)
+			return err
+		},
+		func() error {
+			_, err := findAndApplyApprovalTemplateForIssue(ctx, s, nil, licenseService, secondIssue, approvalSetting)
+			return err
+		},
+	})
+
+	require.NoError(t, results[0])
+	require.NoError(t, results[1])
+	var writes int
+	require.NoError(t, s.GetDB().QueryRowContext(ctx, `
+		SELECT writes
+		FROM approval_finding_write_count
+		WHERE issue_id = $1`,
+		issue.UID,
+	).Scan(&writes))
+	require.Equal(t, 1, writes)
+}
+
+func runApprovalFindingCallsBehindIssueLock(
+	ctx context.Context,
+	t *testing.T,
+	s *store.Store,
+	issue *store.IssueMessage,
+	blockedQueryPattern string,
+	calls []func() error,
+) []error {
+	t.Helper()
+	s.GetDB().SetMaxOpenConns(10)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	var lockedUID int64
+	require.NoError(t, tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM issue
+		WHERE project = $1 AND id = $2
+		FOR UPDATE`,
+		issue.ProjectID, issue.UID,
+	).Scan(&lockedUID))
+	require.Equal(t, issue.UID, lockedUID)
+
+	results := make([]chan error, len(calls))
+	for i, call := range calls {
+		results[i] = make(chan error, 1)
+		go func(result chan<- error, call func() error) {
+			result <- call()
+		}(results[i], call)
+
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			var waiting int
+			require.NoError(t, s.GetDB().QueryRowContext(ctx, `
+				SELECT count(*)
+				FROM pg_stat_activity
+				WHERE pid <> pg_backend_pid()
+				  AND wait_event_type = 'Lock'
+				  AND query LIKE $1`,
+				blockedQueryPattern,
+			).Scan(&waiting))
+			if waiting >= i+1 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("timed out waiting for approval finding call %d to reach the store update", i)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	require.NoError(t, tx.Commit())
+
+	errs := make([]error, len(results))
+	for i, result := range results {
+		select {
+		case errs[i] = <-result:
+		case <-time.After(5 * time.Second):
+			t.Fatalf("approval finding call %d did not return after the Issue lock was released", i)
+		}
+	}
+	return errs
 }
 
 func TestProcessIssueSkipsDraft(t *testing.T) {

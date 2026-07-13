@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -273,6 +274,146 @@ func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
 	require.NotNil(t, run)
 	require.Equal(t, store.PlanCheckRunStatusAvailable, run.Status)
 	require.EqualValues(t, 2, run.Result.GetApprovalInputVersion())
+}
+
+func TestCreateIssueAndPlanCheckRunSharePlanAdvisoryLock(t *testing.T) {
+	ctx := context.Background()
+	operationCtx, cancelOperations := context.WithCancel(ctx)
+	defer cancelOperations()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "plan-a",
+		Config:    &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	blocker, err := s.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer blocker.Rollback()
+	require.NoError(t, store.AcquireAdvisoryXactLockWithStringKey(
+		ctx,
+		blocker,
+		store.AdvisoryLockKeyPlanOperations,
+		fmt.Sprintf("%s/%d", plan.ProjectID, plan.UID),
+	))
+
+	type result struct {
+		err error
+	}
+	issueResult := make(chan result, 1)
+	go func() {
+		_, err := s.CreateIssue(operationCtx, &store.IssueMessage{
+			ProjectID:    plan.ProjectID,
+			CreatorEmail: "creator@example.com",
+			Title:        "draft issue",
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			Payload:      &storepb.Issue{Draft: true},
+			PlanUID:      &plan.UID,
+		})
+		issueResult <- result{err: err}
+	}()
+	checkResult := make(chan result, 1)
+	go func() {
+		_, err := s.CreatePlanCheckRun(operationCtx, &store.PlanCheckRunMessage{
+			ProjectID: plan.ProjectID,
+			PlanUID:   plan.UID,
+			Result:    &storepb.PlanCheckRunResult{},
+		})
+		checkResult <- result{err: err}
+	}()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		select {
+		case got := <-issueResult:
+			cancelOperations()
+			_ = blocker.Rollback()
+			<-checkResult
+			t.Fatalf("CreateIssue bypassed the same-Plan advisory lock: %v", got.err)
+		case got := <-checkResult:
+			cancelOperations()
+			_ = blocker.Rollback()
+			<-issueResult
+			t.Fatalf("CreatePlanCheckRun bypassed the same-Plan advisory lock: %v", got.err)
+		default:
+		}
+		var waiters int
+		require.NoError(t, s.GetDB().QueryRowContext(ctx, `
+			SELECT COUNT(*)
+			FROM pg_stat_activity
+			WHERE pid <> pg_backend_pid()
+			  AND wait_event = 'advisory'
+		`).Scan(&waiters))
+		if waiters >= 2 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for both same-Plan operations; got %d advisory waiters", waiters)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	require.NoError(t, blocker.Commit())
+	for name, ch := range map[string]<-chan result{
+		"CreateIssue":        issueResult,
+		"CreatePlanCheckRun": checkResult,
+	} {
+		select {
+		case got := <-ch:
+			require.NoError(t, got.err, name)
+		case <-time.After(5 * time.Second):
+			t.Fatalf("%s did not return after the advisory lock was released", name)
+		}
+	}
+}
+
+func TestCreatePlanCheckRunWaitsForSubmissionPlanLock(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlanCheckRunVersionStore(ctx, t)
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "plan-a",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	var lockedPlanUID int64
+	require.NoError(t, tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan
+		WHERE project = $1 AND id = $2
+		FOR SHARE`,
+		plan.ProjectID, plan.UID,
+	).Scan(&lockedPlanUID))
+
+	type result struct {
+		created bool
+		err     error
+	}
+	resultCh := make(chan result, 1)
+	go func() {
+		created, err := s.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+			ProjectID: plan.ProjectID,
+			PlanUID:   plan.UID,
+			Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+		})
+		resultCh <- result{created: created, err: err}
+	}()
+
+	waitForTransactionBlock(ctx, t, s.GetDB(), tx)
+	require.NoError(t, tx.Commit())
+
+	select {
+	case got := <-resultCh:
+		require.NoError(t, got.err)
+		require.True(t, got.created)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Plan check rerun did not return after the Plan lock was released")
+	}
 }
 
 func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) {

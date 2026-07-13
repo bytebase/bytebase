@@ -17,8 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-// postCreateIssue runs post-creation logic for an issue: webhook, approval finding, and auto-approve.
-func postCreateIssue(
+// startIssueWorkflow starts webhook, approval-finding, and auto-approval work after direct creation or draft submission.
+func startIssueWorkflow(
 	ctx context.Context,
 	stores *store.Store,
 	webhookManager *webhook.Manager,
@@ -29,6 +29,23 @@ func postCreateIssue(
 	creatorEmail string,
 	issue *store.IssueMessage,
 ) (*store.IssueMessage, error) {
+	if issue.Type == storepb.Issue_DATABASE_CHANGE {
+		if _, err := stores.CreateIssueComments(ctx, creatorEmail, &store.IssueCommentMessage{
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_ReviewSubmission_{
+					ReviewSubmission: &storepb.IssueCommentPayload_ReviewSubmission{},
+				},
+			},
+		}); err != nil {
+			slog.Warn("failed to create review submission activity",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_uid", issue.UID),
+				log.BBError(err))
+		}
+	}
+
 	// Trigger ISSUE_CREATED webhook.
 	webhookManager.CreateEvent(ctx, &webhook.Event{
 		Type:    storepb.Activity_ISSUE_CREATED,
@@ -49,11 +66,12 @@ func postCreateIssue(
 		storepb.Issue_ROLE_GRANT,
 		storepb.Issue_DATABASE_EXPORT:
 
-		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
+		applied, findErr := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue)
+		if findErr != nil {
 			slog.Error("failed to find approval template",
 				slog.String("project", issue.ProjectID), slog.Int64("issue_uid", issue.UID),
 				slog.String("issue_title", issue.Title),
-				log.BBError(err))
+				log.BBError(findErr))
 		}
 
 		// Refresh issue to get updated approval payload.
@@ -65,6 +83,9 @@ func postCreateIssue(
 		}
 
 		if issue.Type == storepb.Issue_DATABASE_EXPORT {
+			return issue, nil
+		}
+		if !applied {
 			return issue, nil
 		}
 
