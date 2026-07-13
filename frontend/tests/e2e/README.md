@@ -12,6 +12,16 @@ Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase ser
 
 2. **`psql` client** on PATH — required for DDL setup (the Bytebase query API is read-only; tests connect directly to the sample Postgres via Unix socket).
 
+3. **Playwright Chromium** — installed automatically. `globalSetup` runs
+   `playwright install chromium` before booting the server, so a fresh checkout
+   or a `@playwright/test` version bump (which invalidates the cached browser)
+   self-heals on the next run. Playwright browsers live in a global cache keyed
+   to the package version, outside `node_modules`, so `pnpm i` never fetches
+   them. To pre-install (or fix a failed auto-install) manually:
+   ```bash
+   pnpm --dir frontend test:e2e:install   # or: pnpm exec playwright install chromium
+   ```
+
 ## Running Tests
 
 ```bash
