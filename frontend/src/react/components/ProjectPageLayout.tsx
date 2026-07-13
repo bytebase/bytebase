@@ -87,7 +87,7 @@ type ProjectPageInfoProps = Omit<AlertProps, "onDismiss" | "variant"> & {
 };
 
 function ProjectPageInfo({ variant = "info", ...props }: ProjectPageInfoProps) {
-  return <Alert variant={variant} {...props} />;
+  return <Alert role="note" variant={variant} {...props} />;
 }
 
 function ProjectPageContent({

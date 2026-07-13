@@ -1,7 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { emptySearchParams } from "./AdvancedSearch";
-import { IssueSearchBar } from "./IssueTable";
+import { IssueSearchBar, PresetButtons } from "./IssueTable";
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({ email: "reviewer@example.com" }),
+}));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: {
@@ -39,5 +43,35 @@ describe("IssueSearchBar", () => {
     );
 
     expect(screen.getByPlaceholderText("common.filter")).toBeInTheDocument();
+    expect(screen.getByTestId("time-range-picker").parentElement).toHaveClass(
+      "flex-wrap",
+      "gap-2"
+    );
+  });
+});
+
+describe("PresetButtons", () => {
+  test("uses accessible tabs and updates the selected preset", () => {
+    const onParamsChange = vi.fn();
+    render(
+      <PresetButtons
+        params={{ query: "", scopes: [{ id: "status", value: "OPEN" }] }}
+        onParamsChange={onParamsChange}
+      />
+    );
+
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+
+    const open = screen.getByRole("tab", { name: "issue.table.open" });
+    expect(open).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(screen.getByRole("tab", { name: "issue.table.closed" }));
+    expect(onParamsChange).toHaveBeenCalledWith({
+      query: "",
+      scopes: [
+        { id: "status", value: "DONE", readonly: undefined },
+        { id: "status", value: "CANCELED", readonly: undefined },
+      ],
+    });
   });
 });

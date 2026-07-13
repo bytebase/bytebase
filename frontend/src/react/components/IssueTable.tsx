@@ -32,6 +32,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -89,8 +90,8 @@ export function IssueSearchBar({
   scopeOptions: ScopeOption[];
 }) {
   return (
-    <div className="flex items-center md:gap-2">
-      <div className="flex-1 min-w-0">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="min-w-0 basis-80 grow">
         <AdvancedSearch
           params={params}
           onParamsChange={onParamsChange}
@@ -295,22 +296,72 @@ export function PresetButtons({
   );
 
   return (
-    <div className="shrink-0 flex border-b border-control-border">
-      {presets.map((preset) => (
-        <button
-          key={preset.value}
-          type="button"
-          className={cn(
-            "px-3 py-1.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-            activePreset === preset.value
-              ? "border-accent text-accent"
-              : "border-transparent text-control-light hover:text-control"
-          )}
-          onClick={() => selectPreset(preset.value)}
-        >
-          {preset.label}
-        </button>
-      ))}
+    <Tabs
+      value={activePreset || undefined}
+      onValueChange={(value) => selectPreset(value as PresetValue)}
+    >
+      <TabsList className="relative overflow-x-auto border-b-0 pt-2 gap-x-0 after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-control-border hide-scrollbar">
+        {presets.map((preset) => (
+          <TabsTrigger
+            key={preset.value}
+            value={preset.value}
+            className="z-10 border-b-2 border-transparent px-3 aria-selected:border-accent aria-selected:after:hidden focus-visible:ring-inset focus-visible:ring-offset-0"
+          >
+            {preset.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
+}
+
+// ===========================================================================
+// IssueListPanel
+// ===========================================================================
+
+/** Bordered list surface shared by the issue dashboards: presets + rows. */
+export function IssueListPanel({
+  params,
+  onParamsChange,
+  isLoading,
+  issues,
+  selectedNames,
+  onToggleSelection,
+  showProject,
+}: {
+  params: SearchParams;
+  onParamsChange: (params: SearchParams) => void;
+  isLoading: boolean;
+  issues: Issue[];
+  selectedNames: Set<string>;
+  onToggleSelection: (name: string) => void;
+  showProject?: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="overflow-hidden rounded-sm border border-block-border">
+      <PresetButtons params={params} onParamsChange={onParamsChange} />
+      {isLoading ? (
+        <div className="flex justify-center py-8 text-control-light">
+          <Loader2 className="size-5 animate-spin" />
+        </div>
+      ) : issues.length === 0 ? (
+        <div className="flex justify-center py-8 text-control-light">
+          {t("common.no-data")}
+        </div>
+      ) : (
+        issues.map((issue) => (
+          <IssueListItem
+            key={issue.name}
+            issue={issue}
+            selected={selectedNames.has(issue.name)}
+            onToggleSelection={onToggleSelection}
+            highlightText={params.query}
+            showProject={showProject}
+          />
+        ))
+      )}
     </div>
   );
 }
@@ -633,7 +684,8 @@ export const IssueListItem = memo(function IssueListItem({
 
   return (
     <div
-      className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-control-bg hover:bg-control-bg"
+      data-slot="issue-list-item"
+      className="flex items-start gap-x-2 px-4 py-3 cursor-pointer border-b border-block-border transition-colors last:border-b-0 hover:bg-control-bg/60"
       onClick={onRowClick}
     >
       <div

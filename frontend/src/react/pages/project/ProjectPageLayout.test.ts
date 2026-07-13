@@ -53,6 +53,7 @@ describe("project page layout", () => {
     expect(source).toContain("paddingBlock: 16");
     expect(source).toContain("paddingInline: 16");
     expect(source).toContain("rowGap: 16");
+    expect(source).toContain('<Alert role="note"');
     expect(source).not.toContain("paddingBottom: 8");
   });
 
@@ -167,6 +168,11 @@ describe("project page layout", () => {
 
   test("uses bordered table surfaces inside padded project pages", () => {
     const projectPlanPage = readProjectPage("ProjectPlanDashboardPage.tsx");
+    const projectIssuePage = readProjectPage("ProjectIssueDashboardPage.tsx");
+    const issueTable = readFileSync(
+      join(componentsDir, "IssueTable.tsx"),
+      "utf8"
+    );
     const auditLogTable = readFileSync(
       join(componentsDir, "AuditLogTable.tsx"),
       "utf8"
@@ -174,6 +180,10 @@ describe("project page layout", () => {
 
     expect(projectPlanPage).toContain(
       'className="overflow-x-auto rounded-sm border border-block-border"'
+    );
+    expect(projectIssuePage).toContain("<IssueListPanel");
+    expect(issueTable).toContain(
+      'className="overflow-hidden rounded-sm border border-block-border"'
     );
     expect(auditLogTable).toContain(
       'className="overflow-x-auto rounded-sm border border-block-border"'

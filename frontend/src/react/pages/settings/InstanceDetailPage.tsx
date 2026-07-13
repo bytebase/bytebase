@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -70,6 +71,8 @@ const isInstanceHash = (x: unknown): x is InstanceHash =>
 
 export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);
   const removeDatabaseMetadataCache = useAppStore(
@@ -82,7 +85,10 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     [cachedInstance, instanceName]
   );
 
-  const [selectedTab, setSelectedTab] = useState<InstanceHash>("overview");
+  const routeHash = location.hash.replace(/^#?/, "");
+  const selectedTab: InstanceHash = isInstanceHash(routeHash)
+    ? routeHash
+    : "overview";
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
     scopes: [{ id: "instance", value: instanceId, readonly: true }],
@@ -257,20 +263,30 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     void useAppStore.getState().getOrFetchInstanceByName(instanceName);
   }, [instanceName]);
 
-  // Sync tab with URL hash
+  // Canonicalize legacy query state and invalid/missing hashes. The location
+  // remains the tab source of truth, so Back/Forward updates the selected tab.
   useEffect(() => {
-    const hash = window.location.hash.replace(/^#?/, "");
-    if (isInstanceHash(hash)) {
-      setSelectedTab(hash);
-    }
-  }, []);
-
-  useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
+    const query = new URLSearchParams(location.search);
     query.delete("qs");
-    const url = `${window.location.pathname}?${query.toString()}#${selectedTab}`;
-    window.history.replaceState(null, "", url);
-  }, [selectedTab]);
+    const search = query.toString();
+    const nextSearch = search ? `?${search}` : "";
+    const nextHash = `#${selectedTab}`;
+    if (location.search === nextSearch && location.hash === nextHash) return;
+    void navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch,
+        hash: nextHash,
+      },
+      { replace: true }
+    );
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    navigate,
+    selectedTab,
+  ]);
 
   // Set document title
   useEffect(() => {
@@ -388,11 +404,20 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     [t, environments, searchProjects, unassignedProjectOption]
   );
 
-  const handleTabChange = useCallback((tab: string | number | null) => {
-    if (typeof tab === "string" && isInstanceHash(tab)) {
-      setSelectedTab(tab);
-    }
-  }, []);
+  const handleTabChange = useCallback(
+    (tab: string | number | null) => {
+      if (typeof tab !== "string" || !isInstanceHash(tab)) return;
+      void navigate(
+        {
+          pathname: location.pathname,
+          search: location.search,
+          hash: `#${tab}`,
+        },
+        { replace: true }
+      );
+    },
+    [location.pathname, location.search, navigate]
+  );
 
   return (
     <div className="p-4 flex flex-col gap-y-2">
@@ -482,8 +507,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               onDatabasesChange={setVisibleDatabases}
               refreshToken={refreshToken}
             />
-            {/* Batch operations bar (sticky at bottom; rendered after the
-                table so selection doesn't shift table position) */}
+            {/* Batch operations bar is fixed within the visible main content. */}
             <DatabaseBatchOperationsBar
               databases={selectedDatabases}
               onSyncSchema={handleSyncSchema}

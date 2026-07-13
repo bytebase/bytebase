@@ -1,19 +1,21 @@
-import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
   BatchIssueStatusActionDrawer,
-  IssueListItem,
+  IssueListPanel,
   IssueSearchBar,
-  PresetButtons,
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
+import {
+  WorkspacePageContent,
+  WorkspacePageFooter,
+  WorkspacePageLayout,
+} from "@/react/components/WorkspacePageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -22,17 +24,20 @@ import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
-  type SearchParams as VueSearchParams,
 } from "@/utils";
 
+const parseSearchParams = (query: string): SearchParams =>
+  buildSearchParamsBySearchText(query);
+const serializeSearchParams = (params: SearchParams): string =>
+  buildSearchTextBySearchParams(params);
+
 export function MyIssuesPage() {
-  const { t } = useTranslation();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
   const me = useCurrentUser();
 
-  const defaultSearchParams = useCallback((): SearchParams => {
+  const defaultSearchParams = useMemo((): SearchParams => {
     const myEmail = me?.email ?? "";
     return {
       query: "",
@@ -47,63 +52,20 @@ export function MyIssuesPage() {
     };
   }, [me]);
 
-  // Initialize from URL or defaults
-  const initialQueryRef = useRef<string | null>(null);
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const urlQ = new URLSearchParams(window.location.search).get("q") ?? null;
-    initialQueryRef.current = urlQ;
-    if (urlQ) {
-      return buildSearchParamsBySearchText(urlQ) as SearchParams;
-    }
-    return defaultSearchParams();
+  const [searchParams, setSearchParams] = useURLSearchParam({
+    param: "q",
+    parse: parseSearchParams,
+    serialize: serializeSearchParams,
+    defaultValue: defaultSearchParams,
   });
-
-  const [orderBy, setOrderBy] = useState("");
-
-  // URL sync
-  const isUpdatingUrl = useRef(false);
-  useEffect(() => {
-    if (isUpdatingUrl.current) return;
-    const queryString = buildSearchTextBySearchParams(
-      searchParams as VueSearchParams
-    );
-    const currentQ = new URLSearchParams(window.location.search).get("q");
-    if (queryString === currentQ) return;
-
-    const isDefault =
-      queryString ===
-      buildSearchTextBySearchParams(defaultSearchParams() as VueSearchParams);
-    if (isDefault && !initialQueryRef.current) {
-      if (currentQ) {
-        isUpdatingUrl.current = true;
-        router
-          .replace({
-            query: { ...router.currentRoute.value.query, q: undefined },
-          })
-          .finally(() => {
-            isUpdatingUrl.current = false;
-          });
-      }
-    } else {
-      isUpdatingUrl.current = true;
-      router
-        .replace({
-          query: {
-            ...router.currentRoute.value.query,
-            q: queryString || undefined,
-          },
-        })
-        .finally(() => {
-          isUpdatingUrl.current = false;
-        });
-    }
-  }, [searchParams]);
+  const [orderBy, setOrderBy] = useURLSearchParam({
+    param: "order",
+    defaultValue: "",
+  });
 
   // Issue filter
   const issueFilter = useMemo(() => {
-    const filter = buildIssueFilterBySearchParams(
-      searchParams as VueSearchParams
-    );
+    const filter = buildIssueFilterBySearchParams(searchParams);
     filter.orderBy = orderBy;
     return filter;
   }, [searchParams, orderBy]);
@@ -188,41 +150,27 @@ export function MyIssuesPage() {
   }, [paged]);
 
   return (
-    <div className="py-4 flex flex-col">
-      <div className="px-4 flex flex-col gap-y-2">
-        <IssueSearchBar
+    <WorkspacePageLayout>
+      <IssueSearchBar
+        params={searchParams}
+        onParamsChange={setSearchParams}
+        orderBy={orderBy}
+        onOrderByChange={setOrderBy}
+        scopeOptions={scopeOptions}
+      />
+
+      <WorkspacePageContent>
+        <IssueListPanel
           params={searchParams}
           onParamsChange={setSearchParams}
-          orderBy={orderBy}
-          onOrderByChange={setOrderBy}
-          scopeOptions={scopeOptions}
+          isLoading={paged.isLoading}
+          issues={paged.dataList}
+          selectedNames={selectedNames}
+          onToggleSelection={toggleSelection}
+          showProject
         />
-        <PresetButtons params={searchParams} onParamsChange={setSearchParams} />
-      </div>
-
-      <div className="mt-2">
-        {paged.isLoading ? (
-          <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-        ) : paged.dataList.length === 0 ? (
-          <div className="flex justify-center py-8 text-control-light">
-            {t("common.no-data")}
-          </div>
-        ) : (
-          paged.dataList.map((issue) => (
-            <IssueListItem
-              key={issue.name}
-              issue={issue}
-              selected={selectedNames.has(issue.name)}
-              onToggleSelection={toggleSelection}
-              highlightText={searchParams.query}
-              showProject
-            />
-          ))
-        )}
         {paged.dataList.length > 0 && (
-          <div className="mt-4 mx-2">
+          <WorkspacePageFooter className="px-2">
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}
@@ -231,9 +179,9 @@ export function MyIssuesPage() {
               isFetchingMore={paged.isFetchingMore}
               onLoadMore={paged.loadMore}
             />
-          </div>
+          </WorkspacePageFooter>
         )}
-      </div>
+      </WorkspacePageContent>
 
       {selectedIssues.length > 0 && (
         <BatchActionBar
@@ -254,6 +202,6 @@ export function MyIssuesPage() {
         onClose={() => setBatchAction(undefined)}
         onUpdated={handleBatchUpdated}
       />
-    </div>
+    </WorkspacePageLayout>
   );
 }

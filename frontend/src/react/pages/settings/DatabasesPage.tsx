@@ -26,8 +26,12 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/react/components/WorkspacePageLayout";
+import {
+  createAdvancedSearchParser,
+  serializeAdvancedSearch,
+  useURLSearchParam,
+} from "@/react/hooks/useURLSearchParam";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
@@ -56,6 +60,14 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 
+const parseDatabaseSearch = createAdvancedSearchParser([
+  "project",
+  "environment",
+  "instance",
+  "engine",
+  "label",
+]);
+
 export function DatabasesPage() {
   const { t } = useTranslation();
   const databasesByName = useAppStore((s) => s.databasesByName);
@@ -71,49 +83,6 @@ export function DatabasesPage() {
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
 
-  // Search state — default to showing unassigned databases from default project
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const currentRoute = router.currentRoute.value;
-    const hasQ = "q" in (currentRoute.query ?? {});
-    const queryString = (currentRoute.query.q as string) ?? "";
-    if (hasQ) {
-      // URL has an explicit `q` param (may be empty if the user cleared all
-      // filters) — parse it and do NOT re-apply the default project scope.
-      const scopes: { id: string; value: string }[] = [];
-      const queryParts: string[] = [];
-      for (const token of queryString.split(/\s+/).filter(Boolean)) {
-        const colonIdx = token.indexOf(":");
-        if (colonIdx > 0) {
-          const id = token.substring(0, colonIdx);
-          const value = token.substring(colonIdx + 1);
-          if (
-            value &&
-            ["project", "environment", "instance", "engine", "label"].includes(
-              id
-            )
-          ) {
-            scopes.push({ id, value });
-            continue;
-          }
-        }
-        queryParts.push(token);
-      }
-      return { query: queryParts.join(" "), scopes };
-    }
-    // First visit (no `q` in URL) — default to the unassigned project.
-    return {
-      query: "",
-      scopes: [
-        {
-          id: "project",
-          value: extractProjectResourceName(
-            useAppStore.getState().serverInfo?.defaultProject ?? ""
-          ),
-        },
-      ],
-    };
-  });
-
   const environments = useAppStore((s) => s.environmentList);
 
   // `serverInfo.defaultProject` is fetched asynchronously by the actuator
@@ -123,6 +92,21 @@ export function DatabasesPage() {
   const defaultProjectId = useAppStore((s) =>
     extractProjectResourceName(s.serverInfo?.defaultProject ?? "")
   );
+  const defaultSearchParams = useMemo<SearchParams>(
+    () => ({
+      query: "",
+      scopes: defaultProjectId
+        ? [{ id: "project", value: defaultProjectId }]
+        : [],
+    }),
+    [defaultProjectId]
+  );
+  const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
+    param: "q",
+    parse: parseDatabaseSearch,
+    serialize: serializeAdvancedSearch,
+    defaultValue: defaultSearchParams,
+  });
   // Shared "Unassigned" option used both by the dropdown (via onSearch) and
   // by the selected-tag display (via the scope's static `options`). `custom`
   // hides the raw "default-<random>" id from the dropdown so users only see
@@ -304,40 +288,6 @@ export function DatabasesPage() {
       });
     }
   }, []);
-
-  // Backfill the project scope once the actuator's default project ID
-  // arrives. The initial `useState` initializer reads the actuator
-  // synchronously — if it hasn't finished fetching yet, the project value
-  // is captured as "" and the API filter becomes broken (`projects/`).
-  useEffect(() => {
-    if (!defaultProjectId) return;
-    setSearchParams((prev) => {
-      const projectScope = prev.scopes.find((s) => s.id === "project");
-      if (!projectScope || projectScope.value !== "") return prev;
-      return {
-        ...prev,
-        scopes: prev.scopes.map((s) =>
-          s.id === "project" && s.value === ""
-            ? { ...s, value: defaultProjectId }
-            : s
-        ),
-      };
-    });
-  }, [defaultProjectId]);
-
-  // Sync search state to URL
-  useEffect(() => {
-    const parts: string[] = [];
-    for (const scope of searchParams.scopes) {
-      parts.push(`${scope.id}:${scope.value}`);
-    }
-    if (searchParams.query) parts.push(searchParams.query);
-    const queryString = parts.join(" ");
-    const currentQuery = router.currentRoute.value.query.q as string;
-    if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: { q: queryString } });
-    }
-  }, [searchParams]);
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());

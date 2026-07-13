@@ -1,5 +1,10 @@
 import { type LucideIcon, MoreHorizontal } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import {
+  type CSSProperties,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -99,6 +104,42 @@ function useSelectionMaxVisible(): number {
 const DESTRUCTIVE_TONE_CLASS =
   "border-error text-error hover:bg-error/10 hover:text-error focus-visible:ring-error";
 
+function useFixedPositionStyle(enabled: boolean): CSSProperties | undefined {
+  const [style, setStyle] = useState<CSSProperties>();
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+
+    const main = document.getElementById("bb-layout-main");
+    if (!main) {
+      setStyle({ left: "50%", maxWidth: "calc(100vw - 2rem)" });
+      return;
+    }
+
+    const update = () => {
+      const rect = main.getBoundingClientRect();
+      setStyle({
+        left: rect.left + rect.width / 2,
+        maxWidth: Math.max(0, rect.width - 32),
+      });
+    };
+
+    update();
+    // Observing the main pane tracks sidebar collapse/expand as well as
+    // window resizes; the extra resize listener covers pure horizontal
+    // shifts where the pane's size stays the same.
+    const observer = new ResizeObserver(update);
+    observer.observe(main);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [enabled]);
+
+  return enabled ? style : undefined;
+}
+
 export function SelectionActionBar({
   count,
   label,
@@ -110,6 +151,7 @@ export function SelectionActionBar({
   const { t } = useTranslation();
   const defaultMaxVisible = useSelectionMaxVisible();
   const maxVisible = maxVisibleActions ?? defaultMaxVisible;
+  const fixedStyle = useFixedPositionStyle(count > 0);
 
   if (count <= 0) return null;
 
@@ -120,11 +162,12 @@ export function SelectionActionBar({
   return (
     <div
       className={cn(
-        "sticky bottom-6 mx-auto w-fit max-w-full",
+        "fixed bottom-6 w-fit max-w-full -translate-x-1/2",
         "flex items-center gap-x-3 rounded-full bg-background border border-control-border shadow-lg",
         "px-4 py-2",
         LAYER_SURFACE_CLASS
       )}
+      style={fixedStyle}
     >
       {/* Leading cluster — never shrinks; stays visible on narrow viewports
           even when the actions group has to scroll horizontally. */}
