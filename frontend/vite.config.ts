@@ -26,12 +26,19 @@ export default defineConfig({
       // pulled Chrome 39-60 above the threshold, which made the babel pass
       // in plugin-legacy's renderChunk down-level every chunk to ES5 and
       // took the release build from ~2.5min to ~32min (13x).
+      // (and_qq/and_uc from the old resolution are omitted: babel's
+      // browserNameMap has no entry for them, so they never influenced
+      // the transforms. ios 11 dominates the transform/polyfill union.)
       targets: [
         "chrome >= 103",
         "edge >= 100",
         "firefox >= 115",
         "safari >= 15",
         "ios >= 11",
+        "android >= 103",
+        "samsung >= 29",
+        "opera >= 99",
+        "op_mob >= 80",
       ],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
     }),
