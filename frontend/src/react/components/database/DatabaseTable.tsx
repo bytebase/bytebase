@@ -34,6 +34,7 @@ export interface DatabaseTableProps {
    */
   onDatabasesChange?: (databases: Database[]) => void;
   refreshToken?: number;
+  emptyPlaceholder?: React.ReactNode;
 }
 
 function databaseFilterKey(filter: DatabaseFilter | string | undefined) {
@@ -68,6 +69,7 @@ export function DatabaseTable({
   onSelectedNamesChange,
   onDatabasesChange,
   refreshToken,
+  emptyPlaceholder,
 }: DatabaseTableProps) {
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,11 @@ export function DatabaseTable({
         databases={databases}
         mode={mode}
         loading={loading}
+        emptyPlaceholder={
+          !loading && databases.length === 0 && !hasMore
+            ? emptyPlaceholder
+            : undefined
+        }
         selectedNames={selectedNames}
         onSelectedNamesChange={onSelectedNamesChange}
         sort={sort}

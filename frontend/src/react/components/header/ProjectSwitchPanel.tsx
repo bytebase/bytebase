@@ -247,8 +247,9 @@ export function ProjectSwitchPanel({
         </div>
 
         <TabsPanel value="recent" className="mt-0">
-          <div className="max-h-[26rem] overflow-auto">
+          <div className="max-h-[26rem] overflow-y-auto overflow-x-hidden">
             <ProjectTable
+              className="table-fixed"
               projectList={filteredRecentProjectList}
               currentProject={currentProject}
               keyword={searchText}
@@ -259,8 +260,9 @@ export function ProjectSwitchPanel({
         </TabsPanel>
 
         <TabsPanel value="all" className="mt-0">
-          <div className="max-h-[26rem] overflow-auto">
+          <div className="max-h-[26rem] overflow-y-auto overflow-x-hidden">
             <ProjectTable
+              className="table-fixed"
               projectList={allProjects}
               currentProject={currentProject}
               keyword={searchText}

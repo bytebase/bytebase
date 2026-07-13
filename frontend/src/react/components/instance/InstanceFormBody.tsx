@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
@@ -17,6 +17,7 @@ import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { RouterLink } from "@/react/components/RouterLink";
+import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -29,11 +30,13 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
+  projectNamePrefix,
 } from "@/store/modules/v1/common";
 import {
   isValidEnvironmentName,
@@ -59,6 +62,10 @@ import {
   supportedEngineV1List,
   urlfy,
 } from "@/utils";
+import {
+  type ConnectionFailureCategory,
+  ConnectionRecovery,
+} from "./ConnectionRecovery";
 import type { EditDataSource } from "./common";
 import { hasSslConfig } from "./common";
 import {
@@ -403,12 +410,14 @@ function SyncDatabases({
   isCreating: isCreatingProp,
   showLabel,
   allowEdit,
+  projectName,
   syncDatabases,
   onSyncDatabasesChange,
 }: {
   isCreating: boolean;
   showLabel: boolean;
   allowEdit: boolean;
+  projectName?: string;
   syncDatabases: string[];
   onSyncDatabasesChange: (databases: string[]) => void;
 }) {
@@ -424,6 +433,11 @@ function SyncDatabases({
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [inputDatabase, setInputDatabase] = useState("");
+  const [visibleDatabaseCount, setVisibleDatabaseCount] = useState(
+    MAX_VISIBLE_DATABASES
+  );
+  const pendingScrollDatabaseRef = useRef<string | null>(null);
+  const firstNewDatabaseRef = useRef<HTMLLabelElement | null>(null);
 
   // Notify parent only when selection actually changes.
   const onSyncDatabasesChangeRef = useRef(onSyncDatabasesChange);
@@ -461,16 +475,26 @@ function SyncDatabases({
     };
   }, [syncAll, isCreatingProp, pendingCreateInstance, instance]);
 
+  useEffect(() => {
+    setVisibleDatabaseCount(MAX_VISIBLE_DATABASES);
+  }, [databaseList, searchText]);
+
+  useEffect(() => {
+    if (!pendingScrollDatabaseRef.current) return;
+    firstNewDatabaseRef.current?.scrollIntoView({ block: "nearest" });
+    pendingScrollDatabaseRef.current = null;
+    firstNewDatabaseRef.current = null;
+  }, [visibleDatabaseCount]);
+
   if (hideAdvancedFeatures) return null;
 
   const lowerSearch = searchText.toLowerCase();
   const filteredDatabases = lowerSearch
     ? [...databaseList].filter((db) => db.toLowerCase().includes(lowerSearch))
     : [...databaseList];
-  const hasMore = filteredDatabases.length > MAX_VISIBLE_DATABASES;
-  const visibleDatabases = hasMore
-    ? filteredDatabases.slice(0, MAX_VISIBLE_DATABASES)
-    : filteredDatabases;
+  const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
+  const hasMore = filteredDatabases.length > visibleDatabaseCount;
+  const hasProjectContext = !!projectName && isCreatingProp;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -495,6 +519,12 @@ function SyncDatabases({
     });
   };
 
+  const loadMoreDatabases = () => {
+    pendingScrollDatabaseRef.current =
+      filteredDatabases[visibleDatabaseCount] ?? null;
+    setVisibleDatabaseCount((count) => count + MAX_VISIBLE_DATABASES);
+  };
+
   return (
     <FormField
       className="sm:col-span-4 sm:col-start-1"
@@ -504,13 +534,35 @@ function SyncDatabases({
       }
     >
       <div className="flex flex-col gap-y-2">
+        {hasProjectContext && (
+          <Alert variant="info">
+            <Trans
+              t={t}
+              i18nKey="instance.sync-databases.project-description"
+              values={{ project: projectName }}
+              components={{
+                project: (
+                  <ResourceLink
+                    resource={projectName || ""}
+                    showResourceType={false}
+                    className="underline underline-offset-2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                ),
+              }}
+            />
+          </Alert>
+        )}
         <label className="flex items-center gap-x-2 cursor-pointer">
           <Checkbox
             checked={syncAll}
             disabled={!allowEdit}
             onCheckedChange={(checked) => setSyncAll(checked)}
           />
-          {t("instance.sync-databases.sync-all")}
+          {hasProjectContext
+            ? t("instance.sync-databases.project-sync-all")
+            : t("instance.sync-databases.sync-all")}
         </label>
         {!syncAll && (
           <div>
@@ -530,6 +582,11 @@ function SyncDatabases({
                   {visibleDatabases.map((db) => (
                     <label
                       key={db}
+                      ref={(element) => {
+                        if (db === pendingScrollDatabaseRef.current) {
+                          firstNewDatabaseRef.current = element;
+                        }
+                      }}
                       className="flex items-center gap-x-2 cursor-pointer text-sm"
                     >
                       <Checkbox
@@ -542,11 +599,15 @@ function SyncDatabases({
                   ))}
                 </div>
                 {hasMore && (
-                  <div className="text-xs text-control-light">
-                    {t("common.n-more", {
-                      n: filteredDatabases.length - MAX_VISIBLE_DATABASES,
-                    })}
-                  </div>
+                  <Button
+                    type="button"
+                    appearance="secondary"
+                    size="sm"
+                    className="self-start"
+                    onClick={loadMoreDatabases}
+                  >
+                    {t("common.load-more")}
+                  </Button>
                 )}
                 <Input
                   value={inputDatabase}
@@ -611,6 +672,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     useState(false);
   const [isConnectionOptionsCollapsed, setIsConnectionOptionsCollapsed] =
     useState(true);
+  const [testConnectionFailure, setTestConnectionFailure] = useState<
+    | {
+        message: string;
+        failureCategory: ConnectionFailureCategory;
+      }
+    | undefined
+  >();
 
   // Auto-expand connection options when configured
   const showConnectionOptionsCard =
@@ -689,6 +757,25 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     if (id === String(UNKNOWN_ID)) return "";
     return id;
   }, [basicInfo.name]);
+
+  const routeProjectId = useMemo(() => {
+    const projectId = router.currentRoute.value.query.project;
+    return typeof projectId === "string" && projectId ? projectId : undefined;
+  }, []);
+  const routeProjectName = routeProjectId
+    ? `${projectNamePrefix}${routeProjectId}`
+    : "";
+
+  useEffect(() => {
+    if (!routeProjectName) return;
+    useAppStore
+      .getState()
+      .fetchProject(routeProjectName, true)
+      .catch(() => {
+        // Ignore prefetch failure. The instance creation request still uses the
+        // route project name directly.
+      });
+  }, [routeProjectName]);
 
   const setResourceId = useCallback(
     (id: string) => {
@@ -983,8 +1070,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const testConnectionForCurrentEditingDS = useCallback(async () => {
     const ds = editingDataSource;
     if (!ds) return;
+    setTestConnectionFailure(undefined);
     const result = await testConnection(ds, false);
-    if (!result.success && hasConfiguredConnectionOptions) {
+    if (result.success) {
+      return;
+    }
+    setTestConnectionFailure({
+      message: result.message,
+      failureCategory: result.failureCategory,
+    });
+    if (hasConfiguredConnectionOptions) {
       emitShowConnectionOptions();
     }
   }, [
@@ -1295,6 +1390,18 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           <h3 className="text-base font-medium text-main">
             {t("instance.section.connection")}
           </h3>
+          {isSaaSMode && (
+            <Alert variant="info" className="mt-2">
+              <a
+                href="https://docs.bytebase.com/get-started/cloud#prerequisites"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="normal-link"
+              >
+                {t("instance.sentence.firewall-info")}
+              </a>
+            </Alert>
+          )}
 
           <div className="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
             {/* Host input */}
@@ -1577,18 +1684,18 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 onOpenInfoPanel={onOpenInfoPanel}
               />
 
-              {isSaaSMode && (
-                <Alert variant="info" className="mt-4">
-                  <a
-                    href="https://docs.bytebase.com/get-started/cloud#prerequisites"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="normal-link"
-                  >
-                    {t("instance.sentence.firewall-info")}
-                  </a>
-                </Alert>
-              )}
+              <div className="mt-6">
+                <SyncDatabases
+                  isCreating={isCreating}
+                  showLabel
+                  allowEdit={
+                    isCreating ? allowEdit && !!allowCreate : allowEdit
+                  }
+                  projectName={routeProjectName}
+                  syncDatabases={basicInfo.syncDatabases}
+                  onSyncDatabasesChange={handleChangeSyncDatabases}
+                />
+              </div>
             </>
           )}
 
@@ -1651,7 +1758,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
         {/* Test Connection button (create only) */}
         {isCreating && !!editingDataSource && (
-          <div className="flex justify-start">
+          <div className="flex flex-col items-start gap-y-2">
             <Button
               appearance="outline"
               disabled={!allowTestConnection || state.isTestingConnection}
@@ -1664,6 +1771,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 ? `${t("instance.test-connection")}...`
                 : t("instance.test-connection")}
             </Button>
+            {testConnectionFailure && (
+              <ConnectionRecovery
+                category={testConnectionFailure.failureCategory}
+                className="max-w-3xl"
+              />
+            )}
           </div>
         )}
       </div>

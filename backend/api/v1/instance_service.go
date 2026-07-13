@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -41,6 +42,118 @@ type InstanceService struct {
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
+}
+
+const (
+	connectionCategoryHeader             = "bytebase-connection-failure-category"
+	connectionCategoryNetworkUnreachable = "network_unreachable"
+	connectionCategoryAuthFailed         = "auth_failed"
+	connectionCategoryPermissionDenied   = "permission_denied"
+	connectionCategorySSLTLSFailed       = "ssl_tls_failed"
+	connectionCategoryTimeout            = "timeout"
+	connectionCategoryUnsupportedEngine  = "unsupported_engine"
+	connectionCategoryUnknown            = "unknown"
+	connectionCategorySuccess            = "success"
+)
+
+func newConnectionTestErrorWithCategory(code connect.Code, err error, category string, format string, args ...any) *connect.Error {
+	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
+	connectErr.Meta().Set(connectionCategoryHeader, category)
+	return connectErr
+}
+
+func classifyConnectionFailure(err error) string {
+	if err == nil {
+		return connectionCategoryUnknown
+	}
+	text := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(text, "timeout"),
+		strings.Contains(text, "timed out"),
+		strings.Contains(text, "deadline exceeded"):
+		return connectionCategoryTimeout
+	case strings.Contains(text, "ssl"),
+		strings.Contains(text, "tls"),
+		strings.Contains(text, "certificate"),
+		strings.Contains(text, "x509"):
+		return connectionCategorySSLTLSFailed
+	case strings.Contains(text, "permission denied"),
+		strings.Contains(text, "insufficient permission"),
+		strings.Contains(text, "insufficient privilege"),
+		strings.Contains(text, "not authorized"):
+		return connectionCategoryPermissionDenied
+	case strings.Contains(text, "password"),
+		strings.Contains(text, "authentication"),
+		strings.Contains(text, "auth failed"),
+		strings.Contains(text, "login failed"),
+		strings.Contains(text, "invalid credential"),
+		strings.Contains(text, "invalid password"),
+		strings.Contains(text, "access denied"):
+		return connectionCategoryAuthFailed
+	case strings.Contains(text, "unsupported"):
+		return connectionCategoryUnsupportedEngine
+	case strings.Contains(text, "network"),
+		strings.Contains(text, "unreachable"),
+		strings.Contains(text, "no route"),
+		strings.Contains(text, "no such host"),
+		strings.Contains(text, "unknown host"),
+		strings.Contains(text, "enotfound"),
+		strings.Contains(text, "econnrefused"),
+		strings.Contains(text, "connection refused"),
+		strings.Contains(text, "connection reset"),
+		strings.Contains(text, "could not translate host"):
+		return connectionCategoryNetworkUnreachable
+	default:
+		return connectionCategoryUnknown
+	}
+}
+
+func buildInstanceConnectionLogAttrs(source string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) []slog.Attr {
+	attrs := []slog.Attr{
+		slog.String("source", source),
+		slog.String("category", category),
+		slog.Int64("elapsed_ms", elapsed.Milliseconds()),
+		slog.Bool("has_ssl", hasDataSourceSSL(dataSource)),
+		slog.Bool("has_ssh", hasDataSourceSSH(dataSource)),
+		slog.Bool("has_external_secret", dataSource.GetExternalSecret() != nil),
+	}
+	if instance != nil {
+		attrs = append(attrs, slog.String("engine", instance.Metadata.GetEngine().String()))
+	}
+	if dataSource != nil {
+		attrs = append(attrs, slog.String("data_source_type", dataSource.GetType().String()))
+	}
+	return attrs
+}
+
+func hasDataSourceSSL(dataSource *storepb.DataSource) bool {
+	return dataSource.GetUseSsl() ||
+		dataSource.GetSslCa() != "" ||
+		dataSource.GetObfuscatedSslCa() != "" ||
+		dataSource.GetSslCert() != "" ||
+		dataSource.GetObfuscatedSslCert() != "" ||
+		dataSource.GetSslKey() != "" ||
+		dataSource.GetObfuscatedSslKey() != "" ||
+		dataSource.GetSslCaPath() != "" ||
+		dataSource.GetObfuscatedSslCaPath() != "" ||
+		dataSource.GetSslCertPath() != "" ||
+		dataSource.GetObfuscatedSslCertPath() != "" ||
+		dataSource.GetSslKeyPath() != "" ||
+		dataSource.GetObfuscatedSslKeyPath() != ""
+}
+
+func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
+	return dataSource.GetSshHost() != "" ||
+		dataSource.GetSshPort() != "" ||
+		dataSource.GetSshUser() != "" ||
+		dataSource.GetSshPassword() != "" ||
+		dataSource.GetObfuscatedSshPassword() != "" ||
+		dataSource.GetSshPrivateKey() != "" ||
+		dataSource.GetObfuscatedSshPrivateKey() != ""
+}
+
+func logInstanceConnection(ctx context.Context, source string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) {
+	slog.LogAttrs(ctx, slog.LevelInfo, "instance connection check completed", buildInstanceConnectionLogAttrs(source, category, instance, dataSource, elapsed)...)
 }
 
 // NewInstanceService creates a new InstanceService.
@@ -179,6 +292,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
+	initialProjectID, err := s.getInitialDatabaseProjectID(ctx, req.Msg.GetProject())
+	if err != nil {
+		return nil, err
+	}
 	for _, ds := range instanceMessage.Metadata.GetDataSources() {
 		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -192,6 +309,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if req.Msg.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
 			err := func() error {
+				start := time.Now()
 				driver, err := s.dbFactory.GetDataSourceDriver(
 					ctx, instanceMessage, ds,
 					db.ConnectionContext{
@@ -199,12 +317,17 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 					},
 				)
 				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
+					category := classifyConnectionFailure(err)
+					logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, category, instanceMessage, ds, time.Since(start))
+					return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
 				}
 				defer driver.Close(ctx)
 				if err := driver.Ping(ctx); err != nil {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", ds.GetType()))
+					category := classifyConnectionFailure(err)
+					logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, category, instanceMessage, ds, time.Since(start))
+					return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", ds.GetType())
 				}
+				logInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, connectionCategorySuccess, instanceMessage, ds, time.Since(start))
 				return nil
 			}()
 			if err != nil {
@@ -231,7 +354,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, _, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, _, _, err := s.schemaSyncer.SyncInstanceWithOptions(ctx, instance, schemasync.SyncInstanceOptions{
+			InitialProjectID: initialProjectID,
+		})
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
@@ -245,6 +370,27 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+func (s *InstanceService) getInitialDatabaseProjectID(ctx context.Context, projectName string) (string, error) {
+	if projectName == "" {
+		return "", nil
+	}
+	projectID, err := common.GetProjectID(projectName)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid project %q", projectName))
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+	})
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, err)
+	}
+	if project == nil || project.Deleted {
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectName))
+	}
+	return project.ResourceID, nil
 }
 
 func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Instance) *store.InstanceMessage {
@@ -847,6 +993,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	// Test connection.
 	if req.Msg.ValidateOnly {
 		err := func() error {
+			start := time.Now()
 			driver, err := s.dbFactory.GetDataSourceDriver(
 				ctx, instance, dataSource,
 				db.ConnectionContext{
@@ -854,12 +1001,17 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 				},
 			)
 			if err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
+				category := classifyConnectionFailure(err)
+				logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, category, instance, dataSource, time.Since(start))
+				return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
+				category := classifyConnectionFailure(err)
+				logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, category, instance, dataSource, time.Since(start))
+				return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", dataSource.GetType())
 			}
+			logInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, connectionCategorySuccess, instance, dataSource, time.Since(start))
 			return nil
 		}()
 		if err != nil {
@@ -1069,17 +1221,23 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	// Test connection.
 	if req.Msg.ValidateOnly {
 		err := func() error {
+			start := time.Now()
 			driver, err := s.dbFactory.GetDataSourceDriver(
 				ctx, instance, dataSource,
 				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
 			)
 			if err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
+				category := classifyConnectionFailure(err)
+				logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, category, instance, dataSource, time.Since(start))
+				return newConnectionTestErrorWithCategory(connect.CodeInternal, err, category, "failed to get database driver")
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
+				category := classifyConnectionFailure(err)
+				logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, category, instance, dataSource, time.Since(start))
+				return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, category, "invalid datasource %s", dataSource.GetType())
 			}
+			logInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, connectionCategorySuccess, instance, dataSource, time.Since(start))
 			return nil
 		}()
 		if err != nil {

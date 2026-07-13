@@ -429,6 +429,10 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	}
 	shortMethod := methodTokens[2]
 
+	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
+		return []string{""}, nil
+	}
+
 	var resources []string
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {

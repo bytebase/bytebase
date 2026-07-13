@@ -672,6 +672,7 @@
     "column": "Columna",
     "columns": "Columnas",
     "comment": "Comentario",
+    "connect-databases": "Conectar bases de datos",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",
     "edit-labels": "Editar etiquetas",
@@ -808,6 +809,13 @@
     "packages": "Paquetes",
     "partitions": "Particiones",
     "procedures": "Procedimientos",
+    "project-instance-synced-action": "Crear primer cambio",
+    "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza con un cambio de base de datos gobernado cuando estés listo.",
+    "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
+    "project-instance-synced-title": "Base de datos conectada",
+    "project-instance-syncing-description": "Esto puede tardar de unos segundos a unos minutos. Puedes actualizar esta página más tarde.",
+    "project-instance-syncing-empty": "Las bases de datos aún se están sincronizando. Actualiza esta página en un momento para verlas aquí.",
+    "project-instance-syncing-title": "Las bases de datos de {{instance}} se están sincronizando.",
     "schema": {
       "default": "Esquema predeterminado"
     },
@@ -932,8 +940,76 @@
       "psc": "Private Service Connect (PSC)",
       "public": "IP pública"
     },
+    "connect-database-to-project": "Conectar base de datos al proyecto",
+    "connecting-database-to-project": "Conectando base de datos...",
     "connection-info": "Información de conexión",
     "connection-options": "Opciones de conexión",
+    "connection-recovery": {
+      "auth": {
+        "description": "Verifica el usuario, la contraseña, el token o la configuración de autenticación IAM y vuelve a probar la conexión.",
+        "steps": {
+          "credentials": "Confirma que el usuario, la contraseña, el token o el valor del gestor de secretos estén actualizados.",
+          "method": "Comprueba que el método de autenticación seleccionado coincida con la configuración de la base de datos.",
+          "retry": "Si las credenciales rotan fuera de Bytebase, actualiza la fuente del secreto antes de reintentar."
+        },
+        "title": "Revisar credenciales de base de datos"
+      },
+      "docs": "Abrir guía de conexión",
+      "network": {
+        "description": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
+        "steps": {
+          "address": "Verifica que el host o socket y el puerto coincidan con el endpoint de la base de datos.",
+          "firewall": "Si usas Bytebase Cloud, agrega la IP requerida de Cloud a la lista permitida del firewall de la base de datos.",
+          "private-network": "Para una base de datos privada, configura primero VPN, red privada o túnel SSH."
+        },
+        "title": "Revisar alcance de red"
+      },
+      "permission": {
+        "description": "Usa una cuenta con los privilegios de base de datos necesarios para leer metadatos de esquema y ejecutar los flujos de trabajo que planeas usar.",
+        "steps": {
+          "account": "Usa una cuenta de base de datos que pueda leer metadatos de esquema.",
+          "database": "Confirma que las bases de datos de destino sean visibles para esta cuenta.",
+          "workflow": "Concede privilegios adicionales solo para los flujos que planeas usar, como cambios de esquema o SQL Editor."
+        },
+        "title": "Revisar permisos de base de datos"
+      },
+      "timeout": {
+        "description": "La base de datos no respondió a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "steps": {
+          "load": "Confirma que la base de datos esté en línea y acepte nuevas conexiones.",
+          "retry": "Si la base de datos está detrás de un firewall, completa primero la lista permitida o el túnel.",
+          "route": "Revisa rutas, proxy, túnel, puerto y configuración de tiempo de espera."
+        },
+        "title": "Revisar firewall y rutas"
+      },
+      "tls": {
+        "description": "Revisa el modo SSL/TLS, certificados, nombre del servidor y configuración de CA, y vuelve a probar la conexión.",
+        "steps": {
+          "certificates": "Verifica los valores o rutas de CA, certificado de cliente y clave.",
+          "hostname": "Confirma que el certificado coincida con el nombre del servidor.",
+          "mode": "Revisa el modo SSL/TLS requerido por la base de datos, como require o verify-full."
+        },
+        "title": "Revisar configuración SSL/TLS"
+      },
+      "unknown": {
+        "description": "Empieza por los datos básicos de conexión y luego usa la guía para opciones específicas del motor.",
+        "steps": {
+          "fields": "Revisa host, puerto, usuario, contraseña o fuente de secreto y modo SSL/TLS.",
+          "help": "Si la base de datos es privada, configura VPN, red privada o túnel SSH antes de reintentar.",
+          "logs": "Si la base de datos tiene reglas de firewall, permite conexiones desde Bytebase Cloud o la red donde está desplegado Bytebase."
+        },
+        "title": "Revisar configuración de conexión"
+      },
+      "unsupported": {
+        "description": "El motor seleccionado no coincide con la base de datos de destino, o este motor/versión aún no está soportado.",
+        "steps": {
+          "engine": "Confirma que el motor de base de datos seleccionado coincida con la base de datos de destino.",
+          "retry": "Selecciona otro motor o actualiza la configuración de conexión y vuelve a intentarlo.",
+          "version": "Revisa si Bytebase soporta este motor o versión."
+        },
+        "title": "Revisar soporte del motor de base de datos"
+      }
+    },
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",
     "default-role": "Rol predeterminado",
@@ -1169,7 +1245,9 @@
     },
     "sync-databases": {
       "add-database": "+ Agregar base de datos, presione enter para enviar",
-      "description": "Sincronizar sólo bases de datos seleccionadas.",
+      "description": "Elige qué bases de datos sincronizar desde esta instancia.",
+      "project-description": "Las bases de datos sincronizadas se agregarán a <project>{{project}}</project>.",
+      "project-sync-all": "Sincronizar todas las bases de datos con este proyecto",
       "search-database": "Buscar en la base de datos",
       "self": "Sincronizar bases de datos",
       "sync-all": "Sincronizar todas las bases de datos"
@@ -1668,6 +1746,8 @@
     }
   },
   "project": {
+    "add-database": "Agregar base de datos",
+    "add-database-empty-placeholder": "Agrega una base de datos de una instancia existente a este proyecto",
     "batch": {
       "archive": {
         "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas.",
@@ -1687,6 +1767,10 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       }
     },
+    "connect-database": "Conectar base de datos",
+    "connect-database-empty-placeholder": "Conecta una instancia para sincronizar bases de datos en este proyecto",
+    "connect-database-intro-description": "Conecta una base de datos para que Bytebase pueda sincronizarla en este proyecto.",
+    "connect-database-intro-title": "Conecta tu primera base de datos",
     "create-modal": {
       "project-name": "Proyecto Nombre",
       "success-prompt": "Proyecto {{name}} creado exitosamente."
@@ -2481,6 +2565,7 @@
       "workload-identity-tag-hint": "Dejar vacío para permitir todas las etiquetas"
     },
     "profile": {
+      "default-project-name": "Nuevo proyecto",
       "display-name": "Su nombre",
       "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
@@ -2493,9 +2578,10 @@
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "role": "Rol",
       "setup-failed": "Error al actualizar el perfil.",
+      "setup-first-project": "Configurar el primer proyecto",
       "setup-skip": "Lo haré después",
       "setup-success": "Perfil actualizado.",
-      "setup-title": "¡Bienvenido! Configure su perfil",
+      "setup-title": "¡Bienvenido! Configure su espacio de trabajo",
       "subscription": "(Actualice para habilitar la gestión de roles)",
       "workspace-name": "Nombre del espacio de trabajo",
       "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"

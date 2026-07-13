@@ -1,5 +1,12 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { memo, useCallback, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentBadge } from "@/react/components/EnvironmentLabel";
@@ -10,6 +17,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableEmptyView,
   TableHead,
   TableHeader,
   TableRow,
@@ -46,6 +54,7 @@ interface DatabaseTableViewProps {
   databases: Database[];
   mode?: DatabaseTableMode;
   loading?: boolean;
+  emptyPlaceholder?: React.ReactNode;
   /** Selection — pass both to enable the checkbox column. */
   selectedNames?: Set<string>;
   onSelectedNamesChange?: (names: Set<string>) => void;
@@ -90,6 +99,7 @@ export function DatabaseTableView({
   databases,
   mode = "ALL",
   loading = false,
+  emptyPlaceholder,
   selectedNames,
   onSelectedNamesChange,
   sort,
@@ -97,6 +107,10 @@ export function DatabaseTableView({
   onRowClick,
 }: DatabaseTableViewProps) {
   const { t } = useTranslation();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [visibleTableWidth, setVisibleTableWidth] = useState<
+    number | undefined
+  >();
 
   // Lift environment + feature lookups to the table level so the per-row
   // env cell doesn't subscribe to Zustand or run a `.find()` per render.
@@ -303,8 +317,31 @@ export function DatabaseTableView({
 
   const totalColumnCount = columns.length + (showSelection ? 1 : 0);
 
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateVisibleWidth = () => {
+      setVisibleTableWidth(container.clientWidth || undefined);
+    };
+    updateVisibleWidth();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(updateVisibleWidth);
+      resizeObserver.observe(container);
+      return () => resizeObserver.disconnect();
+    }
+
+    window.addEventListener("resize", updateVisibleWidth);
+    return () => window.removeEventListener("resize", updateVisibleWidth);
+  }, []);
+
   return (
-    <div className="overflow-x-auto border rounded-sm">
+    <div
+      ref={scrollContainerRef}
+      data-testid="database-table-scroll-container"
+      className="overflow-x-auto border rounded-sm"
+    >
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {showSelection && <col style={{ width: "48px" }} />}
@@ -372,14 +409,16 @@ export function DatabaseTableView({
               </TableCell>
             </TableRow>
           ) : databases.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={totalColumnCount}
-                className="py-8 text-center text-control-placeholder"
-              >
-                {t("common.no-data")}
-              </TableCell>
-            </TableRow>
+            <TableEmptyView
+              colSpan={totalColumnCount}
+              contentTestId="database-table-empty-placeholder"
+              contentClassName="sticky left-0"
+              contentStyle={
+                visibleTableWidth ? { width: visibleTableWidth } : undefined
+              }
+            >
+              {emptyPlaceholder ?? t("common.no-data")}
+            </TableEmptyView>
           ) : (
             databases.map((db) => (
               <DatabaseRowView

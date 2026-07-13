@@ -321,4 +321,31 @@ describe("ProjectSwitchPanel", () => {
     expect(mocks.close).toHaveBeenCalled();
     unmount();
   });
+
+  test("keeps project lists constrained to vertical scrolling", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSwitchPanel
+        onClose={mocks.close}
+        onRequestCreate={mocks.requestCreate}
+      />
+    );
+
+    render();
+
+    const scrollContainers = Array.from(
+      container.querySelectorAll("div")
+    ).filter((div) => div.className.includes("max-h-[26rem]"));
+    expect(scrollContainers).toHaveLength(2);
+    for (const scrollContainer of scrollContainers) {
+      expect(scrollContainer.className).toContain("overflow-y-auto");
+      expect(scrollContainer.className).toContain("overflow-x-hidden");
+      expect(scrollContainer.className).not.toContain("overflow-auto");
+    }
+
+    for (const table of container.querySelectorAll("table")) {
+      expect(table.className).toContain("table-fixed");
+    }
+
+    unmount();
+  });
 });

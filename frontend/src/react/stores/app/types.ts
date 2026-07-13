@@ -438,7 +438,8 @@ export type InstanceSlice = {
   ) => Promise<Instance>;
   createInstance: (
     instance: Instance,
-    validateOnly?: boolean
+    validateOnly?: boolean,
+    options?: { project?: string }
   ) => Promise<Instance>;
   updateInstance: (
     instance: Instance,

@@ -295,8 +295,20 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 	return instanceMeta, nil
 }
 
+// SyncInstanceOptions controls one-off sync behavior.
+type SyncInstanceOptions struct {
+	// InitialProjectID assigns newly discovered databases to this project.
+	// Empty means the workspace default project.
+	InitialProjectID string
+}
+
 // SyncInstance syncs the schema for all databases in an instance.
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
+	return s.SyncInstanceWithOptions(ctx, instance, SyncInstanceOptions{})
+}
+
+// SyncInstanceWithOptions syncs the schema for all databases in an instance with one-off options.
+func (s *Syncer) SyncInstanceWithOptions(ctx context.Context, instance *store.InstanceMessage, options SyncInstanceOptions) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
@@ -325,6 +337,14 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 	var newDatabases []*store.DatabaseMessage
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
+	databaseProjectID := options.InitialProjectID
+	if databaseProjectID == "" {
+		var err error
+		databaseProjectID, err = s.store.GetDefaultProjectID(ctx, instance.Workspace)
+		if err != nil {
+			return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
+		}
+	}
 
 	for _, databaseMetadata := range instanceMeta.Databases {
 		if len(instance.Metadata.GetSyncDatabases()) > 0 && !slices.Contains(instance.Metadata.GetSyncDatabases(), databaseMetadata.Name) {
@@ -334,15 +354,10 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		idx := slices.IndexFunc(databases, func(db *store.DatabaseMessage) bool { return db.DatabaseName == databaseMetadata.Name })
 
 		if idx < 0 {
-			// Create the database in the default project.
-			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, instance.Workspace)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
-			}
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				ProjectID:    defaultProjectID,
+				ProjectID:    databaseProjectID,
 			})
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)

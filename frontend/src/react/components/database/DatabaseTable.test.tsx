@@ -57,9 +57,18 @@ vi.mock("@/react/hooks/usePagedData", () => ({
 }));
 
 vi.mock("./DatabaseTableView", () => ({
-  DatabaseTableView: ({ databases }: { databases: Database[] }) => (
+  DatabaseTableView: ({
+    databases,
+    emptyPlaceholder,
+  }: {
+    databases: Database[];
+    emptyPlaceholder?: React.ReactNode;
+  }) => (
     <div data-testid="database-names">
       {databases.map((database) => database.name).join(",")}
+      {emptyPlaceholder && (
+        <div data-testid="empty-placeholder">{emptyPlaceholder}</div>
+      )}
     </div>
   ),
 }));
@@ -142,5 +151,57 @@ describe("DatabaseTable", () => {
     expect(
       container.querySelector("[data-testid='database-names']")?.textContent
     ).toBe(`${db1.name},${db2.name}`);
+  });
+
+  test("forwards empty placeholder only after a truly empty page loads", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mocks.fetchDatabases.mockResolvedValueOnce({
+      databases: [],
+      nextPageToken: "",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable
+          filter={{}}
+          parent="instances/i"
+          emptyPlaceholder={<button type="button">connect database</button>}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector("[data-testid='empty-placeholder']")?.textContent
+    ).toContain("connect database");
+  });
+
+  test("does not forward empty placeholder while more pages may exist", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mocks.fetchDatabases.mockResolvedValueOnce({
+      databases: [],
+      nextPageToken: "next",
+    });
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTable
+          filter={{}}
+          parent="instances/i"
+          emptyPlaceholder={<button type="button">connect database</button>}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector("[data-testid='empty-placeholder']")
+    ).toBeNull();
   });
 });

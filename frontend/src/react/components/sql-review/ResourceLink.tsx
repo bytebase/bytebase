@@ -1,28 +1,64 @@
 import { ShieldAlert } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { RouterLink } from "@/react/components/RouterLink";
+import {
+  RouterLink,
+  type RouterLinkProps,
+} from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
+import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
-export function ResourceLink({ resource }: { resource: string }) {
+type ResourceLinkAnchorProps = Pick<
+  RouterLinkProps,
+  "className" | "rel" | "target"
+>;
+
+export function ResourceLink({
+  resource,
+  showResourceType = true,
+  ...linkProps
+}: {
+  resource: string;
+  showResourceType?: boolean;
+} & ResourceLinkAnchorProps) {
   if (resource.startsWith(environmentNamePrefix)) {
-    return <EnvironmentResourceLink resource={resource} />;
+    return (
+      <EnvironmentResourceLink
+        resource={resource}
+        showResourceType={showResourceType}
+        {...linkProps}
+      />
+    );
   }
   if (resource.startsWith(projectNamePrefix)) {
-    return <ProjectResourceLink resource={resource} />;
+    return (
+      <ProjectResourceLink
+        resource={resource}
+        showResourceType={showResourceType}
+        {...linkProps}
+      />
+    );
   }
-  return <span>{resource}</span>;
+  return <span className={linkProps.className}>{resource}</span>;
 }
 
-function EnvironmentResourceLink({ resource }: { resource: string }) {
+function EnvironmentResourceLink({
+  resource,
+  showResourceType,
+  className,
+  ...linkProps
+}: {
+  resource: string;
+  showResourceType: boolean;
+} & ResourceLinkAnchorProps) {
   const { t } = useTranslation();
   const environment = useEnvironment(resource);
   const hasEnvTierFeature = usePlanFeature(
@@ -33,19 +69,30 @@ function EnvironmentResourceLink({ resource }: { resource: string }) {
 
   return (
     <RouterLink
+      {...linkProps}
       to={{ path: `/${resource}` }}
-      className="inline-flex items-center gap-x-1 normal-link"
+      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
     >
-      <span className="text-control-light text-xs mr-0.5">
-        {t("common.environment")}:
-      </span>
+      {showResourceType && (
+        <span className="text-control-light text-xs mr-0.5">
+          {t("common.environment")}:
+        </span>
+      )}
       <span>{environment.title || resource}</span>
       {isProtected && <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
     </RouterLink>
   );
 }
 
-function ProjectResourceLink({ resource }: { resource: string }) {
+function ProjectResourceLink({
+  resource,
+  showResourceType,
+  className,
+  ...linkProps
+}: {
+  resource: string;
+  showResourceType: boolean;
+} & ResourceLinkAnchorProps) {
   const { t } = useTranslation();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
@@ -61,13 +108,16 @@ function ProjectResourceLink({ resource }: { resource: string }) {
 
   return (
     <RouterLink
+      {...linkProps}
       to={{ path: `/${resource}` }}
-      className="inline-flex items-center gap-x-1 normal-link"
+      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
     >
-      <span className="text-control-light text-xs mr-0.5">
-        {t("common.project")}:
-      </span>
-      <span>{project?.title || resource}</span>
+      {showResourceType && (
+        <span className="text-control-light text-xs mr-0.5">
+          {t("common.project")}:
+        </span>
+      )}
+      <span>{project?.title || extractProjectResourceName(resource)}</span>
     </RouterLink>
   );
 }

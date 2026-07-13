@@ -7,7 +7,7 @@ const styles = stylex.create({
   root: {
     display: "flex",
     flexDirection: "column",
-    overflowX: "hidden",
+    overflowX: "clip",
     paddingBlock: 16,
     paddingInline: 16,
     rowGap: 16,
