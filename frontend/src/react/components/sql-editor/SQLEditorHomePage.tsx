@@ -101,7 +101,7 @@ export function SQLEditorHomePage() {
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "alter-schema",
-      async ({ databaseName, schema, table }) => {
+      async ({ data: { databaseName, schema, table } }) => {
         const database = await useAppStore
           .getState()
           .getOrFetchDatabaseByName(databaseName);
@@ -147,17 +147,20 @@ export function SQLEditorHomePage() {
   // pendingInsertAtCaret. The React `<SQLEditor>` reads the same Pinia
   // ref and inserts at the cursor.
   useEffect(() => {
-    const off = sqlEditorEvents.on("insert-at-caret", ({ content }) => {
-      const tabsState = getSQLEditorTabsState();
-      const t = tabsState.tabsById.get(tabsState.currentTabId);
-      if (!t) return;
-      tabsState.updateTab(t.id, {
-        viewState: { ...(t.viewState ?? {}), view: "CODE" },
-      });
-      requestAnimationFrame(() => {
-        setPendingInsertAtCaret(content);
-      });
-    });
+    const off = sqlEditorEvents.on(
+      "insert-at-caret",
+      ({ data: { content } }) => {
+        const tabsState = getSQLEditorTabsState();
+        const t = tabsState.tabsById.get(tabsState.currentTabId);
+        if (!t) return;
+        tabsState.updateTab(t.id, {
+          viewState: { ...(t.viewState ?? {}), view: "CODE" },
+        });
+        requestAnimationFrame(() => {
+          setPendingInsertAtCaret(content);
+        });
+      }
+    );
     return () => {
       off();
     };

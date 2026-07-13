@@ -95,6 +95,7 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		UpdateTime:  timestamppb.New(issue.UpdatedAt),
 		RoleGrant:   convertedRoleGrant,
 		Labels:      issuePayload.Labels,
+		Draft:       issuePayload.GetDraft(),
 	}
 
 	if issuePayload.AccessGrantId != "" {

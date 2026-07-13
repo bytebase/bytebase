@@ -89,7 +89,7 @@ export function Label({ tab }: Props) {
   // `readonly` + `tab.id` are the only closure values we care about; the
   // other helpers are referentially stable via the Pinia store singletons.
   useEffect(() => {
-    const unsubscribe = tabListEvents.on("rename-tab", (payload) => {
+    const unsubscribe = tabListEvents.on("rename-tab", ({ data: payload }) => {
       if (payload.tab.id !== tab.id) return;
       getSQLEditorTabsState().setCurrentTabId(tab.id);
       if (readonly) return;

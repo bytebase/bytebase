@@ -462,6 +462,10 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 }
 
 func resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, stores *store.Store, issue *store.IssueMessage, approvalInputVersion int64) (*store.IssueMessage, bool, error) {
+	if issue.Payload.GetDraft() {
+		return nil, false, nil
+	}
+
 	payloadPatch := &storepb.Issue{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  false,

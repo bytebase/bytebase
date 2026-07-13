@@ -175,7 +175,7 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
   // External `edit-table` / `edit-column` events bridge to caller props.
   useEffect(() => {
     if (!onEditTable) return;
-    const off = events.on("edit-table", ({ schema, table }) => {
+    const off = events.on("edit-table", ({ data: { schema, table } }) => {
       onEditTable(schema, table);
     });
     return () => {
@@ -187,7 +187,7 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
     if (!onEditColumn) return;
     const off = events.on(
       "edit-column",
-      ({ schema, table, column, target }) => {
+      ({ data: { schema, table, column, target } }) => {
         onEditColumn(schema, table, column, target);
       }
     );

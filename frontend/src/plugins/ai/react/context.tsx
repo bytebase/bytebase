@@ -230,7 +230,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
     const offNewConversation = events.on(
       "new-conversation",
-      async ({ input }) => {
+      async ({ data: { input } }) => {
         const tab = getCurrentSQLEditorTab();
         if (!tab) return;
         const conn = tab.connection;
@@ -258,27 +258,30 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    const offSendChat = events.on("send-chat", async ({ content, newChat }) => {
-      const tab = getCurrentSQLEditorTab();
-      if (!tab) return;
-      const conn = tab.connection;
-      await useConversationStore
-        .getState()
-        .fetchConversationListByConnection(conn);
-      if (newChat) {
-        setShowHistoryDialog(false);
-        const c = await useConversationStore
+    const offSendChat = events.on(
+      "send-chat",
+      async ({ data: { content, newChat } }) => {
+        const tab = getCurrentSQLEditorTab();
+        if (!tab) return;
+        const conn = tab.connection;
+        await useConversationStore
           .getState()
-          .createConversation({ name: "", ...conn });
-        setSelectedIdByConn((prev) => ({
-          ...prev,
-          [`${conn.instance}/${conn.database}`]: c.id,
-        }));
+          .fetchConversationListByConnection(conn);
+        if (newChat) {
+          setShowHistoryDialog(false);
+          const c = await useConversationStore
+            .getState()
+            .createConversation({ name: "", ...conn });
+          setSelectedIdByConn((prev) => ({
+            ...prev,
+            [`${conn.instance}/${conn.database}`]: c.id,
+          }));
+        }
+        requestAnimationFrame(() => {
+          setPendingSendChat({ content });
+        });
       }
-      requestAnimationFrame(() => {
-        setPendingSendChat({ content });
-      });
-    });
+    );
 
     return () => {
       offNewConversation();

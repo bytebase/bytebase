@@ -245,6 +245,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 		if instanceMessage, err = convertToStoreInstance(instanceID, req.Msg.Instance); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
+		instanceMessage.Workspace = common.GetWorkspaceIDFromContext(ctx)
 	} else {
 		instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 		if err != nil {

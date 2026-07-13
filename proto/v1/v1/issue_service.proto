@@ -480,6 +480,9 @@ message Issue {
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference) = {type: "bytebase.com/AccessGrant"}
   ];
+
+  // Whether this issue is a Draft Review Issue.
+  bool draft = 20 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RoleGrant {

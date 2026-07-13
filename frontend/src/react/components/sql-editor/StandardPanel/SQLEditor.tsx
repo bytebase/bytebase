@@ -372,7 +372,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     });
     const offSetSelection = sqlEditorEvents.on(
       "set-editor-selection",
-      (selection: IRange) => {
+      ({ data: selection }: { data: IRange }) => {
         const editor = activeSQLEditorRef.value;
         if (!editor) return;
         editor.setSelection(selection);
@@ -382,7 +382,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     );
     const offAppend = sqlEditorEvents.on(
       "append-editor-content",
-      ({ content: appended, select }) => {
+      ({ data: { content: appended, select } }) => {
         const editor = activeSQLEditorRef.value;
         if (!editor) return;
         const tabsState = getSQLEditorTabsState();

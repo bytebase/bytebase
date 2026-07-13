@@ -257,6 +257,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 		return nil, err
 	}
 	issueFind.ProjectIDs = []string{projectID}
+	issueFind.ExcludeDraft = true
 
 	orderByKeys, err := store.GetIssueOrders(req.Msg.OrderBy)
 	if err != nil {
@@ -336,6 +337,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		}
 	}
 	issueFind.ProjectIDs = projectIDs
+	issueFind.ExcludeDraft = true
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
@@ -398,7 +400,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	issueLabels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
-	if project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
+	if !req.Msg.Issue.GetDraft() && project.Setting.ForceIssueLabels && len(issueLabels) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
@@ -415,14 +417,38 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, err
 	}
-	issue, err = s.store.CreateIssue(ctx, issue)
+	created := false
+	issueToCreate := issue
+	existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+		return nil, err
+	}
+	if existing != nil {
+		issue = existing
+	} else {
+		issue, err = s.store.CreateIssue(ctx, issueToCreate)
+		if err != nil {
+			if errors.Is(err, store.ErrPlanHasRollout) {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot create a draft issue because the plan already has a rollout"))
+			}
+			existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
+			if lookupErr != nil {
+				return nil, lookupErr
+			}
+			if existing == nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+			}
+			issue = existing
+		} else {
+			created = true
+		}
 	}
 
-	issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	if created && !issue.Payload.GetDraft() {
+		issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	converted, err := s.convertToIssue(issue)
@@ -433,10 +459,42 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(converted), nil
 }
 
+func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
+		return nil, nil
+	}
+
+	existing, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{issue.ProjectID},
+		PlanUID:    issue.PlanUID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find issue by plan"))
+	}
+	if existing == nil {
+		return nil, nil
+	}
+	if !existing.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", *issue.PlanUID))
+	}
+	if !issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("plan %d already has a draft issue; update or submit the existing draft instead of creating another issue", *issue.PlanUID))
+	}
+	if existing.CreatorEmail != issue.CreatorEmail {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a draft issue", *issue.PlanUID))
+	}
+	return existing, nil
+}
+
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {
 	var planUID *int64
 	var roleGrant *storepb.RoleGrant
 	var title, description string
+
+	if request.Issue.GetDraft() && request.Issue.Type != v1pb.Issue_DATABASE_CHANGE {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issues must be database change issues"))
+	}
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
@@ -529,6 +587,11 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
+		if request.Issue.GetDraft() {
+			if err := validateDraftReviewPlan(plan); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+		}
 		for _, spec := range plan.Config.GetSpecs() {
 			if spec.GetExportDataConfig() != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
@@ -572,15 +635,61 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 				Approvers:           nil,
 			},
 			Labels: labels,
+			Draft:  request.Issue.GetDraft(),
 		},
 	}
 
 	return issue, nil
 }
 
+func validateDraftReviewPlan(plan *store.PlanMessage) error {
+	if plan.Deleted {
+		return errors.Errorf("draft issues require an active plan")
+	}
+	specs := plan.Config.GetSpecs()
+	if len(specs) == 0 {
+		return errors.Errorf("draft issues require a database plan")
+	}
+
+	var kind string
+	for _, spec := range specs {
+		var specKind string
+		switch config := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			specKind = "create database"
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			if config.ChangeDatabaseConfig.GetRelease() != "" {
+				return errors.Errorf("draft issues are not supported for GitOps plans")
+			}
+			specKind = "change database"
+		case *storepb.PlanConfig_Spec_ExportDataConfig:
+			return errors.Errorf("draft issues are not supported for export plans")
+		default:
+			return errors.Errorf("draft issues require a database plan")
+		}
+		if kind == "" {
+			kind = specKind
+		} else if kind != specKind {
+			return errors.Errorf("draft issues are not supported for mixed plans")
+		}
+	}
+	return nil
+}
+
+func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, name string) (*store.IssueMessage, error) {
+	issue, err := s.getIssueMessage(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if issue.Payload.GetDraft() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("draft issue must be submitted before approval actions are allowed"))
+	}
+	return issue, nil
+}
+
 // ApproveIssue approves the approval flow of the issue.
 func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1pb.ApproveIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -702,7 +811,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 // RejectIssue rejects a issue.
 func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1pb.RejectIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -816,7 +925,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 
 // RequestIssue requests a issue.
 func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1pb.RequestIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -961,7 +1070,7 @@ func (s *IssueService) updateIssueApprovalPayload(ctx context.Context, issue *st
 // Idempotent: returns the existing issue unchanged when approval-finding
 // has already completed.
 func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Request[v1pb.RetryIssueApprovalRequest]) (*connect.Response[v1pb.Issue], error) {
-	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	issue, err := s.getSubmittedIssueForApprovalAction(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -1233,6 +1342,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *IssueService) shouldResetApprovalForIssueLabels(ctx context.Context, issue *store.IssueMessage) (bool, error) {
+	if issue.Payload.GetDraft() {
+		return false, nil
+	}
+
 	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil {
 		return false, nil
 	}

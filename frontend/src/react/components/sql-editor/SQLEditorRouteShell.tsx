@@ -542,10 +542,13 @@ export function SQLEditorRouteShell() {
   // ---- sidebar tab restore (after project context ready) ----------------
 
   useEffect(() => {
-    const off = sqlEditorEvents.on("project-context-ready", ({ project }) => {
-      if (!project) return;
-      requestAnimationFrame(() => restoreLastVisitedSidebarTab());
-    });
+    const off = sqlEditorEvents.on(
+      "project-context-ready",
+      ({ data: { project } }) => {
+        if (!project) return;
+        requestAnimationFrame(() => restoreLastVisitedSidebarTab());
+      }
+    );
     return () => {
       off();
     };

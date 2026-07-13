@@ -1132,7 +1132,9 @@ type Issue struct {
 	ApprovalStatus ApprovalStatus `protobuf:"varint,18,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.ApprovalStatus" json:"approval_status,omitempty"`
 	// The access grant associated with this issue.
 	// Format: projects/{project}/accessGrants/{access_grant}
-	AccessGrant   string `protobuf:"bytes,19,opt,name=access_grant,json=accessGrant,proto3" json:"access_grant,omitempty"`
+	AccessGrant string `protobuf:"bytes,19,opt,name=access_grant,json=accessGrant,proto3" json:"access_grant,omitempty"`
+	// Whether this issue is a Draft Review Issue.
+	Draft         bool `protobuf:"varint,20,opt,name=draft,proto3" json:"draft,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1277,6 +1279,13 @@ func (x *Issue) GetAccessGrant() string {
 		return x.AccessGrant
 	}
 	return ""
+}
+
+func (x *Issue) GetDraft() bool {
+	if x != nil {
+		return x.Draft
+	}
+	return false
 }
 
 type RoleGrant struct {
@@ -2190,7 +2199,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\acomment\x18\x02 \x01(\tR\acomment\"K\n" +
 	"\x19RetryIssueApprovalRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
-	"\x12bytebase.com/IssueR\x04name\"\xf2\b\n" +
+	"\x12bytebase.com/IssueR\x04name\"\x8d\t\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2213,7 +2222,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x06labels\x18\x11 \x03(\tR\x06labels\x12I\n" +
 	"\x0fapproval_status\x18\x12 \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12C\n" +
 	"\faccess_grant\x18\x13 \x01(\tB \xe0A\x03\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\vaccessGrant\x1a\xaf\x01\n" +
+	"\x18bytebase.com/AccessGrantR\vaccessGrant\x12\x19\n" +
+	"\x05draft\x18\x14 \x01(\bB\x03\xe0A\x01R\x05draft\x1a\xaf\x01\n" +
 	"\bApprover\x12:\n" +
 	"\x06status\x18\x01 \x01(\x0e2\".bytebase.v1.Issue.Approver.StatusR\x06status\x12\x1c\n" +
 	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +

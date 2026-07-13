@@ -341,6 +341,9 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.AccessGrant != y.AccessGrant {
 		return false
 	}
+	if x.Draft != y.Draft {
+		return false
+	}
 	return true
 }
 

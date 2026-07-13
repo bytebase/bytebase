@@ -107,24 +107,27 @@ export function Panels() {
   // event bus is a module-level singleton so we don't need to traverse
   // a Vue provide chain to access it.
   useEffect(() => {
-    const off = aiContextEvents.on("run-statement", async ({ statement }) => {
-      const tabsState = getSQLEditorTabsState();
-      const t = tabsState.tabsById.get(tabsState.currentTabId);
-      if (!t) return;
-      updateViewState({ view: "CODE" });
-      await nextAnimationFrame();
-      const connection = t.connection;
-      const database = await useAppStore
-        .getState()
-        .getOrFetchDatabaseByName(connection.database);
-      void execute({
-        connection,
-        statement,
-        engine: getInstanceResource(database).engine,
-        explain: false,
-        selection: t.editorState.selection,
-      });
-    });
+    const off = aiContextEvents.on(
+      "run-statement",
+      async ({ data: { statement } }) => {
+        const tabsState = getSQLEditorTabsState();
+        const t = tabsState.tabsById.get(tabsState.currentTabId);
+        if (!t) return;
+        updateViewState({ view: "CODE" });
+        await nextAnimationFrame();
+        const connection = t.connection;
+        const database = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(connection.database);
+        void execute({
+          connection,
+          statement,
+          engine: getInstanceResource(database).engine,
+          explain: false,
+          selection: t.editorState.selection,
+        });
+      }
+    );
     return () => {
       off();
     };

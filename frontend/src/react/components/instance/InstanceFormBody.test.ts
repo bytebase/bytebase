@@ -23,19 +23,23 @@ describe("InstanceFormBody", () => {
     );
   });
 
-  test("keeps database sync controls in the connection section", () => {
+  test("renders database sync controls inside the connection card", () => {
     const source = readFileSync(
       join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
       "utf-8"
     );
 
     const basicInfoIndex = source.indexOf("{/* Basic Info Card */}");
-    const connectionIndex = source.indexOf("{/* Connection Card */}");
-    const syncDatabasesIndex = source.indexOf("<SyncDatabases");
+    const connectionCardIndex = source.indexOf("{/* Connection Card */}");
+    const syncDatabasesIndex = source.indexOf("{/* Sync Databases */}");
+    const connectionOptionsIndex = source.indexOf(
+      "{/* Connection Options Card */}"
+    );
 
     expect(basicInfoIndex).toBeGreaterThanOrEqual(0);
-    expect(connectionIndex).toBeGreaterThan(basicInfoIndex);
-    expect(syncDatabasesIndex).toBeGreaterThan(connectionIndex);
+    expect(connectionCardIndex).toBeGreaterThan(basicInfoIndex);
+    expect(syncDatabasesIndex).toBeGreaterThan(connectionCardIndex);
+    expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
   });
 
   test("explains project-aware database sync in the instance form", () => {
@@ -124,6 +128,17 @@ describe("InstanceFormBody", () => {
     expect(source).toContain("setTestConnectionFailure(undefined)");
     expect(source).toContain(
       "category={testConnectionFailure.failureCategory}"
+    );
+  });
+
+  test("refetches database previews when pending create instance changes", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain(
+      "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
     );
   });
 });

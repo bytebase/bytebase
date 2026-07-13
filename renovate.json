@@ -3,12 +3,12 @@
   "extends": ["config:recommended"],
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "allowedCommands": ["^pnpm install --no-frozen-lockfile$"],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Track the pnpm version pinned in scripts/Dockerfile",
-      "fileMatch": ["^scripts/Dockerfile$"],
+      "managerFilePatterns": ["/^scripts/Dockerfile$/"],
       "matchStrings": ["pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "pnpm",
       "datasourceTemplate": "npm"
@@ -35,11 +35,11 @@
     },
     {
       "groupName": "codingame",
-      "matchPackagePatterns": ["^@codingame/", "^monaco-editor$", "^vscode$"]
+      "matchPackageNames": ["/^@codingame//", "/^monaco-editor$/", "/^vscode$/"]
     },
     {
       "groupName": "google.golang.org/genproto",
-      "matchPackagePatterns": ["^google.golang.org/genproto"]
+      "matchPackageNames": ["/^google.golang.org/genproto/"]
     },
     {
       "groupName": "go-toolchain",
@@ -49,16 +49,17 @@
     {
       "groupName": "connectrpc",
       "description": "Group @connectrpc packages since connect-web pins an exact peer version of connect",
-      "matchPackagePatterns": ["^@connectrpc/"]
+      "matchPackageNames": ["/^@connectrpc//"]
     },
     {
       "groupName": "i18next",
       "description": "Group i18next, react-i18next, and i18next plugins so peer-dep major bumps land together",
-      "matchPackagePatterns": ["^i18next$", "^react-i18next$", "^i18next-"]
+      "matchPackageNames": ["/^i18next$/", "/^react-i18next$/", "/^i18next-/"]
     }
   ],
   "ignoreDeps": [
     "github.com/pingcap/tidb/pkg/parser",
-    "github.com/elastic/go-elasticsearch/v7"
+    "github.com/elastic/go-elasticsearch/v7",
+    "typescript-6"
   ]
 }

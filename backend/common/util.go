@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/nyaruka/phonenumbers"
+	"github.com/nyaruka/phonenumbers/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 )

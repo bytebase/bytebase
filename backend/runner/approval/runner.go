@@ -68,6 +68,9 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // This is a utility function that can be called synchronously (from issue creation)
 // or asynchronously (from the event handler).
 func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
+	if issue.Payload.GetDraft() {
+		return nil
+	}
 	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get project")
@@ -99,6 +102,9 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 	}
 	if issue == nil {
 		return // Issue deleted, nothing to do
+	}
+	if issue.Payload.GetDraft() {
+		return
 	}
 
 	project, err := r.store.GetProjectByResourceID(ctx, ref.ProjectID)
@@ -164,6 +170,9 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 }
 
 func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
+	if issue.Payload.GetDraft() {
+		return nil
+	}
 	payload := issue.Payload
 
 	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)

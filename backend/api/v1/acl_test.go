@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common/permission"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -130,18 +131,18 @@ func TestGetResourceFromRequest(t *testing.T) {
 		},
 		{
 			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{"instances/hello"},
+		},
+		{
+			request: &v1pb.ListInstanceDatabaseRequest{
 				Name:     "instances/hello",
 				Instance: &v1pb.Instance{},
 			},
 			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
 			want:   []string{""},
-		},
-		{
-			request: &v1pb.ListInstanceDatabaseRequest{
-				Name: "instances/hello",
-			},
-			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
-			want:   []string{"instances/hello"},
 		},
 		{
 			request: &v1pb.BatchSyncInstancesRequest{
@@ -194,6 +195,46 @@ func TestToSnakeCase(t *testing.T) {
 	for _, tt := range tests {
 		got := toSnakeCase(tt.input)
 		require.Equal(t, tt.want, got, tt.input)
+	}
+}
+
+func TestGetPermissionForRequest(t *testing.T) {
+	tests := []struct {
+		name              string
+		request           any
+		defaultPermission permission.Permission
+		want              permission.Permission
+	}{
+		{
+			name: "keeps default permission for existing instance database listing",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesGet,
+		},
+		{
+			name: "requires create permission for inline instance database preview",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesCreate,
+		},
+		{
+			name:              "keeps default permission for other requests",
+			request:           &v1pb.SyncInstanceRequest{Name: "instances/hello"},
+			defaultPermission: permission.InstancesSync,
+			want:              permission.InstancesSync,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPermissionForRequest(tt.request, tt.defaultPermission)
+			require.Equal(t, tt.want, got)
+		})
 	}
 }
 

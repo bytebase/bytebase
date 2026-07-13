@@ -82,8 +82,8 @@ const createStreamingQueryController = () => {
   let status: "CONNECTED" | "DISCONNECTED" = "DISCONNECTED";
   const events: StreamingQueryController["events"] = new Emittery();
   const input$ = fromEventPattern<SQLEditorQueryParams>(
-    (handler) => events.on("query", handler),
-    (handler) => events.off("query", handler)
+    (handler) => events.on("query", ({ data }) => handler(data)),
+    (_handler, unsubscribe) => unsubscribe()
   );
 
   // Holds the active WebSocket reference. Only written, never read —
@@ -100,7 +100,7 @@ const createStreamingQueryController = () => {
     },
   };
 
-  events.on("query", async (params) => {
+  events.on("query", async ({ data: params }) => {
     const request = mapRequest(params);
     console.debug("query", request);
 
@@ -235,7 +235,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     return list[list.length - 1];
   };
 
-  session.controller.events.on("query", (input) => {
+  session.controller.events.on("query", ({ data: input }) => {
     session.timer.start();
     const tail = activeItem();
     if (!tail) return;
@@ -247,7 +247,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
       });
   });
 
-  session.controller.events.on("result", (resultSet) => {
+  session.controller.events.on("result", ({ data: resultSet }) => {
     // The tab may have been closed mid-flight; disposeWebTerminalQuerySession
     // dropped our session entry, but the WebSocket is still bound and this
     // handler is still subscribed. Bail before pushing a new query item,

@@ -194,7 +194,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, 
 			log.BBError(err))
 		return
 	}
-	if issue != nil && issue.PlanUID != nil {
+	if issue != nil && issue.PlanUID != nil && !issue.Payload.GetDraft() {
 		// Trigger approval finding.
 		s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: projectID, UID: issue.UID}
 	}
