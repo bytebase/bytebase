@@ -292,7 +292,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
-	initialProjectID, err := s.getInitialDatabaseProjectID(ctx, req.Msg.GetProject())
+	initialProjectID, err := s.getInitialDatabaseProjectID(ctx, req.Msg.GetInitialDatabaseProject())
 	if err != nil {
 		return nil, err
 	}

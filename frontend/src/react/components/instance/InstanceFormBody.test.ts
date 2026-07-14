@@ -31,7 +31,7 @@ describe("InstanceFormBody", () => {
 
     const basicInfoIndex = source.indexOf("{/* Basic Info Card */}");
     const connectionCardIndex = source.indexOf("{/* Connection Card */}");
-    const syncDatabasesIndex = source.indexOf("{/* Sync Databases */}");
+    const syncDatabasesIndex = source.indexOf("<SyncDatabases");
     const connectionOptionsIndex = source.indexOf(
       "{/* Connection Options Card */}"
     );
@@ -40,6 +40,15 @@ describe("InstanceFormBody", () => {
     expect(connectionCardIndex).toBeGreaterThan(basicInfoIndex);
     expect(syncDatabasesIndex).toBeGreaterThan(connectionCardIndex);
     expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
+  });
+
+  test("renders database sync controls only once", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source.match(/<SyncDatabases/g)).toHaveLength(1);
   });
 
   test("explains project-aware database sync in the instance form", () => {

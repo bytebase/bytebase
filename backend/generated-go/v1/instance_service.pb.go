@@ -703,9 +703,9 @@ type CreateInstanceRequest struct {
 	ValidateOnly bool `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
 	// The project to assign newly discovered databases to during initial sync.
 	// Format: projects/{project}
-	Project       string `protobuf:"bytes,4,opt,name=project,proto3" json:"project,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	InitialDatabaseProject string `protobuf:"bytes,4,opt,name=initial_database_project,json=initialDatabaseProject,proto3" json:"initial_database_project,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *CreateInstanceRequest) Reset() {
@@ -759,9 +759,9 @@ func (x *CreateInstanceRequest) GetValidateOnly() bool {
 	return false
 }
 
-func (x *CreateInstanceRequest) GetProject() string {
+func (x *CreateInstanceRequest) GetInitialDatabaseProject() string {
 	if x != nil {
-		return x.Project
+		return x.InitialDatabaseProject
 	}
 	return ""
 }
@@ -2996,13 +2996,13 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\border_by\x18\x05 \x01(\tR\aorderBy\"t\n" +
 	"\x15ListInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xaf\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xcf\x01\n" +
 	"\x15CreateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\x12\x18\n" +
-	"\aproject\x18\x04 \x01(\tR\aproject\"\xb1\x01\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\x128\n" +
+	"\x18initial_database_project\x18\x04 \x01(\tR\x16initialDatabaseProject\"\xb1\x01\n" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +

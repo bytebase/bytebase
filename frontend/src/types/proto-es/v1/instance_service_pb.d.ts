@@ -183,9 +183,9 @@ export declare type CreateInstanceRequest = Message<"bytebase.v1.CreateInstanceR
    * The project to assign newly discovered databases to during initial sync.
    * Format: projects/{project}
    *
-   * @generated from field: string project = 4;
+   * @generated from field: string initial_database_project = 4;
    */
-  project: string;
+  initialDatabaseProject: string;
 };
 
 /**

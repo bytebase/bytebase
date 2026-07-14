@@ -31,8 +31,8 @@ func TestCreateInstanceAssignsSyncedDatabasesToProject(t *testing.T) {
 	createSQLiteDatabase(t, instanceDir, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Project:    ctl.project.Name,
+		InstanceId:             generateRandomString("instance"),
+		InitialDatabaseProject: ctl.project.Name,
 		Instance: &v1pb.Instance{
 			Title:       "project-aware-sync",
 			Engine:      v1pb.Engine_SQLITE,

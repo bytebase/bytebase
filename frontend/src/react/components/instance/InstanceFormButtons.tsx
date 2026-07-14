@@ -255,7 +255,7 @@ export function InstanceFormButtons({
       const createdInstance = await useAppStore
         .getState()
         .createInstance(payload, false, {
-          project: projectContext?.name,
+          initialDatabaseProject: projectContext?.name,
         });
       if (onCreated) {
         onCreated(createdInstance);
