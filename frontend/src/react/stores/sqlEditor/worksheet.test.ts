@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
+import { getSQLEditorEditorState } from "./editor";
 import type {
   QueryHistorySlice,
   SQLEditorStoreState,
@@ -80,6 +81,7 @@ const piniaMocks = vi.hoisted(() => ({
     upsertWorksheetOrganizer: vi.fn(),
     createWorksheet: vi.fn(),
     fetchProject: vi.fn(),
+    loadProjectIamPolicy: vi.fn(),
   },
 }));
 
@@ -143,6 +145,7 @@ beforeEach(() => {
   });
   piniaMocks.editorStore.project = "projects/default";
   piniaMocks.editorStore.projectContextReady = true;
+  getSQLEditorEditorState().setProject("");
 });
 
 describe("worksheet save slice — autoSaveController", () => {
@@ -181,5 +184,20 @@ describe("worksheet save slice — maybeSwitchProject", () => {
     const result = await store.getState().maybeSwitchProject("not-a-project");
     expect(result).toBeUndefined();
     expect(piniaMocks.editorStore.setProject).not.toHaveBeenCalled();
+  });
+
+  test("switches project even when project IAM policy preload fails", async () => {
+    piniaMocks.worksheetStore.fetchProject.mockResolvedValue({
+      name: "projects/aaa",
+    });
+    piniaMocks.worksheetStore.loadProjectIamPolicy.mockRejectedValue(
+      new Error("permission denied")
+    );
+
+    const store = makeStore();
+    const result = await store.getState().maybeSwitchProject("projects/aaa");
+
+    expect(result).toBe("projects/aaa");
+    expect(getSQLEditorEditorState().project).toBe("projects/aaa");
   });
 });

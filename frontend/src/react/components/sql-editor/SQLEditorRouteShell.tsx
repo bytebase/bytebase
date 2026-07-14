@@ -37,6 +37,7 @@ import {
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
+  type SQLEditorConnection,
 } from "@/types";
 import {
   emptySQLEditorConnection,
@@ -260,9 +261,26 @@ export function SQLEditorRouteShell() {
     // falls back to the default project instead of opening a bogus
     // `instances/-1/databases/-1` connection.
     if (!isValidDatabaseName(database.name)) return false;
-    if (!(await maybeSwitchProject(database.project))) return false;
+    if (
+      getSQLEditorEditorState().project !== database.project &&
+      !(await maybeSwitchProject(database.project))
+    ) {
+      getSQLEditorEditorState().setProject(database.project);
+    }
     const { instance } = extractDatabaseResourceName(database.name);
-    const connection = { instance, database: database.name };
+    const connection: SQLEditorConnection = {
+      instance,
+      database: database.name,
+    };
+    const schema = route.query.schema;
+    const table = route.query.table;
+    if (typeof schema === "string" && schema) {
+      connection.schema = schema;
+    }
+    if (typeof table === "string" && table) {
+      connection.table = table;
+      connection.schema ??= "";
+    }
     getSQLEditorTabsState().addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -423,6 +441,14 @@ export function SQLEditorRouteShell() {
       tabsState.tabsById.get(tabsState.currentTabId)?.connection ??
       emptySQLEditorConnection()
     );
+
+    if (
+      currentRoute.name === SQL_EDITOR_DATABASE_MODULE &&
+      !vals.sheetName &&
+      !vals.dbName
+    ) {
+      return;
+    }
 
     if (vals.sheetName) {
       const sheet = useAppStore.getState().getWorksheetByName(vals.sheetName);

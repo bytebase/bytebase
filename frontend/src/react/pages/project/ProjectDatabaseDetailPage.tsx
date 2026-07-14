@@ -196,7 +196,6 @@ export function ProjectDatabaseDetailPage({
             <div className="flex flex-row items-center justify-between gap-x-2">
               <div>{t("instance.no-environment")}</div>
               <Button
-                appearance="link"
                 size="sm"
                 onClick={handleSetEnvironment}
               >
