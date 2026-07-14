@@ -65,6 +65,22 @@ message WorkspaceProfileSetting {
     EDITOR = 2;
   }
 
+  // MCPCapability is the maximum capability an MCP (Model Context Protocol)
+  // session may have in the workspace. It is a ceiling: a session runs at this
+  // level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+  // workspaces are unaffected.
+  enum MCPCapability {
+    MCP_CAPABILITY_UNSPECIFIED = 0;
+    // MCP connections are rejected.
+    MCP_DISABLED = 1;
+    // MCP may inspect control-plane and schema metadata only. (Enforced from P1b.)
+    MCP_METADATA_ONLY = 2;
+    // MCP may inspect metadata and run read-only queries. (Enforced from P1b.)
+    MCP_READ_ONLY = 3;
+    // MCP may perform mutations, still bounded by the user's RBAC.
+    MCP_READ_WRITE = 4;
+  }
+
   // The external URL is used for sso authentication callback.
   string external_url = 1;
 
@@ -161,6 +177,12 @@ message WorkspaceProfileSetting {
   // The max expiration duration for request role.
   // Deprecated: use just-in-time access request flows instead.
   google.protobuf.Duration maximum_role_expiration = 25;
+
+  // The maximum capability available to MCP (Model Context Protocol) sessions in
+  // this workspace, acting as an admin-set ceiling. Unset is treated as
+  // MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+  // connections. Enforced server-side by the /mcp endpoint.
+  MCPCapability mcp_capability = 26;
 }
 
 message SQLEditorThemeSetting {

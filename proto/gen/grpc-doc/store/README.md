@@ -290,6 +290,7 @@
     - [SettingName](#bytebase-store-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source)
     - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
+    - [WorkspaceProfileSetting.MCPCapability](#bytebase-store-WorkspaceProfileSetting-MCPCapability)
   
 - [store/signal.proto](#store_signal-proto)
     - [Signal](#bytebase-store-Signal)
@@ -4683,6 +4684,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
+| mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-store-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP connections. Enforced server-side by the /mcp endpoint. |
 
 
 
@@ -4860,6 +4862,24 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
 | PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
 | EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-MCPCapability"></a>
+
+### WorkspaceProfileSetting.MCPCapability
+MCPCapability is the maximum capability an MCP (Model Context Protocol)
+session may have in the workspace. It is a ceiling: a session runs at this
+level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing
+workspaces are unaffected.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MCP_CAPABILITY_UNSPECIFIED | 0 |  |
+| MCP_DISABLED | 1 | MCP connections are rejected. |
+| MCP_METADATA_ONLY | 2 | MCP may inspect control-plane and schema metadata only. (Enforced from P1b.) |
+| MCP_READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. (Enforced from P1b.) |
+| MCP_READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 
  

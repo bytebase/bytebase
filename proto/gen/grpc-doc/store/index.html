@@ -1341,6 +1341,10 @@
                   <a href="#bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode"><span class="badge">E</span>WorkspaceProfileSetting.DatabaseChangeMode</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.WorkspaceProfileSetting.MCPCapability"><span class="badge">E</span>WorkspaceProfileSetting.MCPCapability</a>
+                </li>
+              
               
               
             </ul>
@@ -12905,6 +12909,16 @@ sql_editor_theme_id is a custom uuid. tokens is always complete. </p></td>
 Deprecated: use just-in-time access request flows instead. </p></td>
                 </tr>
               
+                <tr>
+                  <td>mcp_capability</td>
+                  <td><a href="#bytebase.store.WorkspaceProfileSetting.MCPCapability">WorkspaceProfileSetting.MCPCapability</a></td>
+                  <td></td>
+                  <td><p>The maximum capability available to MCP (Model Context Protocol) sessions in
+this workspace, acting as an admin-set ceiling. Unset is treated as
+MCP_READ_WRITE for backward compatibility; MCP_DISABLED rejects all MCP
+connections. Enforced server-side by the /mcp endpoint. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13362,6 +13376,47 @@ Default to this mode.</p></td>
                 <td>EDITOR</td>
                 <td>2</td>
                 <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkspaceProfileSetting.MCPCapability">WorkspaceProfileSetting.MCPCapability</h3>
+        <p>MCPCapability is the maximum capability an MCP (Model Context Protocol)</p><p>session may have in the workspace. It is a ceiling: a session runs at this</p><p>level or lower. Unset (UNSPECIFIED) is treated as MCP_READ_WRITE so existing</p><p>workspaces are unaffected.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MCP_CAPABILITY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MCP_DISABLED</td>
+                <td>1</td>
+                <td><p>MCP connections are rejected.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MCP_METADATA_ONLY</td>
+                <td>2</td>
+                <td><p>MCP may inspect control-plane and schema metadata only. (Enforced from P1b.)</p></td>
+              </tr>
+            
+              <tr>
+                <td>MCP_READ_ONLY</td>
+                <td>3</td>
+                <td><p>MCP may inspect metadata and run read-only queries. (Enforced from P1b.)</p></td>
+              </tr>
+            
+              <tr>
+                <td>MCP_READ_WRITE</td>
+                <td>4</td>
+                <td><p>MCP may perform mutations, still bounded by the user&#39;s RBAC.</p></td>
               </tr>
             
           </tbody>
