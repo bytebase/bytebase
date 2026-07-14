@@ -176,7 +176,7 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
           instance,
           instanceId: extractInstanceResourceName(instance.name),
           validateOnly: validateOnlyValue,
-          project: options?.project,
+          syncDatabasesToProject: options?.syncDatabasesToProject,
         }),
         {
           contextValues: createContextValues().set(

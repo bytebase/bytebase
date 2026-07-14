@@ -252,7 +252,7 @@ describe("InstanceFormButtons", () => {
       expect.anything(),
       false,
       {
-        project: "projects/demo",
+        syncDatabasesToProject: "projects/demo",
       }
     );
     expect(mocks.fetchDatabases).not.toHaveBeenCalled();

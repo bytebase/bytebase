@@ -1698,14 +1698,14 @@ paths:
           schema:
             type: boolean
             title: validate_only
-        - name: project
+        - name: syncDatabasesToProject
           in: query
           description: |-
             The project to assign newly discovered databases to during initial sync.
              Format: projects/{project}
           schema:
             type: string
-            title: project
+            title: sync_databases_to_project
       requestBody:
         description: The instance to create.
         content:
@@ -17624,9 +17624,9 @@ components:
           type: boolean
           title: validate_only
           description: Validate only also tests the data source connection.
-        project:
+        syncDatabasesToProject:
           type: string
-          title: project
+          title: sync_databases_to_project
           description: |-
             The project to assign newly discovered databases to during initial sync.
              Format: projects/{project}

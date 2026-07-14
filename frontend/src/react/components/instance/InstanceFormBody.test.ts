@@ -42,6 +42,15 @@ describe("InstanceFormBody", () => {
     expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
   });
 
+  test("renders database sync controls only once", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source.match(/<SyncDatabases/g)).toHaveLength(1);
+  });
+
   test("explains project-aware database sync in the instance form", () => {
     const source = readFileSync(
       join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),

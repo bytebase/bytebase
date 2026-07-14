@@ -73,7 +73,14 @@ vi.mock("@/react/components/database", () => ({
     emptyPlaceholder,
   }: {
     emptyPlaceholder?: React.ReactNode;
-  }) => <div data-testid="database-table">{emptyPlaceholder}</div>,
+  }) => (
+    <div
+      data-testid="database-table"
+      data-has-empty-placeholder={String(!!emptyPlaceholder)}
+    >
+      {emptyPlaceholder}
+    </div>
+  ),
   LabelEditorSheet: () => null,
   TransferProjectSheet: () => null,
 }));
@@ -126,7 +133,7 @@ beforeEach(async () => {
 });
 
 describe("DatabasesPage", () => {
-  test("passes a connect databases action as the empty table placeholder", async () => {
+  test("does not pass an action as the empty table placeholder", async () => {
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -135,31 +142,50 @@ describe("DatabasesPage", () => {
       await Promise.resolve();
     });
 
-    const emptyStateButton = container.querySelector(
-      "[data-testid='database-table'] button"
-    ) as HTMLButtonElement;
-    expect(emptyStateButton?.textContent).toContain(
-      "database.connect-databases"
-    );
+    expect(
+      container
+        .querySelector("[data-testid='database-table']")
+        ?.getAttribute("data-has-empty-placeholder")
+    ).toBe("false");
+    expect(
+      container.querySelector("[data-testid='database-table'] button")
+    ).toBeNull();
     expect(
       container
         .querySelector("[data-testid='create-database-sheet']")
         ?.getAttribute("data-open")
     ).toBe("false");
 
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("opens the create database sheet from the toolbar action", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
     await act(async () => {
-      emptyStateButton.click();
+      root.render(<DatabasesPage />);
       await Promise.resolve();
     });
 
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.instance.create",
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.create")
+    ) as HTMLButtonElement;
+    expect(createButton).toBeTruthy();
+
+    await act(async () => {
+      createButton.click();
+      await Promise.resolve();
     });
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(
       container
         .querySelector("[data-testid='create-database-sheet']")
         ?.getAttribute("data-open")
-    ).toBe("false");
+    ).toBe("true");
 
     act(() => {
       root.unmount();
