@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -28,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
 }));
+
+const pageDir = dirname(fileURLToPath(import.meta.url));
 
 vi.mock("@/react/components/ComponentPermissionGuard", () => ({
   ComponentPermissionGuard: ({ children }: { children: ReactNode }) =>
@@ -313,6 +318,21 @@ async function renderPage(): Promise<void> {
 }
 
 describe("GroupsPage create group sheet", () => {
+  it("routes domain restriction configuration with intro highlight", () => {
+    const source = readFileSync(join(pageDir, "GroupsPage.tsx"), "utf8");
+    const domainRestrictionIndex = source.indexOf(
+      'hash: "#domain-restriction"'
+    );
+    const domainRestrictionRoute = source.slice(
+      Math.max(0, domainRestrictionIndex - 300),
+      domainRestrictionIndex + 300
+    );
+
+    expect(domainRestrictionIndex).toBeGreaterThan(0);
+    expect(domainRestrictionRoute).toContain("DOMAIN_RESTRICTION_PRODUCT_INTRO");
+    expect(domainRestrictionRoute).toContain("PRODUCT_INTRO_QUERY_KEY");
+  });
+
   it("renders the title-required error under the title field", async () => {
     await renderPage();
 

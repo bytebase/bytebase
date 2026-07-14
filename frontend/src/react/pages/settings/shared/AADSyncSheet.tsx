@@ -2,8 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { ExternalUrlAlert } from "@/react/components/ExternalUrlAlert";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
-import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -101,9 +101,7 @@ export function AADSyncSheet({
             </p>
 
             {/* Missing external URL warning */}
-            {!externalUrl && (
-              <Alert variant="warning" description={t("banner.external-url")} />
-            )}
+            <ExternalUrlAlert variant="warning" actionAppearance="outline" />
 
             {/* SCIM Endpoint URL */}
             <div className="flex flex-col gap-y-2">

@@ -26,6 +26,10 @@ import {
 } from "@/react/components/ui/form";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
+import {
+  DOMAIN_RESTRICTION_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/react/lib/productIntro";
 import { useAppStore } from "@/react/stores/app";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
@@ -219,6 +223,14 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
       onDirtyChange();
     }, [state, domainInput, onDirtyChange]);
 
+    useProductIntro({
+      id: DOMAIN_RESTRICTION_PRODUCT_INTRO,
+      title: t("settings.general.workspace.domain-restriction.self"),
+      description: t(
+        "settings.general.workspace.domain-restriction.description"
+      ),
+    });
+
     const addDomain = () => {
       if (!domainInput.trim()) return;
       setState((prev) => ({
@@ -377,6 +389,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             {/* Domain Restriction */}
             <FormField
               id="domain-restriction"
+              data-product-intro-target={DOMAIN_RESTRICTION_PRODUCT_INTRO}
               title={t("settings.general.workspace.domain-restriction.self")}
               description={t(
                 "settings.general.workspace.domain-restriction.description"

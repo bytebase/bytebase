@@ -29,6 +29,10 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { useServerState } from "@/react/hooks/useAppState";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/react/lib/productIntro";
 import { useAppStore } from "@/react/stores/app";
 import {
   AISetting_Provider,
@@ -115,6 +119,12 @@ export const AIAugmentationSection = forwardRef<
       containerRef.current.scrollIntoView({ block: "nearest" });
     }
   }, []);
+
+  useProductIntro({
+    id: AI_ASSISTANT_PRODUCT_INTRO,
+    title: t("settings.general.workspace.ai-assistant.self"),
+    description: t("settings.general.workspace.ai-assistant.description"),
+  });
 
   const providerDefault =
     PROVIDER_DEFAULTS[state.provider] ??
@@ -214,7 +224,12 @@ export const AIAugmentationSection = forwardRef<
   };
 
   return (
-    <FormSection id="ai" ref={containerRef} title={title}>
+    <FormSection
+      id="ai"
+      ref={containerRef}
+      title={title}
+      data-product-intro-target={AI_ASSISTANT_PRODUCT_INTRO}
+    >
       <ComponentPermissionGuard permissions={["bb.settings.get"]}>
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <FormFieldGroup>

@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { RouterLink } from "@/react/components/RouterLink";
+import { ExternalUrlAlert } from "@/react/components/ExternalUrlAlert";
 import { Alert } from "@/react/components/ui/alert";
-import { buttonVariants } from "@/react/components/ui/button";
 import { CopyButton } from "@/react/components/ui/copy-button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -13,15 +12,10 @@ import {
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useServerState } from "@/react/hooks/useAppState";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function MCPPage() {
   const { t } = useTranslation();
   const { externalUrl, needConfigureExternalUrl } = useServerState();
-  const canConfigureExternalUrl = hasWorkspacePermissionV2(
-    "bb.settings.setWorkspaceProfile"
-  );
 
   const mcpEndpointUrl = useMemo(() => {
     if (needConfigureExternalUrl || !externalUrl) {
@@ -88,31 +82,7 @@ export function MCPPage() {
       </div>
 
       {/* Warning if external URL not configured */}
-      {needConfigureExternalUrl && (
-        <Alert
-          variant="error"
-          title={t("banner.external-url")}
-          description={
-            <>
-              <span>
-                {t("settings.general.workspace.external-url.description")}
-              </span>
-              {canConfigureExternalUrl && (
-                <RouterLink
-                  to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
-                  className={buttonVariants({
-                    appearance: "outline",
-                    size: "sm",
-                    className: "ml-3",
-                  })}
-                >
-                  {t("common.configure-now")}
-                </RouterLink>
-              )}
-            </>
-          }
-        />
-      )}
+      <ExternalUrlAlert actionAppearance="outline" />
 
       {/* Authentication Notice */}
       <Alert

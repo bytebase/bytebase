@@ -17,6 +17,10 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
 import { cn } from "@/react/lib/utils";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -250,6 +254,9 @@ function AINotConfiguredButton({
                   to={{
                     name: SETTING_ROUTE_WORKSPACE_GENERAL,
                     hash: "#ai-assistant",
+                    query: {
+                      [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
+                    },
                   }}
                   tabIndex={-1}
                   className={buttonVariants({

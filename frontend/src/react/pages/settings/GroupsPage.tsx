@@ -64,6 +64,10 @@ import {
 } from "@/react/components/WorkspacePageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import {
+  DOMAIN_RESTRICTION_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
 import { cn } from "@/react/lib/utils";
 import type { NavigationHistoryAction } from "@/react/router";
 import { router } from "@/react/router";
@@ -1235,6 +1239,10 @@ export function GroupsPage() {
                     to={{
                       name: SETTING_ROUTE_WORKSPACE_GENERAL,
                       hash: "#domain-restriction",
+                      query: {
+                        [PRODUCT_INTRO_QUERY_KEY]:
+                          DOMAIN_RESTRICTION_PRODUCT_INTRO,
+                      },
                     }}
                     className="underline text-accent"
                   >

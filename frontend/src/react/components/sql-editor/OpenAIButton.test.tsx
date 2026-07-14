@@ -298,6 +298,33 @@ describe("OpenAIButton", () => {
     unmount();
   });
 
+  test("routes AI configure link to general settings with intro", () => {
+    setupDefaultMocks({ openAIEnabled: false });
+    const { container, render, unmount } = renderIntoContainer(
+      <OpenAIButton />
+    );
+    render();
+
+    const configureLink = Array.from(container.querySelectorAll("a")).find(
+      (link) =>
+        link.textContent === "plugin.ai.not-configured.go-to-configure"
+    ) as HTMLAnchorElement;
+
+    expect(configureLink).toBeTruthy();
+
+    act(() => {
+      configureLink.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "setting.workspace.general",
+      hash: "#ai-assistant",
+      query: { intro: "ai-assistant" },
+    });
+
+    unmount();
+  });
+
   test("click toggles showAIPanel when enabled", () => {
     setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(

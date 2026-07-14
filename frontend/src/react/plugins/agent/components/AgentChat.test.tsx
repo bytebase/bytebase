@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     t: (key: string) => key,
   })),
   hasWorkspacePermissionV2: vi.fn(() => true),
+  routerPush: vi.fn(),
 }));
 
 let AgentChat: typeof import("./AgentChat").AgentChat;
@@ -42,13 +43,15 @@ function createMockStorage(): Storage {
 }
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
 vi.mock("@/react/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/react/router")>()),
   router: {
-    push: vi.fn(),
+    push: mocks.routerPush,
+    resolve: (to: unknown) => ({ href: JSON.stringify(to) }),
   },
 }));
 
@@ -96,6 +99,7 @@ beforeEach(async () => {
   });
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
+  mocks.routerPush.mockReset();
 
   ({ AgentChat } = await import("./AgentChat"));
 });
@@ -199,6 +203,37 @@ describe("AgentChat", () => {
     expect(assistantMessage.toolCalls).toHaveLength(2);
     expect(container.textContent).toContain("first-result");
     expect(container.textContent).toContain("second-result");
+
+    unmount();
+  });
+
+  test("routes AI configuration recovery to general settings with intro", () => {
+    const chat = useAgentStore.getState().ensureCurrentChat();
+    useAgentStore.setState((state) => ({
+      chats: state.chats.map((item) =>
+        item.id === chat.id ? { ...item, requiresAIConfiguration: true } : item
+      ),
+    }));
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+
+    render();
+
+    const configureLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "agent.ai-not-configured.configure"
+    ) as HTMLAnchorElement;
+
+    expect(configureLink).toBeTruthy();
+
+    act(() => {
+      configureLink.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "setting.workspace.general",
+      hash: "#ai-assistant",
+      query: { intro: "ai-assistant" },
+    });
 
     unmount();
   });
