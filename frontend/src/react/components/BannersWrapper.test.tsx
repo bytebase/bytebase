@@ -197,6 +197,13 @@ describe("BannersWrapper", () => {
     const configureButton = Array.from(container.querySelectorAll("a")).find(
       (link) => link.textContent?.includes("Configure now")
     );
+    const configureButtonClasses =
+      configureButton?.className.split(/\s+/) ?? [];
+    expect(configureButtonClasses).toContain("bg-white");
+    expect(configureButtonClasses).toContain("text-accent");
+    expect(configureButtonClasses).not.toContain("bg-accent");
+    expect(configureButtonClasses).not.toContain("text-accent-text");
+
     act(() => {
       configureButton?.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true })
