@@ -35,8 +35,7 @@ import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { preCreateIssue } from "@/react/lib/plan/issue";
 import {
   CONNECT_DATABASE_PRODUCT_INTRO,
-  PRODUCT_INTRO_QUERY_KEY,
-  showProductIntroOnce,
+  useProductIntro,
 } from "@/react/lib/productIntro";
 import { router } from "@/react/router";
 import {
@@ -236,11 +235,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     const value = syncingInstance ?? syncInstance;
     return typeof value === "string" && value ? value : undefined;
   }, []);
-  const productIntro = useMemo(() => {
-    const value = router.currentRoute.value.query[PRODUCT_INTRO_QUERY_KEY];
-    return typeof value === "string" ? value : undefined;
-  }, []);
-
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
     return Array.from(selectedNames)
@@ -482,30 +476,16 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     });
   }, [projectId, visibleDatabases]);
 
-  useEffect(() => {
-    if (productIntro !== CONNECT_DATABASE_PRODUCT_INTRO) return;
-    if (
+  useProductIntro({
+    id: CONNECT_DATABASE_PRODUCT_INTRO,
+    title: t("project.connect-database-intro-title"),
+    description: t("project.connect-database-intro-description"),
+    disabled:
       showSyncingInstanceHint ||
       hasVisibleDatabase ||
       workspaceHasInstance !== false ||
-      !canCreateInstance
-    ) {
-      return;
-    }
-    void showProductIntroOnce({
-      id: CONNECT_DATABASE_PRODUCT_INTRO,
-      title: t("project.connect-database-intro-title"),
-      description: t("project.connect-database-intro-description"),
-      closeLabel: t("common.close"),
-    });
-  }, [
-    canCreateInstance,
-    hasVisibleDatabase,
-    productIntro,
-    showSyncingInstanceHint,
-    workspaceHasInstance,
-    t,
-  ]);
+      !canCreateInstance,
+  });
 
   const handleCreateDatabaseAction = useCallback(() => {
     if (checkingWorkspaceInstance) return;

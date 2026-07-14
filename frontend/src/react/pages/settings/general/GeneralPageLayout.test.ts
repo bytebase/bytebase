@@ -95,4 +95,22 @@ describe("GeneralPage section layout", () => {
       '<span className="flex items-start gap-x-2">'
     );
   });
+
+  test("wires product intro targets for general settings deep links", () => {
+    const aiSource = readFileSync(
+      join(sectionDir, "AIAugmentationSection.tsx"),
+      "utf8"
+    );
+    const securitySource = readFileSync(
+      join(sectionDir, "SecuritySection.tsx"),
+      "utf8"
+    );
+
+    expect(aiSource).toContain("AI_ASSISTANT_PRODUCT_INTRO");
+    expect(aiSource).toContain("data-product-intro-target");
+    expect(aiSource).toContain("useProductIntro");
+    expect(securitySource).toContain("DOMAIN_RESTRICTION_PRODUCT_INTRO");
+    expect(securitySource).toContain("data-product-intro-target");
+    expect(securitySource).toContain("useProductIntro");
+  });
 });

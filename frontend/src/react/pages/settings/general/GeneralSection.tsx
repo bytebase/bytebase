@@ -29,6 +29,10 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { useServerState } from "@/react/hooks/useAppState";
+import {
+  EXTERNAL_URL_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/react/lib/productIntro";
 import { router } from "@/react/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -123,6 +127,13 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
     useEffect(() => {
       onDirtyChange();
     }, [state, onDirtyChange]);
+
+    useProductIntro({
+      id: EXTERNAL_URL_PRODUCT_INTRO,
+      title: t("settings.general.workspace.external-url.self"),
+      description: t("settings.general.workspace.external-url.description"),
+      disabled: isSaaSMode,
+    });
 
     const goToSQLEditor = () => {
       router.push({ name: SQL_EDITOR_HOME_MODULE });
@@ -219,6 +230,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                     />
                   )}
                   <Input
+                    data-product-intro-target={EXTERNAL_URL_PRODUCT_INTRO}
                     value={state.externalUrl}
                     className="w-full"
                     disabled={!canEdit || externalUrlFromFlag}

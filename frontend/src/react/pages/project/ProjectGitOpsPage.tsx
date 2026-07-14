@@ -3,11 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
+import { ExternalUrlAlert } from "@/react/components/ExternalUrlAlert";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ProjectPageLayout } from "@/react/components/ProjectPageLayout";
-import { RouterLink } from "@/react/components/RouterLink";
 import { Alert } from "@/react/components/ui/alert";
-import { Button, buttonVariants } from "@/react/components/ui/button";
+import { Button } from "@/react/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
 import { CopyButton } from "@/react/components/ui/copy-button";
 import { Switch } from "@/react/components/ui/switch";
@@ -19,7 +19,6 @@ import {
 } from "@/react/components/ui/tabs";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { extractWorkloadIdentityId } from "@/react/stores/app/workloadIdentity";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -31,7 +30,6 @@ import {
   getDefaultPagination,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
   parseWorkloadIdentitySubjectPattern,
 } from "@/utils";
 
@@ -668,30 +666,7 @@ function CheckOrX({ ok }: { ok: boolean }) {
 }
 
 function MissingExternalURLAttention() {
-  const { t } = useTranslation();
-  const canConfigure = hasWorkspacePermissionV2(
-    "bb.settings.setWorkspaceProfile"
-  );
-
-  return (
-    <Alert
-      variant="error"
-      className="mt-1"
-      title={t("banner.external-url")}
-      description={t("settings.general.workspace.external-url.description")}
-    >
-      {canConfigure && (
-        <div className="mt-1">
-          <RouterLink
-            to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
-            className={buttonVariants({ size: "sm", className: "w-fit" })}
-          >
-            {t("common.configure-now")}
-          </RouterLink>
-        </div>
-      )}
-    </Alert>
-  );
+  return <ExternalUrlAlert className="mt-1" />;
 }
 
 function CodeBlock({ code }: { code: string }) {

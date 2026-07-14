@@ -212,6 +212,7 @@ describe("BannersWrapper", () => {
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "setting.workspace.general",
+      query: { intro: "external-url" },
     });
     unmount();
   });

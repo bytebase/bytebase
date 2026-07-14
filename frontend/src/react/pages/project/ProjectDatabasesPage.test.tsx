@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   visibleDatabases: [] as { name: string }[],
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
-  showProductIntroOnce: vi.fn(),
+  useProductIntro: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstanceList: vi.fn(async () => ({
     instances: [] as { name: string; title: string }[],
@@ -94,7 +94,7 @@ vi.mock("@/react/lib/plan/issue", () => ({
 vi.mock("@/react/lib/productIntro", () => ({
   CONNECT_DATABASE_PRODUCT_INTRO: "connect-database",
   PRODUCT_INTRO_QUERY_KEY: "intro",
-  showProductIntroOnce: mocks.showProductIntroOnce,
+  useProductIntro: mocks.useProductIntro,
 }));
 
 vi.mock("@/react/stores/app", () => {
@@ -181,11 +181,11 @@ describe("ProjectDatabasesPage", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.showProductIntroOnce).toHaveBeenCalledWith({
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
       id: "connect-database",
       title: "project.connect-database-intro-title",
       description: "project.connect-database-intro-description",
-      closeLabel: "common.close",
+      disabled: false,
     });
 
     act(() => {

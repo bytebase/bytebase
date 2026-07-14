@@ -4,6 +4,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { RouterLink } from "@/react/components/RouterLink";
 import { Button, buttonVariants } from "@/react/components/ui/button";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/react/router/handles";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { AgentMessage, ToolCall } from "../logic/types";
@@ -223,6 +227,9 @@ export function AgentChat({ className }: AgentChatProps) {
                 to={{
                   name: SETTING_ROUTE_WORKSPACE_GENERAL,
                   hash: "#ai-assistant",
+                  query: {
+                    [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
+                  },
                 }}
                 className={buttonVariants({ size: "sm" })}
                 onClick={goConfigure}

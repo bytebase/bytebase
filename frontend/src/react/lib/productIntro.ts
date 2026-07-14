@@ -1,15 +1,22 @@
-import "./productIntro.css";
+import { useEffect } from "react";
+import { router, useCurrentRoute } from "@/react/router";
 
-import { useAppStore } from "@/react/stores/app";
+import "./productIntro.css";
 
 export const PRODUCT_INTRO_QUERY_KEY = "intro";
 export const CONNECT_DATABASE_PRODUCT_INTRO = "connect-database";
+export const EXTERNAL_URL_PRODUCT_INTRO = "external-url";
+export const AI_ASSISTANT_PRODUCT_INTRO = "ai-assistant";
+export const DOMAIN_RESTRICTION_PRODUCT_INTRO = "domain-restriction";
 
 export type ProductIntroOptions = {
   id: string;
   title: string;
   description: string;
-  closeLabel: string;
+};
+
+export type UseProductIntroOptions = ProductIntroOptions & {
+  disabled?: boolean;
 };
 
 const ACTIVE_TARGET_CLASS = "bb-product-intro-active";
@@ -23,6 +30,9 @@ const POPOVER_GAP = 14;
 const POPOVER_WIDTH = 320;
 const POPOVER_HEIGHT = 128;
 const VIEWPORT_PADDING = 16;
+
+let activeCleanup: (() => void) | undefined;
+let activeIntroId: string | undefined;
 
 const getTargetSelector = (id: string) => `[data-product-intro-target="${id}"]`;
 
@@ -73,8 +83,7 @@ const markActiveTarget = (element: HTMLElement) => {
 const createIntroElements = ({
   title,
   description,
-  closeLabel,
-}: Pick<ProductIntroOptions, "title" | "description" | "closeLabel">) => {
+}: Pick<ProductIntroOptions, "title" | "description">) => {
   const root = document.createElement("div");
   root.className = ROOT_CLASS;
 
@@ -100,7 +109,7 @@ const createIntroElements = ({
   const closeButton = document.createElement("button");
   closeButton.className = "bb-product-intro-close";
   closeButton.type = "button";
-  closeButton.setAttribute("aria-label", closeLabel);
+  closeButton.setAttribute("aria-label", "close");
   closeButton.textContent = "×";
 
   popover.append(arrow, closeButton, titleElement, descriptionElement);
@@ -109,31 +118,47 @@ const createIntroElements = ({
   return { root, stage, popover, arrow, closeButton };
 };
 
-export const showProductIntroOnce = async ({
+const removeIntroQuery = () => {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(PRODUCT_INTRO_QUERY_KEY)) {
+    return;
+  }
+  url.searchParams.delete(PRODUCT_INTRO_QUERY_KEY);
+  void router.replace({
+    fullPath: `${url.pathname}${url.search}${url.hash}`,
+  });
+};
+
+const cleanupProductIntro = (id?: string) => {
+  if (id && activeIntroId !== id) {
+    return;
+  }
+  activeCleanup?.();
+};
+
+export const showProductIntro = async ({
   id,
   title,
   description,
-  closeLabel,
 }: ProductIntroOptions): Promise<boolean> => {
   const target = getTargetSelector(id);
-  const store = useAppStore.getState();
-
-  if (store.getIntroStateByKey(id)) {
-    return false;
-  }
 
   const element = await findElement(target);
   if (!element) {
     return false;
   }
 
+  activeCleanup?.();
+
   let activeElement = element;
+  activeElement.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+
   let destroyed = false;
   let refreshTimer: number | undefined;
+  let targetObserver: MutationObserver | undefined;
   const { root, stage, popover, arrow, closeButton } = createIntroElements({
     title,
     description,
-    closeLabel,
   });
 
   const render = () => {
@@ -176,13 +201,25 @@ export const showProductIntroOnce = async ({
       refreshTimer = undefined;
     }
     closeButton.removeEventListener("click", handleCloseClick);
+    root.removeEventListener("click", handleMaskClick);
     document.removeEventListener("click", handleDocumentClick, true);
     document.removeEventListener("keydown", handleDocumentKeydown, true);
+    targetObserver?.disconnect();
+    targetObserver = undefined;
     window.removeEventListener("resize", scheduleRefreshTarget);
     window.removeEventListener("scroll", scheduleRefreshTarget, true);
     root.remove();
+    activeElement.classList.remove(ACTIVE_TARGET_CLASS);
     removeActiveTargetClass();
-    store.saveIntroStateByKey({ key: id, newState: true });
+    if (activeCleanup === cleanup) {
+      activeCleanup = undefined;
+      activeIntroId = undefined;
+    }
+  };
+
+  const dismissIntro = () => {
+    cleanup();
+    removeIntroQuery();
   };
 
   const refreshTarget = () => {
@@ -210,7 +247,14 @@ export const showProductIntroOnce = async ({
   function handleCloseClick(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    cleanup();
+    dismissIntro();
+  }
+
+  function handleMaskClick(event: MouseEvent) {
+    if (event.target instanceof Node && popover.contains(event.target)) {
+      return;
+    }
+    dismissIntro();
   }
 
   function handleDocumentClick(event: MouseEvent) {
@@ -220,23 +264,51 @@ export const showProductIntroOnce = async ({
       return;
     }
     if (event.target instanceof Node && currentElement.contains(event.target)) {
-      cleanup();
+      dismissIntro();
     }
   }
 
   function handleDocumentKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      cleanup();
+      dismissIntro();
     }
   }
 
   markActiveTarget(activeElement);
+  activeCleanup = cleanup;
+  activeIntroId = id;
   document.body.appendChild(root);
   render();
+  targetObserver = new MutationObserver(refreshTarget);
+  targetObserver.observe(document.body, { childList: true, subtree: true });
   closeButton.addEventListener("click", handleCloseClick);
+  root.addEventListener("click", handleMaskClick);
   document.addEventListener("click", handleDocumentClick, true);
   document.addEventListener("keydown", handleDocumentKeydown, true);
   window.addEventListener("resize", scheduleRefreshTarget);
   window.addEventListener("scroll", scheduleRefreshTarget, true);
   return true;
+};
+
+export const useProductIntro = ({
+  id,
+  title,
+  description,
+  disabled = false,
+}: UseProductIntroOptions) => {
+  const route = useCurrentRoute();
+  const productIntroValue = route.query[PRODUCT_INTRO_QUERY_KEY];
+  const productIntro =
+    typeof productIntroValue === "string" ? productIntroValue : undefined;
+
+  useEffect(() => {
+    if (disabled || productIntro !== id) {
+      cleanupProductIntro(id);
+      return;
+    }
+    void showProductIntro({ id, title, description });
+    return () => {
+      cleanupProductIntro(id);
+    };
+  }, [description, disabled, id, productIntro, title]);
 };

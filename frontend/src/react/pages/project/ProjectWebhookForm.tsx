@@ -3,6 +3,7 @@ import { isEqual } from "lodash-es";
 import { EllipsisVertical, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ExternalUrlAlert } from "@/react/components/ExternalUrlAlert";
 import { RouterLink } from "@/react/components/RouterLink";
 import {
   AlertDialog,
@@ -11,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/react/components/ui/button";
+import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -28,7 +29,6 @@ import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
-  SETTING_ROUTE_WORKSPACE_GENERAL,
   WORKSPACE_ROUTE_IM,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -44,7 +44,7 @@ import type {
 } from "@/types/proto-es/v1/project_service_pb";
 import { WebhookSchema } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { extractProjectWebhookID, hasWorkspacePermissionV2 } from "@/utils";
+import { extractProjectWebhookID } from "@/utils";
 
 interface Props {
   allowEdit?: boolean;
@@ -86,8 +86,6 @@ export function ProjectWebhookForm({
   useEffect(() => {
     useAppStore.getState().getOrFetchSettingByName(Setting_SettingName.APP_IM);
   }, []);
-
-  const externalUrl = useAppStore((s) => s.externalUrl());
 
   const webhookTypeItemList = useMemo(() => projectWebhookV1TypeItemList(), []);
   const webhookActivityItemList = useMemo(
@@ -335,22 +333,7 @@ export function ProjectWebhookForm({
         )}
 
         {/* Missing external URL warning */}
-        {!externalUrl && (
-          <div className="mb-6 p-3 border border-error/30 bg-error/5 rounded-xs text-sm text-error">
-            <div className="font-medium">{t("banner.external-url")}</div>
-            <div className="mt-1">
-              {t("settings.general.workspace.external-url.description")}
-            </div>
-            {hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile") && (
-              <RouterLink
-                to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
-                className={buttonVariants({ size: "sm", className: "mt-2" })}
-              >
-                {t("common.configure-now")}
-              </RouterLink>
-            )}
-          </div>
-        )}
+        <ExternalUrlAlert className="mb-6" />
 
         <div className="flex flex-col gap-y-4">
           {/* Destination type selector (create only) */}

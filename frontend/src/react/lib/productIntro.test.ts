@@ -2,31 +2,22 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-const appStoreMocks = vi.hoisted(() => {
-  const introState = new Map<string, boolean>();
-  return {
-    introState,
-    getIntroStateByKey: vi.fn((key: string) => introState.get(key) ?? false),
-    saveIntroStateByKey: vi.fn(
-      ({ key, newState }: { key: string; newState: boolean }) => {
-        introState.set(key, newState);
-      }
-    ),
-  };
-});
-
-vi.mock("@/react/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      getIntroStateByKey: appStoreMocks.getIntroStateByKey,
-      saveIntroStateByKey: appStoreMocks.saveIntroStateByKey,
-    }),
+vi.mock("@/react/router", () => ({
+  router: {
+    replace: ({ fullPath }: { fullPath: string }) => {
+      window.history.replaceState(window.history.state, "", fullPath);
+    },
   },
+  useCurrentRoute: () => ({
+    query: Object.fromEntries(new URLSearchParams(window.location.search)),
+  }),
 }));
 
-import { showProductIntroOnce } from "./productIntro";
+import { showProductIntro, useProductIntro } from "./productIntro";
 
 const setRect = (element: HTMLElement, rect: Partial<DOMRect>) => {
   element.getBoundingClientRect = vi.fn(
@@ -56,17 +47,19 @@ const introOptions = {
   id: "connect-database",
   title: "Connect your first database",
   description: "Connect a database.",
-  closeLabel: "Close",
+};
+
+const ProductIntroHost = () => {
+  useProductIntro(introOptions);
+  return null;
 };
 
 const libDir = dirname(fileURLToPath(import.meta.url));
 
-describe("showProductIntroOnce", () => {
+describe("showProductIntro", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    appStoreMocks.introState.clear();
-    appStoreMocks.getIntroStateByKey.mockClear();
-    appStoreMocks.saveIntroStateByKey.mockClear();
+    window.history.replaceState({}, "", "/");
     window.localStorage.clear();
     document.body.innerHTML = "";
   });
@@ -88,7 +81,7 @@ describe("showProductIntroOnce", () => {
       height: 40,
     });
 
-    await expect(showProductIntroOnce(introOptions)).resolves.toBe(true);
+    await expect(showProductIntro(introOptions)).resolves.toBe(true);
 
     expect(document.querySelectorAll(".bb-product-intro")).toHaveLength(1);
     expect(button.classList.contains("bb-product-intro-active")).toBe(true);
@@ -106,6 +99,25 @@ describe("showProductIntroOnce", () => {
       "style.top",
       "294px"
     );
+  });
+
+  test("scrolls the target before rendering the intro", async () => {
+    const button = createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+    button.scrollIntoView = vi.fn();
+
+    await showProductIntro(introOptions);
+
+    expect(button.scrollIntoView).toHaveBeenCalledWith({
+      block: "nearest",
+      inline: "nearest",
+    });
   });
 
   test("uses the visible target when responsive layouts render multiple matches", async () => {
@@ -126,7 +138,7 @@ describe("showProductIntroOnce", () => {
       height: 40,
     });
 
-    await showProductIntroOnce(introOptions);
+    await showProductIntro(introOptions);
 
     expect(hiddenButton.classList.contains("bb-product-intro-active")).toBe(
       false
@@ -146,7 +158,7 @@ describe("showProductIntroOnce", () => {
       height: 40,
     });
 
-    await showProductIntroOnce(introOptions);
+    await showProductIntro(introOptions);
 
     setRect(oldButton, {
       top: 0,
@@ -182,8 +194,7 @@ describe("showProductIntroOnce", () => {
     );
   });
 
-  test("does not show an already dismissed intro", async () => {
-    appStoreMocks.introState.set("connect-database", true);
+  test("always renders the intro when the target exists", async () => {
     createButton({
       top: 240,
       left: 400,
@@ -193,15 +204,12 @@ describe("showProductIntroOnce", () => {
       height: 40,
     });
 
-    await expect(showProductIntroOnce(introOptions)).resolves.toBe(false);
+    await expect(showProductIntro(introOptions)).resolves.toBe(true);
 
-    expect(appStoreMocks.getIntroStateByKey).toHaveBeenCalledWith(
-      "connect-database"
-    );
-    expect(document.querySelector(".bb-product-intro")).toBeNull();
+    expect(document.querySelector(".bb-product-intro")).not.toBeNull();
   });
 
-  test("marks the intro dismissed when the close button is clicked", async () => {
+  test("destroys the intro when the close button is clicked", async () => {
     createButton({
       top: 240,
       left: 400,
@@ -211,17 +219,12 @@ describe("showProductIntroOnce", () => {
       height: 40,
     });
 
-    await showProductIntroOnce(introOptions);
+    await showProductIntro(introOptions);
 
-    expect(appStoreMocks.saveIntroStateByKey).not.toHaveBeenCalled();
     (
       document.querySelector(".bb-product-intro-close") as HTMLButtonElement
     ).click();
 
-    expect(appStoreMocks.saveIntroStateByKey).toHaveBeenCalledWith({
-      key: "connect-database",
-      newState: true,
-    });
     expect(document.querySelector(".bb-product-intro")).toBeNull();
   });
 
@@ -237,16 +240,132 @@ describe("showProductIntroOnce", () => {
     });
     button.addEventListener("click", onClick);
 
-    await showProductIntroOnce(introOptions);
+    await showProductIntro(introOptions);
 
     button.click();
 
     expect(onClick).toHaveBeenCalledTimes(1);
-    expect(appStoreMocks.saveIntroStateByKey).toHaveBeenCalledWith({
-      key: "connect-database",
-      newState: true,
-    });
     expect(document.querySelector(".bb-product-intro")).toBeNull();
+  });
+
+  test("destroys the intro when the mask is clicked", async () => {
+    createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+
+    await showProductIntro(introOptions);
+
+    (document.querySelector(".bb-product-intro") as HTMLDivElement).click();
+
+    expect(document.querySelector(".bb-product-intro")).toBeNull();
+  });
+
+  test("replaces an existing intro instead of stacking duplicate masks", async () => {
+    window.history.replaceState({}, "", "/?intro=connect-database");
+    createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+
+    await showProductIntro(introOptions);
+    await showProductIntro(introOptions);
+
+    expect(document.querySelectorAll(".bb-product-intro")).toHaveLength(1);
+    expect(window.location.search).toBe("?intro=connect-database");
+
+    (document.querySelector(".bb-product-intro") as HTMLDivElement).click();
+
+    expect(document.querySelector(".bb-product-intro")).toBeNull();
+    expect(window.location.search).toBe("");
+  });
+
+  test("destroys the intro when the target DOM is removed", async () => {
+    window.history.replaceState({}, "", "/?intro=connect-database");
+    const button = createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+
+    await showProductIntro(introOptions);
+
+    button.remove();
+    await Promise.resolve();
+
+    expect(document.querySelector(".bb-product-intro")).toBeNull();
+    expect(button.classList.contains("bb-product-intro-active")).toBe(false);
+    expect(window.location.search).toBe("?intro=connect-database");
+  });
+
+  test("clears the active intro when the query no longer requests it", async () => {
+    window.history.replaceState({}, "", "/?intro=connect-database");
+    createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(createElement(ProductIntroHost));
+      await Promise.resolve();
+    });
+
+    expect(document.querySelector(".bb-product-intro")).not.toBeNull();
+
+    window.history.replaceState({}, "", "/");
+    await act(async () => {
+      root.render(createElement(ProductIntroHost));
+      await Promise.resolve();
+    });
+
+    expect(document.querySelector(".bb-product-intro")).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("removes the intro query parameter when the intro is dismissed", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/settings/general?intro=connect-database&tab=workspace#ai-assistant"
+    );
+    createButton({
+      top: 240,
+      left: 400,
+      right: 560,
+      bottom: 280,
+      width: 160,
+      height: 40,
+    });
+
+    await showProductIntro(introOptions);
+
+    (
+      document.querySelector(".bb-product-intro-close") as HTMLButtonElement
+    ).click();
+
+    expect(window.location.pathname).toBe("/settings/general");
+    expect(window.location.search).toBe("?tab=workspace");
+    expect(window.location.hash).toBe("#ai-assistant");
   });
 
   test("keeps the page cover light enough to preserve context", () => {

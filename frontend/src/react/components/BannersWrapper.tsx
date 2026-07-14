@@ -18,6 +18,10 @@ import {
   useWorkspaceProfile,
 } from "@/react/hooks/useAppState";
 import {
+  EXTERNAL_URL_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/react/lib/productIntro";
+import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/react/router";
@@ -89,11 +93,16 @@ function BannerExternalUrl() {
           {hasPermission ? (
             <div className="order-3 mt-2 w-full shrink-0 sm:order-2 sm:mt-0 sm:w-auto">
               <RouterLink
-                to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
+                to={{
+                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                  query: {
+                    [PRODUCT_INTRO_QUERY_KEY]: EXTERNAL_URL_PRODUCT_INTRO,
+                  },
+                }}
                 className={buttonVariants({
                   appearance: "secondary",
                   className:
-                    "h-auto rounded-md bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
+                    "h-auto bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
                 })}
               >
                 {t("common.configure-now")}
