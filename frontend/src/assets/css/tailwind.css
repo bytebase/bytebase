@@ -15,6 +15,10 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  html {
+    overscroll-behavior-y: none;
+  }
+
   *,
   ::after,
   ::before,

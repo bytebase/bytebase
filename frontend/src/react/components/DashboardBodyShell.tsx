@@ -72,7 +72,7 @@ export function DashboardBodyShell({
       >
         <div
           ref={mobileSidebarRef}
-          className="h-full overflow-y-auto bg-control-bg"
+          className="h-full overflow-y-auto overscroll-y-contain bg-control-bg"
         />
       </div>
     </div>
@@ -113,7 +113,7 @@ export function DashboardBodyShell({
               <div className="flex w-52 flex-col bg-control-bg">
                 <div
                   ref={desktopSidebarRef}
-                  className="flex flex-1 flex-col overflow-y-auto py-0"
+                  className="flex flex-1 flex-col overflow-y-auto overscroll-y-contain py-0"
                 />
               </div>
             </aside>
@@ -146,7 +146,7 @@ export function DashboardBodyShell({
             id="bb-layout-main"
             ref={mainContainerRef}
             className={cn(
-              "flex-1 overflow-y-auto",
+              "flex-1 overflow-y-auto overscroll-y-contain",
               variant === "workspace" ? "md:min-w-0" : "min-w-0"
             )}
           >
