@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { describe, expect, test } from "vitest";
 import { SQL_EDITOR_DATABASE_MODULE } from "./handles";
-import { useCurrentRoute, type ReactRoute } from "./index";
+import { type ReactRoute, useCurrentRoute } from "./index";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

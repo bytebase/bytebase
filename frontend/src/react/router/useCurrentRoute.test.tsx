@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { useCurrentRoute, type ReactRoute } from "./index";
+import { type ReactRoute, useCurrentRoute } from "./index";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
