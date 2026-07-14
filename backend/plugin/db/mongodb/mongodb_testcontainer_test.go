@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -212,4 +213,65 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 	require.Contains(t, jsonStr, `"name"`)
 	require.Contains(t, jsonStr, `"age"`)
 	require.Contains(t, jsonStr, "Test User")
+}
+
+// TestQueryDoubleNotation reproduces GitHub issue #20895: BSON doubles holding
+// large integers must render in mongosh notation (plain decimal), not the Go
+// driver's scientific notation (e.g. 1.779696815227E+12).
+func TestQueryDoubleNotation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping MongoDB testcontainer test in short mode")
+	}
+
+	ctx := context.Background()
+
+	container := testcontainer.GetTestMongoDBContainer(ctx, t)
+	defer container.Close(ctx)
+
+	driver := &Driver{}
+	connConfig := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
+			Username: container.GetUsername(),
+		},
+		ConnectionContext: db.ConnectionContext{
+			DatabaseName: "testdb",
+		},
+		Password: container.GetPassword(),
+	}
+
+	openedDriver, err := driver.Open(ctx, storepb.Engine_MONGODB, connConfig)
+	require.NoError(t, err)
+	defer openedDriver.Close(ctx)
+
+	err = openedDriver.Ping(ctx)
+	require.NoError(t, err, "Failed to ping MongoDB")
+
+	// Insert through the official driver so the field types are guaranteed
+	// BSON doubles, matching the issue's data shape.
+	mongoDriver, ok := openedDriver.(*Driver)
+	require.True(t, ok)
+	_, err = mongoDriver.client.Database("testdb").Collection("users").InsertOne(ctx, bson.D{
+		{Key: "_id", Value: int32(1129063441)},
+		{Key: "name", Value: "repro user 1"},
+		{Key: "created_at", Value: float64(1779696815227)},
+		{Key: "updated_at", Value: float64(1779803079861)},
+		{Key: "current_workspace_id", Value: float64(585723378473606)},
+	})
+	require.NoError(t, err, "Failed to insert test data")
+
+	results, err := openedDriver.QueryConn(ctx, nil, `db.users.find()`, db.QueryContext{
+		Limit:                50,
+		MaximumSQLResultSize: 10 * 1024 * 1024,
+	})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].Error)
+	require.Len(t, results[0].Rows, 1)
+
+	jsonStr := results[0].Rows[0].Values[0].GetStringValue()
+	require.Equal(t,
+		`{"_id":1129063441,"name":"repro user 1","created_at":1779696815227,"updated_at":1779803079861,"current_workspace_id":585723378473606}`,
+		jsonStr)
 }
