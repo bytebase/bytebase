@@ -750,6 +750,79 @@ describe("usePlanDetailPage", () => {
     }
   });
 
+  test.each([
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { SUCCESS: 2 },
+      expectedCalls: 1,
+      name: "approved with passing checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.SKIPPED,
+      checkStatusCount: {},
+      expectedCalls: 1,
+      name: "skipped with no required checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.PENDING,
+      checkStatusCount: { SUCCESS: 2 },
+      expectedCalls: 0,
+      name: "pending approval",
+    },
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { RUNNING: 1 },
+      expectedCalls: 0,
+      name: "running checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { ERROR: 1 },
+      expectedCalls: 0,
+      name: "failed checks",
+    },
+  ])("uses the expected pre-rollout cadence for $name", async ({
+    approvalStatus,
+    checkStatusCount,
+    expectedCalls,
+  }) => {
+    vi.useFakeTimers();
+    try {
+      const patch = buildSnapshotPatch({
+        planId: "plan-1",
+        issue: {
+          name: "projects/foo/issues/1",
+          status: IssueStatus.OPEN,
+          approvalStatus,
+        } as PlanDetailPageSnapshot["issue"],
+      });
+      mocks.fetchPlanSnapshot.mockResolvedValue({
+        ...patch,
+        plan: {
+          ...patch.plan,
+          planCheckRunStatusCount: checkStatusCount,
+        },
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(expectedCalls);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("a stale poll from the previous plan cannot overwrite the new plan", async () => {
     vi.useFakeTimers();
     try {
