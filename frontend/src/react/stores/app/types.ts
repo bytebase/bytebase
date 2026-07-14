@@ -439,7 +439,7 @@ export type InstanceSlice = {
   createInstance: (
     instance: Instance,
     validateOnly?: boolean,
-    options?: { syncDatabasesToProject?: string }
+    options?: { initialDatabaseProject?: string }
   ) => Promise<Instance>;
   updateInstance: (
     instance: Instance,

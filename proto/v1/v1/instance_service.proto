@@ -265,7 +265,7 @@ message CreateInstanceRequest {
 
   // The project to assign newly discovered databases to during initial sync.
   // Format: projects/{project}
-  string sync_databases_to_project = 4;
+  string initial_database_project = 4;
 }
 
 message UpdateInstanceRequest {
