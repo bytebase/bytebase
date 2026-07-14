@@ -88,15 +88,16 @@ type UpdateIssueMessage struct {
 	RemoveLabels             bool
 	RemoveDraft              bool
 
-	RequirePlanApprovalInputVersion *int64
-	RequirePlanUpdatedAt            *time.Time
-	RequireApprovalFindingDone      *bool
-	RequireApproval                 *storepb.IssuePayloadApproval
-	RequireStatus                   *storepb.Issue_Status
-	RequireLabels                   *[]string
-	RequirePlanCheckRunUpdatedAt    *time.Time
-	RequireDraft                    *bool
-	RequireNoRollout                bool
+	RequirePlanApprovalInputVersion  *int64
+	RequirePlanUpdatedAt             *time.Time
+	RequireIssueApprovalInputVersion *int64
+	RequireApprovalFindingDone       *bool
+	RequireApproval                  *storepb.IssuePayloadApproval
+	RequireStatus                    *storepb.Issue_Status
+	RequireLabels                    *[]string
+	RequirePlanCheckRunUpdatedAt     *time.Time
+	RequireDraft                     *bool
+	RequireNoRollout                 bool
 	// SkipIfCurrentApprovalFindingDone skips when approval finding is already done
 	// for the same approval input version.
 	SkipIfCurrentApprovalFindingDone *int64
@@ -558,6 +559,10 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 			)`,
 			*patch.RequirePlanCheckRunUpdatedAt,
 		)
+		hasGuard = true
+	}
+	if version := patch.RequireIssueApprovalInputVersion; version != nil {
+		where.Space("AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?", *version)
 		hasGuard = true
 	}
 	if done := patch.RequireApprovalFindingDone; done != nil {

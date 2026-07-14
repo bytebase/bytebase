@@ -1178,6 +1178,7 @@ func (s *IssueService) updateIssueApprovalPayload(
 	}
 	if plan != nil {
 		update.RequirePlanApprovalInputVersion = &approvalInputVersion
+		update.RequireIssueApprovalInputVersion = &approvalInputVersion
 		for _, spec := range plan.Config.GetSpecs() {
 			if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
 				labels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())

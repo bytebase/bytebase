@@ -509,6 +509,85 @@ func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T)
 	}
 }
 
+func TestApprovalActionRejectsStaleApprovalInputVersion(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Setting:    &storepb.Project{AllowSelfApproval: true},
+	}))
+	_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("creator@example.com"),
+		Roles:     []string{"roles/workspaceAdmin"},
+	})
+	require.NoError(t, err)
+	service := newIssueServiceForTest(t, stores)
+
+	tests := []struct {
+		name     string
+		rejected bool
+		call     func(context.Context, *IssueService, string) error
+	}{
+		{
+			name: "ApproveIssue",
+			call: func(ctx context.Context, service *IssueService, issueName string) error {
+				_, err := service.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+		{
+			name: "RejectIssue",
+			call: func(ctx context.Context, service *IssueService, issueName string) error {
+				_, err := service.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+		{
+			name:     "RequestIssue",
+			rejected: true,
+			call: func(ctx context.Context, service *IssueService, issueName string) error {
+				_, err := service.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{Name: issueName}))
+				return err
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+			staleApproval := proto.CloneOf(issue.Payload.GetApproval())
+			staleApproval.ApprovalInputVersion = 1
+			staleApproval.ApprovalTemplate.Flow.Roles = []string{"roles/workspaceAdmin"}
+			staleApproval.Approvers = nil
+			if test.rejected {
+				staleApproval.Approvers = []*storepb.IssuePayloadApproval_Approver{{
+					Status:    storepb.IssuePayloadApproval_Approver_REJECTED,
+					Principal: common.FormatUserEmail("creator@example.com"),
+				}}
+			}
+			issue, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+				PayloadUpsert: &storepb.Issue{Approval: staleApproval},
+			})
+			require.NoError(t, err)
+
+			err = test.call(ctx, service, common.FormatIssue(issue.ProjectID, issue.UID))
+
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+			stored := getIssueForTest(ctx, t, stores, issue.UID)
+			require.Equal(t, staleApproval, stored.Payload.GetApproval())
+			comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+				ProjectID: issue.ProjectID,
+				IssueUID:  &issue.UID,
+			})
+			require.NoError(t, err)
+			require.Empty(t, comments)
+			require.Empty(t, service.bus.RolloutCreationChan)
+		})
+	}
+}
+
 func TestRequestIssueDoesNotOverwriteConcurrentLabelApprovalReset(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)

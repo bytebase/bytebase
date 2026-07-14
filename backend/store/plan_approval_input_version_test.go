@@ -1336,10 +1336,6 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsUpdatesMatchingVersion(
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	requiredApproval := &storepb.IssuePayloadApproval{
-		ApprovalFindingDone:  true,
-		ApprovalInputVersion: approvalInputVersion,
-	}
 	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			RiskLevel: storepb.RiskLevel_HIGH,
@@ -1348,8 +1344,8 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsUpdatesMatchingVersion(
 				ApprovalInputVersion: 2,
 			},
 		},
-		RequirePlanApprovalInputVersion: &approvalInputVersion,
-		RequireApproval:                 requiredApproval,
+		RequirePlanApprovalInputVersion:  &approvalInputVersion,
+		RequireIssueApprovalInputVersion: &approvalInputVersion,
 	})
 	require.NoError(t, err)
 
@@ -1391,10 +1387,6 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsSkipsStaleIssueApproval
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
-	requiredApproval := &storepb.IssuePayloadApproval{
-		ApprovalFindingDone:  true,
-		ApprovalInputVersion: approvalInputVersion,
-	}
 	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			RiskLevel: storepb.RiskLevel_HIGH,
@@ -1403,8 +1395,8 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsSkipsStaleIssueApproval
 				ApprovalInputVersion: 1,
 			},
 		},
-		RequirePlanApprovalInputVersion: &approvalInputVersion,
-		RequireApproval:                 requiredApproval,
+		RequirePlanApprovalInputVersion:  &approvalInputVersion,
+		RequireIssueApprovalInputVersion: &approvalInputVersion,
 	})
 	require.ErrorIs(t, err, store.ErrIssueUpdateSkipped)
 
