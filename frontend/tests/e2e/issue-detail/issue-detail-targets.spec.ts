@@ -1,17 +1,19 @@
-// Issue detail — Targets "View all" sheet (scrollability).
+// Targets "View all" sheet (scrollability) — on Plan Detail.
 //
-// BYT-9558 (FIXED, #20427): on a Data Change Issue with many targets, clicking
+// BYT-9558 (FIXED, #20427): on a Data Change with many targets, clicking
 // "View all (N)" opened a popup that was frozen — the user could not scroll down
 // to see all the targets. Root cause: the targets list rendered in a Dialog whose
 // nested flex/overflow chain never produced a scrollable container, so content
 // below the fold was unreachable. The fix replaced the Dialog with a Sheet whose
-// SheetBody is `overflow-hidden` and whose inner list is
-// `min-h-0 flex-1 overflow-y-auto` (IssueDetailDatabaseChangeView.tsx) — a real
-// scroll container.
+// body is `overflow-hidden` and whose inner list is `min-h-0 flex-1
+// overflow-y-auto` — a real scroll container.
 //
-// The same broken pattern + fix also lived on the Plan detail Changes/Targets
-// sheet (PlanDetailChangesBranch.tsx); that sibling surface is a candidate for a
-// follow-up lock (CUJ analysis) but is not covered here.
+// SURFACE NOTE (BYT-9721, #20722): schema/data CHANGE issues now redirect off
+// Issue Detail to Plan Detail, so opening this change issue lands on Plan Detail
+// and this test exercises the Plan detail Changes/Targets sheet
+// (PlanDetailChangesBranch.tsx) — the sibling surface that shared the same
+// broken pattern + fix and was previously uncovered. The test asserts the
+// redirect explicitly rather than depending on it silently.
 //
 // Owns its fixtures: creates >20 databases via psql, syncs + transfers them into
 // the project, targets them in a single-spec plan/issue, and drops them in
@@ -106,11 +108,14 @@ test.afterAll(async () => {
   await env.api.syncInstance(env.instance).catch(() => {});
 });
 
-test.describe("Targets 'View all' sheet scrolls to the last target (BYT-9558)", () => {
+test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detail (BYT-9558)", () => {
   test("the all-targets sheet is scrollable — the last target can be brought into view", async () => {
     test.setTimeout(120_000);
 
     await page.goto(issueUrl);
+    // A change issue redirects to Plan Detail (BYT-9721); make that explicit so
+    // the surface under test is intentional, not an accidental redirect.
+    await page.waitForURL(/\/projects\/[^/]+\/plans\/\d+/, { timeout: 20_000 });
     await page.keyboard.press("Escape").catch(() => {});
     await page.waitForLoadState("networkidle").catch(() => {});
 
