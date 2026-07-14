@@ -223,6 +223,7 @@ beforeEach(() => {
     name,
     project: "projects/proj1",
   }));
+  mocks.editorState.project = "projects/proj1";
   mocks.tabsState.tabsById = new Map();
   mocks.tabsState.openTmpTabList = [];
   mocks.tabsState.currentTabId = "";
@@ -431,6 +432,51 @@ describe("SQLEditorRouteShell", () => {
       query: {
         table: "users",
       },
+    });
+
+    unmount();
+  });
+
+  test("updates a stale database URL when the active tab is disconnected", async () => {
+    mocks.tabsState.tabsById.set("tab-blank", {
+      id: "tab-blank",
+      worksheet: "",
+      connection: {
+        instance: "",
+        database: "",
+      },
+    } as SQLEditorTab);
+    mocks.tabsState.currentTabId = "tab-blank";
+    mocks.tabsState.addTab.mockImplementation(
+      (payload: Partial<SQLEditorTab> = {}) => {
+        const tab = {
+          id: "tab-from-route",
+          worksheet: "",
+          connection: {
+            instance: "",
+            database: "",
+          },
+          ...payload,
+        } as SQLEditorTab;
+        mocks.tabsState.tabsById.set(tab.id, tab);
+        return tab;
+      }
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
     });
 
     unmount();

@@ -431,21 +431,21 @@ export function SQLEditorRouteShell() {
       "project",
       "schema",
       "database",
+      "table",
       "panel"
     ) as Record<string, string>;
 
     // Touch the connection so the omit() above sees the live tab —
     // identical to the Vue version's `connection.value` read at the top.
     const tabsState = getSQLEditorTabsState();
-    void (
-      tabsState.tabsById.get(tabsState.currentTabId)?.connection ??
-      emptySQLEditorConnection()
-    );
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+    void (currentTab?.connection ?? emptySQLEditorConnection());
 
     if (
       currentRoute.name === SQL_EDITOR_DATABASE_MODULE &&
       !vals.sheetName &&
-      !vals.dbName
+      !vals.dbName &&
+      !currentTab
     ) {
       return;
     }
