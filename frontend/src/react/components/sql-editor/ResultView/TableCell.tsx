@@ -63,7 +63,8 @@ export function TableCell({
     if (!cell || !wrapper) return;
     const measure = () => {
       const verticalTruncated = wrapper.scrollHeight > wrapper.offsetHeight + 2;
-      const horizontalTruncated = wrapper.scrollWidth > cell.offsetWidth + 2;
+      const availableWidth = Math.min(cell.offsetWidth, wrapper.offsetWidth);
+      const horizontalTruncated = wrapper.scrollWidth > availableWidth + 2;
       setTruncated(verticalTruncated || horizontalTruncated);
     };
     measure();
@@ -133,14 +134,18 @@ export function TableCell({
       onClick={handleClick}
       onDoubleClick={showDetail}
       className={cn(
-        "w-full h-full px-2 py-1 flex items-center",
+        "relative w-full h-full px-2 py-1 flex items-center",
         allowSelect ? "cursor-pointer hover:bg-accent/10" : "select-none",
         selected && "bg-accent/20!"
       )}
     >
       <div
         ref={wrapperRef}
-        className="font-mono text-start wrap-break-word line-clamp-3"
+        className={cn(
+          "font-mono text-start wrap-break-word line-clamp-3",
+          (hasByteData || clickable) && "max-w-[calc(100%-1.5rem)]",
+          hasByteData && clickable && "max-w-[calc(100%-3.25rem)]"
+        )}
       >
         {inner}
       </div>

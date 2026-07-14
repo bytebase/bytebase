@@ -3,7 +3,13 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["src/**/*", "!!src/bbkit/BBUtil.ts", "!!src/types/proto-es/**"]
+    "includes": [
+      "src/**/*",
+      "!src/**/*.test.tsx",
+      "!**/*.svg",
+      "!!src/bbkit/BBUtil.ts",
+      "!!src/types/proto-es/**"
+    ]
   },
   "formatter": {
     "enabled": true,

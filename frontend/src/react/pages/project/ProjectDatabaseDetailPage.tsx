@@ -195,7 +195,7 @@ export function ProjectDatabaseDetailPage({
           description={
             <div className="flex flex-row items-center justify-between gap-x-2">
               <div>{t("instance.no-environment")}</div>
-              <Button variant="link" size="sm" onClick={handleSetEnvironment}>
+              <Button size="sm" onClick={handleSetEnvironment}>
                 {t("database.edit-environment")}
               </Button>
             </div>

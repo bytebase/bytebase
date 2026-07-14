@@ -79,6 +79,7 @@ export const VirtualDataBlock = forwardRef<
     // gap to the next row. The virtualizer's `gap` option adds the
     // requested pixels into each row's `start` so cards visibly breathe.
     gap: 16,
+    paddingEnd: 96,
   });
 
   useImperativeHandle(
@@ -231,6 +232,7 @@ function CopyJSONButton({
         <Button
           size="sm"
           variant="ghost"
+          aria-label={label}
           className="size-7 p-0"
           onClick={handleCopy}
         >

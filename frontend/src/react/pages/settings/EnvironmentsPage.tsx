@@ -1167,11 +1167,20 @@ function CreateSheet({
 
             {/* Tier */}
             <div className="flex flex-col gap-y-2">
-              <label className="font-medium">
+              <label className="font-medium flex items-center gap-x-1">
                 {t("policy.environment-tier.name")}
+                <FeatureBadge feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS} />
               </label>
               <p className="text-sm text-gray-600">
                 {t("policy.environment-tier.description", { newline: "\n" })}
+                <a
+                  href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 text-accent hover:underline"
+                >
+                  {t("common.learn-more")}
+                </a>
               </p>
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
                 <Checkbox
