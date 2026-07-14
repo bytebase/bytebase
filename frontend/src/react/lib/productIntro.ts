@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useCurrentRoute } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 
 import "./productIntro.css";
 
@@ -123,11 +123,9 @@ const removeIntroQuery = () => {
     return;
   }
   url.searchParams.delete(PRODUCT_INTRO_QUERY_KEY);
-  window.history.replaceState(
-    window.history.state,
-    "",
-    `${url.pathname}${url.search}${url.hash}`
-  );
+  void router.replace({
+    fullPath: `${url.pathname}${url.search}${url.hash}`,
+  });
 };
 
 export const showProductIntro = async ({
@@ -206,6 +204,10 @@ export const showProductIntro = async ({
     if (activeCleanup === cleanup) {
       activeCleanup = undefined;
     }
+  };
+
+  const dismissIntro = () => {
+    cleanup();
     removeIntroQuery();
   };
 
@@ -234,14 +236,14 @@ export const showProductIntro = async ({
   function handleCloseClick(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    cleanup();
+    dismissIntro();
   }
 
   function handleMaskClick(event: MouseEvent) {
     if (event.target instanceof Node && popover.contains(event.target)) {
       return;
     }
-    cleanup();
+    dismissIntro();
   }
 
   function handleDocumentClick(event: MouseEvent) {
@@ -251,13 +253,13 @@ export const showProductIntro = async ({
       return;
     }
     if (event.target instanceof Node && currentElement.contains(event.target)) {
-      cleanup();
+      dismissIntro();
     }
   }
 
   function handleDocumentKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      cleanup();
+      dismissIntro();
     }
   }
 

@@ -4,6 +4,17 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+vi.mock("@/react/router", () => ({
+  router: {
+    replace: ({ fullPath }: { fullPath: string }) => {
+      window.history.replaceState(window.history.state, "", fullPath);
+    },
+  },
+  useCurrentRoute: () => ({
+    query: Object.fromEntries(new URLSearchParams(window.location.search)),
+  }),
+}));
+
 import { showProductIntro } from "./productIntro";
 
 const setRect = (element: HTMLElement, rect: Partial<DOMRect>) => {
@@ -243,6 +254,7 @@ describe("showProductIntro", () => {
     await showProductIntro(introOptions);
 
     expect(document.querySelectorAll(".bb-product-intro")).toHaveLength(1);
+    expect(window.location.search).toBe("?intro=connect-database");
 
     (document.querySelector(".bb-product-intro") as HTMLDivElement).click();
 
@@ -251,6 +263,7 @@ describe("showProductIntro", () => {
   });
 
   test("destroys the intro when the target DOM is removed", async () => {
+    window.history.replaceState({}, "", "/?intro=connect-database");
     const button = createButton({
       top: 240,
       left: 400,
@@ -267,6 +280,7 @@ describe("showProductIntro", () => {
 
     expect(document.querySelector(".bb-product-intro")).toBeNull();
     expect(button.classList.contains("bb-product-intro-active")).toBe(false);
+    expect(window.location.search).toBe("?intro=connect-database");
   });
 
   test("removes the intro query parameter when the intro is dismissed", async () => {
