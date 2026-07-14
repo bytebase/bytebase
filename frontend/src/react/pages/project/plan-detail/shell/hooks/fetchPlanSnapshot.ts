@@ -11,6 +11,7 @@ import { silentContextKey } from "@/connect/context-key";
 import {
   GetIssueRequestSchema,
   type Issue,
+  IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
@@ -41,15 +42,15 @@ export interface PlanDetailFetchPatch {
   projectCanCreateRollout: boolean;
   projectRequireIssueApproval: boolean;
   projectRequirePlanCheckNoError: boolean;
-  issue: Issue | undefined;
-  rollout: Rollout | undefined;
-  planCheckRuns: PlanCheckRun[];
-  taskRuns: TaskRun[];
+  issue?: Issue | undefined;
+  rollout?: Rollout | undefined;
+  planCheckRuns?: PlanCheckRun[];
+  taskRuns?: TaskRun[];
 }
 
-// The rollout and its task-run listing are fetched by both the full page
-// snapshot and the slim status lane; only their error handling differs. Keep the
-// request shape — schema, silent context, task-run parent glob — in one place.
+// Keep the rollout and task-run request shape in one place. They are applied as
+// one consistency group below: if either request fails, neither field is
+// patched, so a transient poll failure cannot erase last-known-good deploy data.
 // Fetched WITHOUT touching the store here; the caller (patchState) seeds the
 // store cache after its staleness guard, so a stale in-flight poll can't
 // overwrite the shared cache the log viewer reads.
@@ -68,6 +69,14 @@ const requestRolloutTaskRuns = (rolloutName: string) =>
       { contextValues: createContextValues().set(silentContextKey, true) }
     )
     .then((response) => response.taskRuns);
+
+const requestRolloutState = async (rolloutName: string) => {
+  const [rollout, taskRuns] = await Promise.all([
+    requestRollout(rolloutName),
+    requestRolloutTaskRuns(rolloutName),
+  ]);
+  return { rollout, taskRuns };
+};
 
 const convertRouteQuery = (query: Record<string, unknown>) => {
   const kv: Record<string, string> = {};
@@ -141,36 +150,59 @@ export const fetchPlanSnapshot = async (
     };
   }
 
-  const plan = await planPromise;
+  let plan = await planPromise;
 
   // The rollout name is derived from the plan name, so task runs can load in
   // parallel with the rollout instead of being serialized behind it.
-  const rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
-  const [issue, planCheckRuns, rollout, taskRuns] = await Promise.all([
-    plan.issue
-      ? issueServiceClientConnect
-          .getIssue(
+  let rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
+  const [issueResult, planCheckRunsResult, rolloutStateResult] =
+    await Promise.allSettled([
+      plan.issue
+        ? issueServiceClientConnect.getIssue(
             create(GetIssueRequestSchema, { name: plan.issue }),
             silentCtx
           )
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
-    planServiceClientConnect
-      .getPlanCheckRun(
-        create(GetPlanCheckRunRequestSchema, {
-          name: `${plan.name}/planCheckRun`,
-        }),
-        silentCtx
-      )
-      .then((run) => [run] as PlanCheckRun[])
-      .catch(() => []),
-    rolloutName
-      ? requestRollout(rolloutName).catch(() => undefined)
-      : Promise.resolve(undefined),
-    rolloutName
-      ? requestRolloutTaskRuns(rolloutName).catch(() => [])
-      : Promise.resolve([] as TaskRun[]),
-  ]);
+        : Promise.resolve(undefined),
+      planServiceClientConnect
+        .getPlanCheckRun(
+          create(GetPlanCheckRunRequestSchema, {
+            name: `${plan.name}/planCheckRun`,
+          }),
+          silentCtx
+        )
+        .then((run) => [run] as PlanCheckRun[]),
+      rolloutName
+        ? requestRolloutState(rolloutName)
+        : Promise.resolve({ rollout: undefined, taskRuns: [] as TaskRun[] }),
+    ]);
+
+  // Rollout creation commits plan.hasRollout before marking the issue DONE. If
+  // those two RPCs straddle that commit, refresh the older plan half once so a
+  // single page snapshot cannot combine DONE with a pre-rollout plan.
+  let rolloutState =
+    rolloutStateResult.status === "fulfilled"
+      ? rolloutStateResult.value
+      : undefined;
+  if (
+    !plan.hasRollout &&
+    issueResult.status === "fulfilled" &&
+    issueResult.value?.status === IssueStatus.DONE
+  ) {
+    // The initial no-rollout result belongs to the stale plan half. Do not
+    // publish it if reconciliation itself fails; the caller must retain its
+    // last-known-good deploy state and let the next poll retry.
+    rolloutState = undefined;
+    const refreshedPlan = await planServiceClientConnect
+      .getPlan(create(GetPlanRequestSchema, { name: plan.name }), silentCtx)
+      .catch(() => undefined);
+    if (refreshedPlan?.hasRollout) {
+      plan = refreshedPlan;
+      rolloutName = getRolloutFromPlan(plan.name);
+      rolloutState = await requestRolloutState(rolloutName).catch(
+        () => undefined
+      );
+    }
+  }
 
   return {
     currentUser,
@@ -183,9 +215,10 @@ export const fetchPlanSnapshot = async (
     ),
     projectRequireIssueApproval: project.requireIssueApproval,
     projectRequirePlanCheckNoError: project.requirePlanCheckNoError,
-    issue,
-    rollout,
-    planCheckRuns,
-    taskRuns,
+    ...(issueResult.status === "fulfilled" ? { issue: issueResult.value } : {}),
+    ...(planCheckRunsResult.status === "fulfilled"
+      ? { planCheckRuns: planCheckRunsResult.value }
+      : {}),
+    ...(rolloutState ? rolloutState : {}),
   };
 };

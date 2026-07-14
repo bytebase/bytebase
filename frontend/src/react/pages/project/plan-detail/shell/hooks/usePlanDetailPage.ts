@@ -346,7 +346,15 @@ export const usePlanDetailPage = ({
 
   const { isPlanDone, hasActiveTasks } = useMemo(() => {
     if (!snapshot.rollout) {
-      return { isPlanDone: false, hasActiveTasks: false };
+      // DONE is written only after rollout creation commits. Missing rollout
+      // data here is therefore a transient/mixed snapshot and should converge
+      // on the active cadence rather than looking closed for up to 15 seconds.
+      return {
+        isPlanDone: false,
+        hasActiveTasks:
+          snapshot.plan.hasRollout ||
+          snapshot.issue?.status === IssueStatus.DONE,
+      };
     }
     const nowMs = Date.now();
     let taskCount = 0;
@@ -371,7 +379,7 @@ export const usePlanDetailPage = ({
       }
     }
     return { isPlanDone: taskCount > 0 && allSettled, hasActiveTasks };
-  }, [snapshot.rollout]);
+  }, [snapshot.issue?.status, snapshot.plan.hasRollout, snapshot.rollout]);
 
   // Poll the whole snapshot on a fixed cadence: fast while a task is
   // transitioning so PENDING -> RUNNING -> DONE surfaces promptly, idle
