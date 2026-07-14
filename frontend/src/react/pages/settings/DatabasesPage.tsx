@@ -32,8 +32,6 @@ import {
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
-import { router } from "@/react/router";
-import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
@@ -482,19 +480,6 @@ export function DatabasesPage() {
         onSelectedNamesChange={setSelectedNames}
         onDatabasesChange={setVisibleDatabases}
         refreshToken={refreshToken}
-        emptyPlaceholder={
-          <Button
-            className="gap-x-2"
-            disabled={
-              !hasWorkspacePermissionV2("bb.instances.list") ||
-              !hasWorkspacePermissionV2("bb.issues.create")
-            }
-            onClick={() => router.push({ name: INSTANCE_ROUTE_CREATE })}
-          >
-            <Plus className="h-4 w-4" />
-            {t("database.connect-databases")}
-          </Button>
-        }
       />
 
       {/* Batch operations bar */}

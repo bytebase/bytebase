@@ -1698,19 +1698,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               </div>
             </>
           )}
-
-          {/* Sync Databases */}
-          {basicInfo.engine !== Engine.DYNAMODB && (
-            <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
-              <SyncDatabases
-                isCreating={isCreating}
-                showLabel={!isCreating}
-                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
-                syncDatabases={basicInfo.syncDatabases}
-                onSyncDatabasesChange={handleChangeSyncDatabases}
-              />
-            </div>
-          )}
         </div>
 
         {/* Connection Options Card */}
