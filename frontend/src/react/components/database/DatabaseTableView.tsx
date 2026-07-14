@@ -63,7 +63,12 @@ interface DatabaseTableViewProps {
   onSortChange?: (sort: DatabaseTableSort | null) => void;
   /** Row click handler. Not wired by default — pure UI doesn't navigate. */
   onRowClick?: (db: Database, e: React.MouseEvent) => void;
+  /** Select the row when it is clicked and no explicit row handler is set. */
+  selectOnRowClick?: boolean;
 }
+
+const isAllSelected = (databases: Database[], selected?: Set<string>) =>
+  databases.length > 0 && databases.every((db) => selected?.has(db.name));
 
 interface DatabaseColumn {
   key: string;
@@ -105,6 +110,7 @@ export function DatabaseTableView({
   sort,
   onSortChange,
   onRowClick,
+  selectOnRowClick = false,
 }: DatabaseTableViewProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -182,18 +188,23 @@ export function DatabaseTableView({
     const cb = onSelectedNamesChangeRef.current;
     const dbs = databasesRef.current;
     if (!current || !cb) return;
-    if (current.size === dbs.length) {
+    if (isAllSelected(dbs, current)) {
       cb(new Set());
     } else {
       cb(new Set(dbs.map((db) => db.name)));
     }
   }, []);
 
-  const allSelected =
-    databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
+  const allSelected = isAllSelected(databases, selectedNames);
   const someSelected =
-    (selectedNames?.size ?? 0) > 0 &&
-    (selectedNames?.size ?? 0) < databases.length;
+    !allSelected && databases.some((db) => selectedNames?.has(db.name));
+
+  const selectRowClick = useCallback(
+    (db: Database) => toggleSelection(db.name),
+    [toggleSelection]
+  );
+  const effectiveRowClick =
+    onRowClick ?? (selectOnRowClick ? selectRowClick : undefined);
 
   // `columns` is intentionally NOT a function of `selectedNames` /
   // `databases` so it stays referentially stable across selection toggles
@@ -428,7 +439,7 @@ export function DatabaseTableView({
                 showSelection={showSelection}
                 selected={selectedNames?.has(db.name) ?? false}
                 onToggleSelection={toggleSelection}
-                onRowClick={onRowClick}
+                onRowClick={effectiveRowClick}
               />
             ))
           )}

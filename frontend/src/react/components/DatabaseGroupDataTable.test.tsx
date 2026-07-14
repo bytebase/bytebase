@@ -112,12 +112,34 @@ describe("DatabaseGroupDataTable", () => {
       />
     );
     render();
-    const cb = container.querySelector(
-      "input[type='checkbox']"
-    ) as HTMLInputElement;
+    const cb = container.querySelector("[role='checkbox']") as HTMLElement;
     act(() => {
       cb.click();
     });
+    expect(onChange).toHaveBeenCalledWith(["projects/p/databaseGroups/a"]);
+    unmount();
+  });
+
+  test("uses the shared checkbox control in single-select mode", () => {
+    const groups = [
+      makeGroup({ name: "projects/p/databaseGroups/a", title: "A" }),
+    ];
+    const onChange = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseGroupDataTable
+        databaseGroupList={groups}
+        showSelection
+        singleSelection
+        selectedDatabaseGroupNames={[]}
+        onSelectedDatabaseGroupNamesChange={onChange}
+      />
+    );
+    render();
+    const checkbox = container.querySelector(
+      "[role='checkbox']"
+    ) as HTMLElement;
+    expect(checkbox).toBeTruthy();
+    act(() => checkbox.click());
     expect(onChange).toHaveBeenCalledWith(["projects/p/databaseGroups/a"]);
     unmount();
   });

@@ -21,6 +21,8 @@ export interface DatabaseTableProps {
   filter: DatabaseFilter;
   parent?: string;
   mode?: DatabaseTableMode;
+  /** Row click selects instead of navigating to the database page. */
+  selectOnRowClick?: boolean;
   selectedNames?: Set<string>;
   onSelectedNamesChange?: (names: Set<string>) => void;
   /**
@@ -65,6 +67,7 @@ export function DatabaseTable({
   filter,
   parent,
   mode = "ALL",
+  selectOnRowClick = false,
   selectedNames,
   onSelectedNamesChange,
   onDatabasesChange,
@@ -190,7 +193,8 @@ export function DatabaseTable({
         onSelectedNamesChange={onSelectedNamesChange}
         sort={sort}
         onSortChange={setSort}
-        onRowClick={handleRowClick}
+        onRowClick={selectOnRowClick ? undefined : handleRowClick}
+        selectOnRowClick={selectOnRowClick}
       />
       <div className="mt-4 mx-2">
         <PagedTableFooter

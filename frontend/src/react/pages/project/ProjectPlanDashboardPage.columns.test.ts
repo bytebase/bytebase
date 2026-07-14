@@ -25,6 +25,12 @@ const columnEntry = (src: string, key: string): string => {
 };
 
 describe("plan list column composition", () => {
+  test("composes the new-plan selectors from shared tables", () => {
+    expect(source).toContain("<DatabaseTable");
+    expect(source).toContain("<DatabaseGroupTable");
+    expect(source).not.toContain("<table");
+  });
+
   test("renders five columns in priority order", () => {
     expect(columnKeyOrder(source)).toEqual([
       "name",
