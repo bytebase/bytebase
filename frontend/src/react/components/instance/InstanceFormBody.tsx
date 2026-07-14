@@ -1684,7 +1684,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 onOpenInfoPanel={onOpenInfoPanel}
               />
 
-              {/* Sync Databases */}
               <div className="mt-6">
                 <SyncDatabases
                   isCreating={isCreating}

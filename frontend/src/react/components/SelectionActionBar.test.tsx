@@ -91,6 +91,23 @@ describe("SelectionActionBar", () => {
     expect(container.textContent).toContain("Delete");
   });
 
+  test("pins to the viewport above the visible main content", async () => {
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={1}
+          label="1 selected"
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          actions={[]}
+        />
+      );
+    });
+
+    const bar = container.firstElementChild;
+    expect(bar).toHaveClass("fixed", "bottom-6", "-translate-x-1/2");
+  });
+
   test("omits hidden actions and disables disabled actions", async () => {
     await act(async () => {
       root.render(

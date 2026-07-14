@@ -20,7 +20,26 @@ const extractHostPort = (url: string) => {
 export default defineConfig({
   plugins: [
     legacy({
-      targets: ["> 0.08%, not dead"],
+      // Explicit version floors, matching what "> 0.08%, not dead" resolved
+      // to as of caniuse-lite 1.0.30001792. Usage-based queries re-resolve
+      // against every caniuse-lite/browserslist update; a 2026-07 data update
+      // pulled Chrome 39-60 above the threshold, which made the babel pass
+      // in plugin-legacy's renderChunk down-level every chunk to ES5 and
+      // took the release build from ~2.5min to ~32min (13x).
+      // (and_qq/and_uc from the old resolution are omitted: babel's
+      // browserNameMap has no entry for them, so they never influenced
+      // the transforms. ios 11 dominates the transform/polyfill union.)
+      targets: [
+        "chrome >= 103",
+        "edge >= 100",
+        "firefox >= 115",
+        "safari >= 15",
+        "ios >= 11",
+        "android >= 103",
+        "samsung >= 29",
+        "opera >= 99",
+        "op_mob >= 80",
+      ],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
     }),
     {

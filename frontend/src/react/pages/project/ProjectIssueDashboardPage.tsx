@@ -1,13 +1,11 @@
-import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
   BatchIssueStatusActionDrawer,
-  IssueListItem,
+  IssueListPanel,
   IssueSearchBar,
-  PresetButtons,
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
 import {
@@ -18,8 +16,8 @@ import {
 } from "@/react/components/ProjectPageLayout";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
+import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
-import { router } from "@/react/router";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -30,9 +28,14 @@ import {
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   mergeSearchParams,
-  type SearchParams as VueSearchParams,
   type SearchScope as VueSearchScope,
 } from "@/utils";
+
+const serializeSearchParams = (params: SearchParams): string =>
+  buildSearchTextBySearchParams({
+    ...params,
+    scopes: params.scopes.filter((scope) => !scope.readonly),
+  });
 
 export function ProjectIssueDashboardPage({
   projectId,
@@ -53,16 +56,12 @@ export function ProjectIssueDashboardPage({
     [projectId]
   );
 
-  const defaultSearchParams = useCallback((): SearchParams => {
+  const defaultSearchParams = useMemo((): SearchParams => {
     const myEmail = me?.email ?? "";
     return {
       query: "",
       scopes: [
-        ...readonlyScopes.map((s) => ({
-          id: s.id,
-          value: s.value,
-          readonly: s.readonly,
-        })),
+        ...readonlyScopes,
         { id: "status", value: IssueStatus[IssueStatus.OPEN] },
         {
           id: "approval",
@@ -73,81 +72,34 @@ export function ProjectIssueDashboardPage({
     };
   }, [readonlyScopes, me]);
 
-  // Initialize from URL or defaults
-  const initialQueryRef = useRef<string | null>(null);
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const urlQ = new URLSearchParams(window.location.search).get("q") ?? null;
-    initialQueryRef.current = urlQ;
-    if (urlQ) {
-      const urlParams = buildSearchParamsBySearchText(urlQ);
-      const base: VueSearchParams = {
-        query: "",
-        scopes: readonlyScopes as VueSearchScope[],
-      };
-      const merged = mergeSearchParams(base, urlParams as VueSearchParams);
-      return {
-        query: merged.query,
-        scopes: merged.scopes.map((s) => ({
-          id: s.id,
-          value: s.value,
-          readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
-        })),
-      };
-    }
-    return defaultSearchParams();
+  const parseSearchParams = useCallback(
+    (query: string): SearchParams => {
+      const urlParams = buildSearchParamsBySearchText(query);
+      return mergeSearchParams(
+        { query: "", scopes: [...readonlyScopes] },
+        {
+          ...urlParams,
+          // The project is owned by the route path, not the query string.
+          scopes: urlParams.scopes.filter((scope) => scope.id !== "project"),
+        }
+      );
+    },
+    [readonlyScopes]
+  );
+  const [searchParams, setSearchParams] = useURLSearchParam({
+    param: "q",
+    parse: parseSearchParams,
+    serialize: serializeSearchParams,
+    defaultValue: defaultSearchParams,
   });
-
-  const [orderBy, setOrderBy] = useState("");
-
-  // Reset on project change
-  useEffect(() => {
-    setSearchParams(defaultSearchParams());
-  }, [projectId]);
-
-  // URL sync
-  const isUpdatingUrl = useRef(false);
-  useEffect(() => {
-    if (isUpdatingUrl.current) return;
-    const queryString = buildSearchTextBySearchParams(
-      searchParams as VueSearchParams
-    );
-    const currentQ = new URLSearchParams(window.location.search).get("q");
-    if (queryString === currentQ) return;
-
-    const isDefault =
-      queryString ===
-      buildSearchTextBySearchParams(defaultSearchParams() as VueSearchParams);
-    if (isDefault && !initialQueryRef.current) {
-      if (currentQ) {
-        isUpdatingUrl.current = true;
-        router
-          .replace({
-            query: { ...router.currentRoute.value.query, q: undefined },
-          })
-          .finally(() => {
-            isUpdatingUrl.current = false;
-          });
-      }
-    } else {
-      isUpdatingUrl.current = true;
-      router
-        .replace({
-          query: {
-            ...router.currentRoute.value.query,
-            q: queryString || undefined,
-          },
-        })
-        .finally(() => {
-          isUpdatingUrl.current = false;
-        });
-    }
-  }, [searchParams]);
+  const [orderBy, setOrderBy] = useURLSearchParam({
+    param: "order",
+    defaultValue: "",
+  });
 
   // Issue filter
   const issueFilter = useMemo(() => {
-    const filter = buildIssueFilterBySearchParams(
-      searchParams as VueSearchParams
-    );
+    const filter = buildIssueFilterBySearchParams(searchParams);
     filter.orderBy = orderBy;
     return filter;
   }, [searchParams, orderBy]);
@@ -242,31 +194,19 @@ export function ProjectIssueDashboardPage({
           onOrderByChange={setOrderBy}
           scopeOptions={scopeOptions}
         />
-        <PresetButtons params={searchParams} onParamsChange={setSearchParams} />
       </div>
 
       <ProjectPageContent>
-        {paged.isLoading ? (
-          <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-        ) : paged.dataList.length === 0 ? (
-          <div className="flex justify-center py-8 text-control-light">
-            {t("common.no-data")}
-          </div>
-        ) : (
-          paged.dataList.map((issue) => (
-            <IssueListItem
-              key={issue.name}
-              issue={issue}
-              selected={selectedNames.has(issue.name)}
-              onToggleSelection={toggleSelection}
-              highlightText={searchParams.query}
-            />
-          ))
-        )}
+        <IssueListPanel
+          params={searchParams}
+          onParamsChange={setSearchParams}
+          isLoading={paged.isLoading}
+          issues={paged.dataList}
+          selectedNames={selectedNames}
+          onToggleSelection={toggleSelection}
+        />
         {paged.dataList.length > 0 && (
-          <ProjectPageFooter>
+          <ProjectPageFooter className="px-2">
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}

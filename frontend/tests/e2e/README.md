@@ -12,6 +12,18 @@ Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase ser
 
 2. **`psql` client** on PATH — required for DDL setup (the Bytebase query API is read-only; tests connect directly to the sample Postgres via Unix socket).
 
+3. **Playwright Chromium** — installed automatically. `globalSetup` runs
+   `playwright install chromium` before booting the server, so a fresh checkout
+   or a `@playwright/test` version bump (which invalidates the cached browser)
+   self-heals on the next run. Playwright browsers live in a global cache keyed
+   to the package version, outside `node_modules`, so `pnpm i` never fetches
+   them. The auto-install is **skipped when `BYTEBASE_BROWSER_CHANNEL` is set**
+   (see below) — that mode drives a locally installed browser and needs no
+   download. To pre-install (or fix a failed auto-install) manually:
+   ```bash
+   pnpm --dir frontend test:e2e:install   # or: pnpm exec playwright install chromium
+   ```
+
 ## Running Tests
 
 ```bash
@@ -34,6 +46,7 @@ pnpm exec playwright test masking-exemption
 | `BYTEBASE_BIN` | No | `./bytebase-build/bytebase` | Path to pre-built binary |
 | `BYTEBASE_STARTUP_TIMEOUT` | No | `300000` (5 min) | Server startup timeout in ms |
 | `BYTEBASE_HEADED` | No | — | Set to `1` for headed browser |
+| `BYTEBASE_BROWSER_CHANNEL` | No | — | Drive a locally installed browser channel (e.g. `chrome`) instead of the downloaded Chromium; skips the Chromium auto-install. Useful when the download is unavailable (offline). |
 | `BYTEBASE_E2E_LICENSE` | **Yes** | — | Enterprise license JWT (see below) |
 | `CI` | No | — | Enables CI-specific reporter |
 

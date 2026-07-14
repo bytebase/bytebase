@@ -31,7 +31,7 @@ describe("InstanceFormBody", () => {
 
     const basicInfoIndex = source.indexOf("{/* Basic Info Card */}");
     const connectionCardIndex = source.indexOf("{/* Connection Card */}");
-    const syncDatabasesIndex = source.indexOf("{/* Sync Databases */}");
+    const syncDatabasesIndex = source.indexOf("<SyncDatabases");
     const connectionOptionsIndex = source.indexOf(
       "{/* Connection Options Card */}"
     );

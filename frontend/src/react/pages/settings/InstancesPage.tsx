@@ -70,8 +70,14 @@ import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
+import {
+  createAdvancedSearchParser,
+  legacyStateSearchParams,
+  serializeAdvancedSearch,
+  useURLSearchParam,
+} from "@/react/hooks/useURLSearchParam";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/react/router";
+import { router, useCurrentRoute } from "@/react/router";
 import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import type { InstanceFilter } from "@/react/stores/app/types";
@@ -99,6 +105,14 @@ import {
 
 const ASSIGN_LICENSE_QUERY = "assignLicense";
 const ASSIGN_LICENSE_INSTANCES_QUERY = "instances";
+const parseInstanceSearch = createAdvancedSearchParser([
+  "environment",
+  "engine",
+  "label",
+  "state",
+  "host",
+  "port",
+]);
 
 interface InstanceColumn {
   key: string;
@@ -518,44 +532,17 @@ function EditEnvironmentSheet({
 
 export function InstancesPage() {
   const { t } = useTranslation();
+  const route = useCurrentRoute();
 
-  // Search state
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const currentRoute = router.currentRoute.value;
-    const queryState = currentRoute.query.state as string;
-    if (queryState === "archived" || queryState === "all") {
-      const stateValue = queryState === "archived" ? "DELETED" : "ALL";
-      return { query: "", scopes: [{ id: "state", value: stateValue }] };
-    }
-    const queryString = currentRoute.query.q as string;
-    if (queryString) {
-      const scopes: { id: string; value: string }[] = [];
-      const queryParts: string[] = [];
-      for (const token of queryString.split(/\s+/).filter(Boolean)) {
-        const colonIdx = token.indexOf(":");
-        if (colonIdx > 0) {
-          const id = token.substring(0, colonIdx);
-          const value = token.substring(colonIdx + 1);
-          if (
-            value &&
-            [
-              "environment",
-              "engine",
-              "label",
-              "state",
-              "host",
-              "port",
-            ].includes(id)
-          ) {
-            scopes.push({ id, value });
-            continue;
-          }
-        }
-        queryParts.push(token);
-      }
-      return { query: queryParts.join(" "), scopes };
-    }
-    return { query: "", scopes: [] };
+  const defaultSearchParams = useMemo<SearchParams>(
+    () => legacyStateSearchParams(route.query.state),
+    [route.query.state]
+  );
+  const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
+    param: "q",
+    parse: parseInstanceSearch,
+    serialize: serializeAdvancedSearch,
+    defaultValue: defaultSearchParams,
   });
 
   // Scope options
@@ -674,22 +661,6 @@ export function InstancesPage() {
       });
     }
   }, []);
-
-  // Sync search state to URL
-  useEffect(() => {
-    const parts: string[] = [];
-    for (const scope of searchParams.scopes) {
-      parts.push(`${scope.id}:${scope.value}`);
-    }
-    if (searchParams.query) parts.push(searchParams.query);
-    const queryString = parts.join(" ");
-    const currentQuery = router.currentRoute.value.query;
-    const currentQueryString = currentQuery.q as string;
-    if (queryString !== (currentQueryString ?? "")) {
-      const nextQuery = { ...currentQuery, q: queryString };
-      router.replace({ query: nextQuery });
-    }
-  }, [searchParams]);
 
   // Instance count warning
   const instanceCountLimit = useAppStore((s) => s.instanceCountLimit());
@@ -907,28 +878,26 @@ export function InstancesPage() {
     [hasSplitInstanceLicense]
   );
 
+  // Depend on the two primitive params, not `route.query` — the route object
+  // is rebuilt every render, which would re-run this effect each time.
+  const assignLicenseFlag = route.query[ASSIGN_LICENSE_QUERY];
+  const rawAssignLicenseInstances = route.query[ASSIGN_LICENSE_INSTANCES_QUERY];
   useEffect(() => {
-    const query = router.currentRoute.value.query;
-    if (query[ASSIGN_LICENSE_QUERY] !== "1") {
+    if (assignLicenseFlag !== "1") {
       return;
     }
 
-    const rawInstances = query[ASSIGN_LICENSE_INSTANCES_QUERY];
     const names =
-      typeof rawInstances === "string"
-        ? rawInstances.split(",").filter(Boolean)
-        : Array.isArray(rawInstances)
-          ? rawInstances.filter(
-              (name): name is string => typeof name === "string"
-            )
-          : [];
+      typeof rawAssignLicenseInstances === "string"
+        ? rawAssignLicenseInstances.split(",").filter(Boolean)
+        : [];
     handleAssignLicense(names);
 
-    const nextQuery = { ...query };
+    const nextQuery = { ...router.currentRoute.value.query };
     delete nextQuery[ASSIGN_LICENSE_QUERY];
     delete nextQuery[ASSIGN_LICENSE_INSTANCES_QUERY];
     router.replace({ query: nextQuery });
-  }, [handleAssignLicense]);
+  }, [assignLicenseFlag, rawAssignLicenseInstances, handleAssignLicense]);
 
   // Data source toggle
   const [expandedDataSources, setExpandedDataSources] = useState<Set<string>>(
@@ -1224,8 +1193,7 @@ export function InstancesPage() {
         />
       </WorkspacePageFooter>
 
-      {/* Batch operations bar (sticky at bottom; rendered after the
-          table so selection doesn't shift table position) */}
+      {/* Batch operations bar is fixed within the visible main content. */}
       {(() => {
         const canSync = hasWorkspacePermissionV2("bb.instances.sync");
         const canUpdate = hasWorkspacePermissionV2("bb.instances.update");

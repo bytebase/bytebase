@@ -137,7 +137,7 @@ function WorkspacePageInfo({
   variant = "info",
   ...props
 }: WorkspacePageInfoProps) {
-  return <Alert variant={variant} {...props} />;
+  return <Alert role="note" variant={variant} {...props} />;
 }
 
 export {

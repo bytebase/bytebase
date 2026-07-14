@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 (
@@ -138,7 +139,11 @@ describe("DatabasesPage", () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<DatabasesPage />);
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
       await Promise.resolve();
     });
 
@@ -166,7 +171,11 @@ describe("DatabasesPage", () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<DatabasesPage />);
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
       await Promise.resolve();
     });
 

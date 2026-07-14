@@ -9709,9 +9709,9 @@ components:
           type: boolean
           title: validate_only
           description: Validate only also tests the data source connection.
-        project:
+        syncDatabasesToProject:
           type: string
-          title: project
+          title: sync_databases_to_project
           description: |-
             The project to assign newly discovered databases to during initial sync.
              Format: projects/{project}

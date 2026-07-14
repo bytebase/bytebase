@@ -74,6 +74,7 @@ describe("workspace list page layout", () => {
     expect(source).toContain('padding = "page"');
     expect(source).toContain("pagePadding");
     expect(source).toContain("paddingInline: 16");
+    expect(source).toContain('<Alert role="note"');
     expect(source).not.toContain("paddingBottom: 8");
   });
 
