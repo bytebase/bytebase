@@ -32,6 +32,7 @@ const POPOVER_HEIGHT = 128;
 const VIEWPORT_PADDING = 16;
 
 let activeCleanup: (() => void) | undefined;
+let activeIntroId: string | undefined;
 
 const getTargetSelector = (id: string) => `[data-product-intro-target="${id}"]`;
 
@@ -128,6 +129,13 @@ const removeIntroQuery = () => {
   });
 };
 
+const cleanupProductIntro = (id?: string) => {
+  if (id && activeIntroId !== id) {
+    return;
+  }
+  activeCleanup?.();
+};
+
 export const showProductIntro = async ({
   id,
   title,
@@ -143,6 +151,8 @@ export const showProductIntro = async ({
   activeCleanup?.();
 
   let activeElement = element;
+  activeElement.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+
   let destroyed = false;
   let refreshTimer: number | undefined;
   let targetObserver: MutationObserver | undefined;
@@ -203,6 +213,7 @@ export const showProductIntro = async ({
     removeActiveTargetClass();
     if (activeCleanup === cleanup) {
       activeCleanup = undefined;
+      activeIntroId = undefined;
     }
   };
 
@@ -265,6 +276,7 @@ export const showProductIntro = async ({
 
   markActiveTarget(activeElement);
   activeCleanup = cleanup;
+  activeIntroId = id;
   document.body.appendChild(root);
   render();
   targetObserver = new MutationObserver(refreshTarget);
@@ -291,8 +303,12 @@ export const useProductIntro = ({
 
   useEffect(() => {
     if (disabled || productIntro !== id) {
+      cleanupProductIntro(id);
       return;
     }
     void showProductIntro({ id, title, description });
+    return () => {
+      cleanupProductIntro(id);
+    };
   }, [description, disabled, id, productIntro, title]);
 };
