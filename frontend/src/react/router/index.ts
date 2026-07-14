@@ -184,13 +184,13 @@ function assembleRoute(
 /** React-router-backed current route, shaped like the legacy bridge. */
 export function useCurrentRoute(): ReactRoute {
   const location = useLocation();
-  const params = useParams();
   const matches = useMatches();
-  return assembleRoute(
-    location,
-    matches,
-    params as Record<string, string | string[] | undefined>
-  );
+  const params = useParams();
+  const leafParams = (matches.at(-1)?.params ?? params) as Record<
+    string,
+    string | string[] | undefined
+  >;
+  return assembleRoute(location, matches, leafParams);
 }
 
 // Non-hook snapshot of the current route, read from the registered data router

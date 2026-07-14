@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { SQL_EDITOR_DATABASE_MODULE } from "./handles";
 import {
   navigateByName,
   navigateToPath,
@@ -6,6 +7,7 @@ import {
   setAppRouter,
   setRouteNameIndex,
 } from "./navigation";
+import { buildRouteNameIndex } from "./routes";
 
 beforeEach(() => {
   setRouteNameIndex(
@@ -75,6 +77,25 @@ describe("navigation resolvePath", () => {
         },
       })
     ).toBe("/projects/p1/issues/i1");
+  });
+
+  test("resolves the SQL Editor database route with all resource params", () => {
+    setRouteNameIndex(buildRouteNameIndex());
+
+    expect(
+      resolvePath(SQL_EDITOR_DATABASE_MODULE, {
+        params: {
+          project: "new-project-ticw",
+          instance: "new-instance-rr9e",
+          database: "bytebase-3.16.1",
+        },
+        query: {
+          schema: "public",
+        },
+      })
+    ).toBe(
+      "/sql-editor/projects/new-project-ticw/instances/new-instance-rr9e/databases/bytebase-3.16.1?schema=public"
+    );
   });
 });
 

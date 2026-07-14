@@ -106,6 +106,9 @@ describe("DashboardBodyShell", () => {
     expect(targets.content).toBeInstanceOf(HTMLDivElement);
     expect(targets.quickstart).toBeInstanceOf(HTMLDivElement);
     expect(targets.mainContainer?.id).toBe("bb-layout-main");
+    expect(targets.mainContainer?.className).toContain("overscroll-y-contain");
+    expect(targets.desktopSidebar?.className).toContain("overscroll-y-contain");
+    expect(targets.mobileSidebar?.className).toContain("overscroll-y-contain");
     expect(
       harness.container.querySelector('[data-label="bb-main-body-wrapper"]')
     ).not.toBeNull();

@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseTableView } from "./DatabaseTableView";
 
 (
@@ -16,6 +17,13 @@ vi.mock("@/react/hooks/useAppState", () => ({
   useEnvironmentList: () => [],
   usePlanFeature: () => false,
 }));
+
+const makeDatabase = (name: string): Database =>
+  ({
+    name,
+    effectiveEnvironment: "environments/test",
+    labels: {},
+  }) as Database;
 
 describe("DatabaseTableView", () => {
   let root: Root | undefined;
@@ -63,5 +71,66 @@ describe("DatabaseTableView", () => {
     expect(placeholder).toBeTruthy();
     expect(placeholder.className).toContain("sticky");
     expect(placeholder.style.width).toBe("640px");
+  });
+
+  test("selects a database when a selectable row is clicked", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const database = makeDatabase("instances/i/databases/db1");
+    const onSelectedNamesChange = vi.fn();
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTableView
+          databases={[database]}
+          mode="PROJECT"
+          selectedNames={new Set()}
+          onSelectedNamesChange={onSelectedNamesChange}
+          selectOnRowClick
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const row = container.querySelector("tbody tr") as HTMLTableRowElement;
+    act(() => row.click());
+
+    expect(onSelectedNamesChange).toHaveBeenCalledTimes(1);
+    expect([...onSelectedNamesChange.mock.calls[0][0]]).toEqual([
+      database.name,
+    ]);
+  });
+
+  test("select all checks database names instead of selection size", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const databases = [
+      makeDatabase("instances/i/databases/db1"),
+      makeDatabase("instances/i/databases/db2"),
+    ];
+    const onSelectedNamesChange = vi.fn();
+
+    await act(async () => {
+      root!.render(
+        <DatabaseTableView
+          databases={databases}
+          mode="PROJECT"
+          selectedNames={new Set(["old-1", "old-2"])}
+          onSelectedNamesChange={onSelectedNamesChange}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    const selectAllCell = container.querySelector(
+      "thead th"
+    ) as HTMLTableCellElement;
+    act(() => selectAllCell.click());
+
+    expect([...onSelectedNamesChange.mock.calls[0][0]]).toEqual(
+      databases.map((database) => database.name)
+    );
   });
 });

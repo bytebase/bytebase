@@ -70,6 +70,36 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash s
 	return msg, nil
 }
 
+// ConsumeOAuth2RefreshToken atomically deletes a refresh token and reports
+// whether this call is the one that claimed it. The DELETE ... RETURNING is the
+// single-use rotation gate: concurrent refreshes of the same token race here and
+// exactly one observes consumed=true, so the caller must issue a new token pair
+// only when consumed is true. RETURNING (not RowsAffected) is used deliberately
+// — Postgres row counts are unreliable for this check. A false return means the
+// token was already consumed or never existed; a non-nil error is a real failure
+// and must abort issuance.
+func (s *Store) ConsumeOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) (bool, error) {
+	q := qb.Q().Space(`
+		DELETE FROM oauth2_refresh_token
+		WHERE token_hash = ? AND client_id = ?
+		RETURNING token_hash
+	`, tokenHash, clientID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, err
+	}
+
+	var consumedHash string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&consumedHash); err != nil { // NOSONAR: query is parameterized via qb.Query
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to consume OAuth2 refresh token")
+	}
+	return true, nil
+}
+
 func (s *Store) DeleteOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_refresh_token

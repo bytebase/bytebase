@@ -46,7 +46,10 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
       // Pinia permission store falls back to `app.projectPoliciesByName` when
       // its own cache is empty, so populating the app `iam` slice is enough
       // (see `src/store/modules/v1/permission.ts`).
-      await useAppStore.getState().loadProjectIamPolicy(project.name);
+      await useAppStore
+        .getState()
+        .loadProjectIamPolicy(project.name)
+        .catch(() => undefined);
       editorStore.setProject(project.name);
       await sqlEditorEvents.emit("project-context-ready", {
         project: project.name,

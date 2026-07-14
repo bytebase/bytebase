@@ -86,6 +86,36 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code s
 	return msg, nil
 }
 
+// ConsumeOAuth2AuthorizationCode atomically deletes an authorization code and
+// reports whether this call is the one that claimed it. The DELETE ... RETURNING
+// is the single-use issuance gate: concurrent redemptions of the same code race
+// here and exactly one observes consumed=true, so the caller must issue tokens
+// only when consumed is true. RETURNING (not RowsAffected) is used deliberately
+// — Postgres row counts are unreliable for this check. A false return means the
+// code was already consumed or never existed; a non-nil error is a real failure
+// and must abort issuance.
+func (s *Store) ConsumeOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (bool, error) {
+	q := qb.Q().Space(`
+		DELETE FROM oauth2_authorization_code
+		WHERE code = ? AND client_id = ?
+		RETURNING code
+	`, code, clientID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, err
+	}
+
+	var consumedCode string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&consumedCode); err != nil { // NOSONAR: query is parameterized via qb.Query
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to consume OAuth2 authorization code")
+	}
+	return true, nil
+}
+
 func (s *Store) DeleteOAuth2AuthorizationCode(ctx context.Context, clientID, code string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_authorization_code

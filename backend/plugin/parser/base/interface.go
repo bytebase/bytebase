@@ -167,12 +167,18 @@ func RegisterDiagnoseFunc(engine storepb.Engine, f DiagnoseFunc) {
 }
 
 // Diagnose returns the diagnostics for the statement. The diagnostics never be nil, and may not be empty although the error is not nil.
+// A non-nil result matters: publishing diagnostics as JSON null instead of an empty array
+// does not clear previously published diagnostics on the LSP client.
 func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, statement string) ([]Diagnostic, error) {
 	f, ok := diagnoseCollectors[engine]
 	if !ok {
 		return []Diagnostic{}, nil
 	}
-	return f(ctx, dCtx, statement)
+	diagnostics, err := f(ctx, dCtx, statement)
+	if diagnostics == nil {
+		diagnostics = []Diagnostic{}
+	}
+	return diagnostics, err
 }
 
 func RegisterStatementRangesFunc(engine storepb.Engine, f StatementRangeFunc) {

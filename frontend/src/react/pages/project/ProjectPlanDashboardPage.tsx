@@ -1,11 +1,9 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import {
-  CheckCircle,
   Database as DatabaseIcon,
   FolderTree,
   Loader2,
   Plus,
-  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,8 +14,8 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
-import { EngineIcon } from "@/react/components/EngineIcon";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
+import { DatabaseTable } from "@/react/components/database";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import {
   PermissionGuard,
@@ -32,8 +30,6 @@ import {
 import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import { Checkbox } from "@/react/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Sheet,
@@ -51,14 +47,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useMediaQuery } from "@/react/hooks/useMediaQuery";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
-import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
@@ -77,12 +71,7 @@ import {
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
-import {
-  type Database,
-  SyncStatus,
-} from "@/types/proto-es/v1/database_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -93,9 +82,7 @@ import {
   extractDatabaseResourceName,
   extractPlanUID,
   generatePlanTitle,
-  getDatabaseEnvironment,
   getDefaultPagination,
-  getInstanceResource,
   type SearchParams as VueSearchParams,
 } from "@/utils";
 import {
@@ -835,10 +822,17 @@ function DatabaseAndGroupSelector({
           onSelectedNamesChange={onSelectedDatabaseNamesChange}
         />
       ) : (
-        <DatabaseGroupSelector
+        <DatabaseGroupTable
           projectName={projectName}
-          selectedGroup={selectedDatabaseGroup}
-          onSelectedGroupChange={onSelectedDatabaseGroupChange}
+          view={DatabaseGroupView.BASIC}
+          showSelection
+          singleSelection
+          selectedDatabaseGroupNames={
+            selectedDatabaseGroup ? [selectedDatabaseGroup] : []
+          }
+          onSelectedDatabaseGroupNamesChange={(names) =>
+            onSelectedDatabaseGroupChange(names[0])
+          }
         />
       )}
     </div>
@@ -859,283 +853,23 @@ function DatabaseSelector({
   onSelectedNamesChange: (names: Set<string>) => void;
 }) {
   const { t } = useTranslation();
-
-  const [databases, setDatabases] = useState<Database[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [query, setQuery] = useState("");
-  const [pageSize] = useSessionPageSize("bb.plan-db-selector");
-  const nextPageTokenRef = useRef("");
-  const fetchIdRef = useRef(0);
-
-  const doFetch = useCallback(
-    async (isRefresh: boolean) => {
-      const currentFetchId = ++fetchIdRef.current;
-      if (isRefresh) {
-        setLoading(true);
-      } else {
-        setIsFetchingMore(true);
-      }
-      try {
-        const token = isRefresh ? "" : nextPageTokenRef.current;
-        const result = await useAppStore.getState().fetchDatabases({
-          parent: projectName,
-          pageSize,
-          pageToken: token || undefined,
-          filter: { query },
-        });
-        if (currentFetchId !== fetchIdRef.current) return;
-        setDatabases((prev) =>
-          isRefresh ? result.databases : [...prev, ...result.databases]
-        );
-        nextPageTokenRef.current = result.nextPageToken;
-        setHasMore(Boolean(result.nextPageToken));
-      } finally {
-        if (currentFetchId === fetchIdRef.current) {
-          setLoading(false);
-          setIsFetchingMore(false);
-        }
-      }
-    },
-    [projectName, pageSize, query]
-  );
-
-  const isFirstLoad = useRef(true);
-  useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      doFetch(true);
-      return;
-    }
-    const timer = setTimeout(() => doFetch(true), 300);
-    return () => clearTimeout(timer);
-  }, [doFetch]);
-
-  const toggleDatabase = (name: string) => {
-    const next = new Set(selectedNames);
-    if (next.has(name)) {
-      next.delete(name);
-    } else {
-      next.add(name);
-    }
-    onSelectedNamesChange(next);
-  };
-
-  const toggleAll = () => {
-    const allSelected = databases.every((db) => selectedNames.has(db.name));
-    if (allSelected) {
-      onSelectedNamesChange(new Set());
-    } else {
-      onSelectedNamesChange(new Set(databases.map((db) => db.name)));
-    }
-  };
-
-  const allSelected =
-    databases.length > 0 && databases.every((db) => selectedNames.has(db.name));
-  const someSelected =
-    databases.some((db) => selectedNames.has(db.name)) && !allSelected;
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <div className="flex flex-col gap-y-3">
       <SearchInput
         placeholder={t("database.filter-database")}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-
-      {loading ? (
-        <div className="flex justify-center py-8 text-control-light">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
-      ) : databases.length === 0 ? (
-        <div className="flex justify-center py-8 text-control-light">
-          {t("common.no-data")}
-        </div>
-      ) : (
-        <>
-          <table className="w-full text-sm max-sm:table-fixed">
-            <thead>
-              <tr className="border-b text-left text-control-light">
-                <th className="py-2 pl-3 pr-2 w-10">
-                  <Checkbox
-                    checked={someSelected ? "indeterminate" : allSelected}
-                    onCheckedChange={toggleAll}
-                  />
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.database")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.instance")}
-                </th>
-                <th className="hidden py-2 pr-4 font-medium sm:table-cell">
-                  {t("common.environment")}
-                </th>
-                <th className="hidden py-2 pr-4 font-medium whitespace-nowrap sm:table-cell">
-                  {t("common.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {databases.map((db) => {
-                const { databaseName } = extractDatabaseResourceName(db.name);
-                const inst = getInstanceResource(db);
-                const env = getDatabaseEnvironment(db);
-                const isSelected = selectedNames.has(db.name);
-                return (
-                  <tr
-                    key={db.name}
-                    className={cn(
-                      "border-b cursor-pointer hover:bg-control-bg",
-                      isSelected && "bg-accent/5"
-                    )}
-                    onClick={() => toggleDatabase(db.name)}
-                  >
-                    <td className="py-2 pl-3 pr-2">
-                      <Checkbox checked={isSelected} />
-                    </td>
-                    <td className="py-2 pr-4">
-                      <div className="flex min-w-0 items-center gap-x-1.5">
-                        {inst && (
-                          <EngineIcon
-                            engine={inst.engine}
-                            className="size-4 shrink-0"
-                          />
-                        )}
-                        <span className="truncate">{databaseName}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span className="block truncate">{inst?.title}</span>
-                    </td>
-                    <td className="hidden py-2 pr-4 sm:table-cell">
-                      {env && <EnvironmentLabel environmentName={env.name} />}
-                    </td>
-                    <td className="hidden py-2 pr-4 sm:table-cell">
-                      {db.syncStatus === SyncStatus.FAILED ? (
-                        <Tooltip
-                          content={
-                            db.syncError || t("database.sync-status-failed")
-                          }
-                        >
-                          <XCircle className="size-4 text-error" />
-                        </Tooltip>
-                      ) : (
-                        <CheckCircle className="size-4 text-success" />
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {hasMore && (
-            <div className="flex justify-center">
-              <Button
-                appearance="secondary"
-                size="sm"
-                disabled={isFetchingMore}
-                onClick={() => doFetch(false)}
-              >
-                {isFetchingMore ? t("common.loading") : t("common.load-more")}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      <DatabaseTable
+        filter={{ query }}
+        parent={projectName}
+        mode="PROJECT"
+        selectOnRowClick
+        selectedNames={selectedNames}
+        onSelectedNamesChange={onSelectedNamesChange}
+      />
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DatabaseGroupSelector
-// ---------------------------------------------------------------------------
-
-function DatabaseGroupSelector({
-  projectName,
-  selectedGroup,
-  onSelectedGroupChange,
-}: {
-  projectName: string;
-  selectedGroup: string | undefined;
-  onSelectedGroupChange: (name: string | undefined) => void;
-}) {
-  const { t } = useTranslation();
-  const [groups, setGroups] = useState<DatabaseGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    useAppStore
-      .getState()
-      .fetchDBGroupListByProjectName(projectName, DatabaseGroupView.BASIC)
-      .then((result) => {
-        setGroups(result);
-      })
-      .finally(() => setLoading(false));
-  }, [projectName]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8 text-control-light">
-        <Loader2 className="size-5 animate-spin" />
-      </div>
-    );
-  }
-
-  if (groups.length === 0) {
-    return (
-      <div className="flex justify-center py-8 text-control-light">
-        {t("common.no-data")}
-      </div>
-    );
-  }
-
-  return (
-    <RadioGroup
-      value={selectedGroup ?? ""}
-      onValueChange={(value) => onSelectedGroupChange(String(value))}
-      className="block"
-    >
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 pr-2 w-8" />
-            <th className="py-2 pr-4 font-medium">
-              {t("common.database-group")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((group) => {
-            const isSelected = selectedGroup === group.name;
-            return (
-              <tr
-                key={group.name}
-                className={cn(
-                  "border-b cursor-pointer hover:bg-control-bg",
-                  isSelected && "bg-accent/5"
-                )}
-                onClick={() =>
-                  onSelectedGroupChange(isSelected ? undefined : group.name)
-                }
-              >
-                <td className="py-2 pr-2">
-                  <RadioGroupItem value={group.name} aria-label={group.title} />
-                </td>
-                <td className="py-2 pr-4">
-                  <div className="flex items-center gap-x-1.5">
-                    <FolderTree className="size-4 text-control-light shrink-0" />
-                    <span>{group.title}</span>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </RadioGroup>
   );
 }

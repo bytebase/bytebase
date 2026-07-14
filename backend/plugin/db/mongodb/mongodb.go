@@ -237,5 +237,5 @@ func marshalValueToExtJSON(v any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(jsonBytes), nil
+	return string(normalizeExtJSONNumbers(jsonBytes)), nil
 }

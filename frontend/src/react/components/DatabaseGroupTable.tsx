@@ -79,6 +79,10 @@ export function DatabaseGroupTable({
     void useAppStore
       .getState()
       .fetchDBGroupListByProjectName(projectName, view)
+      .catch((error: unknown) => {
+        console.error(error);
+        return [];
+      })
       .then((groups) => {
         if (cancelled) return;
         setInternalList(groups);
