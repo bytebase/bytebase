@@ -112,9 +112,13 @@ test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detai
   test("the all-targets sheet is scrollable — the last target can be brought into view", async () => {
     test.setTimeout(120_000);
 
-    await page.goto(issueUrl);
-    // A change issue redirects to Plan Detail (BYT-9721); make that explicit so
-    // the surface under test is intentional, not an accidental redirect.
+    // Open the Changes phase explicitly. A change issue redirects to Plan Detail
+    // (BYT-9721) and the loader preserves the query string, so `?phase=changes`
+    // survives the redirect and opens the Changes section this test asserts on —
+    // rather than depending on the phase Plan Detail picks by status (a plan that
+    // has a rollout would default to Deploy, which collapses Changes and would
+    // hide the "View all" button).
+    await page.goto(`${issueUrl}?phase=changes`);
     await page.waitForURL(/\/projects\/[^/]+\/plans\/\d+/, { timeout: 20_000 });
     await page.keyboard.press("Escape").catch(() => {});
     await page.waitForLoadState("networkidle").catch(() => {});
