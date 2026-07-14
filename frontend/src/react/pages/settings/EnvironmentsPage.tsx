@@ -823,10 +823,10 @@ function EnvironmentDetail({
           {/* Tier section */}
           <FormField
             title={
-              <>
+              <span className="inline-flex items-center gap-x-1">
                 {t("policy.environment-tier.name")}
                 <FeatureBadge feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS} />
-              </>
+              </span>
             }
             description={
               <>
@@ -1131,7 +1131,14 @@ function CreateSheet({
 
             {/* Tier */}
             <FormField
-              title={<>{t("policy.environment-tier.name")}</>}
+              title={
+                <span className="inline-flex items-center gap-x-1">
+                  {t("policy.environment-tier.name")}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS}
+                  />
+                </span>
+              }
               description={
                 <>
                   {t("policy.environment-tier.description", { newline: "\n" })}

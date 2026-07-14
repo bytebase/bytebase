@@ -437,6 +437,7 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
       .getState()
       .getOrFetchWorksheetByName(persisted.worksheet, true);
     if (!worksheet) continue;
+    if (worksheet.project !== project) continue;
 
     const statement = getSheetStatement(worksheet);
     const connection = await extractWorksheetConnection(worksheet);

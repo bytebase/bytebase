@@ -1,10 +1,43 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { storageKeySqlEditorTabs } from "@/utils";
 import {
   __resetTabStoreProjectCursor,
   getSQLEditorTabsState,
   subscribeSQLEditorTabsState,
   useSQLEditorTabsStore,
 } from "./tab";
+
+const mocks = vi.hoisted(() => ({
+  loadCurrentUser: vi.fn(async () => undefined),
+  getOrFetchWorksheetByName: vi.fn(),
+}));
+
+vi.mock("@/react/lib/sqlEditorConnection", () => ({
+  extractWorksheetConnection: vi.fn(async () => ({
+    instance: "instances/mysql-instance",
+    database: "instances/mysql-instance/databases/bytebase",
+  })),
+  isConnectedSQLEditorTab: vi.fn(() => true),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      currentUser: {
+        email: "ed@bytebase.com",
+        workspace: "",
+      },
+      isSaaSMode: () => false,
+      loadCurrentUser: mocks.loadCurrentUser,
+      getOrFetchWorksheetByName: mocks.getOrFetchWorksheetByName,
+    }),
+  },
+}));
+
+vi.mock("@/store/modules/sqlEditor/legacy/migration", () => ({
+  migrateDraftsFromCache: vi.fn(async () => undefined),
+  migrateTabViewState: vi.fn(),
+}));
 
 const storage = new Map<string, string>();
 const originalLocalStorage = globalThis.localStorage;
@@ -35,6 +68,16 @@ beforeEach(() => {
   });
   getSQLEditorTabsState().reset();
   __resetTabStoreProjectCursor();
+  mocks.loadCurrentUser.mockClear();
+  mocks.getOrFetchWorksheetByName.mockImplementation(async (name: string) => ({
+    name,
+    project: name.startsWith("projects/project-sample/")
+      ? "projects/project-sample"
+      : "projects/aaa",
+    database: "instances/mysql-instance/databases/bytebase",
+    content: new TextEncoder().encode("SELECT 1"),
+    contentSize: BigInt(new TextEncoder().encode("SELECT 1").length),
+  }));
 });
 
 afterEach(() => {
@@ -222,5 +265,33 @@ describe("useSQLEditorTabsStore", () => {
 
     expect(count).toBeGreaterThanOrEqual(3);
     unsubscribe();
+  });
+
+  test("initProject ignores persisted worksheets from other projects", async () => {
+    storage.set(
+      storageKeySqlEditorTabs("", "projects/aaa", "ed@bytebase.com"),
+      JSON.stringify([
+        {
+          id: "cross-project-tab",
+          worksheet: "projects/project-sample/worksheets/sample-sheet",
+          mode: "WORKSHEET",
+        },
+        {
+          id: "same-project-tab",
+          worksheet: "projects/aaa/worksheets/aaa-sheet",
+          mode: "WORKSHEET",
+        },
+      ])
+    );
+
+    await getSQLEditorTabsState().initProject("projects/aaa");
+
+    const state = useSQLEditorTabsStore.getState();
+    expect(state.tabsById.has("cross-project-tab")).toBe(false);
+    expect(state.tabsById.has("same-project-tab")).toBe(true);
+    expect(state.openTmpTabList.map((tab) => tab.id)).toEqual([
+      "same-project-tab",
+    ]);
+    expect(state.currentTabId).toBe("same-project-tab");
   });
 });
