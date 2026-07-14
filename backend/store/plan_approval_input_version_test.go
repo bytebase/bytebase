@@ -1336,6 +1336,10 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsUpdatesMatchingVersion(
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
+	requiredApproval := &storepb.IssuePayloadApproval{
+		ApprovalFindingDone:  true,
+		ApprovalInputVersion: approvalInputVersion,
+	}
 	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			RiskLevel: storepb.RiskLevel_HIGH,
@@ -1344,8 +1348,8 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsUpdatesMatchingVersion(
 				ApprovalInputVersion: 2,
 			},
 		},
-		RequirePlanApprovalInputVersion:  &approvalInputVersion,
-		RequireIssueApprovalInputVersion: &approvalInputVersion,
+		RequirePlanApprovalInputVersion: &approvalInputVersion,
+		RequireApproval:                 requiredApproval,
 	})
 	require.NoError(t, err)
 
@@ -1387,6 +1391,10 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsSkipsStaleIssueApproval
 	require.NoError(t, err)
 
 	approvalInputVersion := int64(2)
+	requiredApproval := &storepb.IssuePayloadApproval{
+		ApprovalFindingDone:  true,
+		ApprovalInputVersion: approvalInputVersion,
+	}
 	_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			RiskLevel: storepb.RiskLevel_HIGH,
@@ -1395,8 +1403,8 @@ func TestUpdateIssueWithCurrentApprovalInputVersionGuardsSkipsStaleIssueApproval
 				ApprovalInputVersion: 1,
 			},
 		},
-		RequirePlanApprovalInputVersion:  &approvalInputVersion,
-		RequireIssueApprovalInputVersion: &approvalInputVersion,
+		RequirePlanApprovalInputVersion: &approvalInputVersion,
+		RequireApproval:                 requiredApproval,
 	})
 	require.ErrorIs(t, err, store.ErrIssueUpdateSkipped)
 
@@ -1442,10 +1450,9 @@ func TestUpdateIssueDraftGuardAllowsSubmissionAndSkipsStaleDraftLabelWrite(t *te
 
 func TestUpdateIssuePlanSnapshotGuard(t *testing.T) {
 	tests := []struct {
-		name                   string
-		mutatePlan             func(context.Context, *testing.T, *store.Store, *store.PlanMessage) *store.PlanMessage
-		wantSkip               bool
-		useCurrentPlanSnapshot bool
+		name       string
+		mutatePlan func(context.Context, *testing.T, *store.Store, *store.PlanMessage) *store.PlanMessage
+		wantSkip   bool
 	}{
 		{
 			name: "matching active plan",
@@ -1466,21 +1473,6 @@ func TestUpdateIssuePlanSnapshotGuard(t *testing.T) {
 				return updated
 			},
 			wantSkip: true,
-		},
-		{
-			name: "inactive plan",
-			mutatePlan: func(ctx context.Context, t *testing.T, s *store.Store, plan *store.PlanMessage) *store.PlanMessage {
-				deleted := true
-				updated, err := s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-					UID:       plan.UID,
-					ProjectID: plan.ProjectID,
-					Deleted:   &deleted,
-				})
-				require.NoError(t, err)
-				return updated
-			},
-			wantSkip:               true,
-			useCurrentPlanSnapshot: true,
 		},
 	}
 
@@ -1506,18 +1498,12 @@ func TestUpdateIssuePlanSnapshotGuard(t *testing.T) {
 			require.NoError(t, err)
 
 			validatedUpdatedAt := plan.UpdatedAt
-			currentPlan := test.mutatePlan(ctx, t, s, plan)
-			if test.useCurrentPlanSnapshot {
-				validatedUpdatedAt = currentPlan.UpdatedAt
-			}
-			version := int64(2)
+			test.mutatePlan(ctx, t, s, plan)
 			requireDraft := true
 			_, err = s.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{
-				RemoveDraft:                     true,
-				RequireDraft:                    &requireDraft,
-				RequirePlanApprovalInputVersion: &version,
-				RequirePlanUpdatedAt:            &validatedUpdatedAt,
-				RequirePlanActive:               true,
+				RemoveDraft:          true,
+				RequireDraft:         &requireDraft,
+				RequirePlanUpdatedAt: &validatedUpdatedAt,
 			})
 			if test.wantSkip {
 				require.ErrorIs(t, err, store.ErrIssueUpdateSkipped)
@@ -1562,15 +1548,12 @@ func TestUpdateIssuePlanSnapshotGuardWaitsForConcurrentPlanUpdate(t *testing.T) 
 	require.NoError(t, err)
 
 	requireDraft := true
-	version := int64(2)
 	updateResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			RemoveDraft:                     true,
-			RequireDraft:                    &requireDraft,
-			RequirePlanApprovalInputVersion: &version,
-			RequirePlanUpdatedAt:            &plan.UpdatedAt,
-			RequirePlanActive:               true,
+			RemoveDraft:          true,
+			RequireDraft:         &requireDraft,
+			RequirePlanUpdatedAt: &plan.UpdatedAt,
 		})
 		updateResult <- err
 	}()

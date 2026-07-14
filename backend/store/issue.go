@@ -88,20 +88,15 @@ type UpdateIssueMessage struct {
 	RemoveLabels             bool
 	RemoveDraft              bool
 
-	RequirePlanApprovalInputVersion         *int64
-	RequirePlanUpdatedAt                    *time.Time
-	RequirePlanActive                       bool
-	RequirePlanTitle                        bool
-	RequireIssueApprovalInputVersion        *int64
-	RequireApprovalFindingDone              *bool
-	RequireApproval                         *storepb.IssuePayloadApproval
-	RequireStatus                           *storepb.Issue_Status
-	RequireLabels                           *[]string
-	RequirePlanCheckRunUpdatedAt            *time.Time
-	RequirePlanCheckRunApprovalInputVersion *int64
-	RequirePlanCheckRunStatus               *PlanCheckRunStatus
-	RequireDraft                            *bool
-	RequireNoRollout                        bool
+	RequirePlanApprovalInputVersion *int64
+	RequirePlanUpdatedAt            *time.Time
+	RequireApprovalFindingDone      *bool
+	RequireApproval                 *storepb.IssuePayloadApproval
+	RequireStatus                   *storepb.Issue_Status
+	RequireLabels                   *[]string
+	RequirePlanCheckRunUpdatedAt    *time.Time
+	RequireDraft                    *bool
+	RequireNoRollout                bool
 	// SkipIfCurrentApprovalFindingDone skips when approval finding is already done
 	// for the same approval input version.
 	SkipIfCurrentApprovalFindingDone *int64
@@ -540,18 +535,7 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 	if patch.RequireNoRollout && patch.RequirePlanApprovalInputVersion == nil {
 		return nil, false, errors.New("RequireNoRollout requires RequirePlanApprovalInputVersion")
 	}
-	if (patch.RequirePlanActive || patch.RequirePlanTitle) && patch.RequirePlanUpdatedAt == nil {
-		return nil, false, errors.New("Plan active and title guards require RequirePlanUpdatedAt")
-	}
-	hasPlanCheckGuard := patch.RequirePlanCheckRunUpdatedAt != nil ||
-		patch.RequirePlanCheckRunApprovalInputVersion != nil ||
-		patch.RequirePlanCheckRunStatus != nil
-	if hasPlanCheckGuard &&
-		(patch.RequirePlanCheckRunUpdatedAt == nil ||
-			patch.RequirePlanCheckRunApprovalInputVersion == nil ||
-			patch.RequirePlanCheckRunStatus == nil) {
-		return nil, false, errors.New("plan check run snapshot guard requires updated time, approval input version, and status")
-	}
+	hasPlanCheckGuard := patch.RequirePlanCheckRunUpdatedAt != nil
 	if hasPlanCheckGuard && patch.RequirePlanUpdatedAt == nil {
 		return nil, false, errors.New("plan check run guard requires RequirePlanUpdatedAt")
 	}
@@ -559,8 +543,6 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 		where.Space("AND ?", issuePlanCondition(
 			patch.RequirePlanApprovalInputVersion,
 			patch.RequirePlanUpdatedAt,
-			patch.RequirePlanActive,
-			patch.RequirePlanTitle,
 			patch.RequireNoRollout,
 		))
 		hasGuard = true
@@ -573,17 +555,9 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 				WHERE plan_check_run.project = issue.project
 				  AND plan_check_run.plan_id = issue.plan_id
 				  AND plan_check_run.updated_at = ?
-				  AND COALESCE((plan_check_run.result->>'approvalInputVersion')::bigint, 0) = ?
-				  AND plan_check_run.status = ?
 			)`,
 			*patch.RequirePlanCheckRunUpdatedAt,
-			*patch.RequirePlanCheckRunApprovalInputVersion,
-			*patch.RequirePlanCheckRunStatus,
 		)
-		hasGuard = true
-	}
-	if version := patch.RequireIssueApprovalInputVersion; version != nil {
-		where.Space("AND COALESCE((payload->'approval'->>'approvalInputVersion')::bigint, 0) = ?", *version)
 		hasGuard = true
 	}
 	if done := patch.RequireApprovalFindingDone; done != nil {
@@ -626,10 +600,10 @@ func buildUpdateIssueGuard(patch *UpdateIssueMessage, projectID string, uid int6
 }
 
 func issuePlanApprovalInputVersionCondition(approvalInputVersion int64, requireNoRollout bool) *qb.Query {
-	return issuePlanCondition(&approvalInputVersion, nil, false, false, requireNoRollout)
+	return issuePlanCondition(&approvalInputVersion, nil, requireNoRollout)
 }
 
-func issuePlanCondition(approvalInputVersion *int64, updatedAt *time.Time, requireActive bool, requireTitle bool, requireNoRollout bool) *qb.Query {
+func issuePlanCondition(approvalInputVersion *int64, updatedAt *time.Time, requireNoRollout bool) *qb.Query {
 	planWhere := qb.Q().Space(`
 		plan.project = issue.project
 		  AND plan.id = issue.plan_id`)
@@ -638,12 +612,6 @@ func issuePlanCondition(approvalInputVersion *int64, updatedAt *time.Time, requi
 	}
 	if updatedAt != nil {
 		planWhere.Space("AND plan.updated_at = ?", *updatedAt)
-	}
-	if requireActive {
-		planWhere.Space("AND plan.deleted = false")
-	}
-	if requireTitle {
-		planWhere.Space("AND BTRIM(plan.name) <> ''")
 	}
 	if requireNoRollout {
 		planWhere.Space("AND COALESCE((plan.config->>'hasRollout')::boolean, false) = false")

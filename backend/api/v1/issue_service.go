@@ -1178,13 +1178,10 @@ func (s *IssueService) updateIssueApprovalPayload(
 	}
 	if plan != nil {
 		update.RequirePlanApprovalInputVersion = &approvalInputVersion
-		update.RequireIssueApprovalInputVersion = &approvalInputVersion
 		for _, spec := range plan.Config.GetSpecs() {
 			if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
 				labels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
-				approvalFindingDone := true
 				update.RequireLabels = &labels
-				update.RequireApprovalFindingDone = &approvalFindingDone
 				break
 			}
 		}
@@ -1499,18 +1496,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			patch.RequireDraft = &requireDraft
 			requireStatus := storepb.Issue_OPEN
 			patch.RequireStatus = &requireStatus
-			approvalInputVersion := submissionPlan.Config.GetApprovalInputVersion()
-			patch.RequirePlanApprovalInputVersion = &approvalInputVersion
 			patch.RequirePlanUpdatedAt = &submissionPlan.UpdatedAt
-			patch.RequirePlanActive = true
-			patch.RequirePlanTitle = true
-			patch.RequireNoRollout = true
 			patch.RequireLabels = &observedLabels
 			if submissionPlanCheckRun != nil {
-				status := submissionPlanCheckRun.Status
 				patch.RequirePlanCheckRunUpdatedAt = &submissionPlanCheckRun.UpdatedAt
-				patch.RequirePlanCheckRunApprovalInputVersion = &approvalInputVersion
-				patch.RequirePlanCheckRunStatus = &status
 			}
 			hasDirectIssueUpdate = true
 
