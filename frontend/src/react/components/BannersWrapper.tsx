@@ -91,6 +91,7 @@ function BannerExternalUrl() {
               <RouterLink
                 to={{ name: SETTING_ROUTE_WORKSPACE_GENERAL }}
                 className={buttonVariants({
+                  variant: "ghost",
                   className:
                     "h-auto rounded-md bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
                 })}
