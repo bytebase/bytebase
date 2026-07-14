@@ -180,9 +180,8 @@ export function CommentCreator({ creator }: { creator: User }) {
   );
 }
 
-// Header line for a comment-backed activity item: creator (suppressed for the
-// done-rollout system comment, whose sentence already names the actor), action
-// sentence, timestamp, and an "(edited)" marker for edited user comments.
+// Header line for a comment-backed activity item: creator, action sentence,
+// timestamp, and an "(edited)" marker for edited user comments.
 function IssueCommentHeader({
   comment,
   issue,
@@ -203,9 +202,7 @@ function IssueCommentHeader({
 
   return (
     <>
-      {!isDoneRolloutComment(issue, plan, comment) && (
-        <CommentCreator creator={creator} />
-      )}
+      <CommentCreator creator={creator} />
       <IssueCommentActionSentence
         comment={comment}
         issue={issue}
