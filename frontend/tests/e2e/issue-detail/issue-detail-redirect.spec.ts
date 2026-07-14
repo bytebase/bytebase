@@ -31,12 +31,10 @@ test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
-  // Change issues auto-create a rollout under permissive settings — harmless on
-  // the disposable server, and the redirect fires regardless of rollout state.
-  await env.api.updateProjectSettings(env.project, {
-    requireIssueApproval: false,
-    requirePlanCheckNoError: false,
-  });
+  // The redirect is decided by the route loader from the issue type + plan
+  // specs, independent of approval / plan-check gates and rollout state, so this
+  // spec deliberately does NOT touch project settings — leaving the shared
+  // sample project's gates unchanged for later specs (the suite runs workers:1).
   sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
   page = await sharedContext.newPage();
 });
