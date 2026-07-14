@@ -512,6 +512,30 @@ export class BytebaseApiClient {
     });
   }
 
+  // Create a create-database plan (a single createDatabaseConfig spec). Unlike a
+  // change plan this shares the DATABASE_CHANGE issue type but is NOT a change
+  // plan, so shouldStayOnPlanDetailPage(plan) is false — used by the redirect
+  // spec to prove create-database issues stay on Issue Detail (BYT-9721).
+  async createCreateDatabasePlan(
+    project: string,
+    title: string,
+    spec: { id: string; target: string; database: string; environment?: string },
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${project}/plans`, {
+      title,
+      specs: [
+        {
+          id: spec.id,
+          createDatabaseConfig: {
+            target: spec.target,
+            database: spec.database,
+            ...(spec.environment ? { environment: spec.environment } : {}),
+          },
+        },
+      ],
+    });
+  }
+
   async getPlan(planName: string): Promise<{ name: string; hasRollout: boolean; state: string }> {
     return this.request("GET", `/v1/${planName}`);
   }
