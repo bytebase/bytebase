@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -445,11 +446,14 @@ func createStaleApprovalInputVersionIssue(ctx context.Context, t *testing.T, ctl
 	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &planUID})
 	require.NoError(t, err)
 	require.NotNil(t, plan)
-	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:                      plan.UID,
-		ProjectID:                plan.ProjectID,
-		Config:                   proto.CloneOf(plan.Config),
-		BumpApprovalInputVersion: true,
+	storeProject, err := stores.GetProjectByResourceID(ctx, projectID)
+	require.NoError(t, err)
+	require.NotNil(t, storeProject)
+	_, err = review.NewWorkflow(stores).UpdatePlanSpecs(ctx, review.UpdatePlanSpecsInput{
+		Workspace: storeProject.Workspace,
+		PlanUID:   plan.UID,
+		ProjectID: plan.ProjectID,
+		Specs:     proto.CloneOf(plan.Config).GetSpecs(),
 	})
 	require.NoError(t, err)
 

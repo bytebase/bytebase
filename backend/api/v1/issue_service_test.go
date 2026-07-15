@@ -75,7 +75,6 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
-	approvalInputVersion := int64(2)
 	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: &storepb.IssuePayloadApproval{
@@ -83,7 +82,6 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 				ApprovalInputVersion: 2,
 			},
 		},
-		RequirePlanApprovalInputVersion: &approvalInputVersion,
 	})
 	require.NoError(t, err)
 
@@ -420,6 +418,47 @@ func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T)
 			assert.Empty(t, service.bus.RolloutCreationChan)
 		})
 	}
+}
+
+func TestStaleReviewRequestDispatchesNoPostCommitEffects(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	staleApproval := issue.Payload.GetApproval()
+	staleApproval.Approvers[0].Status = storepb.IssuePayloadApproval_Approver_REJECTED
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: staleApproval},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       plan.UID,
+		ProjectID: plan.ProjectID,
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 3,
+			Specs:                plan.Config.GetSpecs(),
+		},
+	})
+	require.NoError(t, err)
+
+	for range 2 {
+		_, err = service.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
+			Name:    common.FormatIssue(issue.ProjectID, issue.UID),
+			Comment: "retry",
+		}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	}
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+	require.Empty(t, service.bus.ApprovalCheckChan)
+	require.Empty(t, service.bus.RolloutCreationChan)
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.True(t, got.Payload.GetApproval().Equal(staleApproval))
 }
 
 func TestCreateDraftIssue(t *testing.T) {
