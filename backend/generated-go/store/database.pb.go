@@ -1074,7 +1074,9 @@ type CompositeTypeAttribute struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The attribute type. User-defined types are always schema-qualified.
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	// The non-default collation of the attribute, empty otherwise.
+	// The non-default collation of the attribute as an emit-ready SQL
+	// identifier reference (quoted as needed, schema-qualified when outside
+	// pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
 	Collation     string `protobuf:"bytes,3,opt,name=collation,proto3" json:"collation,omitempty"`
 	Comment       string `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields

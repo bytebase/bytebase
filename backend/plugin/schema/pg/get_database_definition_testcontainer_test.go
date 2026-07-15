@@ -935,6 +935,9 @@ CREATE SCHEMA geo;
 CREATE TYPE geo.point2 AS (lat numeric(9,6), lng numeric(9,6));
 CREATE TYPE wrapper AS (p geo.point2);
 CREATE TABLE plain_table (id int);
+CREATE SCHEMA locale;
+CREATE COLLATION locale.mycoll (locale = 'C');
+CREATE TYPE coll_qualified AS (v text COLLATE locale.mycoll);
 `)
 	require.NoError(t, err)
 
@@ -951,8 +954,14 @@ CREATE TABLE plain_table (id int);
 	}
 
 	public := compositesBySchema["public"]
-	require.Len(t, public, 4, "public schema should have exactly the created composite types")
+	require.Len(t, public, 5, "public schema should have exactly the created composite types")
 	require.NotContains(t, public, "plain_table", "table row types must not be synced as composite types")
+
+	collQualified := public["coll_qualified"]
+	require.NotNil(t, collQualified)
+	require.Len(t, collQualified.Attributes, 1)
+	require.Equal(t, "locale.mycoll", collQualified.Attributes[0].Collation,
+		"non-pg_catalog collations must be schema-qualified")
 
 	base := public["zz_base"]
 	require.NotNil(t, base)
@@ -960,7 +969,7 @@ CREATE TABLE plain_table (id int);
 	require.Len(t, base.Attributes, 2)
 	require.Equal(t, "street", base.Attributes[0].Name)
 	require.Equal(t, "text", base.Attributes[0].Type)
-	require.Equal(t, "C", base.Attributes[0].Collation)
+	require.Equal(t, `"C"`, base.Attributes[0].Collation)
 	require.Equal(t, "street line", base.Attributes[0].Comment)
 	require.Equal(t, "city", base.Attributes[1].Name)
 	require.Equal(t, "character varying(50)", base.Attributes[1].Type)

@@ -1360,7 +1360,11 @@ const listCompositeTypeQuery = `
 			THEN quote_ident(en.nspname) || '.' || pg_catalog.format_type(a.atttypid, a.atttypmod)
 			ELSE pg_catalog.format_type(a.atttypid, a.atttypmod)
 		END AS attribute_type,
-		co.collname AS attribute_collation,
+		CASE
+			WHEN co.collname IS NULL THEN NULL
+			WHEN nco.nspname <> 'pg_catalog' THEN quote_ident(nco.nspname) || '.' || quote_ident(co.collname)
+			ELSE quote_ident(co.collname)
+		END AS attribute_collation,
 		pg_catalog.col_description(pc.oid, a.attnum) AS attribute_comment
 	FROM pg_type pt
 		JOIN pg_class pc ON pc.oid = pt.typrelid AND pc.relkind = 'c'

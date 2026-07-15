@@ -4668,7 +4668,10 @@ paths:
             title: type
         - name: metadata.schemas.compositeTypes.attributes.collation
           in: query
-          description: The non-default collation of the attribute, empty otherwise.
+          description: |-
+            The non-default collation of the attribute as an emit-ready SQL
+             identifier reference (quoted as needed, schema-qualified when outside
+             pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
           schema:
             type: string
             title: collation
@@ -17567,7 +17570,10 @@ components:
         collation:
           type: string
           title: collation
-          description: The non-default collation of the attribute, empty otherwise.
+          description: |-
+            The non-default collation of the attribute as an emit-ready SQL
+             identifier reference (quoted as needed, schema-qualified when outside
+             pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
         comment:
           type: string
           title: comment

@@ -944,7 +944,9 @@ export declare type CompositeTypeAttribute = Message<"bytebase.v1.CompositeTypeA
   type: string;
 
   /**
-   * The non-default collation of the attribute, empty otherwise.
+   * The non-default collation of the attribute as an emit-ready SQL
+   * identifier reference (quoted as needed, schema-qualified when outside
+   * pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
    *
    * @generated from field: string collation = 3;
    */

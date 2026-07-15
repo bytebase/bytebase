@@ -156,7 +156,9 @@ message CompositeTypeAttribute {
   // The attribute type. User-defined types are always schema-qualified.
   string type = 2;
 
-  // The non-default collation of the attribute, empty otherwise.
+  // The non-default collation of the attribute as an emit-ready SQL
+  // identifier reference (quoted as needed, schema-qualified when outside
+  // pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
   string collation = 3;
 
   string comment = 4;

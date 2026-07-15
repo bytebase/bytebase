@@ -906,14 +906,13 @@ func writeCompositeType(out io.Writer, schema string, composite *storepb.Composi
 		if _, err := io.WriteString(out, attribute.Type); err != nil {
 			return err
 		}
+		// The collation is stored as an emit-ready identifier reference
+		// (quoted as needed, schema-qualified outside pg_catalog).
 		if attribute.Collation != "" {
-			if _, err := io.WriteString(out, ` COLLATE "`); err != nil {
+			if _, err := io.WriteString(out, ` COLLATE `); err != nil {
 				return err
 			}
 			if _, err := io.WriteString(out, attribute.Collation); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `"`); err != nil {
 				return err
 			}
 		}

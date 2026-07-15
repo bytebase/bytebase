@@ -34,7 +34,7 @@ func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 						Name:    "zz_base",
 						Comment: "base address type",
 						Attributes: []*storepb.CompositeTypeAttribute{
-							{Name: "street", Type: "text", Collation: "C", Comment: "street line"},
+							{Name: "street", Type: "text", Collation: `"C"`, Comment: "street line"},
 							{Name: "city", Type: "character varying(50)"},
 						},
 					},

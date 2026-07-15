@@ -3172,7 +3172,7 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the attribute. |
 | type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
-| collation | [string](#string) |  | The non-default collation of the attribute, empty otherwise. |
+| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
 | comment | [string](#string) |  | The comment describing the attribute. |
 
 

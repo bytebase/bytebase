@@ -3468,7 +3468,9 @@ rendered as the `/*!80023 INVISIBLE */` column attribute. </p></td>
                   <td>collation</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The non-default collation of the attribute, empty otherwise. </p></td>
+                  <td><p>The non-default collation of the attribute as an emit-ready SQL
+identifier reference (quoted as needed, schema-qualified when outside
+pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. </p></td>
                 </tr>
               
                 <tr>
