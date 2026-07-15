@@ -4006,6 +4006,26 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 
+	// Generate extensions.sql first: composite type attributes and table
+	// columns may use extension-provided types.
+	if len(metadata.Extensions) > 0 {
+		var buf strings.Builder
+		for i, extension := range metadata.Extensions {
+			if i > 0 {
+				buf.WriteString("\n")
+			}
+
+			if err := writeExtension(&buf, extension); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate extension SDL for %s", extension.Name)
+			}
+		}
+
+		files = append(files, schema.File{
+			Name:    "extensions.sql",
+			Content: buf.String(),
+		})
+	}
+
 	// Generate files for each schema
 	for _, schemaMetadata := range metadata.Schemas {
 		if schemaMetadata.SkipDump {
@@ -4361,25 +4381,6 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				Content: buf.String(),
 			})
 		}
-	}
-
-	// Generate extensions.sql file if there are any extensions
-	if len(metadata.Extensions) > 0 {
-		var buf strings.Builder
-		for i, extension := range metadata.Extensions {
-			if i > 0 {
-				buf.WriteString("\n")
-			}
-
-			if err := writeExtension(&buf, extension); err != nil {
-				return nil, errors.Wrapf(err, "failed to generate extension SDL for %s", extension.Name)
-			}
-		}
-
-		files = append(files, schema.File{
-			Name:    "extensions.sql",
-			Content: buf.String(),
-		})
 	}
 
 	// Generate event_triggers.sql file if there are any event triggers
