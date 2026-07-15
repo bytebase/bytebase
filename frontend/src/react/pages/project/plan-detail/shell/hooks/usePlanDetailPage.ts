@@ -421,6 +421,7 @@ export const usePlanDetailPage = ({
     const hasActiveTaskRuns = snapshot.taskRuns.some(
       (taskRun) =>
         taskRun.status === TaskRun_Status.PENDING ||
+        taskRun.status === TaskRun_Status.AVAILABLE ||
         taskRun.status === TaskRun_Status.RUNNING
     );
     const activePollingKey = [

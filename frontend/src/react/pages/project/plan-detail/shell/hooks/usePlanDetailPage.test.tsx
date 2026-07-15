@@ -726,7 +726,13 @@ describe("usePlanDetailPage", () => {
     }
   });
 
-  test("keeps polling until terminal tasks and task runs agree", async () => {
+  test.each([
+    { name: "pending", status: TaskRun_Status.PENDING },
+    { name: "available", status: TaskRun_Status.AVAILABLE },
+    { name: "running", status: TaskRun_Status.RUNNING },
+  ])("keeps polling while a terminal task has a $name task run", async ({
+    status,
+  }) => {
     vi.useFakeTimers();
     try {
       mocks.fetchPlanSnapshot.mockResolvedValue({
@@ -735,7 +741,7 @@ describe("usePlanDetailPage", () => {
         taskRuns: [
           create(TaskRunSchema, {
             name: "projects/foo/rollouts/1/stages/s1/tasks/t1/taskRuns/r1",
-            status: TaskRun_Status.RUNNING,
+            status,
           }),
         ],
       });
