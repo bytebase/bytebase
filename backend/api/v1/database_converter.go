@@ -241,9 +241,8 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				continue
 			}
 			v1Composite := &v1pb.CompositeTypeMetadata{
-				Name:     composite.Name,
-				Comment:  composite.Comment,
-				SkipDump: composite.SkipDump,
+				Name:    composite.Name,
+				Comment: composite.Comment,
 			}
 			for _, attribute := range composite.Attributes {
 				if attribute == nil {
@@ -741,9 +740,8 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				continue
 			}
 			storeComposite := &storepb.CompositeTypeMetadata{
-				Name:     composite.Name,
-				Comment:  composite.Comment,
-				SkipDump: composite.SkipDump,
+				Name:    composite.Name,
+				Comment: composite.Comment,
 			}
 			for _, attribute := range composite.Attributes {
 				if attribute == nil {

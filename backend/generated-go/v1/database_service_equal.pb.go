@@ -576,9 +576,6 @@ func (x *CompositeTypeMetadata) Equal(y *CompositeTypeMetadata) bool {
 	if x.Comment != y.Comment {
 		return false
 	}
-	if x.SkipDump != y.SkipDump {
-		return false
-	}
 	return true
 }
 

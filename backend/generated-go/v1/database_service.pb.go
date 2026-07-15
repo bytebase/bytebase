@@ -2152,9 +2152,7 @@ type CompositeTypeMetadata struct {
 	// The ordered attributes of the composite type.
 	Attributes []*CompositeTypeAttribute `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty"`
 	// The comment describing the composite type.
-	Comment string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
-	// Whether to skip this composite type during schema dump operations.
-	SkipDump      bool `protobuf:"varint,4,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	Comment       string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2208,13 +2206,6 @@ func (x *CompositeTypeMetadata) GetComment() string {
 		return x.Comment
 	}
 	return ""
-}
-
-func (x *CompositeTypeMetadata) GetSkipDump() bool {
-	if x != nil {
-		return x.SkipDump
-	}
-	return false
 }
 
 type CompositeTypeAttribute struct {
@@ -5892,14 +5883,13 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\tR\x06values\x12\x18\n" +
 	"\acomment\x18\x03 \x01(\tR\acomment\x12\x1b\n" +
-	"\tskip_dump\x18\x04 \x01(\bR\bskipDump\"\xa7\x01\n" +
+	"\tskip_dump\x18\x04 \x01(\bR\bskipDump\"\x8a\x01\n" +
 	"\x15CompositeTypeMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12C\n" +
 	"\n" +
 	"attributes\x18\x02 \x03(\v2#.bytebase.v1.CompositeTypeAttributeR\n" +
 	"attributes\x12\x18\n" +
-	"\acomment\x18\x03 \x01(\tR\acomment\x12\x1b\n" +
-	"\tskip_dump\x18\x04 \x01(\bR\bskipDump\"x\n" +
+	"\acomment\x18\x03 \x01(\tR\acomment\"x\n" +
 	"\x16CompositeTypeAttribute\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1c\n" +

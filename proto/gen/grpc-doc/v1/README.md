@@ -3191,7 +3191,6 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | name | [string](#string) |  | The name of the composite type. |
 | attributes | [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
 | comment | [string](#string) |  | The comment describing the composite type. |
-| skip_dump | [bool](#bool) |  | Whether to skip this composite type during schema dump operations. |
 
 
 

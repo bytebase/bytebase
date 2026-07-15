@@ -910,13 +910,6 @@ export declare type CompositeTypeMetadata = Message<"bytebase.v1.CompositeTypeMe
    * @generated from field: string comment = 3;
    */
   comment: string;
-
-  /**
-   * Whether to skip this composite type during schema dump operations.
-   *
-   * @generated from field: bool skip_dump = 4;
-   */
-  skipDump: boolean;
 };
 
 /**

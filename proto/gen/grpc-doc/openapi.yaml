@@ -4687,12 +4687,6 @@ paths:
           schema:
             type: string
             title: comment
-        - name: metadata.schemas.compositeTypes.skipDump
-          in: query
-          description: Whether to skip this composite type during schema dump operations.
-          schema:
-            type: boolean
-            title: skip_dump
         - name: metadata.characterSet
           in: query
           description: The character_set is the character set of a database.
@@ -17597,10 +17591,6 @@ components:
           type: string
           title: comment
           description: The comment describing the composite type.
-        skipDump:
-          type: boolean
-          title: skip_dump
-          description: Whether to skip this composite type during schema dump operations.
       title: CompositeTypeMetadata
       additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:

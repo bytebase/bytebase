@@ -596,9 +596,6 @@ message CompositeTypeMetadata {
 
   // The comment describing the composite type.
   string comment = 3;
-
-  // Whether to skip this composite type during schema dump operations.
-  bool skip_dump = 4;
 }
 
 message CompositeTypeAttribute {
