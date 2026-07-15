@@ -4006,8 +4006,31 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 
-	// Generate extensions.sql first: composite type attributes and table
-	// columns may use extension-provided types.
+	// Generate every schema.sql first: extensions may install into these
+	// schemas and all other files live inside them.
+	for _, schemaMetadata := range metadata.Schemas {
+		if schemaMetadata.SkipDump {
+			continue
+		}
+		schemaName := schemaMetadata.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		schemaContent, err := getMultiFileSchemaSDL(schemaName, schemaMetadata)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate schema SDL for %s", schemaName)
+		}
+		if schemaContent != "" {
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/schema.sql", schemaName),
+				Content: schemaContent,
+			})
+		}
+	}
+
+	// Generate extensions.sql next: composite type attributes and table
+	// columns may use extension-provided types, and the extensions may
+	// install into the schemas created above.
 	if len(metadata.Extensions) > 0 {
 		var buf strings.Builder
 		for i, extension := range metadata.Extensions {
@@ -4035,17 +4058,6 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 		schemaName := schemaMetadata.Name
 		if schemaName == "" {
 			schemaName = "public"
-		}
-
-		schemaContent, err := getMultiFileSchemaSDL(schemaName, schemaMetadata)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate schema SDL for %s", schemaName)
-		}
-		if schemaContent != "" {
-			files = append(files, schema.File{
-				Name:    fmt.Sprintf("schemas/%s/schema.sql", schemaName),
-				Content: schemaContent,
-			})
 		}
 
 		// Collect independent sequences (no owner) for this schema
