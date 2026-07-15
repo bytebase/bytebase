@@ -2,10 +2,13 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -89,6 +92,44 @@ func TestCompletion(t *testing.T) {
 	if record {
 		yamltest.Record(t, filepath, tests)
 	}
+}
+
+// Completion cost must be bounded by the caret's statement, not the whole
+// sheet: a broken statement anywhere after the caret must not make the
+// FROM-clause re-parse loop shrink through the entire trailing document
+// (BYT-9886).
+func TestCompletionWithBrokenTrailingStatementScalesLinearly(t *testing.T) {
+	a := require.New(t)
+
+	// The caret completes through the JOIN alias a2: resolving a2 to t2's
+	// columns requires parseTableReferences to actually extract the FROM
+	// clause, so an over-truncated (empty) fragment cannot pass this test.
+	var sheet strings.Builder
+	sheet.WriteString("SELECT a2. FROM t1 JOIN t2 a2 ON t1.c1 = a2.c1;\n")
+	sheet.WriteString("SELEC broken FROM oops;\n")
+	for i := range 800 {
+		fmt.Fprintf(&sheet, "SELECT col_a, col_b, col_c FROM table_%04d WHERE col_a = %d AND col_b LIKE 'pattern%%' ORDER BY col_c LIMIT 100;\n", i, i)
+	}
+
+	started := time.Now()
+	result, err := base.Completion(context.Background(), storepb.Engine_MYSQL, base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "db",
+		Metadata:          getMetadataForTest,
+		ListDatabaseNames: listDatabaseNamesForTest,
+	}, sheet.String(), 1, 10 /* caret right after "SELECT a2." */)
+	elapsed := time.Since(started)
+
+	a.NoError(err)
+	var texts []string
+	for _, candidate := range result {
+		if candidate.Type == base.CandidateTypeColumn {
+			texts = append(texts, candidate.Text)
+		}
+	}
+	a.Contains(texts, "c1")
+	a.Contains(texts, "c2")
+	a.Less(elapsed, 2*time.Second)
 }
 
 func listDatabaseNamesForTest(_ context.Context, _ string) ([]string, error) {
