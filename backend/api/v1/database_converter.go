@@ -236,6 +236,29 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			s.EnumTypes = append(s.EnumTypes, v1Enum)
 		}
 
+		for _, composite := range schema.CompositeTypes {
+			if composite == nil {
+				continue
+			}
+			v1Composite := &v1pb.CompositeTypeMetadata{
+				Name:     composite.Name,
+				Comment:  composite.Comment,
+				SkipDump: composite.SkipDump,
+			}
+			for _, attribute := range composite.Attributes {
+				if attribute == nil {
+					continue
+				}
+				v1Composite.Attributes = append(v1Composite.Attributes, &v1pb.CompositeTypeAttribute{
+					Name:      attribute.Name,
+					Type:      attribute.Type,
+					Collation: attribute.Collation,
+					Comment:   attribute.Comment,
+				})
+			}
+			s.CompositeTypes = append(s.CompositeTypes, v1Composite)
+		}
+
 		for _, matview := range schema.MaterializedViews {
 			if matview == nil {
 				continue
@@ -712,6 +735,28 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				SkipDump: enum.SkipDump,
 			}
 			s.EnumTypes = append(s.EnumTypes, storeEnum)
+		}
+		for _, composite := range schema.CompositeTypes {
+			if composite == nil {
+				continue
+			}
+			storeComposite := &storepb.CompositeTypeMetadata{
+				Name:     composite.Name,
+				Comment:  composite.Comment,
+				SkipDump: composite.SkipDump,
+			}
+			for _, attribute := range composite.Attributes {
+				if attribute == nil {
+					continue
+				}
+				storeComposite.Attributes = append(storeComposite.Attributes, &storepb.CompositeTypeAttribute{
+					Name:      attribute.Name,
+					Type:      attribute.Type,
+					Collation: attribute.Collation,
+					Comment:   attribute.Comment,
+				})
+			}
+			s.CompositeTypes = append(s.CompositeTypes, storeComposite)
 		}
 		for _, sequence := range schema.Sequences {
 			if sequence == nil {

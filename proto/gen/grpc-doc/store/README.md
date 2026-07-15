@@ -53,6 +53,8 @@
     - [ColumnCatalog](#bytebase-store-ColumnCatalog)
     - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
+    - [CompositeTypeAttribute](#bytebase-store-CompositeTypeAttribute)
+    - [CompositeTypeMetadata](#bytebase-store-CompositeTypeMetadata)
     - [DatabaseConfig](#bytebase-store-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
@@ -1066,6 +1068,42 @@ This field is populated when syncing from the database. When empty (e.g., when p
 
 
 
+<a name="bytebase-store-CompositeTypeAttribute"></a>
+
+### CompositeTypeAttribute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the attribute. |
+| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
+| collation | [string](#string) |  | The non-default collation of the attribute, empty otherwise. |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-CompositeTypeMetadata"></a>
+
+### CompositeTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the composite type. |
+| attributes | [CompositeTypeAttribute](#bytebase-store-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
+| comment | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DatabaseConfig"></a>
 
 ### DatabaseConfig
@@ -1641,6 +1679,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| composite_types | [CompositeTypeMetadata](#bytebase-store-CompositeTypeMetadata) | repeated | The list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
 
 
 

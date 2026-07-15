@@ -72,6 +72,34 @@ CREATE TABLE items (
 `,
 		},
 		{
+			name: "composite_types",
+			ddl: `
+-- zz_base sorts after its dependent aa_nested alphabetically, so a correct
+-- dump proves dependency ordering rather than name ordering.
+CREATE TYPE zz_base AS (street text COLLATE "C", city varchar(50));
+COMMENT ON TYPE zz_base IS 'base address type';
+COMMENT ON COLUMN zz_base.street IS 'street line';
+
+CREATE TYPE aa_nested AS (home zz_base, homes zz_base[], tags text[]);
+
+CREATE TYPE order_status AS ENUM ('pending', 'shipped');
+CREATE TYPE order_info AS (status order_status, note text);
+
+CREATE SCHEMA geo;
+CREATE TYPE geo.point2 AS (lat numeric(9,6), lng numeric(9,6));
+CREATE TYPE wrapper AS (p geo.point2);
+
+CREATE TYPE empty_type AS ();
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    info order_info,
+    addresses aa_nested,
+    location geo.point2
+);
+`,
+		},
+		{
 			name: "owned_sequence_dependency_order",
 			ddl: `
 -- This reproduces the customer's reported issue
@@ -486,6 +514,9 @@ func compareSchemaContents(t *testing.T, schemaA, schemaB *storepb.SchemaMetadat
 	// Compare enums
 	compareEnumsDef(t, schemaA.EnumTypes, schemaB.EnumTypes)
 
+	// Compare composite types
+	compareCompositeTypesDef(t, schemaA.CompositeTypes, schemaB.CompositeTypes)
+
 	// Compare sequences (excluding implicit sequences from SERIAL columns)
 	compareExplicitSequences(t, schemaA.Sequences, schemaB.Sequences)
 
@@ -874,6 +905,108 @@ func compareEnumsDef(t *testing.T, enumsA, enumsB []*storepb.EnumTypeMetadata) {
 		require.True(t, exists, "enum %s should exist in metadata A", enumB.Name)
 		require.ElementsMatch(t, enumA.Values, enumB.Values, "enum %s: values should match", enumB.Name)
 		require.Equal(t, enumA.Comment, enumB.Comment, "enum %s: comment should match", enumB.Name)
+	}
+}
+
+// TestSyncCompositeTypesWithTestcontainer pins the exact metadata sync
+// produces for composite types, so a sync regression cannot pass vacuously
+// through the A/B round-trip comparison above.
+func TestSyncCompositeTypesWithTestcontainer(t *testing.T) {
+	ctx := context.Background()
+
+	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { pgContainer.Close(ctx) })
+
+	dbName := fmt.Sprintf("test_sync_composite_%d", time.Now().UnixNano()%1000000)
+	_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+	require.NoError(t, err)
+
+	driver, err := createPgDriver(ctx, pgContainer.GetHost(), pgContainer.GetPort(), dbName)
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+
+	_, err = driver.GetDB().ExecContext(ctx, `
+CREATE TYPE zz_base AS (street text COLLATE "C", city varchar(50));
+COMMENT ON TYPE zz_base IS 'base address type';
+COMMENT ON COLUMN zz_base.street IS 'street line';
+CREATE TYPE aa_nested AS (home zz_base, homes zz_base[], tags text[]);
+CREATE TYPE empty_type AS ();
+CREATE SCHEMA geo;
+CREATE TYPE geo.point2 AS (lat numeric(9,6), lng numeric(9,6));
+CREATE TYPE wrapper AS (p geo.point2);
+CREATE TABLE plain_table (id int);
+`)
+	require.NoError(t, err)
+
+	metadata, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+
+	compositesBySchema := make(map[string]map[string]*storepb.CompositeTypeMetadata)
+	for _, schemaMeta := range metadata.Schemas {
+		m := make(map[string]*storepb.CompositeTypeMetadata)
+		for _, composite := range schemaMeta.CompositeTypes {
+			m[composite.Name] = composite
+		}
+		compositesBySchema[schemaMeta.Name] = m
+	}
+
+	public := compositesBySchema["public"]
+	require.Len(t, public, 4, "public schema should have exactly the created composite types")
+	require.NotContains(t, public, "plain_table", "table row types must not be synced as composite types")
+
+	base := public["zz_base"]
+	require.NotNil(t, base)
+	require.Equal(t, "base address type", base.Comment)
+	require.Len(t, base.Attributes, 2)
+	require.Equal(t, "street", base.Attributes[0].Name)
+	require.Equal(t, "text", base.Attributes[0].Type)
+	require.Equal(t, "C", base.Attributes[0].Collation)
+	require.Equal(t, "street line", base.Attributes[0].Comment)
+	require.Equal(t, "city", base.Attributes[1].Name)
+	require.Equal(t, "character varying(50)", base.Attributes[1].Type)
+	require.Empty(t, base.Attributes[1].Collation)
+
+	nested := public["aa_nested"]
+	require.NotNil(t, nested)
+	require.Len(t, nested.Attributes, 3)
+	require.Equal(t, "public.zz_base", nested.Attributes[0].Type, "user-defined attribute types must be schema-qualified")
+	require.Equal(t, "public.zz_base[]", nested.Attributes[1].Type)
+	require.Equal(t, "text[]", nested.Attributes[2].Type)
+
+	empty := public["empty_type"]
+	require.NotNil(t, empty, "zero-attribute composite types must be synced")
+	require.Empty(t, empty.Attributes)
+
+	wrapper := public["wrapper"]
+	require.NotNil(t, wrapper)
+	require.Len(t, wrapper.Attributes, 1)
+	require.Equal(t, "geo.point2", wrapper.Attributes[0].Type, "cross-schema attribute types must be schema-qualified")
+
+	geo := compositesBySchema["geo"]
+	require.Len(t, geo, 1)
+	require.NotNil(t, geo["point2"])
+}
+
+func compareCompositeTypesDef(t *testing.T, compositesA, compositesB []*storepb.CompositeTypeMetadata) {
+	require.Equal(t, len(compositesA), len(compositesB), "number of composite types should match")
+
+	mapA := make(map[string]*storepb.CompositeTypeMetadata)
+	for _, composite := range compositesA {
+		mapA[composite.Name] = composite
+	}
+
+	for _, compositeB := range compositesB {
+		compositeA, exists := mapA[compositeB.Name]
+		require.True(t, exists, "composite type %s should exist in metadata A", compositeB.Name)
+		require.Equal(t, compositeA.Comment, compositeB.Comment, "composite type %s: comment should match", compositeB.Name)
+		require.Equal(t, len(compositeA.Attributes), len(compositeB.Attributes), "composite type %s: attribute count should match", compositeB.Name)
+		for i, attributeA := range compositeA.Attributes {
+			attributeB := compositeB.Attributes[i]
+			require.Equal(t, attributeA.Name, attributeB.Name, "composite type %s: attribute %d name should match", compositeB.Name, i)
+			require.Equal(t, attributeA.Type, attributeB.Type, "composite type %s: attribute %s type should match", compositeB.Name, attributeA.Name)
+			require.Equal(t, attributeA.Collation, attributeB.Collation, "composite type %s: attribute %s collation should match", compositeB.Name, attributeA.Name)
+			require.Equal(t, attributeA.Comment, attributeB.Comment, "composite type %s: attribute %s comment should match", compositeB.Name, attributeA.Name)
+		}
 	}
 }
 

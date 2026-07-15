@@ -566,6 +566,11 @@ message SchemaMetadata {
 
   // The comment is the comment of a schema.
   string comment = 16;
+
+  // The composite_types is the list of user-defined composite types in a
+  // schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+  // types and derived types.
+  repeated CompositeTypeMetadata composite_types = 17;
 }
 
 message EnumTypeMetadata {
@@ -580,6 +585,34 @@ message EnumTypeMetadata {
 
   // Whether to skip this enum type during schema dump operations.
   bool skip_dump = 4;
+}
+
+message CompositeTypeMetadata {
+  // The name of the composite type.
+  string name = 1;
+
+  // The ordered attributes of the composite type.
+  repeated CompositeTypeAttribute attributes = 2;
+
+  // The comment describing the composite type.
+  string comment = 3;
+
+  // Whether to skip this composite type during schema dump operations.
+  bool skip_dump = 4;
+}
+
+message CompositeTypeAttribute {
+  // The name of the attribute.
+  string name = 1;
+
+  // The attribute type. User-defined types are always schema-qualified.
+  string type = 2;
+
+  // The non-default collation of the attribute, empty otherwise.
+  string collation = 3;
+
+  // The comment describing the attribute.
+  string comment = 4;
 }
 
 message EventMetadata {

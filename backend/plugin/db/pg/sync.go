@@ -183,6 +183,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to get enum types from database %q", d.databaseName)
 	}
 
+	compositeTypes, err := getCompositeTypes(txn, extensionDepend)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get composite types from database %q", d.databaseName)
+	}
+
 	eventTriggers, err := getEventTriggers(txn, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get event triggers from database %q", d.databaseName)
@@ -219,6 +224,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Owner:             schemaOwners[i],
 			Comment:           schemaComments[i],
 			EnumTypes:         enumTypes[schemaName],
+			CompositeTypes:    compositeTypes[schemaName],
 			SkipDump:          skipDumps[i],
 		})
 	}
@@ -1331,6 +1337,86 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	}
 
 	return enumTypes, nil
+}
+
+func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.CompositeTypeMetadata, error) {
+	// Standalone composite types only (relkind = 'c'): table/view row types have
+	// their own relkind and are excluded. Attribute types are rendered by
+	// format_type and schema-qualified when the (element) type is user-defined,
+	// so stored type strings are deterministic regardless of search_path.
+	query := `
+	SELECT
+		pt.oid,
+		pc.oid,
+		pn.nspname AS schema_name,
+		pt.typname AS type_name,
+		pg_catalog.obj_description(pt.oid) AS type_comment,
+		a.attname AS attribute_name,
+		CASE
+			WHEN en.nspname IS NOT NULL
+				AND en.nspname NOT IN ('pg_catalog', 'information_schema')
+				AND position(quote_ident(en.nspname) || '.' IN pg_catalog.format_type(a.atttypid, a.atttypmod)) <> 1
+			THEN quote_ident(en.nspname) || '.' || pg_catalog.format_type(a.atttypid, a.atttypmod)
+			ELSE pg_catalog.format_type(a.atttypid, a.atttypmod)
+		END AS attribute_type,
+		co.collname AS attribute_collation,
+		pg_catalog.col_description(pc.oid, a.attnum) AS attribute_comment
+	FROM pg_type pt
+		JOIN pg_class pc ON pc.oid = pt.typrelid AND pc.relkind = 'c'
+		JOIN pg_namespace pn ON pn.oid = pt.typnamespace
+		LEFT JOIN pg_attribute a ON a.attrelid = pc.oid AND a.attnum > 0 AND NOT a.attisdropped
+		LEFT JOIN pg_type at ON at.oid = a.atttypid
+		LEFT JOIN pg_type et ON et.oid = CASE WHEN at.typlen = -1 AND at.typelem <> 0 THEN at.typelem ELSE at.oid END
+		LEFT JOIN pg_namespace en ON en.oid = et.typnamespace
+		LEFT JOIN (pg_catalog.pg_collation co JOIN pg_catalog.pg_namespace nco ON co.collnamespace = nco.oid)
+			ON a.attcollation = co.oid AND (nco.nspname <> 'pg_catalog' OR co.collname <> 'default')
+	WHERE pn.nspname NOT IN (%s)
+	  AND pn.nspname NOT LIKE 'pg_temp%%'
+	  AND pn.nspname NOT LIKE 'pg_toast%%'
+	ORDER BY pn.nspname, pt.typname, a.attnum;`
+	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	compositeTypes := make(map[string][]*storepb.CompositeTypeMetadata)
+	var current *storepb.CompositeTypeMetadata
+	currentSchema := ""
+	for rows.Next() {
+		var typeOid, classOid int
+		var schemaName, typeName string
+		var typeComment, attributeName, attributeType, attributeCollation, attributeComment sql.NullString
+		if err := rows.Scan(&typeOid, &classOid, &schemaName, &typeName, &typeComment, &attributeName, &attributeType, &attributeCollation, &attributeComment); err != nil {
+			return nil, err
+		}
+
+		if current == nil || currentSchema != schemaName || current.Name != typeName {
+			current = &storepb.CompositeTypeMetadata{
+				Name:     typeName,
+				Comment:  typeComment.String,
+				SkipDump: extensionDepend[typeOid] || extensionDepend[classOid],
+			}
+			currentSchema = schemaName
+			compositeTypes[schemaName] = append(compositeTypes[schemaName], current)
+		}
+		// A composite type can have zero live attributes (CREATE TYPE x AS (),
+		// or all attributes dropped); the LEFT JOIN yields a NULL attribute row.
+		if !attributeName.Valid {
+			continue
+		}
+		current.Attributes = append(current.Attributes, &storepb.CompositeTypeAttribute{
+			Name:      attributeName.String,
+			Type:      attributeType.String,
+			Collation: attributeCollation.String,
+			Comment:   attributeComment.String,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return compositeTypes, nil
 }
 
 // getSequences gets all sequences of a database.

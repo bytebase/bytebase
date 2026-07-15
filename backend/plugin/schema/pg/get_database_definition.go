@@ -117,6 +117,35 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
+	// Construct composite types, ordered so referenced composites come first.
+	// Schemas with SkipDump never get a CREATE SCHEMA statement, so their
+	// types must not be emitted either.
+	var compositeTypes []qualifiedCompositeType
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, composite := range schema.CompositeTypes {
+			if composite.SkipDump {
+				continue
+			}
+			compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+		}
+	}
+	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return "", err
+		}
+		if compositeTypeHasComments(t.Composite) {
+			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	// Build the graph for topological sort.
 	graph := parserbase.NewGraph()
 	functionMap := make(map[string]*storepb.FunctionMetadata)
@@ -346,6 +375,28 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		// Write enum comment if present
 		if len(enum.Comment) > 0 {
 			if err := writeEnumComment(&buf, schema.Name, enum); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Construct composite types, ordered so referenced composites come first.
+	var compositeTypes []qualifiedCompositeType
+	for _, composite := range schema.CompositeTypes {
+		if composite.SkipDump {
+			continue
+		}
+		compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+	}
+	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return "", err
+		}
+		if compositeTypeHasComments(t.Composite) {
+			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
 				return "", err
 			}
 		}
@@ -852,6 +903,214 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 
 func escapeSingleQuote(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
+}
+
+func writeCompositeType(out io.Writer, schema string, composite *storepb.CompositeTypeMetadata) error {
+	if _, err := io.WriteString(out, `CREATE TYPE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, composite.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" AS (\n"); err != nil {
+		return err
+	}
+	for i, attribute := range composite.Attributes {
+		if i > 0 {
+			if _, err := io.WriteString(out, ",\n"); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `    "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, attribute.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `" `); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, attribute.Type); err != nil {
+			return err
+		}
+		if attribute.Collation != "" {
+			if _, err := io.WriteString(out, ` COLLATE "`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, attribute.Collation); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+		}
+	}
+
+	if _, err := io.WriteString(out, "\n)"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func compositeTypeHasComments(composite *storepb.CompositeTypeMetadata) bool {
+	if composite.Comment != "" {
+		return true
+	}
+	for _, attribute := range composite.Attributes {
+		if attribute.Comment != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func writeCompositeTypeComments(out io.Writer, schema string, composite *storepb.CompositeTypeMetadata) error {
+	if composite.Comment != "" {
+		if _, err := fmt.Fprintf(out, "COMMENT ON TYPE \"%s\".\"%s\" IS '%s';\n\n", schema, composite.Name, escapeSingleQuote(composite.Comment)); err != nil {
+			return err
+		}
+	}
+	for _, attribute := range composite.Attributes {
+		if attribute.Comment == "" {
+			continue
+		}
+		if _, err := fmt.Fprintf(out, "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n\n", schema, composite.Name, attribute.Name, escapeSingleQuote(attribute.Comment)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// qualifiedCompositeType pairs a composite type with its schema for
+// cross-schema ordering.
+type qualifiedCompositeType struct {
+	Schema    string
+	Composite *storepb.CompositeTypeMetadata
+}
+
+// parseQualifiedTypeIdent splits a type reference produced by the sync layer
+// (format_type output, schema-qualified for user-defined types) into
+// (schema, name), ignoring any typmod or array suffix. It returns ok=false
+// for unqualified references — built-in types are never schema-qualified.
+func parseQualifiedTypeIdent(s string) (string, string, bool) {
+	var parts []string
+	for i := 0; i < len(s); {
+		if s[i] == '"' {
+			var b strings.Builder
+			i++
+			for i < len(s) {
+				if s[i] == '"' {
+					if i+1 < len(s) && s[i+1] == '"' {
+						b.WriteByte('"')
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				b.WriteByte(s[i])
+				i++
+			}
+			parts = append(parts, b.String())
+		} else {
+			start := i
+			for i < len(s) && s[i] != '.' && s[i] != '(' && s[i] != '[' {
+				i++
+			}
+			parts = append(parts, strings.TrimSpace(s[start:i]))
+		}
+		if i < len(s) && s[i] == '.' {
+			i++
+			continue
+		}
+		break
+	}
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		return parts[0], parts[1], true
+	}
+	return "", "", false
+}
+
+// sortCompositeTypesTopologically orders composite types so that a composite
+// referenced by another composite's attribute is emitted first. PostgreSQL
+// rejects self-containment, so the graph is acyclic; any leftover on an
+// unexpected cycle falls back to (schema, name) order. A composite attribute
+// typed with a table or view row type is not reordered here — that requires
+// catalog-grade dependency data (see pg_dump's pg_depend-driven sort).
+func sortCompositeTypesTopologically(types []qualifiedCompositeType) []qualifiedCompositeType {
+	key := func(schema, name string) string { return schema + "\x00" + name }
+	nodes := make(map[string]qualifiedCompositeType, len(types))
+	for _, t := range types {
+		nodes[key(t.Schema, t.Composite.Name)] = t
+	}
+	inDegree := make(map[string]int, len(nodes))
+	dependents := make(map[string][]string, len(nodes))
+	for k := range nodes {
+		inDegree[k] = 0
+	}
+	for k, t := range nodes {
+		for _, attribute := range t.Composite.Attributes {
+			depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type)
+			if !ok {
+				continue
+			}
+			depKey := key(depSchema, depName)
+			if depKey == k {
+				continue
+			}
+			if _, exists := nodes[depKey]; !exists {
+				continue
+			}
+			dependents[depKey] = append(dependents[depKey], k)
+			inDegree[k]++
+		}
+	}
+
+	var ready []string
+	for k, d := range inDegree {
+		if d == 0 {
+			ready = append(ready, k)
+		}
+	}
+	slices.Sort(ready)
+
+	ordered := make([]qualifiedCompositeType, 0, len(nodes))
+	for len(ready) > 0 {
+		k := ready[0]
+		ready = ready[1:]
+		ordered = append(ordered, nodes[k])
+		delete(inDegree, k)
+		for _, dependent := range dependents[k] {
+			if _, remaining := inDegree[dependent]; !remaining {
+				continue
+			}
+			inDegree[dependent]--
+			if inDegree[dependent] == 0 {
+				ready = append(ready, dependent)
+			}
+		}
+		slices.Sort(ready)
+	}
+
+	if len(ordered) < len(nodes) {
+		var rest []string
+		for k := range inDegree {
+			rest = append(rest, k)
+		}
+		slices.Sort(rest)
+		for _, k := range rest {
+			ordered = append(ordered, nodes[k])
+		}
+	}
+
+	return ordered
 }
 
 // signatureTypesOnly strips parameter names from a function/procedure signature,
@@ -2643,6 +2902,34 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
+	// Write all composite types before sequences and tables, ordered so
+	// referenced composites come first.
+	var sdlCompositeTypes []qualifiedCompositeType
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, composite := range schema.CompositeTypes {
+			if composite.SkipDump {
+				continue
+			}
+			sdlCompositeTypes = append(sdlCompositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+		}
+	}
+	for _, t := range sortCompositeTypesTopologically(sdlCompositeTypes) {
+		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
+			return "", err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return "", err
+		}
+		if compositeTypeHasComments(t.Composite) {
+			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	// Write all sequences before tables to ensure they exist before any table references them.
 	// Skip sequences that belong to serial or identity columns as they will be implicitly created.
 	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
@@ -3997,19 +4284,19 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			})
 		}
 
-		// Generate a single file for all enum types in this schema
-		if len(schemaMetadata.EnumTypes) > 0 {
+		// Generate a single file for all enum and composite types in this schema
+		if len(schemaMetadata.EnumTypes) > 0 || len(schemaMetadata.CompositeTypes) > 0 {
 			var buf strings.Builder
-			hasEnumTypes := false
+			hasTypes := false
 			for i, enumType := range schemaMetadata.EnumTypes {
 				if enumType.SkipDump {
 					continue
 				}
 
-				if hasEnumTypes {
+				if hasTypes {
 					buf.WriteString("\n")
 				}
-				hasEnumTypes = true
+				hasTypes = true
 
 				if i > 0 {
 					buf.WriteString("\n")
@@ -4029,7 +4316,35 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				}
 			}
 
-			if hasEnumTypes {
+			// Composite types follow enums, ordered so referenced composites
+			// come first.
+			var compositeTypes []qualifiedCompositeType
+			for _, composite := range schemaMetadata.CompositeTypes {
+				if composite.SkipDump {
+					continue
+				}
+				compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schemaName, Composite: composite})
+			}
+			for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+				if hasTypes {
+					buf.WriteString("\n")
+				}
+				hasTypes = true
+
+				if err := writeCompositeType(&buf, schemaName, t.Composite); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate composite type SDL for %s.%s", schemaName, t.Composite.Name)
+				}
+				buf.WriteString(";\n")
+
+				if compositeTypeHasComments(t.Composite) {
+					buf.WriteString("\n")
+					if err := writeCompositeTypeComments(&buf, schemaName, t.Composite); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate composite type comment for %s.%s", schemaName, t.Composite.Name)
+					}
+				}
+			}
+
+			if hasTypes {
 				files = append(files, schema.File{
 					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
 					Content: buf.String(),
