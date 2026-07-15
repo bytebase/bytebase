@@ -1339,12 +1339,12 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	return enumTypes, nil
 }
 
-func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.CompositeTypeMetadata, error) {
-	// Standalone composite types only (relkind = 'c'): table/view row types have
-	// their own relkind and are excluded. Attribute types are rendered by
-	// format_type and schema-qualified when the (element) type is user-defined,
-	// so stored type strings are deterministic regardless of search_path.
-	query := `
+// listCompositeTypeQuery lists standalone composite types only (relkind =
+// 'c'): table/view row types have their own relkind and are excluded.
+// Attribute types are rendered by format_type and schema-qualified when the
+// (element) type is user-defined, so stored type strings are deterministic
+// regardless of search_path.
+var listCompositeTypeQuery = fmt.Sprintf(`
 	SELECT
 		pt.oid,
 		pc.oid,
@@ -1373,8 +1373,10 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 	WHERE pn.nspname NOT IN (%s)
 	  AND pn.nspname NOT LIKE 'pg_temp%%'
 	  AND pn.nspname NOT LIKE 'pg_toast%%'
-	ORDER BY pn.nspname, pt.typname, a.attnum;`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	ORDER BY pn.nspname, pt.typname, a.attnum;`, pgparser.SystemSchemaWhereClause)
+
+func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.CompositeTypeMetadata, error) {
+	rows, err := txn.Query(listCompositeTypeQuery)
 	if err != nil {
 		return nil, err
 	}

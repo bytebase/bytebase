@@ -117,33 +117,9 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Construct composite types, ordered so referenced composites come first.
-	// Schemas with SkipDump never get a CREATE SCHEMA statement, so their
-	// types must not be emitted either.
-	var compositeTypes []qualifiedCompositeType
-	for _, schema := range metadata.Schemas {
-		if schema.SkipDump {
-			continue
-		}
-		for _, composite := range schema.CompositeTypes {
-			if composite.SkipDump {
-				continue
-			}
-			compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
-		}
-	}
-	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
-		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(";\n\n"); err != nil {
-			return "", err
-		}
-		if compositeTypeHasComments(t.Composite) {
-			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
-				return "", err
-			}
-		}
+	// Construct composite types.
+	if err := writeCompositeTypesSection(&buf, collectCompositeTypes(metadata.Schemas)); err != nil {
+		return "", err
 	}
 
 	// Build the graph for topological sort.
@@ -380,7 +356,8 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Construct composite types, ordered so referenced composites come first.
+	// Construct composite types. The schema-level SkipDump filter does not
+	// apply here: the caller asked for this specific schema's definition.
 	var compositeTypes []qualifiedCompositeType
 	for _, composite := range schema.CompositeTypes {
 		if composite.SkipDump {
@@ -388,18 +365,8 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 		compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
 	}
-	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
-		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(";\n\n"); err != nil {
-			return "", err
-		}
-		if compositeTypeHasComments(t.Composite) {
-			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
-				return "", err
-			}
-		}
+	if err := writeCompositeTypesSection(&buf, compositeTypes); err != nil {
+		return "", err
 	}
 
 	// Build the graph for topological sort.
@@ -993,6 +960,44 @@ func writeCompositeTypeComments(out io.Writer, schema string, composite *storepb
 type qualifiedCompositeType struct {
 	Schema    string
 	Composite *storepb.CompositeTypeMetadata
+}
+
+// collectCompositeTypes gathers the dumpable composite types of the given
+// schemas. Schemas with SkipDump never get a CREATE SCHEMA statement, so
+// their types must not be emitted either.
+func collectCompositeTypes(schemas []*storepb.SchemaMetadata) []qualifiedCompositeType {
+	var compositeTypes []qualifiedCompositeType
+	for _, schema := range schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, composite := range schema.CompositeTypes {
+			if composite.SkipDump {
+				continue
+			}
+			compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+		}
+	}
+	return compositeTypes
+}
+
+// writeCompositeTypesSection emits the composite types with their comments,
+// ordered so referenced composites come first.
+func writeCompositeTypesSection(buf *strings.Builder, compositeTypes []qualifiedCompositeType) error {
+	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+		if err := writeCompositeType(buf, t.Schema, t.Composite); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return err
+		}
+		if compositeTypeHasComments(t.Composite) {
+			if err := writeCompositeTypeComments(buf, t.Schema, t.Composite); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // parseQualifiedTypeIdent splits a type reference produced by the sync layer
@@ -2902,32 +2907,9 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
-	// Write all composite types before sequences and tables, ordered so
-	// referenced composites come first.
-	var sdlCompositeTypes []qualifiedCompositeType
-	for _, schema := range metadata.Schemas {
-		if schema.SkipDump {
-			continue
-		}
-		for _, composite := range schema.CompositeTypes {
-			if composite.SkipDump {
-				continue
-			}
-			sdlCompositeTypes = append(sdlCompositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
-		}
-	}
-	for _, t := range sortCompositeTypesTopologically(sdlCompositeTypes) {
-		if err := writeCompositeType(&buf, t.Schema, t.Composite); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(";\n\n"); err != nil {
-			return "", err
-		}
-		if compositeTypeHasComments(t.Composite) {
-			if err := writeCompositeTypeComments(&buf, t.Schema, t.Composite); err != nil {
-				return "", err
-			}
-		}
+	// Write all composite types before sequences and tables.
+	if err := writeCompositeTypesSection(&buf, collectCompositeTypes(metadata.Schemas)); err != nil {
+		return "", err
 	}
 
 	// Write all sequences before tables to ensure they exist before any table references them.
@@ -4065,6 +4047,75 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			}
 		}
 
+		// Generate a single file for all enum and composite types in this
+		// schema, listed before table files: table columns may use these types.
+		if len(schemaMetadata.EnumTypes) > 0 || len(schemaMetadata.CompositeTypes) > 0 {
+			var buf strings.Builder
+			hasTypes := false
+			for i, enumType := range schemaMetadata.EnumTypes {
+				if enumType.SkipDump {
+					continue
+				}
+
+				if hasTypes {
+					buf.WriteString("\n")
+				}
+				hasTypes = true
+
+				if i > 0 {
+					buf.WriteString("\n")
+				}
+
+				if err := writeEnum(&buf, schemaName, enumType); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Add enum type comment if present
+				if len(enumType.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
+					}
+				}
+			}
+
+			// Composite types follow enums, ordered so referenced composites
+			// come first.
+			var compositeTypes []qualifiedCompositeType
+			for _, composite := range schemaMetadata.CompositeTypes {
+				if composite.SkipDump {
+					continue
+				}
+				compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schemaName, Composite: composite})
+			}
+			for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+				if hasTypes {
+					buf.WriteString("\n")
+				}
+				hasTypes = true
+
+				if err := writeCompositeType(&buf, schemaName, t.Composite); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate composite type SDL for %s.%s", schemaName, t.Composite.Name)
+				}
+				buf.WriteString(";\n")
+
+				if compositeTypeHasComments(t.Composite) {
+					buf.WriteString("\n")
+					if err := writeCompositeTypeComments(&buf, schemaName, t.Composite); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate composite type comment for %s.%s", schemaName, t.Composite.Name)
+					}
+				}
+			}
+
+			if hasTypes {
+				files = append(files, schema.File{
+					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
+					Content: buf.String(),
+				})
+			}
+		}
+
 		// Generate table files
 		for _, table := range schemaMetadata.Tables {
 			if table.SkipDump {
@@ -4282,74 +4333,6 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				Name:    fmt.Sprintf("schemas/%s/%s/%s.sql", schemaName, folderName, function.Name),
 				Content: buf.String(),
 			})
-		}
-
-		// Generate a single file for all enum and composite types in this schema
-		if len(schemaMetadata.EnumTypes) > 0 || len(schemaMetadata.CompositeTypes) > 0 {
-			var buf strings.Builder
-			hasTypes := false
-			for i, enumType := range schemaMetadata.EnumTypes {
-				if enumType.SkipDump {
-					continue
-				}
-
-				if hasTypes {
-					buf.WriteString("\n")
-				}
-				hasTypes = true
-
-				if i > 0 {
-					buf.WriteString("\n")
-				}
-
-				if err := writeEnum(&buf, schemaName, enumType); err != nil {
-					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
-				}
-				buf.WriteString(";\n")
-
-				// Add enum type comment if present
-				if len(enumType.Comment) > 0 {
-					buf.WriteString("\n")
-					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
-					}
-				}
-			}
-
-			// Composite types follow enums, ordered so referenced composites
-			// come first.
-			var compositeTypes []qualifiedCompositeType
-			for _, composite := range schemaMetadata.CompositeTypes {
-				if composite.SkipDump {
-					continue
-				}
-				compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schemaName, Composite: composite})
-			}
-			for _, t := range sortCompositeTypesTopologically(compositeTypes) {
-				if hasTypes {
-					buf.WriteString("\n")
-				}
-				hasTypes = true
-
-				if err := writeCompositeType(&buf, schemaName, t.Composite); err != nil {
-					return nil, errors.Wrapf(err, "failed to generate composite type SDL for %s.%s", schemaName, t.Composite.Name)
-				}
-				buf.WriteString(";\n")
-
-				if compositeTypeHasComments(t.Composite) {
-					buf.WriteString("\n")
-					if err := writeCompositeTypeComments(&buf, schemaName, t.Composite); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate composite type comment for %s.%s", schemaName, t.Composite.Name)
-					}
-				}
-			}
-
-			if hasTypes {
-				files = append(files, schema.File{
-					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
-					Content: buf.String(),
-				})
-			}
 		}
 
 		// Generate a single file for all independent sequences (no owner) in this schema
