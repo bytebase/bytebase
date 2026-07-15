@@ -19,7 +19,7 @@ import {
   PLAN_DETAIL_PHASE_REVIEW,
 } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import { IssueSchema, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanCheckRunSchema,
@@ -38,6 +38,7 @@ import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
+import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
@@ -344,14 +345,31 @@ export const usePlanDetailPage = ({
     syncDefaultActivePhases,
   ]);
 
-  const { isPlanDone, hasActiveTasks } = useMemo(() => {
+  const { isPlanDone, shouldPollActively } = useMemo(() => {
     if (!snapshot.rollout) {
-      return { isPlanDone: false, hasActiveTasks: false };
+      const checks = getPlanCheckSummary(snapshot.plan);
+      const approvalPassed =
+        snapshot.issue?.approvalStatus === ApprovalStatus.APPROVED ||
+        snapshot.issue?.approvalStatus === ApprovalStatus.SKIPPED;
+      const rolloutExpected =
+        snapshot.plan.hasRollout ||
+        snapshot.issue?.status === IssueStatus.DONE ||
+        (snapshot.issue?.status === IssueStatus.OPEN &&
+          approvalPassed &&
+          checks.running === 0 &&
+          checks.error === 0);
+      // Once every gate passes, rollout creation is asynchronous. Keep polling
+      // at the active cadence through that gap, as well as when either the plan
+      // or issue already proves the rollout committed but its data is missing.
+      return {
+        isPlanDone: false,
+        shouldPollActively: rolloutExpected,
+      };
     }
     const nowMs = Date.now();
     let taskCount = 0;
     let allSettled = true;
-    let hasActiveTasks = false;
+    let shouldPollActively = false;
     for (const stage of snapshot.rollout.stages) {
       for (const task of stage.tasks) {
         taskCount++;
@@ -366,12 +384,12 @@ export const usePlanDetailPage = ({
         // stays on the idle cadence rather than polling every second while it
         // waits — the idle poll still catches it once the backend starts it.
         if (isTaskActivelyTransitioning(task, nowMs)) {
-          hasActiveTasks = true;
+          shouldPollActively = true;
         }
       }
     }
-    return { isPlanDone: taskCount > 0 && allSettled, hasActiveTasks };
-  }, [snapshot.rollout]);
+    return { isPlanDone: taskCount > 0 && allSettled, shouldPollActively };
+  }, [snapshot.issue, snapshot.plan, snapshot.rollout]);
 
   // Poll the whole snapshot on a fixed cadence: fast while a task is
   // transitioning so PENDING -> RUNNING -> DONE surfaces promptly, idle
@@ -382,7 +400,7 @@ export const usePlanDetailPage = ({
   // result at once, and the cadence tightens as soon as that status is active.
   usePolling(
     snapshot.ready && !snapshot.isCreating && !isPlanDone,
-    hasActiveTasks ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
+    shouldPollActively ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
     fetchState
   );
 

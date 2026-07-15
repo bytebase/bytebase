@@ -2,7 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { renderHook, waitFor } from "@testing-library/react";
 import { act, type ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -582,6 +583,31 @@ describe("usePlanDetailPage", () => {
     expect(after.taskRuns[1]).toBe(before.taskRuns[1]);
   });
 
+  test("a partial poll patch keeps last-known-good rollout state", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue({
+      ...buildSnapshotPatch({ planId: "plan-1" }),
+      rollout: rolloutWithTask(Task_Status.RUNNING),
+      taskRuns: [create(TaskRunSchema, { name: "taskRuns/1" })],
+    });
+
+    const { result } = renderHook(
+      () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const rollout = result.current.rollout;
+    const taskRuns = result.current.taskRuns;
+
+    mocks.fetchPlanSnapshot.mockResolvedValue({ projectTitle: "Refreshed" });
+    await act(async () => {
+      await result.current.refreshState();
+    });
+
+    expect(result.current.projectTitle).toBe("Refreshed");
+    expect(result.current.rollout).toBe(rollout);
+    expect(result.current.taskRuns).toBe(taskRuns);
+  });
+
   const rolloutWithTask = (status: Task_Status) =>
     create(RolloutSchema, {
       name: "projects/foo/rollouts/1",
@@ -658,6 +684,140 @@ describe("usePlanDetailPage", () => {
         await vi.advanceTimersByTimeAsync(14000);
       });
       expect(mocks.fetchPlanSnapshot).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("polls on the active cadence while a done issue waits for its rollout", async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.fetchPlanSnapshot.mockResolvedValue(
+        buildSnapshotPatch({
+          planId: "plan-1",
+          issue: {
+            name: "projects/foo/issues/1",
+            status: IssueStatus.DONE,
+            approvalStatus: ApprovalStatus.APPROVED,
+          } as PlanDetailPageSnapshot["issue"],
+        })
+      );
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("polls on the active cadence when the plan expects a missing rollout", async () => {
+    vi.useFakeTimers();
+    try {
+      const patch = buildSnapshotPatch({ planId: "plan-1" });
+      mocks.fetchPlanSnapshot.mockResolvedValue({
+        ...patch,
+        plan: { ...patch.plan, hasRollout: true },
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test.each([
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { SUCCESS: 2 },
+      expectedCalls: 1,
+      name: "approved with passing checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.SKIPPED,
+      checkStatusCount: {},
+      expectedCalls: 1,
+      name: "skipped with no required checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.PENDING,
+      checkStatusCount: { SUCCESS: 2 },
+      expectedCalls: 0,
+      name: "pending approval",
+    },
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { RUNNING: 1 },
+      expectedCalls: 0,
+      name: "running checks",
+    },
+    {
+      approvalStatus: ApprovalStatus.APPROVED,
+      checkStatusCount: { ERROR: 1 },
+      expectedCalls: 0,
+      name: "failed checks",
+    },
+  ])("uses the expected pre-rollout cadence for $name", async ({
+    approvalStatus,
+    checkStatusCount,
+    expectedCalls,
+  }) => {
+    vi.useFakeTimers();
+    try {
+      const patch = buildSnapshotPatch({
+        planId: "plan-1",
+        issue: {
+          name: "projects/foo/issues/1",
+          status: IssueStatus.OPEN,
+          approvalStatus,
+        } as PlanDetailPageSnapshot["issue"],
+      });
+      mocks.fetchPlanSnapshot.mockResolvedValue({
+        ...patch,
+        plan: {
+          ...patch.plan,
+          planCheckRunStatusCount: checkStatusCount,
+        },
+      });
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.ready).toBe(true);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(expectedCalls);
     } finally {
       vi.useRealTimers();
     }
