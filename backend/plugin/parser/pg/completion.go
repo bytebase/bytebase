@@ -767,7 +767,7 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 	if pos >= len(c.sql) {
 		return nil
 	}
-	followingText := c.sql[pos:]
+	followingText := c.statementBoundedTextFromByte(pos)
 	if len(followingText) == 0 {
 		return nil
 	}
@@ -1222,6 +1222,20 @@ func (c *Completer) convertCompletionSubqueryReference(reference pgparser.RangeR
 	return virtualReference
 }
 
+// statementBoundedText returns the text of c.sql starting at token i and
+// truncated at the next ';' token, bounding fragment re-parsing to the
+// current statement (BYT-9886).
+func (c *Completer) statementBoundedText(i int) string {
+	return c.statementBoundedTextFromByte(c.tokens[i].Loc)
+}
+
+// statementBoundedTextFromByte is statementBoundedText for a byte offset.
+func (c *Completer) statementBoundedTextFromByte(pos int) string {
+	return base.TruncateAtSemicolonToken(c.sql, pos, c.tokens,
+		func(t pgparser.Token) int { return t.Loc },
+		func(t pgparser.Token) int { return t.Type })
+}
+
 func (c *Completer) collectRemainingTableReferences() {
 	level := 0
 	for i := c.caretTokenIndex; i < len(c.tokens); i++ {
@@ -1232,9 +1246,13 @@ func (c *Completer) collectRemainingTableReferences() {
 			if level > 0 {
 				level--
 			}
+		case ';':
+			// End of the caret's statement: later statements' tables are not
+			// in scope for the caret and must not leak into its completion.
+			return
 		case pgparser.FROM:
 			if level == 0 {
-				c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+				c.parseTableReferences(c.statementBoundedText(i))
 			}
 		default:
 		}
@@ -1255,7 +1273,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 			level--
 			c.referencesStack = c.referencesStack[1:]
 		case pgparser.FROM:
-			c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+			c.parseTableReferences(c.statementBoundedText(i))
 		default:
 		}
 	}
