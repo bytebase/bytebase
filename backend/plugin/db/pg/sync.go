@@ -1343,8 +1343,9 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 // 'c'): table/view row types have their own relkind and are excluded.
 // Attribute types are rendered by format_type and schema-qualified when the
 // (element) type is user-defined, so stored type strings are deterministic
-// regardless of search_path.
-var listCompositeTypeQuery = fmt.Sprintf(`
+// regardless of search_path. System schemas are filtered on the Go side, so
+// the query stays a pure constant.
+const listCompositeTypeQuery = `
 	SELECT
 		pt.oid,
 		pc.oid,
@@ -1370,10 +1371,9 @@ var listCompositeTypeQuery = fmt.Sprintf(`
 		LEFT JOIN pg_namespace en ON en.oid = et.typnamespace
 		LEFT JOIN (pg_catalog.pg_collation co JOIN pg_catalog.pg_namespace nco ON co.collnamespace = nco.oid)
 			ON a.attcollation = co.oid AND (nco.nspname <> 'pg_catalog' OR co.collname <> 'default')
-	WHERE pn.nspname NOT IN (%s)
-	  AND pn.nspname NOT LIKE 'pg_temp%%'
-	  AND pn.nspname NOT LIKE 'pg_toast%%'
-	ORDER BY pn.nspname, pt.typname, a.attnum;`, pgparser.SystemSchemaWhereClause)
+	WHERE pn.nspname NOT LIKE 'pg_temp%'
+	  AND pn.nspname NOT LIKE 'pg_toast%'
+	ORDER BY pn.nspname, pt.typname, a.attnum;`
 
 func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.CompositeTypeMetadata, error) {
 	rows, err := txn.Query(listCompositeTypeQuery)
@@ -1391,6 +1391,9 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 		var typeComment, attributeName, attributeType, attributeCollation, attributeComment sql.NullString
 		if err := rows.Scan(&typeOid, &classOid, &schemaName, &typeName, &typeComment, &attributeName, &attributeType, &attributeCollation, &attributeComment); err != nil {
 			return nil, err
+		}
+		if pgparser.IsSystemSchema(schemaName) {
+			continue
 		}
 
 		if current == nil || currentSchema != schemaName || current.Name != typeName {
