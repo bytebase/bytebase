@@ -163,6 +163,16 @@ export const getApprovalFactorList = (
   return ApprovalSourceFactorMap.get(source) ?? [];
 };
 
+export const isApprovalFlowValid = (
+  roles: string[],
+  noApprovalRequired: boolean
+): boolean => {
+  if (noApprovalRequired) {
+    return true;
+  }
+  return roles.length > 0 && roles.every((role) => role.trim() !== "");
+};
+
 // ─── Option helpers ───────────────────────────────────────────────────────────
 
 const getDBEndingOptions = () => {

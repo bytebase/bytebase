@@ -43,6 +43,7 @@ import {
   filterTemplatesBySource,
   getApprovalFactorList,
   getApprovalOptionConfigMap,
+  isApprovalFlowValid,
 } from "./utils";
 
 interface RuleEditSheetProps {
@@ -93,7 +94,7 @@ export function RuleEditSheet({
   const allowSave =
     title.trim() !== "" &&
     validateSimpleExpr(conditionExpr) === true &&
-    (noApprovalRequired || flow.roles.length > 0);
+    isApprovalFlowValid(flow.roles, noApprovalRequired);
 
   // Reset state on every open
   useEffect(() => {
@@ -143,6 +144,10 @@ export function RuleEditSheet({
   const handleSave = async () => {
     if (!hasFeature) {
       onShowFeatureModal();
+      return;
+    }
+
+    if (!allowSave) {
       return;
     }
 

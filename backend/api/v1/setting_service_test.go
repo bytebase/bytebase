@@ -59,6 +59,61 @@ func TestValidateDomains(t *testing.T) {
 	}
 }
 
+func TestValidateApprovalTemplate(t *testing.T) {
+	cases := []struct {
+		name     string
+		template *v1pb.ApprovalTemplate
+		wantErr  bool
+	}{
+		{
+			name:    "nil template rejected",
+			wantErr: true,
+		},
+		{
+			name:     "nil flow rejected",
+			template: &v1pb.ApprovalTemplate{},
+			wantErr:  true,
+		},
+		{
+			name: "empty roles allowed for skipped approval",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{},
+			},
+		},
+		{
+			name: "valid role accepted",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}},
+			},
+		},
+		{
+			name: "empty role rejected",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{""}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "blank role rejected",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{" "}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateApprovalTemplate(tc.template)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateSQLEditorCustomTheme(t *testing.T) {
 	// The server validates shape, not the frontend token vocabulary: a non-empty
 	// map whose values are google.type.Color messages. A representative subset is enough.
