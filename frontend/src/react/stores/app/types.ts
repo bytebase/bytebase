@@ -95,7 +95,7 @@ import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import type { IssueFilter } from "@/types/v1/issue/issue";
 import type { SQLResultSetV1 } from "@/types/v1/sql";
-import type { AccessGrantFilterStatus } from "@/utils";
+import type { AccessGrantDisplayStatus } from "@/utils";
 
 export type ProjectListParams = {
   pageSize: number;
@@ -155,7 +155,7 @@ export type AccessGrantFilter = {
   // byte-for-byte. PR #20491 bot review #3349385091.
   statementExact?: string;
   creator?: string;
-  status?: AccessGrantFilterStatus[];
+  status?: Exclude<AccessGrantDisplayStatus, "UNKNOWN">[];
   issue?: string;
   target?: string;
   createdTsAfter?: number;

@@ -26,7 +26,7 @@ import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type { AccessGrantFilterStatus } from "@/utils";
+import type { AccessGrantDisplayStatus } from "@/utils";
 import { getDefaultPagination } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { AccessGrantItem } from "./AccessGrantItem";
@@ -114,6 +114,16 @@ export function AccessPane() {
             keywords: ["revoked"],
             render: () => t("common.revoked"),
           },
+          {
+            value: "REJECTED",
+            keywords: ["rejected"],
+            render: () => t("common.rejected"),
+          },
+          {
+            value: "CANCELED",
+            keywords: ["canceled", "cancelled"],
+            render: () => t("common.canceled"),
+          },
         ],
       },
       {
@@ -176,7 +186,7 @@ export function AccessPane() {
   const filter = useMemo((): AccessFilter => {
     const selectedStatuses = searchParams.scopes
       .filter((s) => s.id === "status")
-      .map((s) => s.value) as AccessGrantFilterStatus[];
+      .map((s) => s.value) as Exclude<AccessGrantDisplayStatus, "UNKNOWN">[];
 
     const databaseScope = searchParams.scopes.find((s) => s.id === "database");
     const unmaskScope = searchParams.scopes.find((s) => s.id === "unmask");

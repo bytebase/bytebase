@@ -2,7 +2,6 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { accessGrantServiceClientConnect } from "@/connect";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import {
-  AccessGrant_Status,
   ActivateAccessGrantRequestSchema,
   CreateAccessGrantRequestSchema,
   GetAccessGrantRequestSchema,
@@ -17,8 +16,7 @@ import type {
 } from "./types";
 
 export const buildAccessGrantFilter = (
-  filter: AccessGrantFilter | undefined,
-  now = new Date()
+  filter: AccessGrantFilter | undefined
 ): string => {
   if (!filter) return "";
   const parts: string[] = [];
@@ -29,20 +27,7 @@ export const buildAccessGrantFilter = (
   if (filter.status !== undefined && filter.status.length > 0) {
     const statusFilter: string[] = [];
     for (const status of filter.status) {
-      switch (status) {
-        case "ACTIVE":
-          statusFilter.push(
-            `(status == "${AccessGrant_Status[AccessGrant_Status.ACTIVE]}" && expire_time > "${now.toISOString()}")`
-          );
-          break;
-        case "EXPIRED":
-          statusFilter.push(`expire_time <= "${now.toISOString()}"`);
-          break;
-        default:
-          statusFilter.push(
-            `status == "${status as keyof typeof AccessGrant_Status}"`
-          );
-      }
+      statusFilter.push(`status == "${status}"`);
     }
     parts.push(`(${statusFilter.join(" || ")})`);
   }
