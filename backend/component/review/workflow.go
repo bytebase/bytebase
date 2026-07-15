@@ -466,8 +466,8 @@ func workflowError(code ErrorCode, format string, args ...any) error {
 	return &Error{Code: code, Err: errors.Errorf(format, args...)}
 }
 
-func workflowReasonError(code ErrorCode, reason ErrorReason, format string, args ...any) error {
-	return &Error{Code: code, Reason: reason, Err: errors.Errorf(format, args...)}
+func workflowReasonError(code ErrorCode, reason ErrorReason, message string) error {
+	return &Error{Code: code, Reason: reason, Err: errors.New(message)}
 }
 
 func workflowWrap(_ ErrorCode, err error, message string) error {

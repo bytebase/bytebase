@@ -96,7 +96,7 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 	marked, tasks, err := w.store.CreateRolloutTasks(ctx, input.ProjectID, input.PlanUID, guard, tasks)
 	if err != nil {
 		if errors.Is(err, store.ErrDraftIssueNotSubmitted) {
-			return nil, workflowError(ErrorFailedPrecondition, "draft issue must be submitted before rollout creation")
+			return nil, workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
 		}
 		return nil, workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
 	}
