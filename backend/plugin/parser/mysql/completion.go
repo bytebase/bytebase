@@ -606,7 +606,7 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 	if pos >= len(c.sql) {
 		return nil
 	}
-	followingText := c.sql[pos:]
+	followingText := c.statementBoundedTextFromByte(pos)
 	if len(followingText) == 0 {
 		return nil
 	}
@@ -850,6 +850,22 @@ func (c *Completer) takeReferencesSnapshot() {
 	}
 }
 
+// statementBoundedText returns the text of c.sql starting at token i and
+// truncated at the next ';' token. Fragment re-parsing (parseTableReferences,
+// extractCTETables) tries progressively shorter token prefixes, so feeding it
+// text past the end of the current statement makes its cost quadratic in the
+// size of the whole sheet instead of the current statement (BYT-9886).
+func (c *Completer) statementBoundedText(i int) string {
+	return c.statementBoundedTextFromByte(c.tokens[i].Loc)
+}
+
+// statementBoundedTextFromByte is statementBoundedText for a byte offset.
+func (c *Completer) statementBoundedTextFromByte(pos int) string {
+	return base.TruncateAtSemicolonToken(c.sql, pos, c.tokens,
+		func(t mysqlparser.Token) int { return t.Loc },
+		func(t mysqlparser.Token) int { return t.Type })
+}
+
 func (c *Completer) collectRemainingTableReferences() {
 	level := 0
 	for i := c.caretTokenIndex; i < len(c.tokens); i++ {
@@ -860,9 +876,13 @@ func (c *Completer) collectRemainingTableReferences() {
 			if level > 0 {
 				level--
 			}
+		case ';':
+			// End of the caret's statement: later statements' tables are not
+			// in scope for the caret and must not leak into its completion.
+			return
 		case mysqlparser.FROM:
 			if level == 0 {
-				c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+				c.parseTableReferences(c.statementBoundedText(i))
 			}
 		default:
 		}
@@ -883,9 +903,9 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 			level--
 			c.referencesStack = c.referencesStack[1:]
 		case mysqlparser.FROM:
-			c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+			c.parseTableReferences(c.statementBoundedText(i))
 		case mysqlparser.INSERT, mysqlparser.INTO:
-			c.parseInsertTableReferences(c.sql[c.tokens[i].Loc:])
+			c.parseInsertTableReferences(c.statementBoundedText(i))
 		default:
 			// ALTER TABLE / TRUNCATE TABLE / DROP TABLE / UPDATE / DELETE FROM
 			// — bind the target table for column completion in DDL/DML contexts.
