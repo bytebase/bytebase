@@ -24,12 +24,11 @@ import {
   mockDatabase,
 } from "./issue";
 
-// Priority order for aggregating child task statuses into a parent (stage /
-// rollout) status: the highest-priority status present wins. Failure outranks
+// Canonical task status priority for aggregation and display. Failure outranks
 // active work (a failed task needs attention even while siblings run — see
 // BYT-9822); a cancel is deliberate rather than an error, so it stays below
 // active statuses but above NOT_STARTED, surfacing once nothing is in motion.
-const TASK_STATUS_AGGREGATION_PRIORITY: Task_Status[] = [
+export const TASK_STATUS_PRIORITY: readonly Task_Status[] = [
   Task_Status.FAILED,
   Task_Status.RUNNING,
   Task_Status.PENDING,
@@ -215,14 +214,14 @@ export const stringifyTaskRunStatus = (
   }
 };
 
-// Return the highest-priority Task_Status (per TASK_STATUS_AGGREGATION_PRIORITY)
+// Return the highest-priority Task_Status (per TASK_STATUS_PRIORITY)
 // for which `has` reports a member, or `fallback` when none match. Shared by the
 // stage and rollout status reducers below.
 const foldByStatusPriority = (
   has: (status: Task_Status) => boolean,
   fallback: Task_Status
 ): Task_Status => {
-  for (const status of TASK_STATUS_AGGREGATION_PRIORITY) {
+  for (const status of TASK_STATUS_PRIORITY) {
     if (has(status)) return status;
   }
   return fallback;
