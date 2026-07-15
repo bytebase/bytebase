@@ -224,6 +224,18 @@ export function PlanDetailChangesBranch({
   const [statementVersionBySpecId, setStatementVersionBySpecId] = useState<
     Record<string, number>
   >({});
+  const pageKeyRef = useRef(page.pageKey);
+  pageKeyRef.current = page.pageKey;
+
+  useEffect(() => {
+    setShowAddSpecSheet(false);
+    setShowTargetSelectorSheet(false);
+    setSpecPendingDelete(null);
+    setPendingNewSpec(null);
+    setIsPendingSelected(false);
+    setDraftCheckResultsBySpecId({});
+    setStatementVersionBySpecId({});
+  }, [page.pageKey]);
   const specs = page.plan.specs ?? [];
   // Specs visible in the tab strip — real specs plus any pending draft.
   const visibleSpecs = useMemo(
@@ -244,7 +256,7 @@ export function PlanDetailChangesBranch({
     if (isReleaseBackedPlan(page.plan.specs)) return false;
     if (page.isCreating) return true;
     return (
-      !page.plan.hasRollout &&
+      !(page.plan.hasRollout && !page.issue?.draft) &&
       (page.plan.creator === currentUser.name ||
         hasProjectPermissionV2(project, "bb.plans.update"))
     );
@@ -253,6 +265,7 @@ export function PlanDetailChangesBranch({
     page.isCreating,
     page.plan.creator,
     page.plan.hasRollout,
+    page.issue?.draft,
     page.plan.specs,
     page.plan.state,
     page.readonly,
@@ -269,16 +282,18 @@ export function PlanDetailChangesBranch({
         return planPatch;
       }
 
+      const actionPageKey = page.pageKey;
       const response = await planServiceClientConnect.updatePlan(
         create(UpdatePlanRequestSchema, {
           plan: planPatch,
           updateMask: { paths: ["specs"] },
         })
       );
+      if (pageKeyRef.current !== actionPageKey) return undefined;
       patchState({ plan: response });
       return response;
     },
-    [page.isCreating, page.plan, patchState]
+    [page.isCreating, page.pageKey, page.plan, patchState]
   );
 
   const selectSpec = useCallback(
@@ -354,8 +369,10 @@ export function PlanDetailChangesBranch({
       (spec) => spec.id !== targetSpec.id
     );
     const fallbackSpec = nextSpecs[0];
+    const actionPageKey = page.pageKey;
     try {
-      await commitSpecs(nextSpecs);
+      const updated = await commitSpecs(nextSpecs);
+      if (!updated || pageKeyRef.current !== actionPageKey) return;
       if (fallbackSpec) {
         selectSpec(fallbackSpec.id);
       }
@@ -365,6 +382,7 @@ export function PlanDetailChangesBranch({
         title: t("common.updated"),
       });
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -372,7 +390,9 @@ export function PlanDetailChangesBranch({
         description: String(error),
       });
     } finally {
-      setSpecPendingDelete(null);
+      if (pageKeyRef.current === actionPageKey) {
+        setSpecPendingDelete(null);
+      }
     }
   };
 
@@ -402,8 +422,10 @@ export function PlanDetailChangesBranch({
       }
       return patched;
     });
+    const actionPageKey = page.pageKey;
     try {
-      await commitSpecs(nextSpecs);
+      const updated = await commitSpecs(nextSpecs);
+      if (!updated || pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -411,6 +433,7 @@ export function PlanDetailChangesBranch({
       });
       setShowTargetSelectorSheet(false);
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -553,18 +576,19 @@ export function PlanDetailChangesBranch({
                   : t("plan.add-spec")
               }
             >
-              <button
+              <Button
                 aria-label={t("plan.add-spec")}
                 className={cn(
                   ICON_ACTION_CLASS,
-                  "size-7 rounded-md [touch-action:manipulation]"
+                  "size-7 rounded-md p-0 [touch-action:manipulation]"
                 )}
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
-                type="button"
+                size="sm"
+                appearance="secondary"
               >
                 <Plus aria-hidden="true" className="size-4" />
-              </button>
+              </Button>
             </Tooltip>
           ) : undefined
         }
@@ -639,7 +663,10 @@ export function PlanDetailChangesBranch({
             spec-detail group when the selected spec changes (resetting each
             section's internal state) without the sections colliding on a shared
             key={selectedSpec.id}, which logged a duplicate-key warning. */}
-        <div key={selectedSpec.id} className="flex flex-col gap-y-4">
+        <div
+          key={`${page.pageKey}:${selectedSpec.id}`}
+          className="flex flex-col gap-y-4"
+        >
           <TargetsSection
             allowEdit={canModifySpecs}
             onEdit={() => setShowTargetSelectorSheet(true)}
@@ -736,6 +763,8 @@ function OptionsSection({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, refreshState } = page;
+  const pageKeyRef = useRef(page.pageKey);
+  pageKeyRef.current = page.pageKey;
   const currentUser = useCurrentUser();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
@@ -836,7 +865,7 @@ function OptionsSection({
   );
   const allowChange = useMemo(() => {
     if (page.readonly) return false;
-    if (page.plan.hasRollout) return false;
+    if (page.plan.hasRollout && !page.issue?.draft) return false;
     if (page.isCreating) return true;
     return (
       page.plan.creator === currentUser.name ||
@@ -846,6 +875,7 @@ function OptionsSection({
     currentUser.name,
     page.isCreating,
     page.plan.creator,
+    page.issue?.draft,
     page.plan.hasRollout,
     page.readonly,
     project,
@@ -938,11 +968,13 @@ function OptionsSection({
         return;
       }
 
+      const actionPageKey = page.pageKey;
       const updatedPlan = await updateSpecSheetWithStatement(
         page.plan,
         selectedSpec,
         nextStatement
       );
+      if (pageKeyRef.current !== actionPageKey) return;
       if (updatedPlan) {
         patchState({ plan: updatedPlan });
       }
@@ -953,6 +985,7 @@ function OptionsSection({
     [
       onStatementPersisted,
       page.isCreating,
+      page.pageKey,
       page.plan,
       patchState,
       refreshState,
@@ -977,12 +1010,14 @@ function OptionsSection({
       return;
     }
 
+    const actionPageKey = page.pageKey;
     const response = await planServiceClientConnect.updatePlan(
       create(UpdatePlanRequestSchema, {
         plan: planPatch,
         updateMask: { paths: ["specs"] },
       })
     );
+    if (pageKeyRef.current !== actionPageKey) return;
     patchState({ plan: response });
   };
 

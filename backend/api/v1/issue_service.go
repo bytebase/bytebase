@@ -418,33 +418,42 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 	created := false
 	issueToCreate := issue
-	existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		issue = existing
-	} else {
-		issue, err = s.store.CreateIssue(ctx, issueToCreate)
+	if issueToCreate.Payload.GetDraft() {
+		result, err := s.reviewWorkflow.CreateDraftIssue(ctx, review.CreateDraftIssueInput{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+			Issue:     issueToCreate,
+		})
 		if err != nil {
-			if errors.Is(err, store.ErrPlanHasRollout) {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot create a draft issue because the plan already has a rollout"))
-			}
-			existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
-			if lookupErr != nil {
-				return nil, lookupErr
-			}
-			if existing == nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-			}
+			return nil, mapDraftCreationError(err)
+		}
+		issue = result.Issue
+		created = result.Created
+	} else {
+		existing, err := s.findLinkedIssueForCreate(ctx, issueToCreate)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil {
 			issue = existing
 		} else {
-			created = true
+			issue, err = s.store.CreateIssue(ctx, issueToCreate)
+			if err != nil {
+				existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
+				if lookupErr != nil {
+					return nil, lookupErr
+				}
+				if existing == nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+				}
+				issue = existing
+			} else {
+				created = true
+			}
 		}
 	}
 
 	if created && !issue.Payload.GetDraft() {
-		issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
+		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -456,6 +465,25 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	return connect.NewResponse(converted), nil
+}
+
+func mapDraftCreationError(err error) error {
+	var workflowErr *review.Error
+	if !errors.As(err, &workflowErr) {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	switch workflowErr.Code {
+	case review.ErrorNotFound:
+		return connect.NewError(connect.CodeNotFound, workflowErr)
+	case review.ErrorInvalidAction:
+		return connect.NewError(connect.CodeInvalidArgument, workflowErr)
+	case review.ErrorFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+	case review.ErrorConflict:
+		return connect.NewError(connect.CodeAlreadyExists, workflowErr)
+	default:
+		return connect.NewError(connect.CodeInternal, workflowErr)
+	}
 }
 
 func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *store.IssueMessage) (*store.IssueMessage, error) {
@@ -586,14 +614,11 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if plan == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
-		if request.Issue.GetDraft() {
-			if err := validateDraftReviewPlan(plan); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
-			}
-		}
-		for _, spec := range plan.Config.GetSpecs() {
-			if spec.GetExportDataConfig() != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+		if !request.Issue.GetDraft() {
+			for _, spec := range plan.Config.GetSpecs() {
+				if spec.GetExportDataConfig() != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data export issue creation is no longer supported"))
+				}
 			}
 		}
 		planUID = &plan.UID
@@ -641,40 +666,6 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 	return issue, nil
 }
 
-func validateDraftReviewPlan(plan *store.PlanMessage) error {
-	if plan.Deleted {
-		return errors.Errorf("draft issues require an active plan")
-	}
-	specs := plan.Config.GetSpecs()
-	if len(specs) == 0 {
-		return errors.Errorf("draft issues require a database plan")
-	}
-
-	var kind string
-	for _, spec := range specs {
-		var specKind string
-		switch config := spec.Config.(type) {
-		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-			specKind = "create database"
-		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			if config.ChangeDatabaseConfig.GetRelease() != "" {
-				return errors.Errorf("draft issues are not supported for GitOps plans")
-			}
-			specKind = "change database"
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			return errors.Errorf("draft issues are not supported for export plans")
-		default:
-			return errors.Errorf("draft issues require a database plan")
-		}
-		if kind == "" {
-			kind = specKind
-		} else if kind != specKind {
-			return errors.Errorf("draft issues are not supported for mixed plans")
-		}
-	}
-	return nil
-}
-
 func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, name string) (*store.IssueMessage, error) {
 	issue, err := s.getIssueMessage(ctx, name)
 	if err != nil {
@@ -687,7 +678,7 @@ func (s *IssueService) getSubmittedIssueForApprovalAction(ctx context.Context, n
 }
 
 // RetryIssueApproval re-runs approval-template finding for an issue stuck
-// in CHECKING. The synchronous post-create path in `postCreateIssue`
+// in CHECKING. The synchronous workflow-start path in `startIssueWorkflow`
 // swallows errors (e.g. CEL evaluation failure against a malformed
 // workspace approval rule), and there is no event-driven retry for
 // non-DATABASE_CHANGE issue types — once stuck, only this RPC (or a
@@ -846,14 +837,40 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 
+	submitting := false
+	labelsForSubmission := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+	labelsSetForSubmission := false
+	for _, path := range req.Msg.UpdateMask.Paths {
+		switch path {
+		case "labels":
+			labelsForSubmission = store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
+			labelsSetForSubmission = true
+		case "draft":
+			if req.Msg.Issue.GetDraft() {
+				if !issue.Payload.GetDraft() {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a submitted issue cannot be changed back to draft"))
+				}
+			} else if issue.Payload.GetDraft() {
+				submitting = true
+			}
+		default:
+			// Other update paths do not affect draft submission preparation.
+		}
+	}
+
+	expectedDraft := issue.Payload.GetDraft()
 	metadataInput := review.UpdateIssueMetadataInput{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: issue.ProjectID,
-		IssueUID:  issue.UID,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     issue.ProjectID,
+		IssueUID:      issue.UID,
+		ExpectedDraft: &expectedDraft,
 	}
 	hasMetadataPatch := false
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range req.Msg.UpdateMask.Paths {
+		if issue.Payload.GetDraft() && (path == "title" || path == "description") {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("draft issue %s metadata must be updated through its Plan", req.Msg.Issue.Name))
+		}
 		switch path {
 		case "title":
 			trimmed := strings.TrimSpace(req.Msg.Issue.Title)
@@ -868,10 +885,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			hasMetadataPatch = true
 
 		case "labels":
-			labels := append([]string(nil), req.Msg.Issue.Labels...)
-			metadataInput.Labels = &labels
-			hasMetadataPatch = true
-
+			if !submitting {
+				labels := append([]string(nil), req.Msg.Issue.Labels...)
+				metadataInput.Labels = &labels
+				hasMetadataPatch = true
+			}
+		case "draft":
+			// Submission is committed below through the review workflow.
 		default:
 		}
 	}
@@ -879,7 +899,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	if hasMetadataPatch {
 		result, err := s.reviewWorkflow.UpdateIssueMetadata(ctx, metadataInput)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue"))
+			return nil, mapIssueSubmissionError(err)
 		}
 		issue = result.Issue
 		for _, event := range result.Events {
@@ -928,6 +948,24 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
+	var submissionResult *review.SubmitIssueResult
+	if submitting {
+		submissionResult, err = s.reviewWorkflow.SubmitIssue(ctx, review.SubmitIssueInput{
+			Workspace: common.GetWorkspaceIDFromContext(ctx),
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
+			Labels:    labelsForSubmission,
+			LabelsSet: labelsSetForSubmission,
+		})
+		if err != nil {
+			return nil, mapIssueSubmissionError(err)
+		}
+		issue = submissionResult.Issue
+		if submissionResult.LabelsChanged {
+			issueCommentCreates = append(issueCommentCreates, newIssueLabelsUpdateComment(issue.UID, submissionResult.PreviousLabels, labelsForSubmission))
+		}
+	}
+
 	for _, ic := range issueCommentCreates {
 		ic.ProjectID = issue.ProjectID
 	}
@@ -935,11 +973,61 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
 	}
 
+	if submissionResult != nil {
+		for _, event := range submissionResult.Events {
+			switch event.(type) {
+			case review.SubmittedEvent:
+				recordReviewSubmission(ctx, s.store, user.Email, issue)
+			case review.IssueCreatedEvent:
+				emitIssueCreated(ctx, s.webhookManager, submissionResult.Project, user.Name, user.Email, issue)
+			case review.ApprovalCheckEvent:
+				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+			default:
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected submission event %T", event))
+			}
+		}
+	}
+
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
+}
+
+func newIssueLabelsUpdateComment(issueUID int64, fromLabels, toLabels []string) *store.IssueCommentMessage {
+	return &store.IssueCommentMessage{
+		IssueUID: issueUID,
+		Payload: &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_IssueUpdate_{
+				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+					FromLabels: fromLabels,
+					ToLabels:   toLabels,
+				},
+			},
+		},
+	}
+}
+
+func mapIssueSubmissionError(err error) error {
+	var workflowErr *review.Error
+	if !errors.As(err, &workflowErr) {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	switch workflowErr.Code {
+	case review.ErrorNotFound:
+		return connect.NewError(connect.CodeNotFound, workflowErr)
+	case review.ErrorInvalidAction:
+		return connect.NewError(connect.CodeInvalidArgument, workflowErr)
+	case review.ErrorFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+	case review.ErrorPermissionDenied:
+		return connect.NewError(connect.CodePermissionDenied, workflowErr)
+	case review.ErrorConflict:
+		return connect.NewError(connect.CodeAborted, workflowErr)
+	default:
+		return connect.NewError(connect.CodeInternal, workflowErr)
+	}
 }
 
 // BatchUpdateIssuesStatus batch updates issues status.

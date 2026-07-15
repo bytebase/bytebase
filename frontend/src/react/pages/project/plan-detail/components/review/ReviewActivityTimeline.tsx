@@ -1,5 +1,5 @@
-import { FileText, Loader2, Pencil, Send } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { FileText, Loader2, Pencil } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import {
@@ -8,6 +8,8 @@ import {
   CommentIconBadge,
   canEditIssueComment,
   IssueCommentRow,
+  ReviewSubmissionIcon,
+  ReviewSubmissionSentence,
 } from "@/react/components/issue-activity/IssueCommentActivity";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
@@ -49,6 +51,10 @@ export function ReviewActivityTimeline({
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const [expanded, setExpanded] = useState(false);
 
+  useEffect(() => {
+    setExpanded(false);
+  }, [page.pageKey]);
+
   const entries = useMemo(
     () =>
       buildTimelineEntries({
@@ -56,9 +62,17 @@ export function ReviewActivityTimeline({
         planCreateTime: plan.createTime,
         issueCreator: issue.creator,
         issueCreateTime: issue.createTime,
+        issueDraft: issue.draft,
         comments,
       }),
-    [comments, issue.createTime, issue.creator, plan.createTime, plan.creator]
+    [
+      comments,
+      issue.createTime,
+      issue.creator,
+      issue.draft,
+      plan.createTime,
+      plan.creator,
+    ]
   );
   const items = useMemo(() => {
     const renderable = entries.filter(isRenderableEntry);
@@ -142,17 +156,18 @@ function TornSeparator({
   return (
     <div className="flex items-center gap-x-2 py-2">
       <div aria-hidden="true" className="h-2 flex-1" style={TORN_EDGE_STYLE} />
-      <button
-        className="group shrink-0 bg-white px-2 text-xs text-control-light hover:text-control"
+      <Button
+        className="group shrink-0 bg-background px-2 text-control-light hover:text-control"
         onClick={onShowAll}
-        type="button"
+        size="xs"
+        appearance="link"
       >
         {t("plan.review.activity.n-hidden-events", { count })}
         <span className="mx-1 text-control-placeholder">·</span>
         <span className="text-accent group-hover:underline">
           {t("plan.review.activity.show-all")}
         </span>
-      </button>
+      </Button>
       <div aria-hidden="true" className="h-2 flex-1" style={TORN_EDGE_STYLE} />
     </div>
   );
@@ -197,16 +212,13 @@ function SyntheticIcon({
 }: {
   type: "plan-created" | "ready-for-review";
 }) {
+  if (type === "ready-for-review") {
+    return <ReviewSubmissionIcon />;
+  }
   return (
     <CommentIconBadge
       className="bg-control-bg text-control"
-      icon={
-        type === "plan-created" ? (
-          <FileText className="h-4 w-4" />
-        ) : (
-          <Send className="h-4 w-4" />
-        )
-      }
+      icon={<FileText className="size-4" />}
     />
   );
 }
@@ -223,14 +235,16 @@ function SyntheticHeader({
   return (
     <>
       <ActorName principal={source.creator} />
-      <span className="wrap-break-word min-w-0 text-gray-600">
-        {source.type === "plan-created"
-          ? t("plan.review.activity.created-this-plan")
-          : t("plan.review.activity.marked-ready-for-review")}
-      </span>
+      {source.type === "plan-created" ? (
+        <span className="wrap-break-word min-w-0 text-control-light">
+          {t("plan.review.activity.created-this-plan")}
+        </span>
+      ) : (
+        <ReviewSubmissionSentence />
+      )}
       {source.time && (
         <HumanizeTs
-          className="text-gray-500"
+          className="text-control-light"
           ts={getTimeForPbTimestampProtoEs(source.time, 0) / 1000}
         />
       )}
@@ -265,6 +279,22 @@ function ReviewCommentRow({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.comment);
   const [saving, setSaving] = useState(false);
+  const pageKeyRef = useRef(page.pageKey);
+  const commentNameRef = useRef(comment.name);
+  pageKeyRef.current = page.pageKey;
+  commentNameRef.current = comment.name;
+
+  useEffect(() => {
+    setIsEditing(false);
+    setEditContent(comment.comment);
+    setSaving(false);
+  }, [page.pageKey]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditContent(comment.comment);
+    }
+  }, [comment.comment, isEditing]);
 
   const allowEdit = canEditIssueComment(comment, currentUser.email, project);
 
@@ -273,14 +303,28 @@ function ReviewCommentRow({
       setIsEditing(false);
       return;
     }
+    const actionPageKey = page.pageKey;
+    const actionCommentName = comment.name;
     try {
       setSaving(true);
       await useAppStore.getState().updateIssueComment({
         issueCommentName: comment.name,
         comment: editContent,
       });
+      if (
+        pageKeyRef.current !== actionPageKey ||
+        commentNameRef.current !== actionCommentName
+      ) {
+        return;
+      }
       setIsEditing(false);
     } catch (error) {
+      if (
+        pageKeyRef.current !== actionPageKey ||
+        commentNameRef.current !== actionCommentName
+      ) {
+        return;
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -288,7 +332,12 @@ function ReviewCommentRow({
         description: String(error),
       });
     } finally {
-      setSaving(false);
+      if (
+        pageKeyRef.current === actionPageKey &&
+        commentNameRef.current === actionCommentName
+      ) {
+        setSaving(false);
+      }
     }
   };
 
@@ -318,7 +367,7 @@ function ReviewCommentRow({
             onClick={() => void save()}
             size="xs"
           >
-            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {saving && <Loader2 className="size-3.5 animate-spin" />}
             {t("common.save")}
           </Button>
         </div>
@@ -338,7 +387,7 @@ function ReviewCommentRow({
         size="xs"
         appearance="secondary"
       >
-        <Pencil className="h-3.5 w-3.5" />
+        <Pencil className="size-3.5" />
       </Button>
     ) : undefined;
 

@@ -22,6 +22,12 @@ export function PlanLifecycleSlot({
   const page = usePlanDetailContext();
 
   switch (state.kind) {
+    case "incomplete":
+      return (
+        <LifecycleStamp size="md" tone="error">
+          {t("plan.lifecycle.incomplete")}
+        </LifecycleStamp>
+      );
     case "review-generating":
       // The approval flow is still being generated — show the Review affordance
       // disabled with a loading spinner; no click action until it resolves.
@@ -51,8 +57,7 @@ export function PlanLifecycleSlot({
       return <FrontierStatusStamp stage={state.stage} />;
     default:
       // create / ready-for-review render in the header; closed / deployed are
-      // terminal stamps rendered left of the title (PlanLifecycleStamp); none
-      // renders nothing.
+      // terminal stamps rendered left of the title and none renders nothing.
       return null;
   }
 }

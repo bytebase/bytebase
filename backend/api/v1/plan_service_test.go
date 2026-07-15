@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestPlanServiceListPlansKeepsIssueLessDraftsVisible(t *testing.T) {
+func TestPlanServiceListPlansHidesIssueLessDatabaseDrafts(t *testing.T) {
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
@@ -53,7 +53,14 @@ func TestPlanServiceListPlansKeepsIssueLessDraftsVisible(t *testing.T) {
 	for _, plan := range response.Msg.Plans {
 		got = append(got, plan.Title)
 	}
-	require.ElementsMatch(t, []string{changeDraft.Name, createDraft.Name}, got)
+	require.Empty(t, got)
+	for _, plan := range []*store.PlanMessage{changeDraft, createDraft} {
+		gotPlan, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
+			Name: fmt.Sprintf("projects/project-a/plans/%d", plan.UID),
+		}))
+		require.NoError(t, err)
+		require.Equal(t, plan.Name, gotPlan.Msg.Title)
+	}
 }
 
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {

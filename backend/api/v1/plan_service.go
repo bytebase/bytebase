@@ -93,10 +93,11 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
-		ProjectID: projectID,
+		Workspace:               common.GetWorkspaceIDFromContext(ctx),
+		Limit:                   &limitPlusOne,
+		Offset:                  &offset.offset,
+		ProjectID:               projectID,
+		ExcludeMalformedUIPlans: true,
 	}
 
 	if req.Filter != "" {
@@ -295,7 +296,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
 	}
 
-	planUpdate := &store.UpdatePlanMessage{UID: oldPlan.UID, ProjectID: oldPlan.ProjectID}
+	planUpdate := &store.UpdatePlanMessage{}
 	var specs []*storepb.PlanConfig_Spec
 
 	var planCheckRunsTrigger bool
@@ -336,33 +337,30 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	var updateResult *review.UpdatePlanSpecsResult
-	var updatedPlan *store.PlanMessage
+	var specsUpdate *[]*storepb.PlanConfig_Spec
 	if planCheckRunsTrigger {
-		updateResult, err = s.reviewWorkflow.UpdatePlanSpecs(ctx, review.UpdatePlanSpecsInput{
-			Workspace:   common.GetWorkspaceIDFromContext(ctx),
-			PlanUID:     oldPlan.UID,
-			ProjectID:   oldPlan.ProjectID,
-			Title:       planUpdate.Name,
-			Description: planUpdate.Description,
-			Deleted:     planUpdate.Deleted,
-			Specs:       specs,
-		})
-		if err != nil {
-			var workflowErr *review.Error
-			if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorFailedPrecondition {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update specs for plan that has a rollout"))
-			}
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
-		}
-		updatedPlan = updateResult.Plan
-	} else {
-		updatedPlan, err = s.store.UpdatePlan(ctx, planUpdate)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
-		}
-		updateResult = &review.UpdatePlanSpecsResult{Plan: updatedPlan}
+		specsUpdate = &specs
 	}
+	updateResult, err := s.reviewWorkflow.UpdatePlan(ctx, review.UpdatePlanInput{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
+		PlanUID:     oldPlan.UID,
+		ProjectID:   oldPlan.ProjectID,
+		Title:       planUpdate.Name,
+		Description: planUpdate.Description,
+		Deleted:     planUpdate.Deleted,
+		Specs:       specsUpdate,
+	})
+	if err != nil {
+		var workflowErr *review.Error
+		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorFailedPrecondition {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+		}
+		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorConflict {
+			return nil, connect.NewError(connect.CodeAborted, workflowErr)
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
+	}
+	updatedPlan := updateResult.Plan
 
 	var planCheckRunCreated bool
 	if planCheckRunsTrigger {
@@ -912,7 +910,9 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		if issue := issueByPlanKey[key]; issue != nil {
 			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
-			v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+			if !issue.Payload.GetDraft() {
+				v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+			}
 		}
 
 		if planCheckRun := planCheckRunByPlanKey[key]; planCheckRun != nil {

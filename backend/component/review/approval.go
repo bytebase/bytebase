@@ -103,6 +103,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 		return result, nil
 	}
 	observedLabels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+	labelsAffectApproval := approvalDependsOnLabels(issue, observedPlan)
 	evaluatedIssue := *issue
 	evaluatedIssue.Payload = proto.CloneOf(issue.Payload)
 	evaluate := a.evaluateApproval
@@ -156,7 +157,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 		return nil, err
 	}
 	if !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval) ||
-		!slices.Equal(store.CanonicalizeIssueLabels(lockedIssue.Payload.GetLabels()), observedLabels) ||
+		(labelsAffectApproval && !slices.Equal(store.CanonicalizeIssueLabels(lockedIssue.Payload.GetLabels()), observedLabels)) ||
 		lockedIssue.Payload.GetDraft() != issue.Payload.GetDraft() ||
 		lockedIssue.Type != issue.Type ||
 		!sameInt64Pointer(lockedIssue.PlanUID, issue.PlanUID) {
@@ -182,7 +183,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{
 		Approval:  evaluatedApproval,
 		RiskLevel: evaluatedRiskLevel,
-	}, false); err != nil {
+	}, issuePayloadUpdateOptions{}); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to apply approval finding")
 	}
 	lockedIssue.Payload.Approval = evaluatedApproval
@@ -194,6 +195,18 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	result.Applied = true
 	result.Events = []Event{ApprovalRequestedEvent{}}
 	return result, nil
+}
+
+func approvalDependsOnLabels(issue *store.IssueMessage, plan *store.PlanMessage) bool {
+	if issue.Type != storepb.Issue_DATABASE_CHANGE || plan == nil {
+		return false
+	}
+	for _, spec := range plan.Config.GetSpecs() {
+		if spec.GetChangeDatabaseConfig() != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func approvalsEqual(a, b *storepb.IssuePayloadApproval) bool {

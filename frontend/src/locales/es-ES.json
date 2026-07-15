@@ -1520,7 +1520,6 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
-    "cannot-create": "No se puede crear el plan",
     "checks": {
       "completed": "Se completaron las verificaciones del plan",
       "failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
@@ -1533,6 +1532,7 @@
     "description": {
       "placeholder": "Agregar descripción"
     },
+    "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
@@ -1564,6 +1564,7 @@
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
+      "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
       "rerun": "Reejecutar",
@@ -1659,6 +1660,11 @@
         "re-request-review": "vuelve a solicitar la revisión",
         "title": "Rechazado por {{user}}"
       }
+    },
+    "rollback": {
+      "description_one": "Revertir 1 tarea seleccionada del rollout #{{rolloutId}}.",
+      "description_other": "Revertir {{count}} tareas seleccionadas del rollout #{{rolloutId}}.",
+      "title": "Revertir rollout #{{rolloutId}}"
     },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",

@@ -547,6 +547,16 @@ func (x *IssueComment_IssueUpdate) Equal(y *IssueComment_IssueUpdate) bool {
 	return true
 }
 
+func (x *IssueComment_ReviewSubmission) Equal(y *IssueComment_ReviewSubmission) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
 func (x *IssueComment_PlanUpdate) Equal(y *IssueComment_PlanUpdate) bool {
 	if x == y {
 		return true
@@ -605,6 +615,9 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 		return false
 	}
 	if !x.GetPlanUpdate().Equal(y.GetPlanUpdate()) {
+		return false
+	}
+	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
 		return false
 	}
 	return true
