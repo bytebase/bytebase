@@ -82,12 +82,12 @@ type TaskStatusCount struct {
 // currently linked issue is still a draft.
 var ErrDraftIssueNotSubmitted = errors.New("draft issue must be submitted before rollout creation")
 
-// IssueApprovalGuard carries the approval-input version used for rollout
+// RolloutGuard carries the approval-input version used for rollout
 // creation. When issue approval is required, it also carries the issue approval
 // snapshot that the API layer has already accepted. The store uses it only as a
 // race guard: the plan must still be on this version and, when Approval is set,
 // the locked issue row must still have the same approval payload.
-type IssueApprovalGuard struct {
+type RolloutGuard struct {
 	IssueUID             int64
 	ApprovalInputVersion int64
 	Approval             *storepb.IssuePayloadApproval
@@ -511,11 +511,11 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 }
 
 // CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
-// If issueApprovalGuard is set, the transaction creates no tasks unless the plan
-// still has that approval input version. The API layer owns the "is this issue
-// approved" policy check before calling this method; the store only verifies
-// that the locked issue approval payload still matches the approved snapshot.
-func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, issueApprovalGuard *IssueApprovalGuard, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
+// If rolloutGuard is set, the transaction creates no tasks unless the plan
+// still has that approval input version. The review workflow owns the "is this
+// Bytebase Issue approved" policy check before calling this method; the store
+// only verifies that the locked approval payload still matches the snapshot.
+func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, rolloutGuard *RolloutGuard, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to begin tx")
@@ -527,8 +527,8 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	}
 
 	var approvalInputVersion *int64
-	if issueApprovalGuard != nil {
-		approvalInputVersion = &issueApprovalGuard.ApprovalInputVersion
+	if rolloutGuard != nil {
+		approvalInputVersion = &rolloutGuard.ApprovalInputVersion
 	}
 
 	var currentIssueUID int64
@@ -558,11 +558,11 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 		}
 	}
 
-	if issueApprovalGuard != nil && issueApprovalGuard.Approval != nil {
-		if !issueFound || currentIssueUID != issueApprovalGuard.IssueUID {
+	if rolloutGuard != nil && rolloutGuard.Approval != nil {
+		if !issueFound || currentIssueUID != rolloutGuard.IssueUID {
 			return false, nil, nil
 		}
-		if !isIssueApprovalPayloadSameAsGuard(currentIssuePayload, issueApprovalGuard) {
+		if !isIssueApprovalPayloadSameAsGuard(currentIssuePayload, rolloutGuard) {
 			return false, nil, nil
 		}
 	}
@@ -604,7 +604,7 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUI
 	return true, tasks, nil
 }
 
-func isIssueApprovalPayloadSameAsGuard(issuePayload *storepb.Issue, guard *IssueApprovalGuard) bool {
+func isIssueApprovalPayloadSameAsGuard(issuePayload *storepb.Issue, guard *RolloutGuard) bool {
 	if issuePayload == nil || guard == nil || guard.Approval == nil {
 		return false
 	}

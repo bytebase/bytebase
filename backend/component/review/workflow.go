@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -29,10 +28,21 @@ const (
 	ErrorConflict
 )
 
+// ErrorReason identifies a domain-specific reason within an error class.
+type ErrorReason int
+
+const (
+	ReasonUnspecified ErrorReason = iota
+	ReasonDraftIssue
+	ReasonApprovalRequired
+	ReasonStaleInput
+)
+
 // Error is a typed review transition error.
 type Error struct {
-	Code ErrorCode
-	Err  error
+	Code   ErrorCode
+	Reason ErrorReason
+	Err    error
 }
 
 func (e *Error) Error() string { return e.Err.Error() }
@@ -47,30 +57,62 @@ const (
 	ActionRequest
 )
 
-// EventType identifies a post-commit effect to dispatch.
-type EventType int
+// Event describes a post-commit review effect.
+type Event interface {
+	isReviewEvent()
+}
 
-const (
-	EventIssueComment EventType = iota
-	EventApprovalRequested
-	EventIssueApproved
-	EventIssueSentBack
-	EventCompleteAccessRequest
-	EventCreateRollout
-	EventPlanUpdated
-	EventApprovalCheck
-	EventCompleteRolloutIssue
-)
-
-// EventIntent describes a post-commit effect without dispatching it.
-type EventIntent struct {
-	Type           EventType
+// IssueCommentEvent requests an approval timeline entry.
+type IssueCommentEvent struct {
 	ActorEmail     string
 	Comment        string
 	ApprovalStatus storepb.IssuePayloadApproval_Approver_Status
-	FromSpecs      []*storepb.PlanConfig_Spec
-	ToSpecs        []*storepb.PlanConfig_Spec
 }
+
+func (IssueCommentEvent) isReviewEvent() {}
+
+// ApprovalRequestedEvent requests an approval notification.
+type ApprovalRequestedEvent struct{}
+
+func (ApprovalRequestedEvent) isReviewEvent() {}
+
+// IssueApprovedEvent requests an approved notification.
+type IssueApprovedEvent struct{}
+
+func (IssueApprovedEvent) isReviewEvent() {}
+
+// IssueSentBackEvent requests a sent-back notification.
+type IssueSentBackEvent struct{}
+
+func (IssueSentBackEvent) isReviewEvent() {}
+
+// CompleteAccessRequestEvent requests access or role grant completion.
+type CompleteAccessRequestEvent struct{}
+
+func (CompleteAccessRequestEvent) isReviewEvent() {}
+
+// CreateRolloutEvent requests rollout creation.
+type CreateRolloutEvent struct{}
+
+func (CreateRolloutEvent) isReviewEvent() {}
+
+// PlanUpdatedEvent requests a Plan spec audit entry.
+type PlanUpdatedEvent struct {
+	FromSpecs []*storepb.PlanConfig_Spec
+	ToSpecs   []*storepb.PlanConfig_Spec
+}
+
+func (PlanUpdatedEvent) isReviewEvent() {}
+
+// ApprovalCheckEvent requests approval reevaluation.
+type ApprovalCheckEvent struct{}
+
+func (ApprovalCheckEvent) isReviewEvent() {}
+
+// CompleteRolloutIssueEvent requests linked Bytebase Issue completion.
+type CompleteRolloutIssueEvent struct{}
+
+func (CompleteRolloutIssueEvent) isReviewEvent() {}
 
 // IssueInput identifies an interactive review transition.
 type IssueInput struct {
@@ -87,25 +129,19 @@ type IssueResult struct {
 	Issue    *store.IssueMessage
 	Project  *store.ProjectMessage
 	Approved bool
-	Events   []*EventIntent
+	Events   []Event
 }
 
 // Workflow owns transactional Bytebase Issue and Plan review transitions.
 type Workflow struct {
 	store            *store.Store
-	licenseService   *enterprise.LicenseService
-	evaluateApproval func(context.Context, *store.IssueMessage, *store.ProjectMessage, *storepb.WorkspaceApprovalSetting) error
-	approvalSetting  *storepb.WorkspaceApprovalSetting
 	beforeCommit     func()
+	beforePlanCommit func()
 }
 
 // NewWorkflow creates a review workflow.
 func NewWorkflow(store *store.Store) *Workflow {
 	return &Workflow{store: store}
-}
-
-func newApprovalWorkflow(store *store.Store, licenseService *enterprise.LicenseService) *Workflow {
-	return &Workflow{store: store, licenseService: licenseService}
 }
 
 // ReviewIssue applies an interactive approval action atomically.
@@ -216,13 +252,13 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 		return nil, workflowWrap(ErrorInternal, err, "failed to commit review transaction")
 	}
 	if approved && input.Action == ActionApprove {
-		events = append(events, &EventIntent{Type: EventIssueApproved})
+		events = append(events, IssueApprovedEvent{})
 		switch lockedIssue.Type {
 		case storepb.Issue_ACCESS_GRANT, storepb.Issue_ROLE_GRANT:
-			events = append(events, &EventIntent{Type: EventCompleteAccessRequest})
+			events = append(events, CompleteAccessRequestEvent{})
 		case storepb.Issue_DATABASE_CHANGE:
 			if lockedIssue.PlanUID != nil {
-				events = append(events, &EventIntent{Type: EventCreateRollout})
+				events = append(events, CreateRolloutEvent{})
 			}
 		default:
 		}
@@ -252,7 +288,7 @@ func updateIssuePayload(ctx context.Context, tx *sql.Tx, issue *store.IssueMessa
 	).Scan(&issue.UpdatedAt)
 }
 
-func (w *Workflow) applyReviewAction(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, input IssueInput, approval *storepb.IssuePayloadApproval) ([]*EventIntent, error) {
+func (w *Workflow) applyReviewAction(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, input IssueInput, approval *storepb.IssuePayloadApproval) ([]Event, error) {
 	switch input.Action {
 	case ActionApprove, ActionReject:
 		verb := "approve"
@@ -282,16 +318,15 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			Status:    status,
 			Principal: common.FormatUserEmail(input.Actor.Email),
 		})
-		events := []*EventIntent{{
-			Type:           EventIssueComment,
+		events := []Event{IssueCommentEvent{
 			ActorEmail:     input.Actor.Email,
 			Comment:        input.Comment,
 			ApprovalStatus: status,
 		}}
 		if input.Action == ActionApprove {
-			events = append(events, &EventIntent{Type: EventApprovalRequested})
+			events = append(events, ApprovalRequestedEvent{})
 		} else {
-			events = append(events, &EventIntent{Type: EventIssueSentBack})
+			events = append(events, IssueSentBackEvent{})
 		}
 		return events, nil
 	case ActionRequest:
@@ -309,10 +344,9 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			}
 		}
 		approval.Approvers = approvers
-		return []*EventIntent{
-			{Type: EventApprovalRequested},
-			{
-				Type:           EventIssueComment,
+		return []Event{
+			ApprovalRequestedEvent{},
+			IssueCommentEvent{
 				ActorEmail:     input.Actor.Email,
 				Comment:        input.Comment,
 				ApprovalStatus: storepb.IssuePayloadApproval_Approver_PENDING,
@@ -337,16 +371,29 @@ func (w *Workflow) canReview(ctx context.Context, project *store.ProjectMessage,
 }
 
 func lockIssue(ctx context.Context, tx *sql.Tx, projectID string, issueUID int64) (*store.IssueMessage, error) {
-	issue := &store.IssueMessage{Payload: &storepb.Issue{}}
-	var payload []byte
-	var status string
-	var issueType string
-	err := tx.QueryRowContext(ctx, `
+	return scanLockedIssue(tx.QueryRowContext(ctx, `
 		SELECT id, creator, created_at, updated_at, project, plan_id, name, status, type, description, payload
 		FROM issue
 		WHERE project = $1
 		  AND id = $2
-		FOR UPDATE`, projectID, issueUID).Scan(
+		FOR UPDATE`, projectID, issueUID))
+}
+
+func lockIssueByPlan(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) (*store.IssueMessage, error) {
+	return scanLockedIssue(tx.QueryRowContext(ctx, `
+		SELECT id, creator, created_at, updated_at, project, plan_id, name, status, type, description, payload
+		FROM issue
+		WHERE project = $1
+		  AND plan_id = $2
+		FOR UPDATE`, projectID, planUID))
+}
+
+func scanLockedIssue(row *sql.Row) (*store.IssueMessage, error) {
+	issue := &store.IssueMessage{Payload: &storepb.Issue{}}
+	var payload []byte
+	var status string
+	var issueType string
+	err := row.Scan(
 		&issue.UID,
 		&issue.CreatorEmail,
 		&issue.CreatedAt,
@@ -417,6 +464,10 @@ func lockIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (
 
 func workflowError(code ErrorCode, format string, args ...any) error {
 	return &Error{Code: code, Err: errors.Errorf(format, args...)}
+}
+
+func workflowReasonError(code ErrorCode, reason ErrorReason, format string, args ...any) error {
+	return &Error{Code: code, Reason: reason, Err: errors.Errorf(format, args...)}
 }
 
 func workflowWrap(_ ErrorCode, err error, message string) error {

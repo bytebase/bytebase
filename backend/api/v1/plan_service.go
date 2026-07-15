@@ -381,11 +381,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
 		if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-			if err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+			approvalResult, err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.licenseService, updatedIssue)
+			if err != nil {
 				slog.Error("failed to find approval template after plan update",
 					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 					slog.String("issue_title", updatedIssue.Title),
 					log.BBError(err))
+			} else {
+				review.DispatchApprovalEvents(ctx, s.store, s.webhookManager, approvalResult)
 			}
 		} else if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
@@ -398,7 +401,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	for _, event := range updateResult.Events {
-		if event.Type != review.EventPlanUpdated || updateResult.Issue == nil {
+		planUpdated, ok := event.(review.PlanUpdatedEvent)
+		if !ok || updateResult.Issue == nil {
 			continue
 		}
 		if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
@@ -407,8 +411,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_PlanUpdate_{
 					PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
-						FromSpecs: event.FromSpecs,
-						ToSpecs:   event.ToSpecs,
+						FromSpecs: planUpdated.FromSpecs,
+						ToSpecs:   planUpdated.ToSpecs,
 					},
 				},
 			},

@@ -29,12 +29,12 @@ func TestCreateRolloutTasksRequiresMatchingApprovalInputVersion(t *testing.T) {
 	}, "creator@example.com")
 	require.NoError(t, err)
 
-	updated, tasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: 1}, nil)
+	updated, tasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: 1}, nil)
 	require.NoError(t, err)
 	require.False(t, updated)
 	require.Empty(t, tasks)
 
-	updated, tasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: 2}, nil)
+	updated, tasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: 2}, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
 	require.Empty(t, tasks)
@@ -78,7 +78,7 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	updated, tasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{
+	updated, tasks, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{
 		IssueUID:             issue.UID,
 		ApprovalInputVersion: 2,
 		Approval:             observed,
@@ -87,7 +87,7 @@ func TestCreateRolloutTasksRequiresCurrentIssueApproval(t *testing.T) {
 	require.False(t, updated)
 	require.Empty(t, tasks)
 
-	updated, tasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{
+	updated, tasks, err = s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{
 		IssueUID:             issue.UID,
 		ApprovalInputVersion: 2,
 		Approval:             replacement,

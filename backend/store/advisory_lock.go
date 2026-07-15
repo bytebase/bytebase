@@ -23,8 +23,8 @@ const (
 	// AdvisoryLockKeyVCSProviderUser is used as the namespace for active VCS
 	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
-	// AdvisoryLockKeyPlanIssueRollout serializes linked issue creation and
-	// rollout creation for the same plan.
+	// AdvisoryLockKeyPlanIssueRollout serializes Plan review changes, linked
+	// Bytebase Issue creation, and Rollout creation for the same Plan.
 	AdvisoryLockKeyPlanIssueRollout AdvisoryLockKey = 1005
 )
 

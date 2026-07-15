@@ -3,6 +3,7 @@ package review
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,18 +32,13 @@ type UpdatePlanSpecsResult struct {
 	Plan          *store.PlanMessage
 	Issue         *store.IssueMessage
 	ApprovalReset bool
-	Events        []*EventIntent
+	Events        []Event
 }
 
 // UpdatePlanSpecs commits a Plan spec mutation and any linked approval reset atomically.
 func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInput) (*UpdatePlanSpecsResult, error) {
-	observedIssue, err := w.store.GetIssue(ctx, &store.FindIssueMessage{
-		Workspace:  input.Workspace,
-		ProjectIDs: []string{input.ProjectID},
-		PlanUID:    &input.PlanUID,
-	})
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to get linked issue")
+	if w.beforePlanCommit != nil {
+		w.beforePlanCommit()
 	}
 	tx, err := w.store.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -50,15 +46,13 @@ func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInp
 	}
 	defer tx.Rollback()
 
-	var issue *store.IssueMessage
-	if observedIssue != nil {
-		issue, err = lockIssue(ctx, tx, input.ProjectID, observedIssue.UID)
-		if err != nil {
-			return nil, err
-		}
-		if issue == nil || issue.PlanUID == nil || *issue.PlanUID != input.PlanUID {
-			return nil, workflowError(ErrorConflict, "linked issue changed")
-		}
+	key := input.ProjectID + "/" + strconv.FormatInt(input.PlanUID, 10)
+	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
+	}
+	issue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
+	if err != nil {
+		return nil, err
 	}
 	plan, err := lockPlan(ctx, tx, input.Workspace, input.ProjectID, input.PlanUID)
 	if err != nil {
@@ -124,8 +118,7 @@ func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInp
 		result.ApprovalReset = true
 	}
 	if issue != nil && !planSpecsEqualSet(oldSpecs, input.Specs) {
-		result.Events = append(result.Events, &EventIntent{
-			Type:      EventPlanUpdated,
+		result.Events = append(result.Events, PlanUpdatedEvent{
 			FromSpecs: oldSpecs,
 			ToSpecs:   input.Specs,
 		})

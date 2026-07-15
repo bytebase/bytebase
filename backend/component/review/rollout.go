@@ -28,7 +28,7 @@ type CreateRolloutResult struct {
 	Issue   *store.IssueMessage
 	Project *store.ProjectMessage
 	Tasks   []*store.TaskMessage
-	Events  []*EventIntent
+	Events  []Event
 }
 
 // CreateRollout validates current review state and atomically marks the Plan and creates tasks.
@@ -69,7 +69,7 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil, workflowWrap(ErrorInternal, err, "failed to get linked issue")
 	}
 	if issue != nil && issue.Payload.GetDraft() {
-		return nil, workflowError(ErrorFailedPrecondition, "draft issue must be submitted before rollout creation")
+		return nil, workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
 	}
 	if project.Setting.GetRequireIssueApproval() && issue != nil {
 		approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
@@ -77,7 +77,7 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 			return nil, workflowWrap(ErrorInternal, err, "failed to check issue approval")
 		}
 		if !approved {
-			return nil, workflowError(ErrorFailedPrecondition, "cannot create rollout because issue approval is required but the issue is not approved")
+			return nil, workflowReasonError(ErrorFailedPrecondition, ReasonApprovalRequired, "cannot create rollout because issue approval is required but the issue is not approved")
 		}
 	}
 	if input.BuildTasks == nil {
@@ -88,13 +88,10 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil, err
 	}
 
-	var guard *store.IssueApprovalGuard
-	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
-		guard = &store.IssueApprovalGuard{ApprovalInputVersion: plan.Config.GetApprovalInputVersion()}
-		if project.Setting.GetRequireIssueApproval() {
-			guard.IssueUID = issue.UID
-			guard.Approval = proto.CloneOf(issue.Payload.GetApproval())
-		}
+	guard := &store.RolloutGuard{ApprovalInputVersion: plan.Config.GetApprovalInputVersion()}
+	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE && project.Setting.GetRequireIssueApproval() {
+		guard.IssueUID = issue.UID
+		guard.Approval = proto.CloneOf(issue.Payload.GetApproval())
 	}
 	marked, tasks, err := w.store.CreateRolloutTasks(ctx, input.ProjectID, input.PlanUID, guard, tasks)
 	if err != nil {
@@ -104,11 +101,11 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil, workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
 	}
 	if !marked {
-		return nil, workflowError(ErrorConflict, "issue approval is stale")
+		return nil, workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
 	}
 	result := &CreateRolloutResult{Plan: plan, Issue: issue, Project: project, Tasks: tasks}
 	if issue != nil {
-		result.Events = []*EventIntent{{Type: EventCompleteRolloutIssue}}
+		result.Events = []Event{CompleteRolloutIssueEvent{}}
 	}
 	return result, nil
 }

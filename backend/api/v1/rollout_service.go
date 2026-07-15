@@ -438,11 +438,14 @@ func CreateRolloutAndPendingTasks(
 			return errStaleRolloutApproval
 		}
 		var workflowErr *review.Error
-		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorFailedPrecondition && strings.Contains(workflowErr.Error(), "draft issue") {
-			return errDraftIssueNotSubmitted
-		}
-		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorConflict {
-			return errStaleRolloutApproval
+		if errors.As(err, &workflowErr) {
+			switch workflowErr.Reason {
+			case review.ReasonDraftIssue:
+				return errDraftIssueNotSubmitted
+			case review.ReasonApprovalRequired, review.ReasonStaleInput:
+				return errStaleRolloutApproval
+			default:
+			}
 		}
 		return err
 	}
@@ -450,7 +453,13 @@ func CreateRolloutAndPendingTasks(
 	issue = result.Issue
 
 	// Update issue status to DONE when rollout is created
-	if issue != nil && len(result.Events) > 0 && result.Events[0].Type == review.EventCompleteRolloutIssue {
+	completeIssue := false
+	for _, event := range result.Events {
+		if _, ok := event.(review.CompleteRolloutIssueEvent); ok {
+			completeIssue = true
+		}
+	}
+	if issue != nil && completeIssue {
 		newStatus := storepb.Issue_DONE
 		updatedIssue, err := s.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 		if err != nil {

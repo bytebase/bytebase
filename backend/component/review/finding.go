@@ -12,20 +12,20 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, settingForTest ...*storepb.WorkspaceApprovalSetting) error {
+func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, issue *store.IssueMessage, settingForTest ...*storepb.WorkspaceApprovalSetting) (*ApplyApprovalTemplateResult, error) {
 	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
 	if err != nil {
-		return errors.Wrap(err, "failed to get project")
+		return nil, errors.Wrap(err, "failed to get project")
 	}
 	if project == nil {
-		return errors.Errorf("project %s not found", issue.ProjectID)
+		return nil, errors.Errorf("project %s not found", issue.ProjectID)
 	}
 
-	workflow := newApprovalWorkflow(stores, licenseService)
+	evaluator := NewApprovalEvaluator(stores, licenseService)
 	if len(settingForTest) > 0 {
-		workflow.approvalSetting = settingForTest[0]
+		evaluator.approvalSetting = settingForTest[0]
 	}
-	result, err := workflow.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+	result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
 		Workspace: project.Workspace,
 		ProjectID: issue.ProjectID,
 		IssueUID:  issue.UID,
@@ -33,20 +33,27 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	if err != nil {
 		var workflowErr *Error
 		if errors.As(err, &workflowErr) && workflowErr.Code == ErrorConflict {
-			return nil
+			return &ApplyApprovalTemplateResult{Issue: issue, Project: project}, nil
 		}
-		return err
+		return nil, err
 	}
 	if !result.Applied {
-		return nil
+		return result, nil
 	}
 	issue.Payload = result.Issue.Payload
+	return result, nil
+}
+
+// DispatchApprovalEvents delivers post-commit effects from approval evaluation.
+func DispatchApprovalEvents(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, result *ApplyApprovalTemplateResult) {
+	if result == nil || result.Issue == nil || result.Project == nil {
+		return
+	}
 	for _, event := range result.Events {
-		if event.Type == EventApprovalRequested {
+		if _, ok := event.(ApprovalRequestedEvent); ok {
 			NotifyApprovalRequested(ctx, stores, webhookManager, result.Issue, result.Project)
 		}
 	}
-	return nil
 }
 
 func evaluateApprovalTemplateForIssue(

@@ -20,7 +20,7 @@ type UpdateIssueLabelsInput struct {
 type UpdateIssueLabelsResult struct {
 	Issue         *store.IssueMessage
 	ApprovalReset bool
-	Events        []*EventIntent
+	Events        []Event
 }
 
 // UpdateIssueLabels updates labels and any required approval reset atomically.
@@ -75,7 +75,7 @@ func (w *Workflow) UpdateIssueLabels(ctx context.Context, input UpdateIssueLabel
 	if resetApproval {
 		issue.Payload.Approval = payloadPatch.Approval
 		result.ApprovalReset = true
-		result.Events = []*EventIntent{{Type: EventApprovalCheck}}
+		result.Events = []Event{ApprovalCheckEvent{}}
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to commit issue label transaction")

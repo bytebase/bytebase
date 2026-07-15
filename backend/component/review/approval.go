@@ -6,9 +6,28 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// ApprovalEvaluator owns license-dependent approval evaluation and its
+// transactional commit through the review workflow.
+type ApprovalEvaluator struct {
+	workflow         *Workflow
+	licenseService   *enterprise.LicenseService
+	evaluateApproval func(context.Context, *store.IssueMessage, *store.ProjectMessage, *storepb.WorkspaceApprovalSetting) error
+	approvalSetting  *storepb.WorkspaceApprovalSetting
+	beforeCommit     func()
+}
+
+// NewApprovalEvaluator creates an approval evaluator with all production dependencies.
+func NewApprovalEvaluator(store *store.Store, licenseService *enterprise.LicenseService) *ApprovalEvaluator {
+	return &ApprovalEvaluator{
+		workflow:       NewWorkflow(store),
+		licenseService: licenseService,
+	}
+}
 
 // ApplyApprovalTemplateInput identifies a Bytebase Issue awaiting approval finding.
 type ApplyApprovalTemplateInput struct {
@@ -22,12 +41,13 @@ type ApplyApprovalTemplateResult struct {
 	Issue   *store.IssueMessage
 	Project *store.ProjectMessage
 	Applied bool
-	Events  []*EventIntent
+	Events  []Event
 }
 
 // ApplyApprovalTemplate computes and commits an approval finding while keeping
-// snapshot validation private to the workflow.
-func (w *Workflow) ApplyApprovalTemplate(ctx context.Context, input ApplyApprovalTemplateInput) (*ApplyApprovalTemplateResult, error) {
+// snapshot validation private to the module.
+func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input ApplyApprovalTemplateInput) (*ApplyApprovalTemplateResult, error) {
+	w := a.workflow
 	project, err := w.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  input.Workspace,
 		ResourceID: &input.ProjectID,
@@ -80,10 +100,10 @@ func (w *Workflow) ApplyApprovalTemplate(ctx context.Context, input ApplyApprova
 	observedLabels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
 	evaluatedIssue := *issue
 	evaluatedIssue.Payload = proto.CloneOf(issue.Payload)
-	evaluate := w.evaluateApproval
-	approvalSetting := w.approvalSetting
+	evaluate := a.evaluateApproval
+	approvalSetting := a.approvalSetting
 	if evaluate == nil {
-		if w.licenseService == nil {
+		if a.licenseService == nil {
 			return nil, workflowError(ErrorInternal, "approval evaluation is not configured")
 		}
 		if approvalSetting == nil {
@@ -93,7 +113,7 @@ func (w *Workflow) ApplyApprovalTemplate(ctx context.Context, input ApplyApprova
 			}
 		}
 		evaluate = func(ctx context.Context, issue *store.IssueMessage, project *store.ProjectMessage, setting *storepb.WorkspaceApprovalSetting) error {
-			return evaluateApprovalTemplateForIssue(ctx, w.store, w.licenseService, issue, project, setting)
+			return evaluateApprovalTemplateForIssue(ctx, w.store, a.licenseService, issue, project, setting)
 		}
 	}
 	if approvalSetting == nil {
@@ -110,8 +130,8 @@ func (w *Workflow) ApplyApprovalTemplate(ctx context.Context, input ApplyApprova
 	if evaluatedApproval == nil || evaluatedApproval.GetApprovalInputVersion() != approvalInputVersion {
 		return nil, workflowError(ErrorConflict, "approval finding used stale input")
 	}
-	if w.beforeCommit != nil {
-		w.beforeCommit()
+	if a.beforeCommit != nil {
+		a.beforeCommit()
 	}
 
 	tx, err := w.store.GetDB().BeginTx(ctx, nil)
@@ -157,7 +177,7 @@ func (w *Workflow) ApplyApprovalTemplate(ctx context.Context, input ApplyApprova
 	}
 	result.Issue = lockedIssue
 	result.Applied = true
-	result.Events = []*EventIntent{{Type: EventApprovalRequested}}
+	result.Events = []Event{ApprovalRequestedEvent{}}
 	return result, nil
 }
 

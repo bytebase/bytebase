@@ -738,11 +738,13 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 		return connect.NewResponse(issueV1), nil
 	}
 
-	if err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+	approvalResult, err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.licenseService, issue)
+	if err != nil {
 		// Surface the underlying cause (e.g. CEL error in the workspace
 		// approval rule) so the operator can fix it.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "approval finding still failing"))
 	}
+	review.DispatchApprovalEvents(ctx, s.store, s.webhookManager, approvalResult)
 
 	uid := issue.UID
 	refreshed, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
@@ -942,7 +944,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		issue = result.Issue
 		for _, event := range result.Events {
-			if event.Type == review.EventApprovalCheck {
+			if _, ok := event.(review.ApprovalCheckEvent); ok {
 				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 			}
 		}

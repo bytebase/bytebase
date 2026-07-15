@@ -55,8 +55,8 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 
 	createRollout := false
 	for _, event := range result.Events {
-		switch event.Type {
-		case review.EventIssueComment:
+		switch event := event.(type) {
+		case review.IssueCommentEvent:
 			if _, err := s.store.CreateIssueComments(ctx, event.ActorEmail, &store.IssueCommentMessage{
 				ProjectID: result.Issue.ProjectID,
 				IssueUID:  result.Issue.UID,
@@ -69,11 +69,11 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 			}); err != nil {
 				slog.Warn("failed to create issue comment", log.BBError(err))
 			}
-		case review.EventApprovalRequested:
+		case review.ApprovalRequestedEvent:
 			review.NotifyApprovalRequested(ctx, s.store, s.webhookManager, result.Issue, result.Project)
-		case review.EventIssueApproved:
+		case review.IssueApprovedEvent:
 			review.NotifyIssueApproved(ctx, s.store, s.webhookManager, result.Issue, result.Project, user)
-		case review.EventIssueSentBack:
+		case review.IssueSentBackEvent:
 			creator, err := s.store.GetAccountByEmail(ctx, result.Issue.CreatorEmail)
 			if err != nil {
 				slog.Warn("failed to get issue creator", log.BBError(err))
@@ -89,19 +89,17 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 					Reason:   comment,
 				},
 			})
-		case review.EventCompleteAccessRequest:
+		case review.CompleteAccessRequestEvent:
 			completed, err := completeAccessRequestIssue(ctx, s.store, user.Email, result.Issue)
 			if err != nil {
 				slog.Debug("failed to complete role grant issue", log.BBError(err))
 			} else {
 				result.Issue = completed
 			}
-		case review.EventCreateRollout:
+		case review.CreateRolloutEvent:
 			createRollout = true
-		case review.EventPlanUpdated:
-			return nil, connect.NewError(connect.CodeInternal, errors.New("unexpected Plan event from issue review"))
 		default:
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected review event %d", event.Type))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected review event %T", event))
 		}
 	}
 

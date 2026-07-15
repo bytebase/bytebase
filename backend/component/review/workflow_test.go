@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -51,10 +52,9 @@ func TestReviewIssueRequestAgain(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Empty(t, result.Issue.Payload.GetApproval().GetApprovers())
-	require.Equal(t, []*EventIntent{
-		{Type: EventApprovalRequested},
-		{
-			Type:           EventIssueComment,
+	require.Equal(t, []Event{
+		ApprovalRequestedEvent{},
+		IssueCommentEvent{
 			ActorEmail:     "creator@example.com",
 			Comment:        "addressed",
 			ApprovalStatus: storepb.IssuePayloadApproval_Approver_PENDING,
@@ -111,16 +111,15 @@ func TestReviewIssueApproveCurrentPlan(t *testing.T) {
 		Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
 		Principal: common.FormatUserEmail("reviewer@example.com"),
 	}, result.Issue.Payload.GetApproval().GetApprovers()[0]))
-	require.Equal(t, []*EventIntent{
-		{
-			Type:           EventIssueComment,
+	require.Equal(t, []Event{
+		IssueCommentEvent{
 			ActorEmail:     "reviewer@example.com",
 			Comment:        "looks good",
 			ApprovalStatus: storepb.IssuePayloadApproval_Approver_APPROVED,
 		},
-		{Type: EventApprovalRequested},
-		{Type: EventIssueApproved},
-		{Type: EventCreateRollout},
+		ApprovalRequestedEvent{},
+		IssueApprovedEvent{},
+		CreateRolloutEvent{},
 	}, result.Events)
 }
 
@@ -282,11 +281,73 @@ func TestUpdatePlanResetsLinkedIssueApprovalAtomically(t *testing.T) {
 	require.True(t, result.ApprovalReset)
 	require.False(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 3, result.Issue.Payload.GetApproval().GetApprovalInputVersion())
-	require.Equal(t, []*EventIntent{{
-		Type:      EventPlanUpdated,
+	require.Equal(t, []Event{PlanUpdatedEvent{
 		FromSpecs: oldSpecs,
 		ToSpecs:   newSpecs,
 	}}, result.Events)
+}
+
+func TestUpdatePlanSpecsIncludesIssueLinkedAfterProposal(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "change database",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "old"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	workflow := NewWorkflow(stores)
+	proposalReady := make(chan struct{})
+	releaseCommit := make(chan struct{})
+	workflow.beforePlanCommit = func() {
+		close(proposalReady)
+		<-releaseCommit
+	}
+	type updateOutcome struct {
+		result *UpdatePlanSpecsResult
+		err    error
+	}
+	updateDone := make(chan updateOutcome, 1)
+	go func() {
+		result, err := workflow.UpdatePlanSpecs(ctx, UpdatePlanSpecsInput{
+			Workspace: "default",
+			ProjectID: "project-a",
+			PlanUID:   plan.UID,
+			Specs:     []*storepb.PlanConfig_Spec{{Id: "new"}},
+		})
+		updateDone <- updateOutcome{result: result, err: err}
+	}()
+
+	select {
+	case <-proposalReady:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Plan update did not reach the commit seam")
+	}
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "change database",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		PlanUID:      &plan.UID,
+		Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		}},
+	})
+	require.NoError(t, err)
+	close(releaseCommit)
+
+	outcome := <-updateDone
+	require.NoError(t, outcome.err)
+	require.NotNil(t, outcome.result.Issue)
+	require.Equal(t, issue.UID, outcome.result.Issue.UID)
+	require.True(t, outcome.result.ApprovalReset)
+	require.False(t, outcome.result.Issue.Payload.GetApproval().GetApprovalFindingDone())
+	require.EqualValues(t, 3, outcome.result.Issue.Payload.GetApproval().GetApprovalInputVersion())
 }
 
 func TestApplyApprovalTemplateCommitsFindingAndIntent(t *testing.T) {
@@ -323,13 +384,13 @@ func TestApplyApprovalTemplateCommitsFindingAndIntent(t *testing.T) {
 		RiskLevel: storepb.RiskLevel_HIGH,
 	}
 
-	workflow := NewWorkflow(stores)
-	workflow.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(stores)}
+	evaluator.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
 		issue.Payload.Approval = finding.Approval
 		issue.Payload.RiskLevel = finding.RiskLevel
 		return nil
 	}
-	result, err := workflow.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+	result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
 		Workspace: "default",
 		ProjectID: "project-a",
 		IssueUID:  issue.UID,
@@ -338,7 +399,7 @@ func TestApplyApprovalTemplateCommitsFindingAndIntent(t *testing.T) {
 	require.True(t, result.Applied)
 	require.True(t, result.Issue.Payload.GetApproval().Equal(finding.Approval))
 	require.Equal(t, storepb.RiskLevel_HIGH, result.Issue.Payload.GetRiskLevel())
-	require.Equal(t, []*EventIntent{{Type: EventApprovalRequested}}, result.Events)
+	require.Equal(t, []Event{ApprovalRequestedEvent{}}, result.Events)
 }
 
 func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
@@ -384,7 +445,7 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	require.True(t, result.ApprovalReset)
 	require.False(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, result.Issue.Payload.GetApproval().GetApprovalInputVersion())
-	require.Equal(t, []*EventIntent{{Type: EventApprovalCheck}}, result.Events)
+	require.Equal(t, []Event{ApprovalCheckEvent{}}, result.Events)
 }
 
 func TestLabelResetMakesPendingApprovalActionStale(t *testing.T) {
@@ -477,8 +538,8 @@ func TestRolloutMakesPendingApprovalFindingStale(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	workflow := NewWorkflow(stores)
-	workflow.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(stores)}
+	evaluator.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
 		issue.Payload.Approval = &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  true,
 			ApprovalInputVersion: 2,
@@ -487,13 +548,13 @@ func TestRolloutMakesPendingApprovalFindingStale(t *testing.T) {
 	}
 	proposalReady := make(chan struct{})
 	releaseCommit := make(chan struct{})
-	workflow.beforeCommit = func() {
+	evaluator.beforeCommit = func() {
 		close(proposalReady)
 		<-releaseCommit
 	}
 	applyDone := make(chan error, 1)
 	go func() {
-		_, err := workflow.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+		_, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
 			Workspace: "default",
 			ProjectID: "project-a",
 			IssueUID:  issue.UID,
@@ -511,6 +572,61 @@ func TestRolloutMakesPendingApprovalFindingStale(t *testing.T) {
 	var workflowErr *Error
 	require.True(t, errors.As(err, &workflowErr))
 	require.Equal(t, ErrorConflict, workflowErr.Code)
+}
+
+func TestPlanMutationMakesIssueLessRolloutStale(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "change database",
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 2,
+			Specs:                []*storepb.PlanConfig_Spec{{Id: "old"}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	buildStarted := make(chan struct{})
+	releaseBuild := make(chan struct{})
+	type rolloutOutcome struct {
+		result *CreateRolloutResult
+		err    error
+	}
+	rolloutDone := make(chan rolloutOutcome, 1)
+	go func() {
+		result, err := NewWorkflow(stores).CreateRollout(ctx, CreateRolloutInput{
+			Workspace: "default",
+			ProjectID: "project-a",
+			PlanUID:   plan.UID,
+			BuildTasks: func(_ context.Context, _ *store.PlanMessage, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
+				close(buildStarted)
+				<-releaseBuild
+				return nil, nil
+			},
+		})
+		rolloutDone <- rolloutOutcome{result: result, err: err}
+	}()
+	<-buildStarted
+
+	updated, err := NewWorkflow(stores).UpdatePlanSpecs(ctx, UpdatePlanSpecsInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Specs:     []*storepb.PlanConfig_Spec{{Id: "new"}},
+	})
+	require.NoError(t, err)
+	require.EqualValues(t, 3, updated.Plan.Config.GetApprovalInputVersion())
+	close(releaseBuild)
+
+	outcome := <-rolloutDone
+	require.Nil(t, outcome.result)
+	var workflowErr *Error
+	require.ErrorAs(t, outcome.err, &workflowErr)
+	require.Equal(t, ErrorConflict, workflowErr.Code)
+	got, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, err)
+	require.False(t, got.Config.GetHasRollout())
 }
 
 func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
@@ -534,8 +650,8 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	workflow := NewWorkflow(stores)
-	workflow.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(stores)}
+	evaluator.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
 		issue.Payload.Approval = &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  true,
 			ApprovalInputVersion: 2,
@@ -544,7 +660,7 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 	}
 	proposalReady := make(chan struct{})
 	releaseCommit := make(chan struct{})
-	workflow.beforeCommit = func() {
+	evaluator.beforeCommit = func() {
 		close(proposalReady)
 		<-releaseCommit
 	}
@@ -554,7 +670,7 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 	}
 	applyDone := make(chan findingOutcome, 1)
 	go func() {
-		result, err := workflow.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+		result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
 			Workspace: "default",
 			ProjectID: "project-a",
 			IssueUID:  issue.UID,

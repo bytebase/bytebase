@@ -65,17 +65,18 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // FindAndApplyApprovalTemplate finds and applies the approval template for an issue.
 // This is a utility function that can be called synchronously (from issue creation)
-// or asynchronously (from the event handler).
-func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
+// or asynchronously (from the event handler). The caller dispatches returned
+// events after the approval finding commits.
+func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, issue *store.IssueMessage) (*ApplyApprovalTemplateResult, error) {
 	if issue.Payload.GetDraft() {
-		return nil
+		return &ApplyApprovalTemplateResult{Issue: issue}, nil
 	}
 	// Find approval template - errors are logged, not persisted
-	err := findApprovalTemplateForIssue(ctx, stores, webhookManager, licenseService, issue)
+	result, err := findApprovalTemplateForIssue(ctx, stores, licenseService, issue)
 	if err != nil {
-		return errors.Wrap(err, "failed to find approval template")
+		return nil, errors.Wrap(err, "failed to find approval template")
 	}
-	return nil
+	return result, nil
 }
 
 func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
@@ -103,7 +104,8 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		slog.Error("project not found", slog.String("project", ref.ProjectID))
 		return
 	}
-	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue); err != nil {
+	result, err := findApprovalTemplateForIssue(ctx, r.store, r.licenseService, issue)
+	if err != nil {
 		slog.Error("failed to find approval template",
 			slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID),
 			slog.String("issue_title", issue.Title),
@@ -111,6 +113,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		// Don't persist error - user can rerun plan check to retry
 		return
 	}
+	DispatchApprovalEvents(ctx, r.store, r.webhookManager, result)
 
 	// After approval finding is done, check if the issue is now approved
 	// (e.g., skip approval case where no template is required).

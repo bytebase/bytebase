@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -58,7 +59,7 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 
 	approvalInputVersion := int64(2)
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
+	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: approvalInputVersion}, nil)
 	require.NoError(t, err)
 	require.True(t, marked)
 
@@ -106,6 +107,38 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 
 	gotIssue := getIssueForTest(ctx, t, stores, issue.UID)
 	require.Equal(t, storepb.Issue_DONE, gotIssue.Status)
+}
+
+func TestCreateRolloutAndPendingTasksClassifiesApprovalRaceAsStale(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		Workspace:  "default",
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: true},
+	}))
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	staleIssue := *issue
+	staleIssue.Payload = proto.CloneOf(issue.Payload)
+
+	unapproved := proto.CloneOf(issue.Payload)
+	unapproved.Approval.Approvers = nil
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: unapproved.Approval},
+	})
+	require.NoError(t, err)
+
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, &staleIssue, &store.ProjectMessage{
+		Workspace:  "default",
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: true},
+	}, []*store.TaskMessage{})
+	require.Error(t, err)
+	require.True(t, IsStaleRolloutApprovalError(err))
+
+	got, getErr := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, getErr)
+	require.False(t, got.Config.GetHasRollout())
 }
 
 func TestCreateRolloutAndPendingTasksRejectsDraft(t *testing.T) {
