@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -869,10 +870,18 @@ func (*SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 }
 
 func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
-	if template.Flow == nil {
+	if template == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
+	if template.Flow == nil {
+		return errors.Errorf("approval template flow cannot be nil")
+	}
 	// Empty roles means "no approval required" - issue will be auto-approved
+	for i, role := range template.Flow.Roles {
+		if strings.TrimSpace(role) == "" {
+			return errors.Errorf("approval template role at position %d cannot be empty", i+1)
+		}
+	}
 	return nil
 }
 
