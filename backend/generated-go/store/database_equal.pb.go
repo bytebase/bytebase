@@ -244,6 +244,14 @@ func (x *SchemaMetadata) Equal(y *SchemaMetadata) bool {
 	if x.SkipDump != y.SkipDump {
 		return false
 	}
+	if len(x.CompositeTypes) != len(y.CompositeTypes) {
+		return false
+	}
+	for i := 0; i < len(x.CompositeTypes); i++ {
+		if !x.CompositeTypes[i].Equal(y.CompositeTypes[i]) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -269,6 +277,55 @@ func (x *EnumTypeMetadata) Equal(y *EnumTypeMetadata) bool {
 		return false
 	}
 	if x.SkipDump != y.SkipDump {
+		return false
+	}
+	return true
+}
+
+func (x *CompositeTypeMetadata) Equal(y *CompositeTypeMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if len(x.Attributes) != len(y.Attributes) {
+		return false
+	}
+	for i := 0; i < len(x.Attributes); i++ {
+		if !x.Attributes[i].Equal(y.Attributes[i]) {
+			return false
+		}
+	}
+	if x.Comment != y.Comment {
+		return false
+	}
+	if x.SkipDump != y.SkipDump {
+		return false
+	}
+	return true
+}
+
+func (x *CompositeTypeAttribute) Equal(y *CompositeTypeAttribute) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Collation != y.Collation {
+		return false
+	}
+	if x.Comment != y.Comment {
 		return false
 	}
 	return true

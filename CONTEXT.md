@@ -59,3 +59,7 @@ _Avoid_: Plan, rollout, issue
 **Changelog**:
 The recorded history of a database migration after execution. It is evidence that a change ran, not the proposed change itself.
 _Avoid_: Change request, release
+
+**Composite Type**:
+A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.
+_Avoid_: UDT, user-defined type, custom type, object type

@@ -157,6 +157,8 @@
     - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
+    - [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute)
+    - [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
@@ -3160,6 +3162,41 @@ This field is populated when syncing from the database. When empty (e.g., when p
 
 
 
+<a name="bytebase-v1-CompositeTypeAttribute"></a>
+
+### CompositeTypeAttribute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the attribute. |
+| type | [string](#string) |  | The attribute type. User-defined types are always schema-qualified. |
+| collation | [string](#string) |  | The non-default collation of the attribute as an emit-ready SQL identifier reference (quoted as needed, schema-qualified when outside pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. |
+| comment | [string](#string) |  | The comment describing the attribute. |
+
+
+
+
+
+
+<a name="bytebase-v1-CompositeTypeMetadata"></a>
+
+### CompositeTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the composite type. |
+| attributes | [CompositeTypeAttribute](#bytebase-v1-CompositeTypeAttribute) | repeated | The ordered attributes of the composite type. |
+| comment | [string](#string) |  | The comment describing the composite type. |
+
+
+
+
+
+
 <a name="bytebase-v1-Database"></a>
 
 ### Database
@@ -3828,6 +3865,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated | The enum_types is the list of user-defined enum types in a schema. |
 | skip_dump | [bool](#bool) |  | Whether to skip this schema during schema dump operations. |
 | comment | [string](#string) |  | The comment is the comment of a schema. |
+| composite_types | [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata) | repeated | The composite_types is the list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
 
 
 

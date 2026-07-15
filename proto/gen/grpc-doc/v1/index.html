@@ -773,6 +773,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.CompositeTypeAttribute"><span class="badge">M</span>CompositeTypeAttribute</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CompositeTypeMetadata"><span class="badge">M</span>CompositeTypeMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Database"><span class="badge">M</span>Database</a>
                 </li>
               
@@ -9728,6 +9736,91 @@ int32). </p></td>
 
         
       
+        <h3 id="bytebase.v1.CompositeTypeAttribute">CompositeTypeAttribute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the attribute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The attribute type. User-defined types are always schema-qualified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The non-default collation of the attribute as an emit-ready SQL
+identifier reference (quoted as needed, schema-qualified when outside
+pg_catalog), empty otherwise. e.g. `&#34;C&#34;` or `locale.en_us`. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment describing the attribute. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CompositeTypeMetadata">CompositeTypeMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attributes</td>
+                  <td><a href="#bytebase.v1.CompositeTypeAttribute">CompositeTypeAttribute</a></td>
+                  <td>repeated</td>
+                  <td><p>The ordered attributes of the composite type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment describing the composite type. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.Database">Database</h3>
         <p></p>
 
@@ -11577,6 +11670,15 @@ Snowflake. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The comment is the comment of a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>composite_types</td>
+                  <td><a href="#bytebase.v1.CompositeTypeMetadata">CompositeTypeMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The composite_types is the list of user-defined composite types in a
+schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+types and derived types. </p></td>
                 </tr>
               
             </tbody>

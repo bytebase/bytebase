@@ -9607,6 +9607,49 @@ components:
         - IDENTITY_GENERATION_UNSPECIFIED
         - ALWAYS
         - BY_DEFAULT
+    bytebase.v1.CompositeTypeAttribute:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: The name of the attribute.
+        type:
+          type: string
+          title: type
+          description: The attribute type. User-defined types are always schema-qualified.
+        collation:
+          type: string
+          title: collation
+          description: |-
+            The non-default collation of the attribute as an emit-ready SQL
+             identifier reference (quoted as needed, schema-qualified when outside
+             pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+        comment:
+          type: string
+          title: comment
+          description: The comment describing the attribute.
+      title: CompositeTypeAttribute
+      additionalProperties: false
+    bytebase.v1.CompositeTypeMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: The name of the composite type.
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.CompositeTypeAttribute'
+          title: attributes
+          description: The ordered attributes of the composite type.
+        comment:
+          type: string
+          title: comment
+          description: The comment describing the composite type.
+      title: CompositeTypeMetadata
+      additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
       properties:
@@ -17307,6 +17350,15 @@ components:
           type: string
           title: comment
           description: The comment is the comment of a schema.
+        compositeTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.CompositeTypeMetadata'
+          title: composite_types
+          description: |-
+            The composite_types is the list of user-defined composite types in a
+             schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+             types and derived types.
       title: SchemaMetadata
       additionalProperties: false
       description: |-
