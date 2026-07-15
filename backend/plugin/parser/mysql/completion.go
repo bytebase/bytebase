@@ -856,23 +856,14 @@ func (c *Completer) takeReferencesSnapshot() {
 // text past the end of the current statement makes its cost quadratic in the
 // size of the whole sheet instead of the current statement (BYT-9886).
 func (c *Completer) statementBoundedText(i int) string {
-	start := c.tokens[i].Loc
-	for j := i + 1; j < len(c.tokens); j++ {
-		if c.tokens[j].Type == ';' {
-			return c.sql[start:c.tokens[j].Loc]
-		}
-	}
-	return c.sql[start:]
+	return c.statementBoundedTextFromByte(c.tokens[i].Loc)
 }
 
 // statementBoundedTextFromByte is statementBoundedText for a byte offset.
 func (c *Completer) statementBoundedTextFromByte(pos int) string {
-	for _, tok := range c.tokens {
-		if tok.Loc >= pos && tok.Type == ';' {
-			return c.sql[pos:tok.Loc]
-		}
-	}
-	return c.sql[pos:]
+	return base.TruncateAtSemicolonToken(c.sql, pos, c.tokens,
+		func(t mysqlparser.Token) int { return t.Loc },
+		func(t mysqlparser.Token) int { return t.Type })
 }
 
 func (c *Completer) collectRemainingTableReferences() {
