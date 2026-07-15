@@ -30,6 +30,12 @@ const mocks = vi.hoisted(() => ({
   hasFeature: vi.fn(() => true),
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
   getDefaultPagination: vi.fn(() => 20),
+  advancedSearchScopeOptions: undefined as
+    | Array<{
+        id: string;
+        options?: Array<{ value: string; keywords?: string[] }>;
+      }>
+    | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -111,17 +117,25 @@ vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
 vi.mock("@/react/components/AdvancedSearch", () => ({
   AdvancedSearch: ({
     placeholder,
+    scopeOptions,
     onParamsChange,
   }: {
     placeholder?: string;
+    scopeOptions?: Array<{
+      id: string;
+      options?: Array<{ value: string; keywords?: string[] }>;
+    }>;
     onParamsChange: (p: unknown) => void;
-  }) => (
-    <input
-      data-testid="advanced-search"
-      placeholder={placeholder}
-      onChange={() => onParamsChange({ query: "", scopes: [] })}
-    />
-  ),
+  }) => {
+    mocks.advancedSearchScopeOptions = scopeOptions;
+    return (
+      <input
+        data-testid="advanced-search"
+        placeholder={placeholder}
+        onChange={() => onParamsChange({ query: "", scopes: [] })}
+      />
+    );
+  },
 }));
 
 vi.mock("@/react/components/FeatureBadge", () => ({
@@ -243,6 +257,7 @@ const setupDefaultMocks = () => {
   mocks.project = "projects/proj1";
 
   mocks.state.highlightAccessGrantName = undefined;
+  mocks.advancedSearchScopeOptions = undefined;
 
   mocks.searchMyAccessGrants.mockResolvedValue({
     accessGrants: [],
@@ -280,6 +295,46 @@ describe("AccessPane", () => {
     });
 
     expect(container.textContent).toContain("sql-editor.no-access-requests");
+    unmount();
+  });
+
+  test("initial status filter uses display-status semantics", async () => {
+    const { render, unmount } = renderIntoContainer(<AccessPane />);
+    render();
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(mocks.searchMyAccessGrants).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          status: ["ACTIVE", "PENDING"],
+        },
+      })
+    );
+    unmount();
+  });
+
+  test("status search options include rejected and canceled display statuses", async () => {
+    const { render, unmount } = renderIntoContainer(<AccessPane />);
+    render();
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const statusOption = mocks.advancedSearchScopeOptions?.find(
+      (option) => option.id === "status"
+    );
+    expect(statusOption?.options?.map((option) => option.value)).toEqual([
+      "ACTIVE",
+      "PENDING",
+      "EXPIRED",
+      "REVOKED",
+      "REJECTED",
+      "CANCELED",
+    ]);
     unmount();
   });
 
