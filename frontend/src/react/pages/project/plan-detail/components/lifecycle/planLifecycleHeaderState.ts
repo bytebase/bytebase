@@ -125,15 +125,6 @@ export function resolvePlanLifecycleHeaderState(
     return { kind: "ready-for-review" };
   }
 
-  // Issue exists but is no longer open (review canceled) and never produced a
-  // rollout: the lifecycle ended.
-  if (
-    input.issueStatus !== undefined &&
-    input.issueStatus !== IssueStatus.OPEN
-  ) {
-    return { kind: "closed" };
-  }
-
   // Approval flow still being generated — no safe action until it resolves.
   if (input.approvalStatus === ApprovalStatus.CHECKING) {
     return { kind: "review-generating" };

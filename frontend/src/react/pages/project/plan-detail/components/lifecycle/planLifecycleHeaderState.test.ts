@@ -148,6 +148,15 @@ describe("resolvePlanLifecycleHeaderState — pre-deploy gates", () => {
       "preparing-rollout"
     );
   });
+
+  test("done issue with approved gates and no loaded rollout -> preparing-rollout", () => {
+    expect(
+      resolve({
+        issueStatus: IssueStatus.DONE,
+        approvalStatus: ApprovalStatus.APPROVED,
+      }).kind
+    ).toBe("preparing-rollout");
+  });
 });
 
 describe("resolvePlanLifecycleHeaderState — deploy", () => {
