@@ -48,9 +48,10 @@ func pseudoCreateDomainStmt(schema, name string) *ast.CreateDomainStmt {
 }
 
 // pseudoCompositeTypeStmt builds a composite type with a single text field
-// named "_broken". Without CompositeTypeMetadata in storepb we cannot
-// preserve real field names, so (col).field access against a pseudo composite
-// will fall through to extractFallbackColumns.
+// named "_broken". It is the fallback when a composite type's real
+// definition is absent from metadata or fails to install, so (col).field
+// access against a pseudo composite will fall through to
+// extractFallbackColumns.
 func pseudoCompositeTypeStmt(schema, name string) *ast.CompositeTypeStmt {
 	return &ast.CompositeTypeStmt{
 		Typevar: &ast.RangeVar{
