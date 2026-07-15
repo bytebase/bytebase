@@ -46,6 +46,7 @@ type wtObjectKind int
 const (
 	kindWTSchema wtObjectKind = iota
 	kindWTEnum
+	kindWTComposite
 	kindWTSequence
 	kindWTTable
 	kindWTView
@@ -62,13 +63,14 @@ type wtObjectEntry struct {
 	name   string
 
 	// Exactly one of the following is set based on kind.
-	enumMeta    *storepb.EnumTypeMetadata
-	seqMeta     *storepb.SequenceMetadata
-	tableMeta   *storepb.TableMetadata
-	viewMeta    *storepb.ViewMetadata
-	matViewMeta *storepb.MaterializedViewMetadata
-	funcMeta    *storepb.FunctionMetadata
-	idxMeta     *storepb.IndexMetadata
+	enumMeta      *storepb.EnumTypeMetadata
+	compositeMeta *storepb.CompositeTypeMetadata
+	seqMeta       *storepb.SequenceMetadata
+	tableMeta     *storepb.TableMetadata
+	viewMeta      *storepb.ViewMetadata
+	matViewMeta   *storepb.MaterializedViewMetadata
+	funcMeta      *storepb.FunctionMetadata
+	idxMeta       *storepb.IndexMetadata
 	// For kindWTConstraint: the parent table metadata.
 	constraintTable *storepb.TableMetadata
 	// For kindWTConstraint, kindWTIndex: the parent relation name.
@@ -79,7 +81,7 @@ func (e *wtObjectEntry) key() string {
 	switch e.kind {
 	case kindWTSchema:
 		return "schema:" + e.schema
-	case kindWTEnum:
+	case kindWTEnum, kindWTComposite:
 		return "type:" + e.schema + "." + e.name
 	case kindWTSequence:
 		return "seq:" + e.schema + "." + e.name
@@ -122,6 +124,8 @@ func wtKindLabel(k wtObjectKind) string {
 		return "0schema"
 	case kindWTEnum:
 		return "1enum"
+	case kindWTComposite:
+		return "1composite"
 	case kindWTSequence:
 		return "2seq"
 	case kindWTTable:
@@ -158,6 +162,14 @@ func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
 				schema:   sm.Name,
 				name:     enum.Name,
 				enumMeta: enum,
+			})
+		}
+		for _, composite := range sm.CompositeTypes {
+			out = append(out, &wtObjectEntry{
+				kind:          kindWTComposite,
+				schema:        sm.Name,
+				name:          composite.Name,
+				compositeMeta: composite,
 			})
 		}
 		for _, seq := range sm.Sequences {
@@ -429,6 +441,18 @@ func wtBuildEdges(objects []*wtObjectEntry, index map[string]*wtObjectEntry) map
 					}
 				}
 			}
+		case kindWTComposite:
+			for _, attribute := range obj.compositeMeta.Attributes {
+				for _, ref := range wtExtractUserTypeRefs(attribute.Type) {
+					if k := "type:" + ref.Schema + "." + ref.Name; index[k] != nil {
+						deps = append(deps, k)
+					}
+					// An attribute may be typed with a table/view row type.
+					if k := "rel:" + ref.Schema + "." + ref.Name; index[k] != nil {
+						deps = append(deps, k)
+					}
+				}
+			}
 		default:
 			// kindWTSchema, kindWTEnum, kindWTSequence have no additional deps.
 		}
@@ -566,6 +590,23 @@ func wtInstallOne(cat *catalog.Catalog, obj *wtObjectEntry) {
 		if stmt, err := wtPseudoMatViewStmt(obj.schema, obj.name, cols); err == nil {
 			_ = cat.ExecCreateTableAs(stmt)
 		}
+	case kindWTComposite:
+		// Name-preserving, text-backed fallback (mirroring the table pseudo)
+		// so later DDL targeting an existing attribute still resolves.
+		items := make([]ast.Node, 0, len(obj.compositeMeta.Attributes))
+		for _, attribute := range obj.compositeMeta.Attributes {
+			if attribute.Name == "" {
+				continue
+			}
+			items = append(items, &ast.ColumnDef{
+				Colname:  attribute.Name,
+				TypeName: wtPseudoTextTypeName(),
+			})
+		}
+		_ = cat.DefineCompositeType(&ast.CompositeTypeStmt{
+			Typevar:    &ast.RangeVar{Schemaname: obj.schema, Relname: obj.name},
+			Coldeflist: &ast.List{Items: items},
+		})
 	default:
 		// No pseudo form for schemas, enums, sequences, functions, indexes, constraints.
 	}
@@ -590,6 +631,27 @@ func wtInstallReal(cat *catalog.Catalog, obj *wtObjectEntry) error {
 		return cat.DefineEnum(&ast.CreateEnumStmt{
 			TypeName: wtQualifiedList(obj.schema, obj.name),
 			Vals:     &ast.List{Items: vals},
+		})
+
+	case kindWTComposite:
+		cols := make([]ast.Node, 0, len(obj.compositeMeta.Attributes))
+		for _, attribute := range obj.compositeMeta.Attributes {
+			if attribute.Name == "" {
+				continue
+			}
+			tn, err := wtTypeNameFromString(attribute.Type)
+			if err != nil {
+				return errors.Wrapf(err, "attribute %q", attribute.Name)
+			}
+			cols = append(cols, &ast.ColumnDef{
+				Colname:    attribute.Name,
+				TypeName:   tn,
+				CollClause: collateClauseFromReference(attribute.Collation),
+			})
+		}
+		return cat.DefineCompositeType(&ast.CompositeTypeStmt{
+			Typevar:    &ast.RangeVar{Schemaname: obj.schema, Relname: obj.name},
+			Coldeflist: &ast.List{Items: cols},
 		})
 
 	case kindWTSequence:
@@ -1181,6 +1243,12 @@ func wtExtractUserTypeRefs(typeStr string) []wtUserTypeRef {
 
 func wtStripTypeModifiers(s string) string {
 	s = strings.TrimSpace(s)
+	// Array suffixes wrap the element type: "public.addr[]" refers to
+	// public.addr. Quoted identifiers end with a quote, so a genuine name
+	// containing "[]" is never clipped.
+	for strings.HasSuffix(s, "[]") {
+		s = strings.TrimSpace(strings.TrimSuffix(s, "[]"))
+	}
 	lower := strings.ToLower(s)
 	for _, sfx := range []string{" with time zone", " without time zone"} {
 		if strings.HasSuffix(lower, sfx) {
@@ -1409,4 +1477,22 @@ func wtParseExpr(expr string) ast.Node {
 		return nil
 	}
 	return rt.Val
+}
+
+// collateClauseFromReference converts a stored emit-ready collation reference
+// (quoted as needed, schema-qualified outside pg_catalog, e.g. `"C"` or
+// `locale.en_us`) into an AST collate clause. Returns nil for no collation.
+func collateClauseFromReference(reference string) *ast.CollateClause {
+	if reference == "" {
+		return nil
+	}
+	var items []ast.Node
+	if schemaName, collationName, ok := parseQualifiedTypeIdent(reference); ok {
+		items = []ast.Node{&ast.String{Str: schemaName}, &ast.String{Str: collationName}}
+	} else {
+		name := strings.Trim(reference, `"`)
+		name = strings.ReplaceAll(name, `""`, `"`)
+		items = []ast.Node{&ast.String{Str: name}}
+	}
+	return &ast.CollateClause{Collname: &ast.List{Items: items}}
 }
