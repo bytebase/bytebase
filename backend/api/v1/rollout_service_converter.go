@@ -106,6 +106,8 @@ func convertToTaskRunStatus(status storepb.TaskRun_Status) v1pb.TaskRun_Status {
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
 	case storepb.TaskRun_PENDING:
 		return v1pb.TaskRun_PENDING
+	case storepb.TaskRun_AVAILABLE:
+		return v1pb.TaskRun_AVAILABLE
 	case storepb.TaskRun_RUNNING:
 		return v1pb.TaskRun_RUNNING
 	case storepb.TaskRun_DONE:

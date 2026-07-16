@@ -53,9 +53,9 @@ interface PlanCheckSectionProps {
   isRunning: boolean;
   runDisabled?: boolean;
   onRun: () => void | Promise<void>;
-  // Called when the drawer opens; should refresh runs and return the latest.
-  // Return value replaces what the drawer renders.
-  onRefreshOnOpen?: () => Promise<PlanCheckRun[]>;
+  // Called when the drawer opens. The parent owns the refreshed runs and feeds
+  // them back through planCheckRuns; the callback result itself is ignored.
+  onRefreshOnOpen?: () => Promise<unknown>;
   // Optional trailing element rendered after status counts (e.g. affected rows).
   trailingSummary?: ReactNode;
   renderTarget?: (target: string) => ReactNode;
@@ -241,7 +241,7 @@ interface PlanCheckResultsDrawerProps {
   open: boolean;
   onOpenChange: (next: boolean) => void;
   planCheckRuns: PlanCheckRun[];
-  onRefreshOnOpen?: () => Promise<PlanCheckRun[]>;
+  onRefreshOnOpen?: () => Promise<unknown>;
   includeRunFailure?: boolean;
   renderTarget?: (target: string) => ReactNode;
 }

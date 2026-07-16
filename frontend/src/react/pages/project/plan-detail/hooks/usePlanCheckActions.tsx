@@ -7,12 +7,7 @@ import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix, pushNotification } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import {
-  GetPlanCheckRunRequestSchema,
-  GetPlanRequestSchema,
-  type PlanCheckRun,
-  RunPlanChecksRequestSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
@@ -21,7 +16,7 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 export function usePlanCheckActions() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const { patchState, isRunningChecks, setIsRunningChecks } = page;
+  const { isRunningChecks, refreshState, setIsRunningChecks } = page;
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
@@ -44,36 +39,18 @@ export function usePlanCheckActions() {
     project,
   ]);
 
-  const refreshChecks = useCallback(async (): Promise<PlanCheckRun[]> => {
-    const [nextPlan, runOrNull] = await Promise.all([
-      planServiceClientConnect.getPlan(
-        create(GetPlanRequestSchema, { name: page.plan.name })
-      ),
-      planServiceClientConnect
-        .getPlanCheckRun(
-          create(GetPlanCheckRunRequestSchema, {
-            name: `${page.plan.name}/planCheckRun`,
-          })
-        )
-        .catch(() => null),
-    ]);
-    const nextPlanCheckRuns = runOrNull ? [runOrNull] : [];
-    patchState({ plan: nextPlan, planCheckRuns: nextPlanCheckRuns });
-    return nextPlanCheckRuns;
-  }, [page.plan.name, patchState]);
-
   const runChecks = useCallback(async () => {
     try {
       setIsRunningChecks(true);
       await planServiceClientConnect.runPlanChecks(
         create(RunPlanChecksRequestSchema, { name: page.plan.name })
       );
-      await refreshChecks();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("plan.checks.started"),
       });
+      await refreshState().catch(() => undefined);
     } catch (error) {
       pushNotification({
         module: "bytebase",
@@ -84,12 +61,12 @@ export function usePlanCheckActions() {
     } finally {
       setIsRunningChecks(false);
     }
-  }, [page.plan.name, refreshChecks, t]);
+  }, [page.plan.name, refreshState, setIsRunningChecks, t]);
 
   return {
     allowRunChecks,
     isRunningChecks,
-    refreshChecks,
+    refreshChecks: refreshState,
     runChecks,
   };
 }
