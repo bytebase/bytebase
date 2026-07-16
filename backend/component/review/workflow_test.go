@@ -548,7 +548,7 @@ func TestPlanCheckCreatedDuringApprovalMakesPendingFindingStale(t *testing.T) {
 	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
 }
 
-func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
+func TestUpdateIssueMetadataCommitsMixedPatchAndResetsApproval(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
 	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
@@ -568,6 +568,7 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 		ProjectID:    "project-a",
 		CreatorEmail: "creator@example.com",
 		Title:        "change database",
+		Description:  "old description",
 		Type:         storepb.Issue_DATABASE_CHANGE,
 		PlanUID:      &plan.UID,
 		Payload: &storepb.Issue{
@@ -580,20 +581,77 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	result, err := NewWorkflow(stores).UpdateIssueLabels(ctx, UpdateIssueLabelsInput{
-		Workspace: "default",
-		ProjectID: "project-a",
-		IssueUID:  issue.UID,
-		Labels:    []string{"new"},
+	title := "renamed database change"
+	description := ""
+	labels := []string{"new"}
+	result, err := NewWorkflow(stores).UpdateIssueMetadata(ctx, UpdateIssueMetadataInput{
+		Workspace:   "default",
+		ProjectID:   "project-a",
+		IssueUID:    issue.UID,
+		Title:       &title,
+		Description: &description,
+		Labels:      &labels,
 	})
 	require.NoError(t, err)
+	require.Equal(t, title, result.Issue.Title)
+	require.Empty(t, result.Issue.Description)
 	require.Equal(t, []string{"new"}, result.Issue.Payload.GetLabels())
 	require.True(t, result.ApprovalReset)
 	require.False(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, result.Issue.Payload.GetApproval().GetApprovalInputVersion())
 	require.Equal(t, []Event{
+		IssueTitleUpdatedEvent{FromTitle: "change database", ToTitle: title},
+		IssueDescriptionUpdatedEvent{FromDescription: "old description", ToDescription: ""},
 		IssueLabelsUpdatedEvent{FromLabels: []string{"old"}, ToLabels: []string{"new"}},
 		ApprovalCheckEvent{},
+	}, result.Events)
+}
+
+func TestUpdateIssueMetadataDoesNotRequirePlanForDraftLabels(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "draft database change",
+		Config:    &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "draft database change",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		PlanUID:      &plan.UID,
+		Payload: &storepb.Issue{
+			Draft:  true,
+			Labels: []string{"old"},
+		},
+	})
+	require.NoError(t, err)
+	planTx, err := stores.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer planTx.Rollback()
+	var planUID int64
+	require.NoError(t, planTx.QueryRowContext(ctx, `
+		SELECT id
+		FROM plan
+		WHERE project = $1 AND id = $2
+		FOR UPDATE`, issue.ProjectID, plan.UID).Scan(&planUID))
+
+	labels := []string{"new"}
+	updateCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	result, err := NewWorkflow(stores).UpdateIssueMetadata(updateCtx, UpdateIssueMetadataInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Labels:    &labels,
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"new"}, result.Issue.Payload.GetLabels())
+	require.False(t, result.ApprovalReset)
+	require.Equal(t, []Event{
+		IssueLabelsUpdatedEvent{FromLabels: []string{"old"}, ToLabels: []string{"new"}},
 	}, result.Events)
 }
 
@@ -640,11 +698,12 @@ func TestLabelResetMakesPendingApprovalActionStale(t *testing.T) {
 	}()
 	<-proposalReady
 
-	labels, err := NewWorkflow(stores).UpdateIssueLabels(ctx, UpdateIssueLabelsInput{
+	updatedLabels := []string{"security"}
+	labels, err := NewWorkflow(stores).UpdateIssueMetadata(ctx, UpdateIssueMetadataInput{
 		Workspace: "default",
 		ProjectID: "project-a",
 		IssueUID:  issue.UID,
-		Labels:    []string{"security"},
+		Labels:    &updatedLabels,
 	})
 	require.NoError(t, err)
 	require.True(t, labels.ApprovalReset)

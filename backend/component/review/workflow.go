@@ -119,6 +119,22 @@ type IssueLabelsUpdatedEvent struct {
 
 func (IssueLabelsUpdatedEvent) isReviewEvent() {}
 
+// IssueTitleUpdatedEvent requests a title audit entry for the committed transition.
+type IssueTitleUpdatedEvent struct {
+	FromTitle string
+	ToTitle   string
+}
+
+func (IssueTitleUpdatedEvent) isReviewEvent() {}
+
+// IssueDescriptionUpdatedEvent requests a description audit entry for the committed transition.
+type IssueDescriptionUpdatedEvent struct {
+	FromDescription string
+	ToDescription   string
+}
+
+func (IssueDescriptionUpdatedEvent) isReviewEvent() {}
+
 // CompleteRolloutIssueEvent requests linked Bytebase Issue completion.
 type CompleteRolloutIssueEvent struct{}
 

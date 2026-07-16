@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"slices"
 	"strings"
@@ -242,9 +243,27 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if err != nil {
 		return nil, err
 	}
+	if _, err := updateIssue(ctx, s.GetDB(), projectID, uid, oldIssue, patch); err != nil {
+		return nil, err
+	}
+
+	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+}
+
+// UpdateIssueTx updates an already locked Issue inside a caller-owned transaction.
+func UpdateIssueTx(ctx context.Context, tx *sql.Tx, issue *IssueMessage, patch *UpdateIssueMessage) (time.Time, error) {
+	return updateIssue(ctx, tx, issue.ProjectID, issue.UID, issue, patch)
+}
+
+type issueUpdateExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID string, uid int64, oldIssue *IssueMessage, patch *UpdateIssueMessage) (time.Time, error) {
+	updatedAt := time.Now()
 
 	set := qb.Q()
-	set.Comma("updated_at = ?", time.Now())
+	set.Comma("updated_at = ?", updatedAt)
 
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
@@ -260,7 +279,7 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 		v.Labels = CanonicalizeIssueLabels(v.Labels)
 		p, err := protojson.Marshal(v)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
+			return time.Time{}, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
 		}
 		payloadSet.Space("|| ?::jsonb", string(p))
 	}
@@ -289,14 +308,13 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return time.Time{}, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return nil, err
+	if _, err := executor.ExecContext(ctx, query, args...); err != nil {
+		return time.Time{}, err
 	}
-
-	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+	return updatedAt, nil
 }
 
 // ListIssues returns the list of issues by find query.

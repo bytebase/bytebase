@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"strings"
 	"time"
 
@@ -847,93 +846,68 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 
-	updateMasks := map[string]bool{}
-
-	patch := &store.UpdateIssueMessage{}
-	hasDirectIssueUpdate := false
+	metadataInput := review.UpdateIssueMetadataInput{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
+	}
+	hasMetadataPatch := false
 	var issueCommentCreates []*store.IssueCommentMessage
-	var labelsChanged bool
-	var labelsForUpdate []string
 	for _, path := range req.Msg.UpdateMask.Paths {
-		updateMasks[path] = true
 		switch path {
 		case "title":
 			trimmed := strings.TrimSpace(req.Msg.Issue.Title)
 			if trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
-			if trimmed == issue.Title {
-				// No-op update — skip both the patch and the audit comment so we
-				// don't pollute the timeline with "changed name from X to X".
-				continue
-			}
-
-			patch.Title = &trimmed
-			hasDirectIssueUpdate = true
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromTitle: &issue.Title,
-							ToTitle:   &trimmed,
-						},
-					},
-				},
-			})
+			metadataInput.Title = &trimmed
+			hasMetadataPatch = true
 
 		case "description":
-			if req.Msg.Issue.Description == issue.Description {
-				continue
-			}
-			patch.Description = &req.Msg.Issue.Description
-			hasDirectIssueUpdate = true
-
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromDescription: &issue.Description,
-							ToDescription:   &req.Msg.Issue.Description,
-						},
-					},
-				},
-			})
+			metadataInput.Description = &req.Msg.Issue.Description
+			hasMetadataPatch = true
 
 		case "labels":
-			labels := store.CanonicalizeIssueLabels(req.Msg.Issue.Labels)
-			if slices.Equal(issue.Payload.Labels, labels) {
-				continue
-			}
-			labelsChanged = true
-			labelsForUpdate = labels
+			labels := append([]string(nil), req.Msg.Issue.Labels...)
+			metadataInput.Labels = &labels
+			hasMetadataPatch = true
 
 		default:
 		}
 	}
 
-	if hasDirectIssueUpdate {
-		issue, err = s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, patch)
+	if hasMetadataPatch {
+		result, err := s.reviewWorkflow.UpdateIssueMetadata(ctx, metadataInput)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-		}
-	}
-
-	if labelsChanged {
-		result, err := s.reviewWorkflow.UpdateIssueLabels(ctx, review.UpdateIssueLabelsInput{
-			Workspace: common.GetWorkspaceIDFromContext(ctx),
-			ProjectID: issue.ProjectID,
-			IssueUID:  issue.UID,
-			Labels:    labelsForUpdate,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue labels"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update issue"))
 		}
 		issue = result.Issue
 		for _, event := range result.Events {
 			switch event := event.(type) {
+			case review.IssueTitleUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromTitle: &event.FromTitle,
+								ToTitle:   &event.ToTitle,
+							},
+						},
+					},
+				})
+			case review.IssueDescriptionUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromDescription: &event.FromDescription,
+								ToDescription:   &event.ToDescription,
+							},
+						},
+					},
+				})
 			case review.IssueLabelsUpdatedEvent:
 				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 					IssueUID: issue.UID,
@@ -949,7 +923,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			case review.ApprovalCheckEvent:
 				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 			default:
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected issue label event %T", event))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected issue metadata event %T", event))
 			}
 		}
 	}

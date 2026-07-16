@@ -118,6 +118,160 @@ func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
 	require.Len(t, comments, 10)
 }
 
+func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Go(func() {
+			<-start
+			_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue: &v1pb.Issue{
+					Name:  common.FormatIssue(issue.ProjectID, issue.UID),
+					Title: "renamed issue",
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+			}))
+			errs <- err
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 1)
+	update := comments[0].Payload.GetIssueUpdate()
+	require.Equal(t, "issue-a", update.GetFromTitle())
+	require.Equal(t, "renamed issue", update.GetToTitle())
+}
+
+func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	_, err := stores.GetDB().ExecContext(ctx, `
+		ALTER TABLE issue ADD CONSTRAINT reject_atomic_test_label
+		CHECK (NOT COALESCE(payload->'labels' ? 'reject', false))`)
+	require.NoError(t, err)
+
+	_, err = service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       "renamed issue",
+			Description: "updated description",
+			Labels:      []string{"reject"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, "issue-a", got.Title)
+	require.Empty(t, got.Description)
+	require.Equal(t, []string{"environment:prod"}, got.Payload.GetLabels())
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+}
+
+func TestMixedIssuePatchCommitsWithAuditComments(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	response, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       "renamed issue",
+			Description: "updated description",
+			Labels:      []string{"environment:staging"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.NoError(t, err)
+	require.Equal(t, "renamed issue", response.Msg.Title)
+	require.Equal(t, "updated description", response.Msg.Description)
+	require.Equal(t, []string{"environment:staging"}, response.Msg.Labels)
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.Len(t, service.bus.ApprovalCheckChan, 1)
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 3)
+	var titleAudit, descriptionAudit, labelsAudit bool
+	for _, comment := range comments {
+		update := comment.Payload.GetIssueUpdate()
+		require.NotNil(t, update)
+		switch {
+		case update.FromTitle != nil:
+			titleAudit = true
+			require.Equal(t, "issue-a", update.GetFromTitle())
+			require.Equal(t, "renamed issue", update.GetToTitle())
+		case update.FromDescription != nil:
+			descriptionAudit = true
+			require.Empty(t, update.GetFromDescription())
+			require.Equal(t, "updated description", update.GetToDescription())
+		default:
+			labelsAudit = true
+			require.Equal(t, []string{"environment:prod"}, update.GetFromLabels())
+			require.Equal(t, []string{"environment:staging"}, update.GetToLabels())
+		}
+	}
+	require.True(t, titleAudit)
+	require.True(t, descriptionAudit)
+	require.True(t, labelsAudit)
+}
+
+func TestIssueMetadataNoopDoesNotCreateAuditComments(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       " issue-a ",
+			Description: "",
+			Labels:      []string{" environment:prod ", "environment:prod"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.NoError(t, err)
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, issue.UpdatedAt, got.UpdatedAt)
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.Empty(t, service.bus.ApprovalCheckChan)
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+}
+
 func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
