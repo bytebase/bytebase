@@ -6,6 +6,7 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import type { DatabaseFilter } from "@/react/lib/databaseFilter";
 import { router } from "@/react/router";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
@@ -161,6 +162,12 @@ export function DatabaseTable({
       fetchDatabases(false);
     }
   }, [isFetchingMore, fetchDatabases]);
+  useScrollRestorationLoadMore({
+    dataList: databases,
+    hasMore: !selectOnRowClick && hasMore,
+    isFetchingMore,
+    loadMore,
+  });
 
   // Notify caller whenever the visible-page database list changes.
   useEffect(() => {

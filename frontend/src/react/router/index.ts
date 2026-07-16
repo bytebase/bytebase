@@ -5,7 +5,11 @@ import {
   useParams,
 } from "react-router-dom";
 import type { Permission } from "@/types";
-import type { RouterLocation, RouterMatch } from "./navigation";
+import type {
+  NavigationOptions,
+  RouterLocation,
+  RouterMatch,
+} from "./navigation";
 import {
   buildSearchString,
   getAppRouterState,
@@ -227,14 +231,23 @@ export function resolveRoute(to: RouteTarget): ReactResolvedRoute {
   return { href: fullPath, fullPath };
 }
 
+type PushOptions = Omit<NavigationOptions, "replace">;
+
+function pushRoute(to: RouteTarget, options?: PushOptions): Promise<void> {
+  return navigateToPath(resolveTarget(to), options);
+}
+
+function replaceRoute(to: RouteTarget, options?: PushOptions): Promise<void> {
+  return navigateToPath(resolveTarget(to), { ...options, replace: true });
+}
+
 export function useNavigate() {
   // Hook call keeps React's router context wired; navigation itself goes
   // through the resolver so by-name targets keep working.
   useReactRouterNavigate();
   return {
-    push: (to: RouteTarget) => navigateToPath(resolveTarget(to)),
-    replace: (to: RouteTarget) =>
-      navigateToPath(resolveTarget(to), { replace: true }),
+    push: pushRoute,
+    replace: replaceRoute,
     resolve: resolveRoute,
   };
 }
@@ -294,9 +307,8 @@ export function runBeforeEachGuards(
 }
 
 export const router = {
-  push: (to: RouteTarget) => navigateToPath(resolveTarget(to)),
-  replace: (to: RouteTarget) =>
-    navigateToPath(resolveTarget(to), { replace: true }),
+  push: pushRoute,
+  replace: replaceRoute,
   resolve: (to: RouteTarget): ReactResolvedRoute => resolveRoute(to),
   back: () => routerGo(-1),
   go: (delta: number) => routerGo(delta),

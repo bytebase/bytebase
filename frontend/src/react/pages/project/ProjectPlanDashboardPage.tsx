@@ -60,6 +60,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/react/router/handles";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
 import { pushNotification } from "@/store";
@@ -212,6 +213,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     sessionKey: `bb.${projectName}.plan-table`,
     fetchList: fetchPlanList,
   });
+  useScrollRestorationLoadMore(paged);
 
   useEffect(() => {
     if (paged.dataList.length === 0) {
