@@ -2,17 +2,7 @@ import { useTranslation } from "react-i18next";
 import { TaskStatusIcon } from "@/react/components/TaskStatusIcon";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { stringifyTaskStatus } from "@/utils";
-
-const TASK_STATUS_FILTERS = [
-  Task_Status.NOT_STARTED,
-  Task_Status.PENDING,
-  Task_Status.RUNNING,
-  Task_Status.DONE,
-  Task_Status.FAILED,
-  Task_Status.CANCELED,
-  Task_Status.SKIPPED,
-];
+import { stringifyTaskStatus, TASK_STATUS_PRIORITY } from "@/utils";
 
 export function DeployTaskFilter({
   selectedStatuses,
@@ -29,7 +19,7 @@ export function DeployTaskFilter({
 
   return (
     <div className="flex flex-row items-center gap-1">
-      {TASK_STATUS_FILTERS.map((status) => {
+      {TASK_STATUS_PRIORITY.map((status) => {
         const count = getTaskCount(status);
         if (count <= 0) return null;
         const checked = selectedStatuses.includes(status);
