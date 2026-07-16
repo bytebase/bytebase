@@ -9,13 +9,18 @@ export type RouterState = {
   location: RouterLocation;
   matches: RouterMatch[];
   initialized: boolean;
+  preventScrollReset?: boolean;
+};
+export type NavigationOptions = {
+  replace?: boolean;
+  preventScrollReset?: boolean;
 };
 type AppRouterLike = {
   // Overloaded to match the data router (`navigate(delta)` /
   // `navigate(to, opts)`), so the concrete instance is assignable.
   navigate: {
     (delta: number): Promise<void>;
-    (to: string, opts?: { replace?: boolean }): Promise<void>;
+    (to: string, opts?: NavigationOptions): Promise<void>;
   };
   subscribe?: (fn: (state: RouterState) => void) => () => void;
   state?: RouterState;
@@ -110,26 +115,19 @@ export function setAppRouter(router: AppRouterLike): void {
 // Navigate by route name (mirrors vue-router `router.push({ name, query })`).
 export function navigateByName(
   name: string,
-  options: {
-    params?: NavParams;
-    query?: NavQuery;
-    replace?: boolean;
-  } = {}
+  options: { params?: NavParams; query?: NavQuery } & NavigationOptions = {}
 ): Promise<void> {
-  const path = resolvePath(name, options);
-  return Promise.resolve(
-    appRouter?.navigate(path, { replace: options.replace })
-  );
+  const { params, query, ...navigationOptions } = options;
+  const path = resolvePath(name, { params, query });
+  return Promise.resolve(appRouter?.navigate(path, navigationOptions));
 }
 
 // Navigate to a raw path (mirrors `router.push(path)` / `router.replace(path)`).
 export function navigateToPath(
   path: string,
-  options: { replace?: boolean } = {}
+  options: NavigationOptions = {}
 ): Promise<void> {
-  return Promise.resolve(
-    appRouter?.navigate(path, { replace: options.replace })
-  );
+  return Promise.resolve(appRouter?.navigate(path, options));
 }
 
 // Current data-router state (location + matches), for non-hook snapshots used

@@ -16,6 +16,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -88,6 +89,7 @@ export function MyIssuesPage() {
     sessionKey: "bb.issue-table.my-issues",
     fetchList: fetchIssueList,
   });
+  useScrollRestorationLoadMore(paged);
 
   useEffect(() => {
     if (paged.dataList.length === 0) {

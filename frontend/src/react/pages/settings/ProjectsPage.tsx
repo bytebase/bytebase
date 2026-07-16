@@ -47,6 +47,7 @@ import {
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { PROJECT_V1_ROUTE_ISSUES } from "@/react/router/handles";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -425,6 +426,12 @@ export function ProjectsPage() {
       fetchProjects(false);
     }
   }, [isFetchingMore, fetchProjects]);
+  useScrollRestorationLoadMore({
+    dataList: projects,
+    hasMore,
+    isFetchingMore,
+    loadMore,
+  });
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());

@@ -119,7 +119,10 @@ export function useURLSearchParam<T>({
       if (apply(urlSearchParamsRef.current) === urlSearchParamsRef.current) {
         return;
       }
-      setURLSearchParams(apply, { replace: true });
+      setURLSearchParams(apply, {
+        preventScrollReset: true,
+        replace: true,
+      });
     },
     [defaultValue, param, parse, serialize, setURLSearchParams]
   );

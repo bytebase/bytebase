@@ -8,6 +8,7 @@ import { Watermark } from "@/react/components/Watermark";
 import { AgentWindow } from "@/react/plugins/agent/components/AgentWindow";
 import type { ReactRoute } from "@/react/router";
 import { buildReactRoute, runBeforeEachGuards } from "@/react/router";
+import { NavigationScrollRestoration } from "@/react/router/NavigationScrollRestoration";
 import { routes } from "@/react/router/routes";
 
 // Translate a react-router Location into the legacy `ReactRoute` snapshot the
@@ -69,9 +70,11 @@ export function RootLayout() {
       <AgentWindow />
       <SessionExpiredSurfaceGate />
       <LeaveGuardBlocker />
-      <AuthGate>
-        <Outlet />
-      </AuthGate>
+      <NavigationScrollRestoration>
+        <AuthGate>
+          <Outlet />
+        </AuthGate>
+      </NavigationScrollRestoration>
     </>
   );
 }

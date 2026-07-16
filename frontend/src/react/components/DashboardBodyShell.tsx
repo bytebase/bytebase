@@ -8,6 +8,7 @@ import type {
   DashboardShellTargets,
 } from "@/react/dashboard-shell";
 import { cn } from "@/react/lib/utils";
+import { MAIN_SCROLL_RESTORATION_ID } from "@/react/router/NavigationScrollRestoration";
 
 function subscribeToViewport(onStoreChange: () => void) {
   window.addEventListener("resize", onStoreChange);
@@ -144,6 +145,7 @@ export function DashboardBodyShell({
 
           <div
             id="bb-layout-main"
+            data-scroll-restoration-id={MAIN_SCROLL_RESTORATION_ID}
             ref={mainContainerRef}
             className={cn(
               "flex-1 overflow-y-auto overscroll-y-contain",

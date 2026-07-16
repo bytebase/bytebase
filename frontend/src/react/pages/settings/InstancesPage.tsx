@@ -79,6 +79,7 @@ import {
 import { cn } from "@/react/lib/utils";
 import { router, useCurrentRoute } from "@/react/router";
 import { INSTANCE_ROUTE_CREATE } from "@/react/router/handles";
+import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import type { InstanceFilter } from "@/react/stores/app/types";
 import { pushNotification } from "@/store";
@@ -780,6 +781,12 @@ export function InstancesPage() {
       fetchInstances(false);
     }
   }, [isFetchingMore, fetchInstances]);
+  useScrollRestorationLoadMore({
+    dataList: instances,
+    hasMore,
+    isFetchingMore,
+    loadMore,
+  });
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
