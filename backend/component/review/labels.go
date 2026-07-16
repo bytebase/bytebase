@@ -50,7 +50,8 @@ func (w *Workflow) UpdateIssueLabels(ctx context.Context, input UpdateIssueLabel
 	}
 	labels := store.CanonicalizeIssueLabels(input.Labels)
 	result := &UpdateIssueLabelsResult{Issue: issue}
-	if slices.Equal(store.CanonicalizeIssueLabels(issue.Payload.GetLabels()), labels) {
+	oldLabels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+	if slices.Equal(oldLabels, labels) {
 		if err := tx.Commit(); err != nil {
 			return nil, workflowWrap(ErrorInternal, err, "failed to commit issue label transaction")
 		}
@@ -72,10 +73,14 @@ func (w *Workflow) UpdateIssueLabels(ctx context.Context, input UpdateIssueLabel
 		return nil, workflowWrap(ErrorInternal, err, "failed to update issue labels")
 	}
 	issue.Payload.Labels = labels
+	result.Events = append(result.Events, IssueLabelsUpdatedEvent{
+		FromLabels: oldLabels,
+		ToLabels:   labels,
+	})
 	if resetApproval {
 		issue.Payload.Approval = payloadPatch.Approval
 		result.ApprovalReset = true
-		result.Events = []Event{ApprovalCheckEvent{}}
+		result.Events = append(result.Events, ApprovalCheckEvent{})
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to commit issue label transaction")

@@ -78,21 +78,6 @@ type TaskStatusCount struct {
 	Count       int32
 }
 
-// ErrDraftIssueNotSubmitted indicates rollout creation was rejected because its
-// currently linked issue is still a draft.
-var ErrDraftIssueNotSubmitted = errors.New("draft issue must be submitted before rollout creation")
-
-// RolloutGuard carries the approval-input version used for rollout
-// creation. When issue approval is required, it also carries the issue approval
-// snapshot that the API layer has already accepted. The store uses it only as a
-// race guard: the plan must still be on this version and, when Approval is set,
-// the locked issue row must still have the same approval payload.
-type RolloutGuard struct {
-	IssueUID             int64
-	ApprovalInputVersion int64
-	Approval             *storepb.IssuePayloadApproval
-}
-
 // GetTaskByID gets a task by ID.
 func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int64) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ProjectID: projectID, ID: &id})
@@ -510,115 +495,9 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 	return nil
 }
 
-// CreateRolloutTasks marks the plan as having rollout and creates tasks in one transaction.
-// If rolloutGuard is set, the transaction creates no tasks unless the plan
-// still has that approval input version. The review workflow owns the "is this
-// Bytebase Issue approved" policy check before calling this method; the store
-// only verifies that the locked approval payload still matches the snapshot.
-func (s *Store) CreateRolloutTasks(ctx context.Context, projectID string, planUID int64, rolloutGuard *RolloutGuard, tasks []*TaskMessage) (bool, []*TaskMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	if err := acquirePlanIssueRolloutAdvisoryLock(ctx, tx, projectID, planUID); err != nil {
-		return false, nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
-	}
-
-	var approvalInputVersion *int64
-	if rolloutGuard != nil {
-		approvalInputVersion = &rolloutGuard.ApprovalInputVersion
-	}
-
-	var currentIssueUID int64
-	var payload []byte
-	issueFound := true
-	if err := tx.QueryRowContext(ctx, `
-		SELECT id, payload
-		FROM issue
-		WHERE project = $1
-		  AND plan_id = $2
-		FOR UPDATE`,
-		projectID, planUID).Scan(&currentIssueUID, &payload); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			issueFound = false
-		} else {
-			return false, nil, errors.Wrap(err, "failed to lock linked issue")
-		}
-	}
-
-	currentIssuePayload := &storepb.Issue{}
-	if issueFound {
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, currentIssuePayload); err != nil {
-			return false, nil, errors.Wrap(err, "failed to unmarshal issue payload")
-		}
-		if currentIssuePayload.GetDraft() {
-			return false, nil, ErrDraftIssueNotSubmitted
-		}
-	}
-
-	if rolloutGuard != nil && rolloutGuard.Approval != nil {
-		if !issueFound || currentIssueUID != rolloutGuard.IssueUID {
-			return false, nil, nil
-		}
-		if !isIssueApprovalPayloadSameAsGuard(currentIssuePayload, rolloutGuard) {
-			return false, nil, nil
-		}
-	}
-
-	var updatedPlanUID int64
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE plan
-		SET
-			updated_at = CASE
-				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN $1
-				ELSE updated_at
-			END,
-			config = CASE
-				WHEN COALESCE((config->>'hasRollout')::boolean, false) = false THEN jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
-				ELSE config
-			END
-		WHERE project = $2
-		  AND id = $3
-		  AND (
-			$4::bigint IS NULL
-			OR COALESCE((config->>'approvalInputVersion')::bigint, 0) = $4
-		  )
-		RETURNING id`,
-		time.Now(), projectID, planUID, approvalInputVersion).Scan(&updatedPlanUID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil, nil
-		}
-		return false, nil, errors.Wrapf(err, "failed to mark plan has rollout")
-	}
-
-	tasks, err = s.createTasksTxDedup(ctx, tx, projectID, planUID, tasks)
-	if err != nil {
-		return false, nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return true, tasks, nil
-}
-
-func isIssueApprovalPayloadSameAsGuard(issuePayload *storepb.Issue, guard *RolloutGuard) bool {
-	if issuePayload == nil || guard == nil || guard.Approval == nil {
-		return false
-	}
-	if guard.Approval.GetApprovalInputVersion() != guard.ApprovalInputVersion {
-		return false
-	}
-	approval := issuePayload.GetApproval()
-	if approval == nil || !approval.GetApprovalFindingDone() {
-		return false
-	}
-	return approval.Equal(guard.Approval)
-}
-
-func (s *Store) createTasksTxDedup(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
+// CreateMissingTasksTx creates any missing rollout tasks inside a caller-owned transaction.
+// Review policy and Plan state transitions belong to the review module.
+func (s *Store) CreateMissingTasksTx(ctx context.Context, tx *sql.Tx, projectID string, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
 		ProjectID: projectID,

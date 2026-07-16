@@ -75,6 +75,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	}
 
 	var observedPlan *store.PlanMessage
+	var observedPlanCheckRun *store.PlanCheckRunMessage
 	var approvalInputVersion int64
 	if issue.Type == storepb.Issue_DATABASE_CHANGE {
 		if issue.PlanUID == nil {
@@ -92,6 +93,10 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 			return nil, workflowError(ErrorNotFound, "plan %d not found", *issue.PlanUID)
 		}
 		approvalInputVersion = observedPlan.Config.GetApprovalInputVersion()
+		observedPlanCheckRun, err = w.store.GetPlanCheckRun(ctx, input.ProjectID, observedPlan.UID)
+		if err != nil {
+			return nil, workflowWrap(ErrorInternal, err, "failed to get Plan check generation")
+		}
 	}
 	observedApproval := issue.Payload.GetApproval()
 	if observedApproval != nil && observedApproval.GetApprovalFindingDone() && observedApproval.GetApprovalInputVersion() == approvalInputVersion {
@@ -159,6 +164,16 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	}
 	if observedPlan != nil && (lockedPlan == nil || lockedPlan.Config.GetApprovalInputVersion() != approvalInputVersion) {
 		return nil, workflowError(ErrorConflict, "approval finding input changed")
+	}
+	if observedPlan != nil {
+		generation, err := lockPlanCheckRunGeneration(ctx, tx, input.ProjectID, observedPlan.UID)
+		if err != nil {
+			return nil, err
+		}
+		if (generation == nil) != (observedPlanCheckRun == nil) ||
+			generation != nil && *generation != observedPlanCheckRun.Generation {
+			return nil, workflowError(ErrorConflict, "approval finding input changed")
+		}
 	}
 	if lockedPlan != nil && project.Setting.GetRequireIssueApproval() && lockedPlan.Config.GetHasRollout() {
 		return nil, workflowError(ErrorConflict, "rollout already started")

@@ -910,17 +910,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			labelsChanged = true
 			labelsForUpdate = labels
 
-			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromLabels: issue.Payload.Labels,
-							ToLabels:   labels,
-						},
-					},
-				},
-			})
 		default:
 		}
 	}
@@ -944,8 +933,23 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		issue = result.Issue
 		for _, event := range result.Events {
-			if _, ok := event.(review.ApprovalCheckEvent); ok {
+			switch event := event.(type) {
+			case review.IssueLabelsUpdatedEvent:
+				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromLabels: event.FromLabels,
+								ToLabels:   event.ToLabels,
+							},
+						},
+					},
+				})
+			case review.ApprovalCheckEvent:
 				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
+			default:
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected issue label event %T", event))
 			}
 		}
 	}

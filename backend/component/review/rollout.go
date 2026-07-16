@@ -2,8 +2,9 @@ package review
 
 import (
 	"context"
+	"strconv"
+	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -88,23 +89,70 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil, err
 	}
 
-	guard := &store.RolloutGuard{ApprovalInputVersion: plan.Config.GetApprovalInputVersion()}
-	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE && project.Setting.GetRequireIssueApproval() {
-		guard.IssueUID = issue.UID
-		guard.Approval = proto.CloneOf(issue.Payload.GetApproval())
+	var observedApproval *storepb.IssuePayloadApproval
+	if issue != nil {
+		observedApproval = proto.CloneOf(issue.Payload.GetApproval())
 	}
-	marked, tasks, err := w.store.CreateRolloutTasks(ctx, input.ProjectID, input.PlanUID, guard, tasks)
+
+	tx, err := w.store.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		if errors.Is(err, store.ErrDraftIssueNotSubmitted) {
-			return nil, workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
-		}
-		return nil, workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
+		return nil, workflowWrap(ErrorInternal, err, "failed to begin rollout transaction")
 	}
-	if !marked {
+	defer tx.Rollback()
+	key := input.ProjectID + "/" + strconv.FormatInt(input.PlanUID, 10)
+	if err := store.AcquireAdvisoryXactLockWithStringKey(ctx, tx, store.AdvisoryLockKeyPlanIssueRollout, key); err != nil {
+		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
+	}
+	lockedIssue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
+	if err != nil {
+		return nil, err
+	}
+	lockedPlan, err := lockPlan(ctx, tx, project.Workspace, input.ProjectID, input.PlanUID)
+	if err != nil {
+		return nil, err
+	}
+	if lockedPlan == nil {
+		return nil, workflowError(ErrorNotFound, "plan %d not found", input.PlanUID)
+	}
+	if lockedPlan.Config.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
 		return nil, workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
 	}
-	result := &CreateRolloutResult{Plan: plan, Issue: issue, Project: project, Tasks: tasks}
-	if issue != nil {
+	if lockedIssue != nil && lockedIssue.Payload.GetDraft() {
+		return nil, workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
+	}
+	if project.Setting.GetRequireIssueApproval() && lockedIssue != nil {
+		if issue != nil && (lockedIssue.UID != issue.UID || !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval)) {
+			return nil, workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
+		}
+		approved, err := utils.CheckIssueApprovedForPlan(lockedIssue, lockedPlan)
+		if err != nil {
+			return nil, workflowWrap(ErrorInternal, err, "failed to check issue approval")
+		}
+		if !approved {
+			return nil, workflowReasonError(ErrorFailedPrecondition, ReasonApprovalRequired, "cannot create rollout because issue approval is required but the issue is not approved")
+		}
+	}
+	if !lockedPlan.Config.GetHasRollout() {
+		if err := tx.QueryRowContext(ctx, `
+			UPDATE plan
+			SET updated_at = $1,
+				config = jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
+			WHERE project = $2
+			  AND id = $3
+			RETURNING updated_at`, time.Now(), input.ProjectID, input.PlanUID).Scan(&lockedPlan.UpdatedAt); err != nil {
+			return nil, workflowWrap(ErrorInternal, err, "failed to mark Plan has rollout")
+		}
+		lockedPlan.Config.HasRollout = true
+	}
+	tasks, err = w.store.CreateMissingTasksTx(ctx, tx, input.ProjectID, input.PlanUID, tasks)
+	if err != nil {
+		return nil, workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, workflowWrap(ErrorInternal, err, "failed to commit rollout transaction")
+	}
+	result := &CreateRolloutResult{Plan: lockedPlan, Issue: lockedIssue, Project: project, Tasks: tasks}
+	if lockedIssue != nil {
 		result.Events = []Event{CompleteRolloutIssueEvent{}}
 	}
 	return result, nil

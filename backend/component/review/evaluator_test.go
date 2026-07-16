@@ -519,6 +519,7 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApproval
 		Description: "",
 		Config: &storepb.PlanConfig{
 			ApprovalInputVersion: 2,
+			HasRollout:           true,
 			Specs: []*storepb.PlanConfig_Spec{{
 				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
@@ -542,11 +543,6 @@ func TestFindApprovalTemplateForIssueSkipsDatabaseChangeAfterRolloutWhenApproval
 		PlanUID:      &plan.UID,
 	})
 	require.NoError(t, err)
-
-	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: approvalInputVersion}, nil)
-	require.NoError(t, err)
-	require.True(t, marked)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
@@ -569,6 +565,7 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 		Description: "",
 		Config: &storepb.PlanConfig{
 			ApprovalInputVersion: 2,
+			HasRollout:           true,
 			Specs: []*storepb.PlanConfig_Spec{{
 				Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 					CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{
@@ -592,11 +589,6 @@ func TestFindApprovalTemplateForIssueCompletesAfterRolloutWhenApprovalNotRequire
 		PlanUID:      &plan.UID,
 	})
 	require.NoError(t, err)
-
-	approvalInputVersion := int64(2)
-	marked, _, err := s.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: approvalInputVersion}, nil)
-	require.NoError(t, err)
-	require.True(t, marked)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)

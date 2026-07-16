@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -58,10 +59,15 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	service := newIssueServiceForTest(t, stores)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 
-	approvalInputVersion := int64(2)
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.RolloutGuard{ApprovalInputVersion: approvalInputVersion}, nil)
+	_, err := review.NewWorkflow(stores).CreateRollout(ctx, review.CreateRolloutInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		BuildTasks: func(context.Context, *store.PlanMessage, *store.ProjectMessage) ([]*store.TaskMessage, error) {
+			return nil, nil
+		},
+	})
 	require.NoError(t, err)
-	require.True(t, marked)
 
 	updateIssueLabels(ctx, t, service, issue, []string{"environment:staging"})
 
@@ -70,6 +76,70 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 	require.Len(t, service.bus.ApprovalCheckChan, 0)
+}
+
+func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	for i := range 10 {
+		labels := []string{fmt.Sprintf("iteration:%d", i)}
+		start := make(chan struct{})
+		errs := make(chan error, 2)
+		var wg sync.WaitGroup
+		for range 2 {
+			wg.Go(func() {
+				<-start
+				_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+					Issue: &v1pb.Issue{
+						Name:   common.FormatIssue(issue.ProjectID, issue.UID),
+						Labels: labels,
+					},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"labels"}},
+				}))
+				errs <- err
+			})
+		}
+		close(start)
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err)
+		}
+	}
+
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: "project-a",
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 10)
+}
+
+func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	approval := proto.CloneOf(issue.Payload.GetApproval())
+	approval.Approvers = nil
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: approval},
+	})
+	require.NoError(t, err)
+	_, err = stores.GetDB().ExecContext(ctx, "ALTER TABLE policy RENAME TO unavailable_policy")
+	require.NoError(t, err)
+
+	reviewerCtx := context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
+		Email: "reviewer@example.com",
+		Name:  "reviewer",
+	})
+	_, err = service.ApproveIssue(reviewerCtx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+		Name: common.FormatIssue(issue.ProjectID, issue.UID),
+	}))
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 }
 
 func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequired(t *testing.T) {

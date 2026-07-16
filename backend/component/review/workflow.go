@@ -4,6 +4,7 @@ package review
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -108,6 +110,14 @@ func (PlanUpdatedEvent) isReviewEvent() {}
 type ApprovalCheckEvent struct{}
 
 func (ApprovalCheckEvent) isReviewEvent() {}
+
+// IssueLabelsUpdatedEvent requests a label audit entry for the committed transition.
+type IssueLabelsUpdatedEvent struct {
+	FromLabels []string
+	ToLabels   []string
+}
+
+func (IssueLabelsUpdatedEvent) isReviewEvent() {}
 
 // CompleteRolloutIssueEvent requests linked Bytebase Issue completion.
 type CompleteRolloutIssueEvent struct{}
@@ -304,11 +314,7 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 		if role == "" {
 			return nil, workflowError(ErrorInvalidAction, "the issue has been approved")
 		}
-		canReview, err := w.canReview(ctx, project, input.Actor, role)
-		if err != nil {
-			return nil, err
-		}
-		if !canReview {
+		if !w.canReview(ctx, project, input.Actor, role) {
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because the user does not have the required permission", verb)
 		}
 		if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == input.Actor.Email {
@@ -357,17 +363,19 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 	}
 }
 
-func (w *Workflow) canReview(ctx context.Context, project *store.ProjectMessage, user *store.UserMessage, role string) (bool, error) {
+func (w *Workflow) canReview(ctx context.Context, project *store.ProjectMessage, user *store.UserMessage, role string) bool {
 	projectPolicy, err := w.store.GetProjectIamPolicy(ctx, project.Workspace, project.ResourceID)
 	if err != nil {
-		return false, workflowWrap(ErrorInternal, err, "failed to get project IAM policy")
+		slog.Warn("failed to get project IAM policy", slog.String("project", project.ResourceID), log.BBError(err))
+		return false
 	}
 	workspacePolicy, err := w.store.GetWorkspaceIamPolicy(ctx, project.Workspace)
 	if err != nil {
-		return false, workflowWrap(ErrorInternal, err, "failed to get workspace IAM policy")
+		slog.Warn("failed to get workspace IAM policy", slog.String("workspace", project.Workspace), log.BBError(err))
+		return false
 	}
 	roles := utils.GetUserFormattedRolesMap(ctx, w.store, project.Workspace, user, projectPolicy.Policy, workspacePolicy.Policy)
-	return roles[role], nil
+	return roles[role]
 }
 
 func lockIssue(ctx context.Context, tx *sql.Tx, projectID string, issueUID int64) (*store.IssueMessage, error) {
@@ -460,6 +468,23 @@ func lockIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (
 		return nil, workflowWrap(ErrorInternal, err, "failed to unmarshal plan config")
 	}
 	return plan, nil
+}
+
+func lockPlanCheckRunGeneration(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) (*int64, error) {
+	var generation int64
+	err := tx.QueryRowContext(ctx, `
+		SELECT xmin::text::bigint
+		FROM plan_check_run
+		WHERE project = $1
+		  AND plan_id = $2
+		FOR UPDATE`, projectID, planUID).Scan(&generation)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, workflowWrap(ErrorInternal, err, "failed to lock Plan check generation")
+	}
+	return &generation, nil
 }
 
 func workflowError(code ErrorCode, format string, args ...any) error {

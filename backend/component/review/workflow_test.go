@@ -402,6 +402,152 @@ func TestApplyApprovalTemplateCommitsFindingAndIntent(t *testing.T) {
 	require.Equal(t, []Event{ApprovalRequestedEvent{}}, result.Events)
 }
 
+func TestPlanCheckRerunMakesPendingApprovalFindingStale(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "change database",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "change database",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		PlanUID:      &plan.UID,
+		Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalInputVersion: 2,
+		}},
+	})
+	require.NoError(t, err)
+	created, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	planCheckRun, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NoError(t, stores.UpdatePlanCheckRun(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: 2,
+	}, planCheckRun.UID))
+
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(stores)}
+	evaluator.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+		issue.Payload.Approval = &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		}
+		return nil
+	}
+	proposalReady := make(chan struct{})
+	releaseCommit := make(chan struct{})
+	evaluator.beforeCommit = func() {
+		close(proposalReady)
+		<-releaseCommit
+	}
+	type findingOutcome struct {
+		result *ApplyApprovalTemplateResult
+		err    error
+	}
+	applyDone := make(chan findingOutcome, 1)
+	go func() {
+		result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+			Workspace: "default",
+			ProjectID: "project-a",
+			IssueUID:  issue.UID,
+		})
+		applyDone <- findingOutcome{result: result, err: err}
+	}()
+	<-proposalReady
+
+	refreshed, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+	})
+	require.NoError(t, err)
+	require.True(t, refreshed)
+	close(releaseCommit)
+
+	finding := <-applyDone
+	require.Nil(t, finding.result)
+	var workflowErr *Error
+	require.ErrorAs(t, finding.err, &workflowErr)
+	require.Equal(t, ErrorConflict, workflowErr.Code)
+	got, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+}
+
+func TestPlanCheckCreatedDuringApprovalMakesPendingFindingStale(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "change database",
+		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "change database",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		PlanUID:      &plan.UID,
+		Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalInputVersion: 2,
+		}},
+	})
+	require.NoError(t, err)
+
+	evaluator := &ApprovalEvaluator{workflow: NewWorkflow(stores)}
+	evaluator.evaluateApproval = func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+		created, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+			ProjectID: "project-a",
+			PlanUID:   plan.UID,
+			Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+		})
+		require.NoError(t, err)
+		require.True(t, created)
+		planCheckRun, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
+		require.NoError(t, err)
+		require.NoError(t, stores.UpdatePlanCheckRun(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+			ApprovalInputVersion: 2,
+		}, planCheckRun.UID))
+		issue.Payload.Approval = &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: 2,
+		}
+		return nil
+	}
+	evaluator.beforeCommit = func() {
+		refreshed, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+			ProjectID: "project-a",
+			PlanUID:   plan.UID,
+			Result:    &storepb.PlanCheckRunResult{ApprovalInputVersion: 2},
+		})
+		require.NoError(t, err)
+		require.True(t, refreshed)
+	}
+
+	result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+	})
+	require.Nil(t, result)
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorConflict, workflowErr.Code)
+	got, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+	require.NoError(t, err)
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+}
+
 func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
@@ -445,7 +591,10 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	require.True(t, result.ApprovalReset)
 	require.False(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 2, result.Issue.Payload.GetApproval().GetApprovalInputVersion())
-	require.Equal(t, []Event{ApprovalCheckEvent{}}, result.Events)
+	require.Equal(t, []Event{
+		IssueLabelsUpdatedEvent{FromLabels: []string{"old"}, ToLabels: []string{"new"}},
+		ApprovalCheckEvent{},
+	}, result.Events)
 }
 
 func TestLabelResetMakesPendingApprovalActionStale(t *testing.T) {
@@ -563,9 +712,23 @@ func TestRolloutMakesPendingApprovalFindingStale(t *testing.T) {
 	}()
 	<-proposalReady
 
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, nil, nil)
+	approved := &storepb.IssuePayloadApproval{
+		ApprovalFindingDone:  true,
+		ApprovalInputVersion: 2,
+	}
+	_, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: approved},
+	})
 	require.NoError(t, err)
-	require.True(t, marked)
+	_, err = NewWorkflow(stores).CreateRollout(ctx, CreateRolloutInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		BuildTasks: func(context.Context, *store.PlanMessage, *store.ProjectMessage) ([]*store.TaskMessage, error) {
+			return nil, nil
+		},
+	})
+	require.NoError(t, err)
 	close(releaseCommit)
 
 	err = <-applyDone
@@ -716,6 +879,7 @@ func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 			('reviewer', 'reviewer@example.com', 'unused'),
 			('reviewer2', 'reviewer2@example.com', 'unused');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 	`)
 	require.NoError(t, err)
 

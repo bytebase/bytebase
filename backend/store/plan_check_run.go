@@ -39,6 +39,10 @@ type PlanCheckRunMessage struct {
 
 	Status PlanCheckRunStatus
 	Result *storepb.PlanCheckRunResult
+	// Generation is the PostgreSQL row-version token. It changes whenever the
+	// durable check row changes, including a same-version rerun that preserves
+	// the row UID.
+	Generation int64
 }
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
@@ -119,7 +123,8 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 			plan_check_run.project,
 			plan_check_run.plan_id,
 			plan_check_run.status,
-			plan_check_run.result
+			plan_check_run.result,
+			plan_check_run.xmin::text::bigint
 		FROM plan_check_run
 		WHERE TRUE`)
 	if v := find.ProjectID; v != "" {
@@ -176,6 +181,7 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
 			&result,
+			&planCheckRun.Generation,
 		); err != nil {
 			return nil, err
 		}
