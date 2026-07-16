@@ -6,7 +6,7 @@
 # Intentionally NOT set by default: when this block is present, the statefulset
 # uses it for the container image and ignores bytebase.version, which would force
 # every non-Azure install to docker.io/bytebase/bytebase:latest. Azure Marketplace
-# injects these values (global.azure.images.bytebase.{registry,image,tag}) at deploy
+# injects these values (global.azure.images.bytebase.{registry,image,tag,digest}) at deploy
 # time, so the opt-in path still works.
 # global:
 #   azure:
@@ -15,10 +15,15 @@
 #         tag: latest
 #         image: bytebase/bytebase
 #         registry: docker.io
+#         digest: ""
 
 bytebase:
   version: latest
+  # OCI image digest including the algorithm prefix, for example sha256:abc123.
+  digest: ""
   registryMirrorHost: ""
+  # OCI digest for the BusyBox init container used to escape PostgreSQL passwords.
+  busyboxDigest: ""
   option:
     port: 8080
     data: "/var/opt/bytebase"
