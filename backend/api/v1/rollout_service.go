@@ -12,7 +12,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -22,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/parsercontext"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -415,42 +415,51 @@ func CreateRolloutAndPendingTasks(
 		return errDraftIssueNotSubmitted
 	}
 
-	var err error
-	if tasks == nil {
-		tasks, err = GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
-		if err != nil {
-			return errors.Wrap(err, "failed to get pipeline create for rollout creation")
-		}
-	}
-
-	var issueApprovalGuard *store.IssueApprovalGuard
-	if issue != nil && issue.Type == storepb.Issue_DATABASE_CHANGE {
-		v := plan.Config.GetApprovalInputVersion()
-		issueApprovalGuard = &store.IssueApprovalGuard{ApprovalInputVersion: v}
-		if project.Setting.RequireIssueApproval {
-			var approval *storepb.IssuePayloadApproval
-			if sourceApproval := issue.Payload.GetApproval(); sourceApproval != nil {
-				approval = &storepb.IssuePayloadApproval{}
-				proto.Merge(approval, sourceApproval)
+	result, err := review.NewWorkflow(s).CreateRollout(ctx, review.CreateRolloutInput{
+		Workspace: project.Workspace,
+		ProjectID: project.ResourceID,
+		PlanUID:   plan.UID,
+		BuildTasks: func(ctx context.Context, currentPlan *store.PlanMessage, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
+			if currentPlan.Config.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
+				return nil, errStaleRolloutApproval
 			}
-			issueApprovalGuard.IssueUID = issue.UID
-			issueApprovalGuard.Approval = approval
-		}
-	}
-	marked, createdTasks, err := s.CreateRolloutTasks(ctx, project.ResourceID, plan.UID, issueApprovalGuard, tasks)
+			if tasks != nil {
+				return tasks, nil
+			}
+			created, err := GetPipelineCreate(ctx, s, currentPlan.Config.GetSpecs(), project.ResourceID)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get pipeline create for rollout creation")
+			}
+			return created, nil
+		},
+	})
 	if err != nil {
-		if errors.Is(err, store.ErrDraftIssueNotSubmitted) {
-			return errDraftIssueNotSubmitted
+		if errors.Is(err, errStaleRolloutApproval) {
+			return errStaleRolloutApproval
 		}
-		return errors.Wrap(err, "failed to create rollout tasks")
+		var workflowErr *review.Error
+		if errors.As(err, &workflowErr) {
+			switch workflowErr.Reason {
+			case review.ReasonDraftIssue:
+				return errDraftIssueNotSubmitted
+			case review.ReasonApprovalRequired, review.ReasonStaleInput:
+				return errStaleRolloutApproval
+			default:
+			}
+		}
+		return err
 	}
-	if !marked {
-		return errStaleRolloutApproval
-	}
-	tasks = createdTasks
+	tasks = result.Tasks
+	issue = result.Issue
 
 	// Update issue status to DONE when rollout is created
-	if issue != nil {
+	completeIssue := false
+	for _, event := range result.Events {
+		if _, ok := event.(review.CompleteRolloutIssueEvent); ok {
+			completeIssue = true
+		}
+	}
+	if issue != nil && completeIssue {
 		newStatus := storepb.Issue_DONE
 		updatedIssue, err := s.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 		if err != nil {

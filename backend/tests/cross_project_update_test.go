@@ -68,6 +68,24 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 		"project B's issue status leaked from project A update")
 }
 
+// TestCollisionCreateRolloutIsolation verifies that the review module's
+// transactional Plan/task writes stay scoped to the full project/ID keys.
+func TestCollisionCreateRolloutIsolation(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	fixture.completeRolloutB(ctx, t, ctl)
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B rollout")
+}
+
 // TestCollisionListPlansIsolation verifies that ListPlans scoped to project A
 // does not leak project B's plans.
 func TestCollisionListPlansIsolation(t *testing.T) {

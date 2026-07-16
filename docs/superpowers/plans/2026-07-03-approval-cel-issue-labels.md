@@ -457,10 +457,15 @@ require.EqualValues(t, 2, got.Payload.GetApproval().GetApprovalInputVersion())
 The post-rollout assertion must mark the plan as rolled out by calling:
 
 ```go
-approvalInputVersion := int64(2)
-marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &approvalInputVersion, nil)
+_, err := review.NewWorkflow(stores).CreateRollout(ctx, review.CreateRolloutInput{
+	Workspace: "default",
+	ProjectID: "project-a",
+	PlanUID:   plan.UID,
+	BuildTasks: func(context.Context, *store.PlanMessage, *store.ProjectMessage) ([]*store.TaskMessage, error) {
+		return nil, nil
+	},
+})
 require.NoError(t, err)
-require.True(t, marked)
 ```
 
 Then update labels and assert:

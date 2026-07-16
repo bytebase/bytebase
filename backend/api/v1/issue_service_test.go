@@ -9,11 +9,13 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -57,10 +59,15 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	service := newIssueServiceForTest(t, stores)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 
-	approvalInputVersion := int64(2)
-	marked, _, err := stores.CreateRolloutTasks(ctx, "project-a", plan.UID, &store.IssueApprovalGuard{ApprovalInputVersion: approvalInputVersion}, nil)
+	_, err := review.NewWorkflow(stores).CreateRollout(ctx, review.CreateRolloutInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		PlanUID:   plan.UID,
+		BuildTasks: func(context.Context, *store.PlanMessage, *store.ProjectMessage) ([]*store.TaskMessage, error) {
+			return nil, nil
+		},
+	})
 	require.NoError(t, err)
-	require.True(t, marked)
 
 	updateIssueLabels(ctx, t, service, issue, []string{"environment:staging"})
 
@@ -71,11 +78,228 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 	require.Len(t, service.bus.ApprovalCheckChan, 0)
 }
 
+func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	for i := range 10 {
+		labels := []string{fmt.Sprintf("iteration:%d", i)}
+		start := make(chan struct{})
+		errs := make(chan error, 2)
+		var wg sync.WaitGroup
+		for range 2 {
+			wg.Go(func() {
+				<-start
+				_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+					Issue: &v1pb.Issue{
+						Name:   common.FormatIssue(issue.ProjectID, issue.UID),
+						Labels: labels,
+					},
+					UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"labels"}},
+				}))
+				errs <- err
+			})
+		}
+		close(start)
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err)
+		}
+	}
+
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: "project-a",
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 10)
+}
+
+func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Go(func() {
+			<-start
+			_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue: &v1pb.Issue{
+					Name:  common.FormatIssue(issue.ProjectID, issue.UID),
+					Title: "renamed issue",
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+			}))
+			errs <- err
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 1)
+	update := comments[0].Payload.GetIssueUpdate()
+	require.Equal(t, "issue-a", update.GetFromTitle())
+	require.Equal(t, "renamed issue", update.GetToTitle())
+}
+
+func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	_, err := stores.GetDB().ExecContext(ctx, `
+		ALTER TABLE issue ADD CONSTRAINT reject_atomic_test_label
+		CHECK (NOT COALESCE(payload->'labels' ? 'reject', false))`)
+	require.NoError(t, err)
+
+	_, err = service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       "renamed issue",
+			Description: "updated description",
+			Labels:      []string{"reject"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, "issue-a", got.Title)
+	require.Empty(t, got.Description)
+	require.Equal(t, []string{"environment:prod"}, got.Payload.GetLabels())
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+}
+
+func TestMixedIssuePatchCommitsWithAuditComments(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	response, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       "renamed issue",
+			Description: "updated description",
+			Labels:      []string{"environment:staging"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.NoError(t, err)
+	require.Equal(t, "renamed issue", response.Msg.Title)
+	require.Equal(t, "updated description", response.Msg.Description)
+	require.Equal(t, []string{"environment:staging"}, response.Msg.Labels)
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.False(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.Len(t, service.bus.ApprovalCheckChan, 1)
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 3)
+	var titleAudit, descriptionAudit, labelsAudit bool
+	for _, comment := range comments {
+		update := comment.Payload.GetIssueUpdate()
+		require.NotNil(t, update)
+		switch {
+		case update.FromTitle != nil:
+			titleAudit = true
+			require.Equal(t, "issue-a", update.GetFromTitle())
+			require.Equal(t, "renamed issue", update.GetToTitle())
+		case update.FromDescription != nil:
+			descriptionAudit = true
+			require.Empty(t, update.GetFromDescription())
+			require.Equal(t, "updated description", update.GetToDescription())
+		default:
+			labelsAudit = true
+			require.Equal(t, []string{"environment:prod"}, update.GetFromLabels())
+			require.Equal(t, []string{"environment:staging"}, update.GetToLabels())
+		}
+	}
+	require.True(t, titleAudit)
+	require.True(t, descriptionAudit)
+	require.True(t, labelsAudit)
+}
+
+func TestIssueMetadataNoopDoesNotCreateAuditComments(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+		Issue: &v1pb.Issue{
+			Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+			Title:       " issue-a ",
+			Description: "",
+			Labels:      []string{" environment:prod ", "environment:prod"},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "labels"}},
+	}))
+	require.NoError(t, err)
+
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.Equal(t, issue.UpdatedAt, got.UpdatedAt)
+	require.True(t, got.Payload.GetApproval().GetApprovalFindingDone())
+	require.Empty(t, service.bus.ApprovalCheckChan)
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+}
+
+func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	approval := proto.CloneOf(issue.Payload.GetApproval())
+	approval.Approvers = nil
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: approval},
+	})
+	require.NoError(t, err)
+	_, err = stores.GetDB().ExecContext(ctx, "ALTER TABLE policy RENAME TO unavailable_policy")
+	require.NoError(t, err)
+
+	reviewerCtx := context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
+		Email: "reviewer@example.com",
+		Name:  "reviewer",
+	})
+	_, err = service.ApproveIssue(reviewerCtx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+		Name: common.FormatIssue(issue.ProjectID, issue.UID),
+	}))
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+}
+
 func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequired(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
-	approvalInputVersion := int64(2)
 	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: &storepb.IssuePayloadApproval{
@@ -83,7 +307,6 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 				ApprovalInputVersion: 2,
 			},
 		},
-		RequirePlanApprovalInputVersion: &approvalInputVersion,
 	})
 	require.NoError(t, err)
 
@@ -108,6 +331,38 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 
 	gotIssue := getIssueForTest(ctx, t, stores, issue.UID)
 	require.Equal(t, storepb.Issue_DONE, gotIssue.Status)
+}
+
+func TestCreateRolloutAndPendingTasksClassifiesApprovalRaceAsStale(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		Workspace:  "default",
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: true},
+	}))
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	staleIssue := *issue
+	staleIssue.Payload = proto.CloneOf(issue.Payload)
+
+	unapproved := proto.CloneOf(issue.Payload)
+	unapproved.Approval.Approvers = nil
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: unapproved.Approval},
+	})
+	require.NoError(t, err)
+
+	err = CreateRolloutAndPendingTasks(ctx, stores, "creator@example.com", plan, &staleIssue, &store.ProjectMessage{
+		Workspace:  "default",
+		ResourceID: "project-a",
+		Setting:    &storepb.Project{RequireIssueApproval: true},
+	}, []*store.TaskMessage{})
+	require.Error(t, err)
+	require.True(t, IsStaleRolloutApprovalError(err))
+
+	got, getErr := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: "project-a", UID: &plan.UID})
+	require.NoError(t, getErr)
+	require.False(t, got.Config.GetHasRollout())
 }
 
 func TestCreateRolloutAndPendingTasksRejectsDraft(t *testing.T) {
@@ -420,6 +675,47 @@ func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T)
 			assert.Empty(t, service.bus.RolloutCreationChan)
 		})
 	}
+}
+
+func TestStaleReviewRequestDispatchesNoPostCommitEffects(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+
+	staleApproval := issue.Payload.GetApproval()
+	staleApproval.Approvers[0].Status = storepb.IssuePayloadApproval_Approver_REJECTED
+	_, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: staleApproval},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:       plan.UID,
+		ProjectID: plan.ProjectID,
+		Config: &storepb.PlanConfig{
+			ApprovalInputVersion: 3,
+			Specs:                plan.Config.GetSpecs(),
+		},
+	})
+	require.NoError(t, err)
+
+	for range 2 {
+		_, err = service.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
+			Name:    common.FormatIssue(issue.ProjectID, issue.UID),
+			Comment: "retry",
+		}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	}
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+	require.Empty(t, service.bus.ApprovalCheckChan)
+	require.Empty(t, service.bus.RolloutCreationChan)
+	got := getIssueForTest(ctx, t, stores, issue.UID)
+	require.True(t, got.Payload.GetApproval().Equal(staleApproval))
 }
 
 func TestCreateDraftIssue(t *testing.T) {

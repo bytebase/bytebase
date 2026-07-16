@@ -8,17 +8,16 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,6 +34,7 @@ type PlanService struct {
 	iamManager     *iam.Manager
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
+	reviewWorkflow *review.Workflow
 }
 
 // NewPlanService returns a plan service instance.
@@ -45,6 +45,7 @@ func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager, w
 		iamManager:     iamManager,
 		webhookManager: webhookManager,
 		licenseService: licenseService,
+		reviewWorkflow: review.NewWorkflow(store),
 	}
 }
 
@@ -294,15 +295,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
 	}
 
-	planUpdate := &store.UpdatePlanMessage{
-		UID:       oldPlan.UID,
-		ProjectID: oldPlan.ProjectID,
-	}
+	planUpdate := &store.UpdatePlanMessage{UID: oldPlan.UID, ProjectID: oldPlan.ProjectID}
+	var specs []*storepb.PlanConfig_Spec
 
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
-	var issueCommentCreates []*store.IssueCommentMessage
-	var issueToReset *store.IssueMessage
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -330,93 +327,68 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Convert and store new specs.
 			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
-			config := proto.CloneOf(oldPlan.Config)
-			config.Specs = allSpecs
-			planUpdate.Config = config
-			planUpdate.BumpApprovalInputVersion = true
-			planUpdate.RequireNoRollout = true
+			specs = allSpecs
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
-
-			// Evict approvals if issue exists to request re-approval.
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{projectID}, PlanUID: &oldPlan.UID})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
-			}
-			if issue != nil {
-				if !planSpecsEqualSet(oldPlan.Config.GetSpecs(), allSpecs) {
-					issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-						ProjectID: issue.ProjectID,
-						IssueUID:  issue.UID,
-						Payload: &storepb.IssueCommentPayload{
-							Event: &storepb.IssueCommentPayload_PlanUpdate_{
-								PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
-									FromSpecs: oldPlan.Config.GetSpecs(),
-									ToSpecs:   allSpecs,
-								},
-							},
-						},
-					})
-				}
-				issueToReset = issue
-			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))
 		}
 	}
 
-	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
-	if err != nil {
-		if errors.Is(err, store.ErrPlanHasRollout) {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update specs for plan that has a rollout"))
-		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
-	}
-
-	resetApprovalFinding := func() *store.IssueMessage {
-		if issueToReset == nil {
-			return nil
-		}
-		updatedIssue, updated, err := resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx, s.store, issueToReset, updatedPlan.Config.GetApprovalInputVersion())
+	var updateResult *review.UpdatePlanSpecsResult
+	var updatedPlan *store.PlanMessage
+	if planCheckRunsTrigger {
+		updateResult, err = s.reviewWorkflow.UpdatePlanSpecs(ctx, review.UpdatePlanSpecsInput{
+			Workspace:   common.GetWorkspaceIDFromContext(ctx),
+			PlanUID:     oldPlan.UID,
+			ProjectID:   oldPlan.ProjectID,
+			Title:       planUpdate.Name,
+			Description: planUpdate.Description,
+			Deleted:     planUpdate.Deleted,
+			Specs:       specs,
+		})
 		if err != nil {
-			slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
-			return nil
+			var workflowErr *review.Error
+			if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorFailedPrecondition {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update specs for plan that has a rollout"))
+			}
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 		}
-		if !updated {
-			slog.Info("skip stale approval finding reset after plan update",
-				slog.String("project", issueToReset.ProjectID),
-				slog.Int64("issue_uid", issueToReset.UID),
-				slog.Int64("approval_input_version", updatedPlan.Config.GetApprovalInputVersion()))
-			return nil
+		updatedPlan = updateResult.Plan
+	} else {
+		updatedPlan, err = s.store.UpdatePlan(ctx, planUpdate)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 		}
-		return updatedIssue
+		updateResult = &review.UpdatePlanSpecsResult{Plan: updatedPlan}
 	}
 
 	var planCheckRunCreated bool
 	if planCheckRunsTrigger {
 		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
 		if err != nil {
-			resetApprovalFinding()
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 		}
 		if planCheckRun != nil {
 			created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
 			if err != nil {
-				resetApprovalFinding()
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 			}
 			planCheckRunCreated = created
 		}
 	}
 
-	if updatedIssue := resetApprovalFinding(); updatedIssue != nil {
+	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
 		if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-			if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+			approvalResult, err := review.FindAndApplyApprovalTemplate(ctx, s.store, s.licenseService, updatedIssue)
+			if err != nil {
 				slog.Error("failed to find approval template after plan update",
 					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 					slog.String("issue_title", updatedIssue.Title),
 					log.BBError(err))
+			} else {
+				review.DispatchApprovalEvents(ctx, s.store, s.webhookManager, approvalResult)
 			}
 		} else if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
@@ -428,8 +400,23 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		s.bus.PlanCheckTickleChan <- 0
 	}
 
-	if len(issueCommentCreates) > 0 {
-		if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
+	for _, event := range updateResult.Events {
+		planUpdated, ok := event.(review.PlanUpdatedEvent)
+		if !ok || updateResult.Issue == nil {
+			continue
+		}
+		if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+			ProjectID: updateResult.Issue.ProjectID,
+			IssueUID:  updateResult.Issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_PlanUpdate_{
+					PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
+						FromSpecs: planUpdated.FromSpecs,
+						ToSpecs:   planUpdated.ToSpecs,
+					},
+				},
+			},
+		}); err != nil {
 			slog.Warn("failed to create plan spec audit issue comments", log.BBError(err))
 		}
 	}
@@ -459,43 +446,6 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 
 	converted := convertToPlanCheckRun(projectID, planUID, planCheckRun)
 	return connect.NewResponse(converted), nil
-}
-
-func resetIssueApprovalFindingIfPlanApprovalInputVersion(ctx context.Context, stores *store.Store, issue *store.IssueMessage, approvalInputVersion int64) (*store.IssueMessage, bool, error) {
-	if issue.Payload.GetDraft() {
-		return nil, false, nil
-	}
-
-	payloadPatch := &storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  false,
-			ApprovalInputVersion: approvalInputVersion,
-		},
-	}
-	if issue.Type == storepb.Issue_DATABASE_CHANGE {
-		// Plan check rows are visible before the reset finishes. If another worker already
-		// recomputed approval for this version, the reset must not move the issue back to CHECKING.
-		updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-			PayloadUpsert:                    payloadPatch,
-			RequirePlanApprovalInputVersion:  &approvalInputVersion,
-			SkipIfCurrentApprovalFindingDone: &approvalInputVersion,
-		})
-		if err != nil {
-			if errors.Is(err, store.ErrIssueUpdateSkipped) {
-				return nil, false, nil
-			}
-			return nil, false, err
-		}
-		return updatedIssue, true, nil
-	}
-
-	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: payloadPatch,
-	})
-	if err != nil {
-		return nil, false, err
-	}
-	return updatedIssue, true, nil
 }
 
 // RunPlanChecks runs plan checks for a plan.
@@ -1178,26 +1128,6 @@ func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanCon
 			Password: c.Password,
 		},
 	}
-}
-
-// planSpecsEqualSet reports whether two spec slices have the same set of
-// specs keyed by id, with each pair byte-equal under proto.Equal. Order
-// is ignored — reorder-only diffs are not audited.
-func planSpecsEqualSet(a, b []*storepb.PlanConfig_Spec) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	byID := make(map[string]*storepb.PlanConfig_Spec, len(a))
-	for _, s := range a {
-		byID[s.GetId()] = s
-	}
-	for _, s := range b {
-		other, ok := byID[s.GetId()]
-		if !ok || !proto.Equal(s, other) {
-			return false
-		}
-	}
-	return true
 }
 
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {

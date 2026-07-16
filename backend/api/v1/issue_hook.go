@@ -9,10 +9,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -49,16 +49,18 @@ func postCreateIssue(
 		storepb.Issue_ROLE_GRANT,
 		storepb.Issue_DATABASE_EXPORT:
 
-		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
+		result, err := review.FindAndApplyApprovalTemplate(ctx, stores, licenseService, issue)
+		if err != nil {
 			slog.Error("failed to find approval template",
 				slog.String("project", issue.ProjectID), slog.Int64("issue_uid", issue.UID),
 				slog.String("issue_title", issue.Title),
 				log.BBError(err))
+		} else {
+			review.DispatchApprovalEvents(ctx, stores, webhookManager, result)
 		}
 
 		// Refresh issue to get updated approval payload.
 		uid := issue.UID
-		var err error
 		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{issue.ProjectID}, UID: &uid})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to refresh issue")

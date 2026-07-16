@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 	"time"
 
@@ -62,17 +61,8 @@ type UpdatePlanMessage struct {
 	// Config replaces the entire plan config.
 	// Callers should clone the existing config and modify only the fields they want to change.
 	// Example: config := proto.CloneOf(plan.Config); config.HasRollout = true; patch.Config = config
-	Config *storepb.PlanConfig
-	// BumpApprovalInputVersion increments config.approvalInputVersion from the
-	// current stored row while applying Config as a full replacement. Use this
-	// only for approval-relevant full config replacements such as spec updates.
-	BumpApprovalInputVersion bool
-	// RequireNoRollout rejects full config replacements once rollout marking has
-	// won the race. This is separate from BumpApprovalInputVersion because the
-	// user-visible invariant is about spec immutability after rollout, including
-	// spec edits that do not otherwise affect approval input.
-	RequireNoRollout bool
-	Deleted          *bool
+	Config  *storepb.PlanConfig
+	Deleted *bool
 }
 
 // CreatePlan creates a new plan.
@@ -242,17 +232,10 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal plan config")
 		}
-		if patch.BumpApprovalInputVersion {
-			set.Comma("config = jsonb_set(?::jsonb, '{approvalInputVersion}', to_jsonb(COALESCE((config->>'approvalInputVersion')::bigint, 0) + 1), true)", config)
-		} else {
-			set.Comma("config = ?", config)
-		}
+		set.Comma("config = ?", config)
 	}
 
 	where := qb.Q().Space("id = ? AND project = ?", patch.UID, patch.ProjectID)
-	if patch.RequireNoRollout {
-		where.Space("AND COALESCE((config->>'hasRollout')::boolean, false) = false")
-	}
 
 	q := qb.Q().Space(`UPDATE plan SET ? WHERE ?
 		RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted`,
@@ -278,9 +261,6 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		&config,
 		&plan.Deleted,
 	); err != nil {
-		if patch.RequireNoRollout && errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrPlanHasRollout
-		}
 		return nil, errors.Wrapf(err, "failed to update plan")
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
