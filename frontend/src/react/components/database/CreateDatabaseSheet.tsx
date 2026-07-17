@@ -1,14 +1,18 @@
 import { create } from "@bufbuild/protobuf";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceSelect } from "@/react/components/InstanceSelect";
+import type { IssueLabel } from "@/react/components/IssueLabelSelect";
+import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import {
-  type IssueLabel,
-  IssueLabelSelect,
-} from "@/react/components/IssueLabelSelect";
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import {
@@ -29,9 +33,13 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import {
+  createPlanWithDraftReview,
+  DraftReviewIssueCreationError,
+} from "@/react/pages/project/plan-detail/utils/header";
 import { router } from "@/react/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
-import { experimentalCreateIssueByPlan } from "@/react/stores/app/issue";
 import { pushNotification } from "@/store";
 import {
   defaultCharsetOfEngineV1,
@@ -41,7 +49,6 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { Issue_Type, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_CreateDatabaseConfigSchema,
   Plan_SpecSchema,
@@ -49,7 +56,8 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
-  getIssueRoute,
+  extractPlanUID,
+  extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
   normalizeTitle,
 } from "@/utils";
@@ -63,14 +71,64 @@ export interface CreateDatabaseSheetProps {
   projectName?: string;
 }
 
-export function CreateDatabaseSheet({
+interface CreateDatabaseSession {
+  id: number;
+  open: boolean;
+  fixedProjectName?: string;
+}
+
+export function CreateDatabaseSheet(props: CreateDatabaseSheetProps) {
+  const { open, onClose, projectName: fixedProjectName } = props;
+  const sessionRef = useRef<CreateDatabaseSession>({
+    id: 0,
+    open: false,
+    fixedProjectName,
+  });
+  const session = sessionRef.current;
+  if (open) {
+    if (!session.open || session.fixedProjectName !== fixedProjectName) {
+      session.id += 1;
+      session.fixedProjectName = fixedProjectName;
+    }
+    session.open = true;
+  } else {
+    session.open = false;
+  }
+  const isSessionActive = useCallback(
+    (id: number) => sessionRef.current.open && sessionRef.current.id === id,
+    []
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <CreateDatabaseForm
+          key={`${session.id}:${session.fixedProjectName ?? ""}`}
+          open={open}
+          onClose={onClose}
+          fixedProjectName={session.fixedProjectName}
+          sessionId={session.id}
+          isSessionActive={isSessionActive}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function CreateDatabaseForm({
   open,
   onClose,
-  projectName: fixedProjectName,
-}: CreateDatabaseSheetProps) {
+  fixedProjectName,
+  sessionId,
+  isSessionActive,
+}: {
+  open: boolean;
+  onClose: () => void;
+  fixedProjectName?: string;
+  sessionId: number;
+  isSessionActive: (id: number) => boolean;
+}) {
   const { t } = useTranslation();
-  // subscribe to re-render on project cache change
-  const projectsByName = useAppStore((s) => s.projectsByName);
   const currentUser = useCurrentUser();
 
   const [projectName, setProjectName] = useState("");
@@ -96,78 +154,72 @@ export function CreateDatabaseSheet({
   const environments = useAppStore((s) => s.environmentList);
 
   const [selectedProject, setSelectedProject] = useState<
-    | {
-        issueLabels: IssueLabel[];
-        forceIssueLabels: boolean;
-      }
-    | undefined
+    { name: string; issueLabels: IssueLabel[] } | undefined
   >();
 
   const effectiveProjectName = fixedProjectName || projectName;
 
-  // Intentional split: enforceIssueTitle is read reactively (via the app-store
-  // project cache) because it's a governance gate that MUST reflect live state
-  // (workspace-picker swaps change projects mid-form). `issueLabels` /
-  // `forceIssueLabels` stay on the pre-existing `selectedProject` snapshot
-  // pattern below — they have a known staleness seam that is out of scope
-  // for BYT-9310. Do not collapse these back together without a separate spec.
-  const projectFromName = useProjectByName(effectiveProjectName ?? "");
-  const projectReactive = effectiveProjectName ? projectFromName : undefined;
-  void projectsByName;
-
-  // Note on hydration: projectStore.getProjectByName returns an
-  // unknownProject() sentinel when the project is not yet cached. The sentinel
-  // has restrictive defaults (enforceIssueTitle=true). Rather than depend on
-  // the sentinel value, we mask the pre-hydration state entirely with
-  // `projectHydrated` — this keeps the gate correct regardless of the sentinel
-  // and makes the intent ("we haven't seen the real project yet") explicit.
-  const projectHydrated = selectedProject !== undefined;
+  // Project hydration and the reactive cache entry must agree on the exact
+  // resource name. The store returns an unknown-project sentinel on a miss;
+  // that placeholder must never satisfy governance or become a create parent.
+  const projectFromName = useProjectByName(effectiveProjectName);
+  const projectReactive =
+    effectiveProjectName && projectFromName.name === effectiveProjectName
+      ? projectFromName
+      : undefined;
+  const projectHydrated =
+    selectedProject?.name === effectiveProjectName &&
+    projectReactive !== undefined;
   const enforceIssueTitle =
     projectHydrated && (projectReactive?.enforceIssueTitle ?? false);
 
   const projectFetchRef = useRef(0);
   useEffect(() => {
+    const fetchId = ++projectFetchRef.current;
     setIssueLabels([]);
     setSelectedProject(undefined);
-    if (!effectiveProjectName) return;
-    const fetchId = ++projectFetchRef.current;
-    useAppStore
+    if (!open || !isValidProjectName(effectiveProjectName)) return;
+
+    void useAppStore
       .getState()
       .getOrFetchProjectByName(effectiveProjectName)
       .then((project) => {
-        if (fetchId !== projectFetchRef.current) return;
+        if (
+          fetchId !== projectFetchRef.current ||
+          !isSessionActive(sessionId) ||
+          project.name !== effectiveProjectName ||
+          !isValidProjectName(project.name)
+        ) {
+          return;
+        }
         setSelectedProject({
+          name: project.name,
           issueLabels: project.issueLabels ?? [],
-          forceIssueLabels: project.forceIssueLabels ?? false,
         });
       })
-      .catch((error) => {
-        if (fetchId !== projectFetchRef.current) return;
-        // Hydration-failed cell: without this catch, `projectHydrated` stays
-        // false forever and `allowCreate` is permanently disabled with no
-        // recovery path (transient network error, stale project, permission).
-        // Flip `projectHydrated` with safe defaults so the user can retry.
-        // The governance gate still applies: `enforceIssueTitle` is read from
-        // `projectReactive`, which returns the `unknownProject()` sentinel
-        // (`enforceIssueTitle=true`) when the project isn't cached — forcing
-        // a manual title, the safe governance default. The backend remains
-        // the source of truth on submit.
-        setSelectedProject({ issueLabels: [], forceIssueLabels: false });
+      .catch((error: unknown) => {
+        if (
+          fetchId !== projectFetchRef.current ||
+          !isSessionActive(sessionId)
+        ) {
+          return;
+        }
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("common.error"),
-          description: String(
-            (error as { message?: string })?.message ?? error
-          ),
+          description: error instanceof Error ? error.message : String(error),
         });
       });
-    // `t` is intentionally omitted from the dep array: react-i18next's `t`
-    // is stable across renders in production, and including it causes the
-    // effect to re-fire spuriously in test harnesses where `useTranslation`
-    // is mocked to return a fresh closure per render. Same convention as
-    // the auto-fill effect below.
-  }, [effectiveProjectName]);
+
+    return () => {
+      if (projectFetchRef.current === fetchId) {
+        projectFetchRef.current += 1;
+      }
+    };
+    // `t` is stable in production and intentionally omitted because test
+    // translation adapters may return a new closure on every render.
+  }, [effectiveProjectName, isSessionActive, open, sessionId]);
 
   // Auto-fill when the project doesn't enforce manual titles.
   // Intentional omissions from the dep array: `title` and `titleEdited` are
@@ -185,7 +237,14 @@ export function CreateDatabaseSheet({
   }, [databaseName, enforceIssueTitle, projectHydrated]);
 
   const projectIssueLabels = selectedProject?.issueLabels ?? [];
-  const forceIssueLabels = selectedProject?.forceIssueLabels ?? false;
+  const [canCreateDraftReview, createPermissionReason] = usePermissionCheck(
+    ["bb.plans.create", "bb.issues.create"],
+    projectReactive
+  );
+  const [canUpdateIssue] = usePermissionCheck(
+    ["bb.issues.update"],
+    projectReactive
+  );
 
   const requireOwner =
     selectedInstance &&
@@ -200,57 +259,62 @@ export function CreateDatabaseSheet({
     !!databaseName &&
     !isReservedName &&
     (!requireOwner || !!ownerName) &&
-    (!forceIssueLabels || issueLabels.length > 0) &&
     projectHydrated &&
+    canCreateDraftReview &&
     !(enforceIssueTitle && !normalizeTitle(title));
 
+  const instanceFetchRef = useRef(0);
   useEffect(() => {
-    if (!open) return;
-    setProjectName("");
-    setInstanceName("");
-    setSelectedInstance(undefined);
-    setDatabaseName("");
-    setTableName("");
-    setCluster("");
-    setEnvironmentName("");
-    setOwnerName("");
-    setIssueLabels([]);
-    setCharacterSet("");
-    setCollation("");
-    setCreating(false);
-    setInstanceRoles([]);
-    setTitle("");
-    setTitleEdited(false);
+    if (!open) {
+      instanceFetchRef.current += 1;
+    }
+    return () => {
+      instanceFetchRef.current += 1;
+    };
   }, [open]);
 
-  const instanceFetchRef = useRef(0);
   const handleInstanceChange = async (
     name: string,
     inst: Instance | undefined
   ) => {
+    const fetchId = ++instanceFetchRef.current;
     setInstanceName(name);
     setSelectedInstance(inst);
     setOwnerName("");
     setTableName("");
     setCluster("");
     setInstanceRoles([]);
-    if (inst?.environment) setEnvironmentName(inst.environment);
+    setEnvironmentName(inst?.environment ?? "");
     if (
-      inst &&
-      [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
+      !inst ||
+      ![Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
         inst.engine
       )
     ) {
-      const fetchId = ++instanceFetchRef.current;
+      return;
+    }
+
+    try {
       const full = await useAppStore.getState().getOrFetchInstanceByName(name);
-      if (fetchId !== instanceFetchRef.current) return;
-      if (full?.roles) {
-        setInstanceRoles(
-          full.roles
-            .filter((r) => !INTERNAL_RDS_USERS.includes(r.roleName))
-            .map((r) => ({ name: r.name, roleName: r.roleName }))
-        );
+      if (fetchId !== instanceFetchRef.current || !isSessionActive(sessionId)) {
+        return;
       }
+      setInstanceRoles(
+        (full.roles ?? [])
+          .filter((role) => !INTERNAL_RDS_USERS.includes(role.roleName))
+          .map((role) => ({ name: role.name, roleName: role.roleName }))
+      );
+    } catch (error: unknown) {
+      if (fetchId !== instanceFetchRef.current || !isSessionActive(sessionId)) {
+        return;
+      }
+      setInstanceRoles([]);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -261,6 +325,14 @@ export function CreateDatabaseSheet({
       const project = await useAppStore
         .getState()
         .getOrFetchProjectByName(effectiveProjectName);
+      if (!isSessionActive(sessionId)) return;
+      if (
+        !isValidProjectName(project.name) ||
+        project.name !== effectiveProjectName
+      ) {
+        throw new Error(t("common.error"));
+      }
+
       const engine = selectedInstance?.engine ?? 0;
       const createDatabaseConfig = create(Plan_CreateDatabaseConfigSchema, {
         target: instanceName,
@@ -284,250 +356,283 @@ export function CreateDatabaseSheet({
         specs: [spec],
         creator: currentUser.name,
       });
-      const issueCreate = create(IssueSchema, {
-        title: effectiveTitle,
-        type: Issue_Type.DATABASE_CHANGE,
+      const { plan: createdPlan } = await createPlanWithDraftReview({
+        createIssue: (request) =>
+          issueServiceClientConnect.createIssue(request),
+        createPlan: (request) => planServiceClientConnect.createPlan(request),
         creator: `users/${currentUser.email}`,
         labels: issueLabels,
+        parent: effectiveProjectName,
+        plan: planCreate,
       });
-      const { createdIssue } = await experimentalCreateIssueByPlan(
-        project,
-        issueCreate,
-        planCreate,
-        { skipRollout: true }
-      );
+      if (!isSessionActive(sessionId)) return;
+
       onClose();
-      await router.push(getIssueRoute(createdIssue));
-    } catch (error) {
+      await router.push({
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(createdPlan.name),
+          planId: extractPlanUID(createdPlan.name),
+        },
+      });
+    } catch (error: unknown) {
+      if (!isSessionActive(sessionId)) return;
+      if (error instanceof DraftReviewIssueCreationError) {
+        onClose();
+        await router.push({
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(error.plan.name),
+            planId: extractPlanUID(error.plan.name),
+          },
+        });
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("common.failed"),
-        description: String(error),
+        description: String(
+          error instanceof DraftReviewIssueCreationError ? error.cause : error
+        ),
       });
     } finally {
-      setCreating(false);
+      if (isSessionActive(sessionId)) {
+        setCreating(false);
+      }
     }
   };
-
-  if (!open) return null;
 
   const showCharsetCollation =
     selectedInstance && instanceV1HasCollationAndCharacterSet(selectedInstance);
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("quick-action.create-db")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("quick-action.create-db")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
-          <FormFieldGroup>
-            {!fixedProjectName && (
-              <FormField
-                title={
-                  <>
-                    {t("common.project")} <span className="text-error">*</span>
-                  </>
-                }
-              >
-                <ProjectSelect
-                  value={projectName}
-                  onChange={(name) => setProjectName(name)}
-                  portal
-                />
-              </FormField>
-            )}
-
-            {selectedProject && projectIssueLabels.length > 0 && (
-              <IssueLabelSelect
-                labels={projectIssueLabels}
-                selected={issueLabels}
-                required={forceIssueLabels}
-                onChange={setIssueLabels}
-              />
-            )}
-
+      <SheetBody>
+        <FormFieldGroup>
+          {!fixedProjectName && (
             <FormField
               title={
                 <>
-                  {t("common.instance")} <span className="text-error">*</span>
+                  {t("common.project")} <span className="text-error">*</span>
                 </>
               }
             >
-              <InstanceSelect
-                value={instanceName}
-                onChange={handleInstanceChange}
-                engines={enginesSupportCreateDatabase()}
+              <ProjectSelect
+                value={projectName}
+                onChange={(name) => setProjectName(name)}
                 portal
               />
             </FormField>
+          )}
 
+          {selectedProject && projectIssueLabels.length > 0 && (
+            <IssueLabelSelect
+              labels={projectIssueLabels}
+              selected={issueLabels}
+              required={false}
+              onChange={setIssueLabels}
+            />
+          )}
+          {projectHydrated && !canUpdateIssue && (
+            <Alert
+              variant="warning"
+              description={t("plan.draft-update-permission-required")}
+            />
+          )}
+
+          <FormField
+            title={
+              <>
+                {t("common.instance")} <span className="text-error">*</span>
+              </>
+            }
+          >
+            <InstanceSelect
+              value={instanceName}
+              onChange={handleInstanceChange}
+              engines={enginesSupportCreateDatabase()}
+              portal
+            />
+          </FormField>
+
+          <FormField>
+            <FormTitle id="create-database-name-title">
+              {t("create-db.new-database-name")}{" "}
+              <span className="text-error">*</span>
+            </FormTitle>
+            <Input
+              id="create-database-name"
+              aria-labelledby="create-database-name-title"
+              value={databaseName}
+              onChange={(e) => setDatabaseName(e.target.value)}
+              placeholder={t("create-db.new-database-name")}
+              className={cn(isReservedName && "border-error")}
+            />
+            {isReservedName && (
+              <FormError>
+                {t("create-db.reserved-db-error", { databaseName })}
+              </FormError>
+            )}
+          </FormField>
+
+          <FormField>
+            <FormTitle id="create-database-title-title">
+              {t("create-db.issue-title")}
+              {enforceIssueTitle && <span className="text-error"> *</span>}
+            </FormTitle>
+            <Input
+              id="create-database-title"
+              aria-labelledby="create-database-title-title"
+              value={title}
+              placeholder={t("create-db.issue-title")}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTitle(next);
+                // Invariant: titleEdited ⇒ title is non-empty user intent.
+                // When the user deletes to empty, reset the flag so the
+                // auto-fill effect resumes tracking databaseName — otherwise
+                // the flag stays sticky and the next auto-fill (first char
+                // of a re-typed databaseName) gets frozen by the guard.
+                setTitleEdited(next !== "");
+              }}
+            />
+          </FormField>
+
+          {selectedInstance?.engine === Engine.MONGODB && (
             <FormField>
-              <FormTitle id="create-database-name-title">
-                {t("create-db.new-database-name")}{" "}
+              <FormTitle id="create-database-collection-name-title">
+                {t("create-db.new-collection-name")}{" "}
                 <span className="text-error">*</span>
               </FormTitle>
               <Input
-                id="create-database-name"
-                aria-labelledby="create-database-name-title"
-                value={databaseName}
-                onChange={(e) => setDatabaseName(e.target.value)}
-                placeholder={t("create-db.new-database-name")}
-                className={cn(isReservedName && "border-error")}
+                id="create-database-collection-name"
+                aria-labelledby="create-database-collection-name-title"
+                value={tableName}
+                onChange={(e) => setTableName(e.target.value)}
               />
-              {isReservedName && (
-                <FormError>
-                  {t("create-db.reserved-db-error", { databaseName })}
-                </FormError>
-              )}
             </FormField>
+          )}
 
+          {selectedInstance?.engine === Engine.CLICKHOUSE && (
             <FormField>
-              <FormTitle id="create-database-title-title">
-                {t("create-db.issue-title")}
-                {enforceIssueTitle && <span className="text-error"> *</span>}
+              <FormTitle id="create-database-cluster-title">
+                {t("create-db.cluster")}
               </FormTitle>
               <Input
-                id="create-database-title"
-                aria-labelledby="create-database-title-title"
-                value={title}
-                placeholder={t("create-db.issue-title")}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setTitle(next);
-                  // Invariant: titleEdited ⇒ title is non-empty user intent.
-                  // When the user deletes to empty, reset the flag so the
-                  // auto-fill effect resumes tracking databaseName — otherwise
-                  // the flag stays sticky and the next auto-fill (first char
-                  // of a re-typed databaseName) gets frozen by the guard.
-                  setTitleEdited(next !== "");
-                }}
+                id="create-database-cluster"
+                aria-labelledby="create-database-cluster-title"
+                value={cluster}
+                onChange={(e) => setCluster(e.target.value)}
               />
             </FormField>
+          )}
 
-            {selectedInstance?.engine === Engine.MONGODB && (
-              <FormField>
-                <FormTitle id="create-database-collection-name-title">
-                  {t("create-db.new-collection-name")}{" "}
+          {requireOwner && instanceName && (
+            <FormField
+              title={
+                <>
+                  {t("create-db.database-owner-name")}{" "}
                   <span className="text-error">*</span>
-                </FormTitle>
-                <Input
-                  id="create-database-collection-name"
-                  aria-labelledby="create-database-collection-name-title"
-                  value={tableName}
-                  onChange={(e) => setTableName(e.target.value)}
-                />
-              </FormField>
-            )}
-
-            {selectedInstance?.engine === Engine.CLICKHOUSE && (
-              <FormField>
-                <FormTitle id="create-database-cluster-title">
-                  {t("create-db.cluster")}
-                </FormTitle>
-                <Input
-                  id="create-database-cluster"
-                  aria-labelledby="create-database-cluster-title"
-                  value={cluster}
-                  onChange={(e) => setCluster(e.target.value)}
-                />
-              </FormField>
-            )}
-
-            {requireOwner && instanceName && (
-              <FormField
-                title={
-                  <>
-                    {t("create-db.database-owner-name")}{" "}
-                    <span className="text-error">*</span>
-                  </>
-                }
-              >
-                <Combobox
-                  value={ownerName}
-                  onChange={setOwnerName}
-                  placeholder={t("create-db.database-owner-name")}
-                  noResultsText={t("common.no-data")}
-                  options={instanceRoles.map((role) => ({
-                    value: role.roleName,
-                    label: role.roleName,
-                  }))}
-                />
-              </FormField>
-            )}
-
-            <FormField title={<>{t("common.environment")}</>}>
+                </>
+              }
+            >
               <Combobox
-                value={environmentName}
-                onChange={setEnvironmentName}
-                placeholder={t("common.environment")}
+                value={ownerName}
+                onChange={setOwnerName}
+                placeholder={t("create-db.database-owner-name")}
                 noResultsText={t("common.no-data")}
-                renderValue={(opt) => (
-                  <EnvironmentLabel environmentName={opt.value} />
-                )}
-                options={environments.map((env) => ({
-                  value: env.name,
-                  label: env.title,
-                  render: () => <EnvironmentLabel environmentName={env.name} />,
+                options={instanceRoles.map((role) => ({
+                  value: role.roleName,
+                  label: role.roleName,
                 }))}
+                portal
               />
             </FormField>
+          )}
 
-            {showCharsetCollation && (
-              <>
-                <FormField>
-                  <FormTitle id="create-database-character-set-title">
-                    {selectedInstance.engine === Engine.POSTGRES
-                      ? t("db.encoding")
-                      : t("db.character-set")}
-                  </FormTitle>
-                  <Input
-                    id="create-database-character-set"
-                    aria-labelledby="create-database-character-set-title"
-                    value={characterSet}
-                    onChange={(e) => setCharacterSet(e.target.value)}
-                    placeholder={defaultCharsetOfEngineV1(
-                      selectedInstance.engine
-                    )}
-                  />
-                </FormField>
-                <FormField>
-                  <FormTitle id="create-database-collation-title">
-                    {t("db.collation")}
-                  </FormTitle>
-                  <Input
-                    id="create-database-collation"
-                    aria-labelledby="create-database-collation-title"
-                    value={collation}
-                    onChange={(e) => setCollation(e.target.value)}
-                    placeholder={
-                      defaultCollationOfEngineV1(selectedInstance.engine) ||
-                      t("common.default")
-                    }
-                  />
-                </FormField>
-              </>
-            )}
-          </FormFieldGroup>
-        </SheetBody>
+          <FormField title={<>{t("common.environment")}</>}>
+            <Combobox
+              value={environmentName}
+              onChange={setEnvironmentName}
+              placeholder={t("common.environment")}
+              noResultsText={t("common.no-data")}
+              renderValue={(opt) => (
+                <EnvironmentLabel environmentName={opt.value} />
+              )}
+              options={environments.map((env) => ({
+                value: env.name,
+                label: env.title,
+                render: () => <EnvironmentLabel environmentName={env.name} />,
+              }))}
+              portal
+            />
+          </FormField>
 
-        <SheetFooter>
-          <Button appearance="secondary" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!allowCreate || creating} onClick={handleCreate}>
+          {showCharsetCollation && (
+            <>
+              <FormField>
+                <FormTitle id="create-database-character-set-title">
+                  {selectedInstance.engine === Engine.POSTGRES
+                    ? t("db.encoding")
+                    : t("db.character-set")}
+                </FormTitle>
+                <Input
+                  id="create-database-character-set"
+                  aria-labelledby="create-database-character-set-title"
+                  value={characterSet}
+                  onChange={(e) => setCharacterSet(e.target.value)}
+                  placeholder={defaultCharsetOfEngineV1(
+                    selectedInstance.engine
+                  )}
+                />
+              </FormField>
+              <FormField>
+                <FormTitle id="create-database-collation-title">
+                  {t("db.collation")}
+                </FormTitle>
+                <Input
+                  id="create-database-collation"
+                  aria-labelledby="create-database-collation-title"
+                  value={collation}
+                  onChange={(e) => setCollation(e.target.value)}
+                  placeholder={
+                    defaultCollationOfEngineV1(selectedInstance.engine) ||
+                    t("common.default")
+                  }
+                />
+              </FormField>
+            </>
+          )}
+        </FormFieldGroup>
+      </SheetBody>
+
+      <SheetFooter>
+        <Button appearance="secondary" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <PermissionGuard
+          permissions={["bb.plans.create", "bb.issues.create"]}
+          project={projectReactive}
+        >
+          <Button
+            disabled={!allowCreate || creating}
+            onClick={handleCreate}
+            title={createPermissionReason}
+          >
             {t("common.create")}
           </Button>
-        </SheetFooter>
+        </PermissionGuard>
+      </SheetFooter>
 
-        {creating && (
-          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
-            <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+      {creating && (
+        <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+          <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
+        </div>
+      )}
+    </>
   );
 }

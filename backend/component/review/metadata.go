@@ -17,6 +17,9 @@ type UpdateIssueMetadataInput struct {
 	Title       *string
 	Description *string
 	Labels      *[]string
+	// ExpectedDraft is the lifecycle state observed by the adapter. When set,
+	// the mutation conflicts instead of changing semantics after a race.
+	ExpectedDraft *bool
 }
 
 // UpdateIssueMetadataResult is the committed metadata and review state.
@@ -50,6 +53,9 @@ func (w *Workflow) UpdateIssueMetadata(ctx context.Context, input UpdateIssueMet
 	}
 	if issue == nil {
 		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
+	}
+	if input.ExpectedDraft != nil && issue.Payload.GetDraft() != *input.ExpectedDraft {
+		return nil, workflowError(ErrorConflict, "issue draft state changed while metadata was being updated")
 	}
 	result := &UpdateIssueMetadataResult{Issue: issue}
 	patch := &store.UpdateIssueMessage{}

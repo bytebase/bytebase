@@ -160,9 +160,11 @@ type IssueResult struct {
 
 // Workflow owns transactional Bytebase Issue and Plan review transitions.
 type Workflow struct {
-	store            *store.Store
-	beforeCommit     func()
-	beforePlanCommit func()
+	store             *store.Store
+	beforeCommit      func()
+	beforePlanCommit  func()
+	beforeSubmit      func()
+	beforeCreateDraft func()
 }
 
 // NewWorkflow creates a review workflow.
@@ -265,7 +267,7 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 		return nil, workflowError(ErrorConflict, "approval finding is stale")
 	}
 
-	if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{Approval: updatedApproval}, false); err != nil {
+	if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{Approval: updatedApproval}, issuePayloadUpdateOptions{}); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to update issue approval")
 	}
 	lockedIssue.Payload.Approval = updatedApproval
@@ -298,7 +300,12 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 	}, nil
 }
 
-func updateIssuePayload(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage, patch *storepb.Issue, removeLabels bool) error {
+type issuePayloadUpdateOptions struct {
+	removeLabels bool
+	submitDraft  bool
+}
+
+func updateIssuePayload(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage, patch *storepb.Issue, options issuePayloadUpdateOptions) error {
 	payload, err := protojson.Marshal(patch)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal issue payload")
@@ -306,11 +313,13 @@ func updateIssuePayload(ctx context.Context, tx *sql.Tx, issue *store.IssueMessa
 	return tx.QueryRowContext(ctx, `
 		UPDATE issue
 		SET updated_at = $1,
-			payload = payload || $2::jsonb || CASE WHEN $5 THEN jsonb_build_object('labels', NULL) ELSE '{}'::jsonb END
+			payload = payload || $2::jsonb
+				|| CASE WHEN $5 THEN jsonb_build_object('labels', NULL) ELSE '{}'::jsonb END
+				|| CASE WHEN $6 THEN jsonb_build_object('draft', false) ELSE '{}'::jsonb END
 		WHERE project = $3
 		  AND id = $4
 		RETURNING updated_at`,
-		time.Now(), payload, issue.ProjectID, issue.UID, removeLabels,
+		time.Now(), payload, issue.ProjectID, issue.UID, options.removeLabels, options.submitDraft,
 	).Scan(&issue.UpdatedAt)
 }
 

@@ -18,8 +18,13 @@ import { issueDetailRedirectLoader } from "./issueDetailRedirect";
 
 const PLAN_NAME = "projects/p1/plans/456";
 
-const makeIssue = (type: Issue_Type, plan = ""): Issue =>
-  ({ name: "projects/p1/issues/123", type, plan }) as unknown as Issue;
+const makeIssue = (type: Issue_Type, plan = "", draft = false): Issue =>
+  ({
+    name: "projects/p1/issues/123",
+    type,
+    plan,
+    draft,
+  }) as unknown as Issue;
 
 const makePlan = (cases: string[]): Plan =>
   ({
@@ -53,6 +58,18 @@ describe("issueDetailRedirectLoader", () => {
     expect(res?.status).toBe(302);
     expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456");
     expect(mocks.getPlan).toHaveBeenCalledOnce();
+  });
+
+  test("redirects a Draft Review Issue URL to its Plan", async () => {
+    mocks.getIssue.mockResolvedValue(
+      makeIssue(Issue_Type.DATABASE_EXPORT, PLAN_NAME, true)
+    );
+
+    const res = await run({ projectId: "p1", issueId: "123" });
+
+    expect(res?.status).toBe(302);
+    expect(res?.headers.get("Location")).toBe("/projects/p1/plans/456");
+    expect(mocks.getPlan).not.toHaveBeenCalled();
   });
 
   test("preserves the query string on redirect", async () => {

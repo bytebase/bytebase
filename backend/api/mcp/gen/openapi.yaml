@@ -12875,6 +12875,15 @@ components:
               title: plan_update
               required:
                 - planUpdate
+            - type: object
+              properties:
+                reviewSubmission:
+                  title: review_submission
+                  description: Review submission event.
+                  $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewSubmission'
+              title: review_submission
+              required:
+                - reviewSubmission
       title: IssueComment
       additionalProperties: false
       description: A comment on an issue.
@@ -12961,6 +12970,11 @@ components:
       description: |-
         Plan update event information (snapshot of plan.config.specs before
          and after a PlanService.UpdatePlan call that mutated specs).
+    bytebase.v1.IssueComment.ReviewSubmission:
+      type: object
+      title: ReviewSubmission
+      additionalProperties: false
+      description: Review submission event information.
     bytebase.v1.IssueStatus:
       type: string
       title: IssueStatus

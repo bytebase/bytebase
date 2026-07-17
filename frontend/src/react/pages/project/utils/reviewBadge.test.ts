@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { getReviewBadge } from "./reviewBadge";
+import { getPlanDraftState, getReviewBadge } from "./reviewBadge";
 
 describe("getReviewBadge", () => {
   it("returns undefined when there is no issue", () => {
@@ -139,6 +139,60 @@ describe("getReviewBadge", () => {
           ).toEqual(expected);
         });
       });
+    });
+  });
+
+  describe("getPlanDraftState", () => {
+    it("recognizes a linked draft from its unspecified approval status", () => {
+      expect(
+        getPlanDraftState({
+          approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+          hasRollout: false,
+          isGitOpsPlan: false,
+          issueName: "projects/p1/issues/123",
+        })
+      ).toBe("draft");
+    });
+
+    it("recognizes the durable incomplete state when the linked issue is absent", () => {
+      expect(
+        getPlanDraftState({
+          approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+          hasRollout: false,
+          isGitOpsPlan: false,
+          issueName: "",
+        })
+      ).toBe("incomplete");
+    });
+
+    it("does not call submitted or deployed plans drafts", () => {
+      expect(
+        getPlanDraftState({
+          approvalStatus: ApprovalStatus.PENDING,
+          hasRollout: false,
+          isGitOpsPlan: false,
+          issueName: "projects/p1/issues/123",
+        })
+      ).toBeUndefined();
+      expect(
+        getPlanDraftState({
+          approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+          hasRollout: true,
+          isGitOpsPlan: false,
+          issueName: "projects/p1/issues/123",
+        })
+      ).toBeUndefined();
+    });
+
+    it("keeps release-backed GitOps plans exempt from UI Plan validity", () => {
+      expect(
+        getPlanDraftState({
+          approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED,
+          hasRollout: false,
+          isGitOpsPlan: true,
+          issueName: "",
+        })
+      ).toBeUndefined();
     });
   });
 

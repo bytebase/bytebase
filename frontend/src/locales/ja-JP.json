@@ -1520,7 +1520,6 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
-    "cannot-create": "プランを作成できません",
     "checks": {
       "completed": "プランチェックが完了しました",
       "failed-to-run": "プランチェックの実行に失敗しました",
@@ -1533,6 +1532,7 @@
     "description": {
       "placeholder": "説明を追加"
     },
+    "draft-update-permission-required": "この下書きは表示できますが、ラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
@@ -1564,6 +1564,7 @@
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
+      "incomplete": "未完了",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
       "rerun": "再実行",
@@ -1659,6 +1660,11 @@
         "re-request-review": "レビューを再依頼する",
         "title": "{{user}} に却下されました"
       }
+    },
+    "rollback": {
+      "description_one": "ロールアウト #{{rolloutId}} の選択したタスク 1 件をロールバックします。",
+      "description_other": "ロールアウト #{{rolloutId}} の選択したタスク {{count}} 件をロールバックします。",
+      "title": "ロールアウト #{{rolloutId}} のロールバック"
     },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",

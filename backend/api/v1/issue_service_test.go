@@ -2,9 +2,11 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/review"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -23,6 +26,107 @@ import (
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
+
+func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	draft := createReadyDraftForUpdateTest(ctx, t, stores, service, "label submission race")
+
+	tx, err := stores.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	var lockedUID int64
+	require.NoError(t, tx.QueryRowContext(ctx, `
+		SELECT id FROM issue
+		WHERE project = $1 AND id = $2
+		FOR UPDATE`, draft.ProjectID, draft.UID).Scan(&lockedUID))
+
+	updateResult := make(chan error, 1)
+	go func() {
+		_, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+			Issue: &v1pb.Issue{
+				Name: common.FormatIssue(draft.ProjectID, draft.UID), Labels: []string{"environment:staging"},
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"labels"}},
+		}))
+		updateResult <- err
+	}()
+	waitForTransactionBlock(ctx, t, stores.GetDB(), tx)
+	_, err = tx.ExecContext(ctx, `
+		UPDATE issue
+		SET payload = payload || jsonb_build_object('draft', false)
+		WHERE project = $1 AND id = $2`, draft.ProjectID, draft.UID)
+	require.NoError(t, err)
+	require.NoError(t, tx.Commit())
+
+	select {
+	case err := <-updateResult:
+		require.Equal(t, connect.CodeAborted, connect.CodeOf(err))
+	case <-time.After(5 * time.Second):
+		t.Fatal("draft label update did not return")
+	}
+	stored := getIssueForTest(ctx, t, stores, draft.UID)
+	require.False(t, stored.Payload.GetDraft())
+	require.Equal(t, []string{"team:database"}, stored.Payload.GetLabels())
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: draft.ProjectID, IssueUID: &draft.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, comments)
+	require.Empty(t, service.bus.ApprovalCheckChan)
+}
+
+func TestConcurrentSubmissionWithLabelsWritesOneAuditComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	draft := createReadyDraftForUpdateTest(ctx, t, stores, service, "concurrent labels")
+
+	type outcome struct {
+		response *connect.Response[v1pb.Issue]
+		err      error
+	}
+	start := make(chan struct{})
+	results := make(chan outcome, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Go(func() {
+			<-start
+			response, err := service.UpdateIssue(ctx, connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue: &v1pb.Issue{
+					Name: common.FormatIssue(draft.ProjectID, draft.UID), Labels: []string{"environment:prod"},
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"labels", "draft"}},
+			}))
+			results <- outcome{response: response, err: err}
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+	for result := range results {
+		require.NoError(t, result.err)
+		require.False(t, result.response.Msg.GetDraft())
+	}
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: draft.ProjectID, IssueUID: &draft.UID,
+	})
+	require.NoError(t, err)
+	var labelUpdates, submissions int
+	for _, comment := range comments {
+		switch comment.Payload.Event.(type) {
+		case *storepb.IssueCommentPayload_IssueUpdate_:
+			labelUpdates++
+		case *storepb.IssueCommentPayload_ReviewSubmission_:
+			submissions++
+		default:
+		}
+	}
+	require.Equal(t, 1, labelUpdates)
+	require.Equal(t, 1, submissions)
+	require.Len(t, service.bus.ApprovalCheckChan, 1)
+}
 
 func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 	ctx := issueServiceTestContext()
@@ -867,8 +971,8 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, issues, 1)
-	require.Equal(t, "original title", issues[0].Title)
-	require.Equal(t, "original description", issues[0].Description)
+	require.Equal(t, plan.Name, issues[0].Title)
+	require.Equal(t, plan.Description, issues[0].Description)
 	require.Equal(t, []string{"original"}, issues[0].Payload.GetLabels())
 
 	concurrentPlan, err := stores.CreatePlan(ctx, &store.PlanMessage{
@@ -1333,7 +1437,7 @@ func newIssueServiceForTest(t *testing.T, stores *store.Store) *IssueService {
 
 	b, err := bus.New()
 	require.NoError(t, err)
-	return NewIssueService(stores, nil, b, nil, nil)
+	return NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, nil)
 }
 
 func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *store.Store) (*store.PlanMessage, *store.IssueMessage) {
@@ -1461,4 +1565,72 @@ func getIssueForTest(ctx context.Context, t *testing.T, stores *store.Store, iss
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	return got
+}
+
+func createReadyDraftForUpdateTest(
+	ctx context.Context,
+	t *testing.T,
+	stores *store.Store,
+	service *IssueService,
+	title string,
+) *store.IssueMessage {
+	t.Helper()
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a", Name: title,
+		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+					Targets: []string{"instances/prod/databases/app"}, SheetSha256: "sheet",
+				},
+			},
+		}}},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	response, err := service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Type: v1pb.Issue_DATABASE_CHANGE, Plan: common.FormatPlan("project-a", plan.UID),
+			Labels: []string{"team:database"}, Draft: true,
+		},
+	}))
+	require.NoError(t, err)
+	_, issueUID, err := common.GetProjectIDIssueUID(response.Msg.GetName())
+	require.NoError(t, err)
+	created, err := stores.CreatePlanCheckRun(ctx, &store.PlanCheckRunMessage{
+		ProjectID: plan.ProjectID, PlanUID: plan.UID,
+		Result: &storepb.PlanCheckRunResult{ApprovalInputVersion: plan.Config.GetApprovalInputVersion()},
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	run, err := stores.GetPlanCheckRun(ctx, plan.ProjectID, plan.UID)
+	require.NoError(t, err)
+	require.NoError(t, stores.UpdatePlanCheckRun(ctx, plan.ProjectID, store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: plan.Config.GetApprovalInputVersion(),
+		Results: []*storepb.PlanCheckRunResult_Result{{
+			Type: storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE, Status: storepb.Advice_SUCCESS,
+		}},
+	}, run.UID))
+	return getIssueForTest(ctx, t, stores, issueUID)
+}
+
+func waitForTransactionBlock(ctx context.Context, t *testing.T, db *sql.DB, tx *sql.Tx) {
+	t.Helper()
+	var blockerPID int
+	require.NoError(t, tx.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&blockerPID))
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var waiting int
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT count(*)
+			FROM pg_stat_activity AS activity
+			WHERE activity.pid <> pg_backend_pid()
+			  AND $1 = ANY(pg_blocking_pids(activity.pid))`, blockerPID).Scan(&waiting))
+		if waiting >= 1 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for a session blocked by transaction PID %d", blockerPID)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }

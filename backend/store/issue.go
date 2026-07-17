@@ -497,8 +497,13 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 	defer tx.Rollback()
 
-	// Fetch current issues to validate project membership and get old statuses.
-	fetchQuery := qb.Q().Space("SELECT id, status FROM issue WHERE id = ANY(?) AND project = ?", issueUIDs, projectID)
+	// Lock current issues to serialize status changes with draft submission.
+	fetchQuery := qb.Q().Space(`
+		SELECT id, status, COALESCE((payload->>'draft')::boolean, false)
+		FROM issue
+		WHERE id = ANY(?) AND project = ?
+		ORDER BY id
+		FOR UPDATE`, issueUIDs, projectID)
 	fetchSQL, fetchArgs, err := fetchQuery.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build fetch sql")
@@ -514,7 +519,8 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	for rows.Next() {
 		var issueID int64
 		var statusString string
-		if err := rows.Scan(&issueID, &statusString); err != nil {
+		var draft bool
+		if err := rows.Scan(&issueID, &statusString, &draft); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan issue")
 		}
 		statusValue, ok := storepb.Issue_Status_value[statusString]
@@ -522,6 +528,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
 		issueStatus := storepb.Issue_Status(statusValue)
+		if draft {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status for draft issue %d; submit the issue first", issueID)}
+		}
 
 		// Prevent changing status from DONE to other statuses.
 		if issueStatus == storepb.Issue_DONE && newStatus != storepb.Issue_DONE {
@@ -567,6 +576,11 @@ func getTSVector(text string) string {
 		_, _ = fmt.Fprintf(&tsVector, "%s:%d", part, i+1)
 	}
 	return tsVector.String()
+}
+
+// IssueSearchVector builds the stored search vector for issue metadata.
+func IssueSearchVector(title, description string) string {
+	return getTSVector(fmt.Sprintf("%s %s", title, description))
 }
 
 func getTSQuery(text string) string {

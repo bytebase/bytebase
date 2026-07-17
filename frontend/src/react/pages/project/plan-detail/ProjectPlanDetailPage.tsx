@@ -99,11 +99,15 @@ function ProjectPlanDetailPageInner({
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
-    const hasRollout = !!page.rollout;
+    const isDraftIssue = page.issue?.draft === true;
+    const hasSubmittedIssue = hasIssue && !isDraftIssue;
+    const effectiveRollout = isDraftIssue ? undefined : page.rollout;
+    const hasRollout = !!effectiveRollout;
     const isIssueClosed =
       page.issue?.status === IssueStatus.CANCELED ||
       page.issue?.status === IssueStatus.DONE;
-    const allTasks = page.rollout?.stages.flatMap((stage) => stage.tasks) ?? [];
+    const allTasks =
+      effectiveRollout?.stages.flatMap((stage) => stage.tasks) ?? [];
     const allDone =
       allTasks.length > 0 &&
       allTasks.every(
@@ -113,7 +117,7 @@ function ProjectPlanDetailPageInner({
       );
 
     let review: PhaseStatus = "future";
-    if (hasIssue) {
+    if (hasSubmittedIssue) {
       if (page.issue?.status === IssueStatus.CANCELED) {
         review = "closed";
       } else {
@@ -122,7 +126,7 @@ function ProjectPlanDetailPageInner({
     }
 
     const changesStatus: PhaseStatus =
-      page.isCreating || (reviewVisible && !hasIssue && !hasRollout)
+      page.isCreating || (reviewVisible && !hasSubmittedIssue && !hasRollout)
         ? "active"
         : "completed";
     const deployStatus: PhaseStatus = hasRollout
@@ -133,10 +137,17 @@ function ProjectPlanDetailPageInner({
 
     const changesBadge =
       changesStatus === "active" && !page.isCreating
-        ? { label: t("common.draft"), variant: "default" as const }
+        ? {
+            label: page.issue?.draft
+              ? t("common.draft")
+              : t("plan.lifecycle.incomplete"),
+            variant: page.issue?.draft
+              ? ("default" as const)
+              : ("destructive" as const),
+          }
         : undefined;
     const rawReviewBadge = getReviewBadge({
-      hasIssue,
+      hasIssue: hasSubmittedIssue,
       issueStatus: page.issue?.status,
       hasRollout,
       approvalStatus: page.issue?.approvalStatus,
@@ -148,8 +159,8 @@ function ProjectPlanDetailPageInner({
         }
       : undefined;
     const deployBadge = (() => {
-      if (deployStatus !== "active" || !page.rollout) return undefined;
-      const rolloutStatus = getRolloutStatus(page.rollout);
+      if (deployStatus !== "active" || !effectiveRollout) return undefined;
+      const rolloutStatus = getRolloutStatus(effectiveRollout);
       if (rolloutStatus === Task_Status.FAILED) {
         return { label: t("common.failed"), variant: "destructive" as const };
       }
@@ -202,6 +213,10 @@ function ProjectPlanDetailPageInner({
       },
     };
   }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
+
+  useEffect(() => {
+    setSelectedSpecId(specId ?? "");
+  }, [page.pageKey]);
 
   // Mirror the URL specId into local state. We deliberately don't include
   // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
@@ -301,8 +316,19 @@ function ProjectPlanDetailPageInner({
                 status={phaseConfigs.deploy.status}
                 onSelect={() => page.expandPhase("deploy")}
                 onToggle={() => page.togglePhase("deploy")}
-                summary={buildDeploySummary(page.rollout, t)}
-                future={<PlanDetailDeployFuture />}
+                summary={buildDeploySummary(
+                  page.issue?.draft ? undefined : page.rollout,
+                  t
+                )}
+                future={
+                  page.issue?.draft ? (
+                    <p className="mt-0.5 text-sm text-control-placeholder">
+                      {t("plan.phase.deploy-description")}
+                    </p>
+                  ) : (
+                    <PlanDetailDeployFuture />
+                  )
+                }
               >
                 <DeployBranch />
               </PhaseSection>

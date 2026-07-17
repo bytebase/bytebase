@@ -17,8 +17,9 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-// postCreateIssue runs post-creation logic for an issue: webhook, approval finding, and auto-approve.
-func postCreateIssue(
+// startIssueWorkflow starts webhook, approval-finding, and auto-approval work
+// after direct creation or draft submission.
+func startIssueWorkflow(
 	ctx context.Context,
 	stores *store.Store,
 	webhookManager *webhook.Manager,
@@ -29,18 +30,10 @@ func postCreateIssue(
 	creatorEmail string,
 	issue *store.IssueMessage,
 ) (*store.IssueMessage, error) {
-	// Trigger ISSUE_CREATED webhook.
-	webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  creatorName,
-				Email: creatorEmail,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
+	if issue.Type == storepb.Issue_DATABASE_CHANGE {
+		recordReviewSubmission(ctx, stores, creatorEmail, issue)
+	}
+	emitIssueCreated(ctx, webhookManager, project, creatorName, creatorEmail, issue)
 
 	// Trigger approval finding based on issue type.
 	switch issue.Type {
@@ -88,6 +81,35 @@ func postCreateIssue(
 	}
 
 	return issue, nil
+}
+
+func recordReviewSubmission(ctx context.Context, stores *store.Store, creatorEmail string, issue *store.IssueMessage) {
+	if _, err := stores.CreateIssueComments(ctx, creatorEmail, &store.IssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
+		Payload: &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_ReviewSubmission_{
+				ReviewSubmission: &storepb.IssueCommentPayload_ReviewSubmission{},
+			},
+		},
+	}); err != nil {
+		slog.Warn("failed to create review submission activity",
+			slog.String("project", issue.ProjectID), slog.Int64("issue_uid", issue.UID), log.BBError(err))
+	}
+}
+
+func emitIssueCreated(ctx context.Context, webhookManager *webhook.Manager, project *store.ProjectMessage, creatorName, creatorEmail string, issue *store.IssueMessage) {
+	webhookManager.CreateEvent(ctx, &webhook.Event{
+		Type:    storepb.Activity_ISSUE_CREATED,
+		Project: webhook.NewProject(project),
+		IssueCreated: &webhook.EventIssueCreated{
+			Creator: &webhook.User{
+				Name:  creatorName,
+				Email: creatorEmail,
+			},
+			Issue: webhook.NewIssue(issue),
+		},
+	})
 }
 
 // completeAccessRequestIssue completes the ACCESS_GRANT/ROLE_GRANT issue.

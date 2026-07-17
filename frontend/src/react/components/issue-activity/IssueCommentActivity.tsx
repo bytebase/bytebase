@@ -2,7 +2,7 @@
 // badge and the human-readable action sentence (including rich plan-spec diff
 // rows). Used by both the issue-detail comment list and the plan-detail review
 // timeline so their icons, wordings, and detailed styles stay consistent.
-import { Loader2 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
@@ -313,6 +313,13 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
   }
 
   if (
+    commentType === IssueCommentType.REVIEW_SUBMISSION &&
+    comment.event.case === "reviewSubmission"
+  ) {
+    return <ReviewSubmissionIcon />;
+  }
+
+  if (
     commentType === IssueCommentType.PLAN_UPDATE &&
     comment.event.case === "planUpdate"
   ) {
@@ -357,6 +364,24 @@ export function CommentIconBadge({
         {icon}
       </div>
     </div>
+  );
+}
+
+export function ReviewSubmissionIcon() {
+  return (
+    <CommentIconBadge
+      className="bg-control-bg text-control"
+      icon={<Send className="size-4" />}
+    />
+  );
+}
+
+export function ReviewSubmissionSentence() {
+  const { t } = useTranslation();
+  return (
+    <span className="wrap-break-word min-w-0 text-control-light">
+      {t("plan.review.activity.marked-ready-for-review")}
+    </span>
   );
 }
 
@@ -407,6 +432,13 @@ function IssueCommentActionSentence({
         </span>
       );
     }
+  }
+
+  if (
+    commentType === IssueCommentType.REVIEW_SUBMISSION &&
+    comment.event.case === "reviewSubmission"
+  ) {
+    return <ReviewSubmissionSentence />;
   }
 
   if (

@@ -611,6 +611,8 @@ message IssueComment {
     IssueUpdate issue_update = 8;
     // Plan update event.
     PlanUpdate plan_update = 12;
+    // Review submission event.
+    ReviewSubmission review_submission = 13;
   }
 
   // Approval event information.
@@ -643,6 +645,9 @@ message IssueComment {
     repeated string from_labels = 7;
     repeated string to_labels = 8;
   }
+
+  // Review submission event information.
+  message ReviewSubmission {}
 
   // Plan update event information (snapshot of plan.config.specs before
   // and after a PlanService.UpdatePlan call that mutated specs).

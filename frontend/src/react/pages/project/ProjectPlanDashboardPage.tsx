@@ -90,7 +90,13 @@ import {
   extractStageUID,
   getStageStatusFromCounts,
 } from "@/utils/v1/issue/rollout";
-import { getReviewBadge, type ReviewBadge } from "./utils/reviewBadge";
+import { isReleaseBackedPlan } from "./plan-detail/utils/spec";
+import {
+  getPlanDraftState,
+  getReviewBadge,
+  type PlanDraftState,
+  type ReviewBadge,
+} from "./utils/reviewBadge";
 
 // Below Tailwind's `sm` breakpoint (640px) we switch the plan list and the
 // database picker to their compact mobile layouts.
@@ -181,7 +187,10 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     [t, listUsers, me]
   );
 
-  const [canCreate] = usePermissionCheck(["bb.plans.create"], project);
+  const [canCreate] = usePermissionCheck(
+    ["bb.plans.create", "bb.issues.create"],
+    project
+  );
 
   // Build plan filter
   const planFilter = useMemo(() => {
@@ -293,7 +302,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
               scopeOptions={scopeOptions}
             />
             <PermissionGuard
-              permissions={["bb.plans.create"]}
+              permissions={["bb.plans.create", "bb.issues.create"]}
               project={project}
             >
               <Button
@@ -365,7 +374,7 @@ interface PlanRowContext {
   updateTimeTs: number;
   approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
   isDeleted: boolean;
-  showDraftTag: boolean;
+  draftState: PlanDraftState;
 }
 
 function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
@@ -400,10 +409,15 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
                 {t("common.closed")}
               </span>
             )}
-            {ctx.showDraftTag && !ctx.isDeleted && (
+            {ctx.draftState === "draft" && !ctx.isDeleted && (
               <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
                 {t("common.draft")}
               </span>
+            )}
+            {ctx.draftState === "incomplete" && !ctx.isDeleted && (
+              <Badge variant="destructive" className="shrink-0 px-2 text-xs">
+                {t("plan.lifecycle.incomplete")}
+              </Badge>
             )}
           </div>
         ),
@@ -560,7 +574,12 @@ function PlanRow({
   const { t } = useTranslation();
 
   const isDeleted = plan.state === State.DELETED;
-  const showDraftTag = plan.issue === "" && !plan.hasRollout;
+  const draftState = getPlanDraftState({
+    approvalStatus: plan.approvalStatus,
+    hasRollout: plan.hasRollout,
+    isGitOpsPlan: isReleaseBackedPlan(plan.specs),
+    issueName: plan.issue,
+  });
 
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(plan.creator)
@@ -618,7 +637,7 @@ function PlanRow({
     updateTimeTs,
     approvalTag,
     isDeleted,
-    showDraftTag,
+    draftState,
   };
 
   return (

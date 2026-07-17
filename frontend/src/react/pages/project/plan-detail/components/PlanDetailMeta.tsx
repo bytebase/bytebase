@@ -54,7 +54,16 @@ export function PlanDetailMeta() {
   }, [page.issue, project]);
 
   if (page.isCreating) {
-    return null;
+    return (
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
+        <InlineLabels
+          allowChange
+          issueLabels={project?.issueLabels ?? []}
+          labels={page.creationIssueLabels}
+          onUpdate={page.setCreationIssueLabels}
+        />
+      </div>
+    );
   }
 
   const handleLabelsUpdate = async (labels: string[]) => {
@@ -118,7 +127,7 @@ function InlineLabels({
   allowChange: boolean;
   issueLabels: Array<{ color?: Color; value: string }>;
   labels: string[];
-  onUpdate: (labels: string[]) => Promise<void>;
+  onUpdate: (labels: string[]) => Promise<void> | void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);

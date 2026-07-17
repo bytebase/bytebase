@@ -308,6 +308,7 @@
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
+    - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
@@ -1094,7 +1095,7 @@ can reference it without a circular import.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| APPROVAL_STATUS_UNSPECIFIED | 0 | Unspecified approval status. |
+| APPROVAL_STATUS_UNSPECIFIED | 0 | No approval workflow has started, including for a linked draft issue. |
 | CHECKING | 1 | Approval checks are being evaluated. |
 | PENDING | 2 | Approval is pending. |
 | APPROVED | 3 | Issue has been approved. |
@@ -5660,6 +5661,7 @@ A comment on an issue.
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
+| review_submission | [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission) |  | Review submission event. |
 
 
 
@@ -5714,6 +5716,16 @@ and after a PlanService.UpdatePlan call that mutated specs).
 | ----- | ---- | ----- | ----------- |
 | from_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 | to_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewSubmission"></a>
+
+### IssueComment.ReviewSubmission
+Review submission event information.
 
 
 

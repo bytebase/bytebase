@@ -451,7 +451,7 @@ export declare const ExportFormatSchema: GenEnum<ExportFormat>;
  */
 export enum ApprovalStatus {
   /**
-   * Unspecified approval status.
+   * No approval workflow has started, including for a linked draft issue.
    *
    * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
    */

@@ -15,8 +15,28 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// UpdatePlanSpecsInput describes a review-affecting Plan spec mutation. Metadata
-// is accepted only so a mixed API update remains atomic with the spec change.
+// UpdatePlanInput describes a Plan mutation. The workflow keeps a linked draft
+// issue's metadata and lifecycle synchronized with the Plan and resets review
+// state when submitted Plan specs change.
+type UpdatePlanInput struct {
+	Workspace   string
+	ProjectID   string
+	PlanUID     int64
+	Title       *string
+	Description *string
+	Deleted     *bool
+	Specs       *[]*storepb.PlanConfig_Spec
+}
+
+// UpdatePlanResult is the committed Plan and linked review state.
+type UpdatePlanResult struct {
+	Plan          *store.PlanMessage
+	Issue         *store.IssueMessage
+	ApprovalReset bool
+	Events        []Event
+}
+
+// UpdatePlanSpecsInput is retained for callers performing a spec mutation.
 type UpdatePlanSpecsInput struct {
 	Workspace   string
 	ProjectID   string
@@ -27,16 +47,24 @@ type UpdatePlanSpecsInput struct {
 	Specs       []*storepb.PlanConfig_Spec
 }
 
-// UpdatePlanSpecsResult is the committed Plan and linked review state.
-type UpdatePlanSpecsResult struct {
-	Plan          *store.PlanMessage
-	Issue         *store.IssueMessage
-	ApprovalReset bool
-	Events        []Event
+// UpdatePlanSpecsResult is the result of a spec mutation.
+type UpdatePlanSpecsResult = UpdatePlanResult
+
+// UpdatePlanSpecs commits a Plan spec mutation through UpdatePlan.
+func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInput) (*UpdatePlanSpecsResult, error) {
+	return w.UpdatePlan(ctx, UpdatePlanInput{
+		Workspace:   input.Workspace,
+		ProjectID:   input.ProjectID,
+		PlanUID:     input.PlanUID,
+		Title:       input.Title,
+		Description: input.Description,
+		Deleted:     input.Deleted,
+		Specs:       &input.Specs,
+	})
 }
 
-// UpdatePlanSpecs commits a Plan spec mutation and any linked approval reset atomically.
-func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInput) (*UpdatePlanSpecsResult, error) {
+// UpdatePlan commits a Plan mutation and its linked review changes atomically.
+func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*UpdatePlanResult, error) {
 	if w.beforePlanCommit != nil {
 		w.beforePlanCommit()
 	}
@@ -61,14 +89,16 @@ func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInp
 	if plan == nil {
 		return nil, workflowError(ErrorNotFound, "plan %d not found in project %s", input.PlanUID, input.ProjectID)
 	}
-	if plan.Config.GetHasRollout() {
+	if input.Specs != nil && plan.Config.GetHasRollout() {
 		return nil, workflowError(ErrorFailedPrecondition, "cannot update specs for plan that has a rollout")
 	}
 
 	oldSpecs := plan.Config.GetSpecs()
 	updatedConfig := proto.CloneOf(plan.Config)
-	updatedConfig.Specs = input.Specs
-	updatedConfig.ApprovalInputVersion = plan.Config.GetApprovalInputVersion() + 1
+	if input.Specs != nil {
+		updatedConfig.Specs = *input.Specs
+		updatedConfig.ApprovalInputVersion = plan.Config.GetApprovalInputVersion() + 1
+	}
 	config, err := protojson.Marshal(updatedConfig)
 	if err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to marshal Plan config")
@@ -89,7 +119,7 @@ func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInp
 		input.Title != nil, stringValue(input.Title),
 		input.Description != nil, stringValue(input.Description),
 		input.Deleted != nil, boolValue(input.Deleted),
-		true, config,
+		input.Specs != nil, config,
 		input.ProjectID, input.PlanUID,
 	).Scan(&plan.UpdatedAt); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to update Plan")
@@ -105,22 +135,60 @@ func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInp
 	}
 	plan.Config = updatedConfig
 
-	result := &UpdatePlanSpecsResult{Plan: plan, Issue: issue}
-	if issue != nil && !issue.Payload.GetDraft() {
+	result := &UpdatePlanResult{Plan: plan, Issue: issue}
+	if issue != nil && issue.Payload.GetDraft() {
+		status := issue.Status
+		if input.Deleted != nil {
+			status = storepb.Issue_OPEN
+			if *input.Deleted {
+				status = storepb.Issue_CANCELED
+			}
+		}
+		title := issue.Title
+		if input.Title != nil {
+			title = *input.Title
+		}
+		description := issue.Description
+		if input.Description != nil {
+			description = *input.Description
+		}
+		if err := tx.QueryRowContext(ctx, `
+			UPDATE issue
+			SET updated_at = $1,
+				name = $2,
+				description = $3,
+				status = $4,
+				ts_vector = $5
+			WHERE project = $6
+			  AND id = $7
+			  AND COALESCE((payload->>'draft')::boolean, false)
+			RETURNING updated_at`,
+			time.Now(), title, description, status.String(), store.IssueSearchVector(title, description),
+			input.ProjectID, issue.UID,
+		).Scan(&issue.UpdatedAt); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, workflowError(ErrorConflict, "linked draft issue was submitted while the Plan was being updated")
+			}
+			return nil, workflowWrap(ErrorInternal, err, "failed to synchronize linked draft issue")
+		}
+		issue.Title = title
+		issue.Description = description
+		issue.Status = status
+	} else if issue != nil && input.Specs != nil {
 		approval := &storepb.IssuePayloadApproval{
 			ApprovalFindingDone:  false,
 			ApprovalInputVersion: updatedConfig.GetApprovalInputVersion(),
 		}
-		if err := updateIssuePayload(ctx, tx, issue, &storepb.Issue{Approval: approval}, false); err != nil {
+		if err := updateIssuePayload(ctx, tx, issue, &storepb.Issue{Approval: approval}, issuePayloadUpdateOptions{}); err != nil {
 			return nil, workflowWrap(ErrorInternal, err, "failed to reset issue approval")
 		}
 		issue.Payload.Approval = approval
 		result.ApprovalReset = true
 	}
-	if issue != nil && !planSpecsEqualSet(oldSpecs, input.Specs) {
+	if issue != nil && input.Specs != nil && !planSpecsEqualSet(oldSpecs, *input.Specs) {
 		result.Events = append(result.Events, PlanUpdatedEvent{
 			FromSpecs: oldSpecs,
-			ToSpecs:   input.Specs,
+			ToSpecs:   *input.Specs,
 		})
 	}
 

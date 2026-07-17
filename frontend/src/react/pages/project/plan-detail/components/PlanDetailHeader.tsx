@@ -23,29 +23,22 @@ import {
 } from "@/react/components/ui/popover";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/react/router";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
-} from "@/react/router/handles";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
-  CreateIssueRequestSchema,
-  Issue_Type,
   IssueSchema,
   IssueStatus,
   ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  CreatePlanRequestSchema,
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  extractIssueUID,
   extractPlanUID,
   extractProjectResourceName,
   extractSheetUID,
@@ -55,11 +48,13 @@ import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidatio
 import { focusPlanPhase } from "../shell/focusPhase";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
+  createPlanWithDraftReview,
+  DraftReviewIssueCreationError,
   getCreateIssueBlockingErrors,
   getCreateIssueConfirmErrors,
   getCreatePlanBlockingReasons,
   hasChecksWarning,
-  shouldStayOnPlanDetailPage,
+  submitDraftReview,
 } from "../utils/header";
 import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
 import { PlanLifecycleSlot } from "./lifecycle/PlanLifecycleSlot";
@@ -75,7 +70,10 @@ export function PlanDetailHeader() {
   const { patchState, setEditing } = page;
   const currentUser = page.currentUser;
   const project = page.project;
-  const [title, setTitle] = useState(page.plan.title);
+  const draftIssue = page.issue?.draft === true;
+  const persistedTitle =
+    page.issue && !draftIssue ? page.issue.title : page.plan.title;
+  const [title, setTitle] = useState(persistedTitle);
   const [editingTitle, setEditingTitle] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showReviewPopover, setShowReviewPopover] = useState(false);
@@ -86,8 +84,8 @@ export function PlanDetailHeader() {
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleAutoFocusedRef = useRef(false);
-  const createButtonRef = useRef<HTMLButtonElement>(null);
-  const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const pageKeyRef = useRef(page.pageKey);
+  pageKeyRef.current = page.pageKey;
   const createPlanBlockingReasons = useMemo(
     () =>
       getCreatePlanBlockingReasons({
@@ -97,29 +95,65 @@ export function PlanDetailHeader() {
       }),
     [emptySpecIdSet.size, page.plan.title, t]
   );
-  const titleMissing = page.plan.title.trim() === "";
+  const canCreatePlan = hasProjectPermissionV2(project, "bb.plans.create");
+  const canCreateIssue = hasProjectPermissionV2(project, "bb.issues.create");
+  const canCreateDraftReview = canCreatePlan && canCreateIssue;
+  const createPermissionReason = canCreateDraftReview
+    ? undefined
+    : t("common.missing-required-permission", {
+        permissions: ["bb.plans.create", "bb.issues.create"]
+          .filter(
+            (permission) =>
+              !hasProjectPermissionV2(
+                project,
+                permission as "bb.plans.create" | "bb.issues.create"
+              )
+          )
+          .join(", "),
+      });
+
+  const canUpdatePlan =
+    page.plan.creator === currentUser.name ||
+    hasProjectPermissionV2(project, "bb.plans.update");
 
   useEffect(() => {
-    const nextTitle = page.issue?.title ?? page.plan.title;
-    setTitle((prev) => (prev === nextTitle ? prev : nextTitle));
-  }, [page.issue?.title, page.plan.title]);
+    setTitle(persistedTitle);
+    setEditingTitle(false);
+    setUpdating(false);
+    setShowReviewPopover(false);
+    setSelectedLabels(draftIssue ? (page.issue?.labels ?? []) : []);
+    setChecksWarningAcknowledged(false);
+    setSubmittingReview(false);
+    titleAutoFocusedRef.current = false;
+    setEditing("title", false);
+  }, [page.pageKey]);
+
+  useEffect(() => {
+    if (!editingTitle) {
+      setTitle((prev) => (prev === persistedTitle ? prev : persistedTitle));
+    }
+  }, [editingTitle, persistedTitle]);
+
+  useEffect(() => {
+    if (draftIssue && !showReviewPopover) {
+      setSelectedLabels(page.issue?.labels ?? []);
+    }
+  }, [draftIssue, page.issue?.labels, showReviewPopover]);
 
   const allowTitleEdit = useMemo(() => {
     if (page.readonly) return false;
     if (page.isCreating) return true;
     if (!page.issue && page.plan.hasRollout) return false;
+    if (draftIssue) return canUpdatePlan;
     if (page.issue) {
       return hasProjectPermissionV2(project, "bb.issues.update");
     }
-    return (
-      page.plan.creator === currentUser.name ||
-      hasProjectPermissionV2(project, "bb.plans.update")
-    );
+    return canUpdatePlan;
   }, [
-    currentUser.name,
+    canUpdatePlan,
+    draftIssue,
     page.isCreating,
     page.issue,
-    page.plan.creator,
     page.plan.hasRollout,
     page.readonly,
     project,
@@ -143,33 +177,38 @@ export function PlanDetailHeader() {
   const lifecycle = usePlanLifecycleHeader(page);
   const showClosePlan =
     !page.isCreating &&
-    !page.plan.issue &&
     !page.plan.hasRollout &&
-    page.plan.state === State.ACTIVE;
+    page.plan.state === State.ACTIVE &&
+    (!page.issue || draftIssue) &&
+    canUpdatePlan;
   const showReopenPlan =
     !page.isCreating &&
-    !page.plan.issue &&
     !page.plan.hasRollout &&
-    page.plan.state === State.DELETED;
+    page.plan.state === State.DELETED &&
+    (!page.issue || draftIssue) &&
+    canUpdatePlan;
 
-  // Close (cancel) / reopen the review issue from the header, mirroring the issue
-  // detail page. Close is offered during the review phase (open issue, no rollout
-  // yet); reopen once the review was canceled.
+  // Submitted issues retain issue-status actions. Draft lifecycle changes flow
+  // through the Plan service, which synchronizes the linked draft Issue.
   const canUpdateIssue = hasProjectPermissionV2(project, "bb.issues.update");
   const showCloseIssue =
     !!page.issue &&
+    !draftIssue &&
     page.issue.status === IssueStatus.OPEN &&
     !page.plan.hasRollout &&
     canUpdateIssue;
   const showReopenIssue =
     !!page.issue &&
+    !draftIssue &&
     page.issue.status === IssueStatus.CANCELED &&
     canUpdateIssue;
 
-  const submitDisabled = page.isEditing;
-  const submitDisabledReason = submitDisabled
+  const submitDisabled = page.isEditing || !canUpdateIssue;
+  const submitDisabledReason = page.isEditing
     ? t("plan.editor.save-changes-before-continuing")
-    : undefined;
+    : !canUpdateIssue
+      ? t("plan.draft-update-permission-required")
+      : undefined;
 
   const saveTitle = async () => {
     if (page.isCreating) {
@@ -187,7 +226,8 @@ export function PlanDetailHeader() {
     // Skip the API round-trip when nothing changed so we don't pollute the
     // issue timeline with "changed name from X to X".
     const trimmed = title.trim();
-    const currentTitle = page.issue?.title ?? page.plan.title;
+    const currentTitle =
+      page.issue && !draftIssue ? page.issue.title : page.plan.title;
     if (trimmed === currentTitle) {
       setTitle(currentTitle);
       setEditingTitle(false);
@@ -195,9 +235,10 @@ export function PlanDetailHeader() {
       return;
     }
 
+    const actionPageKey = page.pageKey;
     try {
       setUpdating(true);
-      if (page.issue) {
+      if (page.issue && !draftIssue) {
         const issuePatch = create(IssueSchema, {
           ...page.issue,
           title,
@@ -208,6 +249,7 @@ export function PlanDetailHeader() {
             updateMask: { paths: ["title"] },
           })
         );
+        if (pageKeyRef.current !== actionPageKey) return;
         patchState({ issue: response });
       } else {
         const planPatch = create(PlanSchema, {
@@ -220,10 +262,12 @@ export function PlanDetailHeader() {
             updateMask: { paths: ["title"] },
           })
         );
+        if (pageKeyRef.current !== actionPageKey) return;
         patchState({ plan: response });
       }
     } catch (error) {
-      setTitle(page.issue?.title ?? page.plan.title);
+      if (pageKeyRef.current !== actionPageKey) return;
+      setTitle(currentTitle);
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -231,13 +275,16 @@ export function PlanDetailHeader() {
         description: String(error),
       });
     } finally {
-      setUpdating(false);
-      setEditingTitle(false);
-      setEditing("title", false);
+      if (pageKeyRef.current === actionPageKey) {
+        setUpdating(false);
+        setEditingTitle(false);
+        setEditing("title", false);
+      }
     }
   };
 
   const updatePlanState = async (state: State) => {
+    const actionPageKey = page.pageKey;
     try {
       const planPatch = clone(PlanSchema, page.plan);
       planPatch.state = state;
@@ -247,13 +294,22 @@ export function PlanDetailHeader() {
           updateMask: { paths: ["state"] },
         })
       );
-      patchState({ plan: updated });
+      if (pageKeyRef.current !== actionPageKey) return;
+      if (draftIssue && page.issue) {
+        const issue = clone(IssueSchema, page.issue);
+        issue.status =
+          state === State.DELETED ? IssueStatus.CANCELED : IssueStatus.OPEN;
+        patchState({ plan: updated, issue });
+      } else {
+        patchState({ plan: updated });
+      }
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.updated"),
       });
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -266,6 +322,7 @@ export function PlanDetailHeader() {
   const updateIssueStatus = async (status: IssueStatus) => {
     const issue = page.issue;
     if (!issue) return;
+    const actionPageKey = page.pageKey;
     try {
       await issueServiceClientConnect.batchUpdateIssuesStatus(
         create(BatchUpdateIssuesStatusRequestSchema, {
@@ -274,6 +331,7 @@ export function PlanDetailHeader() {
           status,
         })
       );
+      if (pageKeyRef.current !== actionPageKey) return;
       // Closing / reopening records a system comment — refresh page state and the
       // issue comments so the review timeline reflects it (like issue detail).
       await Promise.all([
@@ -285,6 +343,7 @@ export function PlanDetailHeader() {
           })
         ),
       ]);
+      if (pageKeyRef.current !== actionPageKey) return;
       // Land on the review section so the close/reopen system comment and the
       // updated status are visible (consistent with the other header advances).
       focusPlanPhase("review", page.expandPhase);
@@ -294,6 +353,7 @@ export function PlanDetailHeader() {
         title: t("common.updated"),
       });
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -368,7 +428,7 @@ export function PlanDetailHeader() {
     ? secondaryActions.slice(1)
     : secondaryActions;
 
-  const createSheets = async () => {
+  const createSheets = async (actionPageKey: string) => {
     for (const spec of page.plan.specs) {
       let config = null;
       if (spec.config?.case === "changeDatabaseConfig")
@@ -382,43 +442,64 @@ export function PlanDetailHeader() {
         const createdSheet = await useAppStore
           .getState()
           .createSheet(project.name, local);
+        if (pageKeyRef.current !== actionPageKey) return false;
         removeLocalSheet(config.sheet);
         config.sheet = createdSheet.name;
       }
     }
+    return true;
   };
 
   const handleCreatePlan = async () => {
-    if (createPlanBlockingReasons.length > 0) {
-      setShowCreateErrors(true);
+    if (createPlanBlockingReasons.length > 0 || !canCreateDraftReview) {
       return;
     }
+    const actionPageKey = page.pageKey;
     try {
       setUpdating(true);
-      await createSheets();
-      const createdPlan = await planServiceClientConnect.createPlan(
-        create(CreatePlanRequestSchema, {
-          parent: project.name,
-          plan: page.plan,
-        })
-      );
+      if (!(await createSheets(actionPageKey))) return;
+      const { plan } = await createPlanWithDraftReview({
+        createIssue: (request) =>
+          issueServiceClientConnect.createIssue(request),
+        createPlan: (request) => planServiceClientConnect.createPlan(request),
+        creator: `users/${currentUser.email}`,
+        labels: page.creationIssueLabels,
+        parent: project.name,
+        plan: page.plan,
+      });
+      if (pageKeyRef.current !== actionPageKey) return;
       page.bypassLeaveGuardOnce();
-      void router.replace({
+      await router.replace({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
-          projectId: extractProjectResourceName(createdPlan.name),
-          planId: extractPlanUID(createdPlan.name),
+          projectId: extractProjectResourceName(plan.name),
+          planId: extractPlanUID(plan.name),
         },
       });
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
+      if (error instanceof DraftReviewIssueCreationError) {
+        page.bypassLeaveGuardOnce();
+        await router.replace({
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(error.plan.name),
+            planId: extractPlanUID(error.plan.name),
+          },
+        });
+      }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("common.failed"),
-        description: String(error),
+        description: String(
+          error instanceof DraftReviewIssueCreationError ? error.cause : error
+        ),
       });
     } finally {
-      setUpdating(false);
+      if (pageKeyRef.current === actionPageKey) {
+        setUpdating(false);
+      }
     }
   };
 
@@ -432,6 +513,8 @@ export function PlanDetailHeader() {
       }),
     [emptySpecIdSet.size, page.plan, project, t]
   );
+  const createDisabledReason =
+    createPermissionReason ?? createPlanBlockingReasons[0];
   const showChecksWarning = useMemo(
     () => hasChecksWarning(page.plan),
     [page.plan]
@@ -448,7 +531,7 @@ export function PlanDetailHeader() {
   );
 
   const resetReviewPopoverDraft = () => {
-    setSelectedLabels([]);
+    setSelectedLabels(page.issue?.labels ?? []);
     setChecksWarningAcknowledged(false);
   };
 
@@ -459,44 +542,31 @@ export function PlanDetailHeader() {
     }
   };
 
-  const handleCreateIssue = async () => {
-    if (createIssueConfirmErrors.length > 0) return;
+  const handleSubmitDraftReview = async () => {
+    if (
+      !page.issue?.draft ||
+      !canUpdateIssue ||
+      createIssueConfirmErrors.length > 0
+    ) {
+      return;
+    }
+    const actionPageKey = page.pageKey;
     try {
       setSubmittingReview(true);
-      const createdIssue = await issueServiceClientConnect.createIssue(
-        create(CreateIssueRequestSchema, {
-          parent: project.name,
-          issue: create(IssueSchema, {
-            creator: `users/${currentUser.email}`,
-            labels: selectedLabels,
-            plan: page.plan.name,
-            status: IssueStatus.OPEN,
-            type: Issue_Type.DATABASE_CHANGE,
-          }),
-        })
-      );
+      const submittedIssue = await submitDraftReview({
+        issue: page.issue,
+        labels: selectedLabels,
+        updateIssue: (request) =>
+          issueServiceClientConnect.updateIssue(request),
+      });
+      if (pageKeyRef.current !== actionPageKey) return;
       handleReviewPopoverOpenChange(false);
-      patchState({
-        issue: createdIssue,
-        plan: {
-          ...page.plan,
-          issue: createdIssue.name,
-        },
-      });
-      if (shouldStayOnPlanDetailPage(page.plan)) {
-        await page.refreshState();
-        // Land the user on the review they just opened.
-        focusPlanPhase("review", page.expandPhase);
-        return;
-      }
-      void router.push({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(page.plan.name),
-          issueId: extractIssueUID(createdIssue.name),
-        },
-      });
+      patchState({ issue: submittedIssue });
+      await page.refreshState();
+      if (pageKeyRef.current !== actionPageKey) return;
+      focusPlanPhase("review", page.expandPhase);
     } catch (error) {
+      if (pageKeyRef.current !== actionPageKey) return;
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
@@ -504,7 +574,9 @@ export function PlanDetailHeader() {
         description: String(error),
       });
     } finally {
-      setSubmittingReview(false);
+      if (pageKeyRef.current === actionPageKey) {
+        setSubmittingReview(false);
+      }
     }
   };
 
@@ -555,38 +627,18 @@ export function PlanDetailHeader() {
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}
           {lifecycle.kind === "create" ? (
-            <Popover
-              modal={false}
-              onOpenChange={setShowCreateErrors}
-              open={showCreateErrors && createPlanBlockingReasons.length > 0}
+            <Button
+              disabled={
+                updating ||
+                !canCreateDraftReview ||
+                createPlanBlockingReasons.length > 0
+              }
+              onClick={() => void handleCreatePlan()}
+              title={createDisabledReason}
             >
-              <Button
-                disabled={updating}
-                onClick={() => void handleCreatePlan()}
-                ref={createButtonRef}
-              >
-                {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t("common.create")}
-              </Button>
-              <PopoverContent
-                anchor={createButtonRef}
-                className="max-w-xs overflow-hidden border-error/40 p-0"
-                initialFocus={titleMissing ? titleInputRef : false}
-              >
-                <Alert
-                  className="rounded-none border-0 shadow-none"
-                  description={
-                    <ul className="list-disc pl-4">
-                      {createPlanBlockingReasons.map((reason) => (
-                        <li key={reason}>{reason}</li>
-                      ))}
-                    </ul>
-                  }
-                  title={t("plan.cannot-create")}
-                  variant="error"
-                />
-              </PopoverContent>
-            </Popover>
+              {updating && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {t("common.create")}
+            </Button>
           ) : lifecycle.kind === "ready-for-review" ? (
             <Popover
               open={showReviewPopover}
@@ -615,7 +667,7 @@ export function PlanDetailHeader() {
                   onChecksWarningAcknowledgedChange={
                     setChecksWarningAcknowledged
                   }
-                  onConfirm={() => void handleCreateIssue()}
+                  onConfirm={() => void handleSubmitDraftReview()}
                   onSelectedLabelsChange={setSelectedLabels}
                   selectedLabels={selectedLabels}
                   showChecksWarning={showChecksWarning}
@@ -681,7 +733,7 @@ function ReadyForReviewPopoverContent({
   forceIssueLabels: boolean;
   issueLabels: IssueLabel[];
   onCancel: () => void;
-  onChecksWarningAcknowledgedChange: (checked: boolean) => void;
+  onChecksWarningAcknowledgedChange?: (checked: boolean) => void;
   onConfirm: () => void;
   onSelectedLabelsChange: (labels: string[]) => void;
   selectedLabels: string[];
@@ -693,9 +745,7 @@ function ReadyForReviewPopoverContent({
   return (
     <div className="flex flex-col gap-y-4">
       {showChecksWarning && (
-        <div className="rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-          {t("issue.checks-warning-hint")}
-        </div>
+        <Alert variant="warning" description={t("issue.checks-warning-hint")} />
       )}
       <IssueLabelSelect
         labels={issueLabels}
@@ -708,7 +758,7 @@ function ReadyForReviewPopoverContent({
           <Checkbox
             checked={checksWarningAcknowledged}
             onCheckedChange={(checked) =>
-              onChecksWarningAcknowledgedChange(checked)
+              onChecksWarningAcknowledgedChange?.(checked)
             }
           />
           <span>
@@ -719,9 +769,14 @@ function ReadyForReviewPopoverContent({
         </label>
       )}
       {confirmErrors.length > 0 && (
-        <div className="whitespace-pre-line rounded-sm border border-error/30 bg-error/5 px-3 py-2 text-sm text-error">
-          {confirmErrors.join("\n")}
-        </div>
+        <Alert
+          variant="error"
+          description={
+            <span className="whitespace-pre-line">
+              {confirmErrors.join("\n")}
+            </span>
+          }
+        />
       )}
       <div className="flex justify-start gap-x-2 pt-1">
         <Button
@@ -733,7 +788,7 @@ function ReadyForReviewPopoverContent({
           onClick={onConfirm}
           size="sm"
         >
-          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {submitting && <Loader2 className="size-4 animate-spin" />}
           {t("common.confirm")}
         </Button>
         <Button onClick={onCancel} size="sm" appearance="secondary">
