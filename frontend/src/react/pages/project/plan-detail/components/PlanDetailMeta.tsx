@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
-import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Popover,
@@ -55,16 +54,13 @@ export function PlanDetailMeta() {
   }, [page.issue, project]);
 
   if (page.isCreating) {
-    if ((project?.issueLabels.length ?? 0) === 0) {
-      return null;
-    }
     return (
-      <div className="mt-2 max-w-xl">
-        <IssueLabelSelect
-          labels={project.issueLabels}
-          selected={page.creationIssueLabels}
-          required={false}
-          onChange={page.setCreationIssueLabels}
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
+        <InlineLabels
+          allowChange
+          issueLabels={project?.issueLabels ?? []}
+          labels={page.creationIssueLabels}
+          onUpdate={page.setCreationIssueLabels}
         />
       </div>
     );
@@ -131,7 +127,7 @@ function InlineLabels({
   allowChange: boolean;
   issueLabels: Array<{ color?: Color; value: string }>;
   labels: string[];
-  onUpdate: (labels: string[]) => Promise<void>;
+  onUpdate: (labels: string[]) => Promise<void> | void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);

@@ -150,8 +150,10 @@ test("edits Issue labels directly on the preview creation page", () => {
 
   render(<PlanDetailMeta />);
 
-  expect(screen.getByRole("button", { name: /alpha/ })).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: /alpha/ }));
+  expect(screen.getByText("alpha")).toBeVisible();
+  const labelsButton = screen.getByRole("button", { name: "issue.labels" });
+  expect(labelsButton).toBeEnabled();
+  fireEvent.click(labelsButton);
   fireEvent.click(screen.getByRole("button", { name: "beta" }));
 
   expect(mocks.setCreationIssueLabels).toHaveBeenCalledWith([
