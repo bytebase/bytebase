@@ -10,6 +10,6 @@
 //
 // (The Splash / Body / Dashboard layout placeholders that previously lived here
 // have been replaced by the real layouts in `@/react/app/layouts/*`.)
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 
 export const RouteShellOutletPlaceholder = () => <Outlet />;

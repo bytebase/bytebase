@@ -1,5 +1,5 @@
 import { type ComponentType, createElement, useMemo } from "react";
-import { useLocation, useMatches, useParams } from "react-router-dom";
+import { useLocation, useMatches, useParams } from "react-router";
 
 // Adapter for react-router's `lazy` route field.
 //

@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router-dom";
+import type { RouteObject } from "react-router";
 import { RootLayout } from "@/react/app/RootLayout";
 import { RouteErrorPage } from "@/react/app/RouteErrorPage";
 import { rootGuard } from "@/react/router/guard";

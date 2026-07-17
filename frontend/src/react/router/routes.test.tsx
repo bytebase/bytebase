@@ -1,4 +1,4 @@
-import { matchRoutes, type RouteObject } from "react-router-dom";
+import { matchRoutes, type RouteObject } from "react-router";
 import { describe, expect, it } from "vitest";
 import { WORKSPACE_ROUTE_404 } from "@/react/router/handles";
 import { routes } from "./routes";
