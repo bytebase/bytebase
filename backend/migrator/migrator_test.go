@@ -15,8 +15,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.20.4"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.20/0004##restore_maximum_role_expiration.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.20.5"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.20/0005##migrate_instance_sync_databases.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -32,6 +32,60 @@ func TestVersionUnique(t *testing.T) {
 		}
 		versions[file.version.String()] = struct{}{}
 	}
+}
+
+func TestMigration3_20_5_MigrateInstanceSyncDatabases(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+
+	setup := `
+		CREATE TABLE instance (
+			resource_id TEXT PRIMARY KEY,
+			metadata JSONB NOT NULL DEFAULT '{}'
+		);
+
+		INSERT INTO instance (resource_id, metadata) VALUES
+			(
+				'instance-with-selected-databases',
+				'{"engine":"POSTGRES","syncDatabases":["db1","db2"]}'
+			),
+			(
+				'instance-with-empty-databases',
+				'{"engine":"POSTGRES","syncDatabases":[]}'
+			),
+			(
+				'instance-with-new-shape',
+				'{"engine":"POSTGRES","syncDatabases":{"databases":["db3"]}}'
+			),
+			(
+				'instance-without-sync-databases',
+				'{"engine":"POSTGRES"}'
+			);
+	`
+	_, err := db.ExecContext(ctx, setup)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.20/0005##migrate_instance_sync_databases.sql")
+	require.NoError(t, err)
+
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	getMetadata := func(resourceID string) string {
+		t.Helper()
+		var metadata string
+		err := db.QueryRowContext(ctx, `SELECT metadata::text FROM instance WHERE resource_id = $1`, resourceID).Scan(&metadata)
+		require.NoError(t, err)
+		return metadata
+	}
+
+	require.JSONEq(t, `{"engine":"POSTGRES","syncDatabases":{"databases":["db1","db2"]}}`, getMetadata("instance-with-selected-databases"))
+	require.JSONEq(t, `{"engine":"POSTGRES","syncDatabases":{"databases":[]}}`, getMetadata("instance-with-empty-databases"))
+	require.JSONEq(t, `{"engine":"POSTGRES","syncDatabases":{"databases":["db3"]}}`, getMetadata("instance-with-new-shape"))
+	require.JSONEq(t, `{"engine":"POSTGRES"}`, getMetadata("instance-without-sync-databases"))
 }
 
 func TestMigration3_17_15_DedupeReadOnlyDataSources(t *testing.T) {

@@ -87,6 +87,45 @@ func TestCreateInstanceWithoutProjectKeepsDefaultProject(t *testing.T) {
 	a.NotEqual(ctl.project.Name, databaseResp.Msg.Project)
 }
 
+func TestCreateInstanceWithEmptySyncDatabasesSkipsInitialDatabaseSync(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	instanceRootDir := t.TempDir()
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "skip-initial-database-sync")
+	a.NoError(err)
+	databaseName := "unsynced_database"
+	createSQLiteDatabase(t, instanceDir, databaseName)
+
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:         "skip-initial-database-sync",
+			Engine:        v1pb.Engine_SQLITE,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+		},
+	}))
+	a.NoError(err)
+	instance := instanceResp.Msg
+
+	databaseResp, err := ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
+		Parent:   instance.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err)
+	for _, database := range databaseResp.Msg.Databases {
+		a.NotEqual(fmt.Sprintf("%s/databases/%s", instance.Name, databaseName), database.Name)
+	}
+}
+
 func TestListInstanceDatabaseBeforeCreate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

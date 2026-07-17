@@ -150,4 +150,16 @@ describe("InstanceFormBody", () => {
       "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
     );
   });
+
+  test("distinguishes sync-all from empty selected database list", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).not.toContain(
+      'const key = syncAll ? "" : [...selectedSet].sort().join("\\0");'
+    );
+    expect(source).toContain('syncAll ? "all" : "selected"');
+  });
 });

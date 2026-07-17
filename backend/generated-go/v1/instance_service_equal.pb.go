@@ -340,6 +340,24 @@ func (x *UpdateDataSourceRequest) Equal(y *UpdateDataSourceRequest) bool {
 	return true
 }
 
+func (x *SyncDatabases) Equal(y *SyncDatabases) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Databases) != len(y.Databases) {
+		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if x.Databases[i] != y.Databases[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *Instance) Equal(y *Instance) bool {
 	if x == y {
 		return true
@@ -390,13 +408,8 @@ func (x *Instance) Equal(y *Instance) bool {
 	if p, q := x.SyncInterval, y.SyncInterval; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if len(x.SyncDatabases) != len(y.SyncDatabases) {
+	if !x.SyncDatabases.Equal(y.SyncDatabases) {
 		return false
-	}
-	for i := 0; i < len(x.SyncDatabases); i++ {
-		if x.SyncDatabases[i] != y.SyncDatabases[i] {
-			return false
-		}
 	}
 	if p, q := x.LastSyncTime, y.LastSyncTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false

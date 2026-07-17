@@ -95,7 +95,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
       : store.currentPlan() !== PlanType.FREE && availableLicenseCount > 0,
 
     syncInterval: instance?.syncInterval,
-    syncDatabases: instance?.syncDatabases ?? [],
+    syncDatabases: instance?.syncDatabases,
     roles: instance?.roles ?? [],
     labels: instance?.labels ?? {},
   };

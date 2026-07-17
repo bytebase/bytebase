@@ -413,6 +413,10 @@ message UpdateDataSourceRequest {
   bool allow_missing = 5;
 }
 
+message SyncDatabases {
+  repeated string databases = 1;
+}
+
 message Instance {
   option (google.api.resource) = {
     type: "bytebase.com/Instance"
@@ -455,8 +459,8 @@ message Instance {
   google.protobuf.Duration sync_interval = 12;
 
   // Enable sync for following databases.
-  // Default empty, means sync all schemas & databases.
-  repeated string sync_databases = 14;
+  // Not set means sync all schemas & databases.
+  SyncDatabases sync_databases = 14;
 
   // The last time the instance was synced.
   google.protobuf.Timestamp last_sync_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
