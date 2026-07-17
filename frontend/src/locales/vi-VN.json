@@ -943,6 +943,8 @@
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
+    "delete-active-confirmation": "Instance \"{{name}}\" đang hoạt động. Bytebase sẽ lưu trữ instance này trước, sau đó xóa vĩnh viễn. Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
+    "delete-confirmation": "Thao tác này sẽ xóa vĩnh viễn instance \"{{name}}\". Không thể hoàn tác hành động này. Nhập ID instance \"{{id}}\" để xác nhận.",
     "connection-recovery": {
       "auth": {
         "description": "Kiểm tra tên người dùng, mật khẩu, token hoặc cấu hình xác thực IAM, rồi kiểm tra kết nối lại.",

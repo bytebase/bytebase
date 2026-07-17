@@ -164,15 +164,23 @@ export function InstanceFormProvider({
   const [labelErrors, setLabelErrors] = useState<string[]>([]);
   const [showConnectionOptionsEvent, setShowConnectionOptionsEvent] =
     useState(0);
-  const syncedInstanceNameRef = useRef(instance?.name);
+  const syncedInstanceRef = useRef({
+    name: instance?.name,
+    state: instance?.state,
+  });
   const isCreating = instance === undefined;
 
   useEffect(() => {
-    if (syncedInstanceNameRef.current === instance?.name) {
+    const previous = syncedInstanceRef.current;
+    const next = {
+      name: instance?.name,
+      state: instance?.state,
+    };
+    if (previous.name === next.name && previous.state === next.state) {
       return;
     }
 
-    syncedInstanceNameRef.current = instance?.name;
+    syncedInstanceRef.current = next;
     const nextBasicInfo = extractBasicInfo(instance);
     const nextDataSourceEditState = extractDataSourceEditState(instance);
     setBasicInfo(nextBasicInfo);

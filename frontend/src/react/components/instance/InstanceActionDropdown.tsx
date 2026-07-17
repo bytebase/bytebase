@@ -48,10 +48,7 @@ export function InstanceActionDropdown({
         0: instance.title,
       }),
     });
-    router.replace({
-      name: INSTANCE_ROUTE_DASHBOARD,
-      query: { q: "state:DELETED" },
-    });
+    router.replace({ name: INSTANCE_ROUTE_DASHBOARD });
   }, [instance, t]);
 
   const handleRestore = useCallback(async () => {
