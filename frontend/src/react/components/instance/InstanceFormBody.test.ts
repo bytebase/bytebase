@@ -161,6 +161,9 @@ describe("InstanceFormBody", () => {
       'const key = syncAll ? "" : [...selectedSet].sort().join("\\0");'
     );
     expect(source).toContain('syncAll ? "all" : "selected"');
+    expect(source).toContain(
+      "[...selectedSet].sort((a, b) => a.localeCompare(b))"
+    );
   });
 
   test("preserves an explicitly empty database sync selection", () => {

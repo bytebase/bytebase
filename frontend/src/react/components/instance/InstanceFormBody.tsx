@@ -447,9 +447,10 @@ function SyncDatabases({
   const prevNotifiedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const key = [syncAll ? "all" : "selected", ...[...selectedSet].sort()].join(
-      "\0"
-    );
+    const key = [
+      syncAll ? "all" : "selected",
+      ...[...selectedSet].sort((a, b) => a.localeCompare(b)),
+    ].join("\0");
     if (key === prevNotifiedRef.current) return;
     prevNotifiedRef.current = key;
     onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet], syncAll);
