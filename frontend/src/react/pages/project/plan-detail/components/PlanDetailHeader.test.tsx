@@ -659,21 +659,65 @@ describe("PlanDetailHeader draft ownership", () => {
     );
   });
 
-  test("keeps draft creation enabled and warns when issue update permission is missing", () => {
+  test("creates directly without a confirmation panel", async () => {
     mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
     mocks.lifecycle = { kind: "create" };
     mocks.page = makePage({ creating: true });
+    mocks.createPlan.mockResolvedValue({
+      ...mocks.page.plan,
+      name: "projects/p1/plans/123",
+    });
+    mocks.createIssue.mockResolvedValue({
+      draft: true,
+      labels: [],
+      name: "projects/p1/issues/456",
+      plan: "projects/p1/plans/123",
+    });
 
     render(<PlanDetailHeader />);
 
     expect(screen.getByRole("button", { name: "common.create" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "common.create" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "plan.draft-update-permission-required"
-    );
+
     expect(
-      screen.getByRole("button", { name: "common.confirm" })
-    ).toBeEnabled();
+      screen.queryByRole("button", { name: "common.confirm" })
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.createPlan).toHaveBeenCalledOnce());
+  });
+
+  test("allows draft creation when review labels are still missing", () => {
+    mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
+    mocks.lifecycle = { kind: "create" };
+    const page = makePage({ creating: true });
+    mocks.page = {
+      ...page,
+      project: {
+        ...page.project,
+        forceIssueLabels: true,
+      },
+    };
+
+    render(<PlanDetailHeader />);
+
+    expect(screen.getByRole("button", { name: "common.create" })).toBeEnabled();
+  });
+
+  test("keeps invalid draft creation blocked without a confirmation panel", () => {
+    mocks.permissions = new Set(["bb.plans.create", "bb.issues.create"]);
+    mocks.lifecycle = { kind: "create" };
+    const page = makePage({ creating: true });
+    mocks.page = {
+      ...page,
+      plan: { ...page.plan, title: "" },
+    };
+
+    render(<PlanDetailHeader />);
+
+    expect(screen.getByRole("button", { name: "common.create" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "common.create" })).toHaveAttribute(
+      "title",
+      "plan.title-required"
+    );
   });
 
   test("creates the draft Issue with labels selected on the preview page", async () => {
@@ -699,7 +743,6 @@ describe("PlanDetailHeader draft ownership", () => {
     render(<PlanDetailHeader />);
 
     fireEvent.click(screen.getByRole("button", { name: "common.create" }));
-    fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
 
     await waitFor(() => expect(mocks.createIssue).toHaveBeenCalledOnce());
     expect(mocks.createIssue).toHaveBeenCalledWith(

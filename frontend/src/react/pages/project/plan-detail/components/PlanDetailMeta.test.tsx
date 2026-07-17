@@ -142,15 +142,21 @@ beforeEach(() => {
 
 test("edits Issue labels directly on the preview creation page", () => {
   mocks.creationIssueLabels = ["alpha"];
+  const page = makePage();
   mocks.page = {
-    ...makePage(),
+    ...page,
     isCreating: true,
     issue: undefined,
+    project: {
+      ...page.project,
+      forceIssueLabels: true,
+    },
   };
 
   render(<PlanDetailMeta />);
 
   expect(screen.getByText("alpha")).toBeVisible();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   const labelsButton = screen.getByRole("button", { name: "issue.labels" });
   expect(labelsButton).toBeEnabled();
   fireEvent.click(labelsButton);
@@ -160,6 +166,25 @@ test("edits Issue labels directly on the preview creation page", () => {
     "alpha",
     "beta",
   ]);
+});
+
+test("warns when required Issue labels are missing during creation", () => {
+  const page = makePage();
+  mocks.page = {
+    ...page,
+    isCreating: true,
+    issue: undefined,
+    project: {
+      ...page.project,
+      forceIssueLabels: true,
+    },
+  };
+
+  render(<PlanDetailMeta />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "plan.labels-required-for-review"
+  );
 });
 
 test("keeps draft labels read-only without issues.update and editable with it", async () => {

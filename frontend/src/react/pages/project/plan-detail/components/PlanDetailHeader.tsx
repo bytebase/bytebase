@@ -77,7 +77,6 @@ export function PlanDetailHeader() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showReviewPopover, setShowReviewPopover] = useState(false);
-  const [showCreatePopover, setShowCreatePopover] = useState(false);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [checksWarningAcknowledged, setChecksWarningAcknowledged] =
     useState(false);
@@ -96,7 +95,6 @@ export function PlanDetailHeader() {
       }),
     [emptySpecIdSet.size, page.plan.title, t]
   );
-  const titleMissing = page.plan.title.trim() === "";
   const canCreatePlan = hasProjectPermissionV2(project, "bb.plans.create");
   const canCreateIssue = hasProjectPermissionV2(project, "bb.issues.create");
   const canCreateDraftReview = canCreatePlan && canCreateIssue;
@@ -123,7 +121,6 @@ export function PlanDetailHeader() {
     setEditingTitle(false);
     setUpdating(false);
     setShowReviewPopover(false);
-    setShowCreatePopover(false);
     setSelectedLabels(draftIssue ? (page.issue?.labels ?? []) : []);
     setChecksWarningAcknowledged(false);
     setSubmittingReview(false);
@@ -472,7 +469,6 @@ export function PlanDetailHeader() {
       });
       if (pageKeyRef.current !== actionPageKey) return;
       page.bypassLeaveGuardOnce();
-      setShowCreatePopover(false);
       await router.replace({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
@@ -517,6 +513,8 @@ export function PlanDetailHeader() {
       }),
     [emptySpecIdSet.size, page.plan, project, t]
   );
+  const createDisabledReason =
+    createPermissionReason ?? createPlanBlockingReasons[0];
   const showChecksWarning = useMemo(
     () => hasChecksWarning(page.plan),
     [page.plan]
@@ -629,47 +627,18 @@ export function PlanDetailHeader() {
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}
           {lifecycle.kind === "create" ? (
-            <Popover
-              modal={false}
-              onOpenChange={setShowCreatePopover}
-              open={showCreatePopover}
+            <Button
+              disabled={
+                updating ||
+                !canCreateDraftReview ||
+                createPlanBlockingReasons.length > 0
+              }
+              onClick={() => void handleCreatePlan()}
+              title={createDisabledReason}
             >
-              <PopoverTrigger
-                render={
-                  <Button
-                    disabled={updating || !canCreateDraftReview}
-                    title={createPermissionReason}
-                  />
-                }
-              >
-                {updating && <Loader2 className="mr-2 size-4 animate-spin" />}
-                {t("common.create")}
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-[min(28rem,calc(100vw-2rem))] px-4 py-4"
-                initialFocus={titleMissing ? titleInputRef : false}
-              >
-                <ReadyForReviewPopoverContent
-                  checksWarningAcknowledged={true}
-                  confirmErrors={createPlanBlockingReasons}
-                  forceIssueLabels={false}
-                  issueLabels={project.issueLabels ?? []}
-                  onCancel={() => setShowCreatePopover(false)}
-                  onConfirm={() => void handleCreatePlan()}
-                  onSelectedLabelsChange={page.setCreationIssueLabels}
-                  selectedLabels={page.creationIssueLabels}
-                  showIssueLabels={false}
-                  warning={
-                    canUpdateIssue
-                      ? undefined
-                      : t("plan.draft-update-permission-required")
-                  }
-                  showChecksWarning={false}
-                  submitting={updating}
-                />
-              </PopoverContent>
-            </Popover>
+              {updating && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {t("common.create")}
+            </Button>
           ) : lifecycle.kind === "ready-for-review" ? (
             <Popover
               open={showReviewPopover}
@@ -756,10 +725,8 @@ function ReadyForReviewPopoverContent({
   onConfirm,
   onSelectedLabelsChange,
   selectedLabels,
-  showIssueLabels = true,
   showChecksWarning,
   submitting,
-  warning,
 }: {
   checksWarningAcknowledged: boolean;
   confirmErrors: string[];
@@ -770,27 +737,22 @@ function ReadyForReviewPopoverContent({
   onConfirm: () => void;
   onSelectedLabelsChange: (labels: string[]) => void;
   selectedLabels: string[];
-  showIssueLabels?: boolean;
   showChecksWarning: boolean;
   submitting: boolean;
-  warning?: string;
 }) {
   const { t } = useTranslation();
 
   return (
     <div className="flex flex-col gap-y-4">
-      {warning && <Alert variant="warning" description={warning} />}
       {showChecksWarning && (
         <Alert variant="warning" description={t("issue.checks-warning-hint")} />
       )}
-      {showIssueLabels && (
-        <IssueLabelSelect
-          labels={issueLabels}
-          onChange={onSelectedLabelsChange}
-          required={forceIssueLabels}
-          selected={selectedLabels}
-        />
-      )}
+      <IssueLabelSelect
+        labels={issueLabels}
+        onChange={onSelectedLabelsChange}
+        required={forceIssueLabels}
+        selected={selectedLabels}
+      />
       {showChecksWarning && (
         <label className="flex items-center gap-x-2 text-sm text-control">
           <Checkbox
