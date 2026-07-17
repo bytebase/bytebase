@@ -6,6 +6,7 @@ export { DataSourceForm } from "./DataSourceForm";
 export { DataSourceSection } from "./DataSourceSection";
 export { InfoPanel, InfoPanelContent } from "./InfoPanel";
 export { InstanceActionDropdown } from "./InstanceActionDropdown";
+export { InstanceDeleteDialog } from "./InstanceDeleteDialog";
 export { InstanceFormBody } from "./InstanceFormBody";
 export { InstanceFormButtons } from "./InstanceFormButtons";
 export {

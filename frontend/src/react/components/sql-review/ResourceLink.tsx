@@ -1,20 +1,17 @@
 import { ShieldAlert } from "lucide-react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { ProjectLabel } from "@/react/components/ProjectLabel";
 import {
   RouterLink,
   type RouterLinkProps,
 } from "@/react/components/RouterLink";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
-import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
-import { useAppStore } from "@/react/stores/app";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 type ResourceLinkAnchorProps = Pick<
   RouterLinkProps,
@@ -40,8 +37,9 @@ export function ResourceLink({
   }
   if (resource.startsWith(projectNamePrefix)) {
     return (
-      <ProjectResourceLink
-        resource={resource}
+      <ProjectLabel
+        projectName={resource}
+        link={true}
         showResourceType={showResourceType}
         {...linkProps}
       />
@@ -80,44 +78,6 @@ function EnvironmentResourceLink({
       )}
       <span>{environment.title || resource}</span>
       {isProtected && <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
-    </RouterLink>
-  );
-}
-
-function ProjectResourceLink({
-  resource,
-  showResourceType,
-  className,
-  ...linkProps
-}: {
-  resource: string;
-  showResourceType: boolean;
-} & ResourceLinkAnchorProps) {
-  const { t } = useTranslation();
-  // subscribe to re-render on project cache change
-  const projectsByName = useAppStore((s) => s.projectsByName);
-
-  useEffect(() => {
-    if (hasWorkspacePermissionV2("bb.projects.get")) {
-      useAppStore.getState().getOrFetchProjectByName(resource, true);
-    }
-  }, [resource]);
-
-  const project = useProjectByName(resource);
-  void projectsByName;
-
-  return (
-    <RouterLink
-      {...linkProps}
-      to={{ path: `/${resource}` }}
-      className={cn("inline-flex items-center gap-x-1 normal-link", className)}
-    >
-      {showResourceType && (
-        <span className="text-control-light text-xs mr-0.5">
-          {t("common.project")}:
-        </span>
-      )}
-      <span>{project?.title || extractProjectResourceName(resource)}</span>
     </RouterLink>
   );
 }

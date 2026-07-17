@@ -262,11 +262,26 @@ export function ProjectsPage() {
       title: t("common.state"),
       description: t("issue.advanced-search.scope.state.description"),
       options: [
-        { value: "ACTIVE", keywords: ["active"] },
+        {
+          value: "ACTIVE",
+          keywords: ["active"],
+          custom: true,
+          render: () => <span>{t("common.active")}</span>,
+        },
         ...(canUndelete
           ? [
-              { value: "DELETED", keywords: ["archived", "deleted"] },
-              { value: "ALL", keywords: ["all"] },
+              {
+                value: "DELETED",
+                keywords: ["archived", "deleted"],
+                custom: true,
+                render: () => <span>{t("common.archived")}</span>,
+              },
+              {
+                value: "ALL",
+                keywords: ["all"],
+                custom: true,
+                render: () => <span>{t("common.all")}</span>,
+              },
             ]
           : []),
       ],
@@ -585,10 +600,6 @@ export function ProjectsPage() {
     []
   );
 
-  const getProjectHref = useCallback((project: Project) => {
-    return router.resolve(projectIssuesRoute(project)).fullPath;
-  }, []);
-
   const handleProjectAction = useCallback(() => {
     fetchProjects(true);
   }, [fetchProjects]);
@@ -631,7 +642,6 @@ export function ProjectsPage() {
               onAction={handleProjectAction}
             />
           )}
-          getRowHref={getProjectHref}
           selectedProjectNames={Array.from(selectedNames)}
           onSelectedChange={(names) => setSelectedNames(new Set(names))}
           sortKey={sortKey}
