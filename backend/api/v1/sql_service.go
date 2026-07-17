@@ -1464,8 +1464,77 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	return connect.NewResponse(resp), nil
 }
 
-// GetQueryHistory gets a single query history. Query histories are private to
-// their creator, so only the creator may retrieve one.
+// ListQueryHistories lists query histories of all users in a project. The IAM
+// interceptor checks bb.auditLogs.search on the parent project.
+func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Request[v1pb.ListQueryHistoriesRequest]) (*connect.Response[v1pb.ListQueryHistoriesResponse], error) {
+	request := req.Msg
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", request.Parent))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	creator, err := store.GetListQueryHistoriesCreatorFilter(request.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	historyList, err := s.store.ListQueryHistories(ctx, &store.FindQueryHistoryMessage{
+		Project: &projectID,
+		Creator: creator,
+		Limit:   &limitPlusOne,
+		Offset:  &offset.offset,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
+	}
+
+	nextPageToken := ""
+	if len(historyList) == limitPlusOne {
+		historyList = historyList[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
+		}
+	}
+
+	resp := &v1pb.ListQueryHistoriesResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, history := range historyList {
+		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
+		}
+		if queryHistory == nil {
+			continue
+		}
+		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+// GetQueryHistory gets a single query history. The caller must be the creator
+// of the query history or have bb.auditLogs.search on the project.
 func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v1pb.GetQueryHistoryRequest]) (*connect.Response[v1pb.QueryHistory], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -1481,10 +1550,19 @@ func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query history: %v", err.Error()))
 	}
-	// Hide existence from non-creators and project mismatches by returning the
-	// same not-found error for all three cases.
-	if history == nil || history.Project != projectID || history.Creator != user.Email {
+	// Hide existence from project mismatches and unauthorized callers by
+	// returning the same not-found error for all cases.
+	if history == nil || history.Project != projectID {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
+	}
+	if history.Creator != user.Email {
+		ok, err := s.iamManager.CheckPermission(ctx, permission.AuditLogsSearch, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+		}
+		if !ok {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
+		}
 	}
 
 	queryHistory, err := s.convertToV1QueryHistory(ctx, history)

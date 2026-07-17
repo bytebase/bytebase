@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
@@ -48,8 +49,20 @@ service SQLService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // GetQueryHistory gets a single query history for the caller.
-  // Permissions required: None (only returns the caller's own query history)
+  // ListQueryHistories lists query histories of all users in a project.
+  // Permissions required: bb.auditLogs.search
+  rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/queryHistories"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.auditLogs.search";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // GetQueryHistory gets a single query history. The caller must be the
+  // creator of the query history or have the bb.auditLogs.search permission
+  // on the project.
+  // Permissions required: bb.auditLogs.search (only for non-creators)
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
@@ -506,6 +519,45 @@ message SearchQueryHistoriesRequest {
   // statement.contains("select")
   // type == "QUERY" && statement.contains("select")
   string filter = 3;
+}
+
+message ListQueryHistoriesRequest {
+  // The parent project whose query histories are listed.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The maximum number of histories to return.
+  // The service may return fewer than this value.
+  // If unspecified, at most 10 history entries will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListQueryHistories` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 3;
+
+  // Filter is the filter to apply on the list query histories.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
+  // Supported filter:
+  // - creator: the user full name in "users/{email}" format, support "==" operator.
+  //
+  // For example:
+  // creator == "users/{email}"
+  string filter = 4;
+}
+
+message ListQueryHistoriesResponse {
+  // The list of query histories.
+  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A token to retrieve next page of history.
+  // Pass this value in the page_token field in the subsequent call to
+  // `ListQueryHistories` method to retrieve the next page of history.
+  string next_page_token = 2;
 }
 
 message GetQueryHistoryRequest {

@@ -5571,8 +5571,10 @@ paths:
         - bytebase.v1.SQLService
       summary: GetQueryHistory
       description: |-
-        GetQueryHistory gets a single query history for the caller.
-         Permissions required: None (only returns the caller's own query history)
+        GetQueryHistory gets a single query history. The caller must be the
+         creator of the query history or have the bb.auditLogs.search permission
+         on the project.
+         Permissions required: bb.auditLogs.search (only for non-creators)
       operationId: bytebase.v1.SQLService.GetQueryHistory
       parameters:
         - name: Connect-Protocol-Version
@@ -5603,6 +5605,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+  /bytebase.v1.SQLService/ListQueryHistories:
+    post:
+      tags:
+        - bytebase.v1.SQLService
+      summary: ListQueryHistories
+      description: |-
+        ListQueryHistories lists query histories of all users in a project.
+         Permissions required: bb.auditLogs.search
+      operationId: bytebase.v1.SQLService.ListQueryHistories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListQueryHistoriesResponse'
   /bytebase.v1.SQLService/Query:
     post:
       tags:
@@ -13928,6 +13968,62 @@ components:
             $ref: '#/components/schemas/bytebase.v1.PurchasePlan'
           title: plans
       title: ListPurchasePlansResponse
+      additionalProperties: false
+    bytebase.v1.ListQueryHistoriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project whose query histories are listed.
+             Format: projects/{project}
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of histories to return.
+             The service may return fewer than this value.
+             If unspecified, at most 10 history entries will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListQueryHistories` call.
+             Provide this to retrieve the subsequent page.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is the filter to apply on the list query histories.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - creator: the user full name in "users/{email}" format, support "==" operator.
+
+             For example:
+             creator == "users/{email}"
+      title: ListQueryHistoriesRequest
+      additionalProperties: false
+    bytebase.v1.ListQueryHistoriesResponse:
+      type: object
+      properties:
+        queryHistories:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.QueryHistory'
+          title: query_histories
+          description: The list of query histories.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token to retrieve next page of history.
+             Pass this value in the page_token field in the subsequent call to
+             `ListQueryHistories` method to retrieve the next page of history.
+      title: ListQueryHistoriesResponse
       additionalProperties: false
     bytebase.v1.ListReleaseCategoriesRequest:
       type: object

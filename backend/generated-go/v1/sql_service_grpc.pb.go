@@ -22,6 +22,7 @@ const (
 	SQLService_Query_FullMethodName                = "/bytebase.v1.SQLService/Query"
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
+	SQLService_ListQueryHistories_FullMethodName   = "/bytebase.v1.SQLService/ListQueryHistories"
 	SQLService_GetQueryHistory_FullMethodName      = "/bytebase.v1.SQLService/GetQueryHistory"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
 	SQLService_DiffMetadata_FullMethodName         = "/bytebase.v1.SQLService/DiffMetadata"
@@ -43,8 +44,13 @@ type SQLServiceClient interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history for the caller.
-	// Permissions required: None (only returns the caller's own query history)
+	// ListQueryHistories lists query histories of all users in a project.
+	// Permissions required: bb.auditLogs.search
+	ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error)
+	// GetQueryHistory gets a single query history. The caller must be the
+	// creator of the query history or have the bb.auditLogs.search permission
+	// on the project.
+	// Permissions required: bb.auditLogs.search (only for non-creators)
 	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -92,6 +98,16 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchQueryHistoriesResponse)
 	err := c.cc.Invoke(ctx, SQLService_SearchQueryHistories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListQueryHistoriesResponse)
+	err := c.cc.Invoke(ctx, SQLService_ListQueryHistories_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +169,13 @@ type SQLServiceServer interface {
 	// SearchQueryHistories searches query histories for the caller.
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history for the caller.
-	// Permissions required: None (only returns the caller's own query history)
+	// ListQueryHistories lists query histories of all users in a project.
+	// Permissions required: bb.auditLogs.search
+	ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error)
+	// GetQueryHistory gets a single query history. The caller must be the
+	// creator of the query history or have the bb.auditLogs.search permission
+	// on the project.
+	// Permissions required: bb.auditLogs.search (only for non-creators)
 	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -183,6 +204,9 @@ func (UnimplementedSQLServiceServer) AdminExecute(grpc.BidiStreamingServer[Admin
 }
 func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchQueryHistories not implemented")
+}
+func (UnimplementedSQLServiceServer) ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListQueryHistories not implemented")
 }
 func (UnimplementedSQLServiceServer) GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetQueryHistory not implemented")
@@ -256,6 +280,24 @@ func _SQLService_SearchQueryHistories_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SQLServiceServer).SearchQueryHistories(ctx, req.(*SearchQueryHistoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SQLService_ListQueryHistories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListQueryHistoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).ListQueryHistories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_ListQueryHistories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).ListQueryHistories(ctx, req.(*ListQueryHistoriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -346,6 +388,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchQueryHistories",
 			Handler:    _SQLService_SearchQueryHistories_Handler,
+		},
+		{
+			MethodName: "ListQueryHistories",
+			Handler:    _SQLService_ListQueryHistories_Handler,
 		},
 		{
 			MethodName: "GetQueryHistory",

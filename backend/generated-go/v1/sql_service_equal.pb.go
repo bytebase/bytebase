@@ -570,6 +570,49 @@ func (x *SearchQueryHistoriesRequest) Equal(y *SearchQueryHistoriesRequest) bool
 	return true
 }
 
+func (x *ListQueryHistoriesRequest) Equal(y *ListQueryHistoriesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
+	if x.Filter != y.Filter {
+		return false
+	}
+	return true
+}
+
+func (x *ListQueryHistoriesResponse) Equal(y *ListQueryHistoriesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.QueryHistories) != len(y.QueryHistories) {
+		return false
+	}
+	for i := 0; i < len(x.QueryHistories); i++ {
+		if !x.QueryHistories[i].Equal(y.QueryHistories[i]) {
+			return false
+		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
+	}
+	return true
+}
+
 func (x *GetQueryHistoryRequest) Equal(y *GetQueryHistoryRequest) bool {
 	if x == y {
 		return true
