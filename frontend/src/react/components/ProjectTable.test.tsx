@@ -2,6 +2,7 @@ import type { MouseEventHandler, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ProjectTable } from "./ProjectTable";
 
@@ -163,5 +164,31 @@ describe("ProjectTable", () => {
     expect(onRowClick).toHaveBeenCalledTimes(1);
     expect(onRowClick.mock.calls[0][0]).toBe(project);
     expect(onRowClick.mock.calls[0][1].metaKey).toBe(true);
+  });
+
+  test("renders a state column when requested", () => {
+    act(() => {
+      root.render(
+        <ProjectTable
+          projectList={[
+            { ...project, state: State.ACTIVE },
+            {
+              name: "projects/archived",
+              title: "Archived Project",
+              labels: {},
+              state: State.DELETED,
+            } as Project,
+          ]}
+          showState
+        />
+      );
+    });
+
+    const headers = [...container.querySelectorAll("thead th")].map(
+      (th) => th.textContent
+    );
+    expect(headers).toContain("common.state");
+    expect(container.textContent).toContain("common.active");
+    expect(container.textContent).toContain("common.archived");
   });
 });

@@ -943,6 +943,8 @@
     "connecting-database-to-project": "Conectando base de datos...",
     "connection-info": "Información de conexión",
     "connection-options": "Opciones de conexión",
+    "delete-active-confirmation": "La instancia \"{{name}}\" está activa. Bytebase la archivará primero y luego la eliminará permanentemente. Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",
+    "delete-confirmation": "Esto eliminará permanentemente la instancia \"{{name}}\". Esta acción no se puede deshacer. Escribe el ID de la instancia \"{{id}}\" para confirmar.",
     "connection-recovery": {
       "auth": {
         "description": "Verifica el usuario, la contraseña, el token o la configuración de autenticación IAM y vuelve a probar la conexión.",

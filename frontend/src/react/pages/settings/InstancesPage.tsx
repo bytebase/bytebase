@@ -33,6 +33,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
+import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -73,7 +74,6 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import {
   createAdvancedSearchParser,
-  legacyStateSearchParams,
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
@@ -101,6 +101,10 @@ import {
   hostPortOfInstanceV1,
   supportedEngineV1List,
 } from "@/utils";
+import {
+  defaultActiveStateSearchParams,
+  getResourceStateFilter,
+} from "./resourceStateFilter";
 
 const ASSIGN_LICENSE_QUERY = "assignLicense";
 const ASSIGN_LICENSE_INSTANCES_QUERY = "instances";
@@ -440,7 +444,7 @@ export function InstancesPage() {
   const route = useCurrentRoute();
 
   const defaultSearchParams = useMemo<SearchParams>(
-    () => legacyStateSearchParams(route.query.state),
+    () => defaultActiveStateSearchParams(route.query.state),
     [route.query.state]
   );
   const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
@@ -541,12 +545,7 @@ export function InstancesPage() {
   const searchText = searchParams.query;
 
   const stateFilterVal = getValueFromScopes(searchParams, "state");
-  const selectedState =
-    stateFilterVal === "DELETED"
-      ? State.DELETED
-      : stateFilterVal === "ALL"
-        ? undefined
-        : State.ACTIVE;
+  const selectedState = getResourceStateFilter(stateFilterVal);
 
   const envVal = getValueFromScopes(searchParams, "environment");
   const selectedEnvironment = envVal
@@ -919,6 +918,23 @@ export function InstancesPage() {
       render: (instance) => (
         <EnvironmentLabel environmentName={instance.environment ?? ""} />
       ),
+    },
+    {
+      key: "state",
+      title: t("common.state"),
+      defaultWidth: 120,
+      minWidth: 100,
+      resizable: true,
+      render: (instance) =>
+        instance.state === State.DELETED ? (
+          <Badge variant="warning" className="text-xs">
+            {t("common.archived")}
+          </Badge>
+        ) : (
+          <Badge variant="success" className="text-xs">
+            {t("common.active")}
+          </Badge>
+        ),
     },
     {
       key: "address",

@@ -40,7 +40,6 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import {
   createAdvancedSearchParser,
-  legacyStateSearchParams,
   serializeAdvancedSearch,
   useURLSearchParam,
 } from "@/react/hooks/useURLSearchParam";
@@ -58,6 +57,10 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import {
+  defaultActiveStateSearchParams,
+  getResourceStateFilter,
+} from "./resourceStateFilter";
 
 const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
 
@@ -244,7 +247,7 @@ export function ProjectsPage() {
   const route = useCurrentRoute();
 
   const defaultSearchParams = useMemo<SearchParams>(
-    () => legacyStateSearchParams(route.query.state),
+    () => defaultActiveStateSearchParams(route.query.state),
     [route.query.state]
   );
   const [searchParams, setSearchParams] = useURLSearchParam<SearchParams>({
@@ -297,12 +300,7 @@ export function ProjectsPage() {
 
   // Derived values from searchParams
   const searchText = searchParams.query;
-  const stateFilter = useMemo(() => {
-    const val = getValueFromScopes(searchParams, "state");
-    if (val === "DELETED") return "DELETED" as const;
-    if (val === "ALL") return "ALL" as const;
-    return "ACTIVE" as const;
-  }, [searchParams]);
+  const stateFilter = getValueFromScopes(searchParams, "state");
   const selectedLabels = useMemo(
     () =>
       searchParams.scopes.filter((s) => s.id === "label").map((s) => s.value),
@@ -355,11 +353,7 @@ export function ProjectsPage() {
     [sortKey, sortOrder]
   );
 
-  const selectedState = useMemo(() => {
-    if (stateFilter === "DELETED") return State.DELETED;
-    if (stateFilter === "ALL") return undefined;
-    return State.ACTIVE;
-  }, [stateFilter]);
+  const selectedState = getResourceStateFilter(stateFilter);
 
   const fetchProjects = useCallback(
     async (isRefresh: boolean) => {
@@ -635,6 +629,7 @@ export function ProjectsPage() {
           loading={loading}
           showSelection={canDelete}
           showLabels
+          showState
           showActions
           renderActions={(project) => (
             <ProjectActionDropdown

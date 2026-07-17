@@ -112,7 +112,7 @@ describe("InstanceActionDropdown", () => {
     act(() => menu.root.unmount());
   });
 
-  test("opens the archived instance list after archiving", async () => {
+  test("opens the default instance list after archiving", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     mocks.archiveInstance.mockResolvedValue(undefined);
     const menu = await renderMenu(State.ACTIVE);
@@ -128,7 +128,6 @@ describe("InstanceActionDropdown", () => {
     expect(mocks.archiveInstance).toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.instance",
-      query: { q: "state:DELETED" },
     });
 
     confirmSpy.mockRestore();

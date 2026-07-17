@@ -943,6 +943,8 @@
     "connecting-database-to-project": "データベースを接続中...",
     "connection-info": "接続情報",
     "connection-options": "接続オプション",
+    "delete-active-confirmation": "インスタンス「{{name}}」はアクティブです。Bytebase はまずアーカイブしてから完全に削除します。この操作は元に戻せません。確認するにはインスタンス ID「{{id}}」を入力してください。",
+    "delete-confirmation": "インスタンス「{{name}}」を完全に削除します。この操作は元に戻せません。確認するにはインスタンス ID「{{id}}」を入力してください。",
     "connection-recovery": {
       "auth": {
         "description": "ユーザー名、パスワード、トークン、または IAM 認証設定を確認してから、もう一度接続をテストしてください。",

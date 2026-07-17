@@ -53,6 +53,8 @@ export interface ProjectTableProps {
   readonly showSelection?: boolean;
   /** Mirrors Vue's `:show-labels`. Defaults to true. */
   readonly showLabels?: boolean;
+  /** Adds a dedicated state column. */
+  readonly showState?: boolean;
   /**
    * Mirrors Vue's `:show-actions`. When set, the trailing column renders
    * `renderActions(project)` (typically the project action dropdown).
@@ -97,6 +99,7 @@ export function ProjectTable({
   emptyContent,
   showSelection = false,
   showLabels = true,
+  showState = false,
   showActions = false,
   renderActions,
   selectedProjectNames = [],
@@ -131,6 +134,7 @@ export function ProjectTable({
     1 + // id
     1 + // title
     (showLabels ? 1 : 0) +
+    (showState ? 1 : 0) +
     (showActions ? 1 : 0);
 
   // Use refs so per-row handlers stay stable across selection changes.
@@ -213,6 +217,9 @@ export function ProjectTable({
               {t("common.labels")}
             </TableHead>
           ) : null}
+          {showState ? (
+            <TableHead className="min-w-[120px]">{t("common.state")}</TableHead>
+          ) : null}
           {showActions ? <TableHead className="w-[50px]" /> : null}
         </TableRow>
       </TableHeader>
@@ -248,6 +255,7 @@ export function ProjectTable({
               showSelection={showSelection}
               showLeadingCheck={showLeadingCheck}
               showLabels={showLabels}
+              showState={showState}
               showActions={showActions}
               keyword={keyword}
               onToggleRow={handleToggleRow}
@@ -268,6 +276,7 @@ interface ProjectRowViewProps {
   showSelection: boolean;
   showLeadingCheck: boolean;
   showLabels: boolean;
+  showState: boolean;
   showActions: boolean;
   keyword: string;
   onToggleRow: (name: string) => void;
@@ -282,6 +291,7 @@ const ProjectRowView = memo(function ProjectRowView({
   showSelection,
   showLeadingCheck,
   showLabels,
+  showState,
   showActions,
   keyword,
   onToggleRow,
@@ -342,7 +352,7 @@ const ProjectRowView = memo(function ProjectRowView({
           >
             {titleContent}
           </ProjectLabel>
-          {project.state === State.DELETED ? (
+          {!showState && project.state === State.DELETED ? (
             <Badge variant="warning" className="text-xs shrink-0">
               {t("common.archived")}
             </Badge>
@@ -354,6 +364,11 @@ const ProjectRowView = memo(function ProjectRowView({
           <LabelsCell labels={project.labels ?? {}} />
         </TableCell>
       ) : null}
+      {showState ? (
+        <TableCell>
+          <ResourceStateBadge state={project.state} />
+        </TableCell>
+      ) : null}
       {showActions ? (
         <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-end">{renderActions(project)}</div>
@@ -362,6 +377,22 @@ const ProjectRowView = memo(function ProjectRowView({
     </TableRow>
   );
 });
+
+function ResourceStateBadge({ state }: { state: State }) {
+  const { t } = useTranslation();
+  if (state === State.DELETED) {
+    return (
+      <Badge variant="warning" className="text-xs">
+        {t("common.archived")}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="success" className="text-xs">
+      {t("common.active")}
+    </Badge>
+  );
+}
 
 /**
  * Mirrors Vue's `LabelsCell` — show up to N labels inline, "..." for
