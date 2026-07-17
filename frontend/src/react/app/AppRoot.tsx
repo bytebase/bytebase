@@ -2,8 +2,8 @@ import {
   createBrowserRouter,
   type LoaderFunctionArgs,
   matchRoutes,
-  RouterProvider,
-} from "react-router-dom";
+} from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { rootGuard } from "@/react/router/guard";
 import { setAppRouter, setRouteNameIndex } from "@/react/router/navigation";
 import { buildRouteNameIndex, routes } from "@/react/router/routes";

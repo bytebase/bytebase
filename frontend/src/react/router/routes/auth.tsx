@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router-dom";
+import type { RouteObject } from "react-router";
 import { SplashLayout } from "@/react/app/layouts/SplashLayout";
 import {
   AUTH_2FA_SETUP_MODULE,

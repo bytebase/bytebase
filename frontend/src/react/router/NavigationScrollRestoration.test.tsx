@@ -1,10 +1,7 @@
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  createMemoryRouter,
-  Outlet,
-  RouterProvider,
-} from "react-router-dom";
+import { createMemoryRouter, Outlet } from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { setAppRouter } from "./navigation";
 import {

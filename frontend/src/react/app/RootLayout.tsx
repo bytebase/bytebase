@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import type { Location } from "react-router-dom";
-import { matchRoutes, Outlet, useBlocker } from "react-router-dom";
+import type { Location } from "react-router";
+import { matchRoutes, Outlet, useBlocker } from "react-router";
 import { AuthGate } from "@/react/app/AuthGate";
 import { SessionExpiredSurfaceGate } from "@/react/app/SessionExpiredSurfaceGate";
 import { Toaster } from "@/react/components/ui/toaster";

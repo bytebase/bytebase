@@ -1,4 +1,4 @@
-import { matchRoutes } from "react-router-dom";
+import { matchRoutes, RouterContextProvider } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // Configurable fake session, controlled per test.
@@ -89,7 +89,7 @@ async function runCatchAllLoader(path: string): Promise<Response> {
     url,
     pattern: "*",
     params: {},
-    context: {},
+    context: new RouterContextProvider(),
   }) as Response | Promise<Response>;
 }
 

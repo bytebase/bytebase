@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { type LoaderFunctionArgs, redirect } from "react-router-dom";
+import { type LoaderFunctionArgs, redirect } from "react-router";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { shouldStayOnPlanDetailPage } from "@/react/pages/project/plan-detail/utils/header";
 import { issueNamePrefix, projectNamePrefix } from "@/store/modules/v1/common";

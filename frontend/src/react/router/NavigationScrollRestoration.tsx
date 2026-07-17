@@ -9,11 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type Location,
-  useLocation,
-  useNavigationType,
-} from "react-router-dom";
+import { type Location, useLocation, useNavigationType } from "react-router";
 import type { PagedDataResult } from "@/react/hooks/usePagedData";
 import { getAppRouterState, subscribeRoute } from "@/react/router/navigation";
 import { minmax } from "@/utils/math";
