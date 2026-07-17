@@ -466,7 +466,7 @@ export function PlanDetailHeader() {
           issueServiceClientConnect.createIssue(request),
         createPlan: (request) => planServiceClientConnect.createPlan(request),
         creator: `users/${currentUser.email}`,
-        labels: selectedLabels,
+        labels: page.creationIssueLabels,
         parent: project.name,
         plan: page.plan,
       });
@@ -657,8 +657,9 @@ export function PlanDetailHeader() {
                   issueLabels={project.issueLabels ?? []}
                   onCancel={() => setShowCreatePopover(false)}
                   onConfirm={() => void handleCreatePlan()}
-                  onSelectedLabelsChange={setSelectedLabels}
-                  selectedLabels={selectedLabels}
+                  onSelectedLabelsChange={page.setCreationIssueLabels}
+                  selectedLabels={page.creationIssueLabels}
+                  showIssueLabels={false}
                   warning={
                     canUpdateIssue
                       ? undefined
@@ -755,6 +756,7 @@ function ReadyForReviewPopoverContent({
   onConfirm,
   onSelectedLabelsChange,
   selectedLabels,
+  showIssueLabels = true,
   showChecksWarning,
   submitting,
   warning,
@@ -768,6 +770,7 @@ function ReadyForReviewPopoverContent({
   onConfirm: () => void;
   onSelectedLabelsChange: (labels: string[]) => void;
   selectedLabels: string[];
+  showIssueLabels?: boolean;
   showChecksWarning: boolean;
   submitting: boolean;
   warning?: string;
@@ -780,12 +783,14 @@ function ReadyForReviewPopoverContent({
       {showChecksWarning && (
         <Alert variant="warning" description={t("issue.checks-warning-hint")} />
       )}
-      <IssueLabelSelect
-        labels={issueLabels}
-        onChange={onSelectedLabelsChange}
-        required={forceIssueLabels}
-        selected={selectedLabels}
-      />
+      {showIssueLabels && (
+        <IssueLabelSelect
+          labels={issueLabels}
+          onChange={onSelectedLabelsChange}
+          required={forceIssueLabels}
+          selected={selectedLabels}
+        />
+      )}
       {showChecksWarning && (
         <label className="flex items-center gap-x-2 text-sm text-control">
           <Checkbox

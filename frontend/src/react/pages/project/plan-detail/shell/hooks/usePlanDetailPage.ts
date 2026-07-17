@@ -187,6 +187,7 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
+  const [creationIssueLabels, setCreationIssueLabels] = useState<string[]>([]);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
@@ -204,6 +205,9 @@ export const usePlanDetailPage = ({
   const routeTaskId = route.taskId;
   const setActivePhases = phase.setActivePhases;
   const pageIdentityKey = `${projectId}/${planId}`;
+  useEffect(() => {
+    setCreationIssueLabels([]);
+  }, [pageIdentityKey]);
   const phaseSelectionRef = useRef<PhaseSelection>({});
   phaseSelectionRef.current = {
     routePhase,
@@ -459,6 +463,8 @@ export const usePlanDetailPage = ({
 
   return useDerivedPlanState({
     snapshot,
+    creationIssueLabels,
+    setCreationIssueLabels,
     isEditing,
     isRunningChecks,
     setIsRunningChecks,

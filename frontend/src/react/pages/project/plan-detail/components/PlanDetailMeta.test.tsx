@@ -10,10 +10,12 @@ import type { PlanDetailPageState } from "../shell/hooks/types";
 import { PlanDetailMeta } from "./PlanDetailMeta";
 
 const mocks = vi.hoisted(() => ({
+  creationIssueLabels: [] as string[],
   page: undefined as unknown as PlanDetailPageState,
   patchState: vi.fn(),
   permissions: new Set<string>(),
   pushNotification: vi.fn(),
+  setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
 }));
 
@@ -110,6 +112,7 @@ vi.mock("../shell/PlanDetailContext", () => ({
 
 const makePage = (): PlanDetailPageState =>
   ({
+    creationIssueLabels: mocks.creationIssueLabels,
     isCreating: false,
     issue: {
       draft: true,
@@ -126,13 +129,35 @@ const makePage = (): PlanDetailPageState =>
       issueLabels: [{ value: "alpha" }, { value: "beta" }],
       name: "projects/p1",
     },
+    setCreationIssueLabels: mocks.setCreationIssueLabels,
   }) as unknown as PlanDetailPageState;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.creationIssueLabels = [];
   mocks.page = makePage();
   mocks.permissions = new Set();
   mocks.updateIssue.mockImplementation(async (request) => request.issue);
+});
+
+test("edits Issue labels directly on the preview creation page", () => {
+  mocks.creationIssueLabels = ["alpha"];
+  mocks.page = {
+    ...makePage(),
+    isCreating: true,
+    issue: undefined,
+  };
+
+  render(<PlanDetailMeta />);
+
+  expect(screen.getByRole("button", { name: /alpha/ })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /alpha/ }));
+  fireEvent.click(screen.getByRole("button", { name: "beta" }));
+
+  expect(mocks.setCreationIssueLabels).toHaveBeenCalledWith([
+    "alpha",
+    "beta",
+  ]);
 });
 
 test("keeps draft labels read-only without issues.update and editable with it", async () => {

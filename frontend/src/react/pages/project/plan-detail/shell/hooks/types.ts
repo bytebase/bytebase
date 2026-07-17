@@ -33,6 +33,8 @@ export interface PlanDetailPageSnapshot {
 }
 
 export interface PlanDetailPageState extends PlanDetailPageSnapshot {
+  creationIssueLabels: string[];
+  setCreationIssueLabels: (labels: string[]) => void;
   isEditing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;

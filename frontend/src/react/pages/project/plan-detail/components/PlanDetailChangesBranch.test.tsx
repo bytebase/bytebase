@@ -556,6 +556,7 @@ function buildPageState(): PlanDetailPageState {
   return {
     activePhases: new Set(["changes"]),
     bypassLeaveGuardOnce: vi.fn(),
+    creationIssueLabels: [],
     currentUser: {
       name: "users/me@example.com",
     } as PlanDetailPageState["currentUser"],
@@ -602,6 +603,7 @@ function buildPageState(): PlanDetailPageState {
     routeName: undefined,
     routePhase: "changes",
     selectedTaskName: undefined,
+    setCreationIssueLabels: vi.fn(),
     setEditing: vi.fn(),
     setIsRunningChecks: vi.fn(),
     taskRuns: [],

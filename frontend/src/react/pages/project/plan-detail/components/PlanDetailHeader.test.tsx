@@ -16,6 +16,7 @@ import { PlanDetailHeaderDetails } from "./PlanDetailHeaderDetails";
 
 const mocks = vi.hoisted(() => ({
   batchUpdateIssuesStatus: vi.fn(),
+  creationIssueLabels: [] as string[],
   createIssue: vi.fn(),
   createPlan: vi.fn(),
   lifecycle: { kind: "none" } as { kind: string },
@@ -24,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   permissions: new Set<string>(),
   pushNotification: vi.fn(),
   replaceRoute: vi.fn(),
+  setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
   updatePlan: vi.fn(),
 }));
@@ -262,6 +264,7 @@ const makePage = ({
   ({
     activePhases: new Set(),
     bypassLeaveGuardOnce: vi.fn(),
+    creationIssueLabels: mocks.creationIssueLabels,
     currentUser: { email: "reviewer@example.com", name: "users/reviewer" },
     expandPhase: vi.fn(),
     isCreating: creating,
@@ -310,6 +313,7 @@ const makePage = ({
     refreshState: vi.fn(async () => undefined),
     resolveLeaveConfirm: vi.fn(),
     rollout: undefined,
+    setCreationIssueLabels: mocks.setCreationIssueLabels,
     setEditing: vi.fn(),
     setIsRunningChecks: vi.fn(),
     taskRuns: [],
@@ -319,6 +323,7 @@ const makePage = ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.creationIssueLabels = [];
   mocks.permissions = new Set(["bb.plans.update"]);
   mocks.lifecycle = { kind: "none" };
   mocks.page = makePage();
@@ -669,6 +674,39 @@ describe("PlanDetailHeader draft ownership", () => {
     expect(
       screen.getByRole("button", { name: "common.confirm" })
     ).toBeEnabled();
+  });
+
+  test("creates the draft Issue with labels selected on the preview page", async () => {
+    mocks.creationIssueLabels = ["preview-label"];
+    mocks.permissions = new Set([
+      "bb.plans.create",
+      "bb.issues.create",
+      "bb.issues.update",
+    ]);
+    mocks.lifecycle = { kind: "create" };
+    mocks.page = makePage({ creating: true });
+    mocks.createPlan.mockResolvedValue({
+      ...mocks.page.plan,
+      name: "projects/p1/plans/123",
+    });
+    mocks.createIssue.mockResolvedValue({
+      draft: true,
+      labels: ["preview-label"],
+      name: "projects/p1/issues/456",
+      plan: "projects/p1/plans/123",
+    });
+
+    render(<PlanDetailHeader />);
+
+    fireEvent.click(screen.getByRole("button", { name: "common.create" }));
+    fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+    await waitFor(() => expect(mocks.createIssue).toHaveBeenCalledOnce());
+    expect(mocks.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        issue: expect.objectContaining({ labels: ["preview-label"] }),
+      })
+    );
   });
 });
 

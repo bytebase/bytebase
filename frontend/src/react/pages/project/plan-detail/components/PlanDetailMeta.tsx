@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Popover,
@@ -54,7 +55,19 @@ export function PlanDetailMeta() {
   }, [page.issue, project]);
 
   if (page.isCreating) {
-    return null;
+    if ((project?.issueLabels.length ?? 0) === 0) {
+      return null;
+    }
+    return (
+      <div className="mt-2 max-w-xl">
+        <IssueLabelSelect
+          labels={project.issueLabels}
+          selected={page.creationIssueLabels}
+          required={false}
+          onChange={page.setCreationIssueLabels}
+        />
+      </div>
+    );
   }
 
   const handleLabelsUpdate = async (labels: string[]) => {
