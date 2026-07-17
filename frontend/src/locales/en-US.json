@@ -943,8 +943,6 @@
     "connecting-database-to-project": "Connecting database...",
     "connection-info": "Connection info",
     "connection-options": "Connection Options",
-    "delete-active-confirmation": "Instance \"{{name}}\" is active. Bytebase will archive it first, then permanently delete it. This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
-    "delete-confirmation": "This will permanently delete instance \"{{name}}\". This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
     "connection-recovery": {
       "auth": {
         "description": "Verify the username, password, token, or IAM authentication settings, then test the connection again.",
@@ -1014,6 +1012,8 @@
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",
     "default-role": "Default role",
+    "delete-active-confirmation": "Instance \"{{name}}\" is active. Bytebase will archive it first, then permanently delete it. This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
+    "delete-confirmation": "This will permanently delete instance \"{{name}}\". This action cannot be undone. Type the instance ID \"{{id}}\" to confirm.",
     "endpoint": "Endpoint",
     "external-id": "External ID",
     "external-id-description": "External ID for additional security when assuming role (optional)",

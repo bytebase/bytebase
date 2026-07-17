@@ -943,8 +943,6 @@
     "connecting-database-to-project": "正在连接数据库...",
     "connection-info": "连接信息",
     "connection-options": "连接选项",
-    "delete-active-confirmation": "实例“{{name}}”当前处于活动状态。Bytebase 将先归档该实例，然后永久删除它。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
-    "delete-confirmation": "这将永久删除实例“{{name}}”。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
     "connection-recovery": {
       "auth": {
         "description": "请检查用户名、密码、令牌或 IAM 认证配置，然后重新测试连接。",
@@ -1014,6 +1012,8 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",
     "default-role": "默认角色",
+    "delete-active-confirmation": "实例“{{name}}”当前处于活动状态。Bytebase 将先归档该实例，然后永久删除它。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
+    "delete-confirmation": "这将永久删除实例“{{name}}”。此操作无法撤销。请输入实例 ID “{{id}}” 以确认。",
     "endpoint": "端点",
     "external-id": "外部 ID",
     "external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",
