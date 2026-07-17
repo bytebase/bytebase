@@ -168,7 +168,7 @@ test("edits Issue labels directly on the preview creation page", () => {
   ]);
 });
 
-test("warns when required Issue labels are missing during creation", () => {
+test("does not warn about missing Issue labels during creation", () => {
   const page = makePage();
   mocks.page = {
     ...page,
@@ -182,9 +182,7 @@ test("warns when required Issue labels are missing during creation", () => {
 
   render(<PlanDetailMeta />);
 
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "plan.labels-required-for-review"
-  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
 test("keeps draft labels read-only without issues.update and editable with it", async () => {

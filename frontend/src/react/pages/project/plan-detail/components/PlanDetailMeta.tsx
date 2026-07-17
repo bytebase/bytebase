@@ -61,7 +61,6 @@ export function PlanDetailMeta() {
           issueLabels={project?.issueLabels ?? []}
           labels={page.creationIssueLabels}
           onUpdate={page.setCreationIssueLabels}
-          required={project?.forceIssueLabels === true}
         />
       </div>
     );
@@ -124,13 +123,11 @@ function InlineLabels({
   issueLabels,
   labels,
   onUpdate,
-  required = false,
 }: {
   allowChange: boolean;
   issueLabels: Array<{ color?: Color; value: string }>;
   labels: string[];
   onUpdate: (labels: string[]) => Promise<void> | void;
-  required?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -185,7 +182,6 @@ function InlineLabels({
   });
 
   const triggerDisabled = !allowChange || isUpdating;
-  const missingRequiredLabels = required && labels.length === 0;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -194,14 +190,11 @@ function InlineLabels({
         <PopoverTrigger
           render={
             <button
-              aria-invalid={missingRequiredLabels}
               className={cn(
                 "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
                 allowChange &&
                   !isUpdating &&
                   "hover:border-control hover:text-control",
-                missingRequiredLabels &&
-                  "border-error text-error hover:border-error hover:text-error",
                 triggerDisabled && "cursor-not-allowed opacity-60"
               )}
               disabled={triggerDisabled}
@@ -252,11 +245,6 @@ function InlineLabels({
           </div>
         </PopoverContent>
       </Popover>
-      {missingRequiredLabels && (
-        <span className="ml-1 text-error" role="alert">
-          {t("plan.labels-required-for-review")}
-        </span>
-      )}
     </div>
   );
 }
