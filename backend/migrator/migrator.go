@@ -38,6 +38,7 @@ type GoMigrationFunc func(ctx context.Context, conn *sql.Conn) error
 // - Operations that benefit from programmatic control
 var goMigrations = map[string]GoMigrationFunc{
 	"3.13.21": migrate3_13_21,
+	"3.21.1":  migrate3_21_1,
 }
 
 // MigrateSchema migrates the schema for metadata database.

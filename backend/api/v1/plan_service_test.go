@@ -16,32 +16,66 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestPlanServiceListPlansHidesIssueLessDatabaseDrafts(t *testing.T) {
+func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
 
-	changeDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID: "project-a",
-		Name:      "change draft",
-		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: "change",
+	createPlan := func(name string, config *storepb.PlanConfig) *store.PlanMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "project-a",
+			Name:      name,
+			Config:    config,
+		}, "creator@example.com")
+		require.NoError(t, err)
+		return plan
+	}
+	changeConfig := func(id, release string) *storepb.PlanConfig {
+		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: id,
 			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
 			},
-		}}},
-	}, "creator@example.com")
-	require.NoError(t, err)
-	createDraft, err := stores.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID: "project-a",
-		Name:      "create draft",
-		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: "create",
+		}}}
+	}
+	createConfig := func(id string) *storepb.PlanConfig {
+		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: id,
 			Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
 				CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
 			},
-		}}},
-	}, "creator@example.com")
+		}}}
+	}
+
+	createPlan("malformed change", changeConfig("malformed-change", ""))
+	createPlan("malformed create", createConfig("malformed-create"))
+	createPlan("malformed mixed", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{
+		createConfig("mixed-create").Specs[0],
+		changeConfig("mixed-change", "").Specs[0],
+	}})
+	oldMalformed := createPlan("old malformed", changeConfig("old", ""))
+	_, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE plan SET created_at = CURRENT_TIMESTAMP - INTERVAL '31 days'
+		WHERE project = $1 AND id = $2`, oldMalformed.ProjectID, oldMalformed.UID)
+	require.NoError(t, err)
+	gitOps := createPlan("GitOps", changeConfig("gitops", "projects/project-a/releases/release-a"))
+	export := createPlan("export", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+		Id: "export",
+		Config: &storepb.PlanConfig_Spec_ExportDataConfig{
+			ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{},
+		},
+	}}})
+	deleted := createPlan("deleted", changeConfig("deleted", ""))
+	_, err = stores.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID: deleted.UID, ProjectID: deleted.ProjectID, Deleted: new(true),
+	})
+	require.NoError(t, err)
+	linked := createPlan("linked", changeConfig("linked", ""))
+	_, err = stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID: linked.ProjectID, CreatorEmail: "creator@example.com", PlanUID: &linked.UID,
+		Title: "linked issue", Type: storepb.Issue_DATABASE_CHANGE, Payload: &storepb.Issue{},
+	})
 	require.NoError(t, err)
 
 	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
@@ -53,14 +87,13 @@ func TestPlanServiceListPlansHidesIssueLessDatabaseDrafts(t *testing.T) {
 	for _, plan := range response.Msg.Plans {
 		got = append(got, plan.Title)
 	}
-	require.Empty(t, got)
-	for _, plan := range []*store.PlanMessage{changeDraft, createDraft} {
-		gotPlan, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
-			Name: fmt.Sprintf("projects/project-a/plans/%d", plan.UID),
-		}))
-		require.NoError(t, err)
-		require.Equal(t, plan.Name, gotPlan.Msg.Title)
-	}
+	require.ElementsMatch(t, []string{gitOps.Name, export.Name, deleted.Name, linked.Name}, got)
+
+	gotMalformed, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
+		Name: fmt.Sprintf("projects/project-a/plans/%d", oldMalformed.UID),
+	}))
+	require.NoError(t, err)
+	require.Equal(t, oldMalformed.Name, gotMalformed.Msg.Title)
 }
 
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
