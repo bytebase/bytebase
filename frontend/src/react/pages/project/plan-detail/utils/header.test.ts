@@ -86,6 +86,24 @@ describe("plan detail header create issue helpers", () => {
     );
   });
 
+  test("blocks issue creation while plan checks are queued", () => {
+    const project = {
+      enforceSqlReview: false,
+      forceIssueLabels: false,
+    } as Project;
+
+    expect(
+      getCreateIssueBlockingErrors({
+        emptySpecCount: 0,
+        plan: makePlan(["changeDatabaseConfig"], { AVAILABLE: 1 }),
+        project,
+        t,
+      })
+    ).toContain(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+    );
+  });
+
   test("blocks data export issue creation", () => {
     const project = {
       enforceSqlReview: false,

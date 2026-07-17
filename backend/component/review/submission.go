@@ -383,8 +383,7 @@ func validatePlanCheckRun(project *store.ProjectMessage, plan *store.PlanMessage
 		if result.GetStatus() != storepb.Advice_ERROR {
 			continue
 		}
-		if project.Setting.GetRequirePlanCheckNoError() ||
-			(project.Setting.GetEnforceSqlReview() && result.GetType() == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE) {
+		if project.Setting.GetEnforceSqlReview() && result.GetType() == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE {
 			return workflowError(ErrorFailedPrecondition, "Plan checks did not pass")
 		}
 	}

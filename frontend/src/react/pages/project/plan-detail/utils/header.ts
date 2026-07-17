@@ -156,7 +156,7 @@ export const getCreateIssueBlockingErrors = ({
   if (plan.specs.some((spec) => spec.config?.case === "exportDataConfig")) {
     errors.push(t("issue.data-export.creation-not-supported"));
   }
-  if ((statusCount.RUNNING ?? 0) > 0) {
+  if ((statusCount.AVAILABLE ?? 0) > 0 || (statusCount.RUNNING ?? 0) > 0) {
     errors.push(
       t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"

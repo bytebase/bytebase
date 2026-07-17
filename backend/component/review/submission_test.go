@@ -107,6 +107,35 @@ func TestSubmitIssueRejectsStateChangedAfterProposal(t *testing.T) {
 	}
 }
 
+func TestSubmitIssueAllowsPlanCheckErrorsRequiredOnlyForRollout(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		Workspace: "default", ResourceID: "project-a",
+		Setting: &storepb.Project{
+			RequirePlanCheckNoError: true,
+			EnforceSqlReview:        false,
+		},
+	}))
+	plan, issue := createReadyDraft(ctx, t, stores, false)
+	run, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
+	require.NoError(t, err)
+	require.NoError(t, stores.UpdatePlanCheckRun(ctx, "project-a", store.PlanCheckRunStatusDone, &storepb.PlanCheckRunResult{
+		ApprovalInputVersion: plan.Config.GetApprovalInputVersion(),
+		Results: []*storepb.PlanCheckRunResult_Result{{
+			Status: storepb.Advice_ERROR,
+			Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE,
+		}},
+	}, run.UID))
+
+	result, err := NewWorkflow(stores).SubmitIssue(ctx, SubmitIssueInput{
+		Workspace: "default", ProjectID: "project-a", IssueUID: issue.UID,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Submitted)
+	require.False(t, result.Issue.Payload.GetDraft())
+}
+
 func TestConcurrentSubmitIssueEmitsEffectsOnce(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
