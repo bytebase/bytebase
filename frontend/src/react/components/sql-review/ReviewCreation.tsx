@@ -449,7 +449,9 @@ export function ReviewCreation({
             <RulesSelectPanel
               show={showRuleSelectPanel}
               selectedRuleMap={ruleMapByEngine}
+              selectedEngine={focusedEngine}
               onClose={() => setShowRuleSelectPanel(false)}
+              onSelectedEngineChange={setFocusedEngine}
               onRuleSelect={(rule) => upsertRule(rule, {})}
               onRuleRemove={removeRule}
             />

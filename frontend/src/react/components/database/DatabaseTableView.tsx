@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentBadge } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
+import { ProjectLabel } from "@/react/components/ProjectLabel";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
@@ -36,8 +37,6 @@ import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
-  extractProjectResourceName,
-  getDatabaseProject,
   getInstanceResource,
   hostPortOfInstanceV1,
 } from "@/utils";
@@ -256,9 +255,11 @@ export function DatabaseTableView({
         sortable: true,
         sortKey: "project",
         render: (db) => (
-          <span className="truncate">
-            {extractProjectResourceName(getDatabaseProject(db).name)}
-          </span>
+          <ProjectLabel
+            projectName={db.project}
+            className="truncate"
+            link={true}
+          />
         ),
       });
     } else {

@@ -91,7 +91,10 @@ beforeEach(async () => {
     tags: { protected: "protected" },
   });
   mocks.usePlanFeature.mockReturnValue(true);
-  mocks.useProjectByName.mockReturnValue({ title: "Sample project" });
+  mocks.useProjectByName.mockReturnValue({
+    name: "projects/sample",
+    title: "Sample project",
+  });
   ({ ResourceLink } = await import("./ResourceLink"));
 });
 

@@ -122,6 +122,28 @@ beforeEach(async () => {
 });
 
 describe("RulesSelectPanel", () => {
+  test("uses the provided selected engine for the rule tabs", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RulesSelectPanel
+        show
+        selectedRuleMap={new Map()}
+        selectedEngine={Engine.POSTGRES}
+        onClose={vi.fn()}
+        onRuleSelect={vi.fn()}
+        onRuleRemove={vi.fn()}
+      />
+    );
+
+    render();
+
+    const postgresTab = [...container.querySelectorAll('[role="tab"]')].find(
+      (tab) => tab.textContent?.includes("PostgreSQL")
+    );
+    expect(postgresTab?.getAttribute("aria-selected")).toBe("true");
+
+    unmount();
+  });
+
   test("renders the first rule choices without blocking on the full list", () => {
     const { container, render, unmount } = renderIntoContainer(
       <RulesSelectPanel

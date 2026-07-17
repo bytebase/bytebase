@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   inputOnChange: vi.fn(),
   resourceIdOnChange: vi.fn(),
   ruleTableProps: [] as unknown[],
+  rulesSelectPanelProps: [] as unknown[],
+  tabsByEngineProps: [] as unknown[],
 }));
 
 let ReviewCreation: typeof import("./ReviewCreation").ReviewCreation;
@@ -124,19 +126,23 @@ vi.mock("./TemplateSelector", () => ({
 }));
 
 vi.mock("./TabsByEngine", () => ({
-  TabsByEngine: ({
-    ruleMapByEngine,
-    children,
-  }: {
+  TabsByEngine: (props: {
     ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
     children: (ruleList: RuleTemplateV2[], engine: Engine) => React.ReactNode;
-  }) => (
-    <div data-testid="tabs-by-engine">
-      {[...ruleMapByEngine.entries()].map(([engine, ruleMap]) => (
-        <div key={engine}>{children([...ruleMap.values()], engine)}</div>
-      ))}
-    </div>
-  ),
+    selectedEngine?: Engine;
+    onSelectedEngineChange?: (engine: Engine) => void;
+  }) => {
+    mocks.tabsByEngineProps.push(props);
+    return (
+      <div data-testid="tabs-by-engine">
+        {[...props.ruleMapByEngine.entries()].map(([engine, ruleMap]) => (
+          <div key={engine}>
+            {props.children([...ruleMap.values()], engine)}
+          </div>
+        ))}
+      </div>
+    );
+  },
 }));
 
 vi.mock("./RuleTable", () => ({
@@ -147,7 +153,10 @@ vi.mock("./RuleTable", () => ({
 }));
 
 vi.mock("./Panels", () => ({
-  RulesSelectPanel: () => <div data-testid="rules-select-panel" />,
+  RulesSelectPanel: (props: unknown) => {
+    mocks.rulesSelectPanelProps.push(props);
+    return <div data-testid="rules-select-panel" />;
+  },
 }));
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -170,6 +179,8 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.ruleTableProps = [];
+  mocks.rulesSelectPanelProps = [];
+  mocks.tabsByEngineProps = [];
   ({ ReviewCreation } = await import("./ReviewCreation"));
 });
 
@@ -314,6 +325,51 @@ describe("ReviewCreation", () => {
       `${Engine.MYSQL}:${SQLReviewRule_Type.TABLE_DISALLOW_DDL}`
     );
     expect(lastRuleTableProps.focusRuleSignal).toBeGreaterThan(0);
+
+    unmount();
+  });
+
+  test("opens the rule selection panel on the selected engine", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewCreation selectedRuleList={[]} selectedResources={[]} />
+    );
+
+    render();
+
+    act(() => {
+      mocks.resourceIdOnChange("custom-policy");
+    });
+    const nextButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.next"
+    );
+    expect(nextButton).toBeTruthy();
+
+    act(() => {
+      nextButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const mainTabsProps = mocks.tabsByEngineProps.at(-1) as {
+      onSelectedEngineChange?: (engine: Engine) => void;
+    };
+    expect(mainTabsProps.onSelectedEngineChange).toBeTruthy();
+
+    act(() => {
+      mainTabsProps.onSelectedEngineChange?.(Engine.POSTGRES);
+    });
+
+    const addRulesButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "sql-review.add-or-remove-rules"
+    );
+    expect(addRulesButton).toBeTruthy();
+
+    act(() => {
+      addRulesButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const panelProps = mocks.rulesSelectPanelProps.at(-1) as {
+      selectedEngine?: Engine;
+    };
+    expect(panelProps.selectedEngine).toBe(Engine.POSTGRES);
 
     unmount();
   });
