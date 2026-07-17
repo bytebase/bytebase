@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Outlet, useLocation, useMatches } from "react-router-dom";
+import { Outlet, useLocation, useMatches } from "react-router";
 import { DashboardBodyShell } from "@/react/components/DashboardBodyShell";
 import { DashboardSidebar } from "@/react/components/DashboardSidebar";
 import { ProjectSidebar } from "@/react/components/ProjectSidebar";

@@ -9,7 +9,7 @@ const storeState = vi.hoisted(() => ({
   isTrialing: false,
 }));
 
-vi.mock("react-router-dom", () => ({
+vi.mock("react-router", () => ({
   Outlet: () => <div data-testid="auth-page" />,
   useMatches: () => [{ handle: { name: AUTH_SIGNIN_MODULE } }],
 }));

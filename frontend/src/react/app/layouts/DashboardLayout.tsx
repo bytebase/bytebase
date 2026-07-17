@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router";
 import { DashboardFrameShell } from "@/react/components/DashboardFrameShell";
 import type { DashboardFrameShellTargets } from "@/react/dashboard-shell";
 import { useEnsureWorkspaceCommonData } from "@/react/hooks/useEnsureWorkspaceCommonData";

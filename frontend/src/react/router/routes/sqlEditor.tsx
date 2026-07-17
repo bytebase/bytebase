@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Outlet, type RouteObject } from "react-router-dom";
+import { Outlet, type RouteObject } from "react-router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,

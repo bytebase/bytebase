@@ -3,7 +3,7 @@ import {
   useNavigate as useReactRouterNavigate,
   useMatches,
   useParams,
-} from "react-router-dom";
+} from "react-router";
 import type { Permission } from "@/types";
 import type {
   NavigationOptions,
