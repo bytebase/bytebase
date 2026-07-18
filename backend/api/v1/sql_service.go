@@ -1408,60 +1408,69 @@ func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryTy
 // SearchQueryHistories lists query histories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Request[v1pb.SearchQueryHistoriesRequest]) (*connect.Response[v1pb.SearchQueryHistoriesResponse], error) {
 	request := req.Msg
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	limitPlusOne := offset.limit + 1
-
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	find := &store.FindQueryHistoryMessage{
-		Creator: &user.Email,
-		Limit:   &limitPlusOne,
-		Offset:  &offset.offset,
-	}
 	filterQ, err := store.GetListQueryHistoryFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	find.FilterQ = filterQ
+
+	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, &store.FindQueryHistoryMessage{
+		Creator: &user.Email,
+		FilterQ: filterQ,
+	}, request.PageToken, request.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&v1pb.SearchQueryHistoriesResponse{
+		QueryHistories: histories,
+		NextPageToken:  nextPageToken,
+	}), nil
+}
+
+// paginatedQueryHistories applies pagination to find, fetches one extra row to
+// detect whether a next page exists, and converts the results to the v1 shape.
+func (s *SQLService) paginatedQueryHistories(ctx context.Context, find *store.FindQueryHistoryMessage, pageToken string, requestedPageSize int32) ([]*v1pb.QueryHistory, string, error) {
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   pageToken,
+		limit:   int(requestedPageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	limitPlusOne := offset.limit + 1
+	find.Limit = &limitPlusOne
+	find.Offset = &offset.offset
 
 	historyList, err := s.store.ListQueryHistories(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
+		return nil, "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
 	}
 
 	nextPageToken := ""
 	if len(historyList) == limitPlusOne {
 		historyList = historyList[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
+			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
-	resp := &v1pb.SearchQueryHistoriesResponse{
-		NextPageToken: nextPageToken,
-	}
+	var histories []*v1pb.QueryHistory
 	for _, history := range historyList {
 		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
+			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
 		}
 		if queryHistory == nil {
 			continue
 		}
-		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
+		histories = append(histories, queryHistory)
 	}
-
-	return connect.NewResponse(resp), nil
+	return histories, nextPageToken, nil
 }
 
 // ListQueryHistories lists query histories of all users in a project. The IAM
@@ -1483,54 +1492,22 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", request.Parent))
 	}
 
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	limitPlusOne := offset.limit + 1
-
 	creator, err := store.GetListQueryHistoriesCreatorFilter(request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	historyList, err := s.store.ListQueryHistories(ctx, &store.FindQueryHistoryMessage{
+	histories, nextPageToken, err := s.paginatedQueryHistories(ctx, &store.FindQueryHistoryMessage{
 		Project: &projectID,
 		Creator: creator,
-		Limit:   &limitPlusOne,
-		Offset:  &offset.offset,
-	})
+	}, request.PageToken, request.PageSize)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list history: %v", err.Error()))
+		return nil, err
 	}
-
-	nextPageToken := ""
-	if len(historyList) == limitPlusOne {
-		historyList = historyList[:offset.limit]
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
-		}
-	}
-
-	resp := &v1pb.ListQueryHistoriesResponse{
-		NextPageToken: nextPageToken,
-	}
-	for _, history := range historyList {
-		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
-		}
-		if queryHistory == nil {
-			continue
-		}
-		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
-	}
-
-	return connect.NewResponse(resp), nil
+	return connect.NewResponse(&v1pb.ListQueryHistoriesResponse{
+		QueryHistories: histories,
+		NextPageToken:  nextPageToken,
+	}), nil
 }
 
 // GetQueryHistory gets a single query history. The caller must be the creator
