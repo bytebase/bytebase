@@ -56,7 +56,6 @@ service SQLService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
   }
 
   // GetQueryHistory gets a single query history. The caller must be the
@@ -66,7 +65,6 @@ service SQLService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
   }
 
   // Exports query results to a file format.
