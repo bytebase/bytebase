@@ -1570,10 +1570,8 @@ export declare const SQLService: GenService<{
     output: typeof ListQueryHistoriesResponseSchema;
   },
   /**
-   * GetQueryHistory gets a single query history. The caller must be the
-   * creator of the query history or have the bb.queryHistories.list permission
-   * on the project.
-   * Permissions required: bb.queryHistories.list (only for non-creators)
+   * GetQueryHistory gets a single query history for the caller.
+   * Permissions required: None (only returns the caller's own query history)
    *
    * @generated from rpc bytebase.v1.SQLService.GetQueryHistory
    */

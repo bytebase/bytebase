@@ -47,10 +47,8 @@ type SQLServiceClient interface {
 	// ListQueryHistories lists query histories of all users in a project.
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.queryHistories.list permission
-	// on the project.
-	// Permissions required: bb.queryHistories.list (only for non-creators)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -172,10 +170,8 @@ type SQLServiceServer interface {
 	// ListQueryHistories lists query histories of all users in a project.
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error)
-	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.queryHistories.list permission
-	// on the project.
-	// Permissions required: bb.queryHistories.list (only for non-creators)
+	// GetQueryHistory gets a single query history for the caller.
+	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get

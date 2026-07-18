@@ -13,8 +13,7 @@ import (
 
 // TestListQueryHistories covers BYT-9892: ListQueryHistories exposes a
 // project's query histories across users, gated by bb.queryHistories.list on the
-// project, while SearchQueryHistories stays caller-scoped. GetQueryHistory
-// resolves for non-creators holding the same permission.
+// project, while SearchQueryHistories and GetQueryHistory stay caller-scoped.
 func TestListQueryHistories(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -174,12 +173,13 @@ func TestListQueryHistories(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	// GetQueryHistory now resolves for the non-creator.
-	getResp, err := ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
+	// GetQueryHistory stays creator-only: even with the grant, the
+	// non-creator cannot resolve an individual history.
+	_, err = ctl.sqlServiceClient.GetQueryHistory(ctx, connect.NewRequest(&v1pb.GetQueryHistoryRequest{
 		Name: historyName,
 	}))
-	a.NoError(err)
-	a.Equal(historyName, getResp.Msg.Name)
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
 	// SearchQueryHistories stays caller-scoped: the auditor sees nothing.
 	searchResp, err = ctl.sqlServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{}))

@@ -1510,8 +1510,8 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Reques
 	}), nil
 }
 
-// GetQueryHistory gets a single query history. The caller must be the creator
-// of the query history or have bb.queryHistories.list on the project.
+// GetQueryHistory gets a single query history. Query histories are private to
+// their creator, so only the creator may retrieve one.
 func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v1pb.GetQueryHistoryRequest]) (*connect.Response[v1pb.QueryHistory], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -1527,19 +1527,10 @@ func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query history: %v", err.Error()))
 	}
-	// Hide existence from project mismatches and unauthorized callers by
-	// returning the same not-found error for all cases.
-	if history == nil || history.Project != projectID {
+	// Hide existence from non-creators and project mismatches by returning the
+	// same not-found error for all three cases.
+	if history == nil || history.Project != projectID || history.Creator != user.Email {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
-	}
-	if history.Creator != user.Email {
-		ok, err := s.iamManager.CheckPermission(ctx, permission.QueryHistoriesList, user, common.GetWorkspaceIDFromContext(ctx), projectID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
-		}
-		if !ok {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
-		}
 	}
 
 	queryHistory, err := s.convertToV1QueryHistory(ctx, history)

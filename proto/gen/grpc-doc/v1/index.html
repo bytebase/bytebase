@@ -15177,10 +15177,8 @@ Permissions required: bb.queryHistories.list</p></td>
                 <td>GetQueryHistory</td>
                 <td><a href="#bytebase.v1.GetQueryHistoryRequest">GetQueryHistoryRequest</a></td>
                 <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
-                <td><p>GetQueryHistory gets a single query history. The caller must be the
-creator of the query history or have the bb.queryHistories.list permission
-on the project.
-Permissions required: bb.queryHistories.list (only for non-creators)</p></td>
+                <td><p>GetQueryHistory gets a single query history for the caller.
+Permissions required: None (only returns the caller&#39;s own query history)</p></td>
               </tr>
             
               <tr>

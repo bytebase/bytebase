@@ -58,10 +58,8 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // GetQueryHistory gets a single query history. The caller must be the
-  // creator of the query history or have the bb.queryHistories.list permission
-  // on the project.
-  // Permissions required: bb.queryHistories.list (only for non-creators)
+  // GetQueryHistory gets a single query history for the caller.
+  // Permissions required: None (only returns the caller's own query history)
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
