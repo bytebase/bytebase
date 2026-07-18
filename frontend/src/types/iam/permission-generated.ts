@@ -76,6 +76,7 @@ export type Permission =
   | "bb.projects.setIamPolicy"
   | "bb.projects.undelete"
   | "bb.projects.update"
+  | "bb.queryHistories.list"
   | "bb.releases.check"
   | "bb.releases.create"
   | "bb.releases.delete"

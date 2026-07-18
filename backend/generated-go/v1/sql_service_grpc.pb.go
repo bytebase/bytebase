@@ -45,12 +45,12 @@ type SQLServiceClient interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	// ListQueryHistories lists query histories of all users in a project.
-	// Permissions required: bb.auditLogs.search
+	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error)
 	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.auditLogs.search permission
+	// creator of the query history or have the bb.queryHistories.list permission
 	// on the project.
-	// Permissions required: bb.auditLogs.search (only for non-creators)
+	// Permissions required: bb.queryHistories.list (only for non-creators)
 	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -170,12 +170,12 @@ type SQLServiceServer interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	// ListQueryHistories lists query histories of all users in a project.
-	// Permissions required: bb.auditLogs.search
+	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error)
 	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.auditLogs.search permission
+	// creator of the query history or have the bb.queryHistories.list permission
 	// on the project.
-	// Permissions required: bb.auditLogs.search (only for non-creators)
+	// Permissions required: bb.queryHistories.list (only for non-creators)
 	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get

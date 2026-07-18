@@ -5572,9 +5572,9 @@ paths:
       summary: GetQueryHistory
       description: |-
         GetQueryHistory gets a single query history. The caller must be the
-         creator of the query history or have the bb.auditLogs.search permission
+         creator of the query history or have the bb.queryHistories.list permission
          on the project.
-         Permissions required: bb.auditLogs.search (only for non-creators)
+         Permissions required: bb.queryHistories.list (only for non-creators)
       operationId: bytebase.v1.SQLService.GetQueryHistory
       parameters:
         - name: Connect-Protocol-Version
@@ -5612,7 +5612,7 @@ paths:
       summary: ListQueryHistories
       description: |-
         ListQueryHistories lists query histories of all users in a project.
-         Permissions required: bb.auditLogs.search
+         Permissions required: bb.queryHistories.list
       operationId: bytebase.v1.SQLService.ListQueryHistories
       parameters:
         - name: Connect-Protocol-Version

@@ -12,7 +12,7 @@ import (
 )
 
 // TestListQueryHistories covers BYT-9892: ListQueryHistories exposes a
-// project's query histories across users, gated by bb.auditLogs.search on the
+// project's query histories across users, gated by bb.queryHistories.list on the
 // project, while SearchQueryHistories stays caller-scoped. GetQueryHistory
 // resolves for non-creators holding the same permission.
 func TestListQueryHistories(t *testing.T) {
@@ -97,7 +97,7 @@ func TestListQueryHistories(t *testing.T) {
 	a.NoError(err)
 	auditorToken := loginResp.Msg.Token
 
-	// 4. Without bb.auditLogs.search: List is denied, Get hides existence.
+	// 4. Without bb.queryHistories.list: List is denied, Get hides existence.
 	ctl.authInterceptor.token = auditorToken
 
 	_, err = ctl.sqlServiceClient.ListQueryHistories(ctx, connect.NewRequest(&v1pb.ListQueryHistoriesRequest{
@@ -112,12 +112,12 @@ func TestListQueryHistories(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
-	// 5. Grant a custom role carrying only bb.auditLogs.search on the project.
+	// 5. Grant a custom role carrying only bb.queryHistories.list on the project.
 	ctl.authInterceptor.token = ownerToken
 	_, err = ctl.roleServiceClient.CreateRole(ctx, connect.NewRequest(&v1pb.CreateRoleRequest{
 		Role: &v1pb.Role{
 			Title:       "query-history-auditor",
-			Permissions: []string{"bb.auditLogs.search"},
+			Permissions: []string{"bb.queryHistories.list"},
 		},
 		RoleId: "query-history-auditor",
 	}))

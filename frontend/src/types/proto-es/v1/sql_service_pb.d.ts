@@ -1560,7 +1560,7 @@ export declare const SQLService: GenService<{
   },
   /**
    * ListQueryHistories lists query histories of all users in a project.
-   * Permissions required: bb.auditLogs.search
+   * Permissions required: bb.queryHistories.list
    *
    * @generated from rpc bytebase.v1.SQLService.ListQueryHistories
    */
@@ -1571,9 +1571,9 @@ export declare const SQLService: GenService<{
   },
   /**
    * GetQueryHistory gets a single query history. The caller must be the
-   * creator of the query history or have the bb.auditLogs.search permission
+   * creator of the query history or have the bb.queryHistories.list permission
    * on the project.
-   * Permissions required: bb.auditLogs.search (only for non-creators)
+   * Permissions required: bb.queryHistories.list (only for non-creators)
    *
    * @generated from rpc bytebase.v1.SQLService.GetQueryHistory
    */

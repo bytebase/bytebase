@@ -1465,7 +1465,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 }
 
 // ListQueryHistories lists query histories of all users in a project. The IAM
-// interceptor checks bb.auditLogs.search on the parent project.
+// interceptor checks bb.queryHistories.list on the parent project.
 func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Request[v1pb.ListQueryHistoriesRequest]) (*connect.Response[v1pb.ListQueryHistoriesResponse], error) {
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.Parent)
@@ -1534,7 +1534,7 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, req *connect.Reques
 }
 
 // GetQueryHistory gets a single query history. The caller must be the creator
-// of the query history or have bb.auditLogs.search on the project.
+// of the query history or have bb.queryHistories.list on the project.
 func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v1pb.GetQueryHistoryRequest]) (*connect.Response[v1pb.QueryHistory], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -1556,7 +1556,7 @@ func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("query history %q not found", req.Msg.Name))
 	}
 	if history.Creator != user.Email {
-		ok, err := s.iamManager.CheckPermission(ctx, permission.AuditLogsSearch, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.QueryHistoriesList, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 		}

@@ -66,12 +66,12 @@ type SQLServiceClient interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// ListQueryHistories lists query histories of all users in a project.
-	// Permissions required: bb.auditLogs.search
+	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.auditLogs.search permission
+	// creator of the query history or have the bb.queryHistories.list permission
 	// on the project.
-	// Permissions required: bb.auditLogs.search (only for non-creators)
+	// Permissions required: bb.queryHistories.list (only for non-creators)
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
@@ -210,12 +210,12 @@ type SQLServiceHandler interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// ListQueryHistories lists query histories of all users in a project.
-	// Permissions required: bb.auditLogs.search
+	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history. The caller must be the
-	// creator of the query history or have the bb.auditLogs.search permission
+	// creator of the query history or have the bb.queryHistories.list permission
 	// on the project.
-	// Permissions required: bb.auditLogs.search (only for non-creators)
+	// Permissions required: bb.queryHistories.list (only for non-creators)
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
