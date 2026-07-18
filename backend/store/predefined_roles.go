@@ -246,7 +246,6 @@ var PredefinedRoles = []*RoleMessage{
 			permission.ProjectsSetIAMPolicy,
 			permission.ProjectsUndelete,
 			permission.ProjectsUpdate,
-			permission.QueryHistoriesList,
 			permission.ReleasesCheck,
 			permission.ReleasesCreate,
 			permission.ReleasesDelete,
