@@ -438,6 +438,8 @@ CREATE TABLE query_history (
 
 CREATE INDEX idx_query_history_creator_created_at_project ON query_history(creator, created_at, project DESC);
 
+CREATE INDEX idx_query_history_project_created_at ON query_history(project, created_at DESC);
+
 -----------------------
 -- Instance and instance-scoped tables
 -----------------------
