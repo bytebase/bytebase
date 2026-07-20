@@ -142,7 +142,23 @@ spots — they document what helpers exist and what guarantees they make.
 Stale references don't break the build but they actively mislead future
 contributors and AI agents that read these docs at session start.
 
-## 4. Image Compatibility Window
+## 4. Transaction Lock Ordering
+
+**Skip if:** the diff does not add or modify a transaction in `backend/store/`.
+
+Read the canonical [store row-lock ordering](../backend/store/README.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
+
+- Transaction-scoped advisory locks are acquired before row locks
+- Existing related rows are locked child-to-parent
+- Batches are locked in full primary-key order
+- `nextProjectID` is called only after required existing-child locks
+- `UPDATE`, `DELETE`, foreign-key checks, and conflicting upserts are included in the ordering analysis
+
+If the transaction coordinates multiple rows or tables, add a deterministic real-PostgreSQL regression test against its competing transaction path. The test must observe the public store behavior and fail with the old lock order.
+
+**STOP — do not proceed to PR creation if the transaction conflicts with the canonical order or lacks the required deadlock regression.**
+
+## 5. Image Compatibility Window
 
 **Skip if:** diff does not touch server version metadata, actuator compatibility
 metadata, or `bytebase-action` version/compatibility logic.
@@ -156,7 +172,7 @@ If the diff changes, narrows, or may break the compatibility window, call out
 the policy change, compatibility impact, and validation plan in the PR
 description.
 
-## 5. Lint and Format Gate
+## 6. Lint and Format Gate
 
 **Skip if:** no code changes (docs-only PR).
 
@@ -180,7 +196,7 @@ pnpm --dir frontend type-check
 buf lint proto
 ```
 
-## 6. Test Gate
+## 7. Test Gate
 
 **Skip if:** no code changes.
 
@@ -189,7 +205,7 @@ buf lint proto
 - For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
 
-## 7. SonarCloud Properties
+## 8. SonarCloud Properties
 
 **Skip if:** no new files or directories added.
 
@@ -198,7 +214,7 @@ Update `.sonarcloud.properties` to reflect the latest file structure:
 - `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
 - `sonar.cpd.exclusions` to skip copy-paste detection on test files
 
-## 8. Final Verification
+## 9. Final Verification
 
 Before running `gh pr create`:
 

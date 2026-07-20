@@ -16,6 +16,7 @@ const idMinValue int64 = 101
 
 // nextProjectID returns the next per-project auto-increment ID for the given table.
 // Must be called within a transaction. Locks the project row to serialize concurrent inserts.
+// Callers must first lock existing child rows as described in backend/store/README.md.
 // Returns at least idMinValue (101) for new projects.
 func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (int64, error) {
 	if _, err := tx.ExecContext(ctx,

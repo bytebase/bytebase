@@ -204,6 +204,10 @@ When writing or modifying queries on these tables:
   the public gRPC API, no store access. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
 
+## Transaction Lock Ordering
+
+Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add a deterministic deadlock regression test for new multi-row or multi-table coordination paths.
+
 ### Imports
 
 - Use organized imports (sorted by the import path)
