@@ -17,6 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const projectNotFoundFormat = "project %s not found"
+
 // SubmittedEvent requests a submission timeline entry.
 type SubmittedEvent struct{}
 
@@ -95,12 +97,12 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 		SELECT deleted FROM project
 		WHERE workspace = $1 AND resource_id = $2
 		FOR UPDATE`, input.Workspace, issue.ProjectID).Scan(&projectDeleted); errors.Is(err, sql.ErrNoRows) {
-		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+		return nil, workflowError(ErrorNotFound, projectNotFoundFormat, issue.ProjectID)
 	} else if err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to lock project for draft creation")
 	}
 	if projectDeleted {
-		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+		return nil, workflowError(ErrorNotFound, projectNotFoundFormat, issue.ProjectID)
 	}
 	if err := tx.QueryRowContext(ctx, `
 		SELECT GREATEST(COALESCE(MAX(id), 0) + 1, 101)
@@ -157,7 +159,7 @@ func (w *Workflow) SubmitIssue(ctx context.Context, input SubmitIssueInput) (*Su
 		return nil, workflowWrap(ErrorInternal, err, "failed to get project")
 	}
 	if project == nil {
-		return nil, workflowError(ErrorNotFound, "project %s not found", input.ProjectID)
+		return nil, workflowError(ErrorNotFound, projectNotFoundFormat, input.ProjectID)
 	}
 	observedIssue, err := w.store.GetIssue(ctx, &store.FindIssueMessage{
 		Workspace: input.Workspace, ProjectIDs: []string{input.ProjectID}, UID: &input.IssueUID,
