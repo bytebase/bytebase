@@ -864,6 +864,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		if !taskIDsToRunMap[task.ID] {
 			continue
 		}
+		if task.Payload.GetSkipped() {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("task %d has been skipped and cannot be run", task.ID))
+		}
 
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
@@ -977,7 +980,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
-	var taskUIDs []int64
+	var requestedTasks []*store.TaskMessage
 	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
@@ -988,7 +991,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		if !ok {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %v not found in the rollout", taskID))
 		}
-		taskUIDs = append(taskUIDs, taskID)
+		requestedTasks = append(requestedTasks, taskMsg)
 		environmentSet[taskMsg.Environment] = struct{}{}
 	}
 
@@ -1000,6 +1003,23 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		if !ok {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not allowed to skip tasks in environment %q", environment))
 		}
+	}
+
+	var taskUIDs []int64
+	for _, task := range requestedTasks {
+		if task.Payload.GetSkipped() {
+			continue
+		}
+		switch task.LatestTaskRunStatus {
+		case storepb.TaskRun_NOT_STARTED, storepb.TaskRun_FAILED, storepb.TaskRun_CANCELED:
+			taskUIDs = append(taskUIDs, task.ID)
+		default:
+			status := convertToTaskStatus(task.LatestTaskRunStatus, false)
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("task %d cannot be skipped in status %s", task.ID, status.String()))
+		}
+	}
+	if len(taskUIDs) == 0 {
+		return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 	}
 
 	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {

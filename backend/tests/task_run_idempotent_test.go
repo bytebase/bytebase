@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -105,12 +107,14 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 		err error
 	}
 	results := make(chan result, 5)
+	runTime := timestamppb.New(time.Now().Add(time.Hour))
 
 	for range 5 {
 		go func() {
 			_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
-				Parent: stage.Name,
-				Tasks:  taskNames,
+				Parent:  stage.Name,
+				Tasks:   taskNames,
+				RunTime: runTime,
 			}))
 			results <- result{err: err}
 		}()
@@ -133,8 +137,9 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 
 	// Test 2: Sequential double-click (simulates user accidentally clicking twice)
 	_, err = ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
-		Parent: stage.Name,
-		Tasks:  taskNames,
+		Parent:  stage.Name,
+		Tasks:   taskNames,
+		RunTime: runTime,
 	}))
 	a.NoError(err, "sequential BatchRunTasks call should succeed")
 
@@ -146,4 +151,104 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(taskRunsResp.Msg.TaskRuns), "task %s should still have exactly one task run after sequential call", taskName)
 	}
+
+	_, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+		Parent: stage.Name,
+		Tasks:  taskNames,
+		Reason: "must not skip pending tasks",
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+}
+
+func TestBatchRunTasks_RejectsSkippedTasks(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	instanceRootDir := t.TempDir()
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "testInstanceSkippedTask")
+	a.NoError(err)
+
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "testInstanceSkippedTask",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+
+	const databaseName = "testSkippedTaskDb"
+	a.NoError(ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil /* environment */, databaseName, ""))
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, databaseName),
+	}))
+	a.NoError(err)
+
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet:  &v1pb.Sheet{Content: []byte("SELECT 1;")},
+	}))
+	a.NoError(err)
+
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{Specs: []*v1pb.Plan_Spec{{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Targets: []string{databaseResp.Msg.Name},
+					Sheet:   sheetResp.Msg.Name,
+				},
+			},
+		}}},
+	}))
+	a.NoError(err)
+
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
+		Parent: planResp.Msg.Name,
+	}))
+	a.NoError(err)
+	stage := rolloutResp.Msg.Stages[0]
+	task := stage.Tasks[0]
+
+	_, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+		Parent: stage.Name,
+		Tasks:  []string{task.Name},
+		Reason: "not needed",
+	}))
+	a.NoError(err)
+
+	_, err = ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
+		Parent: stage.Name,
+		Tasks:  []string{task.Name},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+
+	_, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+		Parent: stage.Name,
+		Tasks:  []string{task.Name},
+		Reason: "replacement reason",
+	}))
+	a.NoError(err)
+	rolloutResp, err = ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+		Name: rolloutResp.Msg.Name,
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.Task_SKIPPED, rolloutResp.Msg.Stages[0].Tasks[0].Status)
+	a.Equal("not needed", rolloutResp.Msg.Stages[0].Tasks[0].SkippedReason)
+
+	taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+		Parent: task.Name,
+	}))
+	a.NoError(err)
+	a.Empty(taskRunsResp.Msg.TaskRuns)
 }
