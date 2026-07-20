@@ -20790,13 +20790,11 @@ components:
           description: How often the instance is synced.
           $ref: '#/components/schemas/google.protobuf.Duration'
         syncDatabases:
-          type: array
-          items:
-            type: string
           title: sync_databases
           description: |-
             Enable sync for following databases.
-             Default empty, means sync all schemas & databases.
+             Not set means sync all schemas & databases.
+          $ref: '#/components/schemas/bytebase.v1.SyncDatabases'
         lastSyncTime:
           title: last_sync_time
           description: The last time the instance was synced.
@@ -26759,6 +26757,16 @@ components:
     bytebase.v1.SyncDatabaseResponse:
       type: object
       title: SyncDatabaseResponse
+      additionalProperties: false
+    bytebase.v1.SyncDatabases:
+      type: object
+      properties:
+        databases:
+          type: array
+          items:
+            type: string
+          title: databases
+      title: SyncDatabases
       additionalProperties: false
     bytebase.v1.SyncInstanceRequest:
       type: object

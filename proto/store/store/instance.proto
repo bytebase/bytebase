@@ -8,6 +8,10 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+message SyncDatabases {
+  repeated string databases = 1;
+}
+
 // Instance is the proto for instances.
 message Instance {
   string title = 1;
@@ -22,8 +26,8 @@ message Instance {
   google.protobuf.Duration sync_interval = 7;
 
   // Enable sync for the following databases.
-  // Default empty, means sync all schemas & databases.
-  repeated string sync_databases = 9;
+  // Not set means sync all schemas & databases.
+  SyncDatabases sync_databases = 9;
 
   // The lower_case_table_names config for MySQL instances.
   // It is used to determine whether the table names and database names are case sensitive.

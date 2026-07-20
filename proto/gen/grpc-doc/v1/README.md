@@ -129,6 +129,7 @@
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
+    - [SyncDatabases](#bytebase-v1-SyncDatabases)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
     - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
@@ -2578,7 +2579,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | activation | [bool](#bool) |  | Whether the instance is activated for use. |
 | roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated | Database roles available in this instance. |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
-| sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
+| sync_databases | [SyncDatabases](#bytebase-v1-SyncDatabases) |  | Enable sync for following databases. Not set means sync all schemas &amp; databases. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
 | labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
 
@@ -2742,6 +2743,21 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  | Kerberos authentication configuration. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncDatabases"></a>
+
+### SyncDatabases
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated |  |
 
 
 

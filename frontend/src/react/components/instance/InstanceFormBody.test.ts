@@ -150,4 +150,35 @@ describe("InstanceFormBody", () => {
       "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
     );
   });
+
+  test("distinguishes sync-all from empty selected database list", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).not.toContain(
+      'const key = syncAll ? "" : [...selectedSet].sort().join("\\0");'
+    );
+    expect(source).toContain('syncAll ? "all" : "selected"');
+    expect(source).toContain(
+      "[...selectedSet].sort((a, b) => a.localeCompare(b))"
+    );
+  });
+
+  test("preserves an explicitly empty database sync selection", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/react/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain("syncDatabases?: SyncDatabasesMessage");
+    expect(source).toContain(
+      "const [syncAll, setSyncAll] = useState(syncDatabases === undefined);"
+    );
+    expect(source).toContain("syncDatabases={basicInfo.syncDatabases}");
+    expect(source).not.toContain(
+      "syncDatabases={basicInfo.syncDatabases?.databases ?? []}"
+    );
+  });
 });
