@@ -24,7 +24,9 @@ const plan = {
 const mocks = vi.hoisted(() => ({
   batchGetOrFetchUsers: vi.fn(async () => []),
   listUsers: vi.fn(async () => ({ users: [] })),
+  markScrollRestorationEntry: vi.fn(),
   routerPush: vi.fn(),
+  scrollRestorationKey: undefined as string | undefined,
   usePagedData: vi.fn(),
 }));
 
@@ -149,6 +151,8 @@ vi.mock("@/react/router", () => ({
 }));
 
 vi.mock("@/react/router/NavigationScrollRestoration", () => ({
+  markScrollRestorationEntry: mocks.markScrollRestorationEntry,
+  useScrollRestorationKey: () => mocks.scrollRestorationKey,
   useScrollRestorationLoadMore: () => undefined,
 }));
 
@@ -181,6 +185,7 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     mocks.usePagedData.mockReset();
+    mocks.scrollRestorationKey = undefined;
     mocks.usePagedData.mockReturnValue({
       dataList: [plan],
       hasMore: true,
@@ -202,7 +207,7 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     vi.clearAllMocks();
   });
 
-  test("uses the generic POP cache contract for the URL-owned view", () => {
+  test("does not restore paged data for a generic POP navigation", () => {
     act(() => {
       root.render(
         <MemoryRouter
@@ -222,9 +227,47 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
     const options = mocks.usePagedData.mock.lastCall?.[0] as
       | { cacheKey?: string; cacheRestoreToken?: string }
       | undefined;
-    expect(options?.cacheRestoreToken).toBe("plans-entry");
+    expect(options?.cacheRestoreToken).toBeUndefined();
     expect(options?.cacheKey).toContain("project-plans");
     expect(options?.cacheKey).toContain("state:DELETED");
+  });
+
+  test("uses the item-click restoration key for paged data", () => {
+    mocks.scrollRestorationKey = "plans-entry";
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <ProjectPlanDashboardPage projectId="foo" />
+        </MemoryRouter>
+      );
+    });
+
+    const options = mocks.usePagedData.mock.lastCall?.[0] as
+      | { cacheRestoreToken?: string }
+      | undefined;
+    expect(options?.cacheRestoreToken).toBe("plans-entry");
+  });
+
+  test("marks the list entry before opening a Plan row", () => {
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <ProjectPlanDashboardPage projectId="foo" />
+        </MemoryRouter>
+      );
+    });
+
+    const row = container.querySelector<HTMLElement>(
+      '[data-testid="plan-list-item"]'
+    );
+    expect(row).not.toBeNull();
+    act(() => row?.click());
+
+    expect(mocks.markScrollRestorationEntry).toHaveBeenCalledOnce();
+    expect(mocks.routerPush).toHaveBeenCalledWith("/projects/foo/plans/1");
+    expect(
+      mocks.markScrollRestorationEntry.mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.routerPush.mock.invocationCallOrder[0]);
   });
 
   test("exposes every Plan row as a semantic restoration anchor", () => {

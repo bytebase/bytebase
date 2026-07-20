@@ -33,6 +33,7 @@ const SCROLL_KEYS = new Set([
   "PageUp",
   " ",
 ]);
+const restorableLocationKeys = new Set<string>();
 
 type ScrollAnchor = {
   key: string;
@@ -82,6 +83,21 @@ function locationStorageKey(location: Location): string {
     return location.key;
   }
   return `default:${location.pathname}${location.search}${location.hash}`;
+}
+
+export function markScrollRestorationEntry(location: Location): void {
+  restorableLocationKeys.add(locationStorageKey(location));
+}
+
+export function useScrollRestorationKey(): string | undefined {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  return useMemo(() => {
+    const key = locationStorageKey(location);
+    return navigationType === "POP" && restorableLocationKeys.has(key)
+      ? key
+      : undefined;
+  }, [location, navigationType]);
 }
 
 function loadSavedPositions(): SavedPositions {
@@ -612,7 +628,12 @@ export function NavigationScrollRestoration({
       copyPositions(savedPositions, previousLocationKey, locationKey);
     }
 
-    if (navigationType === "POP" && savedForLocation) {
+    if (
+      navigationType === "POP" &&
+      savedForLocation &&
+      restorableLocationKeys.has(locationKey)
+    ) {
+      restorableLocationKeys.delete(locationKey);
       const currentTargets = collectTargets();
       const targetIds = new Set([
         ...currentTargets.keys(),

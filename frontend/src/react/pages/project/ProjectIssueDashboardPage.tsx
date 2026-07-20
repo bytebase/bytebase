@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigationType } from "react-router";
+import { useLocation } from "react-router";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
 import {
   BatchActionBar,
@@ -19,7 +19,11 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useURLSearchParam } from "@/react/hooks/useURLSearchParam";
 import { refreshIssueList } from "@/react/lib/issue/issueListRefresh";
-import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
+import {
+  markScrollRestorationEntry,
+  useScrollRestorationKey,
+  useScrollRestorationLoadMore,
+} from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -47,7 +51,7 @@ export function ProjectIssueDashboardPage({
 }) {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigationType = useNavigationType();
+  const scrollRestorationKey = useScrollRestorationKey();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -137,7 +141,7 @@ export function ProjectIssueDashboardPage({
     sessionKey: "bb.issue-table.project-issues",
     cacheKey: viewCacheKey,
     cacheScope: projectIssuesPagedDataCacheScope(projectId),
-    cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
+    cacheRestoreToken: scrollRestorationKey,
     fetchList: fetchIssueList,
   });
   useScrollRestorationLoadMore(paged);
@@ -179,6 +183,10 @@ export function ProjectIssueDashboardPage({
       return next;
     });
   }, []);
+  const handleOpenIssue = useCallback(
+    () => markScrollRestorationEntry(location),
+    [location]
+  );
 
   const toggleSelectAll = useCallback(() => {
     setSelectedNames((prev) => {
@@ -223,6 +231,7 @@ export function ProjectIssueDashboardPage({
           issues={paged.dataList}
           selectedNames={selectedNames}
           onToggleSelection={toggleSelection}
+          onOpenIssue={handleOpenIssue}
         />
         {paged.dataList.length > 0 && (
           <ProjectPageFooter className="px-2">

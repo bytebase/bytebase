@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigationType } from "react-router";
+import { useLocation } from "react-router";
 import { v4 as uuidv4 } from "uuid";
 import {
   AdvancedSearch,
@@ -66,7 +66,11 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/react/router/handles";
-import { useScrollRestorationLoadMore } from "@/react/router/NavigationScrollRestoration";
+import {
+  markScrollRestorationEntry,
+  useScrollRestorationKey,
+  useScrollRestorationLoadMore,
+} from "@/react/router/NavigationScrollRestoration";
 import { useAppStore } from "@/react/stores/app";
 import { buildPlanFindBySearchParams } from "@/react/stores/app/plan";
 import { pushNotification } from "@/store";
@@ -113,7 +117,11 @@ const parsePlanSearchParams = createAdvancedSearchParser(["state", "creator"]);
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigationType = useNavigationType();
+  const scrollRestorationKey = useScrollRestorationKey();
+  const handleOpenPlan = useCallback(
+    () => markScrollRestorationEntry(location),
+    [location]
+  );
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listUsers = useAppStore((state) => state.listUsers);
   const batchGetOrFetchUsers = useAppStore(
@@ -235,7 +243,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     sessionKey: `bb.${projectName}.plan-table`,
     cacheKey: viewCacheKey,
     cacheScope: projectPlansPagedDataCacheScope(projectId),
-    cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
+    cacheRestoreToken: scrollRestorationKey,
     fetchList: fetchPlanList,
   });
   useScrollRestorationLoadMore(paged);
@@ -344,7 +352,11 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
             {t("common.no-data")}
           </div>
         ) : (
-          <PlanTable plans={paged.dataList} projectId={projectId} />
+          <PlanTable
+            plans={paged.dataList}
+            projectId={projectId}
+            onOpenPlan={handleOpenPlan}
+          />
         )}
 
         {paged.dataList.length > 0 && (
@@ -393,7 +405,15 @@ interface PlanRowContext {
   draftState: PlanDraftState;
 }
 
-function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
+function PlanTable({
+  plans,
+  projectId,
+  onOpenPlan,
+}: {
+  plans: Plan[];
+  projectId: string;
+  onOpenPlan: () => void;
+}) {
   const { t } = useTranslation();
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
   // Subscribe so stage cells re-render when the environment cache loads.
@@ -566,6 +586,7 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
               plan={plan}
               projectId={projectId}
               columns={columns}
+              onOpenPlan={onOpenPlan}
             />
           ))}
         </TableBody>
@@ -582,10 +603,12 @@ function PlanRow({
   plan,
   projectId,
   columns,
+  onOpenPlan,
 }: Readonly<{
   plan: Plan;
   projectId: string;
   columns: PlanColumn[];
+  onOpenPlan: () => void;
 }>) {
   const { t } = useTranslation();
 
@@ -621,10 +644,11 @@ function PlanRow({
       if (e.ctrlKey || e.metaKey) {
         window.open(planUrl, "_blank");
       } else {
+        onOpenPlan();
         router.push(planUrl);
       }
     },
-    [planUrl]
+    [onOpenPlan, planUrl]
   );
 
   // Approval status

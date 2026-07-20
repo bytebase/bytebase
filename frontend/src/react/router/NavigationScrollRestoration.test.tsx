@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { setAppRouter } from "./navigation";
 import {
   MAIN_SCROLL_RESTORATION_ID,
+  markScrollRestorationEntry,
   NavigationScrollRestoration,
   useScrollRestorationLoadMore,
 } from "./NavigationScrollRestoration";
@@ -187,20 +188,34 @@ afterEach(() => {
 });
 
 describe("NavigationScrollRestoration", () => {
-  test("restores every scroll target on Back and Forward", async () => {
+  test("does not restore an unmarked POP navigation", async () => {
+    const { main, router, unmount } = await renderRouter();
+
+    recordScroll(main, 240);
+    await act(async () => {
+      await router.navigate("/second");
+    });
+    expect(main.scrollTop).toBe(0);
+    await act(async () => {
+      await router.navigate(-1);
+    });
+
+    expect(main.scrollTop).toBe(0);
+    unmount();
+  });
+
+  test("restores every scroll target after an item click", async () => {
     const { main, panel, router, unmount } = await renderRouter();
 
     recordScroll(main, 240, 30);
     recordScroll(panel, 120, 10);
 
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
     expect(main.scrollTop).toBe(0);
     expect(panel.scrollTop).toBe(0);
-
-    recordScroll(main, 360, 40);
-    recordScroll(panel, 180, 20);
 
     await act(async () => {
       await router.navigate(-1);
@@ -210,14 +225,6 @@ describe("NavigationScrollRestoration", () => {
     expect(panel.scrollTop).toBe(120);
     expect(panel.scrollLeft).toBe(10);
 
-    await act(async () => {
-      await router.navigate(1);
-    });
-    expect(main.scrollTop).toBe(360);
-    expect(main.scrollLeft).toBe(40);
-    expect(panel.scrollTop).toBe(180);
-    expect(panel.scrollLeft).toBe(20);
-
     unmount();
   });
 
@@ -225,6 +232,7 @@ describe("NavigationScrollRestoration", () => {
     const { main, router, unmount } = await renderRouter();
 
     main.scrollTop = 240;
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -243,6 +251,7 @@ describe("NavigationScrollRestoration", () => {
     );
 
     main.scrollTop = 640;
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -261,6 +270,7 @@ describe("NavigationScrollRestoration", () => {
 
     recordScroll(main, 240);
     for (let i = 0; i < 3; i++) {
+      markScrollRestorationEntry(router.state.location);
       await act(async () => {
         await router.navigate("/second");
       });
@@ -285,6 +295,7 @@ describe("NavigationScrollRestoration", () => {
     });
     expect(main.scrollTop).toBe(240);
 
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -312,6 +323,7 @@ describe("NavigationScrollRestoration", () => {
     const { main, router, unmount } = await renderRouter(<PagedPage />);
 
     recordScroll(main, 700);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -346,6 +358,7 @@ describe("NavigationScrollRestoration", () => {
     const { main, router, unmount } = await renderRouter(<PagedPage />);
 
     recordScroll(main, 700);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -393,6 +406,7 @@ describe("NavigationScrollRestoration", () => {
     const { main, router, unmount } = await renderRouter(<PagedPage />);
 
     recordScroll(main, 700);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -423,6 +437,7 @@ describe("NavigationScrollRestoration", () => {
     );
 
     recordScroll(main, 380);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -449,6 +464,7 @@ describe("NavigationScrollRestoration", () => {
     );
 
     recordScroll(main, 600);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -487,6 +503,7 @@ describe("NavigationScrollRestoration", () => {
     );
 
     recordScroll(main, 300);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -526,6 +543,7 @@ describe("NavigationScrollRestoration", () => {
     });
 
     recordScroll(main, 300);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -597,6 +615,7 @@ describe("NavigationScrollRestoration", () => {
     });
 
     recordScroll(main, 300);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -658,6 +677,7 @@ describe("NavigationScrollRestoration", () => {
     });
 
     recordScroll(main, 300);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
     });
@@ -672,6 +692,7 @@ describe("NavigationScrollRestoration", () => {
     expect(vi.getTimerCount()).toBe(0);
 
     recordScroll(main, 200);
+    markScrollRestorationEntry(router.state.location);
     await act(async () => {
       await router.navigate("/second");
       await router.navigate(-1);

@@ -1,7 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
+import {
+  IssueSchema,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { emptySearchParams } from "./AdvancedSearch";
-import { IssueSearchBar, PresetButtons } from "./IssueTable";
+import { IssueListItem, IssueSearchBar, PresetButtons } from "./IssueTable";
 
 vi.mock("@/react/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "reviewer@example.com" }),
@@ -99,5 +104,58 @@ describe("PresetButtons", () => {
       screen.getByRole("tab", { name: "issue.waiting-approval" })
     );
     expect(onParamsChange).toHaveBeenCalled();
+  });
+});
+
+describe("IssueListItem", () => {
+  const issue = create(IssueSchema, {
+    name: "projects/foo/issues/1",
+    title: "Issue 1",
+    creator: "users/creator@example.com",
+    status: IssueStatus.OPEN,
+  });
+
+  test("marks normal row and title-link navigation for restoration", () => {
+    const onOpenIssue = vi.fn();
+    const { rerender } = render(
+      <IssueListItem
+        issue={issue}
+        selected={false}
+        onToggleSelection={vi.fn()}
+        onOpenIssue={onOpenIssue}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("issue-list-item"));
+    expect(onOpenIssue).toHaveBeenCalledOnce();
+
+    onOpenIssue.mockClear();
+    rerender(
+      <IssueListItem
+        issue={issue}
+        selected={false}
+        onToggleSelection={vi.fn()}
+        onOpenIssue={onOpenIssue}
+      />
+    );
+    fireEvent.click(screen.getByRole("link", { name: "Issue 1" }));
+    expect(onOpenIssue).toHaveBeenCalledOnce();
+  });
+
+  test("does not mark modified title-link navigation", () => {
+    const onOpenIssue = vi.fn();
+    render(
+      <IssueListItem
+        issue={issue}
+        selected={false}
+        onToggleSelection={vi.fn()}
+        onOpenIssue={onOpenIssue}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: "Issue 1" }), {
+      ctrlKey: true,
+    });
+    expect(onOpenIssue).not.toHaveBeenCalled();
   });
 });
