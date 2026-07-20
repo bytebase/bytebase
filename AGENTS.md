@@ -191,8 +191,11 @@ Several tables use composite primary keys (e.g., `(project, id)`). Check
 multi-column PRIMARY KEY.
 
 When writing or modifying queries on these tables:
-- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key
-  columns — never filter by `id` alone
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
+  project/tenant scope column. Identify rows with either the full primary key or
+  a full declared non-partial UNIQUE key that contains the same scope columns;
+  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
+  unique identifier alone
 - When adding a new store method touching a composite-PK table, add a corresponding
   `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
   fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,

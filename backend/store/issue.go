@@ -180,7 +180,8 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 			SELECT COALESCE((config->>'hasRollout')::boolean, false)
 			FROM plan
 			WHERE project = $1
-			  AND id = $2`,
+			  AND id = $2
+			FOR UPDATE`,
 			create.ProjectID, *create.PlanUID).Scan(&hasRollout); err != nil {
 			return nil, errors.Wrapf(err, "failed to get plan %d", *create.PlanUID)
 		}

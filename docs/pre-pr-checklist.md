@@ -69,14 +69,17 @@ last updated. Cross-reference with the tables your diff touches.
 
 For every query in the diff that touches a composite-PK table, verify:
 
-- Every `WHERE` clause includes ALL primary key columns
-- Every `JOIN ... ON` includes ALL primary key columns
-- Every `DELETE ... USING` includes ALL primary key columns
-- Every `UPDATE ... FROM` includes ALL primary key columns
+- Every `WHERE`, `JOIN ... ON`, `DELETE ... USING`, and `UPDATE ... FROM`
+  predicate includes every project/tenant scope column
+- Each row is identified by either the full primary key or a full declared
+  non-partial UNIQUE key containing the same scope columns
+- Any alternate unique key is verified against `LATEST.sql`
 
-**Red flag pattern:** `WHERE id = ?` without `AND project = ?` on any of these tables.
+**Red flag patterns:** `WHERE id = ?` or `WHERE plan_id = ?` without
+`AND project = ?` on any of these tables.
 
-**STOP — do not proceed to PR creation if any predicate is missing a PK column.**
+**STOP — do not proceed to PR creation if any predicate is missing a required
+scope or key column.**
 This is the exact bug pattern that caused BYT-9259. Fix the query first.
 
 ### Step 3c: Verify collision test coverage
@@ -151,6 +154,7 @@ Read the canonical [store row-lock ordering](../backend/store/README.md#transact
 - Transaction-scoped advisory locks are acquired before row locks
 - Existing related rows are locked child-to-parent
 - Batches are locked in full primary-key order
+- Project-owned sibling branches follow the documented `DeleteProject` order
 - `nextProjectID` is called only after required existing-child locks
 - `UPDATE`, `DELETE`, foreign-key checks, and conflicting upserts are included in the ordering analysis
 
