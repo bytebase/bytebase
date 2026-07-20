@@ -480,9 +480,16 @@ func (s *Store) ListTaskStatusCountByPlanIDs(ctx context.Context, projectIDs []s
 // BatchSkipTasks batch skip tasks.
 func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int64, comment string) error {
 	q := qb.Q().Space(`
-		UPDATE task
+		UPDATE task AS t
 		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)
-		WHERE id = ANY(?) AND project = ?`, true, comment, taskUIDs, projectID)
+		WHERE t.id = ANY(?) AND t.project = ?
+		AND (t.payload->>'skipped')::BOOLEAN IS NOT TRUE
+		AND NOT EXISTS (
+			SELECT 1 FROM task_run
+			WHERE task_run.task_id = t.id AND task_run.project = t.project
+			AND task_run.status IN (?, ?, ?, ?)
+		)`, true, comment, taskUIDs, projectID,
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")

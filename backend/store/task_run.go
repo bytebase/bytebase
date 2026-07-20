@@ -298,7 +298,7 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, task
 
 // CreatePendingTaskRuns creates pending task runs.
 // This operation is idempotent and safe for concurrent calls:
-// - Uses WHERE NOT EXISTS to skip tasks that already have active (PENDING/RUNNING/DONE) task runs
+// - Excludes skipped tasks and tasks that already have active (PENDING/RUNNING/DONE) task runs
 // - Uses ON CONFLICT DO NOTHING to handle race conditions where two requests try to create the same task run
 // - The unique constraint on (task_id, attempt) ensures no duplicates
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creates ...*TaskRunMessage) error {
@@ -349,15 +349,15 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	}
 
 	// Single query that:
-	// 1. Assigns per-project IDs using ROW_NUMBER() + baseID
-	// 2. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
-	// 3. Calculates next attempt for each remaining task
-	// 4. Inserts task runs
-	// 5. Uses ON CONFLICT DO NOTHING to handle race conditions
+	// 1. Locks task rows so task-run creation and skipping cannot both win
+	// 2. Assigns per-project IDs using ROW_NUMBER() + baseID
+	// 3. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
+	// 4. Calculates next attempt for each remaining task
+	// 5. Inserts task runs
+	// 6. Uses ON CONFLICT DO NOTHING to handle race conditions
 	q := qb.Q().Space(`
-		WITH candidates AS (
+		WITH requested_tasks AS (
 			SELECT
-				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
 				tasks.project,
 				tasks.task_id,
 				tasks.run_at
@@ -367,6 +367,17 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 					unnest(CAST(? AS BIGINT[])) AS task_id,
 					unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
 			) tasks
+			JOIN task ON task.project = tasks.project AND task.id = tasks.task_id
+			WHERE (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
+			ORDER BY tasks.project, tasks.task_id
+			FOR UPDATE OF task
+		), candidates AS (
+			SELECT
+				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
+				tasks.project,
+				tasks.task_id,
+				tasks.run_at
+			FROM requested_tasks tasks
 			WHERE NOT EXISTS (
 				SELECT 1 FROM task_run
 				WHERE task_run.task_id = tasks.task_id
@@ -395,7 +406,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			?
 		FROM candidates
 		ON CONFLICT (project, task_id, attempt) DO NOTHING
-	`, baseID, projects, taskUIDs, runAts,
+	`, projects, taskUIDs, runAts, baseID,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String(),
 		creatorPtr, storepb.TaskRun_PENDING.String(), payloadStr)
 
