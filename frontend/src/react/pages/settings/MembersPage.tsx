@@ -92,7 +92,6 @@ import {
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import {
-  useNavigate,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/react/router";
@@ -176,7 +175,6 @@ function MemberTable({
     (state) => state.batchGetOrFetchUsers
   );
   const roleList = useAppStore((state) => state.roleList);
-  const navigate = useNavigate();
   const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
 
@@ -432,20 +430,18 @@ function MemberTable({
                       nameLink={
                         mb.type === "users" && canGetUsers && mb.user?.email
                           ? {
-                              onClick: () =>
-                                void navigate.push({
-                                  name: WORKSPACE_ROUTE_USER_PROFILE,
-                                  params: {
-                                    principalEmail: mb.user!.email,
-                                  },
-                                }),
+                              to: {
+                                name: WORKSPACE_ROUTE_USER_PROFILE,
+                                params: {
+                                  principalEmail: mb.user.email,
+                                },
+                              },
                             }
                           : mb.type === "groups" && canGetGroups
                             ? {
-                                onClick: () =>
-                                  void navigate.push({
-                                    name: WORKSPACE_ROUTE_GROUPS,
-                                  }),
+                                to: {
+                                  name: WORKSPACE_ROUTE_GROUPS,
+                                },
                               }
                             : undefined
                       }
@@ -554,13 +550,12 @@ function MemberTable({
                             nameLink={
                               canGetUsers
                                 ? {
-                                    onClick: () =>
-                                      void navigate.push({
-                                        name: WORKSPACE_ROUTE_USER_PROFILE,
-                                        params: {
-                                          principalEmail: user.email,
-                                        },
-                                      }),
+                                    to: {
+                                      name: WORKSPACE_ROUTE_USER_PROFILE,
+                                      params: {
+                                        principalEmail: user.email,
+                                      },
+                                    },
                                   }
                                 : undefined
                             }
