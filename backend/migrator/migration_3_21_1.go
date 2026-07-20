@@ -142,10 +142,16 @@ func captureMigration3_21_1HighWater(ctx context.Context, conn *sql.Conn, projec
 	highWaterByProject := make(map[string]int64)
 	if len(lockedProjectIDs) > 0 {
 		rows, err := tx.QueryContext(ctx, `
-			SELECT project, MAX(id)
-			FROM plan
-			WHERE project = ANY($1)
-			GROUP BY project`, pq.Array(lockedProjectIDs))
+			SELECT locked_project.project_id, latest_plan.id
+			FROM unnest($1::TEXT[]) AS locked_project(project_id)
+			CROSS JOIN LATERAL (
+				SELECT plan.id
+				FROM plan
+				WHERE plan.project = locked_project.project_id
+				ORDER BY plan.id DESC
+				LIMIT 1
+			) AS latest_plan
+			ORDER BY locked_project.project_id`, pq.Array(lockedProjectIDs))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to capture UI Plan high-water marks")
 		}
