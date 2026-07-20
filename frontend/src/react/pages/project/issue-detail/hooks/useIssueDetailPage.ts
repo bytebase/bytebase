@@ -324,9 +324,20 @@ export const useIssueDetailPage = ({
     [patchState]
   );
 
+  // A late poll must not overwrite a newer post-action refresh or a snapshot
+  // loaded for a different issue after in-place navigation.
+  const fetchSeqRef = useRef(0);
   const refreshState = useCallback(async () => {
     const current = latestSnapshotRef.current;
+    fetchSeqRef.current += 1;
+    const seq = fetchSeqRef.current;
     const patch = await refreshIssueDetailSnapshot(current);
+    if (
+      seq !== fetchSeqRef.current ||
+      latestSnapshotRef.current.pageKey !== current.pageKey
+    ) {
+      return;
+    }
     patchState(patch);
   }, [patchState]);
 

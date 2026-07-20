@@ -238,6 +238,8 @@
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest)
+    - [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest)
+    - [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse)
     - [MaskingReason](#bytebase-v1-MaskingReason)
     - [QueryHistory](#bytebase-v1-QueryHistory)
     - [QueryOption](#bytebase-v1-QueryOption)
@@ -4603,6 +4605,44 @@ DatabaseService manages databases and their schemas.
 
 
 
+<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
+
+### ListQueryHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project whose query histories are listed. Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistories` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | Filter is the filter to apply on the list query histories. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - creator: the user full name in &#34;users/{email}&#34; format, support &#34;==&#34; operator.
+
+For example: creator == &#34;users/{email}&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
+
+### ListQueryHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of query histories. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistories` method to retrieve the next page of history. |
+
+
+
+
+
+
 <a name="bytebase-v1-MaskingReason"></a>
 
 ### MaskingReason
@@ -5032,6 +5072,7 @@ SQLService executes SQL queries and manages query operations.
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) | Executes a read-only SQL query against a database. Permissions required: bb.databases.get |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream | Executes SQL with admin privileges via streaming connection. Permissions required: bb.sql.admin |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. Permissions required: None (only returns caller&#39;s own query histories) |
+| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | ListQueryHistories lists query histories of all users in a project. Permissions required: bb.queryHistories.list |
 | GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | GetQueryHistory gets a single query history for the caller. Permissions required: None (only returns the caller&#39;s own query history) |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) | Computes schema differences between two database metadata. Permissions required: None |

@@ -307,3 +307,75 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 		})
 	}
 }
+
+func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
+	tests := []struct {
+		name        string
+		filter      string
+		wantCreator *string
+		errContains string
+	}{
+		{
+			name:        "empty filter",
+			filter:      "",
+			wantCreator: nil,
+		},
+		{
+			name:        "creator filter",
+			filter:      `creator == "users/alice@example.com"`,
+			wantCreator: stringPtr("alice@example.com"),
+		},
+		{
+			name:        "unsupported variable",
+			filter:      `project == "projects/test-project"`,
+			errContains: `only "creator" is supported`,
+		},
+		{
+			name:        "unsupported logical operator",
+			filter:      `creator == "users/alice@example.com" && creator == "users/bob@example.com"`,
+			errContains: "filter is supported",
+		},
+		{
+			name:        "unsupported contains operator",
+			filter:      `creator.contains("alice")`,
+			errContains: "filter is supported",
+		},
+		{
+			name:        "invalid creator format",
+			filter:      `creator == "alice@example.com"`,
+			errContains: "expect users/{email}",
+		},
+		{
+			name:        "non-string literal",
+			filter:      `creator == 123`,
+			errContains: "expect string",
+		},
+		{
+			name:        "invalid CEL",
+			filter:      `creator ==`,
+			errContains: "failed to parse filter",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creator, err := GetListQueryHistoriesCreatorFilter(tt.filter)
+			if tt.errContains != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantCreator == nil {
+				require.Nil(t, creator)
+				return
+			}
+			require.NotNil(t, creator)
+			require.Equal(t, *tt.wantCreator, *creator)
+		})
+	}
+}
+
+func stringPtr(s string) *string {
+	return &s
+}

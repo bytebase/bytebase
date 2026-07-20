@@ -81,6 +81,7 @@ const (
 	ProjectsSetIAMPolicy                 Permission = "bb.projects.setIamPolicy"
 	ProjectsUndelete                     Permission = "bb.projects.undelete"
 	ProjectsUpdate                       Permission = "bb.projects.update"
+	QueryHistoriesList                   Permission = "bb.queryHistories.list"
 	ReleasesCheck                        Permission = "bb.releases.check"
 	ReleasesCreate                       Permission = "bb.releases.create"
 	ReleasesDelete                       Permission = "bb.releases.delete"
