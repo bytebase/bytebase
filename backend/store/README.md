@@ -14,7 +14,18 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
    - `task_run_log -> task_run -> task -> plan -> project`
 3. Identify project-scoped rows with every scope column plus either the remaining primary-key columns or every remaining column of a declared non-partial unique key. Verify alternate keys in `LATEST.sql`. Lock batches in full primary-key order; project-scoped `(project, id)` batches therefore use that order, not `id` alone.
 4. Treat locks acquired by `UPDATE`, `DELETE`, foreign-key checks, and `INSERT ... ON CONFLICT DO UPDATE` as part of the order. An upsert that can update an existing row is not a new-row-only insert.
-5. `nextProjectID` locks `project`. Call it after locking any existing descendants, and do not lock an existing descendant afterward.
+5. `nextProjectID` locks `project` and requires it to be active before allocating an ID. Call it after locking any existing descendants, and do not lock an existing descendant afterward. Creation is rejected when the project is missing or deleted.
+
+Row ordering prevents wait-for cycles on existing rows. It cannot protect an
+absent child row because there is no row to lock before a concurrent purge passes
+that branch. The active-project check in `nextProjectID` covers this case only for
+writers that call it; it is not a repository-wide purge fence because other
+writers bypass `nextProjectID`.
+
+Every new or modified writer of purge-managed data must define its project
+lifecycle policy: require an active project for new resources, or require only an
+existing project when deleted-project continuation is intentional. Serialize and
+validate that policy against project deletion before writing the managed data.
 
 Transactions spanning project-owned sibling branches follow the order used by `DeleteProject`:
 
@@ -36,4 +47,8 @@ Examples:
 - Issue creation: existing `plan`, then `project`, then the new `issue` row.
 - Task skipping: existing `task` rows ordered by `(project, id)`; it does not lock `task_run` rows.
 
-When adding or changing a transaction that coordinates multiple rows or tables, add a deterministic real-PostgreSQL regression test that exercises its competing transaction path and fails on a deadlock.
+When adding or changing a transaction that coordinates multiple rows or tables,
+add deterministic real-PostgreSQL regression tests for both lock-acquisition
+directions. Assert the terminal outcomes, including that neither direction ends
+in a foreign-key failure; merely checking for the absence of SQLSTATE `40P01` is
+insufficient.

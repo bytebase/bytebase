@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -13,16 +14,16 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func runWithConcurrentProjectDeletion(
-	t *testing.T,
-	seedSQL string,
-	blockedTable string,
-	advisoryLockID int,
-	operation func(context.Context, *store.Store) error,
-) error {
+type projectDeletionLockOrderFixture struct {
+	ctx   context.Context
+	db    *sql.DB
+	store *store.Store
+}
+
+func newProjectDeletionLockOrderFixture(t *testing.T, seedSQL string) *projectDeletionLockOrderFixture {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	t.Cleanup(cancel)
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(context.Background()) })
 	db := container.GetDB()
@@ -42,6 +43,20 @@ func runWithConcurrentProjectDeletion(
 	s, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
+
+	return &projectDeletionLockOrderFixture{ctx: ctx, db: db, store: s}
+}
+
+func runWithConcurrentProjectDeletion(
+	t *testing.T,
+	seedSQL string,
+	blockedTable string,
+	advisoryLockID int,
+	operation func(context.Context, *store.Store) error,
+) error {
+	t.Helper()
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	ctx, db, s := fixture.ctx, fixture.db, fixture.store
 
 	lockConn, err := db.Conn(ctx)
 	require.NoError(t, err)
@@ -116,4 +131,76 @@ func runWithConcurrentProjectDeletion(
 	operationErr := <-operationResult
 	require.NoError(t, deleteErr)
 	return operationErr
+}
+
+func runWithCreationBeforeProjectDeletion(
+	t *testing.T,
+	seedSQL string,
+	lockedChildTable string,
+	operation func(context.Context, *store.Store) error,
+) (error, error) {
+	t.Helper()
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	ctx, db, s := fixture.ctx, fixture.db, fixture.store
+
+	lockConn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	defer lockConn.Close()
+	lockTx, err := lockConn.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	lockReleased := false
+	defer func() {
+		if !lockReleased {
+			_ = lockTx.Rollback()
+		}
+	}()
+
+	var lockBackendPID int
+	require.NoError(t, lockTx.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&lockBackendPID))
+	var lockedProjectID string
+	require.NoError(t, lockTx.QueryRowContext(ctx, `
+		SELECT resource_id
+		FROM project
+		WHERE resource_id = 'project-a'
+		FOR UPDATE
+	`).Scan(&lockedProjectID))
+	require.Equal(t, "project-a", lockedProjectID)
+
+	operationResult := make(chan error, 1)
+	go func() {
+		operationResult <- operation(ctx, s)
+	}()
+
+	var operationBackendPID int
+	require.Eventually(t, func() bool {
+		return db.QueryRowContext(ctx, `
+			SELECT COALESCE((
+				SELECT pid
+				FROM pg_stat_activity
+				WHERE $1 = ANY(pg_blocking_pids(pid))
+				ORDER BY pid
+				LIMIT 1
+			), 0)
+		`, lockBackendPID).Scan(&operationBackendPID) == nil && operationBackendPID != 0
+	}, 10*time.Second, 10*time.Millisecond, "creation should lock %s, then wait for the project row", lockedChildTable)
+
+	deleteResult := make(chan error, 1)
+	go func() {
+		deleteResult <- s.DeleteProject(ctx, "default", "project-a")
+	}()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_stat_activity
+				WHERE $1 = ANY(pg_blocking_pids(pid))
+			)
+		`, operationBackendPID).Scan(&waiting)
+		return err == nil && waiting
+	}, 10*time.Second, 10*time.Millisecond, "project deletion should pass empty child cleanup, then wait for the locked %s", lockedChildTable)
+
+	require.NoError(t, lockTx.Commit())
+	lockReleased = true
+	return <-operationResult, <-deleteResult
 }

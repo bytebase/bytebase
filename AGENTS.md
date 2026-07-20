@@ -209,7 +209,20 @@ When writing or modifying queries on these tables:
 
 ## Transaction Lock Ordering
 
-Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add a deterministic deadlock regression test for new multi-row or multi-table coordination paths.
+Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.
+
+Row ordering prevents wait-for cycles on existing rows, but it cannot protect a
+child row that does not exist yet. `nextProjectID` closes that gap for its callers:
+it locks the project and requires the project to be active before allocating an ID,
+so creation is rejected when the project is missing or deleted. This is not a
+repository-wide purge fence because some writers bypass `nextProjectID`.
+
+Every new or modified writer of purge-managed data must define whether its
+lifecycle policy requires an active project or merely an existing project, then
+serialize and validate that policy against project deletion. Add deterministic
+real-PostgreSQL tests for both lock-acquisition directions. Assert the terminal
+outcomes, including that neither direction ends in a foreign-key failure; merely
+checking for the absence of SQLSTATE `40P01` is insufficient.
 
 ### Imports
 

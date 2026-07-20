@@ -305,6 +305,12 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	if len(creates) == 0 {
 		return nil
 	}
+	projectID := creates[0].ProjectID
+	for _, create := range creates[1:] {
+		if create.ProjectID != projectID {
+			return common.Errorf(common.Invalid, "all task runs in a batch must belong to the same project")
+		}
+	}
 
 	var taskUIDs []int64
 	var runAts []*time.Time
@@ -334,8 +340,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			payloadStr = s
 		}
 	}
-
-	projectID := creates[0].ProjectID
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
