@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   clearPagedDataCache,
+  invalidatePagedDataCacheScope,
   readPagedDataCache,
   writePagedDataCache,
 } from "./pagedDataCache";
@@ -63,5 +64,41 @@ describe("pagedDataCache", () => {
 
     expect(readPagedDataCache("issues-1")).toBeUndefined();
     expect(readPagedDataCache("issues-0")).toBeDefined();
+  });
+
+  test("invalidates only snapshots in the requested scope", () => {
+    writePagedDataCache(
+      "project-a-active-plans",
+      {
+        dataList: [{ name: "projects/a/plans/1" }],
+        hasMore: false,
+        nextPageToken: "",
+      },
+      "project-a-plans"
+    );
+    writePagedDataCache(
+      "project-a-closed-plans",
+      {
+        dataList: [{ name: "projects/a/plans/2" }],
+        hasMore: false,
+        nextPageToken: "",
+      },
+      "project-a-plans"
+    );
+    writePagedDataCache(
+      "project-a-issues",
+      {
+        dataList: [{ name: "projects/a/issues/1" }],
+        hasMore: false,
+        nextPageToken: "",
+      },
+      "project-a-issues"
+    );
+
+    invalidatePagedDataCacheScope("project-a-plans");
+
+    expect(readPagedDataCache("project-a-active-plans")).toBeUndefined();
+    expect(readPagedDataCache("project-a-closed-plans")).toBeUndefined();
+    expect(readPagedDataCache("project-a-issues")).toBeDefined();
   });
 });

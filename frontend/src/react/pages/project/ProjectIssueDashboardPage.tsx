@@ -32,6 +32,7 @@ import {
   mergeSearchParams,
   type SearchScope as VueSearchScope,
 } from "@/utils";
+import { projectIssuesPagedDataCacheScope } from "./pagedDataCacheScope";
 
 const serializeSearchParams = (params: SearchParams): string =>
   buildSearchTextBySearchParams({
@@ -135,6 +136,7 @@ export function ProjectIssueDashboardPage({
   const paged = usePagedData<Issue>({
     sessionKey: "bb.issue-table.project-issues",
     cacheKey: viewCacheKey,
+    cacheScope: projectIssuesPagedDataCacheScope(projectId),
     cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
     fetchList: fetchIssueList,
   });

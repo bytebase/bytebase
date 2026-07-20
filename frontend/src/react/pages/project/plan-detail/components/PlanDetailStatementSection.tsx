@@ -13,6 +13,7 @@ import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import {
@@ -383,7 +384,7 @@ export function PlanDetailStatementSection({
         updateMask: { paths: ["specs"] },
       });
       const response = await planServiceClientConnect.updatePlan(request);
-      page.patchState({ plan: response });
+      applyProjectDetailMutationResult(page, { plan: response });
       // Drop the orphaned local sheet only after the spec is committed
       // to the new server sheet — otherwise an updatePlan failure would
       // leave the spec pointing at a now-empty local entry, losing the

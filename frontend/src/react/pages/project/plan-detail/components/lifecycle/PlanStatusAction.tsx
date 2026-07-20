@@ -29,6 +29,7 @@ import {
 import { useCurrentUser } from "@/react/hooks/useAppState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -381,7 +382,7 @@ function ReRequestGuidance({ issue }: { issue: Issue }) {
       const response = await issueServiceClientConnect.requestIssue(
         create(RequestIssueRequestSchema, { name: issue.name })
       );
-      page.patchState({ issue: response });
+      applyProjectDetailMutationResult(page, { issue: response });
       await page.refreshState();
     } catch (error) {
       pushNotification({

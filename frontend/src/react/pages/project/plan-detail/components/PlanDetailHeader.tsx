@@ -22,6 +22,10 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { cn } from "@/react/lib/utils";
+import {
+  applyProjectDetailMutationResult,
+  invalidateProjectPagedDataCache,
+} from "@/react/pages/project/applyProjectDetailMutationResult";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -250,7 +254,7 @@ export function PlanDetailHeader() {
           })
         );
         if (pageKeyRef.current !== actionPageKey) return;
-        patchState({ issue: response });
+        applyProjectDetailMutationResult(page, { issue: response });
       } else {
         const planPatch = create(PlanSchema, {
           ...page.plan,
@@ -263,7 +267,7 @@ export function PlanDetailHeader() {
           })
         );
         if (pageKeyRef.current !== actionPageKey) return;
-        patchState({ plan: response });
+        applyProjectDetailMutationResult(page, { plan: response });
       }
     } catch (error) {
       if (pageKeyRef.current !== actionPageKey) return;
@@ -299,9 +303,9 @@ export function PlanDetailHeader() {
         const issue = clone(IssueSchema, page.issue);
         issue.status =
           state === State.DELETED ? IssueStatus.CANCELED : IssueStatus.OPEN;
-        patchState({ plan: updated, issue });
+        applyProjectDetailMutationResult(page, { plan: updated, issue });
       } else {
-        patchState({ plan: updated });
+        applyProjectDetailMutationResult(page, { plan: updated });
       }
       pushNotification({
         module: "bytebase",
@@ -331,6 +335,7 @@ export function PlanDetailHeader() {
           status,
         })
       );
+      invalidateProjectPagedDataCache(page.projectId, "issues");
       if (pageKeyRef.current !== actionPageKey) return;
       // Closing / reopening records a system comment — refresh page state and the
       // issue comments so the review timeline reflects it (like issue detail).
@@ -561,7 +566,7 @@ export function PlanDetailHeader() {
       });
       if (pageKeyRef.current !== actionPageKey) return;
       handleReviewPopoverOpenChange(false);
-      patchState({ issue: submittedIssue });
+      applyProjectDetailMutationResult(page, { issue: submittedIssue });
       await page.refreshState();
       if (pageKeyRef.current !== actionPageKey) return;
       focusPlanPhase("review", page.expandPhase);

@@ -96,6 +96,7 @@ import {
   extractStageUID,
   getStageStatusFromCounts,
 } from "@/utils/v1/issue/rollout";
+import { projectPlansPagedDataCacheScope } from "./pagedDataCacheScope";
 import { isReleaseBackedPlan } from "./plan-detail/utils/spec";
 import {
   getPlanDraftState,
@@ -233,6 +234,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const paged = usePagedData<Plan>({
     sessionKey: `bb.${projectName}.plan-table`,
     cacheKey: viewCacheKey,
+    cacheScope: projectPlansPagedDataCacheScope(projectId),
     cacheRestoreToken: navigationType === "POP" ? location.key : undefined,
     fetchList: fetchPlanList,
   });

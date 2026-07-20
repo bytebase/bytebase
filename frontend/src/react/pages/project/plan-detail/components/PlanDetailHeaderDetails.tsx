@@ -11,6 +11,7 @@ import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
 import { Textarea } from "@/react/components/ui/textarea";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { pushNotification } from "@/store";
 import {
   IssueSchema,
@@ -107,7 +108,7 @@ export function PlanDetailHeaderDetails() {
           })
         );
         if (pageKeyRef.current !== actionPageKey) return;
-        patchState({ issue: response });
+        applyProjectDetailMutationResult(page, { issue: response });
       } else {
         const planPatch = create(PlanSchema, { ...page.plan, description });
         const response = await planServiceClientConnect.updatePlan(
@@ -117,7 +118,7 @@ export function PlanDetailHeaderDetails() {
           })
         );
         if (pageKeyRef.current !== actionPageKey) return;
-        patchState({ plan: response });
+        applyProjectDetailMutationResult(page, { plan: response });
       }
       saved = true;
     } catch (error) {

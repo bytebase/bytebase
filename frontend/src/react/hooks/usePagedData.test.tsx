@@ -3,6 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   clearPagedDataCache,
+  invalidatePagedDataCacheScope,
+  readPagedDataCache,
   writePagedDataCache,
 } from "./pagedDataCache";
 import { PagedTableFooter, usePagedData } from "./usePagedData";
@@ -44,16 +46,19 @@ function Harness({ fetchList }: { fetchList: FetchList }) {
 
 function CacheHarness({
   cacheKey,
+  cacheScope,
   cacheRestoreToken,
   fetchList,
 }: {
   cacheKey: string;
+  cacheScope?: string;
   cacheRestoreToken?: string;
   fetchList: FetchList;
 }) {
   const paged = usePagedData<Item>({
     sessionKey: "test-cached-paged-data",
     cacheKey,
+    cacheScope,
     cacheRestoreToken,
     fetchList,
   });
@@ -262,6 +267,31 @@ describe("usePagedData", () => {
     expect(container.querySelector("[data-state]")?.textContent).toBe(
       "items/current"
     );
+  });
+
+  test("persists the cache scope used for later invalidation", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const fetchList = vi.fn<FetchList>(async () => ({
+      list: [{ name: "items/1" }],
+    }));
+
+    await act(async () => {
+      root!.render(
+        <CacheHarness
+          cacheKey="issues"
+          cacheScope="project-a-issues"
+          fetchList={fetchList}
+        />
+      );
+      await Promise.resolve();
+    });
+    expect(readPagedDataCache("issues:page-size=50")).toBeDefined();
+
+    invalidatePagedDataCacheScope("project-a-issues");
+
+    expect(readPagedDataCache("issues:page-size=50")).toBeUndefined();
   });
 
   test("restores an entry again after the mounted page visits another view", async () => {

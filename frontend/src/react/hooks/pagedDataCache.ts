@@ -6,6 +6,7 @@ export type PagedDataCacheSnapshot<T> = {
 
 type StoredSnapshot<T> = PagedDataCacheSnapshot<T> & {
   cachedAt: number;
+  cacheScope?: string;
 };
 
 const MAX_ENTRIES = 20;
@@ -41,13 +42,15 @@ export function readPagedDataCache<T>(
 
 export function writePagedDataCache<T>(
   key: string | undefined,
-  snapshot: PagedDataCacheSnapshot<T>
+  snapshot: PagedDataCacheSnapshot<T>,
+  cacheScope?: string
 ): void {
   if (!key) return;
   cache.delete(key);
   cache.set(key, {
     ...cloneSnapshot(snapshot),
     cachedAt: Date.now(),
+    cacheScope,
   } as StoredSnapshot<unknown>);
 
   while (cache.size > MAX_ENTRIES) {
@@ -59,6 +62,14 @@ export function writePagedDataCache<T>(
 
 export function deletePagedDataCache(key: string | undefined): void {
   if (key) cache.delete(key);
+}
+
+export function invalidatePagedDataCacheScope(scope: string): void {
+  for (const [key, snapshot] of cache) {
+    if (snapshot.cacheScope === scope) {
+      cache.delete(key);
+    }
+  }
 }
 
 export function clearPagedDataCache(): void {

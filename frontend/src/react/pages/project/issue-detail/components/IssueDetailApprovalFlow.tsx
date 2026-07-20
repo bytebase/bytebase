@@ -18,6 +18,7 @@ import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
 import { pushNotification } from "@/store";
@@ -144,7 +145,7 @@ function CheckingState({ issue }: { issue: Issue }) {
       const response = await issueServiceClientConnect.retryIssueApproval(
         create(RetryIssueApprovalRequestSchema, { name: issue.name })
       );
-      page.patchState({ issue: response });
+      applyProjectDetailMutationResult(page, { issue: response });
     } catch (error) {
       pushNotification({
         module: "bytebase",
@@ -691,7 +692,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
           name: issue.name,
         })
       );
-      page.patchState({ issue: response });
+      applyProjectDetailMutationResult(page, { issue: response });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

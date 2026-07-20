@@ -15,6 +15,7 @@ import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { router } from "@/react/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/react/router/handles";
 import { useAppStore } from "@/react/stores/app";
@@ -92,7 +93,7 @@ export function IssueDetailLabels() {
           updateMask: { paths: ["labels"] },
         });
         const response = await issueServiceClientConnect.updateIssue(request);
-        page.patchState({ issue: response });
+        applyProjectDetailMutationResult(page, { issue: response });
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",

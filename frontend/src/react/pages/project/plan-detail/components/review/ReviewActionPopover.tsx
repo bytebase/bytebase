@@ -13,6 +13,7 @@ import { Button } from "@/react/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { useAppStore } from "@/react/stores/app";
 import { pushNotification } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -56,12 +57,12 @@ export function ReviewActionPopover({
         const response = await issueServiceClientConnect.approveIssue(
           create(ApproveIssueRequestSchema, { comment, name: issue.name })
         );
-        page.patchState({ issue: response });
+        applyProjectDetailMutationResult(page, { issue: response });
       } else if (action === "REJECT") {
         const response = await issueServiceClientConnect.rejectIssue(
           create(RejectIssueRequestSchema, { comment, name: issue.name })
         );
-        page.patchState({ issue: response });
+        applyProjectDetailMutationResult(page, { issue: response });
       } else {
         await useAppStore.getState().createIssueComment({
           issueName: issue.name,

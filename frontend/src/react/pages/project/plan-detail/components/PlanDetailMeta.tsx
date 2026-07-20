@@ -11,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { extractUserEmail, pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Color } from "@/types/proto-es/google/type/color_pb";
@@ -25,7 +26,6 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 export function PlanDetailMeta() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const { patchState } = page;
   const project = page.project;
   const [now, setNow] = useState(Date.now());
 
@@ -77,7 +77,7 @@ export function PlanDetailMeta() {
           updateMask: { paths: ["labels"] },
         })
       );
-      patchState({ issue: response });
+      applyProjectDetailMutationResult(page, { issue: response });
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

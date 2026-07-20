@@ -148,12 +148,14 @@ const pagedDataReducer = <T extends { name: string }>(
 export function usePagedData<T extends { name: string }>({
   sessionKey,
   cacheKey,
+  cacheScope,
   cacheRestoreToken,
   fetchList,
   enabled = true,
 }: {
   sessionKey: string;
   cacheKey?: string;
+  cacheScope?: string;
   cacheRestoreToken?: string;
   fetchList: (params: {
     pageSize: number;
@@ -282,13 +284,17 @@ export function usePagedData<T extends { name: string }>({
     ) {
       return;
     }
-    writePagedDataCache(state.cacheKey, {
-      dataList: state.dataList,
-      hasMore: state.hasMore,
-      nextPageToken: nextPageTokenRef.current,
-    });
+    writePagedDataCache(
+      state.cacheKey,
+      {
+        dataList: state.dataList,
+        hasMore: state.hasMore,
+        nextPageToken: nextPageTokenRef.current,
+      },
+      cacheScope
+    );
     dispatch({ type: "cache-persisted", cacheKey: state.cacheKey });
-  }, [resolvedCacheKey, state]);
+  }, [cacheScope, resolvedCacheKey, state]);
 
   // Fetch on mount and when fetchList/pageSize changes (handles search text reactivity)
   const isFirstLoad = useRef(true);

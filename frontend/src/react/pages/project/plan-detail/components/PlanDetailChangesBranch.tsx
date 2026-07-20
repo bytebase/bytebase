@@ -67,6 +67,7 @@ import { useProjectByName } from "@/react/hooks/useProjectByName";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { seedSheetStatement } from "@/react/hooks/useSheetStatement";
 import { cn } from "@/react/lib/utils";
+import { applyProjectDetailMutationResult } from "@/react/pages/project/applyProjectDetailMutationResult";
 import { router } from "@/react/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
@@ -290,7 +291,7 @@ export function PlanDetailChangesBranch({
         })
       );
       if (pageKeyRef.current !== actionPageKey) return undefined;
-      patchState({ plan: response });
+      applyProjectDetailMutationResult(page, { plan: response });
       return response;
     },
     [page.isCreating, page.pageKey, page.plan, patchState]
@@ -976,7 +977,7 @@ function OptionsSection({
       );
       if (pageKeyRef.current !== actionPageKey) return;
       if (updatedPlan) {
-        patchState({ plan: updatedPlan });
+        applyProjectDetailMutationResult(page, { plan: updatedPlan });
       }
       setSheetStatementState(nextStatement);
       onStatementPersisted();
@@ -1018,7 +1019,7 @@ function OptionsSection({
       })
     );
     if (pageKeyRef.current !== actionPageKey) return;
-    patchState({ plan: response });
+    applyProjectDetailMutationResult(page, { plan: response });
   };
 
   const currentGhostConfig = getGhostConfigFromStatement(currentStatement);
