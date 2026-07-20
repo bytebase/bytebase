@@ -252,36 +252,23 @@ function UserTable({
             const accountType = getAccountTypeByEmail(user.email);
             const isDeleted = user.state === State.DELETED;
             const isSelf = currentUser.name === user.name;
+            const canView = hasWorkspacePermissionV2(
+              getViewPermission(accountType)
+            );
 
             return (
               <TableRow
                 key={user.name}
                 className={cn(
-                  hasWorkspacePermissionV2(getViewPermission(accountType)) &&
+                  canView &&
                     "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
                 )}
-                tabIndex={
-                  hasWorkspacePermissionV2(getViewPermission(accountType))
-                    ? 0
-                    : undefined
-                }
-                role={
-                  hasWorkspacePermissionV2(getViewPermission(accountType))
-                    ? "button"
-                    : undefined
-                }
-                aria-label={
-                  hasWorkspacePermissionV2(getViewPermission(accountType))
-                    ? user.title || user.email
-                    : undefined
-                }
-                onClick={
-                  hasWorkspacePermissionV2(getViewPermission(accountType))
-                    ? () => handleView(user)
-                    : undefined
-                }
+                tabIndex={canView ? 0 : undefined}
+                role={canView ? "button" : undefined}
+                aria-label={canView ? user.title || user.email : undefined}
+                onClick={canView ? () => handleView(user) : undefined}
                 onKeyDown={
-                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                  canView
                     ? (e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -296,6 +283,16 @@ function UserTable({
                   <UserCell
                     title={user.title}
                     subtitle={user.email}
+                    nameLink={
+                      canView
+                        ? {
+                            to: {
+                              name: WORKSPACE_ROUTE_USER_PROFILE,
+                              params: { principalEmail: user.email },
+                            },
+                          }
+                        : undefined
+                    }
                     nameClassName={
                       isDeleted ? "line-through !text-control-light" : undefined
                     }
